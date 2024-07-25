@@ -27,7 +27,6 @@ type Config struct {
 
 	AWSAccessKeyID     string `help:"access key ID to use for AWS services"`
 	AWSSecretAccessKey string `help:"secret access key to use for AWS services"`
-	AWSUseCredChain    bool   `help:"using the default AWS credential provider chain instead of values above"`
 	AWSRegion          string `help:"region to use for AWS services, e.g. us-east-1"`
 
 	S3Endpoint          string `help:"S3 service endpoint, e.g. https://s3.amazonaws.com"`
@@ -70,12 +69,11 @@ func NewDefaultConfig() *Config {
 
 		AWSAccessKeyID:     "",
 		AWSSecretAccessKey: "",
-		AWSUseCredChain:    false,
 		AWSRegion:          "us-east-1",
 
 		S3Endpoint:          "https://s3.amazonaws.com",
-		S3AttachmentsBucket: "courier-media",
-		S3LogsBucket:        "courier-logs",
+		S3AttachmentsBucket: "temba-attachments",
+		S3LogsBucket:        "temba-logs",
 		S3ForcePathStyle:    false,
 
 		FacebookApplicationSecret:    "missing_facebook_app_secret",
