@@ -1,28 +1,30 @@
 package firebase
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
+	"sync"
 	"time"
 
-	"github.com/buger/jsonparser"
+	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/messaging"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"google.golang.org/api/option"
 )
 
 const (
-	configTitle        = "FCM_TITLE"
-	configNotification = "FCM_NOTIFICATION"
-	configKey          = "FCM_KEY"
+	configTitle           = "FCM_TITLE"
+	configNotification    = "FCM_NOTIFICATION"
+	configKey             = "FCM_KEY"
+	configCredentialsFile = "FCM_CREDENTIALS_JSON"
 )
 
 var (
-	sendURL      = "https://fcm.googleapis.com/fcm/send"
 	maxMsgLength = 1024
 )
 
@@ -32,10 +34,15 @@ func init() {
 
 type handler struct {
 	handlers.BaseHandler
+
+	fetchTokenMutex sync.Mutex
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("FCM"), "Firebase", handlers.WithRedactConfigKeys(configKey))}
+	return &handler{
+		BaseHandler:     handlers.NewBaseHandler(courier.ChannelType("FCM"), "Firebase", handlers.WithRedactConfigKeys(configKey)),
+		fetchTokenMutex: sync.Mutex{},
+	}
 }
 
 func (h *handler) Initialize(s courier.Server) error {
@@ -120,96 +127,80 @@ func (h *handler) registerContact(ctx context.Context, channel courier.Channel, 
 	return nil, err
 }
 
-type mtPayload struct {
-	Data struct {
-		Type          string   `json:"type"`
-		Title         string   `json:"title"`
-		Message       string   `json:"message"`
-		MessageID     int64    `json:"message_id"`
-		SessionStatus string   `json:"session_status"`
-		QuickReplies  []string `json:"quick_replies,omitempty"`
-	} `json:"data"`
-	Notification     *mtNotification `json:"notification,omitempty"`
-	ContentAvailable bool            `json:"content_available"`
-	To               string          `json:"to"`
-	Priority         string          `json:"priority"`
-}
-
-type mtNotification struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
-}
-
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
-	fcmKey := msg.Channel().StringConfigForKey(configKey, "")
-	if title == "" || fcmKey == "" {
-		return courier.ErrChannelConfig
+
+	fcmClient, projectID, err := h.GetFCMClient(ctx, msg.Channel(), clog)
+	if err != nil {
+		return err
 	}
 
 	configNotification := msg.Channel().ConfigForKey(configNotification, false)
 	notification, _ := configNotification.(bool)
+
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	}
 
-	for i, part := range msgParts {
-		payload := mtPayload{}
+	for _, part := range msgParts {
+		payload := messaging.Message{}
 
-		payload.Data.Type = "rapidpro"
-		payload.Data.Title = title
-		payload.Data.Message = part
-		payload.Data.MessageID = int64(msg.ID())
-		payload.Data.SessionStatus = msg.SessionStatus()
+		payload.Data = map[string]string{"type": "rapidpro", "title": title, "message": part, "message_id": msg.ID().String(), "session_status": msg.SessionStatus()}
 
-		// include any quick replies on the last piece we send
-		if i == len(msgParts)-1 {
-			payload.Data.QuickReplies = msg.QuickReplies()
-		}
-
-		payload.To = msg.URNAuth()
-		payload.Priority = "high"
+		payload.Token = msg.URNAuth()
+		payload.Android = &messaging.AndroidConfig{Priority: "high"}
 
 		if notification {
-			payload.Notification = &mtNotification{
+			payload.Notification = &messaging.Notification{
 				Title: title,
 				Body:  part,
 			}
-			payload.ContentAvailable = true
 		}
 
-		jsonPayload := jsonx.MustMarshal(payload)
-
-		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
-		if err != nil {
-			return err
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json")
-		req.Header.Set("Authorization", fmt.Sprintf("key=%s", fcmKey))
-
-		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 == 5 {
-			return courier.ErrConnectionFailed
-		} else if resp.StatusCode/100 != 2 {
-			return courier.ErrResponseStatus
-		}
-
-		// was this successful
-		success, _ := jsonparser.GetInt(respBody, "success")
-		if success != 1 {
-			return courier.ErrResponseUnexpected
-		}
-
-		externalID, err := jsonparser.GetInt(respBody, "multicast_id")
+		result, err := fcmClient.Send(ctx, &payload)
 		if err != nil {
 			return courier.ErrResponseUnexpected
 		}
-		res.AddExternalID(fmt.Sprintf("%d", externalID))
+
+		if !strings.Contains(result, fmt.Sprintf("projects/%s/messages/", projectID)) {
+			return courier.ErrResponseUnexpected
+		}
+		externalID := strings.TrimLeft(result, fmt.Sprintf("projects/%s/messages/", projectID))
+		if externalID == "" {
+			return courier.ErrResponseUnexpected
+		}
+
+		res.AddExternalID(externalID)
 
 	}
 
 	return nil
+}
+
+type FCMClient interface {
+	Send(ctx context.Context, message *messaging.Message) (string, error)
+}
+
+func (h *handler) GetFCMClient(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (FCMClient, string, error) {
+	credentialsFile := channel.StringConfigForKey(configCredentialsFile, "")
+	if credentialsFile == "" {
+		return nil, "", courier.ErrChannelConfig
+	}
+
+	var credentialsFileJSON map[string]string
+
+	err := json.Unmarshal([]byte(credentialsFile), &credentialsFileJSON)
+	if err != nil {
+		return nil, "", courier.ErrChannelConfig
+	}
+
+	app, err := firebase.NewApp(ctx, nil, option.WithCredentialsJSON([]byte(credentialsFile)))
+	if err != nil {
+		return nil, "", err
+	}
+
+	fcmClient, err := app.Messaging(ctx)
+
+	return fcmClient, credentialsFileJSON["project_id"], err
 }
