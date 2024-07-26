@@ -28,6 +28,7 @@ const (
 )
 
 var (
+	sendURL      = "https://fcm.googleapis.com/fcm/send"
 	maxMsgLength = 1024
 )
 
@@ -146,13 +147,113 @@ type mtPayload struct {
 	} `json:"android,omitempty"`
 }
 
+type mtAPIKeyPayload struct {
+	Data struct {
+		Type          string   `json:"type"`
+		Title         string   `json:"title"`
+		Message       string   `json:"message"`
+		MessageID     int64    `json:"message_id"`
+		SessionStatus string   `json:"session_status"`
+		QuickReplies  []string `json:"quick_replies,omitempty"`
+	} `json:"data"`
+	Notification     *mtNotification `json:"notification,omitempty"`
+	ContentAvailable bool            `json:"content_available"`
+	To               string          `json:"to"`
+	Priority         string          `json:"priority"`
+}
+
 type mtNotification struct {
 	Title string `json:"title"`
 	Body  string `json:"body"`
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+	fcmKey := msg.Channel().StringConfigForKey(configKey, "")
+
+	if fcmKey != "" {
+		return h.sendWithAPIKey(ctx, msg, res, clog)
+	}
+
+	return h.sendWithCredsJSON(ctx, msg, res, clog)
+}
+
+func (h *handler) sendWithAPIKey(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
+	fcmKey := msg.Channel().StringConfigForKey(configKey, "")
+	if title == "" || fcmKey == "" {
+		return courier.ErrChannelConfig
+	}
+
+	configNotification := msg.Channel().ConfigForKey(configNotification, false)
+	notification, _ := configNotification.(bool)
+	msgParts := make([]string, 0)
+	if msg.Text() != "" {
+		msgParts = handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
+	}
+
+	for i, part := range msgParts {
+		payload := mtAPIKeyPayload{}
+
+		payload.Data.Type = "rapidpro"
+		payload.Data.Title = title
+		payload.Data.Message = part
+		payload.Data.MessageID = int64(msg.ID())
+		payload.Data.SessionStatus = msg.SessionStatus()
+
+		// include any quick replies on the last piece we send
+		if i == len(msgParts)-1 {
+			payload.Data.QuickReplies = msg.QuickReplies()
+		}
+
+		payload.To = msg.URNAuth()
+		payload.Priority = "high"
+
+		if notification {
+			payload.Notification = &mtNotification{
+				Title: title,
+				Body:  part,
+			}
+			payload.ContentAvailable = true
+		}
+
+		jsonPayload := jsonx.MustMarshal(payload)
+
+		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
+		if err != nil {
+			return err
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("key=%s", fcmKey))
+
+		resp, respBody, err := h.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
+		}
+
+		// was this successful
+		success, _ := jsonparser.GetInt(respBody, "success")
+		if success != 1 {
+			return courier.ErrResponseUnexpected
+		}
+
+		externalID, err := jsonparser.GetInt(respBody, "multicast_id")
+		if err != nil {
+			return courier.ErrResponseUnexpected
+		}
+		res.AddExternalID(fmt.Sprintf("%d", externalID))
+
+	}
+
+	return nil
+}
+
+func (h *handler) sendWithCredsJSON(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+	title := msg.Channel().StringConfigForKey(configTitle, "")
+
 	credentialsFile := msg.Channel().StringConfigForKey(configCredentialsFile, "")
 	if credentialsFile == "" {
 		return courier.ErrChannelConfig
@@ -187,7 +288,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		payload.Data.MessageID = int64(msg.ID())
 		payload.Data.SessionStatus = msg.SessionStatus()
 
-		// include any quick replies on the last piece we send
 		if i == len(msgParts)-1 {
 			payload.Data.QuickReplies = msg.QuickReplies()
 		}
