@@ -47,7 +47,7 @@ func testConfig() *courier.Config {
 	config.AWSAccessKeyID = "root"
 	config.AWSSecretAccessKey = "tembatemba"
 	config.S3Endpoint = "http://localhost:9000"
-	config.S3ForcePathStyle = true
+	config.S3Minio = true
 
 	return config
 }
@@ -1087,7 +1087,7 @@ func (ts *BackendTestSuite) TestSaveAttachment() {
 
 	newURL, err := ts.b.SaveAttachment(ctx, knChannel, "image/jpeg", testJPG, "jpg")
 	ts.NoError(err)
-	ts.Equal("https://temba-attachments.s3.us-east-1.amazonaws.com/attachments/1/c00e/5d67/c00e5d67-c275-4389-aded-7d8b151cbd5b.jpg", newURL)
+	ts.Equal("http://localhost:9000/temba-attachments/attachments/1/c00e/5d67/c00e5d67-c275-4389-aded-7d8b151cbd5b.jpg", newURL)
 }
 
 func (ts *BackendTestSuite) TestWriteMsg() {
@@ -1216,7 +1216,7 @@ func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
 	// should have actually fetched and saved it to storage, with the correct content type
 	err = ts.b.WriteMsg(ctx, msg, clog)
 	ts.NoError(err)
-	ts.Equal([]string{"image/jpeg:https://temba-attachments.s3.us-east-1.amazonaws.com/attachments/1/9b95/5e36/9b955e36-ac16-4c6b-8ab6-9b9af5cd042a.jpg"}, msg.Attachments())
+	ts.Equal([]string{"image/jpeg:http://localhost:9000/temba-attachments/attachments/1/9b95/5e36/9b955e36-ac16-4c6b-8ab6-9b9af5cd042a.jpg"}, msg.Attachments())
 
 	// try an invalid embedded attachment
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "invalid embedded attachment data", "", clog).(*Msg)

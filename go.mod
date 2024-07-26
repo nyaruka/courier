@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/antchfx/xmlquery v1.4.1
-	github.com/aws/aws-sdk-go v1.54.19
+	github.com/aws/aws-sdk-go v1.55.3
 	github.com/buger/jsonparser v1.1.1
 	github.com/dghubble/oauth1 v0.7.3
 	github.com/getsentry/sentry-go v0.28.1
@@ -16,14 +16,14 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
-	github.com/nyaruka/gocommon v1.55.8
+	github.com/nyaruka/gocommon v1.56.2
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.8.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/samber/slog-multi v1.2.0
 	github.com/samber/slog-sentry v1.2.2
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/exp v0.0.0-20240707233637-46b078467d37
+	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
 	golang.org/x/mod v0.19.0
 	gopkg.in/go-playground/validator.v9 v9.31.0
 )
@@ -32,7 +32,7 @@ require (
 	github.com/antchfx/xpath v1.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.4 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.5 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.22.0 // indirect

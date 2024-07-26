@@ -29,6 +29,7 @@ import (
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/s3x"
 	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
@@ -59,10 +60,10 @@ type backend struct {
 	stLogWriter  *StorageLogWriter // attached logs being written to storage
 	writerWG     *sync.WaitGroup
 
-	db                *sqlx.DB
-	redisPool         *redis.Pool
-	attachmentStorage storage.Storage
-	logStorage        storage.Storage
+	db         *sqlx.DB
+	redisPool  *redis.Pool
+	s3         *s3x.Service
+	logStorage storage.Storage
 
 	channelsByUUID *cache.Local[courier.ChannelUUID, *Channel]
 	channelsByAddr *cache.Local[courier.ChannelAddress, *Channel]
@@ -166,19 +167,29 @@ func (b *backend) Start() error {
 		queue.StartDethrottler(b.redisPool, b.stopChan, b.waitGroup, msgQueueName)
 	}
 
+	// setup S3 storage for attachments
+	b.s3, err = s3x.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.S3Endpoint, b.config.S3Minio)
+	if err != nil {
+		return err
+	}
+	if err := b.s3.Test(ctx, b.config.S3AttachmentsBucket); err != nil {
+		log.Error("attachment bucket not accessible", "error", err)
+	} else {
+		log.Info("attachment bucket ok")
+	}
+
 	s3config := &storage.S3Options{
 		AWSAccessKeyID:     b.config.AWSAccessKeyID,
 		AWSSecretAccessKey: b.config.AWSSecretAccessKey,
 		Region:             b.config.AWSRegion,
 		Endpoint:           b.config.S3Endpoint,
-		ForcePathStyle:     b.config.S3ForcePathStyle,
+		ForcePathStyle:     b.config.S3Minio,
 		MaxRetries:         3,
 	}
 	s3Client, err := storage.NewS3Client(s3config)
 	if err != nil {
 		return err
 	}
-	b.attachmentStorage = storage.NewS3(s3Client, b.config.S3AttachmentsBucket, b.config.AWSRegion, s3.BucketCannedACLPublicRead, 32)
 	b.logStorage = storage.NewS3(s3Client, b.config.S3LogsBucket, b.config.AWSRegion, s3.BucketCannedACLPrivate, 32)
 
 	// create and start channel caches...
@@ -187,12 +198,7 @@ func (b *backend) Start() error {
 	b.channelsByAddr = cache.NewLocal(b.loadChannelByAddress, time.Minute)
 	b.channelsByAddr.Start()
 
-	// check our storages
-	if err := checkStorage(b.attachmentStorage); err != nil {
-		log.Error(b.attachmentStorage.Name()+" attachment storage not available", "error", err)
-	} else {
-		log.Info(b.attachmentStorage.Name() + " attachment storage ok")
-	}
+	// check our log storage
 	if err := checkStorage(b.logStorage); err != nil {
 		log.Error(b.logStorage.Name()+" log storage not available", "error", err)
 	} else {
@@ -643,7 +649,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 
 	path := filepath.Join("attachments", strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 
-	storageURL, err := b.attachmentStorage.Put(ctx, path, contentType, data)
+	storageURL, err := b.s3.PutObject(ctx, b.config.S3AttachmentsBucket, path, contentType, data, s3.BucketCannedACLPublicRead)
 	if err != nil {
 		return "", fmt.Errorf("error saving attachment to storage (bytes=%d): %w", len(data), err)
 	}

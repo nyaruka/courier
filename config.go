@@ -32,7 +32,7 @@ type Config struct {
 	S3Endpoint          string `help:"S3 service endpoint, e.g. https://s3.amazonaws.com"`
 	S3AttachmentsBucket string `help:"S3 bucket to write attachments to"`
 	S3LogsBucket        string `help:"S3 bucket to write channel logs to"`
-	S3ForcePathStyle    bool   `help:"S3 should used /bucket/path style URLs"`
+	S3Minio             bool   `help:"S3 is actually Minio or other compatible service"`
 
 	FacebookApplicationSecret    string `help:"the Facebook app secret"`
 	FacebookWebhookSecret        string `help:"the secret for Facebook webhook URL verification"`
@@ -74,7 +74,7 @@ func NewDefaultConfig() *Config {
 		S3Endpoint:          "https://s3.amazonaws.com",
 		S3AttachmentsBucket: "temba-attachments",
 		S3LogsBucket:        "temba-logs",
-		S3ForcePathStyle:    false,
+		S3Minio:             false,
 
 		FacebookApplicationSecret:    "missing_facebook_app_secret",
 		FacebookWebhookSecret:        "missing_facebook_webhook_secret",
