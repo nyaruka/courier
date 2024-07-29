@@ -9,12 +9,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
-	"github.com/nyaruka/gocommon/storage"
+	"github.com/nyaruka/gocommon/s3x"
 	"github.com/nyaruka/gocommon/syncx"
 )
 
@@ -153,27 +154,29 @@ type StorageLogWriter struct {
 	*syncx.Batcher[*stChannelLog]
 }
 
-func NewStorageLogWriter(st storage.Storage, wg *sync.WaitGroup) *StorageLogWriter {
+func NewStorageLogWriter(s3s *s3x.Service, bucket string, wg *sync.WaitGroup) *StorageLogWriter {
 	return &StorageLogWriter{
 		Batcher: syncx.NewBatcher(func(batch []*stChannelLog) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel()
 
-			writeStorageChannelLogs(ctx, st, batch)
+			writeStorageChannelLogs(ctx, s3s, bucket, batch)
 		}, 1000, time.Millisecond*500, 1000, wg),
 	}
 }
 
-func writeStorageChannelLogs(ctx context.Context, st storage.Storage, batch []*stChannelLog) {
-	uploads := make([]*storage.Upload, len(batch))
+func writeStorageChannelLogs(ctx context.Context, s3s *s3x.Service, bucket string, batch []*stChannelLog) {
+	uploads := make([]*s3x.Upload, len(batch))
 	for i, l := range batch {
-		uploads[i] = &storage.Upload{
-			Path:        l.path(),
+		uploads[i] = &s3x.Upload{
+			Bucket:      bucket,
+			Key:         l.path(),
 			ContentType: "application/json",
 			Body:        jsonx.MustMarshal(l),
+			ACL:         s3.BucketCannedACLPrivate,
 		}
 	}
-	if err := st.BatchPut(ctx, uploads); err != nil {
+	if err := s3s.BatchPut(ctx, uploads, 32); err != nil {
 		slog.Error("error writing channel logs", "comp", "storage log writer")
 	}
 }
