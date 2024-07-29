@@ -16,7 +16,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
-	github.com/nyaruka/gocommon v1.56.2
+	github.com/nyaruka/gocommon v1.56.3
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.8.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -27,7 +27,6 @@ require (
 	golang.org/x/mod v0.19.0
 	google.golang.org/api v0.189.0
 	gopkg.in/go-playground/validator.v9 v9.31.0
-
 )
 
 require (
