@@ -101,7 +101,7 @@ func (ts *BackendTestSuite) TearDownSuite() {
 
 func (ts *BackendTestSuite) clearRedis() {
 	// clear redis
-	r := ts.b.redisPool.Get()
+	r := ts.b.rp.Get()
 	defer r.Close()
 	_, err := r.Do("FLUSHDB")
 	ts.Require().NoError(err)
@@ -702,7 +702,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 }
 
 func (ts *BackendTestSuite) TestSentExternalIDCaching() {
-	rc := ts.b.redisPool.Get()
+	rc := ts.b.rp.Get()
 	defer rc.Close()
 
 	ctx := context.Background()
@@ -752,7 +752,7 @@ func (ts *BackendTestSuite) TestHeartbeat() {
 }
 
 func (ts *BackendTestSuite) TestCheckForDuplicate() {
-	rc := ts.b.redisPool.Get()
+	rc := ts.b.rp.Get()
 	defer rc.Close()
 
 	ctx := context.Background()
@@ -832,7 +832,7 @@ func (ts *BackendTestSuite) TestStatus() {
 	ts.True(strings.Contains(ts.b.Status(), "Channel"), ts.b.Status())
 
 	// add a message to our queue
-	r := ts.b.redisPool.Get()
+	r := ts.b.rp.Get()
 	defer r.Close()
 
 	dbMsg := readMsgFromDB(ts.b, 10000)
@@ -853,7 +853,7 @@ func (ts *BackendTestSuite) TestStatus() {
 func (ts *BackendTestSuite) TestOutgoingQueue() {
 	// add one of our outgoing messages to the queue
 	ctx := context.Background()
-	r := ts.b.redisPool.Get()
+	r := ts.b.rp.Get()
 	defer r.Close()
 
 	dbMsg := readMsgFromDB(ts.b, 10000)
@@ -1364,7 +1364,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 
 func (ts *BackendTestSuite) TestResolveMedia() {
 	ctx := context.Background()
-	rc := ts.b.redisPool.Get()
+	rc := ts.b.rp.Get()
 	defer rc.Close()
 
 	tcs := []struct {
@@ -1469,7 +1469,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 }
 
 func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {
-	rc := ts.b.redisPool.Get()
+	rc := ts.b.rp.Get()
 	defer rc.Close()
 
 	assertredis.ZCard(ts.T(), rc, "handler:1", 0)
@@ -1478,7 +1478,7 @@ func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {
 }
 
 func (ts *BackendTestSuite) assertQueuedContactTask(contactID ContactID, expectedType string, expectedBody map[string]any) {
-	rc := ts.b.redisPool.Get()
+	rc := ts.b.rp.Get()
 	defer rc.Close()
 
 	assertredis.ZCard(ts.T(), rc, "handler:1", 1)

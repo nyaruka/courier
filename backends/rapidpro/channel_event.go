@@ -163,7 +163,7 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clo
 	}
 
 	// queue it up for handling by RapidPro
-	rc := b.redisPool.Get()
+	rc := b.rp.Get()
 	defer rc.Close()
 
 	// if we had a problem queueing the event, log it

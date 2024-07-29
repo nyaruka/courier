@@ -258,7 +258,7 @@ SELECT id, channel_id, external_id
 // resolveStatusUpdateMsgIDs tries to resolve msg IDs for the given statuses - if there's no matching channel id + external id pair
 // found for a status, that status will be left with a nil msg ID.
 func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*StatusUpdate) error {
-	rc := b.redisPool.Get()
+	rc := b.rp.Get()
 	defer rc.Close()
 
 	chAndExtKeys := make([]string, len(statuses))

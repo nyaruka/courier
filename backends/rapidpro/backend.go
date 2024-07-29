@@ -59,9 +59,9 @@ type backend struct {
 	stLogWriter  *StorageLogWriter // attached logs being written to storage
 	writerWG     *sync.WaitGroup
 
-	db        *sqlx.DB
-	redisPool *redis.Pool
-	s3        *s3x.Service
+	db *sqlx.DB
+	rp *redis.Pool
+	s3 *s3x.Service
 
 	channelsByUUID *cache.Local[courier.ChannelUUID, *Channel]
 	channelsByAddr *cache.Local[courier.ChannelAddress, *Channel]
@@ -153,7 +153,7 @@ func (b *backend) Start() error {
 		log.Info("db ok")
 	}
 
-	b.redisPool, err = redisx.NewPool(b.config.Redis)
+	b.rp, err = redisx.NewPool(b.config.Redis)
 	if err != nil {
 		log.Error("redis not reachable", "error", err)
 	} else {
@@ -162,7 +162,7 @@ func (b *backend) Start() error {
 
 	// start our dethrottler if we are going to be doing some sending
 	if b.config.MaxWorkers > 0 {
-		queue.StartDethrottler(b.redisPool, b.stopChan, b.waitGroup, msgQueueName)
+		queue.StartDethrottler(b.rp, b.stopChan, b.waitGroup, msgQueueName)
 	}
 
 	// setup S3 storage
@@ -254,7 +254,7 @@ func (b *backend) Cleanup() error {
 	if b.db != nil {
 		b.db.Close()
 	}
-	return b.redisPool.Close()
+	return b.rp.Close()
 }
 
 // GetChannel returns the channel for the passed in type and UUID
@@ -339,7 +339,7 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Cha
 	}
 
 	if msgID != courier.NilMsgID && contactID != NilContactID {
-		rc := b.redisPool.Get()
+		rc := b.rp.Get()
 		defer rc.Close()
 
 		if err := queueMsgDeleted(rc, ch, msgID, contactID); err != nil {
@@ -372,7 +372,7 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 // PopNextOutgoingMsg pops the next message that needs to be sent
 func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error) {
 	// pop the next message off our queue
-	rc := b.redisPool.Get()
+	rc := b.rp.Get()
 	defer rc.Close()
 
 	token, msgJSON, err := queue.PopFromQueue(rc, msgQueueName)
@@ -427,7 +427,7 @@ var luaSent = redis.NewScript(3,
 
 // WasMsgSent returns whether the passed in message has already been sent
 func (b *backend) WasMsgSent(ctx context.Context, id courier.MsgID) (bool, error) {
-	rc := b.redisPool.Get()
+	rc := b.rp.Get()
 	defer rc.Close()
 
 	todayKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
@@ -442,7 +442,7 @@ var luaClearSent = redis.NewScript(3,
 `)
 
 func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
-	rc := b.redisPool.Get()
+	rc := b.rp.Get()
 	defer rc.Close()
 
 	todayKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
@@ -453,7 +453,7 @@ func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
 
 // MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel
 func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate) {
-	rc := b.redisPool.Get()
+	rc := b.rp.Get()
 	defer rc.Close()
 
 	dbMsg := msg.(*Msg)
@@ -519,7 +519,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 	if status.MsgID() != courier.NilMsgID {
 		// this is a message we've just sent and were given an external id for
 		if status.ExternalID() != "" {
-			rc := b.redisPool.Get()
+			rc := b.rp.Get()
 			defer rc.Close()
 
 			err := b.sentExternalIDs.Set(rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalID_), fmt.Sprintf("%d", status.MsgID()))
@@ -658,7 +658,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 	unlock := b.mediaMutexes.Lock(mediaUUID)
 	defer unlock()
 
-	rc := b.redisPool.Get()
+	rc := b.rp.Get()
 	defer rc.Close()
 
 	var media *Media
@@ -701,7 +701,7 @@ func (b *backend) HttpAccess() *httpx.AccessConfig {
 // Health returns the health of this backend as a string, returning "" if all is well
 func (b *backend) Health() string {
 	// test redis
-	rc := b.redisPool.Get()
+	rc := b.rp.Get()
 	defer rc.Close()
 	_, redisErr := rc.Do("PING")
 
@@ -723,7 +723,7 @@ func (b *backend) Health() string {
 
 // Heartbeat is called every minute, we log our queue depth to librato
 func (b *backend) Heartbeat() error {
-	rc := b.redisPool.Get()
+	rc := b.rp.Get()
 	defer rc.Close()
 
 	active, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("%s:active", msgQueueName), "0", "-1"))
@@ -756,7 +756,7 @@ func (b *backend) Heartbeat() error {
 
 	// get our DB and redis stats
 	dbStats := b.db.Stats()
-	redisStats := b.redisPool.Stats()
+	redisStats := b.rp.Stats()
 
 	dbWaitDurationInPeriod := dbStats.WaitDuration - b.dbWaitDuration
 	dbWaitCountInPeriod := dbStats.WaitCount - b.dbWaitCount
@@ -791,7 +791,7 @@ func (b *backend) Heartbeat() error {
 
 // Status returns information on our queue sizes, number of workers etc..
 func (b *backend) Status() string {
-	rc := b.redisPool.Get()
+	rc := b.rp.Get()
 	defer rc.Close()
 
 	status := bytes.Buffer{}
@@ -860,5 +860,5 @@ func (b *backend) Status() string {
 
 // RedisPool returns the redisPool for this backend
 func (b *backend) RedisPool() *redis.Pool {
-	return b.redisPool
+	return b.rp
 }

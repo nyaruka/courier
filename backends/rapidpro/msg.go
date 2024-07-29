@@ -276,7 +276,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.Channel
 	}
 
 	// queue this up to be handled by RapidPro
-	rc := b.redisPool.Get()
+	rc := b.rp.Get()
 	defer rc.Close()
 	err = queueMsgHandling(rc, contact, m)
 
@@ -328,7 +328,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 
 // checks to see if this message has already been received and if so returns its UUID
 func (b *backend) checkMsgAlreadyReceived(msg *Msg) courier.MsgUUID {
-	rc := b.redisPool.Get()
+	rc := b.rp.Get()
 	defer rc.Close()
 
 	// if we have an external id use that
@@ -358,7 +358,7 @@ func (b *backend) checkMsgAlreadyReceived(msg *Msg) courier.MsgUUID {
 
 // records that the given message has been received and written to the database
 func (b *backend) recordMsgReceived(msg *Msg) {
-	rc := b.redisPool.Get()
+	rc := b.rp.Get()
 	defer rc.Close()
 
 	if msg.ExternalID_ != "" {
