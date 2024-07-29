@@ -1,3 +1,8 @@
+v9.3.1 (2024-07-29)
+-------------------------
+ * Switch to s3x for attachments to get correct urls when using minio
+ * Update FCM handler to use google auth to generate bearer tokens
+
 v9.3.0 (2024-07-25)
 -------------------------
  * Support minio for local dev enviroment and CI
