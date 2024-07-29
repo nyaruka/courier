@@ -30,7 +30,6 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/s3x"
-	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -60,10 +59,9 @@ type backend struct {
 	stLogWriter  *StorageLogWriter // attached logs being written to storage
 	writerWG     *sync.WaitGroup
 
-	db         *sqlx.DB
-	redisPool  *redis.Pool
-	s3         *s3x.Service
-	logStorage storage.Storage
+	db        *sqlx.DB
+	redisPool *redis.Pool
+	s3        *s3x.Service
 
 	channelsByUUID *cache.Local[courier.ChannelUUID, *Channel]
 	channelsByAddr *cache.Local[courier.ChannelAddress, *Channel]
@@ -167,43 +165,29 @@ func (b *backend) Start() error {
 		queue.StartDethrottler(b.redisPool, b.stopChan, b.waitGroup, msgQueueName)
 	}
 
-	// setup S3 storage for attachments
+	// setup S3 storage
 	b.s3, err = s3x.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.S3Endpoint, b.config.S3Minio)
 	if err != nil {
 		return err
 	}
-	if err := b.s3.Test(ctx, b.config.S3AttachmentsBucket); err != nil {
-		log.Error("attachment bucket not accessible", "error", err)
-	} else {
-		log.Info("attachment bucket ok")
-	}
 
-	s3config := &storage.S3Options{
-		AWSAccessKeyID:     b.config.AWSAccessKeyID,
-		AWSSecretAccessKey: b.config.AWSSecretAccessKey,
-		Region:             b.config.AWSRegion,
-		Endpoint:           b.config.S3Endpoint,
-		ForcePathStyle:     b.config.S3Minio,
-		MaxRetries:         3,
+	// check bucket access
+	if err := b.s3.Test(ctx, b.config.S3AttachmentsBucket); err != nil {
+		log.Error("attachments bucket not accessible", "error", err)
+	} else {
+		log.Info("attachments bucket ok")
 	}
-	s3Client, err := storage.NewS3Client(s3config)
-	if err != nil {
-		return err
+	if err := b.s3.Test(ctx, b.config.S3LogsBucket); err != nil {
+		log.Error("logs bucket not accessible", "error", err)
+	} else {
+		log.Info("logs bucket ok")
 	}
-	b.logStorage = storage.NewS3(s3Client, b.config.S3LogsBucket, b.config.AWSRegion, s3.BucketCannedACLPrivate, 32)
 
 	// create and start channel caches...
 	b.channelsByUUID = cache.NewLocal(b.loadChannelByUUID, time.Minute)
 	b.channelsByUUID.Start()
 	b.channelsByAddr = cache.NewLocal(b.loadChannelByAddress, time.Minute)
 	b.channelsByAddr.Start()
-
-	// check our log storage
-	if err := checkStorage(b.logStorage); err != nil {
-		log.Error(b.logStorage.Name()+" log storage not available", "error", err)
-	} else {
-		log.Info(b.logStorage.Name() + " log storage ok")
-	}
 
 	// make sure our spool dirs are writable
 	err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "msgs")
@@ -226,7 +210,7 @@ func (b *backend) Start() error {
 	b.dbLogWriter = NewDBLogWriter(b.db, b.writerWG)
 	b.dbLogWriter.Start()
 
-	b.stLogWriter = NewStorageLogWriter(b.logStorage, b.writerWG)
+	b.stLogWriter = NewStorageLogWriter(b.s3, b.config.S3LogsBucket, b.writerWG)
 	b.stLogWriter.Start()
 
 	// register and start our spool flushers
@@ -877,11 +861,4 @@ func (b *backend) Status() string {
 // RedisPool returns the redisPool for this backend
 func (b *backend) RedisPool() *redis.Pool {
 	return b.redisPool
-}
-
-func checkStorage(s storage.Storage) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	err := s.Test(ctx)
-	cancel()
-	return err
 }

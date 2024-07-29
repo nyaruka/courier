@@ -50,6 +50,7 @@ func testConfig() *courier.Config {
 	config.AWSSecretAccessKey = "tembatemba"
 	config.S3Endpoint = "http://localhost:9000"
 	config.S3AttachmentsBucket = "test-attachments"
+	config.S3LogsBucket = "test-attachments"
 	config.S3Minio = true
 
 	return config
@@ -85,6 +86,7 @@ func (ts *BackendTestSuite) SetupSuite() {
 	ts.b.db.MustExec(string(sql))
 
 	ts.b.s3.Client.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
+	ts.b.s3.Client.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String("test-logs")})
 
 	ts.clearRedis()
 }
@@ -94,6 +96,7 @@ func (ts *BackendTestSuite) TearDownSuite() {
 	ts.b.Cleanup()
 
 	ts.b.s3.EmptyBucket(context.Background(), "test-attachments")
+	ts.b.s3.EmptyBucket(context.Background(), "test-logs")
 }
 
 func (ts *BackendTestSuite) clearRedis() {
@@ -1043,7 +1046,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	time.Sleep(time.Second) // give writer time to write this
 
-	_, body, err := ts.b.logStorage.Get(context.Background(), fmt.Sprintf("channels/%s/%s/%s.json", channel.UUID(), clog2.UUID()[0:4], clog2.UUID()))
+	_, body, err := ts.b.s3.GetObject(context.Background(), ts.b.config.S3LogsBucket, fmt.Sprintf("channels/%s/%s/%s.json", channel.UUID(), clog2.UUID()[0:4], clog2.UUID()))
 	ts.NoError(err)
 	ts.Contains(string(body), "msg_send")
 	ts.Contains(string(body), "https://api.messages.com/send.json")
