@@ -1,3 +1,7 @@
+v9.3.2 (2024-07-29)
+-------------------------
+ * Replace storage usage for logs
+
 v9.3.1 (2024-07-29)
 -------------------------
  * Switch to s3x for attachments to get correct urls when using minio
