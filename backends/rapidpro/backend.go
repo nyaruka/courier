@@ -624,7 +624,7 @@ func (b *backend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLog)
 // SaveAttachment saves an attachment to backend storage
 func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, contentType string, data []byte, extension string) (string, error) {
 	// create our filename
-	filename := string(uuids.New())
+	filename := string(uuids.NewV4())
 	if extension != "" {
 		filename = fmt.Sprintf("%s.%s", filename, extension)
 	}

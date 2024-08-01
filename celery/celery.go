@@ -39,8 +39,8 @@ const defaultBody = `[[], {}, {"chord": null, "callbacks": null, "errbacks": nul
 // QueueEmptyTask queues a new empty task with the passed in task name for the passed in queue
 func QueueEmptyTask(rc redis.Conn, queueName string, taskName string) error {
 	body := base64.StdEncoding.EncodeToString([]byte(defaultBody))
-	taskUUID := string(uuids.New())
-	deliveryTag := string(uuids.New())
+	taskUUID := string(uuids.NewV4())
+	deliveryTag := string(uuids.NewV4())
 
 	task := Task{
 		Body: body,
@@ -63,7 +63,7 @@ func QueueEmptyTask(rc redis.Conn, queueName string, taskName string) error {
 		Properties: TaskProperties{
 			BodyEncoding:  "base64",
 			CorrelationID: taskUUID,
-			ReplyTo:       string(uuids.New()),
+			ReplyTo:       string(uuids.NewV4()),
 			DeliveryMode:  2,
 			DeliveryTag:   deliveryTag,
 			DeliveryInfo: TaskDeliveryInfo{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/test"
@@ -39,7 +40,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	}))
 
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
-	uuids.SetGenerator(uuids.NewSeededGenerator(1234))
+	uuids.SetGenerator(uuids.NewSeededGenerator(1234, time.Now))
 
 	ctx := context.Background()
 	mb := test.NewMockBackend()
