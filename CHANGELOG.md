@@ -1,3 +1,7 @@
+v9.3.3 (2024-08-02)
+-------------------------
+ * Update to latest gocommon
+
 v9.3.2 (2024-07-29)
 -------------------------
  * Replace storage usage for logs
