@@ -63,16 +63,6 @@ func DecodeUTF8(bytes []byte) string {
 	return s
 }
 
-// StringArrayContains returns whether a given string array contains the given element
-func StringArrayContains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
 // BasePathForURL, parse static URL, and return filename + format
 func BasePathForURL(rawURL string) (string, error) {
 	parsedURL, err := url.Parse(rawURL)

@@ -18,12 +18,6 @@ func TestJoinNonEmpty(t *testing.T) {
 	assert.Equal(t, "hello world", utils.JoinNonEmpty(" ", "", "hello", "", "world"))
 }
 
-func TestStringArrayContains(t *testing.T) {
-	assert.False(t, utils.StringArrayContains([]string{}, "x"))
-	assert.False(t, utils.StringArrayContains([]string{"a", "b"}, "x"))
-	assert.True(t, utils.StringArrayContains([]string{"a", "b", "x", "y"}, "x"))
-}
-
 func TestURLGetFile(t *testing.T) {
 	test1, err := utils.BasePathForURL("https://example.com/test.pdf")
 	assert.Equal(t, nil, err)
