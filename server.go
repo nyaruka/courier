@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -18,7 +19,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -240,7 +240,7 @@ func (s *server) initializeChannelHandlers() {
 	// initialize handlers which are included/not-excluded in the config
 	for _, handler := range registeredHandlers {
 		channelType := string(handler.ChannelType())
-		if (includes == nil || utils.StringArrayContains(includes, channelType)) && (excludes == nil || !utils.StringArrayContains(excludes, channelType)) {
+		if (includes == nil || slices.Contains(includes, channelType)) && (excludes == nil || !slices.Contains(excludes, channelType)) {
 			err := handler.Initialize(s)
 			if err != nil {
 				log.Fatal(err)
