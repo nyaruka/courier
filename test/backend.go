@@ -299,7 +299,7 @@ func (mb *MockBackend) GetChannelByAddress(ctx context.Context, cType courier.Ch
 func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, urn urns.URN, authTokens map[string]string, name string, clog *courier.ChannelLog) (courier.Contact, error) {
 	contact, found := mb.contacts[urn]
 	if !found {
-		contact = &mockContact{channel, urn, authTokens, courier.ContactUUID(uuids.New())}
+		contact = &mockContact{channel, urn, authTokens, courier.ContactUUID(uuids.NewV4())}
 		mb.contacts[urn] = contact
 	}
 	return contact, nil
@@ -341,7 +341,7 @@ func (mb *MockBackend) SaveAttachment(ctx context.Context, ch courier.Channel, c
 
 	time.Sleep(time.Millisecond * 2)
 
-	return fmt.Sprintf("https://backend.com/attachments/%s.%s", uuids.New(), extension), nil
+	return fmt.Sprintf("https://backend.com/attachments/%s.%s", uuids.NewV4(), extension), nil
 }
 
 // ResolveMedia resolves the passed in media URL to a media object

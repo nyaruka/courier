@@ -241,7 +241,7 @@ func TestFetchAttachment(t *testing.T) {
 	httpx.SetRequestor(httpMocks)
 
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
-	uuids.SetGenerator(uuids.NewSeededGenerator(1234))
+	uuids.SetGenerator(uuids.NewSeededGenerator(1234, time.Now))
 
 	logger := slog.Default()
 	config := courier.NewDefaultConfig()

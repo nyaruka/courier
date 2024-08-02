@@ -129,7 +129,7 @@ func NewChannelLog(t ChannelLogType, ch Channel, redactVals []string) *ChannelLo
 
 func newChannelLog(t ChannelLogType, ch Channel, r *httpx.Recorder, attached bool, redactVals []string) *ChannelLog {
 	return &ChannelLog{
-		uuid:      ChannelLogUUID(uuids.New()),
+		uuid:      ChannelLogUUID(uuids.NewV4()),
 		type_:     t,
 		channel:   ch,
 		recorder:  r,
