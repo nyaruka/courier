@@ -254,15 +254,13 @@ func (h *handler) sendWithAPIKey(ctx context.Context, msg courier.MsgOut, res *c
 func (h *handler) sendWithCredsJSON(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
 
-	credentialsFile := msg.Channel().StringConfigForKey(configCredentialsFile, "")
-	if credentialsFile == "" {
+	credentialsFile := msg.Channel().ConfigForKey(configCredentialsFile, nil)
+	if credentialsFile == nil {
 		return courier.ErrChannelConfig
 	}
 
-	var credentialsFileJSON map[string]string
-
-	err := json.Unmarshal([]byte(credentialsFile), &credentialsFileJSON)
-	if err != nil {
+	credentialsFileJSON, ok := credentialsFile.(map[string]string)
+	if !ok {
 		return courier.ErrChannelConfig
 	}
 
