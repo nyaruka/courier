@@ -1,3 +1,8 @@
+v9.3.4 (2024-08-07)
+-------------------------
+ * Fix FCM authentication config retrieve to expect map[string]string
+ * Remove old code no longer used
+
 v9.3.3 (2024-08-02)
 -------------------------
  * Update to latest gocommon
