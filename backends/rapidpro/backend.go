@@ -128,6 +128,9 @@ func newBackend(cfg *courier.Config) courier.Backend {
 
 // Start starts our RapidPro backend, this tests our various connections and starts our spool flushers
 func (b *backend) Start() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	// parse and test our redis config
 	log := slog.With("comp", "backend", "state", "starting")
 	log.Info("starting backend")
@@ -144,10 +147,7 @@ func (b *backend) Start() error {
 	b.db.SetMaxOpenConns(16)
 
 	// try connecting
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	err = b.db.PingContext(ctx)
-	cancel()
-	if err != nil {
+	if err := b.db.PingContext(ctx); err != nil {
 		log.Error("db not reachable", "error", err)
 	} else {
 		log.Info("db ok")
