@@ -1,3 +1,7 @@
+v9.3.5 (2024-08-22)
+-------------------------
+ * Update to aws-sdk-go-v2
+
 v9.3.4 (2024-08-07)
 -------------------------
  * Fix FCM authentication config retrieve to expect map[string]string
