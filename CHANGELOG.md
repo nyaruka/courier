@@ -1,3 +1,7 @@
+v9.3.6 (2024-08-22)
+-------------------------
+ * Fix context used during backend startup
+
 v9.3.5 (2024-08-22)
 -------------------------
  * Update to aws-sdk-go-v2
