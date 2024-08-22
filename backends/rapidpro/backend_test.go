@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/lib/pq"
@@ -57,6 +57,8 @@ func testConfig() *courier.Config {
 }
 
 func (ts *BackendTestSuite) SetupSuite() {
+	ctx := context.Background()
+
 	// turn off logging
 	log.SetOutput(io.Discard)
 
@@ -85,8 +87,8 @@ func (ts *BackendTestSuite) SetupSuite() {
 	}
 	ts.b.db.MustExec(string(sql))
 
-	ts.b.s3.Client.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
-	ts.b.s3.Client.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String("test-logs")})
+	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
+	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-logs")})
 
 	ts.clearRedis()
 }

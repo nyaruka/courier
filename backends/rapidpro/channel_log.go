@@ -9,13 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
-	"github.com/nyaruka/gocommon/s3x"
 	"github.com/nyaruka/gocommon/syncx"
 )
 
@@ -173,7 +173,7 @@ func writeStorageChannelLogs(ctx context.Context, s3s *s3x.Service, bucket strin
 			Key:         l.path(),
 			ContentType: "application/json",
 			Body:        jsonx.MustMarshal(l),
-			ACL:         s3.BucketCannedACLPrivate,
+			ACL:         types.ObjectCannedACLPrivate,
 		}
 	}
 	if err := s3s.BatchPut(ctx, uploads, 32); err != nil {
