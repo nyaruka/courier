@@ -1,3 +1,8 @@
+v9.3.7 (2024-08-26)
+-------------------------
+ * Merge pull request #772 from nyaruka/fix-FCM-fetch-token
+ * Adjust FCM JSON config for getting token
+
 v9.3.6 (2024-08-22)
 -------------------------
  * Fix context used during backend startup
