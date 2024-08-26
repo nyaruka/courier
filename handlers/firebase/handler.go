@@ -259,10 +259,8 @@ func (h *handler) sendWithCredsJSON(ctx context.Context, msg courier.MsgOut, res
 		return courier.ErrChannelConfig
 	}
 
-	credentialsFileJSON, ok := credentialsFile.(map[string]string)
-	if !ok {
-		return courier.ErrChannelConfig
-	}
+	var credentialsFileJSON map[string]string
+	jsonx.MustUnmarshal(jsonx.MustMarshal(credentialsFile), &credentialsFileJSON)
 
 	accessToken, err := h.getAccessToken(ctx, msg.Channel(), clog)
 	if err != nil {
@@ -377,10 +375,8 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel,
 		return "", 0, courier.ErrChannelConfig
 	}
 
-	credentialsFileJSON, ok := credentialsFile.(map[string]string)
-	if !ok {
-		return "", 0, courier.ErrChannelConfig
-	}
+	var credentialsFileJSON map[string]string
+	jsonx.MustUnmarshal(jsonx.MustMarshal(credentialsFile), &credentialsFileJSON)
 
 	sendURL := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", credentialsFileJSON["project_id"])
 

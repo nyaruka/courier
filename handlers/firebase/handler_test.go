@@ -49,7 +49,7 @@ var testChannels = []courier.Channel{
 		[]string{urns.Firebase.Prefix},
 		map[string]any{
 			configTitle: "FCMTitle",
-			configCredentialsFile: map[string]string{
+			configCredentialsFile: map[string]any{
 				"type":                        "service_account",
 				"project_id":                  "foo-project-id",
 				"private_key_id":              "123",
@@ -68,7 +68,7 @@ var testChannels = []courier.Channel{
 		map[string]any{
 			configNotification: true,
 			configTitle:        "FCMTitle",
-			configCredentialsFile: map[string]string{
+			configCredentialsFile: map[string]any{
 				"type":                        "service_account",
 				"project_id":                  "bar-project-id",
 				"private_key_id":              "123",
