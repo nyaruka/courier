@@ -372,21 +372,19 @@ func (h *handler) getAccessToken(ctx context.Context, channel courier.Channel, c
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (string, time.Duration, error) {
 
-	credentialsFile := channel.StringConfigForKey(configCredentialsFile, "")
-	if credentialsFile == "" {
+	credentialsFile := channel.ConfigForKey(configCredentialsFile, nil)
+	if credentialsFile == nil {
 		return "", 0, courier.ErrChannelConfig
 	}
 
-	var credentialsFileJSON map[string]string
-
-	err := json.Unmarshal([]byte(credentialsFile), &credentialsFileJSON)
-	if err != nil {
+	credentialsFileJSON, ok := credentialsFile.(map[string]string)
+	if !ok {
 		return "", 0, courier.ErrChannelConfig
 	}
 
 	sendURL := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", credentialsFileJSON["project_id"])
 
-	ts, err := idtoken.NewTokenSource(ctx, sendURL, option.WithCredentialsJSON([]byte(credentialsFile)))
+	ts, err := idtoken.NewTokenSource(ctx, sendURL, option.WithCredentialsJSON(jsonx.MustMarshal(credentialsFileJSON)))
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to create NewTokenSource: %w", err)
 	}
