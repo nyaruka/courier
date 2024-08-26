@@ -1,3 +1,8 @@
+v9.3.8 (2024-08-26)
+-------------------------
+ * Merge pull request #773 from nyaruka/fix-FCM-fetch-token
+ * Adjust converting auth config to JSON
+
 v9.3.7 (2024-08-26)
 -------------------------
  * Merge pull request #772 from nyaruka/fix-FCM-fetch-token
