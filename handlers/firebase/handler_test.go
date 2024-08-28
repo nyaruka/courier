@@ -275,7 +275,7 @@ var notificationSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
-			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"notification":{"title":"FCMTitle","body":"Simple Message"},"token":"auth1","android":{"priority":"high"}}`,
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":"10","session_status":""},"notification":{"title":"FCMTitle","body":"Simple Message"},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
 		ExpectedExtIDs: []string{"123456-a"},
 	},
@@ -294,7 +294,7 @@ var sendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
-			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"token":"auth1","android":{"priority":"high"}}`,
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
 		ExpectedExtIDs: []string{"123456-a"},
 	},
@@ -312,11 +312,11 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Bearer FCMToken"},
-				Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis augue vel placerat congue.\nEtiam nec tempus enim. Cras placerat at est vel suscipit. Duis quis faucibus metus, non elementum tortor.\nPellentesque posuere ullamcorper metus auctor venenatis. Proin eget hendrerit dui. Sed eget massa nec mauris consequat pretium.\nPraesent mattis arcu tortor, ac aliquet turpis tincidunt eu.\n\nFusce ut lacinia augue. Vestibulum felis nisi, porta ut est condimentum, condimentum volutpat libero.\nSuspendisse a elit venenatis, condimentum sem at, ultricies mauris. Morbi interdum sem id tempor tristique.\nUt tincidunt massa eu purus lacinia sodales a volutpat neque. Cras dolor quam, eleifend a rhoncus quis, sodales nec purus.\nVivamus justo dolor, gravida at quam eu, hendrerit rutrum justo. Sed hendrerit nisi vitae nisl ornare tristique.\nProin vulputate id justo non aliquet.\n\nDuis eu arcu pharetra, laoreet nunc at, pharetra sapien. Nulla eu libero diam.\nDonec euismod dapibus ligula, sit amet hendrerit neque vulput","message_id":10,"session_status":""},"token":"auth1","android":{"priority":"high"}}`,
+				Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis augue vel placerat congue.\nEtiam nec tempus enim. Cras placerat at est vel suscipit. Duis quis faucibus metus, non elementum tortor.\nPellentesque posuere ullamcorper metus auctor venenatis. Proin eget hendrerit dui. Sed eget massa nec mauris consequat pretium.\nPraesent mattis arcu tortor, ac aliquet turpis tincidunt eu.\n\nFusce ut lacinia augue. Vestibulum felis nisi, porta ut est condimentum, condimentum volutpat libero.\nSuspendisse a elit venenatis, condimentum sem at, ultricies mauris. Morbi interdum sem id tempor tristique.\nUt tincidunt massa eu purus lacinia sodales a volutpat neque. Cras dolor quam, eleifend a rhoncus quis, sodales nec purus.\nVivamus justo dolor, gravida at quam eu, hendrerit rutrum justo. Sed hendrerit nisi vitae nisl ornare tristique.\nProin vulputate id justo non aliquet.\n\nDuis eu arcu pharetra, laoreet nunc at, pharetra sapien. Nulla eu libero diam.\nDonec euismod dapibus ligula, sit amet hendrerit neque vulput","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 			},
 			{
 				Headers: map[string]string{"Authorization": "Bearer FCMToken"},
-				Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"ate ac.","message_id":10,"session_status":""},"token":"auth1","android":{"priority":"high"}}`,
+				Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"ate ac.","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 			},
 		},
 		ExpectedExtIDs: []string{"123456-a", "123456-a"},
@@ -335,7 +335,7 @@ var sendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
-			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":10,"session_status":"","quick_replies":["yes","no"]},"token":"auth1","android":{"priority":"high"}}`,
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":"10","session_status":"","quick_replies":["yes","no"]},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
 		ExpectedExtIDs: []string{"123456-a"},
 	},
@@ -351,7 +351,7 @@ var sendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
-			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"token":"auth1","android":{"priority":"high"}}`,
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
 		ExpectedError: courier.ErrResponseUnexpected,
 	},
@@ -367,7 +367,7 @@ var sendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
-			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"token":"auth1","android":{"priority":"high"}}`,
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
 		ExpectedError: courier.ErrResponseUnexpected,
 	},
@@ -383,7 +383,7 @@ var sendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
-			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"token":"auth1","android":{"priority":"high"}}`,
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
 		ExpectedError: courier.ErrConnectionFailed,
 	},

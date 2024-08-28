@@ -16,8 +16,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
-	"google.golang.org/api/idtoken"
-	"google.golang.org/api/option"
+	"golang.org/x/oauth2/google"
 )
 
 const (
@@ -132,19 +131,21 @@ func (h *handler) registerContact(ctx context.Context, channel courier.Channel, 
 }
 
 type mtPayload struct {
-	Data struct {
-		Type          string   `json:"type"`
-		Title         string   `json:"title"`
-		Message       string   `json:"message"`
-		MessageID     int64    `json:"message_id"`
-		SessionStatus string   `json:"session_status"`
-		QuickReplies  []string `json:"quick_replies,omitempty"`
-	} `json:"data"`
-	Notification *mtNotification `json:"notification,omitempty"`
-	Token        string          `json:"token"`
-	Android      struct {
-		Priority string `json:"priority"`
-	} `json:"android,omitempty"`
+	Message struct {
+		Data struct {
+			Type          string   `json:"type"`
+			Title         string   `json:"title"`
+			Message       string   `json:"message"`
+			MessageID     string   `json:"message_id"`
+			SessionStatus string   `json:"session_status"`
+			QuickReplies  []string `json:"quick_replies,omitempty"`
+		} `json:"data"`
+		Notification *mtNotification `json:"notification,omitempty"`
+		Token        string          `json:"token"`
+		Android      struct {
+			Priority string `json:"priority"`
+		} `json:"android,omitempty"`
+	} `json:"message"`
 }
 
 type mtAPIKeyPayload struct {
@@ -278,21 +279,21 @@ func (h *handler) sendWithCredsJSON(ctx context.Context, msg courier.MsgOut, res
 	for i, part := range msgParts {
 		payload := mtPayload{}
 
-		payload.Data.Type = "rapidpro"
-		payload.Data.Title = title
-		payload.Data.Message = part
-		payload.Data.MessageID = int64(msg.ID())
-		payload.Data.SessionStatus = msg.SessionStatus()
+		payload.Message.Data.Type = "rapidpro"
+		payload.Message.Data.Title = title
+		payload.Message.Data.Message = part
+		payload.Message.Data.MessageID = msg.ID().String()
+		payload.Message.Data.SessionStatus = msg.SessionStatus()
 
 		if i == len(msgParts)-1 {
-			payload.Data.QuickReplies = msg.QuickReplies()
+			payload.Message.Data.QuickReplies = msg.QuickReplies()
 		}
 
-		payload.Token = msg.URNAuth()
-		payload.Android.Priority = "high"
+		payload.Message.Token = msg.URNAuth()
+		payload.Message.Android.Priority = "high"
 
 		if notification {
-			payload.Notification = &mtNotification{
+			payload.Message.Notification = &mtNotification{
 				Title: title,
 				Body:  part,
 			}
@@ -378,9 +379,9 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel,
 	var credentialsFileJSON map[string]string
 	jsonx.MustUnmarshal(jsonx.MustMarshal(credentialsFile), &credentialsFileJSON)
 
-	sendURL := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", credentialsFileJSON["project_id"])
+	scopes := []string{"https://www.googleapis.com/auth/cloud-platform", "https://www.googleapis.com/auth/firebase.messaging	"}
 
-	ts, err := idtoken.NewTokenSource(ctx, sendURL, option.WithCredentialsJSON(jsonx.MustMarshal(credentialsFileJSON)))
+	ts, err := google.JWTAccessTokenSourceWithScope(jsonx.MustMarshal(credentialsFileJSON), scopes...)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to create NewTokenSource: %w", err)
 	}
