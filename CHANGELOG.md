@@ -1,3 +1,7 @@
+v9.3.9 (2024-08-28)
+-------------------------
+ * Fix FCM message struct and token source initialization
+
 v9.3.8 (2024-08-26)
 -------------------------
  * Merge pull request #773 from nyaruka/fix-FCM-fetch-token
