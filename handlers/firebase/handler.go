@@ -172,13 +172,13 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	fcmKey := msg.Channel().StringConfigForKey(configKey, "")
 
 	if fcmKey != "" {
-		return h.sendWithAPIKey(ctx, msg, res, clog)
+		return h.sendWithAPIKey(msg, res, clog)
 	}
 
-	return h.sendWithCredsJSON(ctx, msg, res, clog)
+	return h.sendWithCredsJSON(msg, res, clog)
 }
 
-func (h *handler) sendWithAPIKey(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) sendWithAPIKey(msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
 	fcmKey := msg.Channel().StringConfigForKey(configKey, "")
 	if title == "" || fcmKey == "" {
@@ -252,7 +252,7 @@ func (h *handler) sendWithAPIKey(ctx context.Context, msg courier.MsgOut, res *c
 	return nil
 }
 
-func (h *handler) sendWithCredsJSON(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) sendWithCredsJSON(msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
 
 	credentialsFile := msg.Channel().ConfigForKey(configCredentialsFile, nil)
@@ -263,7 +263,7 @@ func (h *handler) sendWithCredsJSON(ctx context.Context, msg courier.MsgOut, res
 	var credentialsFileJSON map[string]string
 	jsonx.MustUnmarshal(jsonx.MustMarshal(credentialsFile), &credentialsFileJSON)
 
-	accessToken, err := h.getAccessToken(ctx, msg.Channel(), clog)
+	accessToken, err := h.getAccessToken(msg.Channel())
 	if err != nil {
 		return err
 	}
@@ -337,7 +337,7 @@ func (h *handler) sendWithCredsJSON(ctx context.Context, msg courier.MsgOut, res
 	return nil
 }
 
-func (h *handler) getAccessToken(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (string, error) {
+func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 	rc := h.Backend().RedisPool().Get()
 	defer rc.Close()
 
@@ -355,7 +355,7 @@ func (h *handler) getAccessToken(ctx context.Context, channel courier.Channel, c
 		return token, nil
 	}
 
-	token, expires, err := h.fetchAccessToken(ctx, channel, clog)
+	token, expires, err := h.fetchAccessToken(channel)
 	if err != nil {
 		return "", fmt.Errorf("error fetching new access token: %w", err)
 	}
@@ -369,7 +369,7 @@ func (h *handler) getAccessToken(ctx context.Context, channel courier.Channel, c
 }
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
-func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (string, time.Duration, error) {
+func (h *handler) fetchAccessToken(channel courier.Channel) (string, time.Duration, error) {
 
 	credentialsFile := channel.ConfigForKey(configCredentialsFile, nil)
 	if credentialsFile == nil {
@@ -379,7 +379,7 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel,
 	var credentialsFileJSON map[string]string
 	jsonx.MustUnmarshal(jsonx.MustMarshal(credentialsFile), &credentialsFileJSON)
 
-	scopes := []string{"https://www.googleapis.com/auth/cloud-platform", "https://www.googleapis.com/auth/firebase.messaging	"}
+	scopes := []string{"https://www.googleapis.com/auth/firebase.messaging"}
 
 	ts, err := google.JWTAccessTokenSourceWithScope(jsonx.MustMarshal(credentialsFileJSON), scopes...)
 	if err != nil {
