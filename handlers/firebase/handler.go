@@ -133,12 +133,11 @@ func (h *handler) registerContact(ctx context.Context, channel courier.Channel, 
 type mtPayload struct {
 	Message struct {
 		Data struct {
-			Type          string   `json:"type"`
-			Title         string   `json:"title"`
-			Message       string   `json:"message"`
-			MessageID     string   `json:"message_id"`
-			SessionStatus string   `json:"session_status"`
-			QuickReplies  []string `json:"quick_replies,omitempty"`
+			Type          string `json:"type"`
+			Title         string `json:"title"`
+			Message       string `json:"message"`
+			MessageID     string `json:"message_id"`
+			SessionStatus string `json:"session_status"`
 		} `json:"data"`
 		Notification *mtNotification `json:"notification,omitempty"`
 		Token        string          `json:"token"`
@@ -276,7 +275,7 @@ func (h *handler) sendWithCredsJSON(msg courier.MsgOut, res *courier.SendResult,
 	}
 	sendURL := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", credentialsFileJSON["project_id"])
 
-	for i, part := range msgParts {
+	for _, part := range msgParts {
 		payload := mtPayload{}
 
 		payload.Message.Data.Type = "rapidpro"
@@ -284,10 +283,6 @@ func (h *handler) sendWithCredsJSON(msg courier.MsgOut, res *courier.SendResult,
 		payload.Message.Data.Message = part
 		payload.Message.Data.MessageID = msg.ID().String()
 		payload.Message.Data.SessionStatus = msg.SessionStatus()
-
-		if i == len(msgParts)-1 {
-			payload.Message.Data.QuickReplies = msg.QuickReplies()
-		}
 
 		payload.Message.Token = msg.URNAuth()
 		payload.Message.Android.Priority = "high"
