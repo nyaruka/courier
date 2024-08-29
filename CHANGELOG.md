@@ -1,3 +1,8 @@
+v9.3.10 (2024-08-29)
+-------------------------
+ * No quick replies support for new FCM
+ * Cleanup unused variables
+
 v9.3.9 (2024-08-28)
 -------------------------
  * Fix FCM message struct and token source initialization
