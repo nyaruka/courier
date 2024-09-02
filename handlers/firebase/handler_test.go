@@ -322,7 +322,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"123456-a", "123456-a"},
 	},
 	{
-		Label:           "No Quick Reply support",
+		Label:           "Quick Reply",
 		MsgText:         "Simple Message",
 		MsgURN:          "fcm:250788123123",
 		MsgURNAuth:      "auth1",
@@ -335,7 +335,7 @@ var sendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
-			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":"10","session_status":"","quick_replies":"[\"yes\",\"no\"]"},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
 		ExpectedExtIDs: []string{"123456-a"},
 	},
