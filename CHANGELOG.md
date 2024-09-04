@@ -1,3 +1,7 @@
+v9.3.11 (2024-09-04)
+-------------------------
+ * Use quick replies dumps of the options list and pass that as a string to FCM data
+
 v9.3.10 (2024-08-29)
 -------------------------
  * No quick replies support for new FCM
