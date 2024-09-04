@@ -138,6 +138,7 @@ type mtPayload struct {
 			Message       string `json:"message"`
 			MessageID     string `json:"message_id"`
 			SessionStatus string `json:"session_status"`
+			QuickReplies  string `json:"quick_replies,omitempty"`
 		} `json:"data"`
 		Notification *mtNotification `json:"notification,omitempty"`
 		Token        string          `json:"token"`
@@ -275,7 +276,7 @@ func (h *handler) sendWithCredsJSON(msg courier.MsgOut, res *courier.SendResult,
 	}
 	sendURL := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", credentialsFileJSON["project_id"])
 
-	for _, part := range msgParts {
+	for i, part := range msgParts {
 		payload := mtPayload{}
 
 		payload.Message.Data.Type = "rapidpro"
@@ -286,6 +287,10 @@ func (h *handler) sendWithCredsJSON(msg courier.MsgOut, res *courier.SendResult,
 
 		payload.Message.Token = msg.URNAuth()
 		payload.Message.Android.Priority = "high"
+		
+		if quickReplies := msg.QuickReplies(); quickReplies != nil {
+			payload.Message.Data.QuickReplies = string(jsonx.MustMarshal(quickReplies))
+		}
 
 		if notification {
 			payload.Message.Notification = &mtNotification{
