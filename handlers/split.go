@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"bytes"
+	"slices"
 	"strings"
 
 	"github.com/nyaruka/courier"
-	"golang.org/x/exp/slices"
 )
 
 type MsgPartType int
