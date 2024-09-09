@@ -7,9 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net/http"
 	"net/url"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -25,7 +26,6 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/redisx"
 	"github.com/patrickmn/go-cache"
-	"golang.org/x/exp/maps"
 	"golang.org/x/mod/semver"
 )
 
@@ -720,9 +720,8 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 			for _, comp := range msg.Templating().Components {
 				// get the variables used by this component in order of their names 1, 2 etc
 				compParams := make([]courier.TemplatingVariable, 0, len(comp.Variables))
-				varNames := maps.Keys(comp.Variables)
-				sort.Strings(varNames)
-				for _, varName := range varNames {
+
+				for _, varName := range slices.Sorted(maps.Keys(comp.Variables)) {
 					compParams = append(compParams, msg.Templating().Variables[comp.Variables[varName]])
 				}
 
