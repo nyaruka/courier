@@ -1,3 +1,8 @@
+v9.3.12 (2024-09-09)
+-------------------------
+ * Update to go 1.23
+ * Tidy up getting FCM credentials
+
 v9.3.11 (2024-09-04)
 -------------------------
  * Use quick replies dumps of the options list and pass that as a string to FCM data
