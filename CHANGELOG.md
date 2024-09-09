@@ -1,3 +1,7 @@
+v9.3.13 (2024-09-09)
+-------------------------
+ * Never save attachments with empty content type
+
 v9.3.12 (2024-09-09)
 -------------------------
  * Update to go 1.23
