@@ -254,14 +254,12 @@ func (h *handler) sendWithAPIKey(msg courier.MsgOut, res *courier.SendResult, cl
 
 func (h *handler) sendWithCredsJSON(msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
-
-	credentialsFile := msg.Channel().ConfigForKey(configCredentialsFile, nil)
-	if credentialsFile == nil {
+	credentialsJSONRaw := msg.Channel().ConfigForKey(configCredentialsFile, nil)
+	credentialsJSON, _ := credentialsJSONRaw.(map[string]any)
+	if credentialsJSON == nil {
 		return courier.ErrChannelConfig
 	}
-
-	var credentialsFileJSON map[string]string
-	jsonx.MustUnmarshal(jsonx.MustMarshal(credentialsFile), &credentialsFileJSON)
+	projectID := credentialsJSON["project_id"].(string)
 
 	accessToken, err := h.getAccessToken(msg.Channel())
 	if err != nil {
@@ -274,7 +272,7 @@ func (h *handler) sendWithCredsJSON(msg courier.MsgOut, res *courier.SendResult,
 	if msg.Text() != "" {
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	}
-	sendURL := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", credentialsFileJSON["project_id"])
+	sendURL := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", projectID)
 
 	for i, part := range msgParts {
 		payload := mtPayload{}
@@ -324,10 +322,10 @@ func (h *handler) sendWithCredsJSON(msg courier.MsgOut, res *courier.SendResult,
 			return courier.ErrResponseUnexpected
 		}
 
-		if !strings.Contains(responseName, fmt.Sprintf("projects/%s/messages/", credentialsFileJSON["project_id"])) {
+		if !strings.Contains(responseName, fmt.Sprintf("projects/%s/messages/", projectID)) {
 			return courier.ErrResponseUnexpected
 		}
-		externalID := strings.TrimLeft(responseName, fmt.Sprintf("projects/%s/messages/", credentialsFileJSON["project_id"]))
+		externalID := strings.TrimLeft(responseName, fmt.Sprintf("projects/%s/messages/", projectID))
 		if externalID == "" {
 			return courier.ErrResponseUnexpected
 		}
@@ -372,18 +370,15 @@ func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(channel courier.Channel) (string, time.Duration, error) {
-
-	credentialsFile := channel.ConfigForKey(configCredentialsFile, nil)
-	if credentialsFile == nil {
+	credentialsJSONRaw := channel.ConfigForKey(configCredentialsFile, nil)
+	credentialsJSON, _ := credentialsJSONRaw.(map[string]any)
+	if credentialsJSON == nil {
 		return "", 0, courier.ErrChannelConfig
 	}
 
-	var credentialsFileJSON map[string]string
-	jsonx.MustUnmarshal(jsonx.MustMarshal(credentialsFile), &credentialsFileJSON)
-
 	scopes := []string{"https://www.googleapis.com/auth/firebase.messaging"}
 
-	ts, err := google.JWTAccessTokenSourceWithScope(jsonx.MustMarshal(credentialsFileJSON), scopes...)
+	ts, err := google.JWTAccessTokenSourceWithScope(jsonx.MustMarshal(credentialsJSON), scopes...)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to create NewTokenSource: %w", err)
 	}
