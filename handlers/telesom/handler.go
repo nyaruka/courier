@@ -80,11 +80,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		// build our request
 		form := url.Values{
-			"username": []string{username},
-			"password": []string{password},
-			"to":       []string{to},
-			"from":     []string{from},
-			"msg":      []string{part},
+			"to":   []string{to},
+			"from": []string{from},
+			"msg":  []string{part},
 		}
 
 		date := dates.Now().UTC().Format("02/01/2006")
@@ -94,10 +92,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		hash := hex.EncodeToString(hasher.Sum(nil))
 
 		form["key"] = []string{strings.ToUpper(hash)}
-		encodedForm := form.Encode()
-		tsSendURL = fmt.Sprintf("%s?%s", tsSendURL, encodedForm)
 
-		req, err := http.NewRequest(http.MethodGet, tsSendURL, nil)
+		req, err := http.NewRequest(http.MethodPost, tsSendURL, strings.NewReader(form.Encode()))
 		if err != nil {
 			return err
 		}
