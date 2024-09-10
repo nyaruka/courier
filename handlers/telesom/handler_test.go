@@ -95,7 +95,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Params:  url.Values{"msg": {"Simple Message"}, "to": {"0788383383"}, "from": {"2020"}, "username": {"Username"}, "password": {"Password"}, "key": {"D69BB824F88F20482B94ECF3822EBD84"}},
+			Form:    url.Values{"msg": {"Simple Message"}, "to": {"0788383383"}, "from": {"2020"}, "key": {"D69BB824F88F20482B94ECF3822EBD84"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
 	},
@@ -109,7 +109,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Params:  url.Values{"msg": {"☺"}, "to": {"0788383383"}, "from": {"2020"}, "username": {"Username"}, "password": {"Password"}, "key": {"60421A7D99BD79FE02697D567315AD0E"}},
+			Form:    url.Values{"msg": {"☺"}, "to": {"0788383383"}, "from": {"2020"}, "key": {"60421A7D99BD79FE02697D567315AD0E"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
 	},
@@ -123,7 +123,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Params:  url.Values{"msg": {`Error Message`}, "to": {"0788383383"}, "from": {"2020"}, "username": {"Username"}, "password": {"Password"}, "key": {"3F1E492B2186551570F24C2F07D5D7E2"}},
+			Form:    url.Values{"msg": {`Error Message`}, "to": {"0788383383"}, "from": {"2020"}, "key": {"3F1E492B2186551570F24C2F07D5D7E2"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
 		ExpectedError: courier.ErrResponseStatus,
@@ -139,7 +139,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Params:  url.Values{"msg": {"My pic!\nhttps://foo.bar/image.jpg"}, "to": {"0788383383"}, "from": {"2020"}, "username": {"Username"}, "password": {"Password"}, "key": {"DBE569579FD899628C17254ECCE15DB7"}},
+			Form:    url.Values{"msg": {"My pic!\nhttps://foo.bar/image.jpg"}, "to": {"0788383383"}, "from": {"2020"}, "key": {"DBE569579FD899628C17254ECCE15DB7"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
 	},
@@ -153,7 +153,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Params:  url.Values{"msg": {`Error Message`}, "to": {"0788383383"}, "from": {"2020"}, "username": {"Username"}, "password": {"Password"}, "key": {"3F1E492B2186551570F24C2F07D5D7E2"}},
+			Form:    url.Values{"msg": {`Error Message`}, "to": {"0788383383"}, "from": {"2020"}, "key": {"3F1E492B2186551570F24C2F07D5D7E2"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
 		ExpectedError: courier.ErrConnectionFailed,
