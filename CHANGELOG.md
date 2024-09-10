@@ -1,3 +1,7 @@
+v9.3.14 (2024-09-10)
+-------------------------
+ * Update TS channel type to use POST requests
+
 v9.3.13 (2024-09-09)
 -------------------------
  * Never save attachments with empty content type
