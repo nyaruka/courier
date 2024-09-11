@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
@@ -52,6 +53,8 @@ func testConfig() *courier.Config {
 	config.S3AttachmentsBucket = "test-attachments"
 	config.S3LogsBucket = "test-attachments"
 	config.S3Minio = true
+	config.DynamoEndpoint = "http://localhost:6000"
+	config.DynamoTablePrefix = "Test"
 
 	return config
 }
@@ -63,32 +66,44 @@ func (ts *BackendTestSuite) SetupSuite() {
 	log.SetOutput(io.Discard)
 
 	b, err := courier.NewBackend(testConfig())
-	if err != nil {
-		log.Fatalf("unable to create rapidpro backend: %v", err)
-	}
-	ts.b = b.(*backend)
+	noError(err)
 
-	err = ts.b.Start()
-	if err != nil {
-		log.Fatalf("unable to start backend for testing: %v", err)
-	}
+	ts.b = b.(*backend)
+	must(ts.b.Start())
 
 	// read our schema sql
 	sqlSchema, err := os.ReadFile("schema.sql")
-	if err != nil {
-		panic(fmt.Errorf("Unable to read schema.sql: %s", err))
-	}
+	noError(err)
 	ts.b.db.MustExec(string(sqlSchema))
 
 	// read our testdata sql
 	sql, err := os.ReadFile("testdata.sql")
-	if err != nil {
-		panic(fmt.Errorf("Unable to read testdata.sql: %s", err))
-	}
+	noError(err)
 	ts.b.db.MustExec(string(sql))
 
 	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
 	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-logs")})
+
+	tablesFile, err := os.Open("dynamo.json")
+	noError(err)
+	defer tablesFile.Close()
+
+	tablesJSON, err := io.ReadAll(tablesFile)
+	noError(err)
+
+	inputs := []*dynamodb.CreateTableInput{}
+	jsonx.MustUnmarshal(tablesJSON, &inputs)
+
+	for _, input := range inputs {
+		// delete table if it exists
+		if _, err := ts.b.dynamo.Client.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: input.TableName}); err == nil {
+			_, err := ts.b.dynamo.Client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: input.TableName})
+			must(err)
+		}
+
+		_, err := ts.b.dynamo.Client.CreateTable(ctx, input)
+		noError(err)
+	}
 
 	ts.clearRedis()
 }
@@ -1592,3 +1607,13 @@ func readChannelEventFromDB(b *backend, id ChannelEventID) *ChannelEvent {
 	}
 	return e
 }
+
+// convenience way to call a func and panic if it errors, e.g. must(foo())
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+// if just checking an error is nil noError(err) reads better than must(err)
+var noError = must

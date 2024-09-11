@@ -25,6 +25,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/gocommon/analytics"
+	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/cache"
 	"github.com/nyaruka/gocommon/dbutil"
@@ -59,9 +60,10 @@ type backend struct {
 	stLogWriter  *StorageLogWriter // attached logs being written to storage
 	writerWG     *sync.WaitGroup
 
-	db *sqlx.DB
-	rp *redis.Pool
-	s3 *s3x.Service
+	db     *sqlx.DB
+	rp     *redis.Pool
+	dynamo *dynamo.Service
+	s3     *s3x.Service
 
 	channelsByUUID *cache.Local[courier.ChannelUUID, *Channel]
 	channelsByAddr *cache.Local[courier.ChannelAddress, *Channel]
@@ -163,6 +165,17 @@ func (b *backend) Start() error {
 	// start our dethrottler if we are going to be doing some sending
 	if b.config.MaxWorkers > 0 {
 		queue.StartDethrottler(b.rp, b.stopChan, b.waitGroup, msgQueueName)
+	}
+
+	// setup DynamoDB
+	b.dynamo, err = dynamo.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.DynamoEndpoint, b.config.DynamoTablePrefix)
+	if err != nil {
+		return err
+	}
+	if err := b.dynamo.Test(ctx, "ChannelLogs"); err != nil {
+		log.Error("dynamodb not reachable", "error", err)
+	} else {
+		log.Info("dynamodb ok")
 	}
 
 	// setup S3 storage
