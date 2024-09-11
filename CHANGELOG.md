@@ -1,3 +1,7 @@
+v9.3.16 (2024-09-11)
+-------------------------
+ * Use ordered v7 UUIDs for channel logs
+
 v9.3.15 (2024-09-11)
 -------------------------
  * Add dynamodb support to backend
