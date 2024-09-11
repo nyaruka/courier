@@ -8,6 +8,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -23,7 +24,7 @@ func TestChannelLog(t *testing.T) {
 	}))
 	defer httpx.SetRequestor(httpx.DefaultRequestor)
 
-	uuids.SetGenerator(uuids.NewSeededGenerator(1234, time.Now))
+	uuids.SetGenerator(uuids.NewSeededGenerator(1234, dates.NewSequentialNow(time.Date(2024, 9, 11, 14, 33, 0, 0, time.UTC), time.Second)))
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 
 	channel := test.NewMockChannel("fef91e9b-a6ed-44fb-b6ce-feed8af585a8", "NX", "1234", "US", []string{urns.Phone.Prefix}, nil)
@@ -46,7 +47,7 @@ func TestChannelLog(t *testing.T) {
 	clog.RawError(errors.New("this is an error"))
 	clog.End()
 
-	assert.Equal(t, courier.ChannelLogUUID("c00e5d67-c275-4389-aded-7d8b151cbd5b"), clog.UUID())
+	assert.Equal(t, courier.ChannelLogUUID("0191e180-7d60-7000-aded-7d8b151cbd5b"), clog.UUID())
 	assert.Equal(t, courier.ChannelLogTypeTokenRefresh, clog.Type())
 	assert.Equal(t, channel, clog.Channel())
 	assert.False(t, clog.Attached())
