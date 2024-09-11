@@ -1,3 +1,7 @@
+v9.3.15 (2024-09-11)
+-------------------------
+ * Add dynamodb support to backend
+
 v9.3.14 (2024-09-10)
 -------------------------
  * Update TS channel type to use POST requests
