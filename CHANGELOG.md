@@ -1,3 +1,7 @@
+v9.3.18 (2024-09-12)
+-------------------------
+ * Use 'tasks:handler' queue name instead of 'handler'
+
 v9.3.17 (2024-09-12)
 -------------------------
  * Write all channel logs to DynamoDB
