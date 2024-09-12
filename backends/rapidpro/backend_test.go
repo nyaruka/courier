@@ -17,6 +17,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
@@ -95,6 +96,8 @@ func (ts *BackendTestSuite) SetupSuite() {
 	jsonx.MustUnmarshal(tablesJSON, &inputs)
 
 	for _, input := range inputs {
+		input.TableName = aws.String(ts.b.dynamo.TableName(*input.TableName)) // add table prefix
+
 		// delete table if it exists
 		if _, err := ts.b.dynamo.Client.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: input.TableName}); err == nil {
 			_, err := ts.b.dynamo.Client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: input.TableName})
@@ -1052,6 +1055,15 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM channels_channellog`).Returns(1)
 	assertdb.Query(ts.T(), ts.b.db, `SELECT channel_id, http_logs->0->>'url' AS url, errors->0->>'message' AS err FROM channels_channellog`).
 		Columns(map[string]any{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "Unexpected response status code."})
+
+	resp, err := ts.b.dynamo.Client.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: aws.String(ts.b.dynamo.TableName("ChannelLogs")),
+		Key: map[string]types.AttributeValue{
+			"UUID": &types.AttributeValueMemberS{Value: string(clog1.UUID())},
+		},
+	})
+	ts.NoError(err)
+	ts.Equal(string(clog1.UUID()), resp.Item["UUID"].(*types.AttributeValueMemberS).Value)
 
 	clog2 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog2.HTTP(trace)
