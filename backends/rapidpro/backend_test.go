@@ -1501,8 +1501,8 @@ func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {
 	rc := ts.b.rp.Get()
 	defer rc.Close()
 
-	assertredis.ZCard(ts.T(), rc, "handler:1", 0)
-	assertredis.ZCard(ts.T(), rc, "handler:active", 0)
+	assertredis.ZCard(ts.T(), rc, "tasks:handler:1", 0)
+	assertredis.ZCard(ts.T(), rc, "tasks:handler:active", 0)
 	assertredis.LLen(ts.T(), rc, fmt.Sprintf("c:1:%d", contactID), 0)
 }
 
@@ -1510,8 +1510,8 @@ func (ts *BackendTestSuite) assertQueuedContactTask(contactID ContactID, expecte
 	rc := ts.b.rp.Get()
 	defer rc.Close()
 
-	assertredis.ZCard(ts.T(), rc, "handler:1", 1)
-	assertredis.ZCard(ts.T(), rc, "handler:active", 1)
+	assertredis.ZCard(ts.T(), rc, "tasks:handler:1", 1)
+	assertredis.ZCard(ts.T(), rc, "tasks:handler:active", 1)
 	assertredis.LLen(ts.T(), rc, fmt.Sprintf("c:1:%d", contactID), 1)
 
 	data, err := redis.Bytes(rc.Do("LPOP", fmt.Sprintf("c:1:%d", contactID)))

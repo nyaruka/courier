@@ -71,10 +71,10 @@ func queueMailroomTask(rc redis.Conn, taskType string, orgID OrgID, contactID Co
 
 	// we do all our queueing in a transaction
 	contactQueue := fmt.Sprintf("c:%d:%d", orgID, contactID)
-	rc.Send("multi")
-	rc.Send("rpush", contactQueue, eventJSON)
-	rc.Send("zadd", fmt.Sprintf("handler:%d", orgID), fmt.Sprintf("%.5f", epochFloat-10000000), contactJSON)
-	rc.Send("zincrby", "handler:active", 0, orgID)
+	rc.Send("MULTI")
+	rc.Send("RPUSH", contactQueue, eventJSON)
+	rc.Send("ZADD", fmt.Sprintf("tasks:handler:%d", orgID), fmt.Sprintf("%.5f", epochFloat-10000000), contactJSON)
+	rc.Send("ZINCRBY", "tasks:handler:active", 0, orgID)
 	_, err = rc.Do("EXEC")
 
 	return err
