@@ -1,3 +1,7 @@
+v9.3.17 (2024-09-12)
+-------------------------
+ * Write all channel logs to DynamoDB
+
 v9.3.16 (2024-09-11)
 -------------------------
  * Use ordered v7 UUIDs for channel logs
