@@ -1,6 +1,8 @@
 package rapidpro
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,9 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	dytypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/httpx"
@@ -50,6 +56,16 @@ func (l *stChannelLog) path() string {
 	return path.Join("channels", string(l.ChannelUUID), string(l.UUID[:4]), fmt.Sprintf("%s.json", l.UUID))
 }
 
+// channel log to be written to DynamoDB
+type dyChannelLog struct {
+	UUID      courier.ChannelLogUUID `dynamodbav:"UUID"`
+	Type      courier.ChannelLogType `dynamodbav:"Type"`
+	DataGZ    []byte                 `dynamodbav:"DataGZ,omitempty"`
+	ElapsedMS int                    `dynamodbav:"ElapsedMS"`
+	CreatedOn time.Time              `dynamodbav:"CreatedOn,unixtime"`
+	ExpiresOn time.Time              `dynamodbav:"ExpiresOn,unixtime"`
+}
+
 type channelError struct {
 	Code    string `json:"code"`
 	ExtCode string `json:"ext_code,omitempty"`
@@ -78,9 +94,27 @@ func queueChannelLog(b *backend, clog *courier.ChannelLog) {
 		return
 	}
 
+	// save http logs and errors as gzipped JSON
+	data := jsonx.MustMarshal(map[string]any{"http_logs": logs, "errors": errors})
+	buf := &bytes.Buffer{}
+	w := gzip.NewWriter(buf)
+	w.Write(data)
+	w.Close()
+
+	dl := &dyChannelLog{
+		UUID:      clog.UUID(),
+		Type:      clog.Type(),
+		DataGZ:    buf.Bytes(),
+		ElapsedMS: int(clog.Elapsed() / time.Millisecond),
+		CreatedOn: clog.CreatedOn(),
+		ExpiresOn: clog.CreatedOn().Add(14 * 24 * time.Hour),
+	}
+	if b.dyLogWriter.Queue(dl) <= 0 {
+		log.With("storage", "dynamo").Error("channel log writer buffer full")
+	}
+
 	// if log is attached to a call or message, only write to storage
 	if clog.Attached() {
-		log = log.With("storage", "s3")
 		v := &stChannelLog{
 			UUID:        clog.UUID(),
 			Type:        clog.Type(),
@@ -91,11 +125,10 @@ func queueChannelLog(b *backend, clog *courier.ChannelLog) {
 			ChannelUUID: clog.Channel().UUID(),
 		}
 		if b.stLogWriter.Queue(v) <= 0 {
-			log.Error("channel log writer buffer full")
+			log.With("storage", "s3").Error("channel log writer buffer full")
 		}
 	} else {
 		// otherwise write to database so it's retrievable
-		log = log.With("storage", "db")
 		v := &dbChannelLog{
 			UUID:      clog.UUID(),
 			Type:      clog.Type(),
@@ -107,7 +140,7 @@ func queueChannelLog(b *backend, clog *courier.ChannelLog) {
 			ElapsedMS: int(clog.Elapsed() / time.Millisecond),
 		}
 		if b.dbLogWriter.Queue(v) <= 0 {
-			log.Error("channel log writer buffer full")
+			log.With("storage", "db").Error("channel log writer buffer full")
 		}
 	}
 
@@ -173,10 +206,48 @@ func writeStorageChannelLogs(ctx context.Context, s3s *s3x.Service, bucket strin
 			Key:         l.path(),
 			ContentType: "application/json",
 			Body:        jsonx.MustMarshal(l),
-			ACL:         types.ObjectCannedACLPrivate,
+			ACL:         s3types.ObjectCannedACLPrivate,
 		}
 	}
 	if err := s3s.BatchPut(ctx, uploads, 32); err != nil {
 		slog.Error("error writing channel logs", "comp", "storage log writer")
+	}
+}
+
+type DynamoLogWriter struct {
+	*syncx.Batcher[*dyChannelLog]
+}
+
+func NewDynamoLogWriter(dy *dynamo.Service, wg *sync.WaitGroup) *DynamoLogWriter {
+	return &DynamoLogWriter{
+		Batcher: syncx.NewBatcher(func(batch []*dyChannelLog) {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+
+			writeDynamoChannelLogs(ctx, dy, batch)
+		}, 25, time.Millisecond*500, 1000, wg),
+	}
+}
+
+func writeDynamoChannelLogs(ctx context.Context, dy *dynamo.Service, batch []*dyChannelLog) {
+	log := slog.With("comp", "dynamo log writer")
+
+	var writeReqs []dytypes.WriteRequest
+	for _, l := range batch {
+		item, err := attributevalue.MarshalMap(l)
+		if err != nil {
+			log.Error("error marshalling channel log", "error", err)
+		} else {
+			writeReqs = append(writeReqs, dytypes.WriteRequest{PutRequest: &dytypes.PutRequest{Item: item}})
+		}
+	}
+
+	if len(writeReqs) > 0 {
+		_, err := dy.Client.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
+			RequestItems: map[string][]dytypes.WriteRequest{dy.TableName("ChannelLogs"): writeReqs},
+		})
+		if err != nil {
+			log.Error("error writing channel logs", "error", err)
+		}
 	}
 }

@@ -58,6 +58,7 @@ type backend struct {
 	statusWriter *StatusWriter
 	dbLogWriter  *DBLogWriter      // unattached logs being written to the database
 	stLogWriter  *StorageLogWriter // attached logs being written to storage
+	dyLogWriter  *DynamoLogWriter  // all logs being written to dynamo
 	writerWG     *sync.WaitGroup
 
 	db     *sqlx.DB
@@ -226,6 +227,9 @@ func (b *backend) Start() error {
 	b.stLogWriter = NewStorageLogWriter(b.s3, b.config.S3LogsBucket, b.writerWG)
 	b.stLogWriter.Start()
 
+	b.dyLogWriter = NewDynamoLogWriter(b.dynamo, b.writerWG)
+	b.dyLogWriter.Start()
+
 	// register and start our spool flushers
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "msgs"), b.flushMsgFile)
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "statuses"), b.flushStatusFile)
@@ -258,6 +262,9 @@ func (b *backend) Cleanup() error {
 	}
 	if b.stLogWriter != nil {
 		b.stLogWriter.Stop()
+	}
+	if b.dyLogWriter != nil {
+		b.dyLogWriter.Stop()
 	}
 
 	// wait for them to flush fully
