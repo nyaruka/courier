@@ -936,6 +936,16 @@ func TestOutgoing(t *testing.T) {
 			courier.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
+	var jsonQuotedVariablesChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+		[]string{urns.Phone.Prefix},
+		map[string]any{
+			courier.ConfigSendURL:     "http://example.com/send",
+			courier.ConfigSendBody:    `{ "to":"{{to}}", "text":"{{text}}", "from":'{{from}}', "quick_replies":"{{quick_replies}}" }`,
+			courier.ConfigContentType: contentJSON,
+			courier.ConfigSendMethod:  http.MethodPost,
+			courier.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
+		})
+
 	var xmlChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
@@ -963,6 +973,7 @@ func TestOutgoing(t *testing.T) {
 	RunOutgoingTestCases(t, postSmartChannel, newHandler(), postSendTestCases, nil, nil)
 	RunOutgoingTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil, nil)
 	RunOutgoingTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, jsonQuotedVariablesChannel, newHandler(), jsonSendTestCases, nil, nil)
 	RunOutgoingTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil, nil)
 	RunOutgoingTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil, nil)
 

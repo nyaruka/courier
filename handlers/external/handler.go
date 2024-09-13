@@ -429,6 +429,8 @@ func encodeVariables(variables map[string]string, contentType string) map[string
 
 func replaceVariables(text string, variables map[string]string) string {
 	for k, v := range variables {
+		text = strings.Replace(text, fmt.Sprintf("\"{{%s}}\"", k), v, -1)
+		text = strings.Replace(text, fmt.Sprintf("'{{%s}}'", k), v, -1)
 		text = strings.Replace(text, fmt.Sprintf("{{%s}}", k), v, -1)
 	}
 	return text
