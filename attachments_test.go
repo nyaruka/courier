@@ -61,8 +61,8 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 
 	assert.Len(t, mb.SavedAttachments(), 1)
 	assert.Equal(t, &test.SavedAttachment{Channel: mockChannel, ContentType: "image/jpeg", Data: testJPG, Extension: "jpg"}, mb.SavedAttachments()[0])
-	assert.Len(t, clog.HTTPLogs(), 1)
-	assert.Equal(t, "http://mock.com/media/hello.jpg", clog.HTTPLogs()[0].URL)
+	assert.Len(t, clog.HttpLogs, 1)
+	assert.Equal(t, "http://mock.com/media/hello.jpg", clog.HttpLogs[0].URL)
 
 	att, err = courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello2", clog)
 	assert.NoError(t, err)
@@ -72,8 +72,8 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 
 	assert.Len(t, mb.SavedAttachments(), 2)
 	assert.Equal(t, &test.SavedAttachment{Channel: mockChannel, ContentType: "image/jpeg", Data: testJPG, Extension: "jpg"}, mb.SavedAttachments()[0])
-	assert.Len(t, clog.HTTPLogs(), 2)
-	assert.Equal(t, "http://mock.com/media/hello2", clog.HTTPLogs()[1].URL)
+	assert.Len(t, clog.HttpLogs, 2)
+	assert.Equal(t, "http://mock.com/media/hello2", clog.HttpLogs[1].URL)
 
 	// a non-200 response should return an unavailable attachment
 	att, err = courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello.mp3", clog)
@@ -81,8 +81,8 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	assert.Equal(t, &courier.Attachment{ContentType: "unavailable", URL: "http://mock.com/media/hello.mp3"}, att)
 
 	// should have a logged HTTP request but no attachments will have been saved to storage
-	assert.Len(t, clog.HTTPLogs(), 3)
-	assert.Equal(t, "http://mock.com/media/hello.mp3", clog.HTTPLogs()[2].URL)
+	assert.Len(t, clog.HttpLogs, 3)
+	assert.Equal(t, "http://mock.com/media/hello.mp3", clog.HttpLogs[2].URL)
 	assert.Len(t, mb.SavedAttachments(), 2)
 
 	// same for a connection error

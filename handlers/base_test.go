@@ -37,9 +37,9 @@ func TestRequestHTTP(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode)
 	assert.Equal(t, []byte(`{"status":"success"}`), respBody)
-	assert.Len(t, clog.HTTPLogs(), 1)
+	assert.Len(t, clog.HttpLogs, 1)
 
-	hlog1 := clog.HTTPLogs()[0]
+	hlog1 := clog.HttpLogs[0]
 	assert.Equal(t, 200, hlog1.StatusCode)
 	assert.Equal(t, "https://api.messages.com/send.json", hlog1.URL)
 
@@ -47,9 +47,9 @@ func TestRequestHTTP(t *testing.T) {
 	resp, _, err = h.RequestHTTP(req, clog)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode)
-	assert.Len(t, clog.HTTPLogs(), 2)
+	assert.Len(t, clog.HttpLogs, 2)
 
-	hlog2 := clog.HTTPLogs()[1]
+	hlog2 := clog.HttpLogs[1]
 	assert.Equal(t, 400, hlog2.StatusCode)
 	assert.Equal(t, "https://api.messages.com/send.json", hlog2.URL)
 }

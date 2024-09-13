@@ -19,6 +19,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -37,7 +38,7 @@ const (
 type Server interface {
 	Config() *Config
 
-	AddHandlerRoute(handler ChannelHandler, method string, action string, logType ChannelLogType, handlerFunc ChannelHandleFunc)
+	AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.LogType, handlerFunc ChannelHandleFunc)
 	GetHandler(Channel) ChannelHandler
 
 	Backend() Backend
@@ -255,7 +256,7 @@ func (s *server) initializeChannelHandlers() {
 	sort.Strings(s.chanRoutes)
 }
 
-func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc, logType ChannelLogType) http.HandlerFunc {
+func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc, logType clogs.LogType) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
@@ -352,7 +353,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 	}
 }
 
-func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action string, logType ChannelLogType, handlerFunc ChannelHandleFunc) {
+func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.LogType, handlerFunc ChannelHandleFunc) {
 	method = strings.ToLower(method)
 	channelType := strings.ToLower(string(handler.ChannelType()))
 

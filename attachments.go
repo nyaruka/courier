@@ -14,6 +14,7 @@ import (
 
 	"github.com/h2non/filetype"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 )
 
@@ -35,8 +36,8 @@ type fetchAttachmentRequest struct {
 }
 
 type fetchAttachmentResponse struct {
-	Attachment *Attachment    `json:"attachment"`
-	LogUUID    ChannelLogUUID `json:"log_uuid"`
+	Attachment *Attachment   `json:"attachment"`
+	LogUUID    clogs.LogUUID `json:"log_uuid"`
 }
 
 func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAttachmentResponse, error) {
@@ -72,7 +73,7 @@ func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAtt
 		return nil, err
 	}
 
-	return &fetchAttachmentResponse{Attachment: attachment, LogUUID: clog.UUID()}, nil
+	return &fetchAttachmentResponse{Attachment: attachment, LogUUID: clog.UUID}, nil
 }
 
 func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, attURL string, clog *ChannelLog) (*Attachment, error) {

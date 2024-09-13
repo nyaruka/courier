@@ -16,6 +16,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/handlers/meta/whatsapp"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -344,7 +345,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 						// if we have more than 10 quick replies, truncate and add channel error
 						if len(qrs) > 10 {
-							clog.Error(courier.NewChannelError("", "", "too many quick replies D3C supports only up to 10 quick replies"))
+							clog.Error(clogs.NewLogError("", "", "too many quick replies D3C supports only up to 10 quick replies"))
 							qrs = qrs[:10]
 						}
 
@@ -440,7 +441,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 					payload.Type = "interactive"
 					// if we have more than 10 quick replies, truncate and add channel error
 					if len(qrs) > 10 {
-						clog.Error(courier.NewChannelError("", "", "too many quick replies D3C supports only up to 10 quick replies"))
+						clog.Error(clogs.NewLogError("", "", "too many quick replies D3C supports only up to 10 quick replies"))
 						qrs = qrs[:10]
 					}
 

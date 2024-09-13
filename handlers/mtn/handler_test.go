@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -212,7 +213,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 			Body: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"No External ID","clientCorrelator":"10"}`,
 		}},
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("transactionId")},
+		ExpectedLogErrors: []*clogs.LogError{courier.ErrorResponseValueMissing("transactionId")},
 	},
 	{
 		Label:   "Error Sending",

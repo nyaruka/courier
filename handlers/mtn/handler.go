@@ -77,7 +77,7 @@ type moPayload struct {
 // receiveEvent is our HTTP handler function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.Message != "" {
-		clog.SetType(courier.ChannelLogTypeMsgReceive)
+		clog.Type = courier.ChannelLogTypeMsgReceive
 
 		date := time.Unix(payload.Created/1000, payload.Created%1000*1000000).UTC()
 		urn, err := urns.ParsePhone(payload.From, channel.Country(), true, false)
@@ -90,7 +90,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 
 	} else {
-		clog.SetType(courier.ChannelLogTypeMsgStatus)
+		clog.Type = courier.ChannelLogTypeMsgStatus
 
 		if payload.TransactionID == "" {
 			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "missing transactionId, ignored")

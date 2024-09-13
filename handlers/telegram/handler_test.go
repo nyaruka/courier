@@ -12,6 +12,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -670,7 +671,7 @@ var testCases = []IncomingTestCase{
 		Data:                 invalidFileID,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
-		ExpectedErrors:       []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
+		ExpectedErrors:       []*clogs.LogError{courier.ErrorResponseUnparseable("JSON")},
 	},
 	{
 		Label:                "Receive NoOk FileID",
@@ -685,7 +686,7 @@ var testCases = []IncomingTestCase{
 		Data:                 invalidJsonFile,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
-		ExpectedErrors:       []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
+		ExpectedErrors:       []*clogs.LogError{courier.ErrorResponseUnparseable("JSON")},
 	},
 	{
 		Label:                "Receive error File response",
@@ -693,7 +694,7 @@ var testCases = []IncomingTestCase{
 		Data:                 errorFile,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
-		ExpectedErrors:       []*courier.ChannelError{courier.ErrorExternal("500", "error loading file")},
+		ExpectedErrors:       []*clogs.LogError{courier.ErrorExternal("500", "error loading file")},
 	},
 	{
 		Label:                "Receive NotOk FileID",
@@ -923,7 +924,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgText:           "My foo!",
 		MsgURN:            "telegram:12345",
 		MsgAttachments:    []string{"unknown/foo:https://foo.bar/unknown.foo"},
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorMediaUnsupported("unknown/foo")},
+		ExpectedLogErrors: []*clogs.LogError{courier.ErrorMediaUnsupported("unknown/foo")},
 	},
 }
 

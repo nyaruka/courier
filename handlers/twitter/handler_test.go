@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -259,7 +260,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{BodyContains: `"text":"http`}, // audio link send as text
 		},
 		ExpectedExtIDs:    []string{"133", "133"},
-		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to upload media, unsupported Twitter attachment")},
+		ExpectedLogErrors: []*clogs.LogError{clogs.NewLogError("", "", "unable to upload media, unsupported Twitter attachment")},
 	},
 	{
 		Label:   "ID Error",
@@ -271,7 +272,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedError:     courier.ErrResponseUnexpected,
-		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to get message_id from body")},
+		ExpectedLogErrors: []*clogs.LogError{clogs.NewLogError("", "", "unable to get message_id from body")},
 	},
 	{
 		Label:   "Error",

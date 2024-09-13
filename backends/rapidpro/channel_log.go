@@ -1,8 +1,6 @@
 package rapidpro
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -17,6 +15,7 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/dbutil"
@@ -31,62 +30,35 @@ INSERT INTO channels_channellog( uuid,  log_type,  channel_id,  http_logs,  erro
 
 // channel log to be inserted into the database
 type dbChannelLog struct {
-	UUID      courier.ChannelLogUUID `db:"uuid"`
-	Type      courier.ChannelLogType `db:"log_type"`
-	ChannelID courier.ChannelID      `db:"channel_id"`
-	HTTPLogs  json.RawMessage        `db:"http_logs"`
-	Errors    json.RawMessage        `db:"errors"`
-	IsError   bool                   `db:"is_error"`
-	CreatedOn time.Time              `db:"created_on"`
-	ElapsedMS int                    `db:"elapsed_ms"`
+	UUID      clogs.LogUUID     `db:"uuid"`
+	Type      clogs.LogType     `db:"log_type"`
+	ChannelID courier.ChannelID `db:"channel_id"`
+	HTTPLogs  json.RawMessage   `db:"http_logs"`
+	Errors    json.RawMessage   `db:"errors"`
+	IsError   bool              `db:"is_error"`
+	CreatedOn time.Time         `db:"created_on"`
+	ElapsedMS int               `db:"elapsed_ms"`
 }
 
 // channel log to be written to logs storage
 type stChannelLog struct {
-	UUID        courier.ChannelLogUUID `json:"uuid"`
-	Type        courier.ChannelLogType `json:"type"`
-	HTTPLogs    []*httpx.Log           `json:"http_logs"`
-	Errors      []channelError         `json:"errors"`
-	ElapsedMS   int                    `json:"elapsed_ms"`
-	CreatedOn   time.Time              `json:"created_on"`
-	ChannelUUID courier.ChannelUUID    `json:"-"`
+	UUID        clogs.LogUUID       `json:"uuid"`
+	Type        clogs.LogType       `json:"type"`
+	HTTPLogs    []*httpx.Log        `json:"http_logs"`
+	Errors      []*clogs.LogError   `json:"errors"`
+	ElapsedMS   int                 `json:"elapsed_ms"`
+	CreatedOn   time.Time           `json:"created_on"`
+	ChannelUUID courier.ChannelUUID `json:"-"`
 }
 
 func (l *stChannelLog) path() string {
 	return path.Join("channels", string(l.ChannelUUID), string(l.UUID[:4]), fmt.Sprintf("%s.json", l.UUID))
 }
 
-// channel log to be written to DynamoDB
-type dyChannelLog struct {
-	UUID      courier.ChannelLogUUID `dynamodbav:"UUID"`
-	Type      courier.ChannelLogType `dynamodbav:"Type"`
-	DataGZ    []byte                 `dynamodbav:"DataGZ,omitempty"`
-	ElapsedMS int                    `dynamodbav:"ElapsedMS"`
-	CreatedOn time.Time              `dynamodbav:"CreatedOn,unixtime"`
-	ExpiresOn time.Time              `dynamodbav:"ExpiresOn,unixtime"`
-}
-
-type channelError struct {
-	Code    string `json:"code"`
-	ExtCode string `json:"ext_code,omitempty"`
-	Message string `json:"message"`
-}
-
 // queues the passed in channel log to a writer
 func queueChannelLog(b *backend, clog *courier.ChannelLog) {
-	log := slog.With("log_uuid", clog.UUID(), "log_type", clog.Type(), "channel_uuid", clog.Channel().UUID())
+	log := slog.With("log_uuid", clog.UUID, "log_type", clog.Type, "channel_uuid", clog.Channel().UUID())
 	dbChan := clog.Channel().(*Channel)
-
-	// so that we don't save null
-	logs := clog.HTTPLogs()
-	if logs == nil {
-		logs = []*httpx.Log{}
-	}
-
-	errors := make([]channelError, len(clog.Errors()))
-	for i, e := range clog.Errors() {
-		errors[i] = channelError{Code: e.Code(), ExtCode: e.ExtCode(), Message: e.Message()}
-	}
 	isError := clog.IsError()
 
 	// depending on the channel log policy, we might be able to discard this log
@@ -94,21 +66,8 @@ func queueChannelLog(b *backend, clog *courier.ChannelLog) {
 		return
 	}
 
-	// save http logs and errors as gzipped JSON
-	data := jsonx.MustMarshal(map[string]any{"http_logs": logs, "errors": errors})
-	buf := &bytes.Buffer{}
-	w := gzip.NewWriter(buf)
-	w.Write(data)
-	w.Close()
+	dl := clogs.NewDynamoLog(clog.Log)
 
-	dl := &dyChannelLog{
-		UUID:      clog.UUID(),
-		Type:      clog.Type(),
-		DataGZ:    buf.Bytes(),
-		ElapsedMS: int(clog.Elapsed() / time.Millisecond),
-		CreatedOn: clog.CreatedOn(),
-		ExpiresOn: clog.CreatedOn().Add(14 * 24 * time.Hour),
-	}
 	if b.dyLogWriter.Queue(dl) <= 0 {
 		log.With("storage", "dynamo").Error("channel log writer buffer full")
 	}
@@ -116,12 +75,12 @@ func queueChannelLog(b *backend, clog *courier.ChannelLog) {
 	// if log is attached to a call or message, only write to storage
 	if clog.Attached() {
 		v := &stChannelLog{
-			UUID:        clog.UUID(),
-			Type:        clog.Type(),
-			HTTPLogs:    logs,
-			Errors:      errors,
-			ElapsedMS:   int(clog.Elapsed() / time.Millisecond),
-			CreatedOn:   clog.CreatedOn(),
+			UUID:        clog.UUID,
+			Type:        clog.Type,
+			HTTPLogs:    clog.HttpLogs,
+			Errors:      clog.Errors,
+			ElapsedMS:   int(clog.Elapsed / time.Millisecond),
+			CreatedOn:   clog.CreatedOn,
 			ChannelUUID: clog.Channel().UUID(),
 		}
 		if b.stLogWriter.Queue(v) <= 0 {
@@ -130,14 +89,14 @@ func queueChannelLog(b *backend, clog *courier.ChannelLog) {
 	} else {
 		// otherwise write to database so it's retrievable
 		v := &dbChannelLog{
-			UUID:      clog.UUID(),
-			Type:      clog.Type(),
+			UUID:      clog.UUID,
+			Type:      clog.Type,
 			ChannelID: dbChan.ID(),
-			HTTPLogs:  jsonx.MustMarshal(logs),
-			Errors:    jsonx.MustMarshal(errors),
+			HTTPLogs:  jsonx.MustMarshal(clog.HttpLogs),
+			Errors:    jsonx.MustMarshal(clog.Errors),
 			IsError:   isError,
-			CreatedOn: clog.CreatedOn(),
-			ElapsedMS: int(clog.Elapsed() / time.Millisecond),
+			CreatedOn: clog.CreatedOn,
+			ElapsedMS: int(clog.Elapsed / time.Millisecond),
 		}
 		if b.dbLogWriter.Queue(v) <= 0 {
 			log.With("storage", "db").Error("channel log writer buffer full")
@@ -215,12 +174,12 @@ func writeStorageChannelLogs(ctx context.Context, s3s *s3x.Service, bucket strin
 }
 
 type DynamoLogWriter struct {
-	*syncx.Batcher[*dyChannelLog]
+	*syncx.Batcher[*clogs.DynamoLog]
 }
 
 func NewDynamoLogWriter(dy *dynamo.Service, wg *sync.WaitGroup) *DynamoLogWriter {
 	return &DynamoLogWriter{
-		Batcher: syncx.NewBatcher(func(batch []*dyChannelLog) {
+		Batcher: syncx.NewBatcher(func(batch []*clogs.DynamoLog) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel()
 
@@ -229,7 +188,7 @@ func NewDynamoLogWriter(dy *dynamo.Service, wg *sync.WaitGroup) *DynamoLogWriter
 	}
 }
 
-func writeDynamoChannelLogs(ctx context.Context, dy *dynamo.Service, batch []*dyChannelLog) {
+func writeDynamoChannelLogs(ctx context.Context, dy *dynamo.Service, batch []*clogs.DynamoLog) {
 	log := slog.With("comp", "dynamo log writer")
 
 	var writeReqs []dytypes.WriteRequest

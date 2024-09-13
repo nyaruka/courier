@@ -331,15 +331,15 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	assert.Equal(t, "Bearer SESAME", req.Header.Get("Authorization"))
 
 	// and that we have a log for that request
-	assert.Len(t, clog.HTTPLogs(), 1)
-	assert.Equal(t, "https://channels.jiochat.com/auth/token.action", clog.HTTPLogs()[0].URL)
+	assert.Len(t, clog.HttpLogs, 1)
+	assert.Equal(t, "https://channels.jiochat.com/auth/token.action", clog.HttpLogs[0].URL)
 
 	// check that another request reads token from cache
 	req, err = handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://channels.jiochat.com/media/download.action?media_id=13", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "https://channels.jiochat.com/media/download.action?media_id=13", req.URL.String())
 	assert.Equal(t, "Bearer SESAME", req.Header.Get("Authorization"))
-	assert.Len(t, clog.HTTPLogs(), 1)
+	assert.Len(t, clog.HttpLogs, 1)
 
 	AssertChannelLogRedaction(t, clog, []string{"secret123"})
 }

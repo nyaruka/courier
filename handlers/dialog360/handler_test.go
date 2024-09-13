@@ -12,6 +12,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
@@ -183,7 +184,7 @@ var testCasesD3C = []IncomingTestCase{
 		Data:                  string(test.ReadFile("../meta/testdata/wac/error_msg.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		ExpectedErrors:        []*courier.ChannelError{courier.ErrorExternal("131051", "Unsupported message type")},
+		ExpectedErrors:        []*clogs.LogError{courier.ErrorExternal("131051", "Unsupported message type")},
 		NoInvalidChannelCheck: true,
 	},
 	{
@@ -192,7 +193,7 @@ var testCasesD3C = []IncomingTestCase{
 		Data:                  string(test.ReadFile("../meta/testdata/wac/error_errors.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		ExpectedErrors:        []*courier.ChannelError{courier.ErrorExternal("0", "We were unable to authenticate the app user")},
+		ExpectedErrors:        []*clogs.LogError{courier.ErrorExternal("0", "We were unable to authenticate the app user")},
 		NoInvalidChannelCheck: true,
 	},
 	{
@@ -210,7 +211,7 @@ var testCasesD3C = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
 		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external_id", Status: courier.MsgStatusFailed}},
-		ExpectedErrors:       []*courier.ChannelError{courier.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)")},
+		ExpectedErrors:       []*clogs.LogError{courier.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)")},
 	},
 	{
 		Label:                "Receive Invalid Status",
@@ -508,7 +509,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"},{"id":"4","title":"ROW5"},{"id":"5","title":"ROW6"},{"id":"6","title":"ROW7"},{"id":"7","title":"ROW8"},{"id":"8","title":"ROW9"},{"id":"9","title":"ROW10"}]}]}}}`,
 		}},
 		ExpectedExtIDs:    []string{"157b5e14568e8"},
-		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "too many quick replies D3C supports only up to 10 quick replies")},
+		ExpectedLogErrors: []*clogs.LogError{clogs.NewLogError("", "", "too many quick replies D3C supports only up to 10 quick replies")},
 	},
 	{
 		Label:           "Interactive List Message Send In Spanish",

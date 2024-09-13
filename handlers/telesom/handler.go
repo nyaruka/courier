@@ -11,6 +11,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -107,7 +108,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		}
 
 		if !strings.Contains(string(respBody), "Success") {
-			clog.Error(courier.NewChannelError("", "", "Received invalid response content: %s", string(respBody)))
+			clog.Error(clogs.NewLogError("", "", "Received invalid response content: %s", string(respBody)))
 			return courier.ErrResponseUnexpected
 		}
 	}

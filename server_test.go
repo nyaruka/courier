@@ -11,6 +11,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -97,7 +98,7 @@ func TestIncoming(t *testing.T) {
 	assert.Len(t, mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
 	assert.False(t, clog.Attached())
-	assert.Len(t, clog.HTTPLogs(), 1)
+	assert.Len(t, clog.HttpLogs, 1)
 
 	req, _ := http.NewRequest("GET", "http://localhost:8081/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive?from=2065551212&text=hello", nil)
 	req.Header.Set("Cookie", "secret")
@@ -112,7 +113,7 @@ func TestIncoming(t *testing.T) {
 	assert.Len(t, mb.WrittenChannelLogs(), 2)
 	clog = mb.WrittenChannelLogs()[1]
 	assert.True(t, clog.Attached())
-	assert.Len(t, clog.HTTPLogs(), 1)
+	assert.Len(t, clog.HttpLogs, 1)
 }
 
 func TestOutgoing(t *testing.T) {
@@ -163,11 +164,11 @@ func TestOutgoing(t *testing.T) {
 	// and we should have a channel log with redacted errors and traces
 	assert.Len(t, mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
-	assert.Equal(t, []*courier.ChannelError{courier.NewChannelError("seeds", "", "contains ********** seeds")}, clog.Errors())
+	assert.Equal(t, []*clogs.LogError{clogs.NewLogError("seeds", "", "contains ********** seeds")}, clog.Errors)
 	assert.True(t, clog.Attached())
-	assert.Len(t, clog.HTTPLogs(), 1)
+	assert.Len(t, clog.HttpLogs, 1)
 
-	hlog := clog.HTTPLogs()[0]
+	hlog := clog.HttpLogs[0]
 	assert.Equal(t, "http://mock.com/send", hlog.URL)
 	assert.Equal(t,
 		"GET /send HTTP/1.1\r\nHost: mock.com\r\nUser-Agent: Go-http-client/1.1\r\nAuthorization: Token **********\r\nAccept-Encoding: gzip\r\n\r\n",
@@ -296,9 +297,9 @@ func TestFetchAttachment(t *testing.T) {
 
 	assert.Len(t, mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
-	assert.Equal(t, courier.ChannelLogTypeAttachmentFetch, clog.Type())
-	assert.Len(t, clog.HTTPLogs(), 1)
-	assert.Greater(t, clog.Elapsed(), time.Duration(0))
+	assert.Equal(t, courier.ChannelLogTypeAttachmentFetch, clog.Type)
+	assert.Len(t, clog.HttpLogs, 1)
+	assert.Greater(t, clog.Elapsed, time.Duration(0))
 
 	// if fetching attachment from channel returns non-200, return unavailable attachment so caller doesn't retry
 	statusCode, respBody = submit(`{"channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "url": "http://mock.com/media/hello.mp3"}`, "sesame")

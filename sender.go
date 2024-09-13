@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -391,7 +392,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 			status.SetStatus(MsgStatusFailed)
 		}
 
-		clog.Error(NewChannelError(serr.clogCode, serr.clogExtCode, serr.clogMsg))
+		clog.Error(clogs.NewLogError(serr.clogCode, serr.clogExtCode, serr.clogMsg))
 
 		// if handler returned ErrContactStopped need to write a stop event
 		if serr == ErrContactStopped {
@@ -406,7 +407,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 
 		status.SetStatus(MsgStatusErrored)
 
-		clog.Error(NewChannelError("internal_error", "", "An internal error occured."))
+		clog.Error(clogs.NewLogError("internal_error", "", "An internal error occured."))
 	}
 
 	return status

@@ -526,7 +526,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.After(now))
 	ts.Equal(null.NullString, m.FailedReason_)
-	ts.Equal(pq.StringArray([]string{string(clog1.UUID())}), m.LogUUIDs)
+	ts.Equal(pq.StringArray([]string{string(clog1.UUID)}), m.LogUUIDs)
 
 	sentOn := *m.SentOn_
 
@@ -538,7 +538,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(null.String("ext0"), m.ExternalID_) // no change
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.Equal(sentOn)) // no change
-	ts.Equal(pq.StringArray([]string{string(clog1.UUID()), string(clog2.UUID())}), m.LogUUIDs)
+	ts.Equal(pq.StringArray([]string{string(clog1.UUID), string(clog2.UUID)}), m.LogUUIDs)
 
 	// update to DELIVERED using id
 	clog3 := updateStatusByID(10001, courier.MsgStatusDelivered, "")
@@ -547,7 +547,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(m.Status_, courier.MsgStatusDelivered)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.Equal(sentOn)) // no change
-	ts.Equal(pq.StringArray([]string{string(clog1.UUID()), string(clog2.UUID()), string(clog3.UUID())}), m.LogUUIDs)
+	ts.Equal(pq.StringArray([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID)}), m.LogUUIDs)
 
 	// update to READ using id
 	clog4 := updateStatusByID(10001, courier.MsgStatusRead, "")
@@ -556,7 +556,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(m.Status_, courier.MsgStatusRead)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.Equal(sentOn)) // no change
-	ts.Equal(pq.StringArray([]string{string(clog1.UUID()), string(clog2.UUID()), string(clog3.UUID()), string(clog4.UUID())}), m.LogUUIDs)
+	ts.Equal(pq.StringArray([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID), string(clog4.UUID)}), m.LogUUIDs)
 
 	// no change for incoming messages
 	updateStatusByID(10002, courier.MsgStatusSent, "")
@@ -573,7 +573,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(courier.MsgStatusFailed, m.Status_)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.Nil(m.SentOn_)
-	ts.Equal(pq.StringArray([]string{string(clog5.UUID())}), m.LogUUIDs)
+	ts.Equal(pq.StringArray([]string{string(clog5.UUID)}), m.LogUUIDs)
 
 	now = time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)
@@ -1059,11 +1059,11 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	resp, err := ts.b.dynamo.Client.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(ts.b.dynamo.TableName("ChannelLogs")),
 		Key: map[string]types.AttributeValue{
-			"UUID": &types.AttributeValueMemberS{Value: string(clog1.UUID())},
+			"UUID": &types.AttributeValueMemberS{Value: string(clog1.UUID)},
 		},
 	})
 	ts.NoError(err)
-	ts.Equal(string(clog1.UUID()), resp.Item["UUID"].(*types.AttributeValueMemberS).Value)
+	ts.Equal(string(clog1.UUID), resp.Item["UUID"].(*types.AttributeValueMemberS).Value)
 
 	clog2 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog2.HTTP(trace)
@@ -1075,7 +1075,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	time.Sleep(time.Second) // give writer time to write this
 
-	_, body, err := ts.b.s3.GetObject(context.Background(), ts.b.config.S3LogsBucket, fmt.Sprintf("channels/%s/%s/%s.json", channel.UUID(), clog2.UUID()[0:4], clog2.UUID()))
+	_, body, err := ts.b.s3.GetObject(context.Background(), ts.b.config.S3LogsBucket, fmt.Sprintf("channels/%s/%s/%s.json", channel.UUID(), clog2.UUID[0:4], clog2.UUID))
 	ts.NoError(err)
 	ts.Contains(string(body), "msg_send")
 	ts.Contains(string(body), "https://api.messages.com/send.json")

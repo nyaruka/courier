@@ -70,7 +70,7 @@ func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType
 		URN_:         urn,
 		EventType_:   eventType,
 		OccurredOn_:  time.Now().In(time.UTC),
-		LogUUIDs:     []string{string(clog.UUID())},
+		LogUUIDs:     []string{string(clog.UUID)},
 
 		channel: dbChannel,
 	}
