@@ -17,6 +17,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
@@ -1057,7 +1058,8 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 		Columns(map[string]any{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "Unexpected response status code."})
 
 	// check that we can read the log back from DynamoDB
-	actualLog, err := clogs.Get(ctx, ts.b.dynamo, clog1.UUID)
+	actualLog := &clogs.Log{}
+	err = ts.b.dynamo.GetItem(ctx, "ChannelLogs", map[string]types.AttributeValue{"UUID": &types.AttributeValueMemberS{Value: string(clog1.UUID)}}, actualLog)
 	ts.NoError(err)
 	ts.Equal(clog1.UUID, actualLog.UUID)
 	ts.Equal(courier.ChannelLogTypeTokenRefresh, actualLog.Type)

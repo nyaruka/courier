@@ -173,7 +173,7 @@ func (b *backend) Start() error {
 	if err != nil {
 		return err
 	}
-	if err := b.dynamo.Test(ctx, "ChannelLogs"); err != nil {
+	if err := b.dynamo.Test(ctx); err != nil {
 		log.Error("dynamodb not reachable", "error", err)
 	} else {
 		log.Info("dynamodb ok")
