@@ -17,7 +17,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
@@ -25,6 +24,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
@@ -1056,14 +1056,12 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	assertdb.Query(ts.T(), ts.b.db, `SELECT channel_id, http_logs->0->>'url' AS url, errors->0->>'message' AS err FROM channels_channellog`).
 		Columns(map[string]any{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "Unexpected response status code."})
 
-	resp, err := ts.b.dynamo.Client.GetItem(ctx, &dynamodb.GetItemInput{
-		TableName: aws.String(ts.b.dynamo.TableName("ChannelLogs")),
-		Key: map[string]types.AttributeValue{
-			"UUID": &types.AttributeValueMemberS{Value: string(clog1.UUID)},
-		},
-	})
+	// check that we can read the log back from DynamoDB
+	actualLog, err := clogs.Get(ctx, ts.b.dynamo, clog1.UUID)
 	ts.NoError(err)
-	ts.Equal(string(clog1.UUID), resp.Item["UUID"].(*types.AttributeValueMemberS).Value)
+	ts.Equal(clog1.UUID, actualLog.UUID)
+	ts.Equal(courier.ChannelLogTypeTokenRefresh, actualLog.Type)
+	ts.Equal([]*clogs.LogError{courier.ErrorResponseStatusCode()}, actualLog.Errors)
 
 	clog2 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog2.HTTP(trace)
