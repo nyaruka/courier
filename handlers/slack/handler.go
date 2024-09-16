@@ -16,6 +16,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -64,14 +65,14 @@ func handleURLVerification(ctx context.Context, channel courier.Channel, w http.
 
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.Type == "url_verification" {
-		clog.SetType(courier.ChannelLogTypeWebhookVerify)
+		clog.Type = courier.ChannelLogTypeWebhookVerify
 
 		return handleURLVerification(ctx, channel, w, r, payload)
 	}
 
 	// if event is not a message or is from the bot ignore it
 	if payload.Event.Type == "message" && payload.Event.BotID == "" && payload.Event.ChannelType == "im" {
-		clog.SetType(courier.ChannelLogTypeMsgReceive)
+		clog.Type = courier.ChannelLogTypeMsgReceive
 
 		date := time.Unix(int64(payload.EventTime), 0)
 
@@ -212,7 +213,7 @@ func (h *handler) sendTextMsgPart(msg courier.MsgOut, token string, clog *courie
 		if err != nil {
 			return courier.ErrResponseUnexpected
 		}
-		clog.Error(courier.NewChannelError("", "", errDescription))
+		clog.Error(clogs.NewLogError("", "", errDescription))
 		return courier.ErrFailedWithReason("", errDescription)
 	}
 	return nil

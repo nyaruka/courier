@@ -13,6 +13,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
@@ -212,7 +213,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"channel":"U0123ABCDEF","text":"Hello"}`,
 		}},
 		ExpectedError:     courier.ErrFailedWithReason("", "invalid_auth"),
-		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "invalid_auth")},
+		ExpectedLogErrors: []*clogs.LogError{clogs.NewLogError("", "", "invalid_auth")},
 	},
 }
 

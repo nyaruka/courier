@@ -202,12 +202,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	// check event type and decode body to correspondent struct
 	switch payload.Type {
 	case eventTypeServerVerification:
-		clog.SetType(courier.ChannelLogTypeWebhookVerify)
+		clog.Type = courier.ChannelLogTypeWebhookVerify
 
 		return h.verifyServer(channel, w)
 
 	case eventTypeNewMessage:
-		clog.SetType(courier.ChannelLogTypeMsgReceive)
+		clog.Type = courier.ChannelLogTypeMsgReceive
 
 		newMessage := &moNewMessagePayload{}
 

@@ -20,6 +20,7 @@ import (
 	"github.com/dghubble/oauth1"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -287,10 +288,10 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			if strings.HasPrefix(mimeType, "image") || strings.HasPrefix(mimeType, "video") {
 				mediaID, err = h.uploadMediaToTwitter(msg, mediaURL, mimeType, s3url, client, clog)
 				if err != nil {
-					clog.Error(courier.NewChannelError("", "", "unable to upload media to Twitter server"))
+					clog.Error(clogs.NewLogError("", "", "unable to upload media to Twitter server"))
 				}
 			} else {
-				clog.Error(courier.NewChannelError("", "", "unable to upload media, unsupported Twitter attachment"))
+				clog.Error(clogs.NewLogError("", "", "unable to upload media, unsupported Twitter attachment"))
 			}
 
 			if mediaID != "" {
@@ -333,7 +334,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		externalID, err := jsonparser.GetString(respBody, "event", "id")
 		if err != nil {
-			clog.Error(courier.NewChannelError("", "", "unable to get message_id from body"))
+			clog.Error(clogs.NewLogError("", "", "unable to get message_id from body"))
 			return courier.ErrResponseUnexpected
 		}
 

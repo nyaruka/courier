@@ -125,7 +125,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// subscribe event, trigger a new conversation
 	if payload.MsgType == "event" && payload.Event == "subscribe" {
-		clog.SetType(courier.ChannelLogTypeEventReceive)
+		clog.Type = courier.ChannelLogTypeEventReceive
 
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeNewConversation, urn, clog)
 
@@ -139,7 +139,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// unknown event type (we only deal with subscribe)
 	if payload.MsgType == "event" {
-		clog.SetType(courier.ChannelLogTypeEventReceive)
+		clog.Type = courier.ChannelLogTypeEventReceive
 
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "unknown event type")
 	}

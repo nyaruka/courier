@@ -103,7 +103,7 @@ WHERE
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
 func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel, urn urns.URN, authTokens map[string]string, name string, clog *courier.ChannelLog) (*Contact, error) {
-	log := slog.With("org_id", org, "urn", urn.Identity(), "channel_uuid", channel.UUID(), "log_uuid", clog.UUID())
+	log := slog.With("org_id", org, "urn", urn.Identity(), "channel_uuid", channel.UUID(), "log_uuid", clog.UUID)
 
 	// try to look up our contact by URN
 	contact := &Contact{}

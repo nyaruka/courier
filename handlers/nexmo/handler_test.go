@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -84,7 +85,7 @@ var testCases = []IncomingTestCase{
 		ExpectedStatuses: []ExpectedStatus{
 			{ExternalID: "external1", Status: courier.MsgStatusFailed},
 		},
-		ExpectedErrors: []*courier.ChannelError{courier.ErrorExternal("dlr:6", "Anti-Spam Rejection")},
+		ExpectedErrors: []*clogs.LogError{courier.ErrorExternal("dlr:6", "Anti-Spam Rejection")},
 	},
 	{
 		Label:                "Status accepted",

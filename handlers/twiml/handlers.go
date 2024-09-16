@@ -23,6 +23,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -558,7 +559,7 @@ func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter
 }
 
 // https://www.twilio.com/docs/api/errors
-func twilioError(code int64) *courier.ChannelError {
+func twilioError(code int64) *clogs.LogError {
 	codeAsStr := strconv.Itoa(int(code))
 	errMsg, _ := jsonparser.GetString(errorCodes, codeAsStr)
 	return courier.ErrorExternal(codeAsStr, errMsg)

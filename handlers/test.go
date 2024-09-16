@@ -18,6 +18,7 @@ import (
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -68,7 +69,7 @@ type IncomingTestCase struct {
 	ExpectedMsgID         int64
 	ExpectedStatuses      []ExpectedStatus
 	ExpectedEvents        []ExpectedEvent
-	ExpectedErrors        []*courier.ChannelError
+	ExpectedErrors        []*clogs.LogError
 	NoLogsExpected        bool
 }
 
@@ -227,7 +228,7 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 				if assert.Equal(t, 1, len(mb.WrittenChannelLogs()), "expected a channel log") {
 
 					clog := mb.WrittenChannelLogs()[0]
-					assert.Equal(t, tc.ExpectedErrors, clog.Errors(), "unexpected errors logged")
+					assert.Equal(t, append([]*clogs.LogError{}, tc.ExpectedErrors...), clog.Errors, "unexpected errors logged")
 				}
 			}
 		})
@@ -315,7 +316,7 @@ type OutgoingTestCase struct {
 	ExpectedRequests    []ExpectedRequest
 	ExpectedExtIDs      []string
 	ExpectedError       error
-	ExpectedLogErrors   []*courier.ChannelError
+	ExpectedLogErrors   []*clogs.LogError
 	ExpectedContactURNs map[string]bool
 	ExpectedNewURN      string
 }
@@ -408,7 +409,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 
 			assert.Equal(t, tc.ExpectedExtIDs, externalIDs, "external IDs mismatch")
 			assert.Equal(t, tc.ExpectedError, serr, "send method error mismatch")
-			assert.Equal(t, tc.ExpectedLogErrors, clog.Errors(), "channel log errors mismatch")
+			assert.Equal(t, append([]*clogs.LogError{}, tc.ExpectedLogErrors...), clog.Errors, "channel log errors mismatch")
 
 			if tc.ExpectedContactURNs != nil {
 				var contactUUID courier.ContactUUID
@@ -427,9 +428,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			}
 
 			if tc.ExpectedNewURN != "" {
-
 				require.Equal(urns.URN(tc.ExpectedNewURN), resNewURN)
-
 			}
 
 			AssertChannelLogRedaction(t, clog, checkRedacted)
@@ -466,13 +465,13 @@ func AssertChannelLogRedaction(t *testing.T, clog *courier.ChannelLog, vals []st
 		}
 	}
 
-	for _, h := range clog.HTTPLogs() {
+	for _, h := range clog.HttpLogs {
 		assertRedacted(h.URL)
 		assertRedacted(h.Request)
 		assertRedacted(h.Response)
 	}
-	for _, e := range clog.Errors() {
-		assertRedacted(e.Message())
+	for _, e := range clog.Errors {
+		assertRedacted(e.Message)
 	}
 }
 

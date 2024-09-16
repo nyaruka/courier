@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
@@ -19,15 +20,15 @@ import (
 
 // StatusUpdate represents a status update on a message
 type StatusUpdate struct {
-	ChannelUUID_ courier.ChannelUUID    `json:"channel_uuid"             db:"channel_uuid"`
-	ChannelID_   courier.ChannelID      `json:"channel_id"               db:"channel_id"`
-	MsgID_       courier.MsgID          `json:"msg_id,omitempty"         db:"msg_id"`
-	OldURN_      urns.URN               `json:"old_urn"                  db:"old_urn"`
-	NewURN_      urns.URN               `json:"new_urn"                  db:"new_urn"`
-	ExternalID_  string                 `json:"external_id,omitempty"    db:"external_id"`
-	Status_      courier.MsgStatus      `json:"status"                   db:"status"`
-	ModifiedOn_  time.Time              `json:"modified_on"              db:"modified_on"`
-	LogUUID      courier.ChannelLogUUID `json:"log_uuid"                 db:"log_uuid"`
+	ChannelUUID_ courier.ChannelUUID `json:"channel_uuid"             db:"channel_uuid"`
+	ChannelID_   courier.ChannelID   `json:"channel_id"               db:"channel_id"`
+	MsgID_       courier.MsgID       `json:"msg_id,omitempty"         db:"msg_id"`
+	OldURN_      urns.URN            `json:"old_urn"                  db:"old_urn"`
+	NewURN_      urns.URN            `json:"new_urn"                  db:"new_urn"`
+	ExternalID_  string              `json:"external_id,omitempty"    db:"external_id"`
+	Status_      courier.MsgStatus   `json:"status"                   db:"status"`
+	ModifiedOn_  time.Time           `json:"modified_on"              db:"modified_on"`
+	LogUUID      clogs.LogUUID       `json:"log_uuid"                 db:"log_uuid"`
 }
 
 // creates a new message status update
@@ -43,7 +44,7 @@ func newStatusUpdate(channel courier.Channel, id courier.MsgID, externalID strin
 		ExternalID_:  externalID,
 		Status_:      status,
 		ModifiedOn_:  time.Now().In(time.UTC),
-		LogUUID:      clog.UUID(),
+		LogUUID:      clog.UUID,
 	}
 }
 

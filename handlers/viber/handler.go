@@ -125,12 +125,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	event := payload.Event
 	switch event {
 	case "webhook":
-		clog.SetType(courier.ChannelLogTypeWebhookVerify)
+		clog.Type = courier.ChannelLogTypeWebhookVerify
 
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "webhook valid")
 
 	case "conversation_started":
-		clog.SetType(courier.ChannelLogTypeEventReceive)
+		clog.Type = courier.ChannelLogTypeEventReceive
 
 		msgText := channel.StringConfigForKey(configViberWelcomeMessage, "")
 		if msgText == "" {
@@ -156,7 +156,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return []courier.Event{channelEvent}, writeWelcomeMessageResponse(w, channel, channelEvent)
 
 	case "subscribed":
-		clog.SetType(courier.ChannelLogTypeEventReceive)
+		clog.Type = courier.ChannelLogTypeEventReceive
 
 		viberID := payload.User.ID
 		ContactName := payload.User.Name
@@ -178,7 +178,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, channelEvent)
 
 	case "unsubscribed":
-		clog.SetType(courier.ChannelLogTypeEventReceive)
+		clog.Type = courier.ChannelLogTypeEventReceive
 
 		viberID := payload.UserID
 
@@ -198,19 +198,19 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, channelEvent)
 
 	case "failed":
-		clog.SetType(courier.ChannelLogTypeMsgStatus)
+		clog.Type = courier.ChannelLogTypeMsgStatus
 
 		msgStatus := h.Backend().NewStatusUpdateByExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgStatusFailed, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "delivered":
-		clog.SetType(courier.ChannelLogTypeMsgStatus)
+		clog.Type = courier.ChannelLogTypeMsgStatus
 
 		// we ignore delivered events for viber as they send these for incoming messages too and its not worth the db hit to verify that
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring delivered status")
 
 	case "message":
-		clog.SetType(courier.ChannelLogTypeMsgReceive)
+		clog.Type = courier.ChannelLogTypeMsgReceive
 
 		sender := payload.Sender.ID
 		if sender == "" {

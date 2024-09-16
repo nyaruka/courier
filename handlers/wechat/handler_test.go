@@ -283,14 +283,14 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	assert.Equal(t, "https://api.weixin.qq.com/cgi-bin/media/download.action?access_token=SESAME&media_id=12", req.URL.String())
 
 	// and that we have a log for that request
-	assert.Len(t, clog.HTTPLogs(), 1)
-	assert.Equal(t, "https://api.weixin.qq.com/cgi-bin/token?appid=app-id&grant_type=client_credential&secret=**********", clog.HTTPLogs()[0].URL)
+	assert.Len(t, clog.HttpLogs, 1)
+	assert.Equal(t, "https://api.weixin.qq.com/cgi-bin/token?appid=app-id&grant_type=client_credential&secret=**********", clog.HttpLogs[0].URL)
 
 	// check that another request reads token from cache
 	req, err = handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://api.weixin.qq.com/cgi-bin/media/download.action?media_id=13", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "https://api.weixin.qq.com/cgi-bin/media/download.action?access_token=SESAME&media_id=13", req.URL.String())
-	assert.Len(t, clog.HTTPLogs(), 1)
+	assert.Len(t, clog.HttpLogs, 1)
 }
 
 var defaultSendTestCases = []OutgoingTestCase{

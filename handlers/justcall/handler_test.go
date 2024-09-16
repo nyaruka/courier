@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -325,7 +326,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"+250788383383","body":"ID Error"}`,
 		}},
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("id")},
+		ExpectedLogErrors: []*clogs.LogError{courier.ErrorResponseValueMissing("id")},
 	},
 	{
 		Label:   "Error Sending",

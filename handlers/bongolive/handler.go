@@ -74,7 +74,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	if form.MsgType == 5 {
-		clog.SetType(courier.ChannelLogTypeMsgStatus)
+		clog.Type = courier.ChannelLogTypeMsgStatus
 
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -90,7 +90,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 	}
 
-	clog.SetType(courier.ChannelLogTypeMsgReceive)
+	clog.Type = courier.ChannelLogTypeMsgReceive
 
 	// create our URN
 	urn, err := urns.ParsePhone(form.From, channel.Country(), true, false)

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -59,7 +60,7 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier
 	}
 
 	// log an error than contains a value that should be redacted
-	clog.Error(courier.NewChannelError("seeds", "", "contains sesame seeds"))
+	clog.Error(clogs.NewLogError("seeds", "", "contains sesame seeds"))
 
 	if msg.Text() == "err:config" {
 		return courier.ErrChannelConfig

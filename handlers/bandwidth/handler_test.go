@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
@@ -229,7 +230,7 @@ var incomingCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "14762070468292kw2fuqty55yp2b2", Status: courier.MsgStatusFailed}},
-		ExpectedErrors:       []*courier.ChannelError{courier.ErrorExternal("4432", "forbidden to country")},
+		ExpectedErrors:       []*clogs.LogError{courier.ErrorExternal("4432", "forbidden to country")},
 	},
 }
 
