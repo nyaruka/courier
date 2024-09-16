@@ -9,9 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	dytypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
@@ -66,9 +63,7 @@ func queueChannelLog(b *backend, clog *courier.ChannelLog) {
 		return
 	}
 
-	dl := clogs.NewDynamoLog(clog.Log)
-
-	if b.dyLogWriter.Queue(dl) <= 0 {
+	if b.dyLogWriter.Queue(clog.Log) <= 0 {
 		log.With("storage", "dynamo").Error("channel log writer buffer full")
 	}
 
@@ -174,12 +169,12 @@ func writeStorageChannelLogs(ctx context.Context, s3s *s3x.Service, bucket strin
 }
 
 type DynamoLogWriter struct {
-	*syncx.Batcher[*clogs.DynamoLog]
+	*syncx.Batcher[*clogs.Log]
 }
 
 func NewDynamoLogWriter(dy *dynamo.Service, wg *sync.WaitGroup) *DynamoLogWriter {
 	return &DynamoLogWriter{
-		Batcher: syncx.NewBatcher(func(batch []*clogs.DynamoLog) {
+		Batcher: syncx.NewBatcher(func(batch []*clogs.Log) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel()
 
@@ -188,25 +183,10 @@ func NewDynamoLogWriter(dy *dynamo.Service, wg *sync.WaitGroup) *DynamoLogWriter
 	}
 }
 
-func writeDynamoChannelLogs(ctx context.Context, dy *dynamo.Service, batch []*clogs.DynamoLog) {
+func writeDynamoChannelLogs(ctx context.Context, dy *dynamo.Service, batch []*clogs.Log) {
 	log := slog.With("comp", "dynamo log writer")
 
-	var writeReqs []dytypes.WriteRequest
-	for _, l := range batch {
-		item, err := attributevalue.MarshalMap(l)
-		if err != nil {
-			log.Error("error marshalling channel log", "error", err)
-		} else {
-			writeReqs = append(writeReqs, dytypes.WriteRequest{PutRequest: &dytypes.PutRequest{Item: item}})
-		}
-	}
-
-	if len(writeReqs) > 0 {
-		_, err := dy.Client.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
-			RequestItems: map[string][]dytypes.WriteRequest{dy.TableName("ChannelLogs"): writeReqs},
-		})
-		if err != nil {
-			log.Error("error writing channel logs", "error", err)
-		}
+	if err := clogs.BulkPut(ctx, dy, batch); err != nil {
+		log.Error("error writing channel logs", "error", err)
 	}
 }
