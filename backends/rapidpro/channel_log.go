@@ -186,7 +186,7 @@ func NewDynamoLogWriter(dy *dynamo.Service, wg *sync.WaitGroup) *DynamoLogWriter
 func writeDynamoChannelLogs(ctx context.Context, dy *dynamo.Service, batch []*clogs.Log) {
 	log := slog.With("comp", "dynamo log writer")
 
-	if err := clogs.BulkPut(ctx, dy, batch); err != nil {
+	if err := clogs.BatchPut(ctx, dy, "ChannelLogs", batch); err != nil {
 		log.Error("error writing channel logs", "error", err)
 	}
 }
