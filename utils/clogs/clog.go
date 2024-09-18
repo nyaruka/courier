@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	dynamoTTL = 14 * 24 * time.Hour
+	dynamoTTL = 7 * 24 * time.Hour // 1 week
 )
 
 // LogUUID is the type of a channel log UUID (should be v7)
