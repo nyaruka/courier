@@ -1,3 +1,7 @@
+v9.3.19 (2024-09-18)
+-------------------------
+ * Stop writing channel logs to S3
+
 v9.3.18 (2024-09-12)
 -------------------------
  * Use 'tasks:handler' queue name instead of 'handler'
