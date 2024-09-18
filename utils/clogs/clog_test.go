@@ -54,7 +54,9 @@ func TestLogs(t *testing.T) {
 	l2.Error(clogs.NewLogError("code2", "ext", "message"))
 
 	// write both logs to db
-	err = clogs.BatchPut(ctx, ds, "ChannelLogs", []*clogs.Log{l1, l2})
+	err = ds.PutItem(ctx, "ChannelLogs", l1)
+	assert.NoError(t, err)
+	err = ds.PutItem(ctx, "ChannelLogs", l2)
 	assert.NoError(t, err)
 
 	// read log 1 back from db

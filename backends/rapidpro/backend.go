@@ -56,9 +56,8 @@ type backend struct {
 	config *courier.Config
 
 	statusWriter *StatusWriter
-	dbLogWriter  *DBLogWriter      // unattached logs being written to the database
-	stLogWriter  *StorageLogWriter // attached logs being written to storage
-	dyLogWriter  *DynamoLogWriter  // all logs being written to dynamo
+	dbLogWriter  *DBLogWriter     // unattached logs being written to the database
+	dyLogWriter  *DynamoLogWriter // all logs being written to dynamo
 	writerWG     *sync.WaitGroup
 
 	db     *sqlx.DB
@@ -185,16 +184,11 @@ func (b *backend) Start() error {
 		return err
 	}
 
-	// check bucket access
+	// check attachment bucket access
 	if err := b.s3.Test(ctx, b.config.S3AttachmentsBucket); err != nil {
 		log.Error("attachments bucket not accessible", "error", err)
 	} else {
 		log.Info("attachments bucket ok")
-	}
-	if err := b.s3.Test(ctx, b.config.S3LogsBucket); err != nil {
-		log.Error("logs bucket not accessible", "error", err)
-	} else {
-		log.Info("logs bucket ok")
 	}
 
 	// create and start channel caches...
@@ -223,9 +217,6 @@ func (b *backend) Start() error {
 
 	b.dbLogWriter = NewDBLogWriter(b.db, b.writerWG)
 	b.dbLogWriter.Start()
-
-	b.stLogWriter = NewStorageLogWriter(b.s3, b.config.S3LogsBucket, b.writerWG)
-	b.stLogWriter.Start()
 
 	b.dyLogWriter = NewDynamoLogWriter(b.dynamo, b.writerWG)
 	b.dyLogWriter.Start()
@@ -259,9 +250,6 @@ func (b *backend) Cleanup() error {
 	}
 	if b.dbLogWriter != nil {
 		b.dbLogWriter.Stop()
-	}
-	if b.stLogWriter != nil {
-		b.stLogWriter.Stop()
 	}
 	if b.dyLogWriter != nil {
 		b.dyLogWriter.Stop()

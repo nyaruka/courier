@@ -53,7 +53,6 @@ func testConfig() *courier.Config {
 	config.AWSSecretAccessKey = "tembatemba"
 	config.S3Endpoint = "http://localhost:9000"
 	config.S3AttachmentsBucket = "test-attachments"
-	config.S3LogsBucket = "test-attachments"
 	config.S3Minio = true
 	config.DynamoEndpoint = "http://localhost:6000"
 	config.DynamoTablePrefix = "Test"
@@ -1075,10 +1074,12 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	time.Sleep(time.Second) // give writer time to write this
 
-	_, body, err := ts.b.s3.GetObject(context.Background(), ts.b.config.S3LogsBucket, fmt.Sprintf("channels/%s/%s/%s.json", channel.UUID(), clog2.UUID[0:4], clog2.UUID))
+	// check that we can read the log back from DynamoDB
+	actualLog = &clogs.Log{}
+	err = ts.b.dynamo.GetItem(ctx, "ChannelLogs", map[string]types.AttributeValue{"UUID": &types.AttributeValueMemberS{Value: string(clog2.UUID)}}, actualLog)
 	ts.NoError(err)
-	ts.Contains(string(body), "msg_send")
-	ts.Contains(string(body), "https://api.messages.com/send.json")
+	ts.Equal(clog2.UUID, actualLog.UUID)
+	ts.Equal(courier.ChannelLogTypeMsgSend, actualLog.Type)
 
 	ts.b.db.MustExec(`DELETE FROM channels_channellog`)
 
