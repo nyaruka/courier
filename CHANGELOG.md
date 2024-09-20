@@ -1,3 +1,7 @@
+v9.3.20 (2024-09-20)
+-------------------------
+ * Ignore */* as an attachment content type
+
 v9.3.19 (2024-09-18)
 -------------------------
  * Stop writing channel logs to S3
