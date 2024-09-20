@@ -132,7 +132,7 @@ func getAttachmentType(t *httpx.Trace) (string, string) {
 	}
 
 	// if we didn't get a meaningful content type from the header, try to guess it from the body
-	if typ == "" || typ == "application/octet-stream" {
+	if typ == "" || typ == "*/*" || typ == "application/octet-stream" {
 		fileType, _ := filetype.Match(t.ResponseBody[:300])
 		if fileType != filetype.Unknown {
 			typ = fileType.MIME.Value
