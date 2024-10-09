@@ -1,3 +1,7 @@
+v9.3.21 (2024-10-09)
+-------------------------
+ * Better error logging for attachment requests
+
 v9.3.20 (2024-09-20)
 -------------------------
  * Ignore */* as an attachment content type
