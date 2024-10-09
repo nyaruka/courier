@@ -1,3 +1,7 @@
+v9.3.22 (2024-10-09)
+-------------------------
+ * Ignore reels as attachments on FBA/IG channels
+
 v9.3.21 (2024-10-09)
 -------------------------
  * Better error logging for attachment requests
