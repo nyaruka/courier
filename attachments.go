@@ -70,7 +70,7 @@ func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAtt
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetching attachment for msg #%d: %w", fa.MsgID, err)
 	}
 
 	return &fetchAttachmentResponse{Attachment: attachment, LogUUID: clog.UUID}, nil
@@ -79,7 +79,7 @@ func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAtt
 func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, attURL string, clog *ChannelLog) (*Attachment, error) {
 	parsedURL, err := url.Parse(attURL)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to parse attachment url '%s': %w", attURL, err)
 	}
 
 	var attRequest *http.Request
