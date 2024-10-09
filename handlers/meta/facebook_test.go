@@ -197,7 +197,15 @@ var facebookIncomingTests = []IncomingTestCase{
 		PrepRequest: addValidSignature,
 	},
 	{
-		Label:              "Receive Fallback Attachment",
+		Label:              "Receive unsupported reel attachment",
+		URL:                "/c/fba/receive",
+		Data:               string(test.ReadFile("./testdata/fba/reel.json")),
+		ExpectedRespStatus: 200,
+		ExpectedEvents:     []ExpectedEvent{},
+		PrepRequest:        addValidSignature,
+	},
+	{
+		Label:              "Receive unsupported fallback attachment",
 		URL:                "/c/fba/receive",
 		Data:               string(test.ReadFile("./testdata/fba/fallback.json")),
 		ExpectedRespStatus: 200,

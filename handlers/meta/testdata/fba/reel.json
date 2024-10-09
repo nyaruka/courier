@@ -1,0 +1,32 @@
+{
+	"object": "page",
+	"entry": [
+		{
+			"id": "12345",
+			"messaging": [
+				{
+					"message": {
+						"mid": "external_id",
+						"attachments": [
+							{
+								"type": "ig_reel",
+								"payload": {
+									"url": "/reel/123451234512345/",
+									"reel_video_id": 123451234512345
+								}
+							}
+						]
+					},
+					"recipient": {
+						"id": "12345"
+					},
+					"sender": {
+						"id": "5678"
+					},
+					"timestamp": 1459991487970
+				}
+			],
+			"time": 1459991487970
+		}
+	]
+}

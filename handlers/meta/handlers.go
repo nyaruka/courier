@@ -573,10 +573,9 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 					continue
 				}
 
-				if att.Payload != nil && att.Payload.URL != "" && att.Type != "fallback" {
+				if att.Payload != nil && att.Payload.URL != "" && att.Type != "fallback" && strings.HasPrefix(att.Payload.URL, "http") {
 					attachmentURLs = append(attachmentURLs, att.Payload.URL)
 				}
-
 			}
 
 			// if we have no text or accepted attachments, don't create a message
