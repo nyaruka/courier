@@ -1,3 +1,7 @@
+v9.3.23 (2024-10-16)
+-------------------------
+ * Update deps including phonenumbers to get latest metadata
+
 v9.3.22 (2024-10-09)
 -------------------------
  * Ignore reels as attachments on FBA/IG channels
