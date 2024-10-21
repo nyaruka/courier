@@ -1,3 +1,7 @@
+v9.3.24 (2024-10-21)
+-------------------------
+ * Ignore reels as attachments on FB channels
+
 v9.3.23 (2024-10-16)
 -------------------------
  * Update deps including phonenumbers to get latest metadata
