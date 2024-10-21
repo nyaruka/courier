@@ -134,6 +134,59 @@ var attachment = `{
 	}]
 }`
 
+var attachmentReel = `{
+	"object":"page",
+	"entry": [{
+		"id": "208685479508187",
+		"messaging": [{
+				"message": {
+					"mid": "external_id",
+					"attachments":[{
+					"type":"ig_reel",
+						"payload":{
+							"url":"\/reel\/1833422637182325\/"
+						}
+					}]
+				},
+				"recipient": {
+					"id": "1234"
+				},
+				"sender": {
+					"id": "5678"
+				},
+				"timestamp": 1459991487970
+		}],
+		"time": 1459991487970
+	}]
+}`
+
+var attachmentFallback = `{
+	"object":"page",
+	"entry": [{
+		"id": "208685479508187",
+		"messaging": [{
+				"message": {
+					"mid": "external_id",
+					"attachments":[{
+					"type":"fallback",
+						"payload":{
+							"url":"https://image-url/foo.png",
+							"title": "Foo"
+						}
+					}]
+				},
+				"recipient": {
+					"id": "1234"
+				},
+				"sender": {
+					"id": "5678"
+				},
+				"timestamp": 1459991487970
+		}],
+		"time": 1459991487970
+	}]
+}`
+
 var locationAttachment = `{
 	"object":"page",
 	"entry": [{
@@ -454,6 +507,22 @@ var testCases = []IncomingTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedExternalID:   "external_id",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+	},
+	{
+		Label:                "Receive unsupported reel attachment",
+		URL:                  receiveURL,
+		Data:                 attachmentReel,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Handled",
+		ExpectedEvents:       []ExpectedEvent{},
+	},
+	{
+		Label:                "Receive fallback attachment ignored",
+		URL:                  receiveURL,
+		Data:                 attachmentFallback,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Handled",
+		ExpectedEvents:       []ExpectedEvent{},
 	},
 	{
 		Label:                "Receive Location",

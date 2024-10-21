@@ -372,7 +372,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 					attachmentURLs = append(attachmentURLs, fmt.Sprintf("geo:%f,%f", att.Payload.Coordinates.Lat, att.Payload.Coordinates.Long))
 				}
 
-				if att.Payload != nil && att.Payload.URL != "" {
+				if att.Payload != nil && att.Payload.URL != "" && att.Type != "fallback" && strings.HasPrefix(att.Payload.URL, "http") {
 					attachmentURLs = append(attachmentURLs, att.Payload.URL)
 				}
 
@@ -382,6 +382,11 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			stickerText := stickerIDToEmoji[msg.Message.StickerID]
 			if stickerText != "" {
 				text = stickerText
+			}
+
+			// if we have no text or accepted attachments, don't create a message
+			if text == "" && len(attachmentURLs) == 0 {
+				continue
 			}
 
 			// create our message
