@@ -930,6 +930,72 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.False(sent)
 }
 
+func (ts *BackendTestSuite) TestOutgoingStatusUpdateOutOfOrder() {
+	// add one of our outgoing messages to the queue
+	ctx := context.Background()
+	r := ts.b.rp.Get()
+	defer r.Close()
+
+	dbMsg := readMsgFromDB(ts.b, 10000)
+	dbMsg.ChannelUUID_ = courier.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	ts.NotNil(dbMsg)
+
+	// serialize our message
+	msgJSON, err := json.Marshal([]any{dbMsg})
+	ts.NoError(err)
+
+	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
+	ts.NoError(err)
+
+	// pop a message off our queue
+	msg, err := ts.b.PopNextOutgoingMsg(ctx)
+	ts.NoError(err)
+	ts.NotNil(msg)
+
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, msg.Channel(), nil)
+
+	// make sure it is the message we just added
+	ts.Equal(dbMsg.ID(), msg.ID())
+
+	// and that it has the appropriate text
+	ts.Equal(msg.Text(), "test message")
+
+	// this message should not be marked as sent
+	sent, err := ts.b.WasMsgSent(ctx, msg.ID())
+	ts.NoError(err)
+	ts.False(sent)
+
+	// write an failed status
+	err = ts.b.WriteStatusUpdate(ctx, ts.b.NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusFailed, clog))
+	time.Sleep(time.Second) // give committer time to write this
+	ts.NoError(err)
+
+	m := readMsgFromDB(ts.b, msg.ID())
+	ts.Equal(m.Status_, courier.MsgStatusFailed)
+
+	// message should now be considered sent
+	sent, err = ts.b.WasMsgSent(ctx, msg.ID())
+	ts.NoError(err)
+	ts.True(sent)
+
+	clog = courier.NewChannelLog(courier.ChannelLogTypeUnknown, msg.Channel(), nil)
+	// mark this message as wired
+	status := ts.b.NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusWired, clog)
+	ts.b.MarkOutgoingMsgComplete(ctx, msg, status)
+	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
+	time.Sleep(time.Second) // give committer time to write this
+
+	// this message should still be marked as sent
+	sent, err = ts.b.WasMsgSent(ctx, msg.ID())
+	ts.NoError(err)
+	ts.True(sent)
+
+	time.Sleep(2 * time.Millisecond)
+	m = readMsgFromDB(ts.b, msg.ID())
+	ts.Equal(m.Status_, courier.MsgStatusWired)
+
+}
+
 func (ts *BackendTestSuite) TestChannel() {
 	noAddress := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c99a")
 	ts.Equal(i18n.Country("US"), noAddress.Country())
