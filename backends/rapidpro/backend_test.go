@@ -566,7 +566,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(m.ExternalID_, null.String("ext2"))
 	ts.Equal(pq.StringArray(nil), m.LogUUIDs)
 
-	// update to FAILED using external id
+	// update to QUEUED using external id
 	clog5 := updateStatusByExtID("ext1", courier.MsgStatusQueued)
 
 	m = readMsgFromDB(ts.b, 10000)
