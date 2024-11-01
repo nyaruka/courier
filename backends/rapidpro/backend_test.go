@@ -875,6 +875,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ctx := context.Background()
 	r := ts.b.rp.Get()
 	defer r.Close()
+	ts.clearRedis()
 
 	dbMsg := readMsgFromDB(ts.b, 10000)
 	dbMsg.ChannelUUID_ = courier.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
