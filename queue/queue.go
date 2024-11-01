@@ -227,6 +227,9 @@ var luaComplete = redis.NewScript(2, `-- KEYS: [QueueType, Queue]
 // queues with jobs in them
 func MarkComplete(conn redis.Conn, qType string, token WorkerToken) error {
 	_, err := luaComplete.Do(conn, qType, token)
+	if err != nil {
+		slog.Error("error marking job complete from queue", "error", err, "token", token)
+	}
 	return err
 }
 
