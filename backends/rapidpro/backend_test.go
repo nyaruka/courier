@@ -567,10 +567,10 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(pq.StringArray(nil), m.LogUUIDs)
 
 	// update to FAILED using external id
-	clog5 := updateStatusByExtID("ext1", courier.MsgStatusFailed)
+	clog5 := updateStatusByExtID("ext1", courier.MsgStatusQueued)
 
 	m = readMsgFromDB(ts.b, 10000)
-	ts.Equal(courier.MsgStatusFailed, m.Status_)
+	ts.Equal(courier.MsgStatusQueued, m.Status_)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.Nil(m.SentOn_)
 	ts.Equal(pq.StringArray([]string{string(clog5.UUID)}), m.LogUUIDs)
@@ -992,7 +992,7 @@ func (ts *BackendTestSuite) TestOutgoingStatusUpdateOutOfOrder() {
 
 	time.Sleep(2 * time.Millisecond)
 	m = readMsgFromDB(ts.b, msg.ID())
-	ts.Equal(m.Status_, courier.MsgStatusWired)
+	ts.Equal(m.Status_, courier.MsgStatusFailed) // status should remain failed
 
 }
 

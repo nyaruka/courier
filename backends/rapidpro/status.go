@@ -53,7 +53,7 @@ const sqlUpdateMsgByID = `
 UPDATE msgs_msg SET 
 	status = CASE 
 		WHEN 
-			s.status = 'E' 
+			s.status = 'E' OR msgs_msg.status = 'F' 
 		THEN CASE 
 			WHEN 
 				error_count >= 2 OR msgs_msg.status = 'F' 
