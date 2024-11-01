@@ -475,7 +475,7 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.MsgOu
 		rc.Send("expire", dateKey, 60*60*24*2)
 		_, err := rc.Do("")
 		if err != nil {
-			slog.Error("unable to add new unsent message", "error", err, "sent_msgs_key", dateKey)
+			slog.Error("unable to mark new sent message", "error", err, "sent_msgs_key", dateKey)
 		}
 
 		// if our msg has an associated session and timeout, update that

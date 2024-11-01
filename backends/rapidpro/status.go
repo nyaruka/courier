@@ -246,6 +246,22 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*Status
 	err := dbutil.BulkQuery(ctx, b.db, sqlUpdateMsgByID, resolved)
 	if err != nil {
 		return nil, fmt.Errorf("error updating status: %w", err)
+	} else {
+		for _, s := range resolved {
+			if s.Status() == courier.MsgStatusSent || s.Status() == courier.MsgStatusWired || s.Status() == courier.MsgStatusRead || s.Status() == courier.MsgStatusDelivered || s.Status() == courier.MsgStatusFailed {
+				rc := b.rp.Get()
+				defer rc.Close()
+
+				dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
+				rc.Send("sadd", dateKey, s.MsgID_.String())
+				rc.Send("expire", dateKey, 60*60*24*2)
+				_, err := rc.Do("")
+				if err != nil {
+					slog.Error("unable to mark new sent message", "error", err, "sent_msgs_key", dateKey)
+				}
+			}
+		}
+
 	}
 
 	return unresolved, nil
