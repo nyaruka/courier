@@ -121,10 +121,9 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 		URN_:          urn,
 		MessageCount_: 1,
 
-		NextAttempt_: now,
-		CreatedOn_:   now,
-		ModifiedOn_:  now,
-		LogUUIDs:     []string{string(clog.UUID)},
+		CreatedOn_:  now,
+		ModifiedOn_: now,
+		LogUUIDs:    []string{string(clog.UUID)},
 
 		channel:        dbChannel,
 		workerToken:    "",
