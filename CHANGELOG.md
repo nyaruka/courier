@@ -1,3 +1,9 @@
+v9.3.25 (2024-11-04)
+-------------------------
+ * Tweak healthcheck for redis to timeout after a second
+ * Don't set next attempt for incoming messages
+ * Log error when marking queue job for outgoing message complete fails
+
 v9.3.24 (2024-10-21)
 -------------------------
  * Ignore reels as attachments on FB channels
