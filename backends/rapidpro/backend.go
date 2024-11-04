@@ -709,12 +709,17 @@ func (b *backend) HttpAccess() *httpx.AccessConfig {
 // Health returns the health of this backend as a string, returning "" if all is well
 func (b *backend) Health() string {
 	// test redis
-	rc := b.rp.Get()
-	defer rc.Close()
-	_, redisErr := rc.Do("PING")
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	rc, redisErr := b.rp.GetContext(ctx)
+	cancel()
+
+	if redisErr == nil {
+		defer rc.Close()
+		_, redisErr = rc.Do("PING")
+	}
 
 	// test our db
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 	dbErr := b.db.PingContext(ctx)
 	cancel()
 
