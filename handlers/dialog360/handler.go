@@ -289,7 +289,6 @@ func (h *handler) resolveMediaURL(channel courier.Channel, mediaID string, clog 
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-
 	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	urlStr := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
@@ -297,9 +296,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return courier.ErrChannelConfig
 	}
 	sendURL, _ := url.Parse("/messages")
-
-	conn := h.Backend().RedisPool().Get()
-	defer conn.Close()
 
 	hasCaption := false
 
