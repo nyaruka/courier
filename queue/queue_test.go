@@ -90,15 +90,17 @@ func TestLua(t *testing.T) {
 	assert.Equal(t, Retry, queue)
 
 	// check our redis state
-	assertredis.ZCard(t, rc, "msgs:active", 0)
-	assertredis.ZCard(t, rc, "msgs:throttled", 1)
+	assertredis.ZGetAll(t, rc, "msgs:active", map[string]float64{})
+	assertredis.ZGetAll(t, rc, "msgs:throttled", map[string]float64{"msgs:chan1|10": 10})
+	assertredis.ZGetAll(t, rc, "msgs:future", map[string]float64{})
 
 	// adding more items shouldn't change that
 	err = PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":30}]`, LowPriority)
 	assert.NoError(t, err)
 
-	assertredis.ZCard(t, rc, "msgs:active", 0)
-	assertredis.ZCard(t, rc, "msgs:throttled", 1)
+	assertredis.ZGetAll(t, rc, "msgs:active", map[string]float64{})
+	assertredis.ZGetAll(t, rc, "msgs:throttled", map[string]float64{"msgs:chan1|10": 10})
+	assertredis.ZGetAll(t, rc, "msgs:future", map[string]float64{})
 
 	// but if we wait, our next msg should be our highest priority
 	time.Sleep(time.Second)
@@ -135,6 +137,10 @@ func TestLua(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, WorkerToken("msgs:chan1|10"), queue)
 	assert.Equal(t, `{"id":32}`, value)
+
+	assertredis.ZGetAll(t, rc, "msgs:active", map[string]float64{"msgs:chan1|10": 17})
+	assertredis.ZGetAll(t, rc, "msgs:throttled", map[string]float64{})
+	assertredis.ZGetAll(t, rc, "msgs:future", map[string]float64{"msgs:chan1|10": 0})
 
 	// sleep a few seconds
 	time.Sleep(2 * time.Second)
@@ -193,13 +199,15 @@ func TestLua(t *testing.T) {
 	}
 
 	time.Sleep(2 * time.Second)
+
 	queue, value, err = PopFromQueue(rc, "msgs")
 	assert.NoError(t, err)
 	assert.Equal(t, "", value)
 	assert.Equal(t, Retry, queue)
 
-	assertredis.ZCard(t, rc, "msgs:active", 0)
-	assertredis.ZCard(t, rc, "msgs:throttled", 1)
+	assertredis.ZGetAll(t, rc, "msgs:active", map[string]float64{})
+	assertredis.ZGetAll(t, rc, "msgs:throttled", map[string]float64{"msgs:chan1|10": 0})
+	assertredis.ZGetAll(t, rc, "msgs:future", map[string]float64{})
 
 	// but if we wait for the rate limit to expire
 	time.Sleep(3 * time.Second)
