@@ -1,3 +1,9 @@
+v9.3.26 (2024-11-05)
+-------------------------
+ * Use redisx.NewIntervalSet to track sent message ids
+ * Mark as sent in redis any message send that does result in status errored
+ * Remove request for redis connection that wasn't being used in D360 handler
+
 v9.3.25 (2024-11-04)
 -------------------------
  * Tweak healthcheck for redis to timeout after a second
