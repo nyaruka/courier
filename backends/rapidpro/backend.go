@@ -466,16 +466,19 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.MsgOu
 
 	dbMsg := msg.(*Msg)
 
-	queue.MarkComplete(rc, msgQueueName, dbMsg.workerToken)
+	if err := queue.MarkComplete(rc, msgQueueName, dbMsg.workerToken); err != nil {
+		slog.Error("unable to mark queue task complete", "error", err)
+	}
 
-	// mark as sent in redis as well if this was actually wired or sent
-	if status != nil && (status.Status() == courier.MsgStatusSent || status.Status() == courier.MsgStatusWired) {
+	// mark as sent in redis as well if message send ended in status that won't be retried
+	if status.Status() != courier.MsgStatusErrored {
 		dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
-		rc.Send("sadd", dateKey, msg.ID().String())
-		rc.Send("expire", dateKey, 60*60*24*2)
+		rc.Send("SADD", dateKey, msg.ID().String())
+		rc.Send("EXPIRE", dateKey, 60*60*24*2)
+
 		_, err := rc.Do("")
 		if err != nil {
-			slog.Error("unable to add new unsent message", "error", err, "sent_msgs_key", dateKey)
+			slog.Error("unable to mark message sent", "error", err)
 		}
 
 		// if our msg has an associated session and timeout, update that
