@@ -80,7 +80,7 @@ type Backend interface {
 	ClearMsgSent(context.Context, MsgID) error
 
 	// MarkOutgoingMsgComplete marks the passed in message as having been processed. Note this should be called even in the case
-	// of errors during sending as it will manage the number of active workers per channel. The optional status parameter can be
+	// of errors during sending as it will manage the number of active workers per channel. The status parameter can be
 	// used to determine any sort of deduping of msg sends
 	MarkOutgoingMsgComplete(context.Context, MsgOut, StatusUpdate)
 
