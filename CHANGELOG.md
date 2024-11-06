@@ -1,3 +1,7 @@
+v9.3.27 (2024-11-06)
+-------------------------
+ * Agressively close redis connections
+
 v9.3.26 (2024-11-05)
 -------------------------
  * Use redisx.NewIntervalSet to track sent message ids
