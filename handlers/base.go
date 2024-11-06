@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/httpx"
 )
@@ -147,4 +148,11 @@ func (h *BaseHandler) WriteRequestError(ctx context.Context, w http.ResponseWrit
 // WriteRequestIgnored writes an ignored payload to our response writer
 func (h *BaseHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
 	return courier.WriteIgnored(w, details)
+}
+
+// WithRedisConn is a utility to execute some code with a redis connection
+func (h *BaseHandler) WithRedisConn(fn func(rc redis.Conn)) {
+	rc := h.Backend().RedisPool().Get()
+	defer rc.Close()
+	fn(rc)
 }

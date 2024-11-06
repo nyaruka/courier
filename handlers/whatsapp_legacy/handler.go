@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
@@ -818,9 +819,11 @@ func (h *handler) fetchMediaID(msg courier.MsgOut, mediaURL string, clog *courie
 	cacheKey := fmt.Sprintf(mediaCacheKeyPattern, msg.Channel().UUID())
 	mediaCache := redisx.NewIntervalHash(cacheKey, time.Hour*24, 2)
 
-	rc := h.Backend().RedisPool().Get()
-	mediaID, err := mediaCache.Get(rc, mediaURL)
-	rc.Close()
+	var mediaID string
+	var err error
+	h.WithRedisConn(func(rc redis.Conn) {
+		mediaID, err = mediaCache.Get(rc, mediaURL)
+	})
 
 	if err != nil {
 		return "", fmt.Errorf("error reading media id from redis: %s : %s: %w", cacheKey, mediaURL, err)
@@ -882,9 +885,9 @@ func (h *handler) fetchMediaID(msg courier.MsgOut, mediaURL string, clog *courie
 	}
 
 	// put in cache
-	rc = h.Backend().RedisPool().Get()
-	err = mediaCache.Set(rc, mediaURL, mediaID)
-	rc.Close()
+	h.WithRedisConn(func(rc redis.Conn) {
+		err = mediaCache.Set(rc, mediaURL, mediaID)
+	})
 
 	if err != nil {
 		return "", fmt.Errorf("error setting media id in cache: %w", err)
@@ -907,14 +910,14 @@ func (h *handler) sendWhatsAppMsg(msg courier.MsgOut, sendPath *url.URL, payload
 	if resp != nil && (resp.StatusCode == 429 || resp.StatusCode == 503) {
 		rateLimitKey := fmt.Sprintf("rate_limit:%s", msg.Channel().UUID())
 
-		rc := h.Backend().RedisPool().Get()
-		rc.Do("SET", rateLimitKey, "engaged")
+		h.WithRedisConn(func(rc redis.Conn) {
+			rc.Do("SET", rateLimitKey, "engaged")
 
-		// The rate limit is 50 requests per second
-		// We pause sending 2 seconds so the limit count is reset
-		// TODO: In the future we should the header value when available
-		rc.Do("EXPIRE", rateLimitKey, 2)
-		rc.Close()
+			// The rate limit is 50 requests per second
+			// We pause sending 2 seconds so the limit count is reset
+			// TODO: In the future we should the header value when available
+			rc.Do("EXPIRE", rateLimitKey, 2)
+		})
 
 		return "", "", courier.ErrConnectionThrottled
 	}
@@ -927,13 +930,13 @@ func (h *handler) sendWhatsAppMsg(msg courier.MsgOut, sendPath *url.URL, payload
 		if hasTiersError(*errPayload) {
 			rateLimitBulkKey := fmt.Sprintf("rate_limit_bulk:%s", msg.Channel().UUID())
 
-			rc := h.Backend().RedisPool().Get()
-			rc.Do("SET", rateLimitBulkKey, "engaged")
+			h.WithRedisConn(func(rc redis.Conn) {
+				rc.Do("SET", rateLimitBulkKey, "engaged")
 
-			// The WA tiers spam rate limit hit
-			// We pause the bulk queue for 24 hours and 5min
-			rc.Do("EXPIRE", rateLimitBulkKey, (60*60*24)+(5*60))
-			rc.Close()
+				// The WA tiers spam rate limit hit
+				// We pause the bulk queue for 24 hours and 5min
+				rc.Do("EXPIRE", rateLimitBulkKey, (60*60*24)+(5*60))
+			})
 
 			return "", "", courier.ErrConnectionThrottled
 		}

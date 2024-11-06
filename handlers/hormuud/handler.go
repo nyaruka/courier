@@ -130,9 +130,10 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 // FetchToken gets the current token for this channel, either from Redis if cached or by requesting it
 func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg courier.MsgOut, username, password string, clog *courier.ChannelLog) (string, error) {
 	// first check whether we have it in redis
-	rc := h.Backend().RedisPool().Get()
-	token, _ := redis.String(rc.Do("GET", fmt.Sprintf("hm_token_%s", channel.UUID())))
-	rc.Close()
+	var token string
+	h.WithRedisConn(func(rc redis.Conn) {
+		token, _ = redis.String(rc.Do("GET", fmt.Sprintf("hm_token_%s", channel.UUID())))
+	})
 
 	// got a token, use it
 	if token != "" {
@@ -172,13 +173,12 @@ func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg c
 	}
 
 	// we got a token, cache it to redis with an expiration from the response(we default to 60 minutes)
-	rc = h.Backend().RedisPool().Get()
-	_, err = rc.Do("SETEX", fmt.Sprintf("hm_token_%s", channel.UUID()), expiration, token)
-	rc.Close()
-
-	if err != nil {
-		slog.Error("error caching HM access token", "error", err)
-	}
+	h.WithRedisConn(func(rc redis.Conn) {
+		_, err = rc.Do("SETEX", fmt.Sprintf("hm_token_%s", channel.UUID()), expiration, token)
+		if err != nil {
+			slog.Error("error caching HM access token", "error", err)
+		}
+	})
 
 	return token, nil
 }

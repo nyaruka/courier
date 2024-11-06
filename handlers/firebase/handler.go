@@ -343,9 +343,11 @@ func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 	h.fetchTokenMutex.Lock()
 	defer h.fetchTokenMutex.Unlock()
 
-	rc := h.Backend().RedisPool().Get()
-	token, err := redis.String(rc.Do("GET", tokenKey))
-	rc.Close()
+	var token string
+	var err error
+	h.WithRedisConn(func(rc redis.Conn) {
+		token, err = redis.String(rc.Do("GET", tokenKey))
+	})
 
 	if err != nil && err != redis.ErrNil {
 		return "", fmt.Errorf("error reading cached access token: %w", err)
@@ -360,9 +362,9 @@ func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 		return "", fmt.Errorf("error fetching new access token: %w", err)
 	}
 
-	rc = h.Backend().RedisPool().Get()
-	_, err = rc.Do("SET", tokenKey, token, "EX", int(expires/time.Second))
-	rc.Close()
+	h.WithRedisConn(func(rc redis.Conn) {
+		_, err = rc.Do("SET", tokenKey, token, "EX", int(expires/time.Second))
+	})
 
 	if err != nil {
 		return "", fmt.Errorf("error updating cached access token: %w", err)
