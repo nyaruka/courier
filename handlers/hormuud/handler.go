@@ -173,9 +173,9 @@ func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg c
 
 	// we got a token, cache it to redis with an expiration from the response(we default to 60 minutes)
 	rc = h.Backend().RedisPool().Get()
-	defer rc.Close()
-
 	_, err = rc.Do("SETEX", fmt.Sprintf("hm_token_%s", channel.UUID()), expiration, token)
+	rc.Close()
+
 	if err != nil {
 		slog.Error("error caching HM access token", "error", err)
 	}
