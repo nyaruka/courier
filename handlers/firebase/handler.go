@@ -338,15 +338,17 @@ func (h *handler) sendWithCredsJSON(msg courier.MsgOut, res *courier.SendResult,
 }
 
 func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
-	rc := h.Backend().RedisPool().Get()
-	defer rc.Close()
-
 	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID())
 
 	h.fetchTokenMutex.Lock()
 	defer h.fetchTokenMutex.Unlock()
 
-	token, err := redis.String(rc.Do("GET", tokenKey))
+	var token string
+	var err error
+	h.WithRedisConn(func(rc redis.Conn) {
+		token, err = redis.String(rc.Do("GET", tokenKey))
+	})
+
 	if err != nil && err != redis.ErrNil {
 		return "", fmt.Errorf("error reading cached access token: %w", err)
 	}
@@ -360,7 +362,10 @@ func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 		return "", fmt.Errorf("error fetching new access token: %w", err)
 	}
 
-	_, err = rc.Do("SET", tokenKey, token, "EX", int(expires/time.Second))
+	h.WithRedisConn(func(rc redis.Conn) {
+		_, err = rc.Do("SET", tokenKey, token, "EX", int(expires/time.Second))
+	})
+
 	if err != nil {
 		return "", fmt.Errorf("error updating cached access token: %w", err)
 	}

@@ -495,9 +495,6 @@ type mtErrorPayload struct {
 const maxMsgLength = 4096
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	conn := h.Backend().RedisPool().Get()
-	defer conn.Close()
-
 	// get our token
 	token := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	urlStr := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
@@ -519,7 +516,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	for _, payload := range payloads {
 		externalID := ""
-		wppID, externalID, err = h.sendWhatsAppMsg(conn, msg, sendPath, payload, clog)
+		wppID, externalID, err = h.sendWhatsAppMsg(msg, sendPath, payload, clog)
 		if err != nil {
 			return err
 		}
@@ -562,7 +559,7 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 		for attachmentCount, attachment := range msg.Attachments() {
 
 			mimeType, mediaURL := handlers.SplitAttachment(attachment)
-			mediaID, err := h.fetchMediaID(msg, mimeType, mediaURL, clog)
+			mediaID, err := h.fetchMediaID(msg, mediaURL, clog)
 			if err != nil {
 				slog.Error("error while uploading media to whatsapp", "error", err, "channel_uuid", msg.Channel().UUID())
 			}
@@ -817,14 +814,17 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 }
 
 // fetchMediaID tries to fetch the id for the uploaded media, setting the result in redis.
-func (h *handler) fetchMediaID(msg courier.MsgOut, mimeType, mediaURL string, clog *courier.ChannelLog) (string, error) {
+func (h *handler) fetchMediaID(msg courier.MsgOut, mediaURL string, clog *courier.ChannelLog) (string, error) {
 	// check in cache first
-	rc := h.Backend().RedisPool().Get()
-	defer rc.Close()
-
 	cacheKey := fmt.Sprintf(mediaCacheKeyPattern, msg.Channel().UUID())
 	mediaCache := redisx.NewIntervalHash(cacheKey, time.Hour*24, 2)
-	mediaID, err := mediaCache.Get(rc, mediaURL)
+
+	var mediaID string
+	var err error
+	h.WithRedisConn(func(rc redis.Conn) {
+		mediaID, err = mediaCache.Get(rc, mediaURL)
+	})
+
 	if err != nil {
 		return "", fmt.Errorf("error reading media id from redis: %s : %s: %w", cacheKey, mediaURL, err)
 	} else if mediaID != "" {
@@ -885,7 +885,10 @@ func (h *handler) fetchMediaID(msg courier.MsgOut, mimeType, mediaURL string, cl
 	}
 
 	// put in cache
-	err = mediaCache.Set(rc, mediaURL, mediaID)
+	h.WithRedisConn(func(rc redis.Conn) {
+		err = mediaCache.Set(rc, mediaURL, mediaID)
+	})
+
 	if err != nil {
 		return "", fmt.Errorf("error setting media id in cache: %w", err)
 	}
@@ -893,7 +896,7 @@ func (h *handler) fetchMediaID(msg courier.MsgOut, mimeType, mediaURL string, cl
 	return mediaID, nil
 }
 
-func (h *handler) sendWhatsAppMsg(rc redis.Conn, msg courier.MsgOut, sendPath *url.URL, payload any, clog *courier.ChannelLog) (string, string, error) {
+func (h *handler) sendWhatsAppMsg(msg courier.MsgOut, sendPath *url.URL, payload any, clog *courier.ChannelLog) (string, string, error) {
 	jsonBody := jsonx.MustMarshal(payload)
 
 	req, _ := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
@@ -906,12 +909,15 @@ func (h *handler) sendWhatsAppMsg(rc redis.Conn, msg courier.MsgOut, sendPath *u
 
 	if resp != nil && (resp.StatusCode == 429 || resp.StatusCode == 503) {
 		rateLimitKey := fmt.Sprintf("rate_limit:%s", msg.Channel().UUID())
-		rc.Do("SET", rateLimitKey, "engaged")
 
-		// The rate limit is 50 requests per second
-		// We pause sending 2 seconds so the limit count is reset
-		// TODO: In the future we should the header value when available
-		rc.Do("EXPIRE", rateLimitKey, 2)
+		h.WithRedisConn(func(rc redis.Conn) {
+			rc.Do("SET", rateLimitKey, "engaged")
+
+			// The rate limit is 50 requests per second
+			// We pause sending 2 seconds so the limit count is reset
+			// TODO: In the future we should the header value when available
+			rc.Do("EXPIRE", rateLimitKey, 2)
+		})
 
 		return "", "", courier.ErrConnectionThrottled
 	}
@@ -923,11 +929,14 @@ func (h *handler) sendWhatsAppMsg(rc redis.Conn, msg courier.MsgOut, sendPath *u
 	if err == nil && len(errPayload.Errors) > 0 {
 		if hasTiersError(*errPayload) {
 			rateLimitBulkKey := fmt.Sprintf("rate_limit_bulk:%s", msg.Channel().UUID())
-			rc.Do("SET", rateLimitBulkKey, "engaged")
 
-			// The WA tiers spam rate limit hit
-			// We pause the bulk queue for 24 hours and 5min
-			rc.Do("EXPIRE", rateLimitBulkKey, (60*60*24)+(5*60))
+			h.WithRedisConn(func(rc redis.Conn) {
+				rc.Do("SET", rateLimitBulkKey, "engaged")
+
+				// The WA tiers spam rate limit hit
+				// We pause the bulk queue for 24 hours and 5min
+				rc.Do("EXPIRE", rateLimitBulkKey, (60*60*24)+(5*60))
+			})
 
 			return "", "", courier.ErrConnectionThrottled
 		}
