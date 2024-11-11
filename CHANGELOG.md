@@ -1,3 +1,7 @@
+v9.3.28 (2024-11-11)
+-------------------------
+ * More closing of redis connections and logging of errors
+
 v9.3.27 (2024-11-06)
 -------------------------
  * Agressively close redis connections
