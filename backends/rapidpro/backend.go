@@ -380,48 +380,59 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 
 // PopNextOutgoingMsg pops the next message that needs to be sent
 func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error) {
-	// pop the next message off our queue
-	rc := b.rp.Get()
-	defer rc.Close()
+	tryToPop := func() (queue.WorkerToken, string, error) {
+		rc := b.rp.Get()
+		defer rc.Close()
+		return queue.PopFromQueue(rc, msgQueueName)
+	}
 
-	token, msgJSON, err := queue.PopFromQueue(rc, msgQueueName)
+	markComplete := func(token queue.WorkerToken) {
+		rc := b.rp.Get()
+		defer rc.Close()
+		if err := queue.MarkComplete(rc, msgQueueName, token); err != nil {
+			slog.Error("error marking queue task complete", "error", err)
+		}
+	}
+
+	// pop the next message off our queue
+	token, msgJSON, err := tryToPop()
 	if err != nil {
 		return nil, err
 	}
 
 	for token == queue.Retry {
-		token, msgJSON, err = queue.PopFromQueue(rc, msgQueueName)
+		token, msgJSON, err = tryToPop()
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if msgJSON != "" {
-		dbMsg := &Msg{}
-		err = json.Unmarshal([]byte(msgJSON), dbMsg)
-		if err != nil {
-			queue.MarkComplete(rc, msgQueueName, token)
-			return nil, fmt.Errorf("unable to unmarshal message: %s: %w", string(msgJSON), err)
-		}
-
-		// populate the channel on our db msg
-		channel, err := b.GetChannel(ctx, courier.AnyChannelType, dbMsg.ChannelUUID_)
-		if err != nil {
-			queue.MarkComplete(rc, msgQueueName, token)
-			return nil, err
-		}
-
-		dbMsg.Direction_ = MsgOutgoing
-		dbMsg.channel = channel.(*Channel)
-		dbMsg.workerToken = token
-
-		// clear out our seen incoming messages
-		b.clearMsgSeen(rc, dbMsg)
-
-		return dbMsg, nil
+	if msgJSON == "" {
+		return nil, nil
 	}
 
-	return nil, nil
+	dbMsg := &Msg{}
+	err = json.Unmarshal([]byte(msgJSON), dbMsg)
+	if err != nil {
+		markComplete(token)
+		return nil, fmt.Errorf("unable to unmarshal message: %s: %w", string(msgJSON), err)
+	}
+
+	// populate the channel on our db msg
+	channel, err := b.GetChannel(ctx, courier.AnyChannelType, dbMsg.ChannelUUID_)
+	if err != nil {
+		markComplete(token)
+		return nil, err
+	}
+
+	dbMsg.Direction_ = MsgOutgoing
+	dbMsg.channel = channel.(*Channel)
+	dbMsg.workerToken = token
+
+	// clear out our seen incoming messages
+	b.clearMsgSeen(dbMsg)
+
+	return dbMsg, nil
 }
 
 // WasMsgSent returns whether the passed in message has already been sent

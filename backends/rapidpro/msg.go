@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/gomodule/redigo/redis"
 	filetype "github.com/h2non/filetype"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
@@ -363,17 +362,26 @@ func (b *backend) recordMsgReceived(msg *Msg) {
 	if msg.ExternalID_ != "" {
 		fingerprint := fmt.Sprintf("%s|%s|%s", msg.Channel().UUID(), msg.URN().Identity(), msg.ExternalID())
 
-		b.receivedExternalIDs.Set(rc, fingerprint, string(msg.UUID()))
+		if err := b.receivedExternalIDs.Set(rc, fingerprint, string(msg.UUID())); err != nil {
+			slog.Error("error recording received external id", "msg", msg.UUID(), "error", err)
+		}
 	} else {
 		fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
 
-		b.receivedMsgs.Set(rc, fingerprint, fmt.Sprintf("%s|%s", msg.UUID(), msg.hash()))
+		if err := b.receivedMsgs.Set(rc, fingerprint, fmt.Sprintf("%s|%s", msg.UUID(), msg.hash())); err != nil {
+			slog.Error("error recording received msg", "msg", msg.UUID(), "error", err)
+		}
 	}
 }
 
 // clearMsgSeen clears our seen incoming messages for the passed in channel and URN
-func (b *backend) clearMsgSeen(rc redis.Conn, msg *Msg) {
+func (b *backend) clearMsgSeen(msg *Msg) {
+	rc := b.rp.Get()
+	defer rc.Close()
+
 	fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
 
-	b.receivedMsgs.Del(rc, fingerprint)
+	if err := b.receivedMsgs.Del(rc, fingerprint); err != nil {
+		slog.Error("error clearing received msgs", "urn", msg.URN().Identity(), "error", err)
+	}
 }
