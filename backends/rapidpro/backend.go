@@ -49,6 +49,15 @@ func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
 }
 
+type stats struct {
+	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments by
+	// tracking their previous values
+	dbWaitDuration    time.Duration
+	dbWaitCount       int64
+	redisWaitDuration time.Duration
+	redisWaitCount    int64
+}
+
 type backend struct {
 	config *courier.Config
 
@@ -85,11 +94,7 @@ type backend struct {
 	// tracking of external ids of messages we've sent in case we need one before its status update has been written
 	sentExternalIDs *redisx.IntervalHash
 
-	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments
-	dbWaitDuration    time.Duration
-	dbWaitCount       int64
-	redisWaitDuration time.Duration
-	redisWaitCount    int64
+	stats stats
 }
 
 // NewBackend creates a new RapidPro backend
@@ -760,20 +765,22 @@ func (b *backend) Heartbeat() error {
 	dbStats := b.db.Stats()
 	redisStats := b.rp.Stats()
 
-	dbWaitDurationInPeriod := dbStats.WaitDuration - b.dbWaitDuration
-	dbWaitCountInPeriod := dbStats.WaitCount - b.dbWaitCount
-	redisWaitDurationInPeriod := redisStats.WaitDuration - b.redisWaitDuration
-	redisWaitCountInPeriod := redisStats.WaitCount - b.redisWaitCount
+	dbWaitDurationInPeriod := dbStats.WaitDuration - b.stats.dbWaitDuration
+	dbWaitCountInPeriod := dbStats.WaitCount - b.stats.dbWaitCount
+	redisWaitDurationInPeriod := redisStats.WaitDuration - b.stats.redisWaitDuration
+	redisWaitCountInPeriod := redisStats.WaitCount - b.stats.redisWaitCount
 
-	b.dbWaitDuration = dbStats.WaitDuration
-	b.dbWaitCount = dbStats.WaitCount
-	b.redisWaitDuration = redisStats.WaitDuration
-	b.redisWaitCount = redisStats.WaitCount
+	b.stats.dbWaitDuration = dbStats.WaitDuration
+	b.stats.dbWaitCount = dbStats.WaitCount
+	b.stats.redisWaitDuration = redisStats.WaitDuration
+	b.stats.redisWaitCount = redisStats.WaitCount
 
 	analytics.Gauge("courier.db_busy", float64(dbStats.InUse))
 	analytics.Gauge("courier.db_idle", float64(dbStats.Idle))
 	analytics.Gauge("courier.db_wait_ms", float64(dbWaitDurationInPeriod/time.Millisecond))
 	analytics.Gauge("courier.db_wait_count", float64(dbWaitCountInPeriod))
+	analytics.Gauge("courier.redis_active", float64(redisStats.ActiveCount))
+	analytics.Gauge("courier.redis_idle", float64(redisStats.IdleCount))
 	analytics.Gauge("courier.redis_wait_ms", float64(redisWaitDurationInPeriod/time.Millisecond))
 	analytics.Gauge("courier.redis_wait_count", float64(redisWaitCountInPeriod))
 	analytics.Gauge("courier.bulk_queue", float64(bulkSize))
@@ -783,6 +790,8 @@ func (b *backend) Heartbeat() error {
 		"db_idle", dbStats.Idle,
 		"db_wait_time", dbWaitDurationInPeriod,
 		"db_wait_count", dbWaitCountInPeriod,
+		"redis_active", redisStats.ActiveCount,
+		"redis_idle", redisStats.IdleCount,
 		"redis_wait_time", dbWaitDurationInPeriod,
 		"redis_wait_count", dbWaitCountInPeriod,
 		"priority_size", prioritySize,
