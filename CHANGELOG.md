@@ -1,3 +1,8 @@
+v9.3.29 (2024-11-12)
+-------------------------
+ * Include redis pool active/idle counts in heartbeat stats
+ * Bump redis pool size to 64
+
 v9.3.28 (2024-11-11)
 -------------------------
  * More closing of redis connections and logging of errors
