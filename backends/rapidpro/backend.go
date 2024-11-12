@@ -156,7 +156,7 @@ func (b *backend) Start() error {
 		log.Info("db ok")
 	}
 
-	b.rp, err = redisx.NewPool(b.config.Redis)
+	b.rp, err = redisx.NewPool(b.config.Redis, redisx.WithMaxActive(b.config.MaxWorkers*2))
 	if err != nil {
 		log.Error("redis not reachable", "error", err)
 	} else {

@@ -99,12 +99,12 @@ func StartDethrottler(redis *redis.Pool, quitter chan bool, wg *sync.WaitGroup, 
 				return
 
 			case <-time.After(delay):
-				conn := redis.Get()
-				_, err := scriptDethrottle.Do(conn, qType)
+				rc := redis.Get()
+				_, err := scriptDethrottle.Do(rc, qType)
 				if err != nil {
 					slog.Error("error dethrottling", "error", err)
 				}
-				conn.Close()
+				rc.Close()
 
 				delay = time.Second - time.Duration(time.Now().UnixNano()%int64(time.Second))
 			}
