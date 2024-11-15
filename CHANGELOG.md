@@ -1,3 +1,7 @@
+v9.3.30 (2024-11-15)
+-------------------------
+ * Update deps (inc latest phonenumbers)
+
 v9.3.29 (2024-11-12)
 -------------------------
  * Include redis pool active/idle counts in heartbeat stats
