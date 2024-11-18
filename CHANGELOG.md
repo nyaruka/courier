@@ -1,3 +1,7 @@
+v9.3.31 (2024-11-18)
+-------------------------
+ * Add dummy handler type for load testing
+
 v9.3.30 (2024-11-15)
 -------------------------
  * Update deps (inc latest phonenumbers)
