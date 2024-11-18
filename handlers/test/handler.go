@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/nyaruka/courier"
@@ -32,7 +33,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	time.Sleep(time.Duration(sendDelayMs) * time.Millisecond)
 
-	if random.IntN(100) < errorPercent {
+	if random.IntN(100) < errorPercent || strings.Contains(msg.Text(), "\\error") {
 		return courier.ErrConnectionFailed
 	}
 
