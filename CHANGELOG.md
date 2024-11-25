@@ -1,3 +1,8 @@
+v9.3.32 (2024-11-25)
+-------------------------
+ * Make all WAC Throttling Errors return courier.ErrConnectionThrottled
+ * TST handler should error sends with msg text \error
+
 v9.3.31 (2024-11-18)
 -------------------------
  * Add dummy handler type for load testing
