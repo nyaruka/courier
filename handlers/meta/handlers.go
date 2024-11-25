@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -51,6 +52,8 @@ var (
 		"account":  "ACCOUNT_UPDATE",
 		"agent":    "HUMAN_AGENT",
 	}
+
+	wacThrottlingErrorCodes = []int{4, 80007, 130429, 131048, 131056, 133016}
 )
 
 // keys for extra in channel events
@@ -1090,7 +1093,7 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 		return courier.ErrResponseUnparseable
 	}
 
-	if respPayload.Error.Code == 131056 {
+	if slices.Contains(wacThrottlingErrorCodes, respPayload.Error.Code) {
 		return courier.ErrConnectionThrottled
 	}
 
