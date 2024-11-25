@@ -1090,6 +1090,10 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 		return courier.ErrResponseUnparseable
 	}
 
+	if respPayload.Error.Code == 131056 {
+		return courier.ErrConnectionThrottled
+	}
+
 	if respPayload.Error.Code != 0 {
 		return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}

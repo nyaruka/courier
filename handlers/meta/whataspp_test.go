@@ -679,6 +679,17 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseUnparseable,
 	},
 	{
+		Label:   "Error Channel Contact Pair limit hit",
+		MsgText: "Pair limit",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/12345_ID/messages": {
+				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#131056) (Business Account, Consumer Account) pair rate limit hit","code": 131056 }}`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Error",
 		MsgText: "Error",
 		MsgURN:  "whatsapp:250788123123",
