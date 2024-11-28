@@ -343,7 +343,7 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 
 func (ts *BackendTestSuite) TestContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
+	fbChannel := ts.getChannel("FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 	urn := urns.URN("tel:+12065551515")
 
@@ -356,7 +356,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
-	contact, err = contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, urn, map[string]string{"token1": "chestnut"}, "", clog)
+	contact, err = contactForURN(ctx, ts.b, fbChannel.OrgID_, fbChannel, urn, map[string]string{"token1": "chestnut"}, "", clog)
 	ts.NoError(err)
 	ts.NotNil(contact)
 
@@ -375,30 +375,30 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.NoError(err)
 
 	// then with our twilio channel
-	twURN, err := getOrCreateContactURN(tx, twChannel, contact.ID_, urn, nil)
+	fbURN, err := getOrCreateContactURN(tx, fbChannel, contact.ID_, urn, nil)
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
 	// should be the same URN
-	ts.Equal(knURN.ID, twURN.ID)
+	ts.Equal(knURN.ID, fbURN.ID)
 
 	// same contact
-	ts.Equal(knURN.ContactID, twURN.ContactID)
+	ts.Equal(knURN.ContactID, fbURN.ContactID)
 
-	// and channel should be set to twitter
-	ts.Equal(twURN.ChannelID, twChannel.ID())
+	// and channel should be set to facebook
+	ts.Equal(fbURN.ChannelID, fbChannel.ID())
 
 	// auth should be unchanged
-	ts.Equal(null.Map[string]{"token1": "chestnut", "token2": "sesame"}, twURN.AuthTokens)
+	ts.Equal(null.Map[string]{"token1": "chestnut", "token2": "sesame"}, fbURN.AuthTokens)
 
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
 
 	// again with different auth
-	twURN, err = getOrCreateContactURN(tx, twChannel, contact.ID_, urn, map[string]string{"token3": "peanut"})
+	fbURN, err = getOrCreateContactURN(tx, fbChannel, contact.ID_, urn, map[string]string{"token3": "peanut"})
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
-	ts.Equal(null.Map[string]{"token1": "chestnut", "token2": "sesame", "token3": "peanut"}, twURN.AuthTokens)
+	ts.Equal(null.Map[string]{"token1": "chestnut", "token2": "sesame", "token3": "peanut"}, fbURN.AuthTokens)
 
 	// test that we don't use display when looking up URNs
 	tgChannel := ts.getChannel("TG", "dbc126ed-66bc-4e28-b67b-81dc3327c98a")
@@ -449,9 +449,9 @@ func (ts *BackendTestSuite) TestContactURN() {
 
 func (ts *BackendTestSuite) TestContactURNPriority() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
+	fbChannel := ts.getChannel("FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
 	knURN := urns.URN("tel:+12065551111")
-	twURN := urns.URN("tel:+12065552222")
+	fbURN := urns.URN("tel:+12065552222")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 
 	ctx := context.Background()
@@ -462,30 +462,30 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
-	_, err = getOrCreateContactURN(tx, twChannel, knContact.ID_, twURN, nil)
+	_, err = getOrCreateContactURN(tx, fbChannel, knContact.ID_, fbURN, nil)
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
 	// ok, now looking up our contact should reset our URNs and their affinity..
-	// TwitterURN should be first all all URNs should now use Twitter channel
-	twContact, err := contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, twURN, nil, "", clog)
+	// FacebookURN should be first all all URNs should now use Facebook channel
+	fbContact, err := contactForURN(ctx, ts.b, fbChannel.OrgID_, fbChannel, fbURN, nil, "", clog)
 	ts.NoError(err)
 
-	ts.Equal(twContact.ID_, knContact.ID_)
+	ts.Equal(fbContact.ID_, knContact.ID_)
 
 	// get all the URNs for this contact
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
 
-	urns, err := getURNsForContact(tx, twContact.ID_)
+	urns, err := getURNsForContact(tx, fbContact.ID_)
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
 	ts.Equal("tel:+12065552222", urns[0].Identity)
-	ts.Equal(twChannel.ID(), urns[0].ChannelID)
+	ts.Equal(fbChannel.ID(), urns[0].ChannelID)
 
 	ts.Equal("tel:+12065551111", urns[1].Identity)
-	ts.Equal(twChannel.ID(), urns[1].ChannelID)
+	ts.Equal(fbChannel.ID(), urns[1].ChannelID)
 }
 
 func (ts *BackendTestSuite) TestMsgStatus() {
@@ -777,7 +777,7 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 
 	ctx := context.Background()
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
+	twChannel := ts.getChannel("FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
 	urn := urns.URN("tel:+12065551215")
 	urn2 := urns.URN("tel:+12065551277")
 

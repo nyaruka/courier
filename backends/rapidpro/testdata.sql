@@ -9,7 +9,7 @@ INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modifi
                       VALUES('10', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c95d', 'KN', '2500', 1, 'RW', 'SR', 'A', '{ "encoding": "smart", "use_national": true, "max_length_int": 320, "max_length_str": "320" }');
 
 INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "log_policy", "config")
-                      VALUES('11', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c96a', 'TW', '4500', 1, 'US', 'SR', 'A', '{}');
+                      VALUES('11', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c96a', 'FBA', '4500', 1, 'US', 'SR', 'A', '{}');
 
 INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "log_policy", "config")
                       VALUES('12', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c97a', 'DM', '4500', 1, 'US', 'SR', 'A', '{}');
