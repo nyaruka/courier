@@ -575,7 +575,7 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 				}
 				payload.Audio = mediaPayload
 				payloads = append(payloads, payload)
-			} else if strings.HasPrefix(mimeType, "application") {
+			} else if strings.HasPrefix(mimeType, "application") || strings.HasPrefix(mimeType, "document") {
 				payload := mtDocumentPayload{
 					To:   msg.URN().Path(),
 					Type: "document",
