@@ -563,6 +563,21 @@ var facebookOutgoingTests = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
+		Label:          "Document attachment, document link",
+		MsgURN:         "facebook:12345",
+		MsgAttachments: []string{"document:https://foo.bar/document.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://graph.facebook.com/v17.0/me/messages*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{"access_token": {"a123"}},
+			Body:   `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"file","payload":{"url":"https://foo.bar/document.pdf","is_reusable":true}}}}`,
+		}},
+		ExpectedExtIDs: []string{"mid.133"},
+	},
+	{
 		Label:    "Opt-in request",
 		MsgURN:   "facebook:12345",
 		MsgOptIn: &courier.OptInReference{ID: 3456, Name: "Joke Of The Day"},

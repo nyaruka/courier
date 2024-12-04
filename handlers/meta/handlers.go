@@ -690,7 +690,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 			payload.Message.Attachment = &messenger.Attachment{}
 			attType, attURL := handlers.SplitAttachment(part.Attachment)
 			attType = strings.Split(attType, "/")[0]
-			if attType == "application" {
+			if attType == "application" || attType == "document" {
 				attType = "file"
 			}
 			payload.Message.Attachment.Type = attType

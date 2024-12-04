@@ -354,6 +354,24 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
+		Label:          "Document Send, document link",
+		MsgText:        "document caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"document:https://foo.bar/document.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/12345_ID/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/12345_ID/messages",
+				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`,
+			},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
 		Label:          "Image Send",
 		MsgText:        "image caption",
 		MsgURN:         "whatsapp:250788123123",

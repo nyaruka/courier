@@ -719,6 +719,21 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
+		Label:          "Document Send, document link",
+		MsgText:        "document caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"document:https://foo.bar/document.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Body: `{"to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
 		Label:          "Image Send",
 		MsgText:        "document caption",
 		MsgURN:         "whatsapp:250788123123",

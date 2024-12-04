@@ -33,6 +33,9 @@ func GetTemplatePayload(templating *courier.Templating) *Template {
 				if p.Type != "text" {
 					attType, attURL := handlers.SplitAttachment(p.Value)
 					attType = strings.Split(attType, "/")[0]
+					if attType == "application" {
+						attType = "document"
+					}
 
 					if attType == "image" {
 						component.Params = append(component.Params, &Param{Type: "image", Image: &struct {
@@ -42,7 +45,7 @@ func GetTemplatePayload(templating *courier.Templating) *Template {
 						component.Params = append(component.Params, &Param{Type: "video", Video: &struct {
 							Link string "json:\"link,omitempty\""
 						}{Link: attURL}})
-					} else if attType == "application" {
+					} else if attType == "document" {
 						component.Params = append(component.Params, &Param{Type: "document", Document: &struct {
 							Link string "json:\"link,omitempty\""
 						}{Link: attURL}})
