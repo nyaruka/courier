@@ -1,3 +1,8 @@
+v9.3.33 (2024-12-04)
+-------------------------
+ * Add support for document send with link when attachment type is document
+ * Remove TWT channel type
+
 v9.3.32 (2024-11-25)
 -------------------------
  * Make all WAC Throttling Errors return courier.ErrConnectionThrottled
