@@ -149,7 +149,8 @@ type Param struct {
 		Link string `json:"link,omitempty"`
 	} `json:"video,omitempty"`
 	Document *struct {
-		Link string `json:"link,omitempty"`
+		Link     string `json:"link,omitempty"`
+		Filename string `json:"filename,omitempty"`
 	} `json:"document,omitempty"`
 }
 
