@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 )
 
 func GetTemplatePayload(templating *courier.Templating) *Template {
@@ -46,9 +47,11 @@ func GetTemplatePayload(templating *courier.Templating) *Template {
 							Link string "json:\"link,omitempty\""
 						}{Link: attURL}})
 					} else if attType == "document" {
+						filename, _ := utils.BasePathForURL(attURL)
 						component.Params = append(component.Params, &Param{Type: "document", Document: &struct {
-							Link string "json:\"link,omitempty\""
-						}{Link: attURL}})
+							Link     string "json:\"link,omitempty\""
+							Filename string `json:"filename,omitempty"`
+						}{Link: attURL, Filename: filename}})
 					}
 				} else {
 					component.Params = append(component.Params, &Param{Type: p.Type, Text: p.Value})
