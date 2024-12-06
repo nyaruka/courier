@@ -1,3 +1,7 @@
+v9.3.34 (2024-12-06)
+-------------------------
+ * Fix WA template document  name
+
 v9.3.33 (2024-12-04)
 -------------------------
  * Add support for document send with link when attachment type is document
