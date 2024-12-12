@@ -190,7 +190,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgURN:    "instagram:12345",
 		MsgOrigin: courier.MsgOriginChat,
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v17.0/me/messages*": {
+			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
 			},
 		},
@@ -206,7 +206,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgURN:    "instagram:12345",
 		MsgOrigin: courier.MsgOriginBroadcast,
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v17.0/me/messages*": {
+			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
 			},
 		},
@@ -223,7 +223,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgOrigin:               courier.MsgOriginFlow,
 		MsgResponseToExternalID: "23526",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v17.0/me/messages*": {
+			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
 			},
 		},
@@ -240,7 +240,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgOrigin:       courier.MsgOriginBroadcast,
 		MsgQuickReplies: []string{"Yes", "No"},
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v17.0/me/messages*": {
+			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
 			},
 		},
@@ -257,7 +257,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgQuickReplies: []string{"Yes", "No"},
 		MsgTopic:        "account",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v17.0/me/messages*": {
+			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
 			},
@@ -279,7 +279,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgURN:         "instagram:12345",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v17.0/me/messages*": {
+			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
 			},
 		},
@@ -297,7 +297,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgQuickReplies: []string{"Yes", "No"},
 		MsgTopic:        "event",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v17.0/me/messages*": {
+			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
 			},
@@ -320,7 +320,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgURN:   "instagram:12345",
 		MsgTopic: "agent",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v17.0/me/messages*": {
+			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
 			},
 		},
@@ -335,7 +335,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgURN:         "instagram:12345",
 		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v17.0/me/messages*": {
+			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
 			},
 		},
@@ -350,7 +350,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgText: "ID Error",
 		MsgURN:  "instagram:12345",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v17.0/me/messages*": {
+			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
@@ -361,7 +361,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgText: "Error",
 		MsgURN:  "instagram:12345",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v17.0/me/messages*": {
+			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(403, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
@@ -372,7 +372,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgText: "Error",
 		MsgURN:  "instagram:12345",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v17.0/me/messages*": {
+			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`bad json`)),
 			},
 		},
@@ -383,7 +383,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgText: "Error",
 		MsgURN:  "instagram:12345",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v17.0/me/messages*": {
+			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "error": {"message": "The image size is too large.","code": 36000 }}`)),
 			},
 		},
