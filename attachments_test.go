@@ -67,7 +67,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	att, err = courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello2", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "image/jpeg", att.ContentType)
-	assert.Equal(t, "https://backend.com/attachments/547deaf7-7620-4434-95b3-58675999c4b7.jpe", att.URL)
+	assert.Equal(t, "https://backend.com/attachments/547deaf7-7620-4434-95b3-58675999c4b7.jpg", att.URL)
 	assert.Equal(t, 17301, att.Size)
 
 	assert.Len(t, mb.SavedAttachments(), 2)

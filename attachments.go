@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/h2non/filetype"
@@ -155,6 +156,10 @@ func getAttachmentType(t *httpx.Trace) (string, string) {
 		extensions, err := mime.ExtensionsByType(typ)
 		if len(extensions) > 0 && err == nil {
 			ext = extensions[0][1:]
+			if slices.Contains([]string{"jpe", "jfif"}, ext) {
+				ext = "jpg"
+			}
+
 		}
 	}
 
