@@ -1,3 +1,8 @@
+v9.3.35 (2024-12-12)
+-------------------------
+ * Simplify JPE and JFIF extensions to be saved as JPG
+ * Update Facebook API version to v18.0
+
 v9.3.34 (2024-12-06)
 -------------------------
  * Fix WA template document  name
