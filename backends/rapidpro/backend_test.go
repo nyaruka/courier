@@ -43,7 +43,7 @@ type BackendTestSuite struct {
 	b *backend
 }
 
-func testConfig() *runtime.Config {
+func testRuntime() *runtime.Runtime {
 	config := runtime.NewDefaultConfig()
 	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
@@ -58,7 +58,7 @@ func testConfig() *runtime.Config {
 	config.DynamoEndpoint = "http://localhost:6000"
 	config.DynamoTablePrefix = "Test"
 
-	return config
+	return &runtime.Runtime{Config: config}
 }
 
 func (ts *BackendTestSuite) SetupSuite() {
@@ -67,7 +67,7 @@ func (ts *BackendTestSuite) SetupSuite() {
 	// turn off logging
 	log.SetOutput(io.Discard)
 
-	b, err := courier.NewBackend(&runtime.Runtime{Config: testConfig()})
+	b, err := courier.NewBackend(testRuntime())
 	noError(err)
 
 	ts.b = b.(*backend)

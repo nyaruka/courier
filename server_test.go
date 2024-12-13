@@ -21,24 +21,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testConfig() *runtime.Config {
+func testRuntime() *runtime.Runtime {
 	config := runtime.NewDefaultConfig()
 	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	config.Port = 8081
-	return config
+	return &runtime.Runtime{Config: config}
 }
 
 func TestServerURLs(t *testing.T) {
 	logger := slog.Default()
-	config := testConfig()
-	config.StatusUsername = "admin"
-	config.StatusPassword = "password123"
+	rt := testRuntime()
+	rt.Config.StatusUsername = "admin"
+	rt.Config.StatusPassword = "password123"
 
 	mb := test.NewMockBackend()
 	mb.AddChannel(test.NewMockChannel("95710b36-855d-4832-a723-5f71f73688a0", "MCK", "12345", "RW", []string{urns.Phone.Prefix}, nil))
 
-	server := courier.NewServerWithLogger(&runtime.Runtime{Config: config}, mb, logger)
+	server := courier.NewServerWithLogger(rt, mb, logger)
 	server.Start()
 	defer server.Stop()
 
@@ -84,7 +84,7 @@ func TestServerURLs(t *testing.T) {
 func TestIncoming(t *testing.T) {
 	// create and start our backend and server
 	mb := test.NewMockBackend()
-	s := courier.NewServer(&runtime.Runtime{Config: testConfig()}, mb)
+	s := courier.NewServer(testRuntime(), mb)
 
 	s.Start()
 	defer s.Stop()
@@ -131,7 +131,7 @@ func TestOutgoing(t *testing.T) {
 
 	// create and start our backend and server
 	mb := test.NewMockBackend()
-	s := courier.NewServer(&runtime.Runtime{Config: testConfig()}, mb)
+	s := courier.NewServer(testRuntime(), mb)
 
 	s.Start()
 	defer s.Stop()
