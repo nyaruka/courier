@@ -78,7 +78,7 @@ type IncomingTestCase struct {
 func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBodyContains string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
 	var err error
-	url := fmt.Sprintf("https://%s%s", s.Config().Domain, path)
+	url := fmt.Sprintf("https://%s%s", s.Runtime().Config.Domain, path)
 
 	if data != "" {
 		req, err = http.NewRequest(http.MethodPost, url, strings.NewReader(data))
@@ -145,7 +145,7 @@ func newServer(backend courier.Backend) courier.Server {
 	config.FacebookApplicationSecret = "fb_app_secret"
 	config.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
 
-	return courier.NewServerWithLogger(config, backend, logger)
+	return courier.NewServerWithLogger(&runtime.Runtime{config}, backend, logger)
 
 }
 

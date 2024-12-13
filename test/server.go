@@ -11,22 +11,22 @@ import (
 
 type MockServer struct {
 	backend courier.Backend
-	config  *runtime.Config
+	rt      *runtime.Runtime
 
 	stopChan chan bool
 	stopped  bool
 }
 
-func NewMockServer(config *runtime.Config, backend courier.Backend) courier.Server {
+func NewMockServer(rt *runtime.Runtime, backend courier.Backend) courier.Server {
 	return &MockServer{
 		backend:  backend,
-		config:   config,
+		rt:       rt,
 		stopChan: make(chan bool),
 	}
 }
 
-func (ms *MockServer) Config() *runtime.Config {
-	return ms.config
+func (ms *MockServer) Runtime() *runtime.Runtime {
+	return ms.rt
 }
 
 func (ms *MockServer) AddHandlerRoute(handler courier.ChannelHandler, method string, action string, logType clogs.LogType, handlerFunc courier.ChannelHandleFunc) {

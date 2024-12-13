@@ -178,7 +178,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 
 	// build our callback URL
-	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	callbackDomain := msg.Channel().CallbackDomain(h.Server().Runtime().Config.Domain)
 	callbackURL := fmt.Sprintf("https://%s/c/nx/%s/status", callbackDomain, msg.Channel().UUID())
 
 	text := handlers.GetTextAndAttachments(msg)

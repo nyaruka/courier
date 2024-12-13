@@ -303,7 +303,7 @@ func TestFacebookDescribeURN(t *testing.T) {
 
 	channel := facebookTestChannels[0]
 	handler := newHandler("FBA", "Facebook")
-	handler.Initialize(test.NewMockServer(runtime.NewDefaultConfig(), test.NewMockBackend()))
+	handler.Initialize(test.NewMockServer(&runtime.Runtime{runtime.NewDefaultConfig()}, test.NewMockBackend()))
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -674,7 +674,7 @@ func TestSigning(t *testing.T) {
 
 func TestFacebookBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
-	s := courier.NewServer(runtime.NewDefaultConfig(), mb)
+	s := courier.NewServer(&runtime.Runtime{Config: runtime.NewDefaultConfig()}, mb)
 
 	handler := &handler{NewBaseHandler(courier.ChannelType("FBA"), "Facebook", DisableUUIDRouting())}
 	handler.Initialize(s)

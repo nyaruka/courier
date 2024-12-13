@@ -37,7 +37,7 @@ const (
 // Server is the main interface ChannelHandlers use to interact with backends. It provides an
 // abstraction that makes mocking easier for isolated unit tests
 type Server interface {
-	Config() *runtime.Config
+	Runtime() *runtime.Runtime
 
 	AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.LogType, handlerFunc ChannelHandleFunc)
 	GetHandler(Channel) ChannelHandler
@@ -56,15 +56,15 @@ type Server interface {
 
 // NewServer creates a new Server for the passed in configuration. The server will have to be started
 // afterwards, which is when configuration options are checked.
-func NewServer(config *runtime.Config, backend Backend) Server {
+func NewServer(rt *runtime.Runtime, backend Backend) Server {
 	// create our top level router
 	logger := slog.Default()
-	return NewServerWithLogger(config, backend, logger)
+	return NewServerWithLogger(rt, backend, logger)
 }
 
 // NewServerWithLogger creates a new Server for the passed in configuration. The server will have to be started
 // afterwards, which is when configuration options are checked.
-func NewServerWithLogger(config *runtime.Config, backend Backend, logger *slog.Logger) Server {
+func NewServerWithLogger(rt *runtime.Runtime, backend Backend, logger *slog.Logger) Server {
 	router := chi.NewRouter()
 	router.Use(middleware.Compress(flate.DefaultCompression))
 	router.Use(middleware.StripSlashes)
@@ -77,7 +77,7 @@ func NewServerWithLogger(config *runtime.Config, backend Backend, logger *slog.L
 	router.Mount("/c/", publicRouter)
 
 	return &server{
-		config:  config,
+		rt:      rt,
 		backend: backend,
 
 		router:       router,
@@ -95,8 +95,8 @@ func NewServerWithLogger(config *runtime.Config, backend Backend, logger *slog.L
 func (s *server) Start() error {
 	// configure librato if we have configuration options for it
 	host, _ := os.Hostname()
-	if s.config.LibratoUsername != "" {
-		analytics.RegisterBackend(analytics.NewLibrato(s.config.LibratoUsername, s.config.LibratoToken, host, time.Second, s.waitGroup))
+	if s.rt.Config.LibratoUsername != "" {
+		analytics.RegisterBackend(analytics.NewLibrato(s.rt.Config.LibratoUsername, s.rt.Config.LibratoToken, host, time.Second, s.waitGroup))
 	}
 
 	analytics.Start()
@@ -122,7 +122,7 @@ func (s *server) Start() error {
 
 	// configure timeouts on our server
 	s.httpServer = &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", s.config.Address, s.config.Port),
+		Addr:         fmt.Sprintf("%s:%d", s.rt.Config.Address, s.rt.Config.Port),
 		Handler:      s.router,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 45 * time.Second,
@@ -159,15 +159,15 @@ func (s *server) Start() error {
 		}
 	}()
 
-	slog.Info(fmt.Sprintf("server listening on %d", s.config.Port),
+	slog.Info(fmt.Sprintf("server listening on %d", s.rt.Config.Port),
 		"comp", "server",
-		"port", s.config.Port,
+		"port", s.rt.Config.Port,
 		"state", "started",
-		"version", s.config.Version,
+		"version", s.rt.Config.Version,
 	)
 
 	// start our foreman for outgoing messages
-	s.foreman = NewForeman(s, s.config.MaxWorkers)
+	s.foreman = NewForeman(s, s.rt.Config.MaxWorkers)
 	s.foreman.Start()
 
 	return nil
@@ -211,7 +211,7 @@ func (s *server) GetHandler(ch Channel) ChannelHandler { return activeHandlers[c
 
 func (s *server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
 func (s *server) StopChan() chan bool        { return s.stopChan }
-func (s *server) Config() *runtime.Config    { return s.config }
+func (s *server) Runtime() *runtime.Runtime  { return s.rt }
 func (s *server) Stopped() bool              { return s.stopped }
 
 func (s *server) Backend() Backend   { return s.backend }
@@ -226,7 +226,7 @@ type server struct {
 
 	foreman *Foreman
 
-	config *runtime.Config
+	rt *runtime.Runtime
 
 	waitGroup *sync.WaitGroup
 	stopChan  chan bool
@@ -236,8 +236,8 @@ type server struct {
 }
 
 func (s *server) initializeChannelHandlers() {
-	includes := s.config.IncludeChannels
-	excludes := s.config.ExcludeChannels
+	includes := s.rt.Config.IncludeChannels
+	excludes := s.rt.Config.ExcludeChannels
 
 	// initialize handlers which are included/not-excluded in the config
 	for _, handler := range registeredHandlers {
@@ -377,7 +377,7 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
 	buf.WriteString("<html><head><title>courier</title></head><body><pre>\n")
 	buf.WriteString(splash)
-	buf.WriteString(s.config.Version)
+	buf.WriteString(s.rt.Config.Version)
 	buf.WriteString(s.backend.Health())
 	buf.WriteString("\n\n")
 	buf.WriteString(strings.Join(s.chanRoutes, "\n"))
@@ -392,7 +392,7 @@ func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
 	buf.WriteString("<html><head><title>courier</title></head><body><pre>\n")
 	buf.WriteString(splash)
-	buf.WriteString(s.config.Version)
+	buf.WriteString(s.rt.Config.Version)
 	buf.WriteString("\n\n")
 	buf.WriteString(s.backend.Status())
 	buf.WriteString("\n\n")
@@ -438,9 +438,9 @@ func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
 // wraps a handler to make it use basic auth
 func (s *server) basicAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if s.config.StatusUsername != "" {
+		if s.rt.Config.StatusUsername != "" {
 			user, pass, ok := r.BasicAuth()
-			if !ok || user != s.config.StatusUsername || pass != s.config.StatusPassword {
+			if !ok || user != s.rt.Config.StatusUsername || pass != s.rt.Config.StatusPassword {
 				w.Header().Set("Content-Type", "text/plain")
 				w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
 				w.WriteHeader(http.StatusUnauthorized)
@@ -456,7 +456,7 @@ func (s *server) basicAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 func (s *server) tokenAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") || authHeader[7:] != s.config.AuthToken {
+		if !strings.HasPrefix(authHeader, "Bearer ") || authHeader[7:] != s.rt.Config.AuthToken {
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorized"))

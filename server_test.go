@@ -38,7 +38,7 @@ func TestServerURLs(t *testing.T) {
 	mb := test.NewMockBackend()
 	mb.AddChannel(test.NewMockChannel("95710b36-855d-4832-a723-5f71f73688a0", "MCK", "12345", "RW", []string{urns.Phone.Prefix}, nil))
 
-	server := courier.NewServerWithLogger(config, mb, logger)
+	server := courier.NewServerWithLogger(&runtime.Runtime{Config: config}, mb, logger)
 	server.Start()
 	defer server.Stop()
 
@@ -84,7 +84,7 @@ func TestServerURLs(t *testing.T) {
 func TestIncoming(t *testing.T) {
 	// create and start our backend and server
 	mb := test.NewMockBackend()
-	s := courier.NewServer(testConfig(), mb)
+	s := courier.NewServer(&runtime.Runtime{Config: testConfig()}, mb)
 
 	s.Start()
 	defer s.Stop()
@@ -131,7 +131,7 @@ func TestOutgoing(t *testing.T) {
 
 	// create and start our backend and server
 	mb := test.NewMockBackend()
-	s := courier.NewServer(testConfig(), mb)
+	s := courier.NewServer(&runtime.Runtime{Config: testConfig()}, mb)
 
 	s.Start()
 	defer s.Stop()
@@ -255,7 +255,7 @@ func TestFetchAttachment(t *testing.T) {
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 	mb.AddChannel(mockChannel)
 
-	server := courier.NewServerWithLogger(config, mb, logger)
+	server := courier.NewServerWithLogger(&runtime.Runtime{config}, mb, logger)
 	server.Start()
 	defer server.Stop()
 

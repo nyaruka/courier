@@ -129,7 +129,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return courier.ErrChannelConfig
 	}
 
-	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	callbackDomain := msg.Channel().CallbackDomain(h.Server().Runtime().Config.Domain)
 	statusURL := fmt.Sprintf("https://%s/c/hx/%s/status", callbackDomain, msg.Channel().UUID())
 	receiveURL := fmt.Sprintf("https://%s/c/hx/%s/receive", callbackDomain, msg.Channel().UUID())
 

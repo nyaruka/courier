@@ -267,7 +267,7 @@ func newServer(backend courier.Backend) courier.Server {
 	config := runtime.NewDefaultConfig()
 	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
-	return courier.NewServerWithLogger(config, backend, logger)
+	return courier.NewServerWithLogger(&runtime.Runtime{config}, backend, logger)
 }
 
 func TestDescribeURN(t *testing.T) {

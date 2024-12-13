@@ -11,6 +11,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/runtime"
 	slogmulti "github.com/samber/slog-multi"
 	slogsentry "github.com/samber/slog-sentry"
 
@@ -74,7 +75,6 @@ import (
 	_ "github.com/nyaruka/courier/handlers/whatsapp_legacy"
 	_ "github.com/nyaruka/courier/handlers/yo"
 	_ "github.com/nyaruka/courier/handlers/zenvia"
-	"github.com/nyaruka/courier/runtime"
 
 	// load available backends
 	_ "github.com/nyaruka/courier/backends/rapidpro"
@@ -121,7 +121,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	server := courier.NewServer(config, backend)
+	server := courier.NewServer(&runtime.Runtime{config}, backend)
 	err = server.Start()
 	if err != nil {
 		log.Error("unable to start server", "error", err)

@@ -115,7 +115,7 @@ func (h *BaseHandler) RequestHTTPWithClient(client *http.Client, req *http.Reque
 	var resp *http.Response
 	var body []byte
 
-	req.Header.Set("User-Agent", fmt.Sprintf("Courier/%s", h.server.Config().Version))
+	req.Header.Set("User-Agent", fmt.Sprintf("Courier/%s", h.server.Runtime().Config.Version))
 
 	trace, err := httpx.DoTrace(client, req, nil, h.backend.HttpAccess(), 0)
 	if trace != nil {

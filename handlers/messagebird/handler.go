@@ -288,7 +288,7 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	CalledURL := fmt.Sprintf("https://%s%s", c.CallbackDomain(h.Server().Config().Domain), r.URL.Path)
+	CalledURL := fmt.Sprintf("https://%s%s", c.CallbackDomain(h.Server().Runtime().Config.Domain), r.URL.Path)
 	expectedURLHash := calculateSignature([]byte(CalledURL))
 	URLHash := verifiedToken["url_hash"].(string)
 

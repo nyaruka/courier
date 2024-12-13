@@ -373,7 +373,7 @@ func TestDescribeURN(t *testing.T) {
 	defer func() { apiBaseURL = realAPIUrl }()
 
 	handler := newHandler()
-	handler.Initialize(test.NewMockServer(runtime.NewDefaultConfig(), test.NewMockBackend()))
+	handler.Initialize(test.NewMockServer(&runtime.Runtime{runtime.NewDefaultConfig()}, test.NewMockBackend()))
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 	urn, _ := urns.New(urns.VK, "123456789")
 	data := map[string]string{"name": "John Doe"}

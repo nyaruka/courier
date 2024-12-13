@@ -451,7 +451,7 @@ func TestInstagramDescribeURN(t *testing.T) {
 
 	channel := instgramTestChannels[0]
 	handler := newHandler("IG", "Instagram")
-	handler.Initialize(test.NewMockServer(runtime.NewDefaultConfig(), test.NewMockBackend()))
+	handler.Initialize(test.NewMockServer(&runtime.Runtime{runtime.NewDefaultConfig()}, test.NewMockBackend()))
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -472,7 +472,7 @@ func TestInstagramDescribeURN(t *testing.T) {
 
 func TestInstagramBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
-	s := courier.NewServer(runtime.NewDefaultConfig(), mb)
+	s := courier.NewServer(&runtime.Runtime{Config: runtime.NewDefaultConfig()}, mb)
 
 	handler := &handler{NewBaseHandler(courier.ChannelType("IG"), "Instagram", DisableUUIDRouting())}
 	handler.Initialize(s)

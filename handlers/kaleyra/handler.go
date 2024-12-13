@@ -237,7 +237,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 }
 
 func (h *handler) newSendForm(channel courier.Channel, msgType, toContact string) map[string]string {
-	callbackDomain := channel.CallbackDomain(h.Server().Config().Domain)
+	callbackDomain := channel.CallbackDomain(h.Server().Runtime().Config.Domain)
 	statusURL := fmt.Sprintf("https://%s/c/kwa/%s/status", callbackDomain, channel.UUID())
 
 	return map[string]string{
