@@ -115,13 +115,13 @@ func main() {
 	log.Info("starting courier", "version", version, "released", date)
 
 	// load our backend
-	backend, err := courier.NewBackend(config)
+	backend, err := courier.NewBackend(&runtime.Runtime{Config: config})
 	if err != nil {
 		log.Error("error creating backend", "error", err)
 		os.Exit(1)
 	}
 
-	server := courier.NewServer(&runtime.Runtime{config}, backend)
+	server := courier.NewServer(&runtime.Runtime{Config: config}, backend)
 	err = server.Start()
 	if err != nil {
 		log.Error("unable to start server", "error", err)
