@@ -232,7 +232,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.MsgIn, clog *courier.
 
 	// if we failed write to spool
 	if err != nil {
-		err = courier.WriteToSpool(b.config.SpoolDir, "msgs", m)
+		err = courier.WriteToSpool(b.rt.Config.SpoolDir, "msgs", m)
 	}
 
 	// mark this msg as having been seen

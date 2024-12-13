@@ -23,7 +23,7 @@ func init() {
 	courier.RegisterBackend("mock", buildMockBackend)
 }
 
-func buildMockBackend(config *runtime.Config) courier.Backend {
+func buildMockBackend(rt *runtime.Runtime) courier.Backend {
 	return NewMockBackend()
 }
 

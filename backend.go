@@ -13,7 +13,7 @@ import (
 )
 
 // BackendConstructorFunc defines a function to create a particular backend type
-type BackendConstructorFunc func(*runtime.Config) Backend
+type BackendConstructorFunc func(*runtime.Runtime) Backend
 
 // Backend represents the part of Courier that deals with looking up and writing channels and results
 type Backend interface {
@@ -121,12 +121,12 @@ type Media interface {
 }
 
 // NewBackend creates the type of backend passed in
-func NewBackend(config *runtime.Config) (Backend, error) {
-	backendFunc, found := registeredBackends[strings.ToLower(config.Backend)]
+func NewBackend(rt *runtime.Runtime) (Backend, error) {
+	backendFunc, found := registeredBackends[strings.ToLower(rt.Config.Backend)]
 	if !found {
-		return nil, fmt.Errorf("no such backend type: '%s'", config.Backend)
+		return nil, fmt.Errorf("no such backend type: '%s'", rt.Config.Backend)
 	}
-	return backendFunc(config), nil
+	return backendFunc(rt), nil
 }
 
 // RegisterBackend adds a new backend, called by individual backends in their init() func

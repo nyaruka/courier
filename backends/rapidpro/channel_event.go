@@ -126,7 +126,7 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 	}
 
 	if err != nil {
-		err = courier.WriteToSpool(b.config.SpoolDir, "events", dbEvent)
+		err = courier.WriteToSpool(b.rt.Config.SpoolDir, "events", dbEvent)
 	}
 
 	return err

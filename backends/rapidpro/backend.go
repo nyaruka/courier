@@ -60,7 +60,7 @@ type stats struct {
 }
 
 type backend struct {
-	config *runtime.Config
+	rt *runtime.Runtime
 
 	statusWriter *StatusWriter
 	dbLogWriter  *DBLogWriter     // unattached logs being written to the database
@@ -99,7 +99,7 @@ type backend struct {
 }
 
 // NewBackend creates a new RapidPro backend
-func newBackend(cfg *runtime.Config) courier.Backend {
+func newBackend(rt *runtime.Runtime) courier.Backend {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConns = 64
 	transport.MaxIdleConnsPerHost = 8
@@ -111,10 +111,10 @@ func newBackend(cfg *runtime.Config) courier.Backend {
 	insecureTransport.IdleConnTimeout = 15 * time.Second
 	insecureTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	disallowedIPs, disallowedNets, _ := cfg.ParseDisallowedNetworks()
+	disallowedIPs, disallowedNets, _ := rt.Config.ParseDisallowedNetworks()
 
 	return &backend{
-		config: cfg,
+		rt: rt,
 
 		httpClient:         &http.Client{Transport: transport, Timeout: 30 * time.Second},
 		httpClientInsecure: &http.Client{Transport: insecureTransport, Timeout: 30 * time.Second},
@@ -145,9 +145,9 @@ func (b *backend) Start() error {
 	log.Info("starting backend")
 
 	// build our db
-	db, err := sqlx.Open("postgres", b.config.DB)
+	db, err := sqlx.Open("postgres", b.rt.Config.DB)
 	if err != nil {
-		return fmt.Errorf("unable to open DB with config: '%s': %s", b.config.DB, err)
+		return fmt.Errorf("unable to open DB with config: '%s': %s", b.rt.Config.DB, err)
 	}
 
 	// configure our pool
@@ -162,7 +162,7 @@ func (b *backend) Start() error {
 		log.Info("db ok")
 	}
 
-	b.rp, err = redisx.NewPool(b.config.Redis, redisx.WithMaxActive(b.config.MaxWorkers*2))
+	b.rp, err = redisx.NewPool(b.rt.Config.Redis, redisx.WithMaxActive(b.rt.Config.MaxWorkers*2))
 	if err != nil {
 		log.Error("redis not reachable", "error", err)
 	} else {
@@ -170,12 +170,12 @@ func (b *backend) Start() error {
 	}
 
 	// start our dethrottler if we are going to be doing some sending
-	if b.config.MaxWorkers > 0 {
+	if b.rt.Config.MaxWorkers > 0 {
 		queue.StartDethrottler(b.rp, b.stopChan, b.waitGroup, msgQueueName)
 	}
 
 	// setup DynamoDB
-	b.dynamo, err = dynamo.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.DynamoEndpoint, b.config.DynamoTablePrefix)
+	b.dynamo, err = dynamo.NewService(b.rt.Config.AWSAccessKeyID, b.rt.Config.AWSSecretAccessKey, b.rt.Config.AWSRegion, b.rt.Config.DynamoEndpoint, b.rt.Config.DynamoTablePrefix)
 	if err != nil {
 		return err
 	}
@@ -186,13 +186,13 @@ func (b *backend) Start() error {
 	}
 
 	// setup S3 storage
-	b.s3, err = s3x.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.S3Endpoint, b.config.S3Minio)
+	b.s3, err = s3x.NewService(b.rt.Config.AWSAccessKeyID, b.rt.Config.AWSSecretAccessKey, b.rt.Config.AWSRegion, b.rt.Config.S3Endpoint, b.rt.Config.S3Minio)
 	if err != nil {
 		return err
 	}
 
 	// check attachment bucket access
-	if err := b.s3.Test(ctx, b.config.S3AttachmentsBucket); err != nil {
+	if err := b.s3.Test(ctx, b.rt.Config.S3AttachmentsBucket); err != nil {
 		log.Error("attachments bucket not accessible", "error", err)
 	} else {
 		log.Info("attachments bucket ok")
@@ -205,12 +205,12 @@ func (b *backend) Start() error {
 	b.channelsByAddr.Start()
 
 	// make sure our spool dirs are writable
-	err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "msgs")
+	err = courier.EnsureSpoolDirPresent(b.rt.Config.SpoolDir, "msgs")
 	if err == nil {
-		err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "statuses")
+		err = courier.EnsureSpoolDirPresent(b.rt.Config.SpoolDir, "statuses")
 	}
 	if err == nil {
-		err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "events")
+		err = courier.EnsureSpoolDirPresent(b.rt.Config.SpoolDir, "events")
 	}
 	if err != nil {
 		log.Error("spool directories not writable", "error", err)
@@ -219,7 +219,7 @@ func (b *backend) Start() error {
 	}
 
 	// create our batched writers and start them
-	b.statusWriter = NewStatusWriter(b, b.config.SpoolDir, b.writerWG)
+	b.statusWriter = NewStatusWriter(b, b.rt.Config.SpoolDir, b.writerWG)
 	b.statusWriter.Start()
 
 	b.dbLogWriter = NewDBLogWriter(b.db, b.writerWG)
@@ -229,9 +229,9 @@ func (b *backend) Start() error {
 	b.dyLogWriter.Start()
 
 	// register and start our spool flushers
-	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "msgs"), b.flushMsgFile)
-	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "statuses"), b.flushStatusFile)
-	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "events"), b.flushChannelEventFile)
+	courier.RegisterFlusher(path.Join(b.rt.Config.SpoolDir, "msgs"), b.flushMsgFile)
+	courier.RegisterFlusher(path.Join(b.rt.Config.SpoolDir, "statuses"), b.flushStatusFile)
+	courier.RegisterFlusher(path.Join(b.rt.Config.SpoolDir, "events"), b.flushChannelEventFile)
 
 	slog.Info("backend started", "comp", "backend", "state", "started")
 	return nil
@@ -636,7 +636,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 
 	path := filepath.Join("attachments", strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 
-	storageURL, err := b.s3.PutObject(ctx, b.config.S3AttachmentsBucket, path, contentType, data, types.ObjectCannedACLPublicRead)
+	storageURL, err := b.s3.PutObject(ctx, b.rt.Config.S3AttachmentsBucket, path, contentType, data, types.ObjectCannedACLPublicRead)
 	if err != nil {
 		return "", fmt.Errorf("error saving attachment to storage (bytes=%d): %w", len(data), err)
 	}
@@ -654,7 +654,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 	mediaUUID := uuidRegex.FindString(u.Path)
 
 	// if hostname isn't our media domain, or path doesn't contain a UUID, don't try to resolve
-	if strings.Replace(u.Hostname(), fmt.Sprintf("%s.", b.config.AWSRegion), "", -1) != b.config.MediaDomain || mediaUUID == "" {
+	if strings.Replace(u.Hostname(), fmt.Sprintf("%s.", b.rt.Config.AWSRegion), "", -1) != b.rt.Config.MediaDomain || mediaUUID == "" {
 		return nil, nil
 	}
 
@@ -683,7 +683,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 	}
 
 	// if we found a media record but it doesn't match the URL, don't use it
-	if media == nil || (media.URL() != mediaUrl && media.URL() != strings.Replace(mediaUrl, fmt.Sprintf("%s.", b.config.AWSRegion), "", -1)) {
+	if media == nil || (media.URL() != mediaUrl && media.URL() != strings.Replace(mediaUrl, fmt.Sprintf("%s.", b.rt.Config.AWSRegion), "", -1)) {
 		return nil, nil
 	}
 

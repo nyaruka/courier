@@ -67,7 +67,7 @@ func (ts *BackendTestSuite) SetupSuite() {
 	// turn off logging
 	log.SetOutput(io.Discard)
 
-	b, err := courier.NewBackend(testConfig())
+	b, err := courier.NewBackend(&runtime.Runtime{Config: testConfig()})
 	noError(err)
 
 	ts.b = b.(*backend)
