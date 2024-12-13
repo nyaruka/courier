@@ -17,6 +17,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -263,7 +264,7 @@ func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
 	logger := slog.Default()
 	log.SetOutput(io.Discard)
-	config := courier.NewDefaultConfig()
+	config := runtime.NewDefaultConfig()
 	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	return courier.NewServerWithLogger(config, backend, logger)

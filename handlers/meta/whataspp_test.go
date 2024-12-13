@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
@@ -786,7 +787,7 @@ func TestWhatsAppBuildAttachmentRequest(t *testing.T) {
 }
 
 func newServerWithWAC(backend courier.Backend) courier.Server {
-	config := courier.NewDefaultConfig()
+	config := runtime.NewDefaultConfig()
 	config.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
 	return courier.NewServer(config, backend)
 }

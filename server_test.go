@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/dates"
@@ -20,8 +21,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testConfig() *courier.Config {
-	config := courier.NewDefaultConfig()
+func testConfig() *runtime.Config {
+	config := runtime.NewDefaultConfig()
 	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	config.Port = 8081
@@ -246,7 +247,7 @@ func TestFetchAttachment(t *testing.T) {
 	uuids.SetGenerator(uuids.NewSeededGenerator(1234, dates.NewSequentialNow(time.Date(2024, 9, 11, 14, 33, 0, 0, time.UTC), time.Second)))
 
 	logger := slog.Default()
-	config := courier.NewDefaultConfig()
+	config := runtime.NewDefaultConfig()
 	config.AuthToken = "sesame"
 	config.Port = 8081
 

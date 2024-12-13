@@ -24,6 +24,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
+	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
@@ -59,7 +60,7 @@ type stats struct {
 }
 
 type backend struct {
-	config *courier.Config
+	config *runtime.Config
 
 	statusWriter *StatusWriter
 	dbLogWriter  *DBLogWriter     // unattached logs being written to the database
@@ -98,7 +99,7 @@ type backend struct {
 }
 
 // NewBackend creates a new RapidPro backend
-func newBackend(cfg *courier.Config) courier.Backend {
+func newBackend(cfg *runtime.Config) courier.Backend {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConns = 64
 	transport.MaxIdleConnsPerHost = 8

@@ -6,6 +6,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -26,7 +27,7 @@ func TestRequestHTTP(t *testing.T) {
 	mm := mb.NewOutgoingMsg(mc, 123, urns.URN("tel:+1234"), "Hello World", false, nil, "", "", courier.MsgOriginChat, nil)
 	clog := courier.NewChannelLogForSend(mm, nil)
 
-	config := courier.NewDefaultConfig()
+	config := runtime.NewDefaultConfig()
 	server := test.NewMockServer(config, mb)
 
 	h := handlers.NewBaseHandler("NX", "Test")
