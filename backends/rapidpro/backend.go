@@ -19,12 +19,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/gocommon/analytics"
+	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/cache"
@@ -70,6 +72,7 @@ type backend struct {
 	rp     *redis.Pool
 	dynamo *dynamo.Service
 	s3     *s3x.Service
+	cw     *cwatch.Service
 
 	channelsByUUID *cache.Local[courier.ChannelUUID, *Channel]
 	channelsByAddr *cache.Local[courier.ChannelAddress, *Channel]
@@ -190,6 +193,12 @@ func (b *backend) Start() error {
 		return err
 	}
 
+	b.cw, err = cwatch.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.CloudwatchNamespace, b.config.DeploymentID)
+	if err != nil {
+		return err
+	}
+	b.cw.StartQueue(time.Second * 3)
+
 	// check attachment bucket access
 	if err := b.s3.Test(ctx, b.config.S3AttachmentsBucket); err != nil {
 		log.Error("attachments bucket not accessible", "error", err)
@@ -246,6 +255,9 @@ func (b *backend) Stop() error {
 
 	// wait for our threads to exit
 	b.waitGroup.Wait()
+
+	// stop cloudwatch service
+	b.cw.StopQueue()
 	return nil
 }
 
@@ -635,7 +647,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 
 	path := filepath.Join("attachments", strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 
-	storageURL, err := b.s3.PutObject(ctx, b.config.S3AttachmentsBucket, path, contentType, data, types.ObjectCannedACLPublicRead)
+	storageURL, err := b.s3.PutObject(ctx, b.config.S3AttachmentsBucket, path, contentType, data, s3types.ObjectCannedACLPublicRead)
 	if err != nil {
 		return "", fmt.Errorf("error saving attachment to storage (bytes=%d): %w", len(data), err)
 	}
@@ -775,6 +787,21 @@ func (b *backend) Heartbeat() error {
 	b.stats.redisWaitDuration = redisStats.WaitDuration
 	b.stats.redisWaitCount = redisStats.WaitCount
 
+	hostDim := cwatch.Dimension("Host", b.config.InstanceID)
+	appDim := cwatch.Dimension("App", "courier")
+
+	b.CloudWatch().Queue(
+		cwatch.Datum("DBConnectionsInUse", float64(dbStats.InUse), cwtypes.StandardUnitCount, hostDim, appDim),
+		cwatch.Datum("DBConnectionWaitDuration", float64(dbWaitDurationInPeriod/time.Millisecond), cwtypes.StandardUnitMilliseconds, hostDim, appDim),
+		cwatch.Datum("RedisConnectionsInUse", float64(redisStats.ActiveCount), cwtypes.StandardUnitCount, hostDim, appDim),
+		cwatch.Datum("RedisConnectionsWaitDuration", float64(redisWaitDurationInPeriod/time.Millisecond), cwtypes.StandardUnitMilliseconds, hostDim, appDim),
+	)
+
+	b.CloudWatch().Queue(
+		cwatch.Datum("QueuedMsgs", float64(bulkSize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "bulk")),
+		cwatch.Datum("QueuedMsgs", float64(prioritySize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "priority")),
+	)
+
 	analytics.Gauge("courier.db_busy", float64(dbStats.InUse))
 	analytics.Gauge("courier.db_idle", float64(dbStats.Idle))
 	analytics.Gauge("courier.db_wait_ms", float64(dbWaitDurationInPeriod/time.Millisecond))
@@ -872,4 +899,9 @@ func (b *backend) Status() string {
 // RedisPool returns the redisPool for this backend
 func (b *backend) RedisPool() *redis.Pool {
 	return b.rp
+}
+
+// CloudWatch return the cloudwatch service
+func (b *backend) CloudWatch() *cwatch.Service {
+	return b.cw
 }

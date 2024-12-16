@@ -10,9 +10,11 @@ import (
 	"time"
 	"unicode/utf8"
 
+	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/analytics"
+	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -219,6 +221,15 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 
 	// log that we created a new contact to librato
 	analytics.Gauge("courier.new_contact", float64(1))
+
+	b.cw.Queue(
+		cwatch.Datum(
+			"NewContact",
+			float64(1),
+			cwtypes.StandardUnitCount,
+			cwatch.Dimension("ChannelType", string(channel.ChannelType())),
+		),
+	)
 
 	// and return it
 	return contact, nil

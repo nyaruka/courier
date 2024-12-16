@@ -17,10 +17,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/analytics"
+	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 )
@@ -317,10 +319,18 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 
 		if channel != nil {
 			// if we have a channel but no events were created, we still log this to analytics
+			channelTypeDim := cwatch.Dimension("ChannelType", string(channel.ChannelType()))
+
 			if len(events) == 0 {
 				if hErr != nil {
+					s.Backend().CloudWatch().Queue(
+						cwatch.Datum("ChannelError", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
+					)
 					analytics.Gauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
 				} else {
+					s.Backend().CloudWatch().Queue(
+						cwatch.Datum("ChannelIgnored", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
+					)
 					analytics.Gauge(fmt.Sprintf("courier.channel_ignored_%s", channel.ChannelType()), secondDuration)
 				}
 			}
@@ -329,13 +339,22 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 				switch e := event.(type) {
 				case MsgIn:
 					clog.SetAttached(true)
+					s.Backend().CloudWatch().Queue(
+						cwatch.Datum("MsgReceive", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
+					)
 					analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
 					LogMsgReceived(r, e)
 				case StatusUpdate:
 					clog.SetAttached(true)
+					s.Backend().CloudWatch().Queue(
+						cwatch.Datum("MsgStatus", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
+					)
 					analytics.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
 					LogMsgStatusReceived(r, e)
 				case ChannelEvent:
+					s.Backend().CloudWatch().Queue(
+						cwatch.Datum("EventReceive", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
+					)
 					analytics.Gauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
 					LogChannelEventReceived(r, e)
 				}
