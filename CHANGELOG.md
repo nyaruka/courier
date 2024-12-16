@@ -1,3 +1,7 @@
+v9.3.37 (2024-12-16)
+-------------------------
+ * Revert "Fail messages when we hit contact pair limit"
+
 v9.3.36 (2024-12-16)
 -------------------------
  * Merge pull request #812 from nyaruka/fail-contact-pair-limit
