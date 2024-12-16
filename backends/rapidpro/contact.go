@@ -14,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -220,7 +219,6 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 	contact.URNID_ = contactURN.ID
 
 	// log that we created a new contact to librato
-	analytics.Gauge("courier.new_contact", float64(1))
 	dims := []types.Dimension{
 		{Name: aws.String("ChannelType"), Value: aws.String(string(channel.ChannelType()))},
 		{Name: aws.String("App"), Value: aws.String("courier")},

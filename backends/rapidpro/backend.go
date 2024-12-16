@@ -26,7 +26,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
-	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
@@ -783,7 +782,6 @@ func (b *backend) Heartbeat() error {
 	b.stats.dbWaitCount = dbStats.WaitCount
 	b.stats.redisWaitDuration = redisStats.WaitDuration
 	b.stats.redisWaitCount = redisStats.WaitCount
-
 	dims := []cwtypes.Dimension{
 		{Name: aws.String("Host"), Value: aws.String(b.config.InstanceID)},
 		{Name: aws.String("App"), Value: aws.String("courier")},
@@ -858,18 +856,7 @@ func (b *backend) Heartbeat() error {
 		slog.Error("error putting metrics", "error", err)
 	}
 
-	analytics.Gauge("courier.db_busy", float64(dbStats.InUse))
-	analytics.Gauge("courier.db_idle", float64(dbStats.Idle))
-	analytics.Gauge("courier.db_wait_ms", float64(dbWaitDurationInPeriod/time.Millisecond))
-	analytics.Gauge("courier.db_wait_count", float64(dbWaitCountInPeriod))
-	analytics.Gauge("courier.redis_active", float64(redisStats.ActiveCount))
-	analytics.Gauge("courier.redis_idle", float64(redisStats.IdleCount))
-	analytics.Gauge("courier.redis_wait_ms", float64(redisWaitDurationInPeriod/time.Millisecond))
-	analytics.Gauge("courier.redis_wait_count", float64(redisWaitCountInPeriod))
-	analytics.Gauge("courier.bulk_queue", float64(bulkSize))
-	analytics.Gauge("courier.priority_queue", float64(prioritySize))
-
-	slog.Info("current analytics", "db_busy", dbStats.InUse,
+	slog.Info("current metrics", "db_busy", dbStats.InUse,
 		"db_idle", dbStats.Idle,
 		"db_wait_time", dbWaitDurationInPeriod,
 		"db_wait_count", dbWaitCountInPeriod,

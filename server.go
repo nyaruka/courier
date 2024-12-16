@@ -9,7 +9,6 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
-	"os"
 	"runtime/debug"
 	"slices"
 	"sort"
@@ -22,7 +21,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nyaruka/courier/utils/clogs"
-	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 )
@@ -94,14 +92,6 @@ func NewServerWithLogger(config *Config, backend Backend, logger *slog.Logger) S
 // if it encounters any unrecoverable (or ignorable) error, though its bias is to move forward despite
 // connection errors
 func (s *server) Start() error {
-	// configure librato if we have configuration options for it
-	host, _ := os.Hostname()
-	if s.config.LibratoUsername != "" {
-		analytics.RegisterBackend(analytics.NewLibrato(s.config.LibratoUsername, s.config.LibratoToken, host, time.Second, s.waitGroup))
-	}
-
-	analytics.Start()
-
 	// start our backend
 	err := s.backend.Start()
 	if err != nil {
@@ -196,8 +186,6 @@ func (s *server) Stop() error {
 	if err != nil {
 		return err
 	}
-
-	analytics.Stop()
 
 	// wait for everything to stop
 	s.waitGroup.Wait()
@@ -332,7 +320,6 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 						Value:      aws.Float64(float64(secondDuration)),
 						Unit:       types.StandardUnitSeconds,
 					})
-					analytics.Gauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
 				} else {
 					s.Backend().CloudWatchService().Send(ctx, types.MetricDatum{
 						MetricName: aws.String("ChannelIgnored"),
@@ -340,7 +327,6 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 						Value:      aws.Float64(float64(secondDuration)),
 						Unit:       types.StandardUnitSeconds,
 					})
-					analytics.Gauge(fmt.Sprintf("courier.channel_ignored_%s", channel.ChannelType()), secondDuration)
 				}
 			}
 
@@ -354,7 +340,6 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 						Value:      aws.Float64(float64(secondDuration)),
 						Unit:       types.StandardUnitSeconds,
 					})
-					analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
 					LogMsgReceived(r, e)
 				case StatusUpdate:
 					clog.SetAttached(true)
@@ -364,7 +349,6 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 						Value:      aws.Float64(float64(secondDuration)),
 						Unit:       types.StandardUnitSeconds,
 					})
-					analytics.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
 					LogMsgStatusReceived(r, e)
 				case ChannelEvent:
 					s.Backend().CloudWatchService().Send(ctx, types.MetricDatum{
@@ -372,7 +356,6 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 						Dimensions: dims,
 						Value:      aws.Float64(float64(secondDuration)),
 						Unit:       types.StandardUnitSeconds})
-					analytics.Gauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
 					LogChannelEventReceived(r, e)
 				}
 			}
