@@ -1,3 +1,8 @@
+v9.3.36 (2024-12-16)
+-------------------------
+ * Merge pull request #812 from nyaruka/fail-contact-pair-limit
+ * Fail messages when we hit contact pair limit
+
 v9.3.35 (2024-12-12)
 -------------------------
  * Simplify JPE and JFIF extensions to be saved as JPG
