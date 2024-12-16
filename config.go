@@ -7,6 +7,7 @@ import (
 	"log"
 	"log/slog"
 	"net"
+	"os"
 	"strings"
 
 	"github.com/nyaruka/courier/utils"
@@ -28,6 +29,10 @@ type Config struct {
 	AWSAccessKeyID     string `help:"access key ID to use for AWS services"`
 	AWSSecretAccessKey string `help:"secret access key to use for AWS services"`
 	AWSRegion          string `help:"region to use for AWS services, e.g. us-east-1"`
+
+	CloudwatchNamespace string `help:"the namespace to use for cloudwatch metrics"`
+	DeploymentID        string `help:"the deployment identifier to use for metrics"`
+	InstanceID          string `help:"the instance identifier to use for metrics"`
 
 	DynamoEndpoint    string `help:"DynamoDB service endpoint, e.g. https://dynamodb.us-east-1.amazonaws.com"`
 	DynamoTablePrefix string `help:"prefix to use for DynamoDB tables"`
@@ -60,6 +65,7 @@ type Config struct {
 
 // NewDefaultConfig returns a new default configuration object
 func NewDefaultConfig() *Config {
+	hostname, _ := os.Hostname()
 	return &Config{
 		Backend:  "rapidpro",
 		Domain:   "localhost",
@@ -72,6 +78,10 @@ func NewDefaultConfig() *Config {
 		AWSAccessKeyID:     "",
 		AWSSecretAccessKey: "",
 		AWSRegion:          "us-east-1",
+
+		CloudwatchNamespace: "Temba",
+		DeploymentID:        "dev",
+		InstanceID:          hostname,
 
 		DynamoEndpoint:    "", // let library generate it
 		DynamoTablePrefix: "Temba",

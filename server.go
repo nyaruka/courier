@@ -17,6 +17,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -317,10 +319,27 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 
 		if channel != nil {
 			// if we have a channel but no events were created, we still log this to analytics
+
+			dims := []types.Dimension{
+				{Name: aws.String("ChannelType"), Value: aws.String(string(channel.ChannelType()))},
+				{Name: aws.String("App"), Value: aws.String("courier")},
+			}
 			if len(events) == 0 {
 				if hErr != nil {
+					s.Backend().CloudWatchService().Send(ctx, types.MetricDatum{
+						MetricName: aws.String("ChannelError"),
+						Dimensions: dims,
+						Value:      aws.Float64(float64(secondDuration)),
+						Unit:       types.StandardUnitSeconds,
+					})
 					analytics.Gauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
 				} else {
+					s.Backend().CloudWatchService().Send(ctx, types.MetricDatum{
+						MetricName: aws.String("ChannelIgnored"),
+						Dimensions: dims,
+						Value:      aws.Float64(float64(secondDuration)),
+						Unit:       types.StandardUnitSeconds,
+					})
 					analytics.Gauge(fmt.Sprintf("courier.channel_ignored_%s", channel.ChannelType()), secondDuration)
 				}
 			}
@@ -329,13 +348,30 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 				switch e := event.(type) {
 				case MsgIn:
 					clog.SetAttached(true)
+					s.Backend().CloudWatchService().Send(ctx, types.MetricDatum{
+						MetricName: aws.String("MsgReceive"),
+						Dimensions: dims,
+						Value:      aws.Float64(float64(secondDuration)),
+						Unit:       types.StandardUnitSeconds,
+					})
 					analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
 					LogMsgReceived(r, e)
 				case StatusUpdate:
 					clog.SetAttached(true)
+					s.Backend().CloudWatchService().Send(ctx, types.MetricDatum{
+						MetricName: aws.String("MsgStatus"),
+						Dimensions: dims,
+						Value:      aws.Float64(float64(secondDuration)),
+						Unit:       types.StandardUnitSeconds,
+					})
 					analytics.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
 					LogMsgStatusReceived(r, e)
 				case ChannelEvent:
+					s.Backend().CloudWatchService().Send(ctx, types.MetricDatum{
+						MetricName: aws.String("EventReceive"),
+						Dimensions: dims,
+						Value:      aws.Float64(float64(secondDuration)),
+						Unit:       types.StandardUnitSeconds})
 					analytics.Gauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
 					LogChannelEventReceived(r, e)
 				}

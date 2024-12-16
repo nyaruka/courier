@@ -51,6 +51,8 @@ func testConfig() *courier.Config {
 	// configure S3 to use a local minio instance
 	config.AWSAccessKeyID = "root"
 	config.AWSSecretAccessKey = "tembatemba"
+	config.CloudwatchNamespace = "Temba"
+	config.DeploymentID = "test"
 	config.S3Endpoint = "http://localhost:9000"
 	config.S3AttachmentsBucket = "test-attachments"
 	config.S3Minio = true

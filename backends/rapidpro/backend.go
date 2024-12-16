@@ -19,12 +19,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/gocommon/analytics"
+	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/cache"
@@ -70,6 +73,7 @@ type backend struct {
 	rp     *redis.Pool
 	dynamo *dynamo.Service
 	s3     *s3x.Service
+	cw     *cwatch.Service
 
 	channelsByUUID *cache.Local[courier.ChannelUUID, *Channel]
 	channelsByAddr *cache.Local[courier.ChannelAddress, *Channel]
@@ -186,6 +190,11 @@ func (b *backend) Start() error {
 
 	// setup S3 storage
 	b.s3, err = s3x.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.S3Endpoint, b.config.S3Minio)
+	if err != nil {
+		return err
+	}
+
+	b.cw, err = cwatch.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.CloudwatchNamespace, b.config.DeploymentID)
 	if err != nil {
 		return err
 	}
@@ -635,7 +644,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 
 	path := filepath.Join("attachments", strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 
-	storageURL, err := b.s3.PutObject(ctx, b.config.S3AttachmentsBucket, path, contentType, data, types.ObjectCannedACLPublicRead)
+	storageURL, err := b.s3.PutObject(ctx, b.config.S3AttachmentsBucket, path, contentType, data, s3types.ObjectCannedACLPublicRead)
 	if err != nil {
 		return "", fmt.Errorf("error saving attachment to storage (bytes=%d): %w", len(data), err)
 	}
@@ -775,6 +784,80 @@ func (b *backend) Heartbeat() error {
 	b.stats.redisWaitDuration = redisStats.WaitDuration
 	b.stats.redisWaitCount = redisStats.WaitCount
 
+	dims := []cwtypes.Dimension{
+		{Name: aws.String("Host"), Value: aws.String(b.config.InstanceID)},
+		{Name: aws.String("App"), Value: aws.String("courier")},
+	}
+
+	metrics := []cwtypes.MetricDatum{
+		{
+			MetricName: aws.String("DBBusy"),
+			Dimensions: dims,
+			Value:      aws.Float64(float64(dbStats.InUse)),
+			Unit:       cwtypes.StandardUnitCount,
+		},
+		{
+			MetricName: aws.String("DBIdle"),
+			Dimensions: dims,
+			Value:      aws.Float64(float64(dbStats.InUse)),
+			Unit:       cwtypes.StandardUnitCount},
+		{
+			MetricName: aws.String("DBWaitMS"),
+			Dimensions: dims,
+			Value:      aws.Float64(float64(dbWaitDurationInPeriod / time.Millisecond)),
+			Unit:       cwtypes.StandardUnitMilliseconds,
+		},
+		{
+			MetricName: aws.String("DBWaitCount"),
+			Dimensions: dims,
+			Value:      aws.Float64(float64(dbWaitCountInPeriod)),
+			Unit:       cwtypes.StandardUnitCount,
+		},
+
+		{
+			MetricName: aws.String("RedisActive"),
+			Dimensions: dims,
+			Value:      aws.Float64(float64(redisStats.ActiveCount)),
+			Unit:       cwtypes.StandardUnitCount,
+		},
+		{
+			MetricName: aws.String("RedisIdle"),
+			Dimensions: dims,
+			Value:      aws.Float64(float64(redisStats.IdleCount)),
+			Unit:       cwtypes.StandardUnitCount,
+		},
+		{MetricName: aws.String("RedisWaitMS"),
+			Dimensions: dims,
+			Value:      aws.Float64(float64(redisWaitDurationInPeriod / time.Millisecond)),
+			Unit:       cwtypes.StandardUnitMilliseconds,
+		},
+		{
+			MetricName: aws.String("RedisWaitCount"),
+			Dimensions: dims,
+			Value:      aws.Float64(float64(redisWaitCountInPeriod)),
+			Unit:       cwtypes.StandardUnitCount,
+		},
+
+		{
+			MetricName: aws.String("BulkQueue"),
+			Dimensions: dims,
+			Value:      aws.Float64(float64(bulkSize)),
+			Unit:       cwtypes.StandardUnitCount,
+		},
+		{
+			MetricName: aws.String("PriorityQueue"),
+			Dimensions: dims,
+			Value:      aws.Float64(float64(prioritySize)),
+			Unit:       cwtypes.StandardUnitCount,
+		},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
+	if err = b.CloudWatchService().Send(ctx, metrics...); err != nil {
+		slog.Error("error putting metrics", "error", err)
+	}
+
 	analytics.Gauge("courier.db_busy", float64(dbStats.InUse))
 	analytics.Gauge("courier.db_idle", float64(dbStats.Idle))
 	analytics.Gauge("courier.db_wait_ms", float64(dbWaitDurationInPeriod/time.Millisecond))
@@ -872,4 +955,9 @@ func (b *backend) Status() string {
 // RedisPool returns the redisPool for this backend
 func (b *backend) RedisPool() *redis.Pool {
 	return b.rp
+}
+
+// CloudWatchService return the cloudwatch service
+func (b *backend) CloudWatchService() *cwatch.Service {
+	return b.cw
 }

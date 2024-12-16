@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -105,6 +106,9 @@ type Backend interface {
 
 	// RedisPool returns the redisPool for this backend
 	RedisPool() *redis.Pool
+
+	// CloudWatchService return the CloudWatch service for this backend
+	CloudWatchService() *cwatch.Service
 }
 
 // Media is a resolved media object that can be used as a message attachment

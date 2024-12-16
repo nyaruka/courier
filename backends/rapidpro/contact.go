@@ -10,6 +10,8 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/analytics"
@@ -219,6 +221,17 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 
 	// log that we created a new contact to librato
 	analytics.Gauge("courier.new_contact", float64(1))
+	dims := []types.Dimension{
+		{Name: aws.String("ChannelType"), Value: aws.String(string(channel.ChannelType()))},
+		{Name: aws.String("App"), Value: aws.String("courier")},
+	}
+
+	b.cw.Send(ctx, types.MetricDatum{
+		MetricName: aws.String("NewContact"),
+		Dimensions: dims,
+		Value:      aws.Float64(float64(1)),
+		Unit:       types.StandardUnitCount,
+	})
 
 	// and return it
 	return contact, nil

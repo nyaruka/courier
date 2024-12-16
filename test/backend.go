@@ -13,6 +13,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -44,6 +45,8 @@ type MockBackend struct {
 
 	mutex     sync.RWMutex
 	redisPool *redis.Pool
+
+	cw *cwatch.Service
 
 	writtenMsgs          []courier.MsgIn
 	writtenMsgStatuses   []courier.StatusUpdate
@@ -83,6 +86,11 @@ func NewMockBackend() *MockBackend {
 		log.Fatal(err)
 	}
 
+	CW, err := cwatch.NewService("root", "tembatemba", "us-east-1", "Temba", "test")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return &MockBackend{
 		channels:          make(map[courier.ChannelUUID]courier.Channel),
 		channelsByAddress: make(map[courier.ChannelAddress]courier.Channel),
@@ -91,6 +99,7 @@ func NewMockBackend() *MockBackend {
 		sentMsgs:          make(map[courier.MsgID]bool),
 		seenExternalIDs:   make(map[string]courier.MsgUUID),
 		redisPool:         redisPool,
+		cw:                CW,
 	}
 }
 
@@ -380,6 +389,11 @@ func (mb *MockBackend) Heartbeat() error {
 // RedisPool returns the redisPool for this backend
 func (mb *MockBackend) RedisPool() *redis.Pool {
 	return mb.redisPool
+}
+
+// RedisPool returns the redisPool for this backend
+func (mb *MockBackend) CloudWatchService() *cwatch.Service {
+	return mb.cw
 }
 
 ////////////////////////////////////////////////////////////////////////////////

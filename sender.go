@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/urns"
@@ -333,11 +335,29 @@ func (w *Sender) sendMessage(msg MsgOut) {
 		secondDuration := float64(duration) / float64(time.Second)
 		log.Debug("send complete", "status", status.Status(), "elapsed", duration)
 
+		dims := []types.Dimension{
+			{Name: aws.String("ChannelType"), Value: aws.String(string(msg.Channel().ChannelType()))},
+			{Name: aws.String("App"), Value: aws.String("courier")},
+		}
+
 		// report to librato
 		if status.Status() == MsgStatusErrored || status.Status() == MsgStatusFailed {
 			analytics.Gauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
+			backend.CloudWatchService().Send(sendCTX, types.MetricDatum{
+				MetricName: aws.String("MsgSendError"),
+				Dimensions: dims,
+				Value:      aws.Float64(float64(secondDuration)),
+				Unit:       types.StandardUnitSeconds,
+			})
+
 		} else {
 			analytics.Gauge(fmt.Sprintf("courier.msg_send_%s", msg.Channel().ChannelType()), secondDuration)
+			backend.CloudWatchService().Send(sendCTX, types.MetricDatum{
+				MetricName: aws.String("MsgSend"),
+				Dimensions: dims,
+				Value:      aws.Float64(float64(secondDuration)),
+				Unit:       types.StandardUnitSeconds,
+			})
 		}
 	}
 
