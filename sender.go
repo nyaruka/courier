@@ -9,7 +9,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/nyaruka/courier/utils/clogs"
-	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -339,13 +338,11 @@ func (w *Sender) sendMessage(msg MsgOut) {
 
 		// report to librato
 		if status.Status() == MsgStatusErrored || status.Status() == MsgStatusFailed {
-			analytics.Gauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
 			backend.CloudWatch().Queue(
 				cwatch.Datum("MsgSendError", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
 			)
 
 		} else {
-			analytics.Gauge(fmt.Sprintf("courier.msg_send_%s", msg.Channel().ChannelType()), secondDuration)
 			backend.CloudWatch().Queue(
 				cwatch.Datum("MsgSend", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
 			)
