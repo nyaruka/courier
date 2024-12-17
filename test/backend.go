@@ -13,7 +13,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -45,8 +44,6 @@ type MockBackend struct {
 
 	mutex     sync.RWMutex
 	redisPool *redis.Pool
-
-	cw *cwatch.Service
 
 	writtenMsgs          []courier.MsgIn
 	writtenMsgStatuses   []courier.StatusUpdate
@@ -86,11 +83,6 @@ func NewMockBackend() *MockBackend {
 		log.Fatal(err)
 	}
 
-	cw, err := cwatch.NewService("root", "tembatemba", "us-east-1", "Temba", "test")
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	return &MockBackend{
 		channels:          make(map[courier.ChannelUUID]courier.Channel),
 		channelsByAddress: make(map[courier.ChannelAddress]courier.Channel),
@@ -99,7 +91,6 @@ func NewMockBackend() *MockBackend {
 		sentMsgs:          make(map[courier.MsgID]bool),
 		seenExternalIDs:   make(map[string]courier.MsgUUID),
 		redisPool:         redisPool,
-		cw:                cw,
 	}
 }
 
@@ -179,12 +170,15 @@ func (mb *MockBackend) ClearMsgSent(ctx context.Context, id courier.MsgID) error
 	return nil
 }
 
-// MarkOutgoingMsgComplete marks the passed msg as having been dealt with
-func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.MsgOut, s courier.StatusUpdate) {
+// OnSendComplete marks the passed msg as having been dealt with
+func (mb *MockBackend) OnSendComplete(ctx context.Context, msg courier.MsgOut, s courier.StatusUpdate, clog *courier.ChannelLog) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
 	mb.sentMsgs[msg.ID()] = true
+}
+
+func (mb *MockBackend) OnReceiveComplete(ctx context.Context, ch courier.Channel, events []courier.Event, clog *courier.ChannelLog) {
 }
 
 // WriteChannelLog writes the passed in channel log to the DB
@@ -389,11 +383,6 @@ func (mb *MockBackend) Heartbeat() error {
 // RedisPool returns the redisPool for this backend
 func (mb *MockBackend) RedisPool() *redis.Pool {
 	return mb.redisPool
-}
-
-// CloudWatch returns the cloudwatch service for this backend
-func (mb *MockBackend) CloudWatch() *cwatch.Service {
-	return mb.cw
 }
 
 ////////////////////////////////////////////////////////////////////////////////

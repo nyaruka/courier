@@ -50,13 +50,6 @@ func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
 }
 
-type stats struct {
-	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments by
-	// tracking their previous values
-	dbWaitDuration    time.Duration
-	redisWaitDuration time.Duration
-}
-
 type backend struct {
 	config *courier.Config
 
@@ -94,7 +87,12 @@ type backend struct {
 	// tracking of external ids of messages we've sent in case we need one before its status update has been written
 	sentExternalIDs *redisx.IntervalHash
 
-	stats stats
+	stats *StatsCollector
+
+	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments by
+	// tracking their previous values
+	dbWaitDuration    time.Duration
+	redisWaitDuration time.Duration
 }
 
 // NewBackend creates a new RapidPro backend
@@ -131,6 +129,8 @@ func newBackend(cfg *courier.Config) courier.Backend {
 		receivedExternalIDs: redisx.NewIntervalHash("seen-external-ids", time.Hour*24, 2), // 24 - 48 hours
 		sentIDs:             redisx.NewIntervalSet("sent-ids", time.Hour, 2),              // 1 - 2 hours
 		sentExternalIDs:     redisx.NewIntervalHash("sent-external-ids", time.Hour, 2),    // 1 - 2 hours
+
+		stats: NewStatsCollector(),
 	}
 }
 
@@ -194,7 +194,6 @@ func (b *backend) Start() error {
 	if err != nil {
 		return err
 	}
-	b.cw.StartQueue(time.Second * 3)
 
 	// check attachment bucket access
 	if err := b.s3.Test(ctx, b.config.S3AttachmentsBucket); err != nil {
@@ -253,8 +252,6 @@ func (b *backend) Stop() error {
 	// wait for our threads to exit
 	b.waitGroup.Wait()
 
-	// stop cloudwatch service
-	b.cw.StopQueue()
 	return nil
 }
 
@@ -464,8 +461,8 @@ func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
 	return b.sentIDs.Rem(rc, id.String())
 }
 
-// MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel
-func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate) {
+// OnSendComplete is called when the sender has finished trying to send a message
+func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate, clog *courier.ChannelLog) {
 	rc := b.rp.Get()
 	defer rc.Close()
 
@@ -489,6 +486,13 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.MsgOu
 			slog.Error("unable to update session timeout", "error", err, "session_id", dbMsg.SessionID_)
 		}
 	}
+
+	b.stats.RecordOutgoing(msg.Channel().ChannelType(), wasSuccess, clog.Elapsed)
+}
+
+// OnReceiveComplete is called when the server has finished handling an incoming request
+func (b *backend) OnReceiveComplete(ctx context.Context, ch courier.Channel, events []courier.Event, clog *courier.ChannelLog) {
+	b.stats.RecordIncoming(ch.ChannelType(), events, clog.Elapsed)
 }
 
 // WriteMsg writes the passed in message to our store
@@ -737,7 +741,6 @@ func (b *backend) Health() string {
 	return health.String()
 }
 
-// Heartbeat is called every minute, we log our queue depth to librato
 func (b *backend) Heartbeat() error {
 	rc := b.rp.Get()
 	defer rc.Close()
@@ -773,35 +776,53 @@ func (b *backend) Heartbeat() error {
 	// get our DB and redis stats
 	dbStats := b.db.Stats()
 	redisStats := b.rp.Stats()
+	dbWaitDurationInPeriod := dbStats.WaitDuration - b.dbWaitDuration
+	redisWaitDurationInPeriod := redisStats.WaitDuration - b.redisWaitDuration
+	b.dbWaitDuration = dbStats.WaitDuration
+	b.redisWaitDuration = redisStats.WaitDuration
 
-	dbWaitDurationInPeriod := dbStats.WaitDuration - b.stats.dbWaitDuration
-	redisWaitDurationInPeriod := redisStats.WaitDuration - b.stats.redisWaitDuration
+	stats := b.stats.Extract()
 
-	b.stats.dbWaitDuration = dbStats.WaitDuration
-	b.stats.redisWaitDuration = redisStats.WaitDuration
-
+	metrics := make([]cwtypes.MetricDatum, 0, 10)
 	hostDim := cwatch.Dimension("Host", b.config.InstanceID)
 
-	b.CloudWatch().Queue(
+	metrics = append(metrics,
 		cwatch.Datum("DBConnectionsInUse", float64(dbStats.InUse), cwtypes.StandardUnitCount, hostDim),
-		cwatch.Datum("DBConnectionWaitDuration", float64(dbWaitDurationInPeriod/time.Millisecond), cwtypes.StandardUnitMilliseconds, hostDim),
+		cwatch.Datum("DBConnectionWaitDuration", float64(dbWaitDurationInPeriod/time.Second), cwtypes.StandardUnitSeconds, hostDim),
 		cwatch.Datum("RedisConnectionsInUse", float64(redisStats.ActiveCount), cwtypes.StandardUnitCount, hostDim),
-		cwatch.Datum("RedisConnectionsWaitDuration", float64(redisWaitDurationInPeriod/time.Millisecond), cwtypes.StandardUnitMilliseconds, hostDim),
-	)
+		cwatch.Datum("RedisConnectionsWaitDuration", float64(redisWaitDurationInPeriod/time.Second), cwtypes.StandardUnitSeconds, hostDim),
 
-	b.CloudWatch().Queue(
 		cwatch.Datum("QueuedMsgs", float64(bulkSize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "bulk")),
 		cwatch.Datum("QueuedMsgs", float64(prioritySize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "priority")),
+		cwatch.Datum("ContactsCreated", float64(stats.ContactsCreated), cwtypes.StandardUnitCount),
 	)
 
-	slog.Info("current metrics",
-		"db_inuse", dbStats.InUse,
-		"db_wait", dbWaitDurationInPeriod,
-		"redis_inuse", redisStats.ActiveCount,
-		"redis_wait", redisWaitDurationInPeriod,
-		"priority_size", prioritySize,
-		"bulk_size", bulkSize,
-	)
+	metrics = append(metrics, stats.IncomingRequests.Metrics("IncomingRequests")...)
+	metrics = append(metrics, stats.IncomingMessages.Metrics("IncomingMessages")...)
+	metrics = append(metrics, stats.IncomingStatuses.Metrics("IncomingStatuses")...)
+	metrics = append(metrics, stats.IncomingEvents.Metrics("IncomingEvents")...)
+	metrics = append(metrics, stats.IncomingIgnored.Metrics("IncomingIgnored")...)
+	metrics = append(metrics, stats.OutgoingSends.Metrics("OutgoingSends")...)
+	metrics = append(metrics, stats.OutgoingErrors.Metrics("OutgoingErrors")...)
+
+	// turn our duration stats into averages for metrics
+	for cType, count := range stats.IncomingDuration {
+		avgTime := float64(count) / float64(stats.IncomingRequests[cType])
+		metrics = append(metrics, cwatch.Datum("IncomingDuration", float64(avgTime), cwtypes.StandardUnitCount, cwatch.Dimension("ChannelType", string(cType))))
+	}
+	for cType, duration := range stats.OutgoingDuration {
+		avgTime := float64(duration) / float64(stats.OutgoingSends[cType]+stats.OutgoingErrors[cType])
+		metrics = append(metrics, cwatch.Datum("OutgoingDuration", avgTime, cwtypes.StandardUnitSeconds, cwatch.Dimension("ChannelType", string(cType))))
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	if err := b.cw.Send(ctx, metrics...); err != nil {
+		slog.Error("error sending metrics", "error", err)
+	} else {
+		slog.Info("sent metrics to cloudwatch", "metrics", len(metrics))
+	}
+	cancel()
+
 	return nil
 }
 
@@ -877,9 +898,4 @@ func (b *backend) Status() string {
 // RedisPool returns the redisPool for this backend
 func (b *backend) RedisPool() *redis.Pool {
 	return b.rp
-}
-
-// CloudWatch return the cloudwatch service
-func (b *backend) CloudWatch() *cwatch.Service {
-	return b.cw
 }

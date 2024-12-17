@@ -10,10 +10,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -218,9 +216,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 	// store this URN on our contact
 	contact.URNID_ = contactURN.ID
 
-	// report that we created a new contact
-	b.cw.Queue(cwatch.Datum("ContactCreated", float64(1), cwtypes.StandardUnitCount))
+	b.stats.RecordContactCreated()
 
-	// and return it
 	return contact, nil
 }

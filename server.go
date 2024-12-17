@@ -16,11 +16,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nyaruka/courier/utils/clogs"
-	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 )
@@ -248,8 +246,6 @@ func (s *server) initializeChannelHandlers() {
 
 func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc, logType clogs.LogType) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
 		// stuff a few things in our context that help with logging
 		baseCtx := context.WithValue(r.Context(), contextRequestURL, r.URL.String())
 		baseCtx = context.WithValue(baseCtx, contextRequestStart, time.Now())
@@ -290,8 +286,6 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		clog := NewChannelLogForIncoming(logType, channel, recorder, handler.RedactValues(channel))
 
 		events, hErr := handlerFunc(ctx, channel, recorder.ResponseWriter, r, clog)
-		duration := time.Since(start)
-		secondDuration := float64(duration) / float64(time.Second)
 
 		// if we received an error, write it out and report it
 		if hErr != nil {
@@ -306,30 +300,15 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		}
 
 		if channel != nil {
-			cw := s.Backend().CloudWatch()
-			channelTypeDim := cwatch.Dimension("ChannelType", string(channel.ChannelType()))
-
-			// if we have a channel but no events were created, we still log this to metrics
-			if len(events) == 0 {
-				if hErr != nil {
-					cw.Queue(cwatch.Datum("ChannelError", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim))
-				} else {
-					cw.Queue(cwatch.Datum("ChannelIgnored", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim))
-				}
-			}
-
 			for _, event := range events {
 				switch e := event.(type) {
 				case MsgIn:
 					clog.SetAttached(true)
-					cw.Queue(cwatch.Datum("MsgReceive", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim))
 					LogMsgReceived(r, e)
 				case StatusUpdate:
 					clog.SetAttached(true)
-					cw.Queue(cwatch.Datum("MsgStatus", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim))
 					LogMsgStatusReceived(r, e)
 				case ChannelEvent:
-					cw.Queue(cwatch.Datum("EventReceive", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim))
 					LogChannelEventReceived(r, e)
 				}
 			}
@@ -339,9 +318,10 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			if err := s.backend.WriteChannelLog(ctx, clog); err != nil {
 				slog.Error("error writing channel log", "error", err)
 			}
+
+			s.backend.OnReceiveComplete(ctx, channel, events, clog)
 		} else {
 			slog.Info("non-channel specific request", "error", err, "channel_type", handler.ChannelType(), "request", recorder.Trace.RequestTrace, "status", recorder.Trace.Response.StatusCode)
-
 		}
 	}
 }
