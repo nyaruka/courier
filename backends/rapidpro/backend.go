@@ -54,9 +54,7 @@ type stats struct {
 	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments by
 	// tracking their previous values
 	dbWaitDuration    time.Duration
-	dbWaitCount       int64
 	redisWaitDuration time.Duration
-	redisWaitCount    int64
 }
 
 type backend struct {
@@ -777,23 +775,18 @@ func (b *backend) Heartbeat() error {
 	redisStats := b.rp.Stats()
 
 	dbWaitDurationInPeriod := dbStats.WaitDuration - b.stats.dbWaitDuration
-	dbWaitCountInPeriod := dbStats.WaitCount - b.stats.dbWaitCount
 	redisWaitDurationInPeriod := redisStats.WaitDuration - b.stats.redisWaitDuration
-	redisWaitCountInPeriod := redisStats.WaitCount - b.stats.redisWaitCount
 
 	b.stats.dbWaitDuration = dbStats.WaitDuration
-	b.stats.dbWaitCount = dbStats.WaitCount
 	b.stats.redisWaitDuration = redisStats.WaitDuration
-	b.stats.redisWaitCount = redisStats.WaitCount
 
 	hostDim := cwatch.Dimension("Host", b.config.InstanceID)
-	appDim := cwatch.Dimension("App", "courier")
 
 	b.CloudWatch().Queue(
-		cwatch.Datum("DBConnectionsInUse", float64(dbStats.InUse), cwtypes.StandardUnitCount, hostDim, appDim),
-		cwatch.Datum("DBConnectionWaitDuration", float64(dbWaitDurationInPeriod/time.Millisecond), cwtypes.StandardUnitMilliseconds, hostDim, appDim),
-		cwatch.Datum("RedisConnectionsInUse", float64(redisStats.ActiveCount), cwtypes.StandardUnitCount, hostDim, appDim),
-		cwatch.Datum("RedisConnectionsWaitDuration", float64(redisWaitDurationInPeriod/time.Millisecond), cwtypes.StandardUnitMilliseconds, hostDim, appDim),
+		cwatch.Datum("DBConnectionsInUse", float64(dbStats.InUse), cwtypes.StandardUnitCount, hostDim),
+		cwatch.Datum("DBConnectionWaitDuration", float64(dbWaitDurationInPeriod/time.Millisecond), cwtypes.StandardUnitMilliseconds, hostDim),
+		cwatch.Datum("RedisConnectionsInUse", float64(redisStats.ActiveCount), cwtypes.StandardUnitCount, hostDim),
+		cwatch.Datum("RedisConnectionsWaitDuration", float64(redisWaitDurationInPeriod/time.Millisecond), cwtypes.StandardUnitMilliseconds, hostDim),
 	)
 
 	b.CloudWatch().Queue(
@@ -801,17 +794,14 @@ func (b *backend) Heartbeat() error {
 		cwatch.Datum("QueuedMsgs", float64(prioritySize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "priority")),
 	)
 
-	slog.Info("current metrics", "db_busy", dbStats.InUse,
-		"db_idle", dbStats.Idle,
-		"db_wait_time", dbWaitDurationInPeriod,
-		"db_wait_count", dbWaitCountInPeriod,
-		"redis_active", redisStats.ActiveCount,
-		"redis_idle", redisStats.IdleCount,
-		"redis_wait_time", redisWaitDurationInPeriod,
-		"redis_wait_count", redisWaitCountInPeriod,
+	slog.Info("current metrics",
+		"db_inuse", dbStats.InUse,
+		"db_wait", dbWaitDurationInPeriod,
+		"redis_inuse", redisStats.ActiveCount,
+		"redis_wait", redisWaitDurationInPeriod,
 		"priority_size", prioritySize,
-		"bulk_size", bulkSize)
-
+		"bulk_size", bulkSize,
+	)
 	return nil
 }
 

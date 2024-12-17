@@ -767,7 +767,6 @@ func (ts *BackendTestSuite) TestHealth() {
 }
 
 func (ts *BackendTestSuite) TestHeartbeat() {
-	// TODO make metrics abstraction layer so we can test what we report
 	ts.NoError(ts.b.Heartbeat())
 }
 

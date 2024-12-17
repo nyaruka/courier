@@ -218,15 +218,8 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 	// store this URN on our contact
 	contact.URNID_ = contactURN.ID
 
-	// log that we created a new contact to librato
-	b.cw.Queue(
-		cwatch.Datum(
-			"NewContact",
-			float64(1),
-			cwtypes.StandardUnitCount,
-			cwatch.Dimension("ChannelType", string(channel.ChannelType())),
-		),
-	)
+	// report that we created a new contact
+	b.cw.Queue(cwatch.Datum("ContactCreated", float64(1), cwtypes.StandardUnitCount))
 
 	// and return it
 	return contact, nil
