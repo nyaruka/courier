@@ -819,8 +819,8 @@ func (b *backend) Heartbeat() error {
 		"db_wait_count", dbWaitCountInPeriod,
 		"redis_active", redisStats.ActiveCount,
 		"redis_idle", redisStats.IdleCount,
-		"redis_wait_time", dbWaitDurationInPeriod,
-		"redis_wait_count", dbWaitCountInPeriod,
+		"redis_wait_time", redisWaitDurationInPeriod,
+		"redis_wait_count", redisWaitCountInPeriod,
 		"priority_size", prioritySize,
 		"bulk_size", bulkSize)
 
