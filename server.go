@@ -306,18 +306,15 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		}
 
 		if channel != nil {
-			// if we have a channel but no events were created, we still log this to metrics
+			cw := s.Backend().CloudWatch()
 			channelTypeDim := cwatch.Dimension("ChannelType", string(channel.ChannelType()))
 
+			// if we have a channel but no events were created, we still log this to metrics
 			if len(events) == 0 {
 				if hErr != nil {
-					s.Backend().CloudWatch().Queue(
-						cwatch.Datum("ChannelError", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
-					)
+					cw.Queue(cwatch.Datum("ChannelError", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim))
 				} else {
-					s.Backend().CloudWatch().Queue(
-						cwatch.Datum("ChannelIgnored", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
-					)
+					cw.Queue(cwatch.Datum("ChannelIgnored", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim))
 				}
 			}
 
@@ -325,20 +322,14 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 				switch e := event.(type) {
 				case MsgIn:
 					clog.SetAttached(true)
-					s.Backend().CloudWatch().Queue(
-						cwatch.Datum("MsgReceive", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
-					)
+					cw.Queue(cwatch.Datum("MsgReceive", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim))
 					LogMsgReceived(r, e)
 				case StatusUpdate:
 					clog.SetAttached(true)
-					s.Backend().CloudWatch().Queue(
-						cwatch.Datum("MsgStatus", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
-					)
+					cw.Queue(cwatch.Datum("MsgStatus", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim))
 					LogMsgStatusReceived(r, e)
 				case ChannelEvent:
-					s.Backend().CloudWatch().Queue(
-						cwatch.Datum("EventReceive", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
-					)
+					cw.Queue(cwatch.Datum("EventReceive", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim))
 					LogChannelEventReceived(r, e)
 				}
 			}
