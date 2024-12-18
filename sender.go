@@ -7,9 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/nyaruka/courier/utils/clogs"
-	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -289,8 +287,6 @@ func (w *Sender) sendMessage(msg MsgOut) {
 		log = log.With("quick_replies", msg.QuickReplies())
 	}
 
-	start := time.Now()
-
 	// if this is a resend, clear our sent status
 	if msg.IsResend() {
 		err := backend.ClearMsgSent(sendCTX, msg.ID())
@@ -327,26 +323,7 @@ func (w *Sender) sendMessage(msg MsgOut) {
 		log.Warn("duplicate send, marking as wired")
 
 	} else {
-
 		status = w.sendByHandler(sendCTX, handler, msg, clog, log)
-
-		duration := time.Since(start)
-		secondDuration := float64(duration) / float64(time.Second)
-		log.Debug("send complete", "status", status.Status(), "elapsed", duration)
-
-		channelTypeDim := cwatch.Dimension("ChannelType", string(msg.Channel().ChannelType()))
-
-		// report to librato
-		if status.Status() == MsgStatusErrored || status.Status() == MsgStatusFailed {
-			backend.CloudWatch().Queue(
-				cwatch.Datum("MsgSendError", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
-			)
-
-		} else {
-			backend.CloudWatch().Queue(
-				cwatch.Datum("MsgSend", float64(secondDuration), types.StandardUnitSeconds, channelTypeDim),
-			)
-		}
 	}
 
 	// we allot 10 seconds to write our status to the db
@@ -367,7 +344,7 @@ func (w *Sender) sendMessage(msg MsgOut) {
 	}
 
 	// mark our send task as complete
-	backend.MarkOutgoingMsgComplete(writeCTX, msg, status)
+	backend.OnSendComplete(writeCTX, msg, status, clog)
 }
 
 func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, clog *ChannelLog, log *slog.Logger) StatusUpdate {

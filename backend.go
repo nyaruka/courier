@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -68,7 +67,7 @@ type Backend interface {
 	// WriteChannelLog writes the passed in channel log to our backend
 	WriteChannelLog(context.Context, *ChannelLog) error
 
-	// PopNextOutgoingMsg returns the next message that needs to be sent, callers should call MarkOutgoingMsgComplete with the
+	// PopNextOutgoingMsg returns the next message that needs to be sent, callers should call OnSendComplete with the
 	// returned message when they have dealt with the message (regardless of whether it was sent or not)
 	PopNextOutgoingMsg(context.Context) (MsgOut, error)
 
@@ -80,10 +79,11 @@ type Backend interface {
 	// a message is being forced in being resent by a user
 	ClearMsgSent(context.Context, MsgID) error
 
-	// MarkOutgoingMsgComplete marks the passed in message as having been processed. Note this should be called even in the case
-	// of errors during sending as it will manage the number of active workers per channel. The status parameter can be
-	// used to determine any sort of deduping of msg sends
-	MarkOutgoingMsgComplete(context.Context, MsgOut, StatusUpdate)
+	// OnSendComplete is called when the sender has finished trying to send a message
+	OnSendComplete(context.Context, MsgOut, StatusUpdate, *ChannelLog)
+
+	// OnReceiveComplete is called when the server has finished handling an incoming request
+	OnReceiveComplete(context.Context, Channel, []Event, *ChannelLog)
 
 	// SaveAttachment saves an attachment to backend storage
 	SaveAttachment(context.Context, Channel, string, []byte, string) (string, error)
@@ -106,9 +106,6 @@ type Backend interface {
 
 	// RedisPool returns the redisPool for this backend
 	RedisPool() *redis.Pool
-
-	// CloudWatch return the CloudWatch service for this backend
-	CloudWatch() *cwatch.Service
 }
 
 // Media is a resolved media object that can be used as a message attachment
