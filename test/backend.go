@@ -375,11 +375,6 @@ func (mb *MockBackend) Status() string {
 	return "ALL GOOD"
 }
 
-// Heartbeat is a noop for our mock backend
-func (mb *MockBackend) Heartbeat() error {
-	return nil
-}
-
 // RedisPool returns the redisPool for this backend
 func (mb *MockBackend) RedisPool() *redis.Pool {
 	return mb.redisPool
