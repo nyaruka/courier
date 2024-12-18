@@ -1,3 +1,8 @@
+v9.3.38 (2024-12-18)
+-------------------------
+ * Refactor metrics so that everything is sent from Heartbeat in the backend
+ * Send metrics to cloudwatch
+
 v9.3.37 (2024-12-16)
 -------------------------
  * Revert "Fail messages when we hit contact pair limit"
