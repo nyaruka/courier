@@ -11,8 +11,8 @@ import (
 
 type CountByType map[courier.ChannelType]int
 
-// Metrics converts per channel counts into cloudwatch metrics with type as a dimension
-func (c CountByType) Metrics(name string) []types.MetricDatum {
+// converts per channel counts into cloudwatch metrics with type as a dimension
+func (c CountByType) metrics(name string) []types.MetricDatum {
 	m := make([]types.MetricDatum, 0, len(c))
 	for typ, count := range c {
 		m = append(m, cwatch.Datum(name, float64(count), types.StandardUnitCount, cwatch.Dimension("ChannelType", string(typ))))
@@ -52,6 +52,31 @@ func newStats() *Stats {
 
 		ContactsCreated: 0,
 	}
+}
+
+func (s *Stats) ToMetrics() []types.MetricDatum {
+	metrics := make([]types.MetricDatum, 0, 20)
+	metrics = append(metrics, s.IncomingRequests.metrics("IncomingRequests")...)
+	metrics = append(metrics, s.IncomingMessages.metrics("IncomingMessages")...)
+	metrics = append(metrics, s.IncomingStatuses.metrics("IncomingStatuses")...)
+	metrics = append(metrics, s.IncomingEvents.metrics("IncomingEvents")...)
+	metrics = append(metrics, s.IncomingIgnored.metrics("IncomingIgnored")...)
+
+	for typ, d := range s.IncomingDuration { // convert to averages
+		avgTime := float64(d) / float64(s.IncomingRequests[typ])
+		metrics = append(metrics, cwatch.Datum("IncomingDuration", float64(avgTime), types.StandardUnitCount, cwatch.Dimension("ChannelType", string(typ))))
+	}
+
+	metrics = append(metrics, s.OutgoingSends.metrics("OutgoingSends")...)
+	metrics = append(metrics, s.OutgoingErrors.metrics("OutgoingErrors")...)
+
+	for typ, d := range s.OutgoingDuration { // convert to averages
+		avgTime := float64(d) / float64(s.OutgoingSends[typ]+s.OutgoingErrors[typ])
+		metrics = append(metrics, cwatch.Datum("OutgoingDuration", avgTime, types.StandardUnitSeconds, cwatch.Dimension("ChannelType", string(typ))))
+	}
+
+	metrics = append(metrics, cwatch.Datum("ContactsCreated", float64(s.ContactsCreated), types.StandardUnitCount))
+	return metrics
 }
 
 // StatsCollector provides threadsafe stats collection

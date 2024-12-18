@@ -745,6 +745,8 @@ func (b *backend) Heartbeat() error {
 	rc := b.rp.Get()
 	defer rc.Close()
 
+	metrics := b.stats.Extract().ToMetrics()
+
 	active, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("%s:active", msgQueueName), "0", "-1"))
 	if err != nil {
 		return fmt.Errorf("error getting active queues: %w", err)
@@ -773,7 +775,7 @@ func (b *backend) Heartbeat() error {
 		bulkSize += count
 	}
 
-	// get our DB and redis stats
+	// calculate DB and redis pool metrics
 	dbStats := b.db.Stats()
 	redisStats := b.rp.Stats()
 	dbWaitDurationInPeriod := dbStats.WaitDuration - b.dbWaitDuration
@@ -781,39 +783,15 @@ func (b *backend) Heartbeat() error {
 	b.dbWaitDuration = dbStats.WaitDuration
 	b.redisWaitDuration = redisStats.WaitDuration
 
-	stats := b.stats.Extract()
-
-	metrics := make([]cwtypes.MetricDatum, 0, 10)
 	hostDim := cwatch.Dimension("Host", b.config.InstanceID)
-
 	metrics = append(metrics,
 		cwatch.Datum("DBConnectionsInUse", float64(dbStats.InUse), cwtypes.StandardUnitCount, hostDim),
 		cwatch.Datum("DBConnectionWaitDuration", float64(dbWaitDurationInPeriod/time.Second), cwtypes.StandardUnitSeconds, hostDim),
 		cwatch.Datum("RedisConnectionsInUse", float64(redisStats.ActiveCount), cwtypes.StandardUnitCount, hostDim),
 		cwatch.Datum("RedisConnectionsWaitDuration", float64(redisWaitDurationInPeriod/time.Second), cwtypes.StandardUnitSeconds, hostDim),
-
 		cwatch.Datum("QueuedMsgs", float64(bulkSize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "bulk")),
 		cwatch.Datum("QueuedMsgs", float64(prioritySize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "priority")),
-		cwatch.Datum("ContactsCreated", float64(stats.ContactsCreated), cwtypes.StandardUnitCount),
 	)
-
-	metrics = append(metrics, stats.IncomingRequests.Metrics("IncomingRequests")...)
-	metrics = append(metrics, stats.IncomingMessages.Metrics("IncomingMessages")...)
-	metrics = append(metrics, stats.IncomingStatuses.Metrics("IncomingStatuses")...)
-	metrics = append(metrics, stats.IncomingEvents.Metrics("IncomingEvents")...)
-	metrics = append(metrics, stats.IncomingIgnored.Metrics("IncomingIgnored")...)
-	metrics = append(metrics, stats.OutgoingSends.Metrics("OutgoingSends")...)
-	metrics = append(metrics, stats.OutgoingErrors.Metrics("OutgoingErrors")...)
-
-	// turn our duration stats into averages for metrics
-	for cType, count := range stats.IncomingDuration {
-		avgTime := float64(count) / float64(stats.IncomingRequests[cType])
-		metrics = append(metrics, cwatch.Datum("IncomingDuration", float64(avgTime), cwtypes.StandardUnitCount, cwatch.Dimension("ChannelType", string(cType))))
-	}
-	for cType, duration := range stats.OutgoingDuration {
-		avgTime := float64(duration) / float64(stats.OutgoingSends[cType]+stats.OutgoingErrors[cType])
-		metrics = append(metrics, cwatch.Datum("OutgoingDuration", avgTime, cwtypes.StandardUnitSeconds, cwatch.Dimension("ChannelType", string(cType))))
-	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	if err := b.cw.Send(ctx, metrics...); err != nil {

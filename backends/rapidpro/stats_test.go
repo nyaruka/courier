@@ -32,6 +32,9 @@ func TestStats(t *testing.T) {
 	assert.Equal(t, rapidpro.CountByType{}, stats.OutgoingErrors)
 	assert.Equal(t, rapidpro.DurationByType{"T": time.Second * 2, "FBA": time.Second * 3}, stats.OutgoingDuration)
 
+	metrics := stats.ToMetrics()
+	assert.Len(t, metrics, 8)
+
 	sc.RecordOutgoing("FBA", true, time.Second)
 	sc.RecordOutgoing("FBA", true, time.Second)
 
@@ -46,4 +49,7 @@ func TestStats(t *testing.T) {
 	assert.Equal(t, rapidpro.CountByType{"FBA": 2}, stats.OutgoingSends)
 	assert.Equal(t, rapidpro.CountByType{}, stats.OutgoingErrors)
 	assert.Equal(t, rapidpro.DurationByType{"FBA": time.Second * 2}, stats.OutgoingDuration)
+
+	metrics = stats.ToMetrics()
+	assert.Len(t, metrics, 3)
 }
