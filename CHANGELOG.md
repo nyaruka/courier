@@ -1,3 +1,7 @@
+v9.3.42 (2024-12-18)
+-------------------------
+ * Fix integer rounding in duration metrics
+
 v9.3.41 (2024-12-18)
 -------------------------
  * Tweak metric reporter so all errors are logged
