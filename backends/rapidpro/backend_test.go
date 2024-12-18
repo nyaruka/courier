@@ -766,10 +766,6 @@ func (ts *BackendTestSuite) TestHealth() {
 	ts.Equal(ts.b.Health(), "")
 }
 
-func (ts *BackendTestSuite) TestHeartbeat() {
-	ts.NoError(ts.b.Heartbeat())
-}
-
 func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	rc := ts.b.rp.Get()
 	defer rc.Close()

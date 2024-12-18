@@ -129,25 +129,6 @@ func (s *server) Start() error {
 		}
 	}()
 
-	s.waitGroup.Add(1)
-
-	// start our heartbeat
-	go func() {
-		defer s.waitGroup.Done()
-
-		for !s.stopped {
-			select {
-			case <-s.stopChan:
-				return
-			case <-time.After(time.Minute):
-				err := s.backend.Heartbeat()
-				if err != nil {
-					slog.Error("error running backend heartbeat", "error", err)
-				}
-			}
-		}
-	}()
-
 	slog.Info(fmt.Sprintf("server listening on %d", s.config.Port),
 		"comp", "server",
 		"port", s.config.Port,

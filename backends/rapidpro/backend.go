@@ -237,8 +237,31 @@ func (b *backend) Start() error {
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "statuses"), b.flushStatusFile)
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "events"), b.flushChannelEventFile)
 
+	b.startMetricsReporter(time.Minute)
+
 	slog.Info("backend started", "comp", "backend", "state", "started")
 	return nil
+}
+
+func (b *backend) startMetricsReporter(interval time.Duration) {
+	b.waitGroup.Add(1)
+
+	go func() {
+		defer func() {
+			slog.Info("metrics reporter exiting")
+			b.waitGroup.Done()
+		}()
+
+		for {
+			select {
+			case <-b.stopChan:
+				b.reportMetrics()
+				return
+			case <-time.After(interval):
+				b.reportMetrics()
+			}
+		}
+	}()
 }
 
 // Stop stops our RapidPro backend, closing our db and redis connections
@@ -741,7 +764,7 @@ func (b *backend) Health() string {
 	return health.String()
 }
 
-func (b *backend) Heartbeat() error {
+func (b *backend) reportMetrics() error {
 	rc := b.rp.Get()
 	defer rc.Close()
 
