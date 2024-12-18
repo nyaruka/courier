@@ -63,16 +63,16 @@ func (s *Stats) ToMetrics() []types.MetricDatum {
 	metrics = append(metrics, s.IncomingIgnored.metrics("IncomingIgnored")...)
 
 	for typ, d := range s.IncomingDuration { // convert to averages
-		avgTime := float64(d) / float64(s.IncomingRequests[typ])
-		metrics = append(metrics, cwatch.Datum("IncomingDuration", avgTime/float64(time.Second), types.StandardUnitSeconds, cwatch.Dimension("ChannelType", string(typ))))
+		avgTime := d / time.Duration(s.IncomingRequests[typ])
+		metrics = append(metrics, cwatch.Datum("IncomingDuration", float64(avgTime/time.Second), types.StandardUnitSeconds, cwatch.Dimension("ChannelType", string(typ))))
 	}
 
 	metrics = append(metrics, s.OutgoingSends.metrics("OutgoingSends")...)
 	metrics = append(metrics, s.OutgoingErrors.metrics("OutgoingErrors")...)
 
 	for typ, d := range s.OutgoingDuration { // convert to averages
-		avgTime := float64(d) / float64(s.OutgoingSends[typ]+s.OutgoingErrors[typ])
-		metrics = append(metrics, cwatch.Datum("OutgoingDuration", avgTime/float64(time.Second), types.StandardUnitSeconds, cwatch.Dimension("ChannelType", string(typ))))
+		avgTime := d / time.Duration(s.OutgoingSends[typ]+s.OutgoingErrors[typ])
+		metrics = append(metrics, cwatch.Datum("OutgoingDuration", float64(avgTime/time.Second), types.StandardUnitSeconds, cwatch.Dimension("ChannelType", string(typ))))
 	}
 
 	metrics = append(metrics, cwatch.Datum("ContactsCreated", float64(s.ContactsCreated), types.StandardUnitCount))
