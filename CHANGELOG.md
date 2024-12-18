@@ -1,3 +1,7 @@
+v9.3.39 (2024-12-18)
+-------------------------
+ * Make backend responsible for reporting its own metrics
+
 v9.3.38 (2024-12-18)
 -------------------------
  * Refactor metrics so that everything is sent from Heartbeat in the backend
