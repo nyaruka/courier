@@ -1,3 +1,7 @@
+v9.3.40 (2024-12-18)
+-------------------------
+ * Fix duration metrics
+
 v9.3.39 (2024-12-18)
 -------------------------
  * Make backend responsible for reporting its own metrics
