@@ -11,16 +11,41 @@ import (
 
 type CountByType map[courier.ChannelType]int
 
-// converts per channel counts into cloudwatch metrics with type as a dimension
+// converts per channel counts into a set of cloudwatch metrics with type as a dimension, and a total count without type
 func (c CountByType) metrics(name string) []types.MetricDatum {
-	m := make([]types.MetricDatum, 0, len(c))
+	m := make([]types.MetricDatum, 0, len(c)+1)
+	total := 0
 	for typ, count := range c {
 		m = append(m, cwatch.Datum(name, float64(count), types.StandardUnitCount, cwatch.Dimension("ChannelType", string(typ))))
+
+		total += count
 	}
+
+	m = append(m, cwatch.Datum(name, float64(total), types.StandardUnitCount))
 	return m
 }
 
 type DurationByType map[courier.ChannelType]time.Duration
+
+func (c DurationByType) metrics(name string, avgDenom func(courier.ChannelType) int) []types.MetricDatum {
+	m := make([]types.MetricDatum, 0, len(c)+1)
+	totalDuration := time.Duration(0)
+	totalDenom := 0
+	for typ, d := range c { // convert to averages
+		denom := avgDenom(typ)
+		avgTime := d / time.Duration(denom)
+		m = append(m, cwatch.Datum(name, float64(avgTime)/float64(time.Second), types.StandardUnitSeconds, cwatch.Dimension("ChannelType", string(typ))))
+
+		totalDuration += d
+		totalDenom += denom
+	}
+
+	if totalDenom > 0 {
+		overallAvg := float64(totalDuration) / float64(totalDenom)
+		m = append(m, cwatch.Datum(name, overallAvg/float64(time.Second), types.StandardUnitSeconds))
+	}
+	return m
+}
 
 type Stats struct {
 	IncomingRequests CountByType    // number of handler requests
@@ -61,19 +86,11 @@ func (s *Stats) ToMetrics() []types.MetricDatum {
 	metrics = append(metrics, s.IncomingStatuses.metrics("IncomingStatuses")...)
 	metrics = append(metrics, s.IncomingEvents.metrics("IncomingEvents")...)
 	metrics = append(metrics, s.IncomingIgnored.metrics("IncomingIgnored")...)
-
-	for typ, d := range s.IncomingDuration { // convert to averages
-		avgTime := d / time.Duration(s.IncomingRequests[typ])
-		metrics = append(metrics, cwatch.Datum("IncomingDuration", float64(avgTime)/float64(time.Second), types.StandardUnitSeconds, cwatch.Dimension("ChannelType", string(typ))))
-	}
+	metrics = append(metrics, s.IncomingDuration.metrics("IncomingDuration", func(typ courier.ChannelType) int { return s.IncomingRequests[typ] })...)
 
 	metrics = append(metrics, s.OutgoingSends.metrics("OutgoingSends")...)
 	metrics = append(metrics, s.OutgoingErrors.metrics("OutgoingErrors")...)
-
-	for typ, d := range s.OutgoingDuration { // convert to averages
-		avgTime := d / time.Duration(s.OutgoingSends[typ]+s.OutgoingErrors[typ])
-		metrics = append(metrics, cwatch.Datum("OutgoingDuration", float64(avgTime)/float64(time.Second), types.StandardUnitSeconds, cwatch.Dimension("ChannelType", string(typ))))
-	}
+	metrics = append(metrics, s.OutgoingDuration.metrics("OutgoingDuration", func(typ courier.ChannelType) int { return s.OutgoingSends[typ] + s.OutgoingErrors[typ] })...)
 
 	metrics = append(metrics, cwatch.Datum("ContactsCreated", float64(s.ContactsCreated), types.StandardUnitCount))
 	return metrics
