@@ -35,7 +35,7 @@ func TestStats(t *testing.T) {
 	assert.Equal(t, rapidpro.DurationByType{"T": time.Second * 2, "FBA": time.Second * 3}, stats.OutgoingDuration)
 
 	metrics := stats.ToMetrics()
-	assert.Len(t, metrics, 17)
+	assert.Len(t, metrics, 8)
 
 	sc.RecordOutgoing("FBA", true, time.Second)
 	sc.RecordOutgoing("FBA", true, time.Second)
@@ -53,18 +53,10 @@ func TestStats(t *testing.T) {
 	assert.Equal(t, rapidpro.DurationByType{"FBA": time.Second * 2}, stats.OutgoingDuration)
 
 	metrics = stats.ToMetrics()
-	assert.Len(t, metrics, 11)
+	assert.Len(t, metrics, 3)
 	assert.Equal(t, []types.MetricDatum{
-		cwatch.Datum("IncomingRequests", 0, "Count"),
-		cwatch.Datum("IncomingMessages", 0, "Count"),
-		cwatch.Datum("IncomingStatuses", 0, "Count"),
-		cwatch.Datum("IncomingEvents", 0, "Count"),
-		cwatch.Datum("IncomingIgnored", 0, "Count"),
 		cwatch.Datum("OutgoingSends", 2, "Count", cwatch.Dimension("ChannelType", "FBA")),
-		cwatch.Datum("OutgoingSends", 2, "Count"),
-		cwatch.Datum("OutgoingErrors", 0, "Count"),
 		cwatch.Datum("OutgoingDuration", 1, "Seconds", cwatch.Dimension("ChannelType", "FBA")),
-		cwatch.Datum("OutgoingDuration", 1, "Seconds"),
 		cwatch.Datum("ContactsCreated", 0, "Count"),
 	}, metrics)
 }
