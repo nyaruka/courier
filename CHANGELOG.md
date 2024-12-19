@@ -1,3 +1,7 @@
+v9.3.43 (2024-12-19)
+-------------------------
+ * Send metrics without channel type as well
+
 v9.3.42 (2024-12-18)
 -------------------------
  * Fix integer rounding in duration metrics
