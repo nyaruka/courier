@@ -1,3 +1,7 @@
+v9.3.44 (2024-12-19)
+-------------------------
+ * Remove previously added aggregated versions of channel type specific metrics because apparently we don't need them
+
 v9.3.43 (2024-12-19)
 -------------------------
  * Send metrics without channel type as well
