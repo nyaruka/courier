@@ -14,14 +14,9 @@ type CountByType map[courier.ChannelType]int
 // converts per channel counts into a set of cloudwatch metrics with type as a dimension, and a total count without type
 func (c CountByType) metrics(name string) []types.MetricDatum {
 	m := make([]types.MetricDatum, 0, len(c)+1)
-	total := 0
 	for typ, count := range c {
 		m = append(m, cwatch.Datum(name, float64(count), types.StandardUnitCount, cwatch.Dimension("ChannelType", string(typ))))
-
-		total += count
 	}
-
-	m = append(m, cwatch.Datum(name, float64(total), types.StandardUnitCount))
 	return m
 }
 
@@ -29,20 +24,9 @@ type DurationByType map[courier.ChannelType]time.Duration
 
 func (c DurationByType) metrics(name string, avgDenom func(courier.ChannelType) int) []types.MetricDatum {
 	m := make([]types.MetricDatum, 0, len(c)+1)
-	totalDuration := time.Duration(0)
-	totalDenom := 0
 	for typ, d := range c { // convert to averages
-		denom := avgDenom(typ)
-		avgTime := d / time.Duration(denom)
+		avgTime := d / time.Duration(avgDenom(typ))
 		m = append(m, cwatch.Datum(name, float64(avgTime)/float64(time.Second), types.StandardUnitSeconds, cwatch.Dimension("ChannelType", string(typ))))
-
-		totalDuration += d
-		totalDenom += denom
-	}
-
-	if totalDenom > 0 {
-		overallAvg := float64(totalDuration) / float64(totalDenom)
-		m = append(m, cwatch.Datum(name, overallAvg/float64(time.Second), types.StandardUnitSeconds))
 	}
 	return m
 }
