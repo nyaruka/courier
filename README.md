@@ -42,7 +42,7 @@ environment variables and parameters and for more details on each option.
 ### AWS services:
 
  * `COURIER_AWS_ACCESS_KEY_ID`: AWS access key id used to authenticate to AWS
- * `COURIER_AWS_SECRET_ACCESS_KEY` AWS secret access key used to authenticate to AWS
+ * `COURIER_AWS_SECRET_ACCESS_KEY`: AWS secret access key used to authenticate to AWS
  * `COURIER_AWS_REGION`: AWS region (ex: `eu-west-1`)
  * `COURIER_S3_ATTACHMENTS_BUCKET`: name of your S3 bucket (ex: `rp-attachments`)
 
