@@ -33,29 +33,24 @@ We recommend running courier with no changes to the configuration and no paramet
 environment variables to configure it. You can use `% courier --help` to see a list of the
 environment variables and parameters and for more details on each option.
 
-### RapidPro
-
-For use with RapidPro/TextIt, you will want to configure these settings:
-
  * `COURIER_DOMAIN`: The root domain which courier is exposed as (ex `textit.in`)
  * `COURIER_SPOOL_DIR`: A local path where courier can spool files if the database is down, should be writable. (ex: `/home/courier/spool`)
  * `COURIER_DB`: Details parameters used to connect to the Postgres RapidPro database (ex: `postgres://textit:fooman@rds.courier.io/5432/textit`)
  * `COURIER_REDIS`: Details parameters to use to connect to Redis RapidPro database (ex: `redis://redis-internal.courier.io:6379/13`)
  * `COURIER_AUTH_TOKEN`: authentication token to require for requests from Mailroom
- 
-For writing of message attachments, Courier needs access to an S3 bucket, you can configure access to your bucket via:
 
- * `COURIER_S3_REGION`: The region for your S3 bucket (ex: `ew-west-1`)
- * `COURIER_S3_ATTACHMENTS_BUCKET`: The name of your S3 bucket (ex: `rp-attachments`)
- * `COURIER_S3_ATTACHMENTS_PREFIX`: The prefix to use for filenames of attachments added to your bucket (ex: `attachments`)
- * `COURIER_AWS_ACCESS_KEY_ID`: The AWS access key id used to authenticate to AWS
- * `COURIER_AWS_SECRET_ACCESS_KEY` The AWS secret access key used to authenticate to AWS
+### AWS services:
 
-Recommended settings for error and performance monitoring:
+- `COURIER_AWS_ACCESS_KEY_ID`: AWS access key id used to authenticate to AWS
+- `COURIER_AWS_SECRET_ACCESS_KEY` AWS secret access key used to authenticate to AWS
+- `COURIER_AWS_REGION`: AWS region (ex: `eu-west-1`)
+- `COURIER_S3_ATTACHMENTS_BUCKET`: name of your S3 bucket (ex: `rp-attachments`)
 
- * `COURIER_LIBRATO_USERNAME`: The username to use for logging of events to Librato
- * `COURIER_LIBRATO_TOKEN`: The token to use for logging of events to Librato
- * `COURIER_SENTRY_DSN`: The DSN to use when logging errors to Sentry
+### Logging and error reporting:
+
+- `COURIER_DEPLOYMENT_ID`: used for metrics reporting
+- `COURIER_SENTRY_DSN`: DSN to use when logging errors to Sentry
+- `COURIER_LOG_LEVEL`: logging level mailroom should use (default is `warn`)
 
 ## Development
 
