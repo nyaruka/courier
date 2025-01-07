@@ -41,16 +41,16 @@ environment variables and parameters and for more details on each option.
 
 ### AWS services:
 
-- `COURIER_AWS_ACCESS_KEY_ID`: AWS access key id used to authenticate to AWS
-- `COURIER_AWS_SECRET_ACCESS_KEY` AWS secret access key used to authenticate to AWS
-- `COURIER_AWS_REGION`: AWS region (ex: `eu-west-1`)
-- `COURIER_S3_ATTACHMENTS_BUCKET`: name of your S3 bucket (ex: `rp-attachments`)
+ * `COURIER_AWS_ACCESS_KEY_ID`: AWS access key id used to authenticate to AWS
+ * `COURIER_AWS_SECRET_ACCESS_KEY` AWS secret access key used to authenticate to AWS
+ * `COURIER_AWS_REGION`: AWS region (ex: `eu-west-1`)
+ * `COURIER_S3_ATTACHMENTS_BUCKET`: name of your S3 bucket (ex: `rp-attachments`)
 
 ### Logging and error reporting:
 
-- `COURIER_DEPLOYMENT_ID`: used for metrics reporting
-- `COURIER_SENTRY_DSN`: DSN to use when logging errors to Sentry
-- `COURIER_LOG_LEVEL`: logging level mailroom should use (default is `warn`)
+ * `COURIER_DEPLOYMENT_ID`: used for metrics reporting
+ * `COURIER_SENTRY_DSN`: DSN to use when logging errors to Sentry
+ * `COURIER_LOG_LEVEL`: logging level to use (default is `warn`)
 
 ## Development
 
