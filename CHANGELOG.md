@@ -1,3 +1,7 @@
+v10.0.0 (2025-01-07)
+-------------------------
+ * Update README.md
+
 v9.3.44 (2024-12-19)
 -------------------------
  * Remove previously added aggregated versions of channel type specific metrics because apparently we don't need them
