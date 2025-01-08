@@ -12,7 +12,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	slogmulti "github.com/samber/slog-multi"
-	slogsentry "github.com/samber/slog-sentry"
+	slogsentry "github.com/samber/slog-sentry/v2"
 
 	// load channel handler packages
 	_ "github.com/nyaruka/courier/handlers/africastalking"
