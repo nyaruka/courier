@@ -1,3 +1,7 @@
+v10.1.0 (2025-01-08)
+-------------------------
+ * Udpate deps including phonenumbers
+
 v10.0.0 (2025-01-07)
 -------------------------
  * Update README.md
