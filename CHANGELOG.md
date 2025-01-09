@@ -1,3 +1,7 @@
+v10.1.1 (2025-01-09)
+-------------------------
+ * Do not log EX MT response check error
+
 v10.1.0 (2025-01-08)
 -------------------------
  * Udpate deps including phonenumbers
