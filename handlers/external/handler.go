@@ -366,7 +366,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		}
 
 		if responseCheck != "" && !strings.Contains(string(respBody), responseCheck) {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseUnexpectedUnlogged
 		}
 	}
 

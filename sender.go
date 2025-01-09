@@ -110,6 +110,15 @@ var ErrResponseUnexpected error = &SendError{
 	clogMsg:   "Response doesn't match expected values.",
 }
 
+// ErrResponseUnexpectedUnlogged is same as ErrResponseUnexpected without logging so better for channels where response check is user configured.
+var ErrResponseUnexpectedUnlogged error = &SendError{
+	msg:       "response not expected values",
+	retryable: false,
+	loggable:  false,
+	clogCode:  "response_unexpected",
+	clogMsg:   "Response doesn't match expected values.",
+}
+
 // ErrContactStopped should be returned when channel tells us explicitly that the contact has opted-out
 var ErrContactStopped error = &SendError{
 	msg:       "contact opted out",
