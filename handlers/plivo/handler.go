@@ -178,7 +178,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		externalID, err := jsonparser.GetString(respBody, "message_uuid", "[0]")
 		if err != nil {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseUnexpectedUnlogged
 		}
 
 		res.AddExternalID(externalID)

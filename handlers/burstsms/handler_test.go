@@ -114,7 +114,7 @@ var outgoingCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
 	},
 	{
 		Label:   "Error Sending",

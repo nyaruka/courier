@@ -1060,7 +1060,7 @@ func getSendWhatsAppMsgId(resp []byte) (string, error) {
 	if externalID, err := jsonparser.GetString(resp, "messages", "[0]", "id"); err == nil {
 		return externalID, nil
 	} else {
-		return "", courier.ErrResponseUnexpected
+		return "", courier.ErrResponseUnexpectedUnlogged
 	}
 }
 

@@ -156,7 +156,7 @@ var sendTestCases = []OutgoingTestCase{
 			Body: `{"from_did":"2065551212","to_did":"2067791234","message":"No External ID"}`,
 		}},
 		ExpectedLogErrors: []*clogs.LogError{courier.ErrorResponseValueMissing("guid")},
-		ExpectedError:     courier.ErrResponseUnexpected,
+		ExpectedError:     courier.ErrResponseUnexpectedUnlogged,
 	},
 	{
 		Label:   "Error Sending",

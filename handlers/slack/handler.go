@@ -205,13 +205,13 @@ func (h *handler) sendTextMsgPart(msg courier.MsgOut, token string, clog *courie
 
 	ok, err := jsonparser.GetBoolean(respBody, "ok")
 	if err != nil {
-		return courier.ErrResponseUnexpected
+		return courier.ErrResponseUnexpectedUnlogged
 	}
 
 	if !ok {
 		errDescription, err := jsonparser.GetString(respBody, "error")
 		if err != nil {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseUnexpectedUnlogged
 		}
 		clog.Error(clogs.NewLogError("", "", errDescription))
 		return courier.ErrFailedWithReason("", errDescription)
@@ -284,7 +284,7 @@ func (h *handler) sendFilePart(msg courier.MsgOut, token string, fileParams *Fil
 	}
 
 	if !fr.OK {
-		return courier.ErrResponseUnexpected
+		return courier.ErrResponseUnexpectedUnlogged
 	}
 
 	return nil

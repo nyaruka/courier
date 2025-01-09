@@ -214,7 +214,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	groupID, err := jsonparser.GetInt(respBody, "messages", "[0]", "status", "groupId")
 	if err != nil || (groupID != 1 && groupID != 3) {
-		return courier.ErrResponseUnexpected
+		return courier.ErrResponseUnexpectedUnlogged
 	}
 
 	externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "messageId")

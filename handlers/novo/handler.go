@@ -115,7 +115,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		// we always get 204 on success
 		if responseMsgStatus != "FINISHED" || err != nil {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseUnexpectedUnlogged
 		}
 	}
 

@@ -226,7 +226,7 @@ var sendAPIkeyTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "key=FCMKey"},
 			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
 	},
 	{
 		Label:      "No Multicast ID",
@@ -242,7 +242,7 @@ var sendAPIkeyTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "key=FCMKey"},
 			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
 	},
 	{
 		Label:      "Request Error",
@@ -353,7 +353,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
 			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
 	},
 	{
 		Label:      "No Multicast ID",
@@ -369,7 +369,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
 			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
 	},
 	{
 		Label:      "Request Error",

@@ -179,7 +179,7 @@ func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.V
 	if response.Result.MessageID > 0 {
 		return strconv.FormatInt(response.Result.MessageID, 10), nil
 	}
-	return "", courier.ErrResponseUnexpected
+	return "", courier.ErrResponseUnexpectedUnlogged
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
