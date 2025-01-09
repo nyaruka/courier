@@ -834,7 +834,7 @@ var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
 	},
 	{
 		Label:          "Send Attachment",
