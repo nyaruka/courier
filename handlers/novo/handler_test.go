@@ -120,7 +120,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"Invalid Parameters"}, "signature": {"4b640a668fd83223e38d429b15ea737ef58e1ab025b756baaca4743f3adb3f77"}},
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:   "Error Response",

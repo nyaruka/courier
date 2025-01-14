@@ -156,7 +156,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	// was this request successful?
 	msgStatus, _ := jsonparser.GetString(respBody, "SMSMessageData", "Recipients", "[0]", "status")
 	if msgStatus != "Success" {
-		return courier.ErrResponseUnexpected
+		return courier.ErrResponseContent
 	}
 
 	// grab the external id if we can

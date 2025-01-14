@@ -406,7 +406,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	externalMsgId, err := jsonparser.GetInt(respBody, responseOutgoingMessageKey)
 	if err != nil {
-		return courier.ErrResponseUnexpected
+		return courier.ErrResponseContent
 	}
 
 	res.AddExternalID(strconv.FormatInt(externalMsgId, 10))

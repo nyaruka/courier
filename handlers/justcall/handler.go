@@ -199,7 +199,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		clog.Error(courier.ErrorResponseValueMissing("status"))
 	}
 	if respStatus != "success" {
-		return courier.ErrResponseUnexpected
+		return courier.ErrResponseContent
 
 	}
 

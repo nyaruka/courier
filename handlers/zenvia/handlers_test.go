@@ -319,7 +319,7 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"No External ID"}]}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:   "Error Sending",
@@ -427,7 +427,7 @@ var defaultSMSSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"No External ID"}]}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:   "Error Sending",

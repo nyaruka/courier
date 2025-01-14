@@ -93,7 +93,7 @@ var getSendTestCases = []OutgoingTestCase{
 			"password":     {"yo-password"},
 			"origin":       {"2020"},
 		}}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{Label: "Unicode Send",
 		MsgText: "☺", MsgURN: "tel:+250788383383",

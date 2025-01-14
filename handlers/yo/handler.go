@@ -143,7 +143,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			if len(createStatus) > 0 && createStatus[0] == "OK" {
 				return nil
 			} else {
-				return courier.ErrResponseUnexpected
+				return courier.ErrResponseContent
 			}
 		}
 	}

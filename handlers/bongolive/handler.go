@@ -166,7 +166,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		msgStatus, _ := jsonparser.GetString(respBody, "results", "[0]", "status")
 		if msgStatus != "0" {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseContent
 		}
 
 		// grab the external id if we can

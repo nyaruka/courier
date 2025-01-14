@@ -72,6 +72,35 @@ const successResponse = `{
 	]
 }`
 
+const successResponseMissingMessageID = `{
+	"http_code": 200,
+	"response_code": "SUCCESS",
+	"response_msg": "Here are your data.",
+	"data": {
+	  "total_price": 0.28,
+	  "total_count": 2,
+	  "queued_count": 2,
+	  "messages": [
+		{
+		  "direction": "out",
+		  "date": 1436871253,
+		  "to": "+61411111111",
+		  "body": "Jelly liquorice marshmallow candy carrot cake 4Eyffjs1vL.",
+		  "from": "sendmobile",
+		  "schedule": 1436874701,
+		  "message_id": "",
+		  "message_parts": 1,
+		  "message_price": 0.07,
+		  "custom_string": "this is a test",
+		  "user_id": 1,
+		  "subaccount_id": 1,
+		  "country": "AU",
+		  "carrier": "Telstra",
+		  "status": "SUCCESS"
+		}
+	]
+}`
+
 const failureResponse = `{
 	"http_code": 200,
 	"response_code": "SUCCESS",
@@ -186,7 +215,24 @@ var outgoingCases = []OutgoingTestCase{
 				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"Error Sending","source":"courier"}]}`,
 			},
 		},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
+	},
+	{
+		Label:   "Failure Response",
+		MsgText: "Error Sending",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.clicksend.com/v3/sms/send": {
+				httpx.NewMockResponse(200, nil, []byte(successResponseMissingMessageID)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
+				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"Error Sending","source":"courier"}]}`,
+			},
+		},
+		ExpectedError: courier.ErrResponseContent,
 	},
 }
 

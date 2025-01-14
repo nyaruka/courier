@@ -920,6 +920,20 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
+		Label:   "Response Unexpected",
+		MsgText: "Simple Message",
+		MsgURN:  "telegram:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 0 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Simple Message"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+		},
+		ExpectedError: courier.ErrResponseContent,
+	},
+	{
 		Label:             "Unknown attachment type",
 		MsgText:           "My foo!",
 		MsgURN:            "telegram:12345",
