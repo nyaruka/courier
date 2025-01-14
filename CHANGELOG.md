@@ -1,3 +1,8 @@
+v10.1.2 (2025-01-14)
+-------------------------
+ * Rename ErrResponseUnexpectedUnlogged to ErrResponseContent
+ * Do not log response check error after 200 status
+
 v10.1.1 (2025-01-09)
 -------------------------
  * Do not log EX MT response check error
