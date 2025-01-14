@@ -628,7 +628,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Path: "/v1/messages",
 			Body: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:   "Error Field",

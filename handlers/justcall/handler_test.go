@@ -345,7 +345,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"+250788383383","body":"Error"}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:   "Error",

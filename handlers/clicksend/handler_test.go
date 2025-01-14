@@ -215,7 +215,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"Error Sending","source":"courier"}]}`,
 			},
 		},
-		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:   "Failure Response",
@@ -232,7 +232,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"Error Sending","source":"courier"}]}`,
 			},
 		},
-		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
+		ExpectedError: courier.ErrResponseContent,
 	},
 }
 

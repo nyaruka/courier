@@ -128,7 +128,7 @@ var outgoingCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:   "Error status 403",

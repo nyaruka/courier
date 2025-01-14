@@ -173,7 +173,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		externalID, err := jsonparser.GetString(respBody, "guid")
 		if err != nil {
 			clog.Error(courier.ErrorResponseValueMissing("guid"))
-			return courier.ErrResponseUnexpectedUnlogged
+			return courier.ErrResponseContent
 		}
 
 		res.AddExternalID(externalID)
@@ -207,7 +207,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			externalID, err := jsonparser.GetString(respBody, "guid")
 			if err != nil {
 				clog.Error(courier.ErrorResponseValueMissing("guid"))
-				return courier.ErrResponseUnexpectedUnlogged
+				return courier.ErrResponseContent
 			}
 
 			res.AddExternalID(externalID)

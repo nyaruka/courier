@@ -190,7 +190,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message"}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
+		ExpectedError: courier.ErrResponseContent,
 	},
 }
 

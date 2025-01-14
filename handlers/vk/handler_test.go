@@ -516,7 +516,7 @@ var outgoingCases = []OutgoingTestCase{
 				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
-		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
+		ExpectedError: courier.ErrResponseContent,
 	},
 }
 

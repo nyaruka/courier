@@ -146,7 +146,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		responseCode, _ := jsonparser.GetString(respBody, "code")
 		if responseCode != "000" {
-			return courier.ErrResponseUnexpectedUnlogged
+			return courier.ErrResponseContent
 		}
 	}
 

@@ -238,12 +238,12 @@ func (h *handler) sendWithAPIKey(msg courier.MsgOut, res *courier.SendResult, cl
 		// was this successful
 		success, _ := jsonparser.GetInt(respBody, "success")
 		if success != 1 {
-			return courier.ErrResponseUnexpectedUnlogged
+			return courier.ErrResponseContent
 		}
 
 		externalID, err := jsonparser.GetInt(respBody, "multicast_id")
 		if err != nil {
-			return courier.ErrResponseUnexpectedUnlogged
+			return courier.ErrResponseContent
 		}
 		res.AddExternalID(fmt.Sprintf("%d", externalID))
 
@@ -319,15 +319,15 @@ func (h *handler) sendWithCredsJSON(msg courier.MsgOut, res *courier.SendResult,
 
 		responseName, err := jsonparser.GetString(respBody, "name")
 		if err != nil {
-			return courier.ErrResponseUnexpectedUnlogged
+			return courier.ErrResponseContent
 		}
 
 		if !strings.Contains(responseName, fmt.Sprintf("projects/%s/messages/", projectID)) {
-			return courier.ErrResponseUnexpectedUnlogged
+			return courier.ErrResponseContent
 		}
 		externalID := strings.TrimLeft(responseName, fmt.Sprintf("projects/%s/messages/", projectID))
 		if externalID == "" {
-			return courier.ErrResponseUnexpectedUnlogged
+			return courier.ErrResponseContent
 		}
 
 		res.AddExternalID(externalID)

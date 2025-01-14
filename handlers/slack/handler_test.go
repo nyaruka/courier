@@ -224,7 +224,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{"channel":"U0123ABCDEF"}`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:   "Response Unexpected",
@@ -235,7 +235,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{"ok":false,"channel":"U0123ABCDEF"}`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
+		ExpectedError: courier.ErrResponseContent,
 	},
 }
 
@@ -275,7 +275,7 @@ var fileSendTestCases = []OutgoingTestCase{
 			{},
 			{BodyContains: "image.png"},
 		},
-		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
+		ExpectedError: courier.ErrResponseContent,
 	},
 }
 

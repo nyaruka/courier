@@ -173,7 +173,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
 		ExpectedLogErrors: []*clogs.LogError{clogs.NewLogError("", "", "Received invalid response content: <return>Missing</return>")},
-		ExpectedError:     courier.ErrResponseUnexpectedUnlogged,
+		ExpectedError:     courier.ErrResponseContent,
 	},
 }
 
