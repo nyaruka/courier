@@ -83,13 +83,22 @@ var ErrConnectionThrottled error = &SendError{
 	clogMsg:   "Connection to server has been rate limited.",
 }
 
-// ErrResponseStatus should be returned when channel the response has a non-success status code
+// ErrResponseStatus should be returned when the response from the channel has a non-success status code
 var ErrResponseStatus error = &SendError{
 	msg:       "response status code",
 	retryable: false,
 	loggable:  false,
 	clogCode:  "response_status",
 	clogMsg:   "Response has non-success status code.",
+}
+
+// ErrResponseContent should be returned when the response content from the channel indicates non-succeess
+var ErrResponseContent error = &SendError{
+	msg:       "response content",
+	retryable: false,
+	loggable:  false,
+	clogCode:  "response_content",
+	clogMsg:   "Response content indicates non-success.",
 }
 
 // ErrResponseUnparseable should be returned when channel response can't be parsed in expected format
@@ -106,15 +115,6 @@ var ErrResponseUnexpected error = &SendError{
 	msg:       "response not expected values",
 	retryable: false,
 	loggable:  true,
-	clogCode:  "response_unexpected",
-	clogMsg:   "Response doesn't match expected values.",
-}
-
-// ErrResponseContent is same as ErrResponseUnexpected without logging so better for channels where response check is user configured. We conside this message failed when the response content is unexpected
-var ErrResponseContent error = &SendError{
-	msg:       "response not expected values",
-	retryable: false,
-	loggable:  false,
 	clogCode:  "response_unexpected",
 	clogMsg:   "Response doesn't match expected values.",
 }
