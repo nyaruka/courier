@@ -186,6 +186,22 @@ var sendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrConnectionFailed,
 	},
+	{
+		Label:   "Reponse Unexpected",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+12067791234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.thinq.com/account/1234/product/origination/sms/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "missing": "1002" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "Basic dXNlcjE6c2VzYW1l"},
+			Body:    `{"from_did":"2065551212","to_did":"2067791234","message":"Simple Message ☺"}`,
+		}},
+		ExpectedLogErrors: []*clogs.LogError{courier.ErrorResponseValueMissing("guid")},
+		ExpectedError:     courier.ErrResponseUnexpectedUnlogged,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

@@ -387,6 +387,54 @@ var sendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrConnectionFailed,
 	},
+	{
+		Label:      "Response Unexpected",
+		MsgText:    "Simple Message",
+		MsgURN:     "fcm:250788123123",
+		MsgURNAuth: "auth1",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"missing_name":"projects/foo-project-id/messages/123456-a"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
+		}},
+		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
+	},
+	{
+		Label:      "Response Unexpected",
+		MsgText:    "Simple Message",
+		MsgURN:     "fcm:250788123123",
+		MsgURNAuth: "auth1",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"name":"projects/not-our-project-id/messages/123456-a"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
+		}},
+		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
+	},
+	{
+		Label:      "Response Unexpected",
+		MsgText:    "Simple Message",
+		MsgURN:     "fcm:250788123123",
+		MsgURNAuth: "auth1",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"name":"projects/foo-project-id/messages/"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
+		}},
+		ExpectedError: courier.ErrResponseUnexpectedUnlogged,
+	},
 }
 
 func setupBackend(mb *test.MockBackend) {
