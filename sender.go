@@ -110,7 +110,7 @@ var ErrResponseUnexpected error = &SendError{
 	clogMsg:   "Response doesn't match expected values.",
 }
 
-// ErrResponseContent is same as ErrResponseUnexpected without logging so better for channels where response check is user configured.
+// ErrResponseContent is same as ErrResponseUnexpected without logging so better for channels where response check is user configured. We conside this message failed when the response content is unexpected
 var ErrResponseContent error = &SendError{
 	msg:       "response not expected values",
 	retryable: false,
