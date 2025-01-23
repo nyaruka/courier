@@ -132,6 +132,7 @@ DROP TABLE IF EXISTS flows_flowsession CASCADE;
 CREATE TABLE flows_flowsession (
     id serial primary key,
     status character varying(1) NOT NULL,
+    modified_on timestamp with time zone NOT NULL,
     timeout_on timestamp with time zone NULL,
     wait_started_on timestamp with time zone
 );
