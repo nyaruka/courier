@@ -20,8 +20,10 @@ const (
 )
 
 type MediaTypeSupport struct {
-	Types    []string
-	MaxBytes int
+	Types     []string
+	MaxBytes  int
+	MaxWidth  int
+	MaxHeight int
 }
 
 // Attachment is a resolved attachment
@@ -84,7 +86,10 @@ func resolveAttachment(ctx context.Context, b courier.Backend, contentType, medi
 	}
 
 	mediaType, _ := parseContentType(media.ContentType())
-	mediaSupport := support[mediaType]
+	mediaSupport, ok := support[MediaType(media.ContentType())]
+	if !ok {
+		mediaSupport = support[mediaType]
+	}
 
 	// our candidates are the uploaded media and any alternates of the same media type
 	candidates := append([]courier.Media{media}, filterMediaByType(media.Alternates(), mediaType)...)
@@ -97,6 +102,11 @@ func resolveAttachment(ctx context.Context, b courier.Backend, contentType, medi
 	// narrow down the candidates to the ones that don't exceed our max bytes
 	if mediaSupport.MaxBytes > 0 {
 		candidates = filterMediaBySize(candidates, mediaSupport.MaxBytes)
+	}
+
+	// narrow down the candidates to the ones that don't exceed our max dimensions
+	if mediaSupport.MaxWidth > 0 && mediaSupport.MaxHeight > 0 {
+		candidates = filterMediaByDimensions(candidates, mediaSupport.MaxWidth, mediaSupport.MaxHeight)
 	}
 
 	// if we have no candidates, we can't use this media
@@ -142,6 +152,10 @@ func filterMediaByContentTypes(in []courier.Media, types []string) []courier.Med
 
 func filterMediaBySize(in []courier.Media, maxBytes int) []courier.Media {
 	return filterMedia(in, func(m courier.Media) bool { return m.Size() <= maxBytes })
+}
+
+func filterMediaByDimensions(in []courier.Media, maxWidth int, MaxHeight int) []courier.Media {
+	return filterMedia(in, func(m courier.Media) bool { return m.Width() <= maxWidth && m.Height() <= MaxHeight })
 }
 
 func filterMedia(in []courier.Media, f func(courier.Media) bool) []courier.Media {
