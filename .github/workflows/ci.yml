@@ -9,11 +9,11 @@ jobs:
 
     services:
       redis:
-        image: redis:6.2-alpine
+        image: valkey/valkey:8.0-alpine
         ports:
           - 6379:6379
       postgres:
-        image: postgres:15-alpine
+        image: postgres:17-alpine
         env:
           POSTGRES_DB: courier_test
           POSTGRES_USER: courier_test
