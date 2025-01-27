@@ -515,8 +515,8 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 
 	// if message was successfully sent, and we have a session timeout, update it
 	wasSuccess := status.Status() == courier.MsgStatusWired || status.Status() == courier.MsgStatusSent || status.Status() == courier.MsgStatusDelivered || status.Status() == courier.MsgStatusRead
-	if wasSuccess && dbMsg.SessionWaitStartedOn_ != nil {
-		if err := updateSessionTimeout(ctx, b, dbMsg.SessionID_, *dbMsg.SessionWaitStartedOn_, dbMsg.SessionTimeout_); err != nil {
+	if wasSuccess && dbMsg.SessionTimeout_ != 0 {
+		if err := updateSessionTimeout(ctx, b, dbMsg.SessionID_, *dbMsg.SessionModifiedOn_, dbMsg.SessionTimeout_); err != nil {
 			slog.Error("unable to update session timeout", "error", err, "session_id", dbMsg.SessionID_)
 		}
 	}

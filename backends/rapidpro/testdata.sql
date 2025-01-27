@@ -68,6 +68,6 @@ INSERT INTO msgs_media("id", "uuid", "org_id", "content_type", "url", "path", "s
 
 /** Simple session */
 DELETE from flows_flowsession;
-INSERT INTO flows_flowsession("id", "status", "wait_started_on")
-                       VALUES(1, 'W', '2018-12-04 11:52:20.958955-08'),
-                             (2, 'C', '2018-12-04 11:52:20.958955-08');
+INSERT INTO flows_flowsession("id", "status", "modified_on", "wait_started_on")
+                       VALUES(1, 'W', '2018-12-04 11:52:20.900234-08', '2018-12-04 11:52:20.900123-08'),
+                             (2, 'C', '2018-12-04 11:52:20.900456-08', '2018-12-04 11:52:20.900345-08');

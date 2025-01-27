@@ -87,10 +87,10 @@ type Msg struct {
 	ContactLastSeenOn_    *time.Time              `json:"contact_last_seen_on"`
 
 	// extra fields used to allow courier to update a session's timeout to *after* the message has been sent
-	SessionID_            SessionID  `json:"session_id"`
-	SessionTimeout_       int        `json:"session_timeout"`
-	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on"`
-	SessionStatus_        string     `json:"session_status"`
+	SessionID_         SessionID  `json:"session_id"`
+	SessionTimeout_    int        `json:"session_timeout"`
+	SessionStatus_     string     `json:"session_status"`
+	SessionModifiedOn_ *time.Time `json:"session_modified_on"`
 
 	ContactName_   string            `json:"contact_name"`
 	URNAuthTokens_ map[string]string `json:"auth_tokens"`
