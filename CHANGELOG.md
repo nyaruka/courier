@@ -1,3 +1,7 @@
+v10.1.3 (2025-01-27)
+-------------------------
+ * Use session_modified_on instead of session_wait_started_on to gate timeout updates
+
 v10.1.2 (2025-01-14)
 -------------------------
  * Rename ErrResponseUnexpectedUnlogged to ErrResponseContent
