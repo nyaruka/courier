@@ -1,3 +1,7 @@
+v10.1.5 (2025-01-28)
+-------------------------
+ * Insert contact fire for session timeout
+
 v10.1.4 (2025-01-28)
 -------------------------
  * Fix initialization of sentry
