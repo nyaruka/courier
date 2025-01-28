@@ -1,7 +1,6 @@
 package main
 
 import (
-	ulog "log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -95,9 +94,10 @@ func main() {
 
 	// if we have a DSN entry, try to initialize it
 	if config.SentryDSN != "" {
-		err := sentry.Init(sentry.ClientOptions{Dsn: config.SentryDSN, EnableTracing: false})
+		err := sentry.Init(sentry.ClientOptions{Dsn: config.SentryDSN, ServerName: config.InstanceID, Release: version, AttachStacktrace: true})
 		if err != nil {
-			ulog.Fatalf("error initiating sentry client, error %s, dsn %s", err, config.SentryDSN)
+			slog.Error("error initiating sentry client", "error", err, "dsn", config.SentryDSN)
+			os.Exit(1)
 		}
 
 		defer sentry.Flush(2 * time.Second)
