@@ -56,6 +56,18 @@ CREATE TABLE contacts_contacturn (
     UNIQUE (org_id, identity)
 );
 
+DROP TABLE IF EXISTS contacts_contactfire CASCADE;
+CREATE TABLE IF NOT EXISTS contacts_contactfire (
+    id serial primary key,
+    org_id integer NOT NULL,
+    contact_id integer references contacts_contact(id) on delete cascade,
+    fire_type character varying(1) NOT NULL,
+    scope character varying(128) NOT NULL,
+    extra jsonb,
+    fire_on timestamp with time zone NOT NULL,
+    UNIQUE (contact_id, fire_type, scope)
+);
+
 DROP TABLE IF EXISTS msgs_optin CASCADE;
 CREATE TABLE msgs_optin (
     id serial primary key,
@@ -126,15 +138,6 @@ CREATE TABLE channels_channelevent (
     optin_id integer references msgs_optin(id) on delete cascade,
     org_id integer NOT NULL references orgs_org(id) on delete cascade,
     log_uuids uuid[]
-);
-
-DROP TABLE IF EXISTS flows_flowsession CASCADE;
-CREATE TABLE flows_flowsession (
-    id serial primary key,
-    status character varying(1) NOT NULL,
-    modified_on timestamp with time zone NOT NULL,
-    timeout_on timestamp with time zone NULL,
-    wait_started_on timestamp with time zone
 );
 
 DROP TABLE IF EXISTS msgs_media CASCADE;

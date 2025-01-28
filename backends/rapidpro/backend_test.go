@@ -26,6 +26,7 @@ import (
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
@@ -1337,15 +1338,46 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 func (ts *BackendTestSuite) TestSessionTimeout() {
 	ctx := context.Background()
 
-	// parse from an iso date
-	t, err := time.Parse("2006-01-02 15:04:05.000000-07", "2018-12-04 11:52:20.900234-08")
+	dates.SetNowFunc(dates.NewSequentialNow(time.Date(2025, 1, 28, 20, 43, 34, 157379218, time.UTC), time.Second))
+	defer dates.SetNowFunc(time.Now)
+
+	msgJSON := `{
+		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f",
+		"id": 204,
+		"org_id": 1,
+		"text": "Test message 21",
+		"contact_id": 100,
+		"contact_urn_id": 14,
+		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba",
+		"urn": "telegram:3527065",
+		"created_on": "2017-07-21T19:22:23.242757Z",
+		"high_priority": true,
+		"session_id": 12345,
+		"session_timeout": 3600,
+		"session_modified_on": "2025-01-28T20:43:34.157379218Z"
+	}`
+
+	msg := &Msg{}
+	jsonx.MustUnmarshal([]byte(msgJSON), msg)
+
+	err := ts.b.insertTimeoutFire(ctx, msg)
 	ts.NoError(err)
 
-	err = updateSessionTimeout(ctx, ts.b, SessionID(1), t, 300)
+	assertdb.Query(ts.T(), ts.b.db, `SELECT org_id, contact_id, fire_type, scope, extra->>'session_id' AS session_id, extra->>'session_modified_on' AS session_modified_on FROM contacts_contactfire`).
+		Columns(map[string]any{
+			"org_id":              int64(1),
+			"contact_id":          int64(100),
+			"fire_type":           "T",
+			"scope":               "",
+			"session_id":          "12345",
+			"session_modified_on": "2025-01-28T20:43:34.157379218Z",
+		})
+
+	// if there's a conflict (e.g. in this case trying to add same timeout again), it should be ignored
+	err = ts.b.insertTimeoutFire(ctx, msg)
 	ts.NoError(err)
 
-	// make sure that took
-	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) from flows_flowsession WHERE timeout_on > NOW()`).Returns(1)
+	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM contacts_contactfire`).Returns(1)
 }
 
 func (ts *BackendTestSuite) TestMailroomEvents() {
