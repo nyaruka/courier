@@ -74,6 +74,13 @@ type Templating struct {
 	ExternalID string               `json:"external_id"`
 }
 
+type Session struct {
+	UUID       string `json:"uuid"`
+	Status     string `json:"status"`
+	SprintUUID string `json:"sprint_uuid"`
+	Timeout    int    `json:"timeout"`
+}
+
 //-----------------------------------------------------------------------------
 // Msg interface
 //-----------------------------------------------------------------------------
@@ -110,8 +117,8 @@ type MsgOut interface {
 	Flow() *FlowReference
 	OptIn() *OptInReference
 	UserID() UserID
-	SessionStatus() string
 	HighPriority() bool
+	Session() *Session
 }
 
 // MsgIn is our interface to represent an incoming

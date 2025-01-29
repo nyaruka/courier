@@ -63,8 +63,10 @@ CREATE TABLE IF NOT EXISTS contacts_contactfire (
     contact_id integer references contacts_contact(id) on delete cascade,
     fire_type character varying(1) NOT NULL,
     scope character varying(128) NOT NULL,
-    extra jsonb,
     fire_on timestamp with time zone NOT NULL,
+    session_uuid uuid,
+    sprint_uuid uuid,
+    extra jsonb,
     UNIQUE (contact_id, fire_type, scope)
 );
 
