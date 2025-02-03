@@ -1,3 +1,7 @@
+v10.1.6 (2025-02-03)
+-------------------------
+ * Start using new session field on queued messages
+
 v10.1.5 (2025-01-28)
 -------------------------
  * Insert contact fire for session timeout
