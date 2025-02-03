@@ -31,6 +31,7 @@ type MockMsg struct {
 	metadata             json.RawMessage
 	alreadyWritten       bool
 	isResend             bool
+	session              *courier.Session
 
 	flow   *courier.FlowReference
 	optIn  *courier.OptInReference
@@ -75,7 +76,7 @@ func (m *MockMsg) IsResend() bool                  { return m.isResend }
 func (m *MockMsg) Flow() *courier.FlowReference    { return m.flow }
 func (m *MockMsg) OptIn() *courier.OptInReference  { return m.optIn }
 func (m *MockMsg) UserID() courier.UserID          { return m.userID }
-func (m *MockMsg) SessionStatus() string           { return "" }
+func (m *MockMsg) Session() *courier.Session       { return m.session }
 func (m *MockMsg) HighPriority() bool              { return m.highPriority }
 
 // incoming specific

@@ -1352,6 +1352,12 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 		"urn": "telegram:3527065",
 		"created_on": "2017-07-21T19:22:23.242757Z",
 		"high_priority": true,
+		"session": {
+			"uuid": "79c1dbc6-4200-4333-b17a-1f996273a4cb",
+			"status": "W",
+			"sprint_uuid": "0897c392-8b08-43c4-b9d9-e75d332a2c58",
+			"timeout": 3600
+		},
 		"session_id": 12345,
 		"session_timeout": 3600,
 		"session_modified_on": "2025-01-28T20:43:34.157379218Z"
@@ -1363,12 +1369,14 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 	err := ts.b.insertTimeoutFire(ctx, msg)
 	ts.NoError(err)
 
-	assertdb.Query(ts.T(), ts.b.db, `SELECT org_id, contact_id, fire_type, scope, extra->>'session_id' AS session_id, extra->>'session_modified_on' AS session_modified_on FROM contacts_contactfire`).
+	assertdb.Query(ts.T(), ts.b.db, `SELECT org_id, contact_id, fire_type, scope, session_uuid::text, sprint_uuid::text, extra->>'session_id' AS session_id, extra->>'session_modified_on' AS session_modified_on FROM contacts_contactfire`).
 		Columns(map[string]any{
 			"org_id":              int64(1),
 			"contact_id":          int64(100),
 			"fire_type":           "T",
 			"scope":               "",
+			"session_uuid":        "79c1dbc6-4200-4333-b17a-1f996273a4cb",
+			"sprint_uuid":         "0897c392-8b08-43c4-b9d9-e75d332a2c58",
 			"session_id":          "12345",
 			"session_modified_on": "2025-01-28T20:43:34.157379218Z",
 		})

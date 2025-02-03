@@ -199,7 +199,9 @@ func (h *handler) sendWithAPIKey(msg courier.MsgOut, res *courier.SendResult, cl
 		payload.Data.Title = title
 		payload.Data.Message = part
 		payload.Data.MessageID = int64(msg.ID())
-		payload.Data.SessionStatus = msg.SessionStatus()
+		if msg.Session() != nil {
+			payload.Data.SessionStatus = msg.Session().Status
+		}
 
 		// include any quick replies on the last piece we send
 		if i == len(msgParts)-1 {
@@ -281,7 +283,9 @@ func (h *handler) sendWithCredsJSON(msg courier.MsgOut, res *courier.SendResult,
 		payload.Message.Data.Title = title
 		payload.Message.Data.Message = part
 		payload.Message.Data.MessageID = msg.ID().String()
-		payload.Message.Data.SessionStatus = msg.SessionStatus()
+		if msg.Session() != nil {
+			payload.Message.Data.SessionStatus = msg.Session().Status
+		}
 
 		if i == len(msgParts)-1 {
 			if msg.QuickReplies() != nil {

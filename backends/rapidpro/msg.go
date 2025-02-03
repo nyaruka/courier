@@ -85,18 +85,17 @@ type Msg struct {
 	UserID_               courier.UserID          `json:"user_id"`
 	Origin_               courier.MsgOrigin       `json:"origin"`
 	ContactLastSeenOn_    *time.Time              `json:"contact_last_seen_on"`
-
-	// extra fields used to allow courier to update a session's timeout to *after* the message has been sent
-	SessionID_         SessionID  `json:"session_id"`
-	SessionTimeout_    int        `json:"session_timeout"`
-	SessionStatus_     string     `json:"session_status"`
-	SessionModifiedOn_ *time.Time `json:"session_modified_on"`
+	Session_              *courier.Session        `json:"session"`
 
 	ContactName_   string            `json:"contact_name"`
 	URNAuthTokens_ map[string]string `json:"auth_tokens"`
 	channel        *Channel
 	workerToken    queue.WorkerToken
 	alreadyWritten bool
+
+	// deprecated
+	SessionID_         SessionID  `json:"session_id"`
+	SessionModifiedOn_ *time.Time `json:"session_modified_on"`
 }
 
 // newMsg creates a new DBMsg object with the passed in parameters
@@ -162,7 +161,7 @@ func (m *Msg) IsResend() bool                 { return m.IsResend_ }
 func (m *Msg) Flow() *courier.FlowReference   { return m.Flow_ }
 func (m *Msg) OptIn() *courier.OptInReference { return m.OptIn_ }
 func (m *Msg) UserID() courier.UserID         { return m.UserID_ }
-func (m *Msg) SessionStatus() string          { return m.SessionStatus_ }
+func (m *Msg) Session() *courier.Session      { return m.Session_ }
 func (m *Msg) HighPriority() bool             { return m.HighPriority_ }
 
 // incoming specific
