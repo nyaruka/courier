@@ -92,10 +92,6 @@ type Msg struct {
 	channel        *Channel
 	workerToken    queue.WorkerToken
 	alreadyWritten bool
-
-	// deprecated
-	SessionID_         SessionID  `json:"session_id"`
-	SessionModifiedOn_ *time.Time `json:"session_modified_on"`
 }
 
 // newMsg creates a new DBMsg object with the passed in parameters
