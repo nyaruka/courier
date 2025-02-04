@@ -1369,16 +1369,14 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 	err := ts.b.insertTimeoutFire(ctx, msg)
 	ts.NoError(err)
 
-	assertdb.Query(ts.T(), ts.b.db, `SELECT org_id, contact_id, fire_type, scope, session_uuid::text, sprint_uuid::text, extra->>'session_id' AS session_id, extra->>'session_modified_on' AS session_modified_on FROM contacts_contactfire`).
+	assertdb.Query(ts.T(), ts.b.db, `SELECT org_id, contact_id, fire_type, scope, session_uuid::text, sprint_uuid::text FROM contacts_contactfire`).
 		Columns(map[string]any{
-			"org_id":              int64(1),
-			"contact_id":          int64(100),
-			"fire_type":           "T",
-			"scope":               "",
-			"session_uuid":        "79c1dbc6-4200-4333-b17a-1f996273a4cb",
-			"sprint_uuid":         "0897c392-8b08-43c4-b9d9-e75d332a2c58",
-			"session_id":          "12345",
-			"session_modified_on": "2025-01-28T20:43:34.157379218Z",
+			"org_id":       int64(1),
+			"contact_id":   int64(100),
+			"fire_type":    "T",
+			"scope":        "",
+			"session_uuid": "79c1dbc6-4200-4333-b17a-1f996273a4cb",
+			"sprint_uuid":  "0897c392-8b08-43c4-b9d9-e75d332a2c58",
 		})
 
 	// if there's a conflict (e.g. in this case trying to add same timeout again), it should be ignored
