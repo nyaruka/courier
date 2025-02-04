@@ -1,3 +1,7 @@
+v10.1.7 (2025-02-04)
+-------------------------
+ * Simplify contact fire inserted for timeouts
+
 v10.1.6 (2025-02-03)
 -------------------------
  * Start using new session field on queued messages
