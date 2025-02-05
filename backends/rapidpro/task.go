@@ -24,10 +24,10 @@ func queueMsgHandling(rc redis.Conn, c *Contact, m *Msg) error {
 		"new_contact":     c.IsNew_,
 	}
 
-	return queueMailroomTask(rc, "msg_event", m.OrgID_, m.ContactID_, body)
+	return queueMailroomTask(rc, "msg_received", m.OrgID_, m.ContactID_, body)
 }
 
-func queueChannelEvent(rc redis.Conn, c *Contact, e *ChannelEvent) error {
+func queueEventHandling(rc redis.Conn, c *Contact, e *ChannelEvent) error {
 	body := map[string]any{
 		"event_id":    e.ID_,
 		"event_type":  e.EventType_,
@@ -42,7 +42,7 @@ func queueChannelEvent(rc redis.Conn, c *Contact, e *ChannelEvent) error {
 		body["optin_id"] = e.OptInID_
 	}
 
-	return queueMailroomTask(rc, "channel_event", e.OrgID_, e.ContactID_, body)
+	return queueMailroomTask(rc, "event_received", e.OrgID_, e.ContactID_, body)
 }
 
 func queueMsgDeleted(rc redis.Conn, ch *Channel, msgID courier.MsgID, contactID ContactID) error {

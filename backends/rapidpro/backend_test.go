@@ -1213,7 +1213,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	err = writeMsgToDB(ctx, ts.b, msg, clog)
 	ts.NoError(err)
 
-	ts.assertQueuedContactTask(msg.ContactID_, "msg_event", map[string]any{
+	ts.assertQueuedContactTask(msg.ContactID_, "msg_received", map[string]any{
 		"channel_id":      float64(10),
 		"msg_id":          float64(msg.ID_),
 		"msg_uuid":        string(msg.UUID()),
@@ -1414,7 +1414,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 
-	ts.assertQueuedContactTask(contact.ID_, "channel_event", map[string]any{
+	ts.assertQueuedContactTask(contact.ID_, "event_received", map[string]any{
 		"event_id":    float64(dbE.ID_),
 		"event_type":  "referral",
 		"channel_id":  float64(10),
