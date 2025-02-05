@@ -1,3 +1,7 @@
+v10.1.8 (2025-02-05)
+-------------------------
+ * Use new ctask names
+
 v10.1.7 (2025-02-04)
 -------------------------
  * Simplify contact fire inserted for timeouts
