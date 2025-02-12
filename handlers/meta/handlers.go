@@ -86,7 +86,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeWebhookVerify, h.receiveVerify)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvents))
-	s.AddHandlerRoute(h, http.MethodPost, "delete", courier.ChannelLogTypeEventReceive, handlers.JSONPayload(h, h.deleteEvents))
+	s.AddHandlerRoute(h, http.MethodPost, "delete", courier.ChannelLogTypeEventReceive, handlers.JSONPayload(h, h.deleteContactEvents))
 	return nil
 }
 
@@ -228,8 +228,8 @@ type DeleteConfirmationData struct {
 	ConfirmationCode string `json:"confirmation_code"`
 }
 
-// deleteEvents is our HTTP handler function for deleting data requests
-func (h *handler) deleteEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *DeletionRequestData, clog *courier.ChannelLog) ([]courier.Event, error) {
+// deleteContactEvents is our HTTP handler function for deleting data requests
+func (h *handler) deleteContactEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *DeletionRequestData, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -247,7 +247,7 @@ func (h *handler) deleteEvents(ctx context.Context, channel courier.Channel, w h
 	payloadJson, _ := json.Marshal(payload)
 	sentry.CaptureMessage(fmt.Sprintf("Data Deletion Request: %s", payloadJson))
 
-	event := h.Backend().NewChannelEvent(channel, courier.EventDeletionRequest, urn, clog).WithOccurredOn(date).WithExtra(map[string]string{"userID": payload.UserID})
+	event := h.Backend().NewChannelEvent(channel, courier.EventDeleteContact, urn, clog).WithOccurredOn(date).WithExtra(map[string]string{"userID": payload.UserID})
 
 	err = h.Backend().WriteChannelEvent(ctx, event, clog)
 	if err != nil {

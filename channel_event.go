@@ -21,7 +21,7 @@ const (
 	EventTypeWelcomeMessage  ChannelEventType = "welcome_message"
 	EventTypeOptIn           ChannelEventType = "optin"
 	EventTypeOptOut          ChannelEventType = "optout"
-	EventDeletionRequest     ChannelEventType = "delete_request"
+	EventDeleteContact       ChannelEventType = "delete_contact"
 )
 
 //-----------------------------------------------------------------------------

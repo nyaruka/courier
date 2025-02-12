@@ -336,7 +336,7 @@ func TestDeleteRequest(t *testing.T) {
 			NoInvalidChannelCheck: true,
 			NoLogsExpected:        true,
 			ExpectedEvents: []ExpectedEvent{
-				{Type: courier.EventDeletionRequest, URN: "facebook:218471", Extra: map[string]string{"userID": "218471"}},
+				{Type: courier.EventDeleteContact, URN: "facebook:218471", Extra: map[string]string{"userID": "218471"}},
 			},
 		},
 		{
