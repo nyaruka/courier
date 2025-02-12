@@ -322,6 +322,38 @@ func TestFacebookDescribeURN(t *testing.T) {
 	AssertChannelLogRedaction(t, clog, []string{"a123", "wac_admin_system_user_token"})
 }
 
+func TestDeleteRequest(t *testing.T) {
+	RunIncomingTestCases(t, facebookTestChannels, newHandler("FBA", "Facebook"), []IncomingTestCase{
+		{
+			Label:       "Receive Delete request FBA",
+			URL:         "/c/fba/delete",
+			Data:        `{"algorithm":"HMAC-SHA256","expires":1291840400,"issued_at":1291836800,"user_id":"218471"}`,
+			PrepRequest: addValidSignature,
+
+			ExpectedRespStatus:    200,
+			ExpectedBodyContains:  "Deletion Request Received",
+			NoQueueErrorCheck:     true,
+			NoInvalidChannelCheck: true,
+			NoLogsExpected:        true,
+			ExpectedEvents: []ExpectedEvent{
+				{Type: courier.EventDeletionRequest, URN: "facebook:218471", Extra: map[string]string{"userID": "218471"}},
+			},
+		},
+		{
+			Label:       "Receive Delete request FBA",
+			URL:         "/c/fba/delete",
+			Data:        `{"algorithm":"HMAC-SHA256","expires":1291840400,"issued_at":1291836800,"user_id":"abc1234"}`,
+			PrepRequest: addValidSignature,
+
+			ExpectedRespStatus:    200,
+			ExpectedBodyContains:  "invalid facebook id",
+			NoQueueErrorCheck:     true,
+			NoInvalidChannelCheck: true,
+			NoLogsExpected:        true,
+		},
+	})
+}
+
 func TestFacebookVerify(t *testing.T) {
 	RunIncomingTestCases(t, facebookTestChannels, newHandler("FBA", "Facebook"), []IncomingTestCase{
 		{
