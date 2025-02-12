@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
+	"github.com/getsentry/sentry-go"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/handlers/meta/messenger"
@@ -85,6 +86,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeWebhookVerify, h.receiveVerify)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvents))
+	s.AddHandlerRoute(h, http.MethodPost, "delete", courier.ChannelLogTypeEventReceive, handlers.JSONPayload(h, h.deleteEvents))
 	return nil
 }
 
@@ -130,7 +132,7 @@ func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, 
 
 // GetChannel returns the channel
 func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
-	if r.Method == http.MethodGet {
+	if r.Method == http.MethodGet || r.URL.Path == "/c/fba/delete" {
 		return nil, nil
 	}
 
@@ -212,6 +214,52 @@ func (h *handler) resolveMediaURL(mediaID string, token string, clog *courier.Ch
 
 	mediaURL, err := jsonparser.GetString(respBody, "url")
 	return mediaURL, err
+}
+
+type DeletionRequestData struct {
+	Algorithm string `json:"algorithm"`
+	Expires   int64  `json:"expires"`
+	IssuedAt  int64  `json:"issued_at"`
+	UserID    string `json:"user_id"`
+}
+
+type DeleteConfirmationData struct {
+	URL              string `json:"url"`
+	ConfirmationCode string `json:"confirmation_code"`
+}
+
+// deleteEvents is our HTTP handler function for deleting data requests
+func (h *handler) deleteEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *DeletionRequestData, clog *courier.ChannelLog) ([]courier.Event, error) {
+	err := h.validateSignature(r)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+
+	urn, err := urns.New(urns.Facebook, payload.UserID)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid facebook id"))
+	}
+	date := parseTimestamp(payload.IssuedAt)
+
+	events := make([]courier.Event, 0, 2)
+	data := make([]any, 0, 2)
+
+	payloadJson, _ := json.Marshal(payload)
+	sentry.CaptureMessage(fmt.Sprintf("Data Deletion Request: %s", payloadJson))
+
+	event := h.Backend().NewChannelEvent(channel, courier.EventDeletionRequest, urn, clog).WithOccurredOn(date).WithExtra(map[string]string{"userID": payload.UserID})
+
+	err = h.Backend().WriteChannelEvent(ctx, event, clog)
+	if err != nil {
+		return nil, err
+	}
+
+	confirmationURL := fmt.Sprintf("https://%s/channels/events/read/%s/", h.Server().Config().Domain, event.UUID())
+
+	events = append(events, event)
+	data = append(data, DeleteConfirmationData{URL: confirmationURL, ConfirmationCode: string(event.UUID())})
+
+	return events, courier.WriteDataResponse(w, http.StatusOK, "Deletion Request Received", data)
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
