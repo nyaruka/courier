@@ -14,6 +14,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
 )
 
@@ -38,6 +39,7 @@ func (i ChannelEventID) String() string {
 // ChannelEvent represents an event on a channel.. that isn't a new message or status update
 type ChannelEvent struct {
 	ID_          ChannelEventID           `                               db:"id"`
+	UUID_        courier.ChannelEventUUID `json:"uuid"                    db:"uuid"`
 	OrgID_       OrgID                    `json:"org_id"                  db:"org_id"`
 	ChannelUUID_ courier.ChannelUUID      `json:"channel_uuid"            db:"channel_uuid"`
 	ChannelID_   courier.ChannelID        `json:"channel_id"              db:"channel_id"`
@@ -64,6 +66,7 @@ func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType
 	dbChannel := channel.(*Channel)
 
 	return &ChannelEvent{
+		UUID_:        courier.ChannelEventUUID(uuids.NewV4()),
 		ChannelUUID_: dbChannel.UUID_,
 		OrgID_:       dbChannel.OrgID_,
 		ChannelID_:   dbChannel.ID_,
@@ -77,6 +80,7 @@ func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType
 }
 
 func (e *ChannelEvent) EventID() int64                      { return int64(e.ID_) }
+func (e *ChannelEvent) UUID() courier.ChannelEventUUID      { return e.UUID_ }
 func (e *ChannelEvent) ChannelID() courier.ChannelID        { return e.ChannelID_ }
 func (e *ChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
 func (e *ChannelEvent) EventType() courier.ChannelEventType { return e.EventType_ }
@@ -134,8 +138,8 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 
 const sqlInsertChannelEvent = `
 INSERT INTO 
-	channels_channelevent( org_id,  channel_id,  contact_id,  contact_urn_id,  event_type,  optin_id,  extra,  occurred_on, created_on, status,  log_uuids)
-				   VALUES(:org_id, :channel_id, :contact_id, :contact_urn_id, :event_type, :optin_id, :extra, :occurred_on,      NOW(), 'P',    :log_uuids)
+	channels_channelevent( org_id,  uuid, channel_id,  contact_id,  contact_urn_id,  event_type,  optin_id,  extra,  occurred_on, created_on, status,  log_uuids)
+				   VALUES(:org_id, :uuid, :channel_id, :contact_id, :contact_urn_id, :event_type, :optin_id, :extra, :occurred_on,      NOW(), 'P',    :log_uuids)
 RETURNING id, created_on`
 
 // writeChannelEventToDB writes the passed in channel event to our db

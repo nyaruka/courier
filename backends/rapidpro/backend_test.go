@@ -1641,7 +1641,7 @@ WHERE
 `
 
 const sqlSelectEvent = `
-SELECT id, org_id, channel_id, contact_id, contact_urn_id, event_type, optin_id, extra, occurred_on, created_on, log_uuids
+SELECT id, uuid, org_id, channel_id, contact_id, contact_urn_id, event_type, optin_id, extra, occurred_on, created_on, log_uuids
   FROM channels_channelevent
  WHERE id = $1`
 
