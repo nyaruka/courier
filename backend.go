@@ -61,7 +61,7 @@ type Backend interface {
 	// NewChannelEvent creates a new channel event for the given channel and event type
 	NewChannelEvent(Channel, ChannelEventType, urns.URN, *ChannelLog) ChannelEvent
 
-	// WriteChannelEvent writes the passed in channel even returning any error
+	// WriteChannelEvent writes the passed in channel event returning any error
 	WriteChannelEvent(context.Context, ChannelEvent, *ChannelLog) error
 
 	// WriteChannelLog writes the passed in channel log to our backend

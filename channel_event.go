@@ -4,10 +4,14 @@ import (
 	"time"
 
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 // ChannelEventType is the type of channel event this is
 type ChannelEventType string
+
+// ChannelEvent is our typing of a channelevent's UUID
+type ChannelEventUUID uuids.UUID
 
 // Possible values for ChannelEventTypes
 const (
@@ -27,6 +31,7 @@ const (
 type ChannelEvent interface {
 	Event
 
+	UUID() ChannelEventUUID
 	ChannelUUID() ChannelUUID
 	URN() urns.URN
 	EventType() ChannelEventType

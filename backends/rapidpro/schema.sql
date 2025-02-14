@@ -129,6 +129,7 @@ CREATE TABLE channels_channellog (
 DROP TABLE IF EXISTS channels_channelevent CASCADE;
 CREATE TABLE channels_channelevent (
     id serial primary key,
+    uuid uuid NOT NULL,
     event_type character varying(16) NOT NULL,
     status character varying(1) NOT NULL,
     extra text,
