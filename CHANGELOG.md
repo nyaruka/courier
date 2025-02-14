@@ -1,3 +1,7 @@
+v10.1.9 (2025-02-14)
+-------------------------
+ * Add channel event UUID and start writing that
+
 v10.1.8 (2025-02-05)
 -------------------------
  * Use new ctask names
