@@ -52,21 +52,25 @@ type Contact struct {
 	CreatedOn_  time.Time `db:"created_on"`
 	ModifiedOn_ time.Time `db:"modified_on"`
 
+	CreatedBy_  int `db:"created_by_id"`
+	ModifiedBy_ int `db:"modified_by_id"`
+
 	IsNew_ bool
 }
 
 // UUID returns the UUID for this contact
 func (c *Contact) UUID() courier.ContactUUID { return c.UUID_ }
 
-const sqlInsertContact = `
+const insertContactSQL = `
 INSERT INTO 
-	contacts_contact( org_id, is_active, status, uuid,  created_on,  modified_on,  name, ticket_count) 
-              VALUES(:org_id, TRUE,      'A',   :uuid, :created_on, :modified_on, :name, 0)
-RETURNING id`
+	contacts_contact(org_id, is_active, status, uuid, created_on, modified_on, created_by_id, modified_by_id, name, ticket_count) 
+              VALUES(:org_id, TRUE, 'A', :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name, 0)
+RETURNING id
+`
 
 // insertContact inserts the passed in contact, the id field will be populated with the result on success
 func insertContact(tx *sqlx.Tx, contact *Contact) error {
-	rows, err := tx.NamedQuery(sqlInsertContact, contact)
+	rows, err := tx.NamedQuery(insertContactSQL, contact)
 	if err != nil {
 		return err
 	}
@@ -161,6 +165,10 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 			contact.Name_ = null.String(dbutil.ToValidUTF8(name))
 		}
 	}
+
+	// TODO: Set these to a system user
+	contact.CreatedBy_ = 1
+	contact.ModifiedBy_ = 1
 
 	// insert it
 	tx, err := b.db.BeginTxx(ctx, nil)

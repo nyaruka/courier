@@ -36,8 +36,8 @@ CREATE TABLE contacts_contact (
     uuid character varying(36) NOT NULL,
     name character varying(128),
     language character varying(3),
-    created_by_id integer,
-    modified_by_id integer,
+    created_by_id integer NOT NULL,
+    modified_by_id integer NOT NULL,
     org_id integer references orgs_org(id) on delete cascade
 );
 
