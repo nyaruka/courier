@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
@@ -61,27 +62,31 @@ func testConfig() *courier.Config {
 	return config
 }
 
+func (ts *BackendTestSuite) loadSQL(path string) {
+	db, err := sqlx.Open("postgres", ts.b.config.DB)
+	noError(err)
+
+	sql, err := os.ReadFile(path)
+	noError(err)
+	db.MustExec(string(sql))
+}
+
 func (ts *BackendTestSuite) SetupSuite() {
 	ctx := context.Background()
+	cfg := testConfig()
 
 	// turn off logging
 	log.SetOutput(io.Discard)
 
-	b, err := courier.NewBackend(testConfig())
+	b, err := courier.NewBackend(cfg)
 	noError(err)
-
 	ts.b = b.(*backend)
+
+	// load our test schema and data
+	ts.loadSQL("schema.sql")
+	ts.loadSQL("testdata.sql")
+
 	must(ts.b.Start())
-
-	// read our schema sql
-	sqlSchema, err := os.ReadFile("schema.sql")
-	noError(err)
-	ts.b.db.MustExec(string(sqlSchema))
-
-	// read our testdata sql
-	sql, err := os.ReadFile("testdata.sql")
-	noError(err)
-	ts.b.db.MustExec(string(sql))
 
 	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
 	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-logs")})
