@@ -1,3 +1,7 @@
+v10.1.10 (2025-02-17)
+-------------------------
+ * Use system user for new contacts
+
 v10.1.9 (2025-02-14)
 -------------------------
  * Add channel event UUID and start writing that
