@@ -1,3 +1,10 @@
+DROP TABLE IF EXISTS users_user CASCADE;
+CREATE TABLE users_user (
+    id serial primary key,
+    username character varying(254) NOT NULL,
+    first_name character varying(150) NOT NULL
+);
+
 DROP TABLE IF EXISTS orgs_org CASCADE;
 CREATE TABLE orgs_org (
     id serial primary key,
@@ -36,8 +43,8 @@ CREATE TABLE contacts_contact (
     uuid character varying(36) NOT NULL,
     name character varying(128),
     language character varying(3),
-    created_by_id integer,
-    modified_by_id integer,
+    created_by_id integer references users_user(id) NOT NULL,
+    modified_by_id integer references users_user(id) NOT NULL,
     org_id integer references orgs_org(id) on delete cascade
 );
 
@@ -89,7 +96,7 @@ CREATE TABLE msgs_msg (
     --broadcast_id integer REFERENCES msgs_broadcast(id) ON DELETE CASCADE,
     --flow_id integer REFERENCES flows_flow(id) ON DELETE CASCADE,
     --ticket_id integer REFERENCES tickets_ticket(id) ON DELETE CASCADE,
-    --created_by_id integer REFERENCES auth_user(id) ON DELETE CASCADE,
+    created_by_id integer REFERENCES users_user(id),
     text text NOT NULL,
     attachments character varying(255)[] NULL,
     quick_replies character varying(64)[] NULL,
