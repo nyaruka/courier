@@ -58,11 +58,12 @@ type backend struct {
 	dyLogWriter  *DynamoLogWriter // all logs being written to dynamo
 	writerWG     *sync.WaitGroup
 
-	db     *sqlx.DB
-	rp     *redis.Pool
-	dynamo *dynamo.Service
-	s3     *s3x.Service
-	cw     *cwatch.Service
+	db           *sqlx.DB
+	rp           *redis.Pool
+	dynamo       *dynamo.Service
+	s3           *s3x.Service
+	cw           *cwatch.Service
+	systemUserID UserID
 
 	channelsByUUID *cache.Local[courier.ChannelUUID, *Channel]
 	channelsByAddr *cache.Local[courier.ChannelAddress, *Channel]
@@ -231,6 +232,12 @@ func (b *backend) Start() error {
 
 	b.dyLogWriter = NewDynamoLogWriter(b.dynamo, b.writerWG)
 	b.dyLogWriter.Start()
+
+	// store the system user id
+	b.systemUserID, err = getSystemUserID(ctx, b.db)
+	if err != nil {
+		return err
+	}
 
 	// register and start our spool flushers
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "msgs"), b.flushMsgFile)

@@ -1,3 +1,6 @@
+DELETE FROM users_user;
+INSERT INTO users_user("id", "username", "first_name") VALUES(1, 'system', 'System');
+              
 /* Org with id 1 */
 DELETE FROM orgs_org;
 INSERT INTO orgs_org("id", "name", "language", "is_anon", "config")
