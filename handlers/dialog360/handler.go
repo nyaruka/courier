@@ -357,7 +357,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 									Type: "reply",
 								}
 								btns[i].Reply.ID = fmt.Sprint(i)
-								btns[i].Reply.Title = qr
+								btns[i].Reply.Title = qr.Text
 							}
 							interactive.Action = &struct {
 								Button   string             "json:\"button,omitempty\""
@@ -376,7 +376,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 							for i, qr := range qrs {
 								section.Rows[i] = whatsapp.SectionRow{
 									ID:    fmt.Sprint(i),
-									Title: qr,
+									Title: qr.Text,
 								}
 							}
 
@@ -510,7 +510,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 								Type: "reply",
 							}
 							btns[i].Reply.ID = fmt.Sprint(i)
-							btns[i].Reply.Title = qr
+							btns[i].Reply.Title = qr.Text
 						}
 						interactive.Action = &struct {
 							Button   string             "json:\"button,omitempty\""
@@ -530,7 +530,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 						for i, qr := range qrs {
 							section.Rows[i] = whatsapp.SectionRow{
 								ID:    fmt.Sprint(i),
-								Title: qr,
+								Title: qr.Text,
 							}
 						}
 

@@ -3,18 +3,19 @@ package vk_test
 import (
 	"testing"
 
+	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers/vk"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestKeyboardFromReplies(t *testing.T) {
 	tcs := []struct {
-		replies  []string
+		replies  []courier.QuickReply
 		expected *vk.Keyboard
 	}{
 		{
 
-			[]string{"OK"},
+			[]courier.QuickReply{{Text: "OK"}},
 			&vk.Keyboard{
 				true,
 				[][]vk.ButtonPayload{
@@ -26,7 +27,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			},
 		},
 		{
-			[]string{"Yes", "No", "Maybe"},
+			[]courier.QuickReply{{Text: "Yes"}, {Text: "No"}, {Text: "Maybe"}},
 			&vk.Keyboard{
 				true,
 				[][]vk.ButtonPayload{
@@ -40,7 +41,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			},
 		},
 		{
-			[]string{"Vanilla", "Chocolate", "Mint", "Lemon Sorbet", "Papaya", "Strawberry"},
+			[]courier.QuickReply{{Text: "Vanilla"}, {Text: "Chocolate"}, {Text: "Mint"}, {Text: "Lemon Sorbet"}, {Text: "Papaya"}, {Text: "Strawberry"}},
 			&vk.Keyboard{
 				true,
 				[][]vk.ButtonPayload{
@@ -56,7 +57,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			},
 		},
 		{
-			[]string{"A", "B", "C", "D", "Chicken", "Fish", "Peanut Butter Pickle"},
+			[]courier.QuickReply{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}, {Text: "Chicken"}, {Text: "Fish"}, {Text: "Peanut Butter Pickle"}},
 			&vk.Keyboard{
 				true,
 				[][]vk.ButtonPayload{
@@ -73,7 +74,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			},
 		},
 		{
-			[]string{"A", "B", "C", "D", "E"},
+			[]courier.QuickReply{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}, {Text: "E"}},
 			&vk.Keyboard{
 				true,
 				[][]vk.ButtonPayload{

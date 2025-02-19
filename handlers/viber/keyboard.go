@@ -5,6 +5,9 @@ import (
 	"html"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/handlers"
 )
 
 // KeyboardButton is button on a keyboard, see https://developers.viber.com/docs/tools/keyboards/#buttons-parameters
@@ -36,8 +39,8 @@ const (
 var textSizes = map[string]bool{"small": true, "regular": true, "large": true}
 
 // NewKeyboardFromReplies create a keyboard from the given quick replies
-func NewKeyboardFromReplies(replies []string, buttonConfig map[string]any) *Keyboard {
-	rows := StringsToRows(replies, maxColumns, maxRowRunes, paddingRunes)
+func NewKeyboardFromReplies(replies []courier.QuickReply, buttonConfig map[string]any) *Keyboard {
+	rows := StringsToRows(handlers.TextOnlyQuickReplies(replies), maxColumns, maxRowRunes, paddingRunes)
 	buttons := []KeyboardButton{}
 
 	for i := range rows {

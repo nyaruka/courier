@@ -299,7 +299,7 @@ type OutgoingTestCase struct {
 	MsgURN                  string
 	MsgURNAuth              string
 	MsgAttachments          []string
-	MsgQuickReplies         []string
+	MsgQuickReplies         []courier.QuickReply
 	MsgLocale               i18n.Locale
 	MsgTopic                string
 	MsgTemplating           string

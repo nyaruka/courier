@@ -473,7 +473,7 @@ var outgoingCases = []OutgoingTestCase{
 		Label:           "Send keyboard",
 		MsgText:         "Send keyboard",
 		MsgURN:          "vk:123456789",
-		MsgQuickReplies: []string{"A", "B", "C", "D", "E"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}, {Text: "E"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.vk.com/method/messages.send.json?*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),

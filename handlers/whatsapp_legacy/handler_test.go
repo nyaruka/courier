@@ -951,7 +951,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		Label:           "Interactive Button Message Send",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"BUTTON1"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "BUTTON1"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -967,7 +967,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		Label:           "Interactive List Message Send",
 		MsgText:         "Interactive List Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}, {Text: "ROW4"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -984,7 +984,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		Label:           "Interactive Button Message Send with attachment",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"BUTTON1"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "BUTTON1"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
@@ -1002,7 +1002,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		Label:           "Interactive List Message Send with attachment",
 		MsgText:         "Interactive List Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}, {Text: "ROW4"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {

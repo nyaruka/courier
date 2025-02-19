@@ -172,7 +172,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	ts.Equal("5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2", msg.URNAuth_)
 	ts.Equal("", msg.ExternalID())
-	ts.Equal([]string{"Yes", "No"}, msg.QuickReplies())
+	ts.Equal([]courier.QuickReply{{Text: "Yes"}, {Text: "No"}}, msg.QuickReplies())
 	ts.Equal("event", msg.Topic())
 	ts.Equal("external-id", msg.ResponseToExternalID())
 	ts.True(msg.HighPriority())
@@ -1605,7 +1605,6 @@ SELECT
 	direction,
 	text,
 	attachments,
-	quick_replies,
 	msg_count,
 	error_count,
 	failed_reason,

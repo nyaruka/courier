@@ -3,18 +3,19 @@ package viber_test
 import (
 	"testing"
 
+	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers/viber"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestKeyboardFromReplies(t *testing.T) {
 	tsc := []struct {
-		replies      []string
+		replies      []courier.QuickReply
 		expected     *viber.Keyboard
 		buttonConfig map[string]any
 	}{
 		{
-			[]string{"OK"},
+			[]courier.QuickReply{{Text: "OK"}},
 			&viber.Keyboard{
 				"keyboard",
 				false,
@@ -25,7 +26,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			map[string]any{},
 		},
 		{
-			[]string{"Yes", "No", "Maybe"},
+			[]courier.QuickReply{{Text: "Yes"}, {Text: "No"}, {Text: "Maybe"}},
 			&viber.Keyboard{
 				"keyboard",
 				false,
@@ -38,7 +39,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			map[string]any{},
 		},
 		{
-			[]string{"A", "B", "C", "D"},
+			[]courier.QuickReply{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}},
 			&viber.Keyboard{
 				"keyboard",
 				false,
@@ -52,7 +53,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			map[string]any{},
 		},
 		{
-			[]string{"\"A\"", "<B>"},
+			[]courier.QuickReply{{Text: "\"A\""}, {Text: "<B>"}},
 			&viber.Keyboard{
 				"keyboard",
 				false,
@@ -64,7 +65,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			map[string]any{},
 		},
 		{
-			[]string{"Vanilla", "Chocolate", "Mint", "Lemon Sorbet", "Papaya", "Strawberry"},
+			[]courier.QuickReply{{Text: "Vanilla"}, {Text: "Chocolate"}, {Text: "Mint"}, {Text: "Lemon Sorbet"}, {Text: "Papaya"}, {Text: "Strawberry"}},
 			&viber.Keyboard{
 				"keyboard",
 				false,
@@ -80,7 +81,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			map[string]any{},
 		},
 		{
-			[]string{"A", "B", "C", "D", "Chicken", "Fish", "Peanut Butter Pickle"},
+			[]courier.QuickReply{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}, {Text: "Chicken"}, {Text: "Fish"}, {Text: "Peanut Butter Pickle"}},
 			&viber.Keyboard{
 				"keyboard",
 				false,
@@ -97,7 +98,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			map[string]any{},
 		},
 		{
-			[]string{"Foo", "Bar", "Baz"},
+			[]courier.QuickReply{{Text: "Foo"}, {Text: "Bar"}, {Text: "Baz"}},
 			&viber.Keyboard{
 				"keyboard",
 				false,
@@ -114,7 +115,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			},
 		},
 		{
-			[]string{"Yes", "No", "Maybe"},
+			[]courier.QuickReply{{Text: "Yes"}, {Text: "No"}, {Text: "Maybe"}},
 			&viber.Keyboard{
 				"keyboard",
 				false,

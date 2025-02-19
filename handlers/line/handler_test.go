@@ -490,7 +490,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		Label:           "Quick Reply",
 		MsgText:         "Are you happy?",
 		MsgURN:          "line:uabcdefghij",
-		MsgQuickReplies: []string{"Yes", "No"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
 		},
@@ -505,7 +505,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:         "Are you happy?",
 		MsgURN:          "line:uabcdefghij",
 		MsgAttachments:  []string{"image/jpeg:http://mock.com/1234/test.jpg"},
-		MsgQuickReplies: []string{"Yes", "No"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
 		},
@@ -521,7 +521,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:                  "line:uabcdefghij",
 		MsgResponseToExternalID: "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
 		MsgAttachments:          []string{"image/jpeg:http://mock.com/1234/test.jpg"},
-		MsgQuickReplies:         []string{"Yes", "No"},
+		MsgQuickReplies:         []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.line.me/v2/bot/message/reply": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
 		},
