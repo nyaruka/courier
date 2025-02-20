@@ -171,7 +171,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		To:           msg.URN().Path(),
 		Channel:      string(msg.Channel().UUID()),
 		Attachments:  attachmentURLs,
-		QuickReplies: msg.QuickReplies(),
+		QuickReplies: handlers.TextOnlyQuickReplies(msg.QuickReplies()),
 	}
 
 	var body io.Reader

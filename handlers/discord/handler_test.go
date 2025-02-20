@@ -24,7 +24,7 @@ var testChannels = []courier.Channel{
 
 var testCases = []IncomingTestCase{
 	{
-		Label:              "Recieve Message",
+		Label:              "Receive Message",
 		URL:                "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive",
 		Data:               `from=694634743521607802&text=hello`,
 		ExpectedRespStatus: 200,
@@ -32,7 +32,7 @@ var testCases = []IncomingTestCase{
 		ExpectedURN:        "discord:694634743521607802",
 	},
 	{
-		Label:               "Recieve Message with attachment",
+		Label:               "Receive Message with attachment",
 		URL:                 "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive",
 		Data:                `from=694634743521607802&text=hello&attachments=https://test.test/foo.png`,
 		ExpectedRespStatus:  200,
@@ -90,7 +90,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/discord/rp/send",
-				Body: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":null}`,
+				Body: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":[]}`,
 			},
 		},
 	},
@@ -107,7 +107,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/discord/rp/send",
-				Body: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":null}`,
+				Body: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":[]}`,
 			},
 		},
 	},
@@ -115,7 +115,7 @@ var sendTestCases = []OutgoingTestCase{
 		Label:           "Attachement and quick replies",
 		MsgText:         "Hello World",
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MsgQuickReplies: []string{"hello", "world"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "hello"}, {Text: "world"}},
 		MsgURN:          "discord:694634743521607802",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://example.com/discord/rp/send": {
@@ -141,7 +141,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/discord/rp/send",
-				Body: `{"id":"10","text":"Error Sending","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":null}`,
+				Body: `{"id":"10","text":"Error Sending","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":[]}`,
 			},
 		},
 		ExpectedError: courier.ErrResponseStatus,
@@ -158,7 +158,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/discord/rp/send",
-				Body: `{"id":"10","text":"Error","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":null}`,
+				Body: `{"id":"10","text":"Error","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":[]}`,
 			},
 		},
 		ExpectedError: courier.ErrConnectionFailed,

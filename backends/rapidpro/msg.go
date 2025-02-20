@@ -45,20 +45,20 @@ const (
 
 // Msg is our base struct to represent msgs both in our JSON and db representations
 type Msg struct {
-	OrgID_        OrgID               `json:"org_id"          db:"org_id"`
-	ID_           courier.MsgID       `json:"id"              db:"id"`
-	UUID_         courier.MsgUUID     `json:"uuid"            db:"uuid"`
-	Direction_    MsgDirection        `                       db:"direction"`
-	Status_       courier.MsgStatus   `                       db:"status"`
-	Visibility_   MsgVisibility       `                       db:"visibility"`
-	HighPriority_ bool                `json:"high_priority"   db:"high_priority"`
-	Text_         string              `json:"text"            db:"text"`
-	Attachments_  pq.StringArray      `json:"attachments"     db:"attachments"`
-	QuickReplies_ pq.StringArray      `json:"quick_replies"   db:"quick_replies"`
-	Locale_       null.String         `json:"locale"          db:"locale"`
-	Templating_   *courier.Templating `json:"templating"      db:"templating"`
-	ExternalID_   null.String         `                       db:"external_id"`
-	Metadata_     json.RawMessage     `json:"metadata"        db:"metadata"`
+	OrgID_        OrgID                `json:"org_id"          db:"org_id"`
+	ID_           courier.MsgID        `json:"id"              db:"id"`
+	UUID_         courier.MsgUUID      `json:"uuid"            db:"uuid"`
+	Direction_    MsgDirection         `                       db:"direction"`
+	Status_       courier.MsgStatus    `                       db:"status"`
+	Visibility_   MsgVisibility        `                       db:"visibility"`
+	HighPriority_ bool                 `json:"high_priority"   db:"high_priority"`
+	Text_         string               `json:"text"            db:"text"`
+	Attachments_  pq.StringArray       `json:"attachments"     db:"attachments"`
+	QuickReplies_ []courier.QuickReply `json:"quick_replies"`
+	Locale_       null.String          `json:"locale"          db:"locale"`
+	Templating_   *courier.Templating  `json:"templating"      db:"templating"`
+	ExternalID_   null.String          `                       db:"external_id"`
+	Metadata_     json.RawMessage      `json:"metadata"        db:"metadata"`
 
 	ChannelID_    courier.ChannelID `                       db:"channel_id"`
 	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
@@ -135,12 +135,12 @@ func (m *Msg) URN() urns.URN            { return m.URN_ }
 func (m *Msg) Channel() courier.Channel { return m.channel }
 
 // outgoing specific
-func (m *Msg) QuickReplies() []string          { return m.QuickReplies_ }
-func (m *Msg) Locale() i18n.Locale             { return i18n.Locale(string(m.Locale_)) }
-func (m *Msg) Templating() *courier.Templating { return m.Templating_ }
-func (m *Msg) URNAuth() string                 { return m.URNAuth_ }
-func (m *Msg) Origin() courier.MsgOrigin       { return m.Origin_ }
-func (m *Msg) ContactLastSeenOn() *time.Time   { return m.ContactLastSeenOn_ }
+func (m *Msg) QuickReplies() []courier.QuickReply { return m.QuickReplies_ }
+func (m *Msg) Locale() i18n.Locale                { return i18n.Locale(string(m.Locale_)) }
+func (m *Msg) Templating() *courier.Templating    { return m.Templating_ }
+func (m *Msg) URNAuth() string                    { return m.URNAuth_ }
+func (m *Msg) Origin() courier.MsgOrigin          { return m.Origin_ }
+func (m *Msg) ContactLastSeenOn() *time.Time      { return m.ContactLastSeenOn_ }
 func (m *Msg) Topic() string {
 	if m.Metadata_ == nil {
 		return ""

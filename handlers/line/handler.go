@@ -335,8 +335,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			for j, qr := range qrs {
 				items[j] = QuickReplyItem{Type: "action"}
 				items[j].Action.Type = "message"
-				items[j].Action.Label = qr
-				items[j].Action.Text = qr
+				items[j].Action.Label = qr.Text
+				items[j].Action.Text = qr.Text
 			}
 			if len(items) > 0 {
 				mtTextMsg.QuickReply = &mtQuickReply{Items: items}

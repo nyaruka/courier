@@ -1,6 +1,10 @@
 package telegram
 
-import "github.com/nyaruka/courier/utils"
+import (
+	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
+)
 
 // KeyboardButton is button on a keyboard, see https://core.telegram.org/bots/api/#keyboardbutton
 type KeyboardButton struct {
@@ -17,8 +21,8 @@ type ReplyKeyboardMarkup struct {
 }
 
 // NewKeyboardFromReplies creates a keyboard from the given quick replies
-func NewKeyboardFromReplies(replies []string) *ReplyKeyboardMarkup {
-	rows := utils.StringsToRows(replies, 5, 30, 2)
+func NewKeyboardFromReplies(replies []courier.QuickReply) *ReplyKeyboardMarkup {
+	rows := utils.StringsToRows(handlers.TextOnlyQuickReplies(replies), 5, 30, 2)
 	keyboard := make([][]KeyboardButton, len(rows))
 
 	for i := range rows {

@@ -35,6 +35,15 @@ func SplitAttachment(attachment string) (string, string) {
 	return parts[0], parts[1]
 }
 
+// TextOnlyQuickReplies returns the text of a list of quick replies
+func TextOnlyQuickReplies(qrs []courier.QuickReply) []string {
+	t := make([]string, len(qrs))
+	for i, qr := range qrs {
+		t[i] = qr.Text
+	}
+	return t
+}
+
 // NameFromFirstLastUsername is a utility function to build a contact's name from the passed
 // in values, all of which can be empty
 func NameFromFirstLastUsername(first string, last string, username string) string {

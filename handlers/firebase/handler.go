@@ -205,7 +205,7 @@ func (h *handler) sendWithAPIKey(msg courier.MsgOut, res *courier.SendResult, cl
 
 		// include any quick replies on the last piece we send
 		if i == len(msgParts)-1 {
-			payload.Data.QuickReplies = msg.QuickReplies()
+			payload.Data.QuickReplies = handlers.TextOnlyQuickReplies(msg.QuickReplies())
 		}
 
 		payload.To = msg.URNAuth()
@@ -289,7 +289,7 @@ func (h *handler) sendWithCredsJSON(msg courier.MsgOut, res *courier.SendResult,
 
 		if i == len(msgParts)-1 {
 			if msg.QuickReplies() != nil {
-				payload.Message.Data.QuickReplies = string(jsonx.MustMarshal(msg.QuickReplies()))
+				payload.Message.Data.QuickReplies = string(jsonx.MustMarshal(handlers.TextOnlyQuickReplies(msg.QuickReplies())))
 			}
 		}
 

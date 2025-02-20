@@ -517,7 +517,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		Label:           "Interactive Button Message Send",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"BUTTON1"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "BUTTON1"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -532,7 +532,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		Label:           "Interactive List Message Send",
 		MsgText:         "Interactive List Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}, {Text: "ROW4"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -544,10 +544,14 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:           "Interactive List Message Send, more than 10 QRs",
-		MsgText:         "Interactive List Msg",
-		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4", "ROW5", "ROW6", "ROW7", "ROW8", "ROW9", "ROW10", "ROW11", "ROW12"},
+		Label:   "Interactive List Message Send, more than 10 QRs",
+		MsgText: "Interactive List Msg",
+		MsgURN:  "whatsapp:250788123123",
+		MsgQuickReplies: []courier.QuickReply{
+			{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}, {Text: "ROW4"},
+			{Text: "ROW5"}, {Text: "ROW6"}, {Text: "ROW7"}, {Text: "ROW8"},
+			{Text: "ROW9"}, {Text: "ROW10"}, {Text: "ROW11"}, {Text: "ROW12"},
+		},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -564,7 +568,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MsgText:         "Hola",
 		MsgURN:          "whatsapp:250788123123",
 		MsgLocale:       "spa",
-		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}, {Text: "ROW4"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -579,7 +583,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		Label:           "Interactive Button Message Send with image attachment",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"BUTTON1"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "BUTTON1"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
@@ -598,7 +602,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		Label:           "Interactive Button Message Send with video attachment",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"BUTTON1"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "BUTTON1"}},
 		MsgAttachments:  []string{"video/mp4:https://foo.bar/video.mp4"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
@@ -617,7 +621,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		Label:           "Interactive Button Message Send with document attachment",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"BUTTON1"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "BUTTON1"}},
 		MsgAttachments:  []string{"document/pdf:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
@@ -636,7 +640,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		Label:           "Interactive Button Message Send with audio attachment",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}},
 		MsgAttachments:  []string{"audio/mp3:https://foo.bar/audio.mp3"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
@@ -654,7 +658,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		Label:           "Interactive List Message Send with attachment",
 		MsgText:         "Interactive List Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}, {Text: "ROW4"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {

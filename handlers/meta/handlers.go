@@ -706,7 +706,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 		// include any quick replies on the last piece we send
 		if part.IsLast {
 			for _, qr := range msg.QuickReplies() {
-				payload.Message.QuickReplies = append(payload.Message.QuickReplies, messenger.QuickReply{Title: qr, Payload: qr, ContentType: "text"})
+				payload.Message.QuickReplies = append(payload.Message.QuickReplies, messenger.QuickReply{Title: qr.Text, Payload: qr.Text, ContentType: "text"})
 			}
 		} else {
 			payload.Message.QuickReplies = nil
@@ -855,7 +855,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 										Type: "reply",
 									}
 									btns[i].Reply.ID = fmt.Sprint(i)
-									btns[i].Reply.Title = qr
+									btns[i].Reply.Title = qr.Text
 								}
 								interactive.Action = &struct {
 									Button   string             "json:\"button,omitempty\""
@@ -874,7 +874,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 								for i, qr := range qrs {
 									section.Rows[i] = whatsapp.SectionRow{
 										ID:    fmt.Sprint(i),
-										Title: qr,
+										Title: qr.Text,
 									}
 								}
 
@@ -1011,7 +1011,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 								Type: "reply",
 							}
 							btns[i].Reply.ID = fmt.Sprint(i)
-							btns[i].Reply.Title = qr
+							btns[i].Reply.Title = qr.Text
 						}
 						interactive.Action = &struct {
 							Button   string             "json:\"button,omitempty\""
@@ -1031,7 +1031,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 						for i, qr := range qrs {
 							section.Rows[i] = whatsapp.SectionRow{
 								ID:    fmt.Sprint(i),
-								Title: qr,
+								Title: qr.Text,
 							}
 						}
 

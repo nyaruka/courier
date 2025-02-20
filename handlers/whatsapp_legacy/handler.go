@@ -668,7 +668,7 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 								Type: "reply",
 							}
 							btns[i].Reply.ID = fmt.Sprint(i)
-							btns[i].Reply.Title = qr
+							btns[i].Reply.Title = qr.Text
 						}
 						payload.Interactive.Action.Buttons = btns
 						payloads = append(payloads, payload)
@@ -682,7 +682,7 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 						for i, qr := range qrs {
 							section.Rows[i] = mtSectionRow{
 								ID:    fmt.Sprint(i),
-								Title: qr,
+								Title: qr.Text,
 							}
 						}
 						payload.Interactive.Action.Sections = []mtSection{
@@ -763,7 +763,7 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 									Type: "reply",
 								}
 								btns[i].Reply.ID = fmt.Sprint(i)
-								btns[i].Reply.Title = qr
+								btns[i].Reply.Title = qr.Text
 							}
 							payload.Interactive.Action.Buttons = btns
 							payloads = append(payloads, payload)
@@ -777,7 +777,7 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 							for i, qr := range qrs {
 								section.Rows[i] = mtSectionRow{
 									ID:    fmt.Sprint(i),
-									Title: qr,
+									Title: qr.Text,
 								}
 							}
 							payload.Interactive.Action.Sections = []mtSection{
