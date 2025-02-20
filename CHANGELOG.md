@@ -1,3 +1,7 @@
+v10.1.11 (2025-02-20)
+-------------------------
+ * Model quick replies as structs instead of strings
+
 v10.1.10 (2025-02-17)
 -------------------------
  * Use system user for new contacts
