@@ -73,7 +73,6 @@ CREATE TABLE IF NOT EXISTS contacts_contactfire (
     fire_on timestamp with time zone NOT NULL,
     session_uuid uuid,
     sprint_uuid uuid,
-    extra jsonb,
     UNIQUE (contact_id, fire_type, scope)
 );
 

@@ -12,8 +12,8 @@ import (
 type SessionID int64
 
 const sqlInsertTimeoutFire = `
-INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, fire_on, session_uuid, sprint_uuid, extra)
-                          VALUES($1, $2, 'T', '', $3, $4, $5, '{}')
+INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, fire_on, session_uuid, sprint_uuid)
+                          VALUES($1, $2, 'T', '', $3, $4, $5)
 ON CONFLICT DO NOTHING`
 
 // insertTimeoutFire inserts a timeout fire for the session associated with the given msg
