@@ -1,3 +1,7 @@
+v10.1.12 (2025-02-21)
+-------------------------
+ * Stop writing contactfire.extra
+
 v10.1.11 (2025-02-20)
 -------------------------
  * Model quick replies as structs instead of strings
