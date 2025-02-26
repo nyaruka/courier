@@ -11,7 +11,7 @@ import (
 	"encoding/hex"
 	"log/slog"
 	"strconv"
-
+	"errors"
 	"fmt"
 
 	"net/http"
@@ -62,14 +62,16 @@ var statusMapping = map[string]courier.MsgStatus{
 	"expired":         courier.MsgStatusFailed,
 }
 
-type ReceivedMessage struct {
-	ID              string   `json:"id"`
-	Recipient       string   `json:"recipient"`
-	Originator      string   `json:"originator"`
-	Body            string   `json:"body"`
-	CreatedDatetime string   `json:"createdDatetime"`
-	MediaURLs       []string `json:"mediaUrls"`
-	MMS             bool     `json:"mms"`
+type formMessage struct {
+	ID              string   `name:"id"`
+	MID             string   `name:"mid"`  //shortcode only
+	Shortcode       string   `name:"shortcode"`  //shortcode only	
+	Recipient       string   `name:"recipient" validate:"required"` 
+	Originator      string   `name:"originator"`
+	Body            string   `name:"body"`
+	MediaURLs       []string `name:"mediaUrls"`
+	MessageBody     string   `name:"message"` //shortcode only
+	CreatedDatetime string   `name:"receive_datetime" validate:"required"`
 }
 
 func init() {
@@ -88,7 +90,7 @@ func newHandler(channelType courier.ChannelType, name string, validateSignatures
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
 	s.AddHandlerRoute(h, http.MethodGet, "status", courier.ChannelLogTypeMsgStatus, h.receiveStatus)
 
 	return nil
@@ -141,15 +143,32 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *ReceivedMessage, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
+	payload := &formMessage{}
+	err = handlers.DecodeAndValidateForm(payload, r)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+
+	text := ""
+	messageID := ""
+	//chechk if shortcode or regular
+	if payload.Shortcode != "" {
+		text = payload.MessageBody
+		messageID = payload.MID
+	} else {
+		text = payload.Body
+		messageID = payload.ID
+	}
+
 	// no message? ignore this
-	if payload.Body == "" && !payload.MMS {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
+	if text == "" && len(payload.MediaURLs) == 0 {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or media"))
 	}
 
 	// create our date from the timestamp
@@ -160,7 +179,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		shortCodeDateLayout := "20060102150405"
 		date, err = time.Parse(shortCodeDateLayout, payload.CreatedDatetime)
 		if err != nil {
-			return nil, fmt.Errorf("unable to parse date '%s': %v", payload.CreatedDatetime, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to parse date '%s': %v", payload.CreatedDatetime, err))
 		}
 	}
 
@@ -169,13 +188,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
-	text := payload.Body
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, payload.ID, clog).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, messageID, clog).WithReceivedOn(date.UTC())
 
 	// process any attached media
-	if payload.MMS {
+	if len(payload.MediaURLs) > 0 {
 		for _, mediaURL := range payload.MediaURLs {
 			msg.WithAttachment(mediaURL)
 		}
@@ -311,4 +329,12 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	}
 
 	return nil
+}
+
+// WriteMsgSuccessResponse writes a success response for the messages, MB expects an 'OK' body in our response
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.MsgIn) error {
+	w.Header().Add("Content-type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write([]byte("OK"))
+	return err
 }
