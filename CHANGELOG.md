@@ -1,3 +1,7 @@
+v10.1.14 (2025-02-26)
+-------------------------
+ * Updated handler for MessageBird
+
 v10.1.13 (2025-02-24)
 -------------------------
  * Lookup system user via email instead of username
