@@ -71,7 +71,8 @@ type formMessage struct {
 	Body            string   `name:"body"`
 	MediaURLs       []string `name:"mediaUrls"`
 	MessageBody     string   `name:"message"` //shortcode only
-	CreatedDatetime string   `name:"receive_datetime" validate:"required"`
+	CreatedDatetime string   `name:"createdDatetime"`
+	ReceiveDatetime string   `name:"receive_datetime"` //shortcode only
 }
 
 func init() {
@@ -157,30 +158,29 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	text := ""
 	messageID := ""
+	date := time.Time{}
 	//chechk if shortcode or regular
 	if payload.Shortcode != "" {
 		text = payload.MessageBody
 		messageID = payload.MID
+		shortCodeDateLayout := "20060102150405"
+		date, err = time.Parse(shortCodeDateLayout, payload.ReceiveDatetime)
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to parse date '%s': %v", payload.ReceiveDatetime, err))
+		}
 	} else {
 		text = payload.Body
 		messageID = payload.ID
+		standardDateLayout := "2006-01-02T15:04:05+00:00"
+		date, err = time.Parse(standardDateLayout, payload.CreatedDatetime)
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to parse date '%s': %v", payload.CreatedDatetime, err))
+		}
 	}
 
 	// no message? ignore this
 	if text == "" && len(payload.MediaURLs) == 0 {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or media"))
-	}
-
-	// create our date from the timestamp
-	standardDateLayout := "2006-01-02T15:04:05+00:00"
-	date, err := time.Parse(standardDateLayout, payload.CreatedDatetime)
-	if err != nil {
-		//try shortcode format
-		shortCodeDateLayout := "20060102150405"
-		date, err = time.Parse(shortCodeDateLayout, payload.CreatedDatetime)
-		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to parse date '%s': %v", payload.CreatedDatetime, err))
-		}
 	}
 
 	// create our URN
