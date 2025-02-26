@@ -9,10 +9,10 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"log/slog"
-	"strconv"
 	"errors"
 	"fmt"
+	"log/slog"
+	"strconv"
 
 	"net/http"
 	"time"
@@ -64,9 +64,9 @@ var statusMapping = map[string]courier.MsgStatus{
 
 type formMessage struct {
 	ID              string   `name:"id"`
-	MID             string   `name:"mid"`  //shortcode only
-	Shortcode       string   `name:"shortcode"`  //shortcode only	
-	Recipient       string   `name:"recipient" validate:"required"` 
+	MID             string   `name:"mid"`       //shortcode only
+	Shortcode       string   `name:"shortcode"` //shortcode only
+	Recipient       string   `name:"recipient" validate:"required"`
 	Originator      string   `name:"originator"`
 	Body            string   `name:"body"`
 	MediaURLs       []string `name:"mediaUrls"`
