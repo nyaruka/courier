@@ -839,7 +839,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 
 							// if we have more than 10 quick replies, truncate and add channel error
 							if len(qrs) > 10 {
-								clog.Error(clogs.NewLogError("", "", "too many quick replies WAC supports only up to 10 quick replies"))
+								clog.Error(&clogs.LogError{Message: "too many quick replies WAC supports only up to 10 quick replies"})
 								qrs = qrs[:10]
 							}
 
@@ -937,7 +937,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 
 					// if we have more than 10 quick replies, truncate and add channel error
 					if len(qrs) > 10 {
-						clog.Error(clogs.NewLogError("", "", "too many quick replies WAC supports only up to 10 quick replies"))
+						clog.Error(&clogs.LogError{Message: "too many quick replies WAC supports only up to 10 quick replies"})
 						qrs = qrs[:10]
 					}
 

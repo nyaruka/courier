@@ -33,11 +33,6 @@ type LogError struct {
 	Message string `json:"message"`
 }
 
-// NewLogError creates a new log error
-func NewLogError(code, extCode, message string, args ...any) *LogError {
-	return &LogError{Code: code, ExtCode: extCode, Message: fmt.Sprintf(message, args...)}
-}
-
 // Redact applies the given redactor to this error
 func (e *LogError) Redact(r stringsx.Redactor) *LogError {
 	return &LogError{Code: e.Code, ExtCode: e.ExtCode, Message: r(e.Message)}
