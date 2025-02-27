@@ -172,7 +172,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Form:    url.Values{"msg": {"Simple Message"}, "to": {"0788383383"}, "from": {"2020"}, "key": {"D69BB824F88F20482B94ECF3822EBD84"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
-		ExpectedLogErrors: []*clogs.LogError{&clogs.LogError{Message: "Received invalid response content: <return>Missing</return>"}},
+		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "Received invalid response content: <return>Missing</return>"}},
 		ExpectedError:     courier.ErrResponseContent,
 	},
 }

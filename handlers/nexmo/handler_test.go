@@ -85,7 +85,7 @@ var testCases = []IncomingTestCase{
 		ExpectedStatuses: []ExpectedStatus{
 			{ExternalID: "external1", Status: courier.MsgStatusFailed},
 		},
-		ExpectedErrors: []*clogs.LogError{courier.ErrorExternal("dlr:6", "Anti-Spam Rejection")},
+		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("dlr:6", "Anti-Spam Rejection")},
 	},
 	{
 		Label:                "Status accepted",

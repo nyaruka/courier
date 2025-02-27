@@ -559,7 +559,7 @@ func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter
 }
 
 // https://www.twilio.com/docs/api/errors
-func twilioError(code int64) *clogs.LogError {
+func twilioError(code int64) *clogs.Error {
 	codeAsStr := strconv.Itoa(int(code))
 	errMsg, _ := jsonparser.GetString(errorCodes, codeAsStr)
 	return courier.ErrorExternal(codeAsStr, errMsg)

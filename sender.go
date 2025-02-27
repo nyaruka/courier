@@ -386,7 +386,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 			status.SetStatus(MsgStatusFailed)
 		}
 
-		clog.Error(&clogs.LogError{Code: serr.clogCode, ExtCode: serr.clogExtCode, Message: serr.clogMsg})
+		clog.Error(&clogs.Error{Code: serr.clogCode, ExtCode: serr.clogExtCode, Message: serr.clogMsg})
 
 		// if handler returned ErrContactStopped need to write a stop event
 		if serr == ErrContactStopped {
@@ -401,7 +401,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 
 		status.SetStatus(MsgStatusErrored)
 
-		clog.Error(&clogs.LogError{Code: "internal_error", Message: "An internal error occured."})
+		clog.Error(&clogs.Error{Code: "internal_error", Message: "An internal error occured."})
 	}
 
 	return status

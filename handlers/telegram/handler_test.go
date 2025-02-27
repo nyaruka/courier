@@ -671,7 +671,7 @@ var testCases = []IncomingTestCase{
 		Data:                 invalidFileID,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
-		ExpectedErrors:       []*clogs.LogError{courier.ErrorResponseUnparseable("JSON")},
+		ExpectedErrors:       []*clogs.Error{courier.ErrorResponseUnparseable("JSON")},
 	},
 	{
 		Label:                "Receive NoOk FileID",
@@ -686,7 +686,7 @@ var testCases = []IncomingTestCase{
 		Data:                 invalidJsonFile,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
-		ExpectedErrors:       []*clogs.LogError{courier.ErrorResponseUnparseable("JSON")},
+		ExpectedErrors:       []*clogs.Error{courier.ErrorResponseUnparseable("JSON")},
 	},
 	{
 		Label:                "Receive error File response",
@@ -694,7 +694,7 @@ var testCases = []IncomingTestCase{
 		Data:                 errorFile,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
-		ExpectedErrors:       []*clogs.LogError{courier.ErrorExternal("500", "error loading file")},
+		ExpectedErrors:       []*clogs.Error{courier.ErrorExternal("500", "error loading file")},
 	},
 	{
 		Label:                "Receive NotOk FileID",
@@ -938,7 +938,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgText:           "My foo!",
 		MsgURN:            "telegram:12345",
 		MsgAttachments:    []string{"unknown/foo:https://foo.bar/unknown.foo"},
-		ExpectedLogErrors: []*clogs.LogError{courier.ErrorMediaUnsupported("unknown/foo")},
+		ExpectedLogErrors: []*clogs.Error{courier.ErrorMediaUnsupported("unknown/foo")},
 	},
 }
 

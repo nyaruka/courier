@@ -108,7 +108,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		}
 
 		if !strings.Contains(string(respBody), "Success") {
-			clog.Error(&clogs.LogError{Message: fmt.Sprintf("Received invalid response content: %s", string(respBody))})
+			clog.Error(&clogs.Error{Message: fmt.Sprintf("Received invalid response content: %s", string(respBody))})
 			return courier.ErrResponseContent
 		}
 	}

@@ -230,7 +230,7 @@ var incomingCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "14762070468292kw2fuqty55yp2b2", Status: courier.MsgStatusFailed}},
-		ExpectedErrors:       []*clogs.LogError{courier.ErrorExternal("4432", "forbidden to country")},
+		ExpectedErrors:       []*clogs.Error{courier.ErrorExternal("4432", "forbidden to country")},
 	},
 }
 

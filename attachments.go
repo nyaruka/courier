@@ -37,8 +37,8 @@ type fetchAttachmentRequest struct {
 }
 
 type fetchAttachmentResponse struct {
-	Attachment *Attachment   `json:"attachment"`
-	LogUUID    clogs.LogUUID `json:"log_uuid"`
+	Attachment *Attachment `json:"attachment"`
+	LogUUID    clogs.UUID  `json:"log_uuid"`
 }
 
 func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAttachmentResponse, error) {

@@ -25,8 +25,8 @@ INSERT INTO channels_channellog( uuid,  log_type,  channel_id,  http_logs,  erro
 
 // channel log to be inserted into the database
 type dbChannelLog struct {
-	UUID      clogs.LogUUID     `db:"uuid"`
-	Type      clogs.LogType     `db:"log_type"`
+	UUID      clogs.UUID        `db:"uuid"`
+	Type      clogs.Type        `db:"log_type"`
 	ChannelID courier.ChannelID `db:"channel_id"`
 	HTTPLogs  json.RawMessage   `db:"http_logs"`
 	Errors    json.RawMessage   `db:"errors"`

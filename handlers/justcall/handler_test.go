@@ -326,7 +326,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"+250788383383","body":"ID Error"}`,
 		}},
-		ExpectedLogErrors: []*clogs.LogError{courier.ErrorResponseValueMissing("id")},
+		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("id")},
 	},
 	{
 		Label:   "Error Sending",

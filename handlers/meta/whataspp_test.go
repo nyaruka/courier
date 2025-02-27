@@ -192,7 +192,7 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/error_msg.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		ExpectedErrors:        []*clogs.LogError{courier.ErrorExternal("131051", "Unsupported message type")},
+		ExpectedErrors:        []*clogs.Error{courier.ErrorExternal("131051", "Unsupported message type")},
 		NoInvalidChannelCheck: true,
 		PrepRequest:           addValidSignature,
 	},
@@ -202,7 +202,7 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/error_errors.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		ExpectedErrors:        []*clogs.LogError{courier.ErrorExternal("0", "We were unable to authenticate the app user")},
+		ExpectedErrors:        []*clogs.Error{courier.ErrorExternal("0", "We were unable to authenticate the app user")},
 		NoInvalidChannelCheck: true,
 		PrepRequest:           addValidSignature,
 	},
@@ -226,7 +226,7 @@ var whatsappIncomingTests = []IncomingTestCase{
 		ExpectedStatuses: []ExpectedStatus{
 			{ExternalID: "external_id", Status: courier.MsgStatusFailed},
 		},
-		ExpectedErrors: []*clogs.LogError{
+		ExpectedErrors: []*clogs.Error{
 			courier.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)"),
 		},
 		PrepRequest: addValidSignature,
@@ -561,7 +561,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"},{"id":"4","title":"ROW5"},{"id":"5","title":"ROW6"},{"id":"6","title":"ROW7"},{"id":"7","title":"ROW8"},{"id":"8","title":"ROW9"},{"id":"9","title":"ROW10"}]}]}}}`,
 		}},
 		ExpectedExtIDs:    []string{"157b5e14568e8"},
-		ExpectedLogErrors: []*clogs.LogError{&clogs.LogError{Message: "too many quick replies WAC supports only up to 10 quick replies"}},
+		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "too many quick replies WAC supports only up to 10 quick replies"}},
 	},
 	{
 		Label:           "Interactive List Message Send In Spanish",

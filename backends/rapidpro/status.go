@@ -28,7 +28,7 @@ type StatusUpdate struct {
 	ExternalID_  string              `json:"external_id,omitempty"    db:"external_id"`
 	Status_      courier.MsgStatus   `json:"status"                   db:"status"`
 	ModifiedOn_  time.Time           `json:"modified_on"              db:"modified_on"`
-	LogUUID      clogs.LogUUID       `json:"log_uuid"                 db:"log_uuid"`
+	LogUUID      clogs.UUID          `json:"log_uuid"                 db:"log_uuid"`
 }
 
 // creates a new message status update

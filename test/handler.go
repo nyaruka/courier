@@ -60,7 +60,7 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier
 	}
 
 	// log an error than contains a value that should be redacted
-	clog.Error(&clogs.LogError{Code: "seeds", Message: "contains sesame seeds"})
+	clog.Error(&clogs.Error{Code: "seeds", Message: "contains sesame seeds"})
 
 	if msg.Text() == "err:config" {
 		return courier.ErrChannelConfig

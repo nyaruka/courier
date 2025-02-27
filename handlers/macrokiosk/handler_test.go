@@ -156,7 +156,7 @@ var outgoingTestCases = []OutgoingTestCase{
 			},
 			Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"No External ID","from":"macro","servid":"service-id","type":"0"}`,
 		}},
-		ExpectedLogErrors: []*clogs.LogError{courier.ErrorResponseValueMissing("MsgID")},
+		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("MsgID")},
 	},
 	{
 		Label:   "Error Sending",

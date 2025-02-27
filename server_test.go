@@ -164,7 +164,7 @@ func TestOutgoing(t *testing.T) {
 	// and we should have a channel log with redacted errors and traces
 	assert.Len(t, mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
-	assert.Equal(t, []*clogs.LogError{&clogs.LogError{Code: "seeds", Message: "contains ********** seeds"}}, clog.Errors)
+	assert.Equal(t, []*clogs.Error{&clogs.Error{Code: "seeds", Message: "contains ********** seeds"}}, clog.Errors)
 	assert.True(t, clog.Attached())
 	assert.Len(t, clog.HttpLogs, 1)
 

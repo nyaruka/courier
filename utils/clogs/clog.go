@@ -16,34 +16,34 @@ const (
 	dynamoTTL = 7 * 24 * time.Hour // 1 week
 )
 
-// LogUUID is the type of a channel log UUID (should be v7)
-type LogUUID uuids.UUID
+// UUID is the type of a channel log UUID (should be v7)
+type UUID uuids.UUID
 
-// NewLogUUID creates a new channel log UUID
-func NewLogUUID() LogUUID {
-	return LogUUID(uuids.NewV7())
+// NewUUID creates a new channel log UUID
+func NewUUID() UUID {
+	return UUID(uuids.NewV7())
 }
 
-type LogType string
+type Type string
 
 // Error is an error that occurred during a channel interaction
-type LogError struct {
+type Error struct {
 	Code    string `json:"code"`
 	ExtCode string `json:"ext_code,omitempty"`
 	Message string `json:"message"`
 }
 
 // Redact applies the given redactor to this error
-func (e *LogError) Redact(r stringsx.Redactor) *LogError {
-	return &LogError{Code: e.Code, ExtCode: e.ExtCode, Message: r(e.Message)}
+func (e *Error) Redact(r stringsx.Redactor) *Error {
+	return &Error{Code: e.Code, ExtCode: e.ExtCode, Message: r(e.Message)}
 }
 
 // Log is the basic channel log structure
 type Log struct {
-	UUID      LogUUID
-	Type      LogType
+	UUID      UUID
+	Type      Type
 	HttpLogs  []*httpx.Log
-	Errors    []*LogError
+	Errors    []*Error
 	CreatedOn time.Time
 	Elapsed   time.Duration
 
@@ -51,12 +51,12 @@ type Log struct {
 	redactor stringsx.Redactor
 }
 
-func NewLog(t LogType, r *httpx.Recorder, redactVals []string) *Log {
+func New(t Type, r *httpx.Recorder, redactVals []string) *Log {
 	return &Log{
-		UUID:      NewLogUUID(),
+		UUID:      NewUUID(),
 		Type:      t,
 		HttpLogs:  []*httpx.Log{},
-		Errors:    []*LogError{},
+		Errors:    []*Error{},
 		CreatedOn: time.Now(),
 
 		recorder: r,
@@ -70,7 +70,7 @@ func (l *Log) HTTP(t *httpx.Trace) {
 }
 
 // Error adds the given error to this log
-func (l *Log) Error(e *LogError) {
+func (l *Log) Error(e *Error) {
 	l.Errors = append(l.Errors, e.Redact(l.redactor))
 }
 
@@ -90,8 +90,8 @@ func (l *Log) traceToLog(t *httpx.Trace) *httpx.Log {
 
 // log struct to be written to DynamoDB
 type dynamoLog struct {
-	UUID      LogUUID   `dynamodbav:"UUID"`
-	Type      LogType   `dynamodbav:"Type"`
+	UUID      UUID      `dynamodbav:"UUID"`
+	Type      Type      `dynamodbav:"Type"`
 	DataGZ    []byte    `dynamodbav:"DataGZ,omitempty"`
 	ElapsedMS int       `dynamodbav:"ElapsedMS"`
 	CreatedOn time.Time `dynamodbav:"CreatedOn,unixtime"`
@@ -100,7 +100,7 @@ type dynamoLog struct {
 
 type dynamoLogData struct {
 	HttpLogs []*httpx.Log `json:"http_logs"`
-	Errors   []*LogError  `json:"errors"`
+	Errors   []*Error     `json:"errors"`
 }
 
 func (l *Log) MarshalDynamo() (map[string]types.AttributeValue, error) {

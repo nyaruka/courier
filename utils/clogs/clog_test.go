@@ -23,8 +23,8 @@ func TestLogs(t *testing.T) {
 		"http://ivr.com/hangup": {httpx.NewMockResponse(400, nil, []byte("Oops"))},
 	}))
 
-	clog1 := clogs.NewLog("type1", nil, []string{"sesame"})
-	clog2 := clogs.NewLog("type1", nil, []string{"sesame"})
+	clog1 := clogs.New("type1", nil, []string{"sesame"})
+	clog2 := clogs.New("type1", nil, []string{"sesame"})
 
 	req1, _ := httpx.NewRequest("GET", "http://ivr.com/start", nil, map[string]string{"Authorization": "Token sesame"})
 	trace1, err := httpx.DoTrace(http.DefaultClient, req1, nil, nil, -1)
@@ -38,7 +38,7 @@ func TestLogs(t *testing.T) {
 	require.NoError(t, err)
 
 	clog2.HTTP(trace2)
-	clog2.Error(&clogs.LogError{Message: "oops"})
+	clog2.Error(&clogs.Error{Message: "oops"})
 	clog2.End()
 
 	assert.NotEqual(t, clog1.UUID, clog2.UUID)
@@ -47,11 +47,11 @@ func TestLogs(t *testing.T) {
 	ds, err := dynamo.NewService("root", "tembatemba", "us-east-1", "http://localhost:6000", "Test")
 	require.NoError(t, err)
 
-	l1 := clogs.NewLog("test_type1", nil, nil)
-	l1.Error(&clogs.LogError{Code: "code1", ExtCode: "ext", Message: "message"})
+	l1 := clogs.New("test_type1", nil, nil)
+	l1.Error(&clogs.Error{Code: "code1", ExtCode: "ext", Message: "message"})
 
-	l2 := clogs.NewLog("test_type2", nil, nil)
-	l2.Error(&clogs.LogError{Code: "code2", ExtCode: "ext", Message: "message"})
+	l2 := clogs.New("test_type2", nil, nil)
+	l2.Error(&clogs.Error{Code: "code2", ExtCode: "ext", Message: "message"})
 
 	// write both logs to db
 	err = ds.PutItem(ctx, "ChannelLogs", l1)
@@ -64,8 +64,8 @@ func TestLogs(t *testing.T) {
 	err = ds.GetItem(ctx, "ChannelLogs", map[string]types.AttributeValue{"UUID": &types.AttributeValueMemberS{Value: string(l1.UUID)}}, l3)
 	assert.NoError(t, err)
 	assert.Equal(t, l1.UUID, l3.UUID)
-	assert.Equal(t, clogs.LogType("test_type1"), l3.Type)
-	assert.Equal(t, []*clogs.LogError{{Code: "code1", ExtCode: "ext", Message: "message"}}, l3.Errors)
+	assert.Equal(t, clogs.Type("test_type1"), l3.Type)
+	assert.Equal(t, []*clogs.Error{{Code: "code1", ExtCode: "ext", Message: "message"}}, l3.Errors)
 	assert.Equal(t, l1.Elapsed, l3.Elapsed)
 	assert.Equal(t, l1.CreatedOn.Truncate(time.Second), l3.CreatedOn)
 }

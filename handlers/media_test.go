@@ -35,7 +35,7 @@ func TestResolveAttachments(t *testing.T) {
 		mediaSupport map[handlers.MediaType]handlers.MediaTypeSupport
 		allowURLOnly bool
 		resolved     []*handlers.Attachment
-		errors       []*clogs.LogError
+		errors       []*clogs.Error
 		err          string
 	}{
 		{ // 0: user entered image URL
@@ -45,7 +45,7 @@ func TestResolveAttachments(t *testing.T) {
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeImage, Name: "image 1.jpg", ContentType: "image", URL: "https://example.com/image%201.jpg"},
 			},
-			errors: []*clogs.LogError{},
+			errors: []*clogs.Error{},
 		},
 		{ // 1: user entered audio URL which isn't properly escaped
 			attachments:  []string{"image:https://example.com/audio 1.m4a"},
@@ -54,14 +54,14 @@ func TestResolveAttachments(t *testing.T) {
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeImage, Name: "audio 1.m4a", ContentType: "image", URL: "https://example.com/audio%201.m4a"},
 			},
-			errors: []*clogs.LogError{},
+			errors: []*clogs.Error{},
 		},
 		{ // 2: user entered image URL, URL only attachments not allowed
 			attachments:  []string{"image:https://example.com/image.jpg"},
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/png"}}}, // ignored
 			allowURLOnly: false,
 			resolved:     []*handlers.Attachment{},
-			errors:       []*clogs.LogError{courier.ErrorMediaUnresolveable("image")},
+			errors:       []*clogs.Error{courier.ErrorMediaUnresolveable("image")},
 		},
 		{ // 3: resolveable uploaded image URL
 			attachments:  []string{"image/jpeg:http://mock.com/1234/test.jpg"},
@@ -70,7 +70,7 @@ func TestResolveAttachments(t *testing.T) {
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeImage, Name: "test.jpg", ContentType: "image/jpeg", URL: "http://mock.com/1234/test.jpg", Media: imageJPG, Thumbnail: nil},
 			},
-			errors: []*clogs.LogError{},
+			errors: []*clogs.Error{},
 		},
 		{ // 4: unresolveable uploaded image URL
 			attachments:  []string{"image/jpeg:http://mock.com/9876/gone.jpg"},
@@ -79,21 +79,21 @@ func TestResolveAttachments(t *testing.T) {
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeImage, Name: "gone.jpg", ContentType: "image/jpeg", URL: "http://mock.com/9876/gone.jpg", Media: nil, Thumbnail: nil},
 			},
-			errors: []*clogs.LogError{},
+			errors: []*clogs.Error{},
 		},
 		{ // 5: unresolveable uploaded image URL, URL only attachments not allowed
 			attachments:  []string{"image/jpeg:http://mock.com/9876/gone.jpg"},
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/jpeg", "image/png"}}},
 			allowURLOnly: false,
 			resolved:     []*handlers.Attachment{},
-			errors:       []*clogs.LogError{courier.ErrorMediaUnresolveable("image/jpeg")},
+			errors:       []*clogs.Error{courier.ErrorMediaUnresolveable("image/jpeg")},
 		},
 		{ // 6: resolveable uploaded image URL, type not in supported types
 			attachments:  []string{"image/jpeg:http://mock.com/1234/test.jpg"},
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/png"}}},
 			allowURLOnly: true,
 			resolved:     []*handlers.Attachment{},
-			errors:       []*clogs.LogError{courier.ErrorMediaUnresolveable("image/jpeg")},
+			errors:       []*clogs.Error{courier.ErrorMediaUnresolveable("image/jpeg")},
 		},
 		{ // 7: resolveable uploaded audio URL, type in supported types
 			attachments:  []string{"audio/mp3:http://mock.com/3456/test.mp3"},
@@ -102,7 +102,7 @@ func TestResolveAttachments(t *testing.T) {
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeAudio, Name: "test.mp3", ContentType: "audio/mp3", URL: "http://mock.com/3456/test.mp3", Media: audioMP3, Thumbnail: nil},
 			},
-			errors: []*clogs.LogError{},
+			errors: []*clogs.Error{},
 		},
 		{ // 8: resolveable uploaded audio URL, type not in supported types, but has alternate
 			attachments:  []string{"audio/mp3:http://mock.com/3456/test.mp3"},
@@ -111,7 +111,7 @@ func TestResolveAttachments(t *testing.T) {
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeAudio, Name: "test.m4a", ContentType: "audio/mp4", URL: "http://mock.com/2345/test.m4a", Media: audioM4A, Thumbnail: nil},
 			},
-			errors: []*clogs.LogError{},
+			errors: []*clogs.Error{},
 		},
 		{ // 9: resolveable uploaded video URL, has thumbnail
 			attachments:  []string{"video/mp4:http://mock.com/5678/test.mp4"},
@@ -120,7 +120,7 @@ func TestResolveAttachments(t *testing.T) {
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeVideo, Name: "test.mp4", ContentType: "video/mp4", URL: "http://mock.com/5678/test.mp4", Media: videoMP4, Thumbnail: thumbJPG},
 			},
-			errors: []*clogs.LogError{},
+			errors: []*clogs.Error{},
 		},
 		{ // 10: resolveable uploaded video URL, no thumbnail
 			attachments:  []string{"video/quicktime:http://mock.com/6789/test.mov"},
@@ -129,14 +129,14 @@ func TestResolveAttachments(t *testing.T) {
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeVideo, Name: "test.mov", ContentType: "video/quicktime", URL: "http://mock.com/6789/test.mov", Media: videoMOV, Thumbnail: nil},
 			},
-			errors: []*clogs.LogError{},
+			errors: []*clogs.Error{},
 		},
 		{ // 11: resolveable uploaded video URL, too big
 			attachments:  []string{"video/quicktime:http://mock.com/6789/test.mov"},
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeVideo: {Types: []string{"video/quicktime"}, MaxBytes: 10 * 1024 * 1024}},
 			allowURLOnly: true,
 			resolved:     []*handlers.Attachment{},
-			errors:       []*clogs.LogError{courier.ErrorMediaUnresolveable("video/quicktime")},
+			errors:       []*clogs.Error{courier.ErrorMediaUnresolveable("video/quicktime")},
 		},
 		{ // 12: invalid attachment format
 			attachments:  []string{"image"},

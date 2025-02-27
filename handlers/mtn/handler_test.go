@@ -213,7 +213,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 			Body: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"No External ID","clientCorrelator":"10"}`,
 		}},
-		ExpectedLogErrors: []*clogs.LogError{courier.ErrorResponseValueMissing("transactionId")},
+		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("transactionId")},
 	},
 	{
 		Label:   "Error Sending",

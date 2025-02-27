@@ -36,7 +36,7 @@ const (
 type Server interface {
 	Config() *Config
 
-	AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.LogType, handlerFunc ChannelHandleFunc)
+	AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.Type, handlerFunc ChannelHandleFunc)
 	GetHandler(Channel) ChannelHandler
 
 	Backend() Backend
@@ -225,7 +225,7 @@ func (s *server) initializeChannelHandlers() {
 	sort.Strings(s.chanRoutes)
 }
 
-func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc, logType clogs.LogType) http.HandlerFunc {
+func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc, logType clogs.Type) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// stuff a few things in our context that help with logging
 		baseCtx := context.WithValue(r.Context(), contextRequestURL, r.URL.String())
@@ -307,7 +307,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 	}
 }
 
-func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.LogType, handlerFunc ChannelHandleFunc) {
+func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.Type, handlerFunc ChannelHandleFunc) {
 	method = strings.ToLower(method)
 	channelType := strings.ToLower(string(handler.ChannelType()))
 

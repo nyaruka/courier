@@ -28,7 +28,7 @@ func (ms *MockServer) Config() *courier.Config {
 	return ms.config
 }
 
-func (ms *MockServer) AddHandlerRoute(handler courier.ChannelHandler, method string, action string, logType clogs.LogType, handlerFunc courier.ChannelHandleFunc) {
+func (ms *MockServer) AddHandlerRoute(handler courier.ChannelHandler, method string, action string, logType clogs.Type, handlerFunc courier.ChannelHandleFunc) {
 
 }
 func (ms *MockServer) GetHandler(courier.Channel) courier.ChannelHandler {

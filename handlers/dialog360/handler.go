@@ -341,7 +341,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 						// if we have more than 10 quick replies, truncate and add channel error
 						if len(qrs) > 10 {
-							clog.Error(&clogs.LogError{Message: "too many quick replies D3C supports only up to 10 quick replies"})
+							clog.Error(&clogs.Error{Message: "too many quick replies D3C supports only up to 10 quick replies"})
 							qrs = qrs[:10]
 						}
 
@@ -437,7 +437,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 					payload.Type = "interactive"
 					// if we have more than 10 quick replies, truncate and add channel error
 					if len(qrs) > 10 {
-						clog.Error(&clogs.LogError{Message: "too many quick replies D3C supports only up to 10 quick replies"})
+						clog.Error(&clogs.Error{Message: "too many quick replies D3C supports only up to 10 quick replies"})
 						qrs = qrs[:10]
 					}
 

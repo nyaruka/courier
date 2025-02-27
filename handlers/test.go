@@ -69,7 +69,7 @@ type IncomingTestCase struct {
 	ExpectedMsgID         int64
 	ExpectedStatuses      []ExpectedStatus
 	ExpectedEvents        []ExpectedEvent
-	ExpectedErrors        []*clogs.LogError
+	ExpectedErrors        []*clogs.Error
 	NoLogsExpected        bool
 }
 
@@ -228,7 +228,7 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 				if assert.Equal(t, 1, len(mb.WrittenChannelLogs()), "expected a channel log") {
 
 					clog := mb.WrittenChannelLogs()[0]
-					assert.Equal(t, append([]*clogs.LogError{}, tc.ExpectedErrors...), clog.Errors, "unexpected errors logged")
+					assert.Equal(t, append([]*clogs.Error{}, tc.ExpectedErrors...), clog.Errors, "unexpected errors logged")
 				}
 			}
 		})
@@ -316,7 +316,7 @@ type OutgoingTestCase struct {
 	ExpectedRequests    []ExpectedRequest
 	ExpectedExtIDs      []string
 	ExpectedError       error
-	ExpectedLogErrors   []*clogs.LogError
+	ExpectedLogErrors   []*clogs.Error
 	ExpectedContactURNs map[string]bool
 	ExpectedNewURN      string
 }
@@ -409,7 +409,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 
 			assert.Equal(t, tc.ExpectedExtIDs, externalIDs, "external IDs mismatch")
 			assert.Equal(t, tc.ExpectedError, serr, "send method error mismatch")
-			assert.Equal(t, append([]*clogs.LogError{}, tc.ExpectedLogErrors...), clog.Errors, "channel log errors mismatch")
+			assert.Equal(t, append([]*clogs.Error{}, tc.ExpectedLogErrors...), clog.Errors, "channel log errors mismatch")
 
 			if tc.ExpectedContactURNs != nil {
 				var contactUUID courier.ContactUUID

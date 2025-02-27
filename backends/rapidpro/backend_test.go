@@ -1063,7 +1063,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.NoError(err)
 	ts.Equal(clog1.UUID, actualLog.UUID)
 	ts.Equal(courier.ChannelLogTypeTokenRefresh, actualLog.Type)
-	ts.Equal([]*clogs.LogError{courier.ErrorResponseStatusCode()}, actualLog.Errors)
+	ts.Equal([]*clogs.Error{courier.ErrorResponseStatusCode()}, actualLog.Errors)
 
 	clog2 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog2.HTTP(trace)

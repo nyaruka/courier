@@ -213,7 +213,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"channel":"U0123ABCDEF","text":"Hello"}`,
 		}},
 		ExpectedError:     courier.ErrFailedWithReason("", "invalid_auth"),
-		ExpectedLogErrors: []*clogs.LogError{&clogs.LogError{Message: "invalid_auth"}},
+		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "invalid_auth"}},
 	},
 	{
 		Label:   "Response Unexpected",
