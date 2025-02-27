@@ -44,7 +44,7 @@ func TestChannelLog(t *testing.T) {
 	assert.EqualError(t, err, "unable to connect to server")
 
 	clog.HTTP(trace)
-	clog.Error(clogs.NewLogError("not_right", "", "Something not right"))
+	clog.Error(&clogs.LogError{Code: "not_right", Message: "Something not right"})
 	clog.RawError(errors.New("this is an error"))
 	clog.End()
 

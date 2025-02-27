@@ -38,7 +38,7 @@ func TestLogs(t *testing.T) {
 	require.NoError(t, err)
 
 	clog2.HTTP(trace2)
-	clog2.Error(clogs.NewLogError("", "", "oops"))
+	clog2.Error(&clogs.LogError{Message: "oops"})
 	clog2.End()
 
 	assert.NotEqual(t, clog1.UUID, clog2.UUID)
@@ -48,10 +48,10 @@ func TestLogs(t *testing.T) {
 	require.NoError(t, err)
 
 	l1 := clogs.NewLog("test_type1", nil, nil)
-	l1.Error(clogs.NewLogError("code1", "ext", "message"))
+	l1.Error(&clogs.LogError{Code: "code1", ExtCode: "ext", Message: "message"})
 
 	l2 := clogs.NewLog("test_type2", nil, nil)
-	l2.Error(clogs.NewLogError("code2", "ext", "message"))
+	l2.Error(&clogs.LogError{Code: "code2", ExtCode: "ext", Message: "message"})
 
 	// write both logs to db
 	err = ds.PutItem(ctx, "ChannelLogs", l1)
@@ -65,7 +65,7 @@ func TestLogs(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, l1.UUID, l3.UUID)
 	assert.Equal(t, clogs.LogType("test_type1"), l3.Type)
-	assert.Equal(t, []*clogs.LogError{clogs.NewLogError("code1", "ext", "message")}, l3.Errors)
+	assert.Equal(t, []*clogs.LogError{{Code: "code1", ExtCode: "ext", Message: "message"}}, l3.Errors)
 	assert.Equal(t, l1.Elapsed, l3.Elapsed)
 	assert.Equal(t, l1.CreatedOn.Truncate(time.Second), l3.CreatedOn)
 }
