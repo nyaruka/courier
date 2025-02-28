@@ -34,7 +34,8 @@ type MsgUUID uuids.UUID
 const NilMsgUUID = MsgUUID("")
 
 type QuickReply struct {
-	Text string `json:"text"`
+	Text  string `json:"text"`
+	Extra string `json:"extra,omitempty"`
 }
 
 func (q *QuickReply) UnmarshalJSON(d []byte) error {

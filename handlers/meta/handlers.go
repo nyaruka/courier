@@ -873,8 +873,9 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 								}
 								for i, qr := range qrs {
 									section.Rows[i] = whatsapp.SectionRow{
-										ID:    fmt.Sprint(i),
-										Title: qr.Text,
+										ID:          fmt.Sprint(i),
+										Title:       qr.Text,
+										Description: qr.Extra,
 									}
 								}
 
