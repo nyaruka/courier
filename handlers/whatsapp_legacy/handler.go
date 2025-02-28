@@ -681,8 +681,9 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 						}
 						for i, qr := range qrs {
 							section.Rows[i] = mtSectionRow{
-								ID:    fmt.Sprint(i),
-								Title: qr.Text,
+								ID:          fmt.Sprint(i),
+								Title:       qr.Text,
+								Description: qr.Extra,
 							}
 						}
 						payload.Interactive.Action.Sections = []mtSection{
@@ -776,8 +777,9 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 							}
 							for i, qr := range qrs {
 								section.Rows[i] = mtSectionRow{
-									ID:    fmt.Sprint(i),
-									Title: qr.Text,
+									ID:          fmt.Sprint(i),
+									Title:       qr.Text,
+									Description: qr.Extra,
 								}
 							}
 							payload.Interactive.Action.Sections = []mtSection{
