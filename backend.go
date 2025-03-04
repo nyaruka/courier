@@ -32,7 +32,7 @@ type Backend interface {
 	GetChannelByAddress(context.Context, ChannelType, ChannelAddress) (Channel, error)
 
 	// GetContact returns (or creates) the contact for the passed in channel and URN
-	GetContact(context.Context, Channel, urns.URN, map[string]string, string, *ChannelLog) (Contact, error)
+	GetContact(context.Context, Channel, urns.URN, map[string]string, string, bool, *ChannelLog) (Contact, error)
 
 	// AddURNtoContact adds a URN to the passed in contact
 	AddURNtoContact(context context.Context, channel Channel, contact Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error)

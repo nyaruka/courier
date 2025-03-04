@@ -299,9 +299,13 @@ func (mb *MockBackend) GetChannelByAddress(ctx context.Context, cType courier.Ch
 }
 
 // GetContact creates a new contact with the passed in channel and URN
-func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, urn urns.URN, authTokens map[string]string, name string, clog *courier.ChannelLog) (courier.Contact, error) {
+func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *courier.ChannelLog) (courier.Contact, error) {
 	contact, found := mb.contacts[urn]
 	if !found {
+		if !allowCreate {
+			return nil, nil
+		}
+
 		contact = &mockContact{channel, urn, authTokens, courier.ContactUUID(uuids.NewV4())}
 		mb.contacts[urn] = contact
 	}
