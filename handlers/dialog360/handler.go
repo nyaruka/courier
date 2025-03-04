@@ -304,6 +304,15 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	}
 	qrs := msg.QuickReplies()
+
+	qrsAsList := false
+	for i, qr := range qrs {
+		if i > 2 || qr.Extra != "" {
+			qrsAsList = true
+		}
+
+	}
+
 	menuButton := handlers.GetText("Menu", msg.Locale())
 
 	var payloadAudio whatsapp.SendRequest
@@ -346,7 +355,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 						}
 
 						// We can use buttons
-						if len(qrs) <= 3 {
+						if !qrsAsList {
 							interactive := whatsapp.Interactive{Type: "button", Body: struct {
 								Text string "json:\"text\""
 							}{Text: msgParts[i-len(msg.Attachments())]}}
