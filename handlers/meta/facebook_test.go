@@ -323,12 +323,14 @@ func TestFacebookDescribeURN(t *testing.T) {
 }
 
 func TestDeleteRequest(t *testing.T) {
+	urn, _ := urns.New(urns.Facebook, "218471")
 	RunIncomingTestCases(t, facebookTestChannels, newHandler("FBA", "Facebook"), []IncomingTestCase{
 		{
-			Label:       "Receive Delete request FBA",
-			URL:         "/c/fba/delete",
-			Data:        `{"algorithm":"HMAC-SHA256","expires":1291840400,"issued_at":1291836800,"user_id":"218471"}`,
-			PrepRequest: addValidSignature,
+			Label:          "Receive Delete request FBA",
+			URL:            "/c/fba/delete",
+			Data:           `{"algorithm":"HMAC-SHA256","expires":1291840400,"issued_at":1291836800,"user_id":"218471"}`,
+			PrepRequest:    addValidSignature,
+			ExistingDBURNs: []urns.URN{urn},
 
 			ExpectedRespStatus:    200,
 			ExpectedBodyContains:  "Deletion Request Received",
@@ -340,10 +342,24 @@ func TestDeleteRequest(t *testing.T) {
 			},
 		},
 		{
-			Label:       "Receive Delete request FBA",
-			URL:         "/c/fba/delete",
-			Data:        `{"algorithm":"HMAC-SHA256","expires":1291840400,"issued_at":1291836800,"user_id":"abc1234"}`,
-			PrepRequest: addValidSignature,
+			Label:          "Receive Delete request FBA, contact not existing",
+			URL:            "/c/fba/delete",
+			Data:           `{"algorithm":"HMAC-SHA256","expires":1291840400,"issued_at":1291836800,"user_id":"123456"}`,
+			PrepRequest:    addValidSignature,
+			ExistingDBURNs: []urns.URN{urn},
+
+			ExpectedRespStatus:    200,
+			ExpectedBodyContains:  "ignoring request, no existing contact matched",
+			NoQueueErrorCheck:     true,
+			NoInvalidChannelCheck: true,
+			NoLogsExpected:        true,
+		},
+		{
+			Label:          "Receive Delete request FBA, invalid facebook ID",
+			URL:            "/c/fba/delete",
+			Data:           `{"algorithm":"HMAC-SHA256","expires":1291840400,"issued_at":1291836800,"user_id":"abc1234"}`,
+			PrepRequest:    addValidSignature,
+			ExistingDBURNs: []urns.URN{urn},
 
 			ExpectedRespStatus:    200,
 			ExpectedBodyContains:  "invalid facebook id",

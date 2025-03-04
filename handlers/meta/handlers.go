@@ -239,6 +239,12 @@ func (h *handler) deleteContactEvents(ctx context.Context, channel courier.Chann
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid facebook id"))
 	}
+
+	contact, err := h.Server().Backend().GetContact(ctx, channel, urn, nil, "", false, clog)
+	if contact == nil {
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no existing contact matched")
+	}
+
 	date := parseTimestamp(payload.IssuedAt)
 
 	events := make([]courier.Event, 0, 2)
