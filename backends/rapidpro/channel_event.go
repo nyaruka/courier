@@ -145,7 +145,7 @@ RETURNING id, created_on`
 // writeChannelEventToDB writes the passed in channel event to our db
 func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clog *courier.ChannelLog) error {
 	// grab the contact for this event
-	contact, err := contactForURN(ctx, b, e.OrgID_, e.channel, e.URN_, e.URNAuthTokens_, e.ContactName_, clog)
+	contact, err := contactForURN(ctx, b, e.OrgID_, e.channel, e.URN_, e.URNAuthTokens_, e.ContactName_, true, clog)
 	if err != nil {
 		return err
 	}

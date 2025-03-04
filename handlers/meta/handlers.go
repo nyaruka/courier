@@ -756,7 +756,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 				clog.RawError(fmt.Errorf("unable to make facebook urn from %s", recipientID))
 			}
 
-			contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", clog)
+			contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", true, clog)
 			if err != nil {
 				clog.RawError(fmt.Errorf("unable to get contact for %s", msg.URN().String()))
 			}
