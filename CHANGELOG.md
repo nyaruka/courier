@@ -1,3 +1,8 @@
+v10.1.15 (2025-03-05)
+-------------------------
+ * Support sending quick reply extra as list option description for Whatsapp
+ * Use go 1.24
+
 v10.1.14 (2025-02-26)
 -------------------------
  * Updated handler for MessageBird
