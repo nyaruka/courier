@@ -548,6 +548,12 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 
 	qrs := msg.QuickReplies()
+	qrsAsList := false
+	for i, qr := range qrs {
+		if i > 2 || qr.Extra != "" {
+			qrsAsList = true
+		}
+	}
 	langCode := getSupportedLanguage(msg.Locale())
 	wppVersion := msg.Channel().ConfigForKey("version", "0").(string)
 	isInteractiveMsgCompatible := semver.Compare(wppVersion, interactiveMsgMinSupVersion)
@@ -658,8 +664,8 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 						Type: "interactive",
 					}
 
-					// up to 3 qrs the interactive message will be button type, otherwise it will be list
-					if len(qrs) <= 3 {
+					// we show buttons
+					if !qrsAsList {
 						payload.Interactive.Type = "button"
 						payload.Interactive.Body.Text = part
 						btns := make([]mtButton, len(qrs))
@@ -754,8 +760,8 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 							Type: "interactive",
 						}
 
-						// up to 3 qrs the interactive message will be button type, otherwise it will be list
-						if len(qrs) <= 3 {
+						// we show buttons
+						if !qrsAsList {
 							payload.Interactive.Type = "button"
 							payload.Interactive.Body.Text = part
 							btns := make([]mtButton, len(qrs))

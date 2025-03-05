@@ -499,6 +499,36 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
+		Label:           "Interactive List Message Send, QRs Extra",
+		MsgText:         "Interactive List Msg",
+		MsgURN:          "whatsapp:250788123123",
+		MsgQuickReplies: []courier.QuickReply{{Text: "OPTION1", Extra: "This option is the most popular"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://waba-v2.360dialog.io/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"OPTION1","description":"This option is the most popular"}]}]}}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:           "Interactive List Message Send, QRs Extra Empty",
+		MsgText:         "Interactive QR Extra empty Msg",
+		MsgURN:          "whatsapp:250788123123",
+		MsgQuickReplies: []courier.QuickReply{{Text: "OPTION1", Extra: ""}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://waba-v2.360dialog.io/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive QR Extra empty Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"OPTION1"}}]}}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
 		Label:           "Interactive List Message Send",
 		MsgText:         "Interactive List Msg",
 		MsgURN:          "whatsapp:250788123123",
@@ -527,7 +557,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"},{"id":"4","title":"ROW5"},{"id":"5","title":"ROW6"},{"id":"6","title":"ROW7"},{"id":"7","title":"ROW8"},{"id":"8","title":"ROW9"},{"id":"9","title":"ROW10"}]}]}}}`,
 		}},
 		ExpectedExtIDs:    []string{"157b5e14568e8"},
-		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "too many quick replies D3C supports only up to 10 quick replies"}},
+		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "too many quick replies WhatsApp supports only up to 10 quick replies"}},
 	},
 	{
 		Label:           "Interactive List Message Send In Spanish",
