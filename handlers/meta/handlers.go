@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/getsentry/sentry-go"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/handlers/meta/messenger"
@@ -250,9 +249,6 @@ func (h *handler) deleteContactEvents(ctx context.Context, channel courier.Chann
 	events := make([]courier.Event, 0, 2)
 	data := make([]any, 0, 2)
 
-	payloadJson, _ := json.Marshal(payload)
-	sentry.CaptureMessage(fmt.Sprintf("Data Deletion Request: %s", payloadJson))
-
 	event := h.Backend().NewChannelEvent(channel, courier.EventDeleteContact, urn, clog).WithOccurredOn(date).WithExtra(map[string]string{"userID": payload.UserID})
 
 	err = h.Backend().WriteChannelEvent(ctx, event, clog)
@@ -260,7 +256,7 @@ func (h *handler) deleteContactEvents(ctx context.Context, channel courier.Chann
 		return nil, err
 	}
 
-	confirmationURL := fmt.Sprintf("https://%s/channels/events/read/%s/", h.Server().Config().Domain, event.UUID())
+	confirmationURL := fmt.Sprintf("https://%s/public/forgetme/", h.Server().Config().Domain)
 
 	events = append(events, event)
 	data = append(data, DeleteConfirmationData{URL: confirmationURL, ConfirmationCode: string(event.UUID())})
