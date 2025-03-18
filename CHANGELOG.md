@@ -1,3 +1,8 @@
+v10.1.16 (2025-03-18)
+-------------------------
+ * Use constant time comparison to check chip secret
+ * Add support for config to shorten URL for TMS
+
 v10.1.15 (2025-03-05)
 -------------------------
  * Support sending quick reply extra as list option description for Whatsapp
