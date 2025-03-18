@@ -52,8 +52,8 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 func handleURLVerification(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload) ([]courier.Event, error) {
-	validationToken := channel.ConfigForKey(configValidationToken, "")
-	if validationToken != payload.Token {
+	validationToken := channel.StringConfigForKey(configValidationToken, "")
+	if !utils.SecretEqual(payload.Token, validationToken) {
 		w.WriteHeader(http.StatusForbidden)
 		return nil, fmt.Errorf("wrong validation token for channel: %s", channel.UUID())
 	}

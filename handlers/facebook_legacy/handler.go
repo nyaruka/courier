@@ -87,7 +87,7 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 
 	// verify the token against our secret, if the same return the challenge FB sent us
 	secret := r.URL.Query().Get("hub.verify_token")
-	if secret != channel.StringConfigForKey(courier.ConfigSecret, "") {
+	if !utils.SecretEqual(secret, channel.StringConfigForKey(courier.ConfigSecret, "")) {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("token does not match secret"))
 	}
 

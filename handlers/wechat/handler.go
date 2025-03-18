@@ -19,6 +19,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -84,7 +85,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	ResponseText := "unknown request"
 	StatusCode := 400
 
-	if encoded == form.Signature {
+	if utils.SecretEqual(encoded, form.Signature) {
 		ResponseText = form.EchoStr
 		StatusCode = 200
 	}
