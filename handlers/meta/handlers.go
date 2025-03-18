@@ -183,7 +183,7 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 
 	// verify the token against our server facebook webhook secret, if the same return the challenge FB sent us
 	secret := r.URL.Query().Get("hub.verify_token")
-	if secret != h.Server().Config().FacebookWebhookSecret {
+	if !utils.SecretEqual(secret, h.Server().Config().FacebookWebhookSecret) {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("token does not match secret"))
 	}
 	// and respond with the challenge token
