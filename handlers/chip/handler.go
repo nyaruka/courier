@@ -8,6 +8,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -59,7 +60,7 @@ type receivePayload struct {
 // receiveMessage is our HTTP handler function for incoming events
 func (h *handler) receive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *receivePayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	secret := c.StringConfigForKey(courier.ConfigSecret, "")
-	if !handlers.SecretEqual(payload.Secret, secret) {
+	if !utils.SecretEqual(payload.Secret, secret) {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("secret incorrect"))
 	}
 

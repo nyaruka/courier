@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"net/url"
 	"path"
@@ -145,4 +146,9 @@ func MapUpdate[K comparable, V comparable, M ~map[K]V](m1 M, m2 M) {
 			m1[k] = v
 		}
 	}
+}
+
+// SecretEqual checks if an incoming secret matches the expected secret using constant time comparison.
+func SecretEqual(in, expected string) bool {
+	return subtle.ConstantTimeCompare([]byte(in), []byte(expected)) == 1
 }
