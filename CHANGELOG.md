@@ -1,3 +1,8 @@
+v10.1.17 (2025-03-18)
+-------------------------
+ * Tweak handling of panics
+ * Use constant time comparison to check more secret strings
+
 v10.1.16 (2025-03-18)
 -------------------------
  * Use constant time comparison to check chip secret
