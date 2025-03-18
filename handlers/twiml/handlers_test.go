@@ -822,6 +822,27 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 	},
 }
 
+var tmsShortenLinks = []OutgoingTestCase{
+	{
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+				Path:    "/2010-04-01/Accounts/accountSID/Messages.json",
+				Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "ShortenUrls": {"true"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"}},
+			},
+		},
+		ExpectedExtIDs: []string{"1002"},
+	},
+}
+
 var twDefaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Plain Send",
@@ -1348,6 +1369,14 @@ func TestOutgoing(t *testing.T) {
 			configAccountSID:          "accountSID",
 			courier.ConfigAuthToken:   "authToken"})
 
+	var tmsShortenLinksChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56cd", "TMS", "", "US",
+		[]string{urns.Phone.Prefix},
+		map[string]any{
+			configLinkShortening:      true,
+			configMessagingServiceSID: "messageServiceSID",
+			configAccountSID:          "accountSID",
+			courier.ConfigAuthToken:   "authToken"})
+
 	var twDefaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TW", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
@@ -1366,6 +1395,7 @@ func TestOutgoing(t *testing.T) {
 
 	RunOutgoingTestCases(t, defaultChannel, newTWIMLHandler("T", "Twilio", true), defaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 	RunOutgoingTestCases(t, tmsDefaultChannel, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsDefaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, tmsShortenLinksChannel, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsShortenLinks, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 	RunOutgoingTestCases(t, twDefaultChannel, newTWIMLHandler("TW", "TwiML", true), twDefaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 	RunOutgoingTestCases(t, swChannel, newTWIMLHandler("SW", "SignalWire", false), swSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 
