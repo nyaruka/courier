@@ -18,6 +18,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -393,7 +394,8 @@ func (s *server) basicAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if s.config.StatusUsername != "" {
 			user, pass, ok := r.BasicAuth()
-			if !ok || user != s.config.StatusUsername || pass != s.config.StatusPassword {
+
+			if !ok || !utils.SecretEqual(user, s.config.StatusUsername) || !utils.SecretEqual(pass, s.config.StatusPassword) {
 				w.Header().Set("Content-Type", "text/plain")
 				w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
 				w.WriteHeader(http.StatusUnauthorized)
@@ -409,7 +411,7 @@ func (s *server) basicAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 func (s *server) tokenAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") || authHeader[7:] != s.config.AuthToken {
+		if !strings.HasPrefix(authHeader, "Bearer ") || !utils.SecretEqual(authHeader[7:], s.config.AuthToken) {
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorized"))

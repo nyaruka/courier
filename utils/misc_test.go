@@ -139,3 +139,9 @@ func TestMapUpdate(t *testing.T) {
 		assert.Equal(t, tc.updated, tc.m1)
 	}
 }
+
+func TestSecretEqual(t *testing.T) {
+	assert.True(t, utils.SecretEqual("sesame", "sesame"))
+	assert.False(t, utils.SecretEqual("sesame", "Sesame"))
+	assert.False(t, utils.SecretEqual("sesame", "sesame3"))
+}
