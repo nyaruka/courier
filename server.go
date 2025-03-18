@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nyaruka/courier/utils"
@@ -257,10 +258,11 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 
 		defer func() {
 			// catch any panics and recover
-			panicLog := recover()
-			if panicLog != nil {
+			if panicVal := recover(); panicVal != nil {
 				debug.PrintStack()
-				slog.Error("panic handling request", "error", err, "channel_uuid", channelUUID, "request", recorder.Trace.RequestTrace, "trace", panicLog)
+
+				sentry.CurrentHub().Recover(panicVal)
+
 				writeAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
 			}
 		}()
