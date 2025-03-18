@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
 	"regexp"
@@ -101,4 +102,9 @@ func DecodePossibleBase64(original string) string {
 
 func IsURL(s string) bool {
 	return urlRegex.MatchString(s)
+}
+
+// SecretEqual checks if an incoming secret matches the expected secret using constant time comparison.
+func SecretEqual(in, expected string) bool {
+	return subtle.ConstantTimeCompare([]byte(in), []byte(expected)) == 1
 }

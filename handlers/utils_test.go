@@ -124,3 +124,9 @@ func TestDecodePossibleBase64(t *testing.T) {
 	assert.Contains(handlers.DecodePossibleBase64("Tm93IGlzDQp0aGUgdGltZQ0KZm9yIGFsbCBnb29kDQpwZW9wbGUgdG8NCnJlc2lzdC4NCg0KSG93IGFib3V0IGhhaWt1cz8NCkkgZmluZCB0aGVtIHRvIGJlIGZyaWVuZGx5Lg0KcmVmcmlnZXJhdG9yDQoNCjAxMjM0NTY3ODkNCiFAIyQlXiYqKCkgW117fS09Xys7JzoiLC4vPD4/fFx+YA0KQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg=="), "I find them to be friendly")
 	assert.Contains(handlers.DecodePossibleBase64(test6), "I received your letter today")
 }
+
+func TestSecretEqual(t *testing.T) {
+	assert.True(t, handlers.SecretEqual("sesame", "sesame"))
+	assert.False(t, handlers.SecretEqual("sesame", "Sesame"))
+	assert.False(t, handlers.SecretEqual("sesame", "sesame3"))
+}
