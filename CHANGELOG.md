@@ -1,3 +1,8 @@
+v10.1.18 (2025-03-21)
+-------------------------
+ * Update dependencies including phonenumbers
+ * Fix panic from legacy whatsapp handler with bad interactive message payload
+
 v10.1.17 (2025-03-18)
 -------------------------
  * Tweak handling of panics
