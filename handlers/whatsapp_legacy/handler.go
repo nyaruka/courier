@@ -222,10 +222,10 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 		} else if msg.Type == "image" && msg.Image != nil {
 			text = msg.Image.Caption
 			mediaURL, err = resolveMediaURL(channel, msg.Image.ID)
-		} else if msg.Type == "interactive" {
-			if msg.Interactive.Type == "button_reply" {
+		} else if msg.Type == "interactive" && msg.Interactive != nil {
+			if msg.Interactive.Type == "button_reply" && msg.Interactive.ButtonReply != nil {
 				text = msg.Interactive.ButtonReply.Title
-			} else {
+			} else if msg.Interactive.Type == "list_reply" && msg.Interactive.ListReply != nil {
 				text = msg.Interactive.ListReply.Title
 			}
 		} else if msg.Type == "location" && msg.Location != nil {
