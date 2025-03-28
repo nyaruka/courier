@@ -26,14 +26,14 @@ func TestLogs(t *testing.T) {
 	clog1 := clogs.New("type1", nil, []string{"sesame"})
 	clog2 := clogs.New("type1", nil, []string{"sesame"})
 
-	req1, _ := httpx.NewRequest("GET", "http://ivr.com/start", nil, map[string]string{"Authorization": "Token sesame"})
+	req1, _ := httpx.NewRequest(ctx, "GET", "http://ivr.com/start", nil, map[string]string{"Authorization": "Token sesame"})
 	trace1, err := httpx.DoTrace(http.DefaultClient, req1, nil, nil, -1)
 	require.NoError(t, err)
 
 	clog1.HTTP(trace1)
 	clog1.End()
 
-	req2, _ := httpx.NewRequest("GET", "http://ivr.com/hangup", nil, nil)
+	req2, _ := httpx.NewRequest(ctx, "GET", "http://ivr.com/hangup", nil, nil)
 	trace2, err := httpx.DoTrace(http.DefaultClient, req2, nil, nil, -1)
 	require.NoError(t, err)
 
