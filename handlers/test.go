@@ -52,6 +52,8 @@ type IncomingTestCase struct {
 	NoInvalidChannelCheck bool
 	PrepRequest           RequestPrepFunc
 
+	ExistingDBURNs []urns.URN
+
 	URL           string
 	Data          string
 	Headers       map[string]string
@@ -159,6 +161,11 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 	handler.Initialize(s)
 
 	for _, tc := range testCases {
+		for _, urn := range tc.ExistingDBURNs {
+			ctx, _ := context.WithTimeout(context.Background(), time.Second*10)
+			s.Backend().GetContact(ctx, channels[0], urn, nil, "", true, nil)
+		}
+
 		t.Run(tc.Label, func(t *testing.T) {
 			require := require.New(t)
 
