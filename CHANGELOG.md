@@ -1,3 +1,8 @@
+v10.1.19 (2025-04-08)
+-------------------------
+ * Rename config for BW messaging application ID
+ * Update to latest gocommon
+
 v10.1.18 (2025-03-21)
 -------------------------
  * Update dependencies including phonenumbers
