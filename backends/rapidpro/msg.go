@@ -101,7 +101,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 
 	return &Msg{
 		OrgID_:        dbChannel.OrgID(),
-		UUID_:         courier.MsgUUID(uuids.NewV4()),
+		UUID_:         courier.MsgUUID(uuids.NewV7()),
 		Direction_:    direction,
 		Status_:       courier.MsgStatusPending,
 		Visibility_:   MsgVisible,
