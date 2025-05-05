@@ -1,3 +1,8 @@
+v10.1.20 (2025-05-05)
+-------------------------
+ * Switch to v7 UUIDs for messages
+ * Update dependencies
+
 v10.1.19 (2025-04-08)
 -------------------------
  * Rename config for BW messaging application ID
