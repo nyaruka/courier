@@ -1145,23 +1145,23 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 
 	// create a new courier msg
 	urn := urns.URN("tel:+12065551212")
-	msg := ts.b.NewIncomingMsg(knChannel, urn, "test123", "ext123", clog).WithReceivedOn(now).WithContactName("test contact").(*Msg)
+	msg1 := ts.b.NewIncomingMsg(knChannel, urn, "test123", "ext123", clog).WithReceivedOn(now).WithContactName("test contact").(*Msg)
 
 	// try to write it to our db
-	err := ts.b.WriteMsg(ctx, msg, clog)
+	err := ts.b.WriteMsg(ctx, msg1, clog)
 	ts.NoError(err)
 
 	// creating the incoming msg again should give us the same UUID and have the msg set as not to write
 	time.Sleep(1 * time.Second)
 	msg2 := ts.b.NewIncomingMsg(knChannel, urn, "test123", "ext123", clog).(*Msg)
-	ts.Equal(msg2.UUID(), msg.UUID())
+	ts.Equal(msg2.UUID(), msg1.UUID())
 	ts.True(msg2.alreadyWritten)
 
 	// check we had an id set
-	ts.NotZero(msg.ID)
+	ts.NotZero(msg1.ID)
 
 	// load it back from the id
-	m := readMsgFromDB(ts.b, msg.ID())
+	m := readMsgFromDB(ts.b, msg1.ID())
 
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
@@ -1173,7 +1173,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	}
 
 	// make sure our values are set appropriately
-	ts.Equal(msg.ID(), m.ID())
+	ts.Equal(msg1.ID(), m.ID())
 	ts.Equal(knChannel.ID_, m.ChannelID_)
 	ts.Equal(knChannel.OrgID_, m.OrgID_)
 	ts.Equal(contactURN.ContactID, m.ContactID_)
@@ -1202,34 +1202,34 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	// waiting 5 seconds should let us write it successfully
 	time.Sleep(5 * time.Second)
 	msg3 := ts.b.NewIncomingMsg(knChannel, urn, "test123", "", clog).(*Msg)
-	ts.NotEqual(msg3.UUID(), msg.UUID())
+	ts.Greater(msg3.UUID(), msg1.UUID())
 
 	// msg with null bytes in it, that's fine for a request body
-	msg = ts.b.NewIncomingMsg(knChannel, urn, "test456\x00456", "ext456", clog).(*Msg)
-	err = writeMsgToDB(ctx, ts.b, msg, clog)
+	msg4 := ts.b.NewIncomingMsg(knChannel, urn, "test456\x00456", "ext456", clog).(*Msg)
+	err = writeMsgToDB(ctx, ts.b, msg4, clog)
 	ts.NoError(err)
 
 	// more null bytes
 	text, _ := url.PathUnescape("%1C%00%00%00%00%00%07%E0%00")
-	msg = ts.b.NewIncomingMsg(knChannel, urn, text, "", clog).(*Msg)
-	err = writeMsgToDB(ctx, ts.b, msg, clog)
+	msg5 := ts.b.NewIncomingMsg(knChannel, urn, text, "", clog).(*Msg)
+	err = writeMsgToDB(ctx, ts.b, msg5, clog)
 	ts.NoError(err)
 
 	ts.clearRedis()
 
 	// check that our mailroom queue has an item
-	msg = ts.b.NewIncomingMsg(knChannel, urn, "hello 1 2 3", "", clog).(*Msg)
-	err = writeMsgToDB(ctx, ts.b, msg, clog)
+	msg6 := ts.b.NewIncomingMsg(knChannel, urn, "hello 1 2 3", "", clog).(*Msg)
+	err = writeMsgToDB(ctx, ts.b, msg6, clog)
 	ts.NoError(err)
 
-	ts.assertQueuedContactTask(msg.ContactID_, "msg_received", map[string]any{
+	ts.assertQueuedContactTask(msg6.ContactID_, "msg_received", map[string]any{
 		"channel_id":      float64(10),
-		"msg_id":          float64(msg.ID_),
-		"msg_uuid":        string(msg.UUID()),
-		"msg_external_id": msg.ExternalID(),
-		"urn":             msg.URN().String(),
-		"urn_id":          float64(msg.ContactURNID_),
-		"text":            msg.Text(),
+		"msg_id":          float64(msg6.ID_),
+		"msg_uuid":        string(msg6.UUID()),
+		"msg_external_id": msg6.ExternalID(),
+		"urn":             msg6.URN().String(),
+		"urn_id":          float64(msg6.ContactURNID_),
+		"text":            msg6.Text(),
 		"attachments":     nil,
 		"new_contact":     contact.IsNew_,
 	})
@@ -1245,39 +1245,39 @@ func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 	urn := urns.URN("tel:+12065551218")
 
-	msg := ts.b.NewIncomingMsg(knChannel, urn, "two regular attachments", "", clog).(*Msg)
-	msg.WithAttachment("http://example.com/test.jpg")
-	msg.WithAttachment("http://example.com/test.m4a")
+	msg1 := ts.b.NewIncomingMsg(knChannel, urn, "two regular attachments", "", clog).(*Msg)
+	msg1.WithAttachment("http://example.com/test.jpg")
+	msg1.WithAttachment("http://example.com/test.m4a")
 
 	// should just write attachments as they are
-	err := ts.b.WriteMsg(ctx, msg, clog)
+	err := ts.b.WriteMsg(ctx, msg1, clog)
 	ts.NoError(err)
-	ts.Equal([]string{"http://example.com/test.jpg", "http://example.com/test.m4a"}, msg.Attachments())
+	ts.Equal([]string{"http://example.com/test.jpg", "http://example.com/test.m4a"}, msg1.Attachments())
 
 	// try an embedded attachment
-	msg = ts.b.NewIncomingMsg(knChannel, urn, "embedded attachment data", "", clog).(*Msg)
-	msg.WithAttachment(fmt.Sprintf("data:%s", base64.StdEncoding.EncodeToString(test.ReadFile("../../test/testdata/test.jpg"))))
+	msg2 := ts.b.NewIncomingMsg(knChannel, urn, "embedded attachment data", "", clog).(*Msg)
+	msg2.WithAttachment(fmt.Sprintf("data:%s", base64.StdEncoding.EncodeToString(test.ReadFile("../../test/testdata/test.jpg"))))
 
 	// should have actually fetched and saved it to storage, with the correct content type
-	err = ts.b.WriteMsg(ctx, msg, clog)
+	err = ts.b.WriteMsg(ctx, msg2, clog)
 	ts.NoError(err)
-	ts.Equal([]string{"image/jpeg:http://localhost:9000/test-attachments/attachments/1/9b95/5e36/9b955e36-ac16-4c6b-8ab6-9b9af5cd042a.jpg"}, msg.Attachments())
+	ts.Equal([]string{"image/jpeg:http://localhost:9000/test-attachments/attachments/1/9b95/5e36/9b955e36-ac16-4c6b-8ab6-9b9af5cd042a.jpg"}, msg2.Attachments())
 
 	// try an invalid embedded attachment
-	msg = ts.b.NewIncomingMsg(knChannel, urn, "invalid embedded attachment data", "", clog).(*Msg)
-	msg.WithAttachment("data:34564363576573573")
+	msg3 := ts.b.NewIncomingMsg(knChannel, urn, "invalid embedded attachment data", "", clog).(*Msg)
+	msg3.WithAttachment("data:34564363576573573")
 
-	err = ts.b.WriteMsg(ctx, msg, clog)
+	err = ts.b.WriteMsg(ctx, msg3, clog)
 	ts.EqualError(err, "unable to decode attachment data: illegal base64 data at input byte 16")
 
 	// try a geo attachment
-	msg = ts.b.NewIncomingMsg(knChannel, urn, "geo attachment", "", clog).(*Msg)
-	msg.WithAttachment("geo:123.234,-45.676")
+	msg4 := ts.b.NewIncomingMsg(knChannel, urn, "geo attachment", "", clog).(*Msg)
+	msg4.WithAttachment("geo:123.234,-45.676")
 
 	// should be saved as is
-	err = ts.b.WriteMsg(ctx, msg, clog)
+	err = ts.b.WriteMsg(ctx, msg4, clog)
 	ts.NoError(err)
-	ts.Equal([]string{"geo:123.234,-45.676"}, msg.Attachments())
+	ts.Equal([]string{"geo:123.234,-45.676"}, msg4.Attachments())
 }
 
 func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {

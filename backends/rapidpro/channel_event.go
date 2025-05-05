@@ -66,7 +66,7 @@ func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType
 	dbChannel := channel.(*Channel)
 
 	return &ChannelEvent{
-		UUID_:        courier.ChannelEventUUID(uuids.NewV4()),
+		UUID_:        courier.ChannelEventUUID(uuids.NewV7()),
 		ChannelUUID_: dbChannel.UUID_,
 		OrgID_:       dbChannel.OrgID_,
 		ChannelID_:   dbChannel.ID_,
