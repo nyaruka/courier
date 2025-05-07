@@ -1,3 +1,7 @@
+v10.1.21 (2025-05-07)
+-------------------------
+ * Fix MessageBird handler for shortcode messages
+
 v10.1.20 (2025-05-05)
 -------------------------
  * Switch to v7 UUIDs for messages
