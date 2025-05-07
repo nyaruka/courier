@@ -66,8 +66,8 @@ type formMessage struct {
 	ID              string   `name:"id"`
 	MID             string   `name:"mid"`       //shortcode only
 	Shortcode       string   `name:"shortcode"` //shortcode only
-	Recipient       string   `name:"recipient" validate:"required"`
-	Originator      string   `name:"originator"`
+	Recipient       string   `name:"recipient"` //non-shortcode only
+	Originator      string   `name:"originator" validate:"required"`
 	Body            string   `name:"body"`
 	MediaURLs       []string `name:"mediaUrls"`
 	MessageBody     string   `name:"message"` //shortcode only
