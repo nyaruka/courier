@@ -1,3 +1,8 @@
+v10.1.22 (2025-05-15)
+-------------------------
+ * Remove Facebook topics which are no longer a thing
+ * Add quick replies support for chip
+
 v10.1.21 (2025-05-07)
 -------------------------
  * Fix MessageBird handler for shortcode messages
