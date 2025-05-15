@@ -1,7 +1,6 @@
 package test
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/nyaruka/courier"
@@ -26,9 +25,7 @@ type MockMsg struct {
 	quickReplies         []courier.QuickReply
 	origin               courier.MsgOrigin
 	contactLastSeenOn    *time.Time
-	topic                string
 	responseToExternalID string
-	metadata             json.RawMessage
 	alreadyWritten       bool
 	isResend             bool
 	session              *courier.Session
@@ -68,8 +65,6 @@ func (m *MockMsg) Templating() *courier.Templating    { return m.templating }
 func (m *MockMsg) URNAuth() string                    { return m.urnAuth }
 func (m *MockMsg) Origin() courier.MsgOrigin          { return m.origin }
 func (m *MockMsg) ContactLastSeenOn() *time.Time      { return m.contactLastSeenOn }
-func (m *MockMsg) Topic() string                      { return m.topic }
-func (m *MockMsg) Metadata() json.RawMessage          { return m.metadata }
 func (m *MockMsg) ResponseToExternalID() string       { return m.responseToExternalID }
 func (m *MockMsg) SentOn() *time.Time                 { return m.sentOn }
 func (m *MockMsg) IsResend() bool                     { return m.isResend }

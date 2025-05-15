@@ -37,13 +37,6 @@ var (
 		369239343222814: "👍", // medium
 		369239383222810: "👍", // big
 	}
-
-	tagByTopic = map[string]string{
-		"event":    "CONFIRMED_EVENT_UPDATE",
-		"purchase": "POST_PURCHASE_UPDATE",
-		"account":  "ACCOUNT_UPDATE",
-		"agent":    "HUMAN_AGENT",
-	}
 )
 
 // keys for extra in channel events
@@ -476,15 +469,11 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	if accessToken == "" {
 		return courier.ErrChannelConfig
 	}
-	topic := msg.Topic()
 	payload := mtPayload{}
 
 	// set our message type
 	if msg.ResponseToExternalID() != "" {
 		payload.MessagingType = "RESPONSE"
-	} else if topic != "" {
-		payload.MessagingType = "MESSAGE_TAG"
-		payload.Tag = tagByTopic[topic]
 	} else {
 		payload.MessagingType = "NON_PROMOTIONAL_SUBSCRIPTION" // only allowed until Jan 15, 2020
 	}

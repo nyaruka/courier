@@ -161,8 +161,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"created_on": "2017-07-21T19:22:23.242757Z",
 		"high_priority": true,
 		"response_to_external_id": "external-id",
-		"is_resend": true,
-		"metadata": {"topic": "event"}
+		"is_resend": true
 	}`
 
 	msg := Msg{}
@@ -173,7 +172,6 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal("5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2", msg.URNAuth_)
 	ts.Equal("", msg.ExternalID())
 	ts.Equal([]courier.QuickReply{{Text: "Yes"}, {Text: "No"}}, msg.QuickReplies())
-	ts.Equal("event", msg.Topic())
 	ts.Equal("external-id", msg.ResponseToExternalID())
 	ts.True(msg.HighPriority())
 	ts.True(msg.IsResend())
@@ -201,7 +199,6 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.NoError(err)
 	ts.Nil(msg.Attachments())
 	ts.Nil(msg.QuickReplies())
-	ts.Equal("", msg.Topic())
 	ts.Equal("", msg.ResponseToExternalID())
 	ts.False(msg.IsResend())
 	ts.Nil(msg.Flow())

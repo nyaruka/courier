@@ -45,13 +45,6 @@ var (
 		369239383222810: "👍", // big
 	}
 
-	tagByTopic = map[string]string{
-		"event":    "CONFIRMED_EVENT_UPDATE",
-		"purchase": "POST_PURCHASE_UPDATE",
-		"account":  "ACCOUNT_UPDATE",
-		"agent":    "HUMAN_AGENT",
-	}
-
 	wacThrottlingErrorCodes = []int{4, 80007, 130429, 131048, 131056, 133016}
 )
 
@@ -652,15 +645,9 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 		payload.Recipient.ID = msg.URN().Path()
 	}
 
-	if msg.Topic() != "" || isHuman {
+	if isHuman {
 		payload.MessagingType = "MESSAGE_TAG"
-
-		if msg.Topic() != "" {
-			payload.Tag = tagByTopic[msg.Topic()]
-		} else if isHuman {
-			// this will most likely fail if we're out of the 7 day window.. but user was warned and we try anyway
-			payload.Tag = "HUMAN_AGENT"
-		}
+		payload.Tag = "HUMAN_AGENT"
 	} else {
 		if msg.ResponseToExternalID() != "" {
 			payload.MessagingType = "RESPONSE"
