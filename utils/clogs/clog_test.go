@@ -6,9 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/nyaruka/courier/utils/clogs"
-	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,28 +42,9 @@ func TestLogs(t *testing.T) {
 	assert.NotEqual(t, clog1.UUID, clog2.UUID)
 	assert.NotEqual(t, time.Duration(0), clog1.Elapsed)
 
-	ds, err := dynamo.NewService("root", "tembatemba", "us-east-1", "http://localhost:6000", "Test")
-	require.NoError(t, err)
-
 	l1 := clogs.New("test_type1", nil, nil)
 	l1.Error(&clogs.Error{Code: "code1", ExtCode: "ext", Message: "message"})
 
 	l2 := clogs.New("test_type2", nil, nil)
 	l2.Error(&clogs.Error{Code: "code2", ExtCode: "ext", Message: "message"})
-
-	// write both logs to db
-	err = ds.PutItem(ctx, "ChannelLogs", l1)
-	assert.NoError(t, err)
-	err = ds.PutItem(ctx, "ChannelLogs", l2)
-	assert.NoError(t, err)
-
-	// read log 1 back from db
-	l3 := &clogs.Log{}
-	err = ds.GetItem(ctx, "ChannelLogs", map[string]types.AttributeValue{"UUID": &types.AttributeValueMemberS{Value: string(l1.UUID)}}, l3)
-	assert.NoError(t, err)
-	assert.Equal(t, l1.UUID, l3.UUID)
-	assert.Equal(t, clogs.Type("test_type1"), l3.Type)
-	assert.Equal(t, []*clogs.Error{{Code: "code1", ExtCode: "ext", Message: "message"}}, l3.Errors)
-	assert.Equal(t, l1.Elapsed, l3.Elapsed)
-	assert.Equal(t, l1.CreatedOn.Truncate(time.Second), l3.CreatedOn)
 }

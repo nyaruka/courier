@@ -54,8 +54,8 @@ type backend struct {
 	config *courier.Config
 
 	statusWriter *StatusWriter
-	dbLogWriter  *DBLogWriter     // unattached logs being written to the database
-	dyLogWriter  *DynamoLogWriter // all logs being written to dynamo
+	dbLogWriter  *DBLogWriter  // unattached logs being written to the database
+	dyLogWriter  *DynamoWriter // all logs being written to dynamo
 	writerWG     *sync.WaitGroup
 
 	db           *sqlx.DB
@@ -230,7 +230,7 @@ func (b *backend) Start() error {
 	b.dbLogWriter = NewDBLogWriter(b.db, b.writerWG)
 	b.dbLogWriter.Start()
 
-	b.dyLogWriter = NewDynamoLogWriter(b.dynamo, b.writerWG)
+	b.dyLogWriter = NewDynamoWriter(b.dynamo, b.writerWG)
 	b.dyLogWriter.Start()
 
 	// store the system user id
