@@ -877,7 +877,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:         "This is a long message which spans more than one part, what will actually be sent in the end if we exceed the max length?",
 		MsgURN:          "facebook:12345",
 		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
-		MsgTopic:        "account",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v3.3/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
@@ -889,13 +888,13 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Params: url.Values{
 					"access_token": {"access_token"},
 				},
-				Body: `{"messaging_type":"MESSAGE_TAG","tag":"ACCOUNT_UPDATE","recipient":{"id":"12345"},"message":{"text":"This is a long message which spans more than one part, what will actually be sent in the end if"}}`,
+				Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"This is a long message which spans more than one part, what will actually be sent in the end if"}}`,
 			},
 			{
 				Params: url.Values{
 					"access_token": {"access_token"},
 				},
-				Body: `{"messaging_type":"MESSAGE_TAG","tag":"ACCOUNT_UPDATE","recipient":{"id":"12345"},"message":{"text":"we exceed the max length?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
+				Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"we exceed the max length?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 			},
 		},
 		ExpectedExtIDs: []string{"mid.133", "mid.133"},
@@ -923,7 +922,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:          "facebook:12345",
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
-		MsgTopic:        "event",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v3.3/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
@@ -936,13 +934,13 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Params: url.Values{
 					"access_token": {"access_token"},
 				},
-				Body: `{"messaging_type":"MESSAGE_TAG","tag":"CONFIRMED_EVENT_UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
+				Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
 			},
 			{
 				Params: url.Values{
 					"access_token": {"access_token"},
 				},
-				Body: `{"messaging_type":"MESSAGE_TAG","tag":"CONFIRMED_EVENT_UPDATE","recipient":{"id":"12345"},"message":{"text":"This is some text.","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
+				Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"This is some text.","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 			},
 		},
 		ExpectedExtIDs: []string{"mid.133", "mid.133"},

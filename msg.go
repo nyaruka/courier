@@ -2,7 +2,6 @@ package courier
 
 import (
 	"database/sql/driver"
-	"encoding/json"
 	"strconv"
 	"time"
 
@@ -127,8 +126,6 @@ type MsgOut interface {
 	URNAuth() string
 	Origin() MsgOrigin
 	ContactLastSeenOn() *time.Time
-	Topic() string
-	Metadata() json.RawMessage
 	ResponseToExternalID() string
 	SentOn() *time.Time
 	IsResend() bool
