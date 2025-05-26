@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/buger/jsonparser"
 	filetype "github.com/h2non/filetype"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
@@ -58,11 +57,9 @@ type Msg struct {
 	Locale_       null.String          `json:"locale"          db:"locale"`
 	Templating_   *courier.Templating  `json:"templating"      db:"templating"`
 	ExternalID_   null.String          `                       db:"external_id"`
-	Metadata_     json.RawMessage      `json:"metadata"        db:"metadata"`
-
-	ChannelID_    courier.ChannelID `                       db:"channel_id"`
-	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
-	ContactURNID_ ContactURNID      `json:"contact_urn_id"  db:"contact_urn_id"`
+	ChannelID_    courier.ChannelID    `                       db:"channel_id"`
+	ContactID_    ContactID            `json:"contact_id"      db:"contact_id"`
+	ContactURNID_ ContactURNID         `json:"contact_urn_id"  db:"contact_urn_id"`
 
 	MessageCount_ int         `                     db:"msg_count"`
 	ErrorCount_   int         `                     db:"error_count"`
@@ -141,24 +138,14 @@ func (m *Msg) Templating() *courier.Templating    { return m.Templating_ }
 func (m *Msg) URNAuth() string                    { return m.URNAuth_ }
 func (m *Msg) Origin() courier.MsgOrigin          { return m.Origin_ }
 func (m *Msg) ContactLastSeenOn() *time.Time      { return m.ContactLastSeenOn_ }
-func (m *Msg) Topic() string {
-	if m.Metadata_ == nil {
-		return ""
-	}
-	topic, _, _, _ := jsonparser.Get(m.Metadata_, "topic")
-	return string(topic)
-}
-func (m *Msg) Metadata() json.RawMessage {
-	return m.Metadata_
-}
-func (m *Msg) ResponseToExternalID() string   { return m.ResponseToExternalID_ }
-func (m *Msg) SentOn() *time.Time             { return m.SentOn_ }
-func (m *Msg) IsResend() bool                 { return m.IsResend_ }
-func (m *Msg) Flow() *courier.FlowReference   { return m.Flow_ }
-func (m *Msg) OptIn() *courier.OptInReference { return m.OptIn_ }
-func (m *Msg) UserID() courier.UserID         { return m.UserID_ }
-func (m *Msg) Session() *courier.Session      { return m.Session_ }
-func (m *Msg) HighPriority() bool             { return m.HighPriority_ }
+func (m *Msg) ResponseToExternalID() string       { return m.ResponseToExternalID_ }
+func (m *Msg) SentOn() *time.Time                 { return m.SentOn_ }
+func (m *Msg) IsResend() bool                     { return m.IsResend_ }
+func (m *Msg) Flow() *courier.FlowReference       { return m.Flow_ }
+func (m *Msg) OptIn() *courier.OptInReference     { return m.OptIn_ }
+func (m *Msg) UserID() courier.UserID             { return m.UserID_ }
+func (m *Msg) Session() *courier.Session          { return m.Session_ }
+func (m *Msg) HighPriority() bool                 { return m.HighPriority_ }
 
 // incoming specific
 func (m *Msg) ReceivedOn() *time.Time { return m.SentOn_ }

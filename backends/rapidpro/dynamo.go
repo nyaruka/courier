@@ -73,7 +73,7 @@ func writeDynamoBatch(ctx context.Context, ds *dynamo.Service, batch []*DynamoIt
 	}
 	if len(resp.UnprocessedItems) > 0 {
 		// TODO shouldn't happend.. but need to figure out how we would retry these
-		slog.Error("unprocessed items writing logs to dynamo", "count", len(resp.UnprocessedItems))
+		slog.Error("unprocessed items writing to dynamo", "count", len(resp.UnprocessedItems))
 	}
 	return nil
 }
