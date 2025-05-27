@@ -1,3 +1,7 @@
+v10.1.25 (2025-05-27)
+-------------------------
+ * Tweak clog dynamo format.. again
+
 v10.1.24 (2025-05-27)
 -------------------------
  * Tweak encoding of http logs in channel logs written to DynamoDB
