@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
@@ -23,12 +24,28 @@ type DynamoItem struct {
 	DataGZ []byte         `dynamodbav:"DataGZ,omitempty"`
 }
 
-func (d *DynamoItem) MarshalDynamo() (map[string]types.AttributeValue, error) {
-	return attributevalue.MarshalMap(d)
-}
+func getDynamoItem(ctx context.Context, dyn *dynamo.Service, table, pk, sk string) (*DynamoItem, error) {
+	resp, err := dyn.Client.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: aws.String(dyn.TableName(table)),
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: pk},
+			"SK": &types.AttributeValueMemberS{Value: sk},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error getting item from dynamo: %w", err)
+	}
 
-func (d *DynamoItem) UnmarshalDynamo(m map[string]types.AttributeValue) error {
-	return attributevalue.UnmarshalMap(m, d)
+	if resp.Item == nil {
+		return nil, nil // item not found
+	}
+
+	item := &DynamoItem{}
+	if err := attributevalue.UnmarshalMap(resp.Item, &item); err != nil {
+		return nil, fmt.Errorf("error unmarshalling dynamo item: %w", err)
+	}
+
+	return item, nil
 }
 
 type DynamoWriter struct {
@@ -52,7 +69,7 @@ func writeDynamoBatch(ctx context.Context, ds *dynamo.Service, batch []*DynamoIt
 	writeReqs := make([]types.WriteRequest, len(batch))
 
 	for i, item := range batch {
-		d, err := item.MarshalDynamo()
+		d, err := attributevalue.MarshalMap(item)
 		if err != nil {
 			return fmt.Errorf("error marshalling log for dynamo: %w", err)
 		}
