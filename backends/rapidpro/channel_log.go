@@ -128,11 +128,11 @@ func NewDynamoChannelLog(clog *courier.ChannelLog) (*DynamoItem, error) {
 		OrgID: int(clog.Channel().(*Channel).OrgID()),
 		TTL:   clog.CreatedOn.Add(dynamoChannelLogTTL),
 		Data: map[string]any{
-			"type":         clog.Type,
-			"http_logs_gz": logsGZ,
-			"errors":       clog.Errors,
-			"elapsed_ms":   int(clog.Elapsed / time.Millisecond),
-			"created_on":   clog.CreatedOn,
+			"type":       clog.Type,
+			"http_logs":  logsGZ,
+			"errors":     clog.Errors,
+			"elapsed_ms": int(clog.Elapsed / time.Millisecond),
+			"created_on": clog.CreatedOn,
 		},
 	}, nil
 }

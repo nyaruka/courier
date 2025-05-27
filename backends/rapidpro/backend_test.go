@@ -1064,6 +1064,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.NoError(err)
 	ts.Equal(1, actualLog.OrgID)
 	ts.Equal("token_refresh", actualLog.Data["type"])
+	ts.NotNil(actualLog.Data["http_logs"])
 
 	clog2 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog2.HTTP(trace)
