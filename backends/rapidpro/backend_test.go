@@ -77,18 +77,9 @@ func (ts *BackendTestSuite) SetupSuite() {
 	// turn off logging
 	log.SetOutput(io.Discard)
 
-	b, err := courier.NewBackend(cfg)
+	// create dynamo tables prior to starting backend, as it will check they exist
+	dyn, err := dynamo.NewClient(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.DynamoEndpoint)
 	noError(err)
-	ts.b = b.(*backend)
-
-	// load our test schema and data
-	ts.loadSQL("schema.sql")
-	ts.loadSQL("testdata.sql")
-
-	must(ts.b.Start())
-
-	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
-	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-logs")})
 
 	tablesFile, err := os.Open("dynamo.json")
 	noError(err)
@@ -101,17 +92,30 @@ func (ts *BackendTestSuite) SetupSuite() {
 	jsonx.MustUnmarshal(tablesJSON, &inputs)
 
 	for _, input := range inputs {
-		input.TableName = aws.String(ts.b.dynamo.TableName(*input.TableName)) // add table prefix
+		input.TableName = aws.String(cfg.DynamoTablePrefix + *input.TableName) // add table prefix
 
 		// delete table if it exists
-		if _, err := ts.b.dynamo.Client.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: input.TableName}); err == nil {
-			_, err := ts.b.dynamo.Client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: input.TableName})
+		if _, err := dyn.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: input.TableName}); err == nil {
+			_, err := dyn.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: input.TableName})
 			must(err)
 		}
 
-		_, err := ts.b.dynamo.Client.CreateTable(ctx, input)
+		_, err := dyn.CreateTable(ctx, input)
 		noError(err)
 	}
+
+	b, err := courier.NewBackend(cfg)
+	noError(err)
+	ts.b = b.(*backend)
+
+	// load our test schema and data
+	ts.loadSQL("schema.sql")
+	ts.loadSQL("testdata.sql")
+
+	must(ts.b.Start())
+
+	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
+	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-logs")})
 
 	ts.clearRedis()
 }
@@ -1059,7 +1063,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	// check that we can read the log back from DynamoDB
 	clog1Key := GetChannelLogKey(clog1)
-	item1, err := getDynamoItem(ctx, ts.b.dynamo, "Main", clog1Key)
+	item1, err := ts.b.dynamo.GetItem(ctx, clog1Key)
 	ts.NoError(err)
 	ts.Equal(1, item1.OrgID)
 	ts.Equal("token_refresh", item1.Data["type"])
@@ -1083,7 +1087,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	// check that we can read the log back from DynamoDB
 	clog2Key := GetChannelLogKey(clog2)
-	item2, err := getDynamoItem(ctx, ts.b.dynamo, "Main", clog2Key)
+	item2, err := ts.b.dynamo.GetItem(ctx, clog2Key)
 	ts.NoError(err)
 	ts.Equal("msg_send", item2.Data["type"])
 
