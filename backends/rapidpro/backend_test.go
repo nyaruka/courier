@@ -1058,8 +1058,8 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 		Columns(map[string]any{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "Unexpected response status code."})
 
 	// check that we can read the log back from DynamoDB
-	clog1PK, clog1SK := GetChannelLogKey(clog1)
-	item1, err := getDynamoItem(ctx, ts.b.dynamo, "Main", clog1PK, clog1SK)
+	clog1Key := GetChannelLogKey(clog1)
+	item1, err := getDynamoItem(ctx, ts.b.dynamo, "Main", clog1Key)
 	ts.NoError(err)
 	ts.Equal(1, item1.OrgID)
 	ts.Equal("token_refresh", item1.Data["type"])
@@ -1082,8 +1082,8 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	time.Sleep(time.Second) // give writer time to write this
 
 	// check that we can read the log back from DynamoDB
-	clog2PK, clog2SK := GetChannelLogKey(clog2)
-	item2, err := getDynamoItem(ctx, ts.b.dynamo, "Main", clog2PK, clog2SK)
+	clog2Key := GetChannelLogKey(clog2)
+	item2, err := getDynamoItem(ctx, ts.b.dynamo, "Main", clog2Key)
 	ts.NoError(err)
 	ts.Equal("msg_send", item2.Data["type"])
 

@@ -15,22 +15,26 @@ import (
 	"github.com/nyaruka/gocommon/syncx"
 )
 
+type DynamoKey struct {
+	PK string `dynamodbav:"PK"`
+	SK string `dynamodbav:"SK"`
+}
+
 type DynamoItem struct {
-	PK     string         `dynamodbav:"PK"`
-	SK     string         `dynamodbav:"SK"`
+	DynamoKey
+
 	OrgID  int            `dynamodbav:"OrgID"`
 	TTL    time.Time      `dynamodbav:"TTL,unixtime,omitempty"`
 	Data   map[string]any `dynamodbav:"Data"`
 	DataGZ []byte         `dynamodbav:"DataGZ,omitempty"`
 }
 
-func getDynamoItem(ctx context.Context, dyn *dynamo.Service, table, pk, sk string) (*DynamoItem, error) {
+func getDynamoItem(ctx context.Context, dyn *dynamo.Service, table string, key DynamoKey) (*DynamoItem, error) {
+	keyAttrs, _ := attributevalue.MarshalMap(key)
+
 	resp, err := dyn.Client.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(dyn.TableName(table)),
-		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: pk},
-			"SK": &types.AttributeValueMemberS{Value: sk},
-		},
+		Key:       keyAttrs,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error getting item from dynamo: %w", err)

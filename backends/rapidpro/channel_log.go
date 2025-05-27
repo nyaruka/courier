@@ -116,7 +116,7 @@ func writeDBChannelLogs(ctx context.Context, db *sqlx.DB, batch []*dbChannelLog)
 }
 
 func NewDynamoChannelLog(clog *courier.ChannelLog) (*DynamoItem, error) {
-	pk, sk := GetChannelLogKey(clog)
+	key := GetChannelLogKey(clog)
 
 	type DataGZ struct {
 		HttpLogs []*httpx.Log   `json:"http_logs"`
@@ -129,10 +129,9 @@ func NewDynamoChannelLog(clog *courier.ChannelLog) (*DynamoItem, error) {
 	}
 
 	return &DynamoItem{
-		PK:    pk,
-		SK:    sk,
-		OrgID: int(clog.Channel().(*Channel).OrgID()),
-		TTL:   clog.CreatedOn.Add(dynamoChannelLogTTL),
+		DynamoKey: key,
+		OrgID:     int(clog.Channel().(*Channel).OrgID()),
+		TTL:       clog.CreatedOn.Add(dynamoChannelLogTTL),
 		Data: map[string]any{
 			"type":       clog.Type,
 			"elapsed_ms": int(clog.Elapsed / time.Millisecond),
@@ -142,8 +141,8 @@ func NewDynamoChannelLog(clog *courier.ChannelLog) (*DynamoItem, error) {
 	}, nil
 }
 
-func GetChannelLogKey(l *courier.ChannelLog) (string, string) {
+func GetChannelLogKey(l *courier.ChannelLog) DynamoKey {
 	pk := fmt.Sprintf("cha#%s#%s", l.Channel().UUID(), l.UUID[len(l.UUID)-1:]) // 16 buckets for each channel
 	sk := fmt.Sprintf("log#%s", l.UUID)
-	return pk, sk
+	return DynamoKey{PK: pk, SK: sk}
 }
