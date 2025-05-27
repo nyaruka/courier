@@ -117,7 +117,7 @@ func writeDBChannelLogs(ctx context.Context, db *sqlx.DB, batch []*dbChannelLog)
 func NewDynamoChannelLog(clog *courier.ChannelLog) (*DynamoItem, error) {
 	pk, sk := GetChannelLogKey(clog)
 
-	logsGZ, err := dynamo.MarshalJSONGZ(clog.HttpLogs)
+	dataGZ, err := dynamo.MarshalJSONGZ(map[string]any{"http_logs": clog.HttpLogs})
 	if err != nil {
 		return nil, fmt.Errorf("error encoding http logs as JSON+GZip: %w", err)
 	}
@@ -129,11 +129,11 @@ func NewDynamoChannelLog(clog *courier.ChannelLog) (*DynamoItem, error) {
 		TTL:   clog.CreatedOn.Add(dynamoChannelLogTTL),
 		Data: map[string]any{
 			"type":       clog.Type,
-			"http_logs":  logsGZ,
 			"errors":     clog.Errors,
 			"elapsed_ms": int(clog.Elapsed / time.Millisecond),
 			"created_on": clog.CreatedOn,
 		},
+		DataGZ: dataGZ,
 	}, nil
 }
 

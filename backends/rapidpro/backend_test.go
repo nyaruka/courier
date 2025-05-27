@@ -26,6 +26,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/httpx"
@@ -1064,7 +1065,13 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.NoError(err)
 	ts.Equal(1, actualLog.OrgID)
 	ts.Equal("token_refresh", actualLog.Data["type"])
-	ts.NotNil(actualLog.Data["http_logs"])
+	ts.NotNil(actualLog.DataGZ)
+
+	var dataGZ map[string]any
+	err = dynamo.UnmarshalJSONGZ(actualLog.DataGZ, &dataGZ)
+	ts.NoError(err)
+	ts.NotNil(dataGZ["http_logs"])
+	ts.Equal("https://api.messages.com/send.json", dataGZ["http_logs"].([]any)[0].(map[string]any)["url"])
 
 	clog2 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog2.HTTP(trace)

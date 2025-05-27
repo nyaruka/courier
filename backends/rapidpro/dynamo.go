@@ -15,11 +15,12 @@ import (
 )
 
 type DynamoItem struct {
-	PK    string         `dynamodbav:"PK"`
-	SK    string         `dynamodbav:"SK"`
-	OrgID int            `dynamodbav:"OrgID"`
-	TTL   time.Time      `dynamodbav:"TTL,unixtime,omitempty"`
-	Data  map[string]any `dynamodbav:"Data"`
+	PK     string         `dynamodbav:"PK"`
+	SK     string         `dynamodbav:"SK"`
+	OrgID  int            `dynamodbav:"OrgID"`
+	TTL    time.Time      `dynamodbav:"TTL,unixtime,omitempty"`
+	Data   map[string]any `dynamodbav:"Data"`
+	DataGZ []byte         `dynamodbav:"DataGZ,omitempty"`
 }
 
 func (d *DynamoItem) MarshalDynamo() (map[string]types.AttributeValue, error) {
