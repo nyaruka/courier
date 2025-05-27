@@ -60,7 +60,7 @@ type backend struct {
 
 	db           *sqlx.DB
 	rp           *redis.Pool
-	dynamo       *dynamo.Service
+	dynamo       *dynamo.Table[DynamoKey, DynamoItem]
 	s3           *s3x.Service
 	cw           *cwatch.Service
 	systemUserID UserID
@@ -174,8 +174,8 @@ func (b *backend) Start() error {
 		queue.StartDethrottler(b.rp, b.stopChan, b.waitGroup, msgQueueName)
 	}
 
-	// setup DynamoDB
-	b.dynamo, err = dynamo.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.DynamoEndpoint, b.config.DynamoTablePrefix)
+	// setup DynamoDB main table
+	b.dynamo, err = dynamo.NewTable[DynamoKey, DynamoItem](b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.DynamoEndpoint, b.config.DynamoTablePrefix+"Main")
 	if err != nil {
 		return err
 	}
