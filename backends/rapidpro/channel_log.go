@@ -11,8 +11,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils/clogs"
+	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/dbutil"
-	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/syncx"
 )
@@ -115,28 +115,30 @@ func writeDBChannelLogs(ctx context.Context, db *sqlx.DB, batch []*dbChannelLog)
 }
 
 func NewDynamoChannelLog(clog *courier.ChannelLog) (*DynamoItem, error) {
-	type logData struct {
-		HttpLogs []*httpx.Log   `json:"http_logs"`
-		Errors   []*clogs.Error `json:"errors"`
-	}
-
 	pk, sk := GetChannelLogKey(clog)
 
-	d := &DynamoItem{
+	logsGZ := make([][]byte, len(clog.HttpLogs))
+	var err error
+	for i, log := range clog.HttpLogs {
+		logsGZ[i], err = dynamo.MarshalJSONGZ(log)
+		if err != nil {
+			return nil, fmt.Errorf("error encoding http log as JSON+GZip: %w", err)
+		}
+	}
+
+	return &DynamoItem{
 		PK:    pk,
 		SK:    sk,
 		OrgID: int(clog.Channel().(*Channel).OrgID()),
 		TTL:   clog.CreatedOn.Add(dynamoChannelLogTTL),
-		Attributes: map[string]any{
+		Data: map[string]any{
 			"type":       clog.Type,
+			"http_logs":  logsGZ,
+			"errors":     clog.Errors,
 			"elapsed_ms": int(clog.Elapsed / time.Millisecond),
 			"created_on": clog.CreatedOn,
 		},
-	}
-	if err := d.EncodeData(&logData{HttpLogs: clog.HttpLogs, Errors: clog.Errors}); err != nil {
-		return nil, fmt.Errorf("error marshaling log data: %w", err)
-	}
-	return d, nil
+	}, nil
 }
 
 func GetChannelLogKey(l *courier.ChannelLog) (string, string) {

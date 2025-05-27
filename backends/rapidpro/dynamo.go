@@ -15,18 +15,11 @@ import (
 )
 
 type DynamoItem struct {
-	PK         string         `dynamodbav:"PK"`
-	SK         string         `dynamodbav:"SK"`
-	OrgID      int            `dynamodbav:"OrgID"`
-	TTL        time.Time      `dynamodbav:"TTL,unixtime,omitempty"`
-	Attributes map[string]any `dynamodbav:"Attributes"`
-	DataGZ     []byte         `dynamodbav:"DataGZ,omitempty"`
-}
-
-func (d *DynamoItem) EncodeData(v any) error {
-	var err error
-	d.DataGZ, err = dynamo.MarshalJSONGZ(v)
-	return err
+	PK    string         `dynamodbav:"PK"`
+	SK    string         `dynamodbav:"SK"`
+	OrgID int            `dynamodbav:"OrgID"`
+	TTL   time.Time      `dynamodbav:"TTL,unixtime,omitempty"`
+	Data  map[string]any `dynamodbav:"Data"`
 }
 
 func (d *DynamoItem) MarshalDynamo() (map[string]types.AttributeValue, error) {

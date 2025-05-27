@@ -1063,7 +1063,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	err = ts.b.dynamo.GetItem(ctx, "Main", map[string]types.AttributeValue{"PK": &types.AttributeValueMemberS{Value: clog1PK}, "SK": &types.AttributeValueMemberS{Value: clog1SK}}, actualLog)
 	ts.NoError(err)
 	ts.Equal(1, actualLog.OrgID)
-	ts.Equal("token_refresh", actualLog.Attributes["type"])
+	ts.Equal("token_refresh", actualLog.Data["type"])
 
 	clog2 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog2.HTTP(trace)
@@ -1080,7 +1080,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	clog2PK, clog2SK := GetChannelLogKey(clog2)
 	err = ts.b.dynamo.GetItem(ctx, "Main", map[string]types.AttributeValue{"PK": &types.AttributeValueMemberS{Value: clog2PK}, "SK": &types.AttributeValueMemberS{Value: clog2SK}}, actualLog)
 	ts.NoError(err)
-	ts.Equal("msg_send", actualLog.Attributes["type"])
+	ts.Equal("msg_send", actualLog.Data["type"])
 
 	ts.b.db.MustExec(`DELETE FROM channels_channellog`)
 
