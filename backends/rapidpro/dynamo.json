@@ -46,21 +46,5 @@
             }
         ],
         "BillingMode": "PAY_PER_REQUEST"
-    },
-    {
-        "TableName": "ChannelLogs",
-        "KeySchema": [
-            {
-                "AttributeName": "UUID",
-                "KeyType": "HASH"
-            }
-        ],
-        "AttributeDefinitions": [
-            {
-                "AttributeName": "UUID",
-                "AttributeType": "S"
-            }
-        ],
-        "BillingMode": "PAY_PER_REQUEST"
     }
 ]
