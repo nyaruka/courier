@@ -175,10 +175,12 @@ func (b *backend) Start() error {
 	}
 
 	// setup DynamoDB main table
-	b.dynamo, err = dynamo.NewTable[DynamoKey, DynamoItem](b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.DynamoEndpoint, b.config.DynamoTablePrefix+"Main")
+	dc, err := dynamo.NewClient(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.DynamoEndpoint)
 	if err != nil {
 		return err
 	}
+	b.dynamo = dynamo.NewTable[DynamoKey, DynamoItem](dc, b.config.DynamoTablePrefix+"Main")
+
 	if err := b.dynamo.Test(ctx); err != nil {
 		log.Error("dynamodb not reachable", "error", err)
 	} else {
