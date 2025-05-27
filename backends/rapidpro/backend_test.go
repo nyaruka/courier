@@ -26,7 +26,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/test"
-	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/httpx"
@@ -1059,12 +1058,12 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 		Columns(map[string]any{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "Unexpected response status code."})
 
 	// check that we can read the log back from DynamoDB
-	actualLog := &clogs.Log{}
-	err = ts.b.dynamo.GetItem(ctx, "ChannelLogs", map[string]types.AttributeValue{"UUID": &types.AttributeValueMemberS{Value: string(clog1.UUID)}}, actualLog)
+	actualLog := &DynamoItem{}
+	clog1PK, clog1SK := GetChannelLogKey(clog1)
+	err = ts.b.dynamo.GetItem(ctx, "Main", map[string]types.AttributeValue{"PK": &types.AttributeValueMemberS{Value: clog1PK}, "SK": &types.AttributeValueMemberS{Value: clog1SK}}, actualLog)
 	ts.NoError(err)
-	ts.Equal(clog1.UUID, actualLog.UUID)
-	ts.Equal(courier.ChannelLogTypeTokenRefresh, actualLog.Type)
-	ts.Equal([]*clogs.Error{courier.ErrorResponseStatusCode()}, actualLog.Errors)
+	ts.Equal(1, actualLog.OrgID)
+	ts.Equal("token_refresh", actualLog.Data["type"])
 
 	clog2 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog2.HTTP(trace)
@@ -1077,11 +1076,11 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	time.Sleep(time.Second) // give writer time to write this
 
 	// check that we can read the log back from DynamoDB
-	actualLog = &clogs.Log{}
-	err = ts.b.dynamo.GetItem(ctx, "ChannelLogs", map[string]types.AttributeValue{"UUID": &types.AttributeValueMemberS{Value: string(clog2.UUID)}}, actualLog)
+	actualLog = &DynamoItem{}
+	clog2PK, clog2SK := GetChannelLogKey(clog2)
+	err = ts.b.dynamo.GetItem(ctx, "Main", map[string]types.AttributeValue{"PK": &types.AttributeValueMemberS{Value: clog2PK}, "SK": &types.AttributeValueMemberS{Value: clog2SK}}, actualLog)
 	ts.NoError(err)
-	ts.Equal(clog2.UUID, actualLog.UUID)
-	ts.Equal(courier.ChannelLogTypeMsgSend, actualLog.Type)
+	ts.Equal("msg_send", actualLog.Data["type"])
 
 	ts.b.db.MustExec(`DELETE FROM channels_channellog`)
 
