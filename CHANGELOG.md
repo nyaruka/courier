@@ -1,3 +1,7 @@
+v10.1.23 (2025-05-27)
+-------------------------
+ * Start writing channel logs to new DynamoDB table
+
 v10.1.22 (2025-05-15)
 -------------------------
  * Remove Facebook topics which are no longer a thing
