@@ -1,3 +1,8 @@
+v10.1.26 (2025-06-03)
+-------------------------
+ * Stop writing channel logs to database and add is_error data field
+ * Update to latest gocommon
+
 v10.1.25 (2025-05-27)
 -------------------------
  * Tweak clog dynamo format.. again
