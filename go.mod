@@ -18,9 +18,9 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
-	github.com/nyaruka/gocommon v1.63.2
+	github.com/nyaruka/gocommon v1.64.0
 	github.com/nyaruka/null/v3 v3.0.0
-	github.com/nyaruka/redisx v0.9.0
+	github.com/nyaruka/redisx v0.10.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/samber/slog-multi v1.4.0
 	github.com/samber/slog-sentry/v2 v2.9.3
@@ -73,7 +73,7 @@ require (
 	github.com/samber/slog-common v0.18.1 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
-	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
+	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect

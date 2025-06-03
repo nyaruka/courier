@@ -124,8 +124,8 @@ func (ts *BackendTestSuite) TearDownSuite() {
 	ts.b.Stop()
 	ts.b.Cleanup()
 
+	ts.b.dynamo.Purge(context.Background())
 	ts.b.s3.EmptyBucket(context.Background(), "test-attachments")
-	ts.b.s3.EmptyBucket(context.Background(), "test-logs")
 }
 
 func (ts *BackendTestSuite) clearRedis() {
@@ -1115,6 +1115,10 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	item5, err := ts.b.dynamo.GetItem(ctx, GetChannelLogKey(clog5))
 	ts.NoError(err)
 	ts.Nil(item5)
+
+	count, err := ts.b.dynamo.Count(ctx)
+	ts.NoError(err)
+	ts.Equal(3, count)
 }
 
 func (ts *BackendTestSuite) TestSaveAttachment() {
