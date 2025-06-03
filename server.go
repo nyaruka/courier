@@ -287,10 +287,8 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			for _, event := range events {
 				switch e := event.(type) {
 				case MsgIn:
-					clog.SetAttached(true)
 					LogMsgReceived(r, e)
 				case StatusUpdate:
-					clog.SetAttached(true)
 					LogMsgStatusReceived(r, e)
 				case ChannelEvent:
 					LogChannelEventReceived(r, e)

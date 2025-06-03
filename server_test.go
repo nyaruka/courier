@@ -97,7 +97,6 @@ func TestIncoming(t *testing.T) {
 
 	assert.Len(t, mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
-	assert.False(t, clog.Attached())
 	assert.Len(t, clog.HttpLogs, 1)
 
 	req, _ := http.NewRequest("GET", "http://localhost:8081/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive?from=2065551212&text=hello", nil)
@@ -112,7 +111,6 @@ func TestIncoming(t *testing.T) {
 
 	assert.Len(t, mb.WrittenChannelLogs(), 2)
 	clog = mb.WrittenChannelLogs()[1]
-	assert.True(t, clog.Attached())
 	assert.Len(t, clog.HttpLogs, 1)
 }
 
@@ -164,8 +162,7 @@ func TestOutgoing(t *testing.T) {
 	// and we should have a channel log with redacted errors and traces
 	assert.Len(t, mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
-	assert.Equal(t, []*clogs.Error{&clogs.Error{Code: "seeds", Message: "contains ********** seeds"}}, clog.Errors)
-	assert.True(t, clog.Attached())
+	assert.Equal(t, []*clogs.Error{{Code: "seeds", Message: "contains ********** seeds"}}, clog.Errors)
 	assert.Len(t, clog.HttpLogs, 1)
 
 	hlog := clog.HttpLogs[0]

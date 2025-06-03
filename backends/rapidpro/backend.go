@@ -54,8 +54,7 @@ type backend struct {
 	config *courier.Config
 
 	statusWriter *StatusWriter
-	dbLogWriter  *DBLogWriter  // unattached logs being written to the database
-	dyLogWriter  *DynamoWriter // all logs being written to dynamo
+	dynamoWriter *DynamoWriter // all logs being written to dynamo
 	writerWG     *sync.WaitGroup
 
 	db           *sqlx.DB
@@ -229,11 +228,8 @@ func (b *backend) Start() error {
 	b.statusWriter = NewStatusWriter(b, b.config.SpoolDir, b.writerWG)
 	b.statusWriter.Start()
 
-	b.dbLogWriter = NewDBLogWriter(b.db, b.writerWG)
-	b.dbLogWriter.Start()
-
-	b.dyLogWriter = NewDynamoWriter(b.dynamo, b.writerWG)
-	b.dyLogWriter.Start()
+	b.dynamoWriter = NewDynamoWriter(b.dynamo, b.writerWG)
+	b.dynamoWriter.Start()
 
 	// store the system user id
 	b.systemUserID, err = getSystemUserID(ctx, b.db)
@@ -303,11 +299,8 @@ func (b *backend) Cleanup() error {
 	if b.statusWriter != nil {
 		b.statusWriter.Stop()
 	}
-	if b.dbLogWriter != nil {
-		b.dbLogWriter.Stop()
-	}
-	if b.dyLogWriter != nil {
-		b.dyLogWriter.Stop()
+	if b.dynamoWriter != nil {
+		b.dynamoWriter.Stop()
 	}
 
 	// wait for them to flush fully

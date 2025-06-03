@@ -1031,10 +1031,6 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
-	defer func() {
-		ts.b.db.MustExecContext(ctx, "DELETE FROM channels_channellog")
-	}()
-
 	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
@@ -1051,19 +1047,13 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	clog1.HTTP(trace)
 	clog1.Error(courier.ErrorResponseStatusCode())
 
-	// log isn't attached to a message so will be written to the database
 	err = ts.b.WriteChannelLog(ctx, clog1)
 	ts.NoError(err)
 
 	time.Sleep(time.Second) // give writer time to write this
 
-	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM channels_channellog`).Returns(1)
-	assertdb.Query(ts.T(), ts.b.db, `SELECT channel_id, http_logs->0->>'url' AS url, errors->0->>'message' AS err FROM channels_channellog`).
-		Columns(map[string]any{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "Unexpected response status code."})
-
 	// check that we can read the log back from DynamoDB
-	clog1Key := GetChannelLogKey(clog1)
-	item1, err := ts.b.dynamo.GetItem(ctx, clog1Key)
+	item1, err := ts.b.dynamo.GetItem(ctx, GetChannelLogKey(clog1))
 	ts.NoError(err)
 	ts.Equal(1, item1.OrgID)
 	ts.Equal("token_refresh", item1.Data["type"])
@@ -1077,21 +1067,16 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	clog2 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog2.HTTP(trace)
-	clog2.SetAttached(true)
 
-	// log is attached to a message so will be written to storage
 	err = ts.b.WriteChannelLog(ctx, clog2)
 	ts.NoError(err)
 
 	time.Sleep(time.Second) // give writer time to write this
 
 	// check that we can read the log back from DynamoDB
-	clog2Key := GetChannelLogKey(clog2)
-	item2, err := ts.b.dynamo.GetItem(ctx, clog2Key)
+	item2, err := ts.b.dynamo.GetItem(ctx, GetChannelLogKey(clog2))
 	ts.NoError(err)
 	ts.Equal("msg_send", item2.Data["type"])
-
-	ts.b.db.MustExec(`DELETE FROM channels_channellog`)
 
 	// channel channel log policy to only write errors
 	channel.LogPolicy = LogPolicyErrors
@@ -1102,7 +1087,9 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	time.Sleep(time.Second) // give writer time to.. not write this
 
-	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM channels_channellog`).Returns(0)
+	item3, err := ts.b.dynamo.GetItem(ctx, GetChannelLogKey(clog3))
+	ts.NoError(err)
+	ts.Nil(item3)
 
 	clog4 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog4.HTTP(trace)
@@ -1111,7 +1098,9 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	time.Sleep(time.Second) // give writer time to write this because it's an error
 
-	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM channels_channellog`).Returns(1)
+	item4, err := ts.b.dynamo.GetItem(ctx, GetChannelLogKey(clog4))
+	ts.NoError(err)
+	ts.NotNil(item4)
 
 	// channel channel log policy to discard all
 	channel.LogPolicy = LogPolicyNone
@@ -1123,7 +1112,9 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	time.Sleep(time.Second) // give writer time to.. not write this
 
-	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM channels_channellog`).Returns(1)
+	item5, err := ts.b.dynamo.GetItem(ctx, GetChannelLogKey(clog5))
+	ts.NoError(err)
+	ts.Nil(item5)
 }
 
 func (ts *BackendTestSuite) TestSaveAttachment() {
