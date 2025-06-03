@@ -119,19 +119,6 @@ CREATE TABLE msgs_msg (
     log_uuids uuid[]
 );
 
-DROP TABLE IF EXISTS channels_channellog CASCADE;
-CREATE TABLE channels_channellog (
-    id serial primary key,
-    uuid uuid NOT NULL,
-    channel_id integer NOT NULL references channels_channel(id) on delete cascade,
-    log_type character varying(16),
-    http_logs jsonb,
-    errors jsonb,
-    is_error boolean NOT NULL,
-    created_on timestamp with time zone NOT NULL,
-    elapsed_ms integer
-);
-
 DROP TABLE IF EXISTS channels_channelevent CASCADE;
 CREATE TABLE channels_channelevent (
     id serial primary key,

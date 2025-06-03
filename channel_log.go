@@ -60,36 +60,34 @@ func ErrorExternal(code, message string) *clogs.Error {
 type ChannelLog struct {
 	*clogs.Log
 
-	channel  Channel
-	attached bool
+	channel Channel
 }
 
 // NewChannelLogForIncoming creates a new channel log for an incoming request, the type of which won't be known
 // until the handler completes.
 func NewChannelLogForIncoming(logType clogs.Type, ch Channel, r *httpx.Recorder, redactVals []string) *ChannelLog {
-	return newChannelLog(logType, ch, r, false, redactVals)
+	return newChannelLog(logType, ch, r, redactVals)
 }
 
 // NewChannelLogForSend creates a new channel log for a message send
 func NewChannelLogForSend(msg MsgOut, redactVals []string) *ChannelLog {
-	return newChannelLog(ChannelLogTypeMsgSend, msg.Channel(), nil, true, redactVals)
+	return newChannelLog(ChannelLogTypeMsgSend, msg.Channel(), nil, redactVals)
 }
 
 // NewChannelLogForSend creates a new channel log for an attachment fetch
 func NewChannelLogForAttachmentFetch(ch Channel, redactVals []string) *ChannelLog {
-	return newChannelLog(ChannelLogTypeAttachmentFetch, ch, nil, true, redactVals)
+	return newChannelLog(ChannelLogTypeAttachmentFetch, ch, nil, redactVals)
 }
 
 // NewChannelLog creates a new channel log with the given type and channel
 func NewChannelLog(t clogs.Type, ch Channel, redactVals []string) *ChannelLog {
-	return newChannelLog(t, ch, nil, false, redactVals)
+	return newChannelLog(t, ch, nil, redactVals)
 }
 
-func newChannelLog(t clogs.Type, ch Channel, r *httpx.Recorder, attached bool, redactVals []string) *ChannelLog {
+func newChannelLog(t clogs.Type, ch Channel, r *httpx.Recorder, redactVals []string) *ChannelLog {
 	return &ChannelLog{
-		Log:      clogs.New(t, r, redactVals),
-		channel:  ch,
-		attached: attached,
+		Log:     clogs.New(t, r, redactVals),
+		channel: ch,
 	}
 }
 
@@ -100,14 +98,6 @@ func (l *ChannelLog) RawError(err error) {
 
 func (l *ChannelLog) Channel() Channel {
 	return l.channel
-}
-
-func (l *ChannelLog) Attached() bool {
-	return l.attached
-}
-
-func (l *ChannelLog) SetAttached(a bool) {
-	l.attached = a
 }
 
 // if we have an error or a non 2XX/3XX http response then log is considered an error

@@ -76,6 +76,21 @@ func (l *Log) End() {
 	l.Elapsed = time.Since(l.CreatedOn)
 }
 
+// if we have an error or a non 2XX/3XX http response then log is considered an error
+func (l *Log) IsError() bool {
+	if len(l.Errors) > 0 {
+		return true
+	}
+
+	for _, l := range l.HttpLogs {
+		if l.StatusCode < 200 || l.StatusCode >= 400 {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (l *Log) traceToLog(t *httpx.Trace) *httpx.Log {
 	return httpx.NewLog(t, 2048, 50000, l.redactor)
 }
