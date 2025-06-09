@@ -145,7 +145,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, form.MessageSID, clog)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, form.MessageSID, clog)
 
 	// process any attached media
 	for i := 0; i < form.NumMedia; i++ {

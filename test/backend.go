@@ -100,7 +100,7 @@ func (mb *MockBackend) DeleteMsgByExternalID(ctx context.Context, channel courie
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.MsgIn {
+func (mb *MockBackend) NewIncomingMsg(ctx context.Context, channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.MsgIn {
 	m := &MockMsg{
 		channel: channel, urn: urn, text: text, externalID: extID,
 	}

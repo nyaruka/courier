@@ -144,7 +144,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 	}
 
 	// otherwise, create and write the message
-	msg := h.Backend().NewIncomingMsg(c, urn, text, msgID, clog).WithReceivedOn(time.Now().UTC())
+	msg := h.Backend().NewIncomingMsg(ctx, c, urn, text, msgID, clog).WithReceivedOn(time.Now().UTC())
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 

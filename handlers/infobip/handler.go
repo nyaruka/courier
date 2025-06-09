@@ -147,7 +147,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// build our infobipMessage
-		msg := h.Backend().NewIncomingMsg(channel, urn, text, messageID, clog).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, messageID, clog).WithReceivedOn(date)
 		msgs = append(msgs, msg)
 
 	}

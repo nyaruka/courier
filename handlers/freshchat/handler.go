@@ -86,7 +86,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, payload.Data.Message.ID, clog).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, payload.Data.Message.ID, clog).WithReceivedOn(date)
 
 	//add image
 	if mediaURL != "" {

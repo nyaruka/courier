@@ -74,7 +74,7 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 
 	for _, event := range payload.Events {
 		if event.Type == "msg_in" {
-			msg := h.Backend().NewIncomingMsg(c, urn, event.Msg.Text, "", clog)
+			msg := h.Backend().NewIncomingMsg(ctx, c, urn, event.Msg.Text, "", clog)
 
 			if err = h.Backend().WriteMsg(ctx, msg, clog); err != nil {
 				return nil, err

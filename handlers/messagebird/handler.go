@@ -190,7 +190,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, messageID, clog).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, messageID, clog).WithReceivedOn(date.UTC())
 
 	// process any attached media
 	if len(payload.MediaURLs) > 0 {

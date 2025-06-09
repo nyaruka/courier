@@ -93,7 +93,7 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 
 	// build msg
 	date := time.Unix(ts, 0).UTC()
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Body, "", clog).WithReceivedOn(date).WithContactName(form.Name)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Body, "", clog).WithReceivedOn(date).WithContactName(form.Name)
 
 	if form.MediaURL != "" {
 		msg.WithAttachment(form.MediaURL)

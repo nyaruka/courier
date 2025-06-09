@@ -44,7 +44,7 @@ type Backend interface {
 	DeleteMsgByExternalID(ctx context.Context, channel Channel, externalID string) error
 
 	// NewIncomingMsg creates a new message from the given params
-	NewIncomingMsg(Channel, urns.URN, string, string, *ChannelLog) MsgIn
+	NewIncomingMsg(context.Context, Channel, urns.URN, string, string, *ChannelLog) MsgIn
 
 	// WriteMsg writes the passed in message to our backend
 	WriteMsg(context.Context, MsgIn, *ChannelLog) error

@@ -95,7 +95,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, "", clog).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, "", clog).WithReceivedOn(date)
 
 	for _, attachment := range r.Form["attachments"] {
 		msg.WithAttachment(attachment)
