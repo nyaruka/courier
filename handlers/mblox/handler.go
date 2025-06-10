@@ -97,7 +97,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// build our Message
-		msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body, payload.ID, clog).WithReceivedOn(date.UTC())
+		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, payload.Body, payload.ID, clog).WithReceivedOn(date.UTC())
 
 		// and finally write our message
 		return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)

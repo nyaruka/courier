@@ -75,7 +75,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text, form.ID, clog).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Text, form.ID, clog).WithReceivedOn(date)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)

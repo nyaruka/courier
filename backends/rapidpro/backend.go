@@ -407,7 +407,7 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Cha
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.MsgIn {
+func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.MsgIn {
 	// strip out invalid UTF8 and NULL chars
 	urn = urns.URN(dbutil.ToValidUTF8(string(urn)))
 	text = dbutil.ToValidUTF8(text)
@@ -417,7 +417,7 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 	msg.WithReceivedOn(time.Now().UTC())
 
 	// check if this message could be a duplicate and if so use the original's UUID
-	if prevUUID := b.checkMsgAlreadyReceived(msg); prevUUID != courier.NilMsgUUID {
+	if prevUUID := b.checkMsgAlreadyReceived(ctx, msg); prevUUID != courier.NilMsgUUID {
 		msg.UUID_ = prevUUID
 		msg.alreadyWritten = true
 	}
@@ -477,7 +477,7 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 	dbMsg.workerToken = token
 
 	// clear out our seen incoming messages
-	b.clearMsgSeen(dbMsg)
+	b.clearMsgSeen(ctx, dbMsg)
 
 	return dbMsg, nil
 }
@@ -487,14 +487,14 @@ func (b *backend) WasMsgSent(ctx context.Context, id courier.MsgID) (bool, error
 	rc := b.rp.Get()
 	defer rc.Close()
 
-	return b.sentIDs.IsMember(rc, id.String())
+	return b.sentIDs.IsMember(ctx, rc, id.String())
 }
 
 func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
 	rc := b.rp.Get()
 	defer rc.Close()
 
-	return b.sentIDs.Rem(rc, id.String())
+	return b.sentIDs.Rem(ctx, rc, id.String())
 }
 
 // OnSendComplete is called when the sender has finished trying to send a message
@@ -510,7 +510,7 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 
 	// if message won't be retried, mark as sent to avoid dupe sends
 	if status.Status() != courier.MsgStatusErrored {
-		if err := b.sentIDs.Add(rc, msg.ID().String()); err != nil {
+		if err := b.sentIDs.Add(ctx, rc, msg.ID().String()); err != nil {
 			slog.Error("unable to mark message sent", "error", err)
 		}
 	}
@@ -573,7 +573,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 			rc := b.rp.Get()
 			defer rc.Close()
 
-			err := b.sentExternalIDs.Set(rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalID_), fmt.Sprintf("%d", status.MsgID()))
+			err := b.sentExternalIDs.Set(ctx, rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalID_), fmt.Sprintf("%d", status.MsgID()))
 			if err != nil {
 				log.Error("error recording external id", "error", err)
 			}
@@ -713,7 +713,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 	defer rc.Close()
 
 	var media *Media
-	mediaJSON, err := b.mediaCache.Get(rc, mediaUUID)
+	mediaJSON, err := b.mediaCache.Get(ctx, rc, mediaUUID)
 	if err != nil {
 		return nil, fmt.Errorf("error looking up cached media: %w", err)
 	}
@@ -727,7 +727,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 		}
 
 		// cache it for future requests
-		b.mediaCache.Set(rc, mediaUUID, string(jsonx.MustMarshal(media)))
+		b.mediaCache.Set(ctx, rc, mediaUUID, string(jsonx.MustMarshal(media)))
 	}
 
 	// if we found a media record but it doesn't match the URL, don't use it

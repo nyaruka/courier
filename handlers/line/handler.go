@@ -154,7 +154,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid line id"))
 		}
 
-		msg := h.Backend().NewIncomingMsg(channel, urn, text, lineEvent.ReplyToken, clog).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, lineEvent.ReplyToken, clog).WithReceivedOn(date)
 
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)

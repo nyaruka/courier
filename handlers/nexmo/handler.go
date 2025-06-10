@@ -165,7 +165,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create and write the message
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text, form.MessageID, clog)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Text, form.MessageID, clog)
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 

@@ -98,7 +98,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, messagePayload.Message.Text, messagePayload.Message.ID, clog).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, messagePayload.Message.Text, messagePayload.Message.ID, clog).WithReceivedOn(date)
 
 	for _, attURL := range messagePayload.Message.Media {
 		msg.WithAttachment(attURL)

@@ -242,7 +242,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := time.Unix(payload.Object.Message.Date, 0).UTC()
 	text := payload.Object.Message.Text
 	externalId := strconv.FormatInt(payload.Object.Message.Id, 10)
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, externalId, clog).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, externalId, clog).WithReceivedOn(date)
 
 	if attachment := takeFirstAttachmentUrl(*payload); attachment != "" {
 		msg.WithAttachment(attachment)

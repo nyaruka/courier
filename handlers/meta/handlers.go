@@ -321,7 +321,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 				}
 
 				// create our message
-				event := h.Backend().NewIncomingMsg(channel, urn, text, msg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[msg.From])
+				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, msg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[msg.From])
 
 				// we had an error downloading media
 				if err != nil {
@@ -579,7 +579,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			}
 
 			// create our message
-			event := h.Backend().NewIncomingMsg(channel, urn, text, msg.Message.MID, clog).WithReceivedOn(date)
+			event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, msg.Message.MID, clog).WithReceivedOn(date)
 
 			// add any attachment URL found
 			for _, attURL := range attachmentURLs {

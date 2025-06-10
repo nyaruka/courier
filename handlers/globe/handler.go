@@ -98,7 +98,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
-		msg := h.Backend().NewIncomingMsg(c, urn, glMsg.Message, glMsg.MessageID, clog).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(ctx, c, urn, glMsg.Message, glMsg.MessageID, clog).WithReceivedOn(date)
 		msgs = append(msgs, msg)
 	}
 
