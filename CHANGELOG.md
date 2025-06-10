@@ -1,3 +1,7 @@
+v10.1.27 (2025-06-10)
+-------------------------
+ * Update to latest redisx which requires use of context
+
 v10.1.26 (2025-06-03)
 -------------------------
  * Stop writing channel logs to database and add is_error data field
