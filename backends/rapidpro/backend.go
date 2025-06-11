@@ -499,19 +499,21 @@ func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
 
 // OnSendComplete is called when the sender has finished trying to send a message
 func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate, clog *courier.ChannelLog) {
+	log := slog.With("channel", msg.Channel().UUID(), "msg", msg.UUID(), "clog", clog.UUID, "status", status)
+
 	rc := b.rp.Get()
 	defer rc.Close()
 
 	dbMsg := msg.(*Msg)
 
 	if err := queue.MarkComplete(rc, msgQueueName, dbMsg.workerToken); err != nil {
-		slog.Error("unable to mark queue task complete", "error", err)
+		log.Error("unable to mark queue task complete", "error", err)
 	}
 
 	// if message won't be retried, mark as sent to avoid dupe sends
 	if status.Status() != courier.MsgStatusErrored {
 		if err := b.sentIDs.Add(ctx, rc, msg.ID().String()); err != nil {
-			slog.Error("unable to mark message sent", "error", err)
+			log.Error("unable to mark message sent", "error", err)
 		}
 	}
 
@@ -519,7 +521,7 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 	wasSuccess := status.Status() == courier.MsgStatusWired || status.Status() == courier.MsgStatusSent || status.Status() == courier.MsgStatusDelivered || status.Status() == courier.MsgStatusRead
 	if wasSuccess && dbMsg.Session_ != nil && dbMsg.Session_.Timeout > 0 {
 		if err := b.insertTimeoutFire(ctx, dbMsg); err != nil {
-			slog.Error("unable to update session timeout", "error", err, "session_uuid", dbMsg.Session_.UUID)
+			log.Error("unable to update session timeout", "error", err, "session_uuid", dbMsg.Session_.UUID)
 		}
 	}
 

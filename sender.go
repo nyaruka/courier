@@ -278,7 +278,6 @@ func (w *Sender) Stop() {
 }
 
 func (w *Sender) sendMessage(msg MsgOut) {
-
 	log := slog.With("comp", "sender", "sender_id", w.id, "channel_uuid", msg.Channel().UUID())
 
 	server := w.foreman.server
@@ -335,20 +334,18 @@ func (w *Sender) sendMessage(msg MsgOut) {
 		status = w.sendByHandler(sendCTX, handler, msg, clog, log)
 	}
 
-	// we allot 10 seconds to write our status to the db
-	writeCTX, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	// we allot 15 seconds to write our status to the db
+	writeCTX, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	err = backend.WriteStatusUpdate(writeCTX, status)
-	if err != nil {
+	if err := backend.WriteStatusUpdate(writeCTX, status); err != nil {
 		log.Info("error writing msg status", "error", err)
 	}
 
 	clog.End()
 
 	// write our logs as well
-	err = backend.WriteChannelLog(writeCTX, clog)
-	if err != nil {
+	if err := backend.WriteChannelLog(writeCTX, clog); err != nil {
 		log.Info("error writing msg logs", "error", err)
 	}
 
