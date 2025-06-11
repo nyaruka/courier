@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      redis:
+      valkey:
         image: valkey/valkey:8.0-alpine
         ports:
           - 6379:6379
