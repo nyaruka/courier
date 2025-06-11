@@ -151,7 +151,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"src":"2020","dst":"250788383383","text":"No External ID","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{Label: "Error Sending",
 		MsgText: "Error Message",

@@ -91,6 +91,25 @@ var outgoingCases = []OutgoingTestCase{
 		},
 	},
 	{
+		Label:   "Flow message with quick replies",
+		MsgText: "Simple message ☺",
+		MsgURN:  "webchat:65vbbDAQCdPdEWlEhDGy4utO",
+		MsgQuickReplies: []courier.QuickReply{
+			{Text: "Yes"},
+			{Text: "No"},
+		},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://textit.com/wc/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status": "queued"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","quick_replies":["Yes","No"],"origin":"flow"}}`,
+			},
+		},
+	},
+	{
 		Label:          "Chat message that is an attachment",
 		MsgAttachments: []string{"image/jpeg:https://example.com/image.jpg"},
 		MsgURN:         "webchat:65vbbDAQCdPdEWlEhDGy4utO",

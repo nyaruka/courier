@@ -44,14 +44,13 @@ func TestChannelLog(t *testing.T) {
 	assert.EqualError(t, err, "unable to connect to server")
 
 	clog.HTTP(trace)
-	clog.Error(clogs.NewLogError("not_right", "", "Something not right"))
+	clog.Error(&clogs.Error{Code: "not_right", Message: "Something not right"})
 	clog.RawError(errors.New("this is an error"))
 	clog.End()
 
-	assert.Equal(t, clogs.LogUUID("0191e180-7d60-7000-aded-7d8b151cbd5b"), clog.UUID)
+	assert.Equal(t, clogs.UUID("0191e180-7d60-7000-aded-7d8b151cbd5b"), clog.UUID)
 	assert.Equal(t, courier.ChannelLogTypeTokenRefresh, clog.Type)
 	assert.Equal(t, channel, clog.Channel())
-	assert.False(t, clog.Attached())
 	assert.Equal(t, 2, len(clog.HttpLogs))
 	assert.Equal(t, 2, len(clog.Errors))
 	assert.False(t, clog.CreatedOn.IsZero())
@@ -76,14 +75,11 @@ func TestChannelLog(t *testing.T) {
 	err2 := clog.Errors[1]
 	assert.Equal(t, "this is an error", err2.Message)
 	assert.Equal(t, "", err2.Code)
-
-	clog.SetAttached(true)
-	assert.True(t, clog.Attached())
 }
 
 func TestChannelErrors(t *testing.T) {
 	tcs := []struct {
-		err             *clogs.LogError
+		err             *clogs.Error
 		expectedCode    string
 		expectedExtCode string
 		expectedMessage string

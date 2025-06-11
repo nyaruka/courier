@@ -52,8 +52,8 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 func handleURLVerification(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload) ([]courier.Event, error) {
-	validationToken := channel.ConfigForKey(configValidationToken, "")
-	if validationToken != payload.Token {
+	validationToken := channel.StringConfigForKey(configValidationToken, "")
+	if !utils.SecretEqual(payload.Token, validationToken) {
 		w.WriteHeader(http.StatusForbidden)
 		return nil, fmt.Errorf("wrong validation token for channel: %s", channel.UUID())
 	}
@@ -92,7 +92,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		text := payload.Event.Text
-		msg := h.Backend().NewIncomingMsg(channel, urn, text, payload.EventID, clog).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, payload.EventID, clog).WithReceivedOn(date)
 
 		for _, attURL := range attachmentURLs {
 			msg.WithAttachment(attURL)
@@ -205,15 +205,15 @@ func (h *handler) sendTextMsgPart(msg courier.MsgOut, token string, clog *courie
 
 	ok, err := jsonparser.GetBoolean(respBody, "ok")
 	if err != nil {
-		return courier.ErrResponseUnexpected
+		return courier.ErrResponseContent
 	}
 
 	if !ok {
 		errDescription, err := jsonparser.GetString(respBody, "error")
 		if err != nil {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseContent
 		}
-		clog.Error(clogs.NewLogError("", "", errDescription))
+		clog.Error(&clogs.Error{Message: errDescription})
 		return courier.ErrFailedWithReason("", errDescription)
 	}
 	return nil
@@ -284,7 +284,7 @@ func (h *handler) sendFilePart(msg courier.MsgOut, token string, fileParams *Fil
 	}
 
 	if !fr.OK {
-		return courier.ErrResponseUnexpected
+		return courier.ErrResponseContent
 	}
 
 	return nil

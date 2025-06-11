@@ -28,7 +28,7 @@ type StatusUpdate struct {
 	ExternalID_  string              `json:"external_id,omitempty"    db:"external_id"`
 	Status_      courier.MsgStatus   `json:"status"                   db:"status"`
 	ModifiedOn_  time.Time           `json:"modified_on"              db:"modified_on"`
-	LogUUID      clogs.LogUUID       `json:"log_uuid"                 db:"log_uuid"`
+	LogUUID      clogs.UUID          `json:"log_uuid"                 db:"log_uuid"`
 }
 
 // creates a new message status update
@@ -266,7 +266,7 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*Sta
 	for i, s := range statuses {
 		chAndExtKeys[i] = fmt.Sprintf("%d|%s", s.ChannelID_, s.ExternalID_)
 	}
-	cachedIDs, err := b.sentExternalIDs.MGet(rc, chAndExtKeys...)
+	cachedIDs, err := b.sentExternalIDs.MGet(ctx, rc, chAndExtKeys...)
 	if err != nil {
 		// log error but we continue and try to get ids from the database
 		slog.Error("error looking up sent message ids in redis", "error", err)

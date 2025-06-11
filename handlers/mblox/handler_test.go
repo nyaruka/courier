@@ -208,7 +208,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":["250788383383"],"body":"No External ID","delivery_report":"per_recipient"}`,
 		}},
-		ExpectedLogErrors: []*clogs.LogError{courier.ErrorResponseValueMissing("id")},
+		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("id")},
 	},
 	{
 		Label:   "Error Sending",

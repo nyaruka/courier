@@ -1,3 +1,128 @@
+v10.1.28 (2025-06-11)
+-------------------------
+ * Give OnSendComplete more logging and time
+
+v10.1.27 (2025-06-10)
+-------------------------
+ * Update to latest redisx which requires use of context
+
+v10.1.26 (2025-06-03)
+-------------------------
+ * Stop writing channel logs to database and add is_error data field
+ * Update to latest gocommon
+
+v10.1.25 (2025-05-27)
+-------------------------
+ * Tweak clog dynamo format.. again
+
+v10.1.24 (2025-05-27)
+-------------------------
+ * Tweak encoding of http logs in channel logs written to DynamoDB
+
+v10.1.23 (2025-05-27)
+-------------------------
+ * Start writing channel logs to new DynamoDB table
+
+v10.1.22 (2025-05-15)
+-------------------------
+ * Remove Facebook topics which are no longer a thing
+ * Add quick replies support for chip
+
+v10.1.21 (2025-05-07)
+-------------------------
+ * Fix MessageBird handler for shortcode messages
+
+v10.1.20 (2025-05-05)
+-------------------------
+ * Switch to v7 UUIDs for messages
+ * Update dependencies
+
+v10.1.19 (2025-04-08)
+-------------------------
+ * Rename config for BW messaging application ID
+ * Update to latest gocommon
+
+v10.1.18 (2025-03-21)
+-------------------------
+ * Update dependencies including phonenumbers
+ * Fix panic from legacy whatsapp handler with bad interactive message payload
+
+v10.1.17 (2025-03-18)
+-------------------------
+ * Tweak handling of panics
+ * Use constant time comparison to check more secret strings
+
+v10.1.16 (2025-03-18)
+-------------------------
+ * Use constant time comparison to check chip secret
+ * Add support for config to shorten URL for TMS
+
+v10.1.15 (2025-03-05)
+-------------------------
+ * Support sending quick reply extra as list option description for Whatsapp
+ * Use go 1.24
+
+v10.1.14 (2025-02-26)
+-------------------------
+ * Updated handler for MessageBird
+
+v10.1.13 (2025-02-24)
+-------------------------
+ * Lookup system user via email instead of username
+
+v10.1.12 (2025-02-21)
+-------------------------
+ * Stop writing contactfire.extra
+
+v10.1.11 (2025-02-20)
+-------------------------
+ * Model quick replies as structs instead of strings
+
+v10.1.10 (2025-02-17)
+-------------------------
+ * Use system user for new contacts
+
+v10.1.9 (2025-02-14)
+-------------------------
+ * Add channel event UUID and start writing that
+
+v10.1.8 (2025-02-05)
+-------------------------
+ * Use new ctask names
+
+v10.1.7 (2025-02-04)
+-------------------------
+ * Simplify contact fire inserted for timeouts
+
+v10.1.6 (2025-02-03)
+-------------------------
+ * Start using new session field on queued messages
+
+v10.1.5 (2025-01-28)
+-------------------------
+ * Insert contact fire for session timeout
+
+v10.1.4 (2025-01-28)
+-------------------------
+ * Fix initialization of sentry
+
+v10.1.3 (2025-01-27)
+-------------------------
+ * Use session_modified_on instead of session_wait_started_on to gate timeout updates
+
+v10.1.2 (2025-01-14)
+-------------------------
+ * Rename ErrResponseUnexpectedUnlogged to ErrResponseContent
+ * Do not log response check error after 200 status
+
+v10.1.1 (2025-01-09)
+-------------------------
+ * Do not log EX MT response check error
+
+v10.1.0 (2025-01-08)
+-------------------------
+ * Udpate deps including phonenumbers
+
 v10.0.0 (2025-01-07)
 -------------------------
  * Update README.md

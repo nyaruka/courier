@@ -124,7 +124,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create and write the message
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text, form.MessageUUID, clog)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Text, form.MessageUUID, clog)
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
@@ -178,7 +178,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		externalID, err := jsonparser.GetString(respBody, "message_uuid", "[0]")
 		if err != nil {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseContent
 		}
 
 		res.AddExternalID(externalID)

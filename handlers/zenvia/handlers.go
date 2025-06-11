@@ -119,7 +119,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// build our msg
-		msg := h.Backend().NewIncomingMsg(channel, urn, text, payload.Message.ID, clog).WithReceivedOn(date.UTC()).WithContactName(contactName)
+		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, payload.Message.ID, clog).WithReceivedOn(date.UTC()).WithContactName(contactName)
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)
 		}
@@ -242,7 +242,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	externalID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {
-		return courier.ErrResponseUnexpected
+		return courier.ErrResponseContent
 	}
 	res.AddExternalID(externalID)
 	return nil

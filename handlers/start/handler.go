@@ -83,7 +83,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := time.Unix(ts, 0).UTC()
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body.Text, payload.Service.RequestID, clog).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, payload.Body.Text, payload.Service.RequestID, clog).WithReceivedOn(date)
 
 	// and write it
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
@@ -174,7 +174,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		}
 
 		if response.ID == "" {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseContent
 		}
 
 		res.AddExternalID(response.ID)

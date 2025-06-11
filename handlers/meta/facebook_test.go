@@ -454,7 +454,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 		MsgText:         "Are you happy?",
 		MsgURN:          "facebook:12345",
 		MsgOrigin:       courier.MsgOriginBroadcast,
-		MsgQuickReplies: []string{"Yes", "No"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
@@ -471,7 +471,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 		MsgText:         "Are you happy?",
 		MsgURN:          "facebook:12345",
 		MsgOrigin:       courier.MsgOriginBroadcast,
-		MsgQuickReplies: []string{"Yes", "No"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
@@ -487,8 +487,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 		Label:           "Message that exceeds max text length",
 		MsgText:         "This is a long message which spans more than one part, what will actually be sent in the end if we exceed the max length?",
 		MsgURN:          "facebook:12345",
-		MsgQuickReplies: []string{"Yes", "No"},
-		MsgTopic:        "account",
+		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
@@ -498,11 +497,11 @@ var facebookOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Params: url.Values{"access_token": {"a123"}},
-				Body:   `{"messaging_type":"MESSAGE_TAG","tag":"ACCOUNT_UPDATE","recipient":{"id":"12345"},"message":{"text":"This is a long message which spans more than one part, what will actually be sent in the end if"}}`,
+				Body:   `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"text":"This is a long message which spans more than one part, what will actually be sent in the end if"}}`,
 			},
 			{
 				Params: url.Values{"access_token": {"a123"}},
-				Body:   `{"messaging_type":"MESSAGE_TAG","tag":"ACCOUNT_UPDATE","recipient":{"id":"12345"},"message":{"text":"we exceed the max length?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
+				Body:   `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"text":"we exceed the max length?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 			},
 		},
 		ExpectedExtIDs: []string{"mid.133", "mid.133"},
@@ -523,12 +522,11 @@ var facebookOutgoingTests = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
-		Label:           "Text, image attachment, quick replies and explicit message topic",
+		Label:           "Text, image attachment and quick replies",
 		MsgText:         "This is some text.",
 		MsgURN:          "facebook:12345",
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MsgQuickReplies: []string{"Yes", "No"},
-		MsgTopic:        "event",
+		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
@@ -538,11 +536,11 @@ var facebookOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Params: url.Values{"access_token": {"a123"}},
-				Body:   `{"messaging_type":"MESSAGE_TAG","tag":"CONFIRMED_EVENT_UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
+				Body:   `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
 			},
 			{
 				Params: url.Values{"access_token": {"a123"}},
-				Body:   `{"messaging_type":"MESSAGE_TAG","tag":"CONFIRMED_EVENT_UPDATE","recipient":{"id":"12345"},"message":{"text":"This is some text.","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
+				Body:   `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"text":"This is some text.","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 			},
 		},
 		ExpectedExtIDs: []string{"mid.133", "mid.133"},

@@ -147,7 +147,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// build our infobipMessage
-		msg := h.Backend().NewIncomingMsg(channel, urn, text, messageID, clog).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, messageID, clog).WithReceivedOn(date)
 		msgs = append(msgs, msg)
 
 	}
@@ -214,7 +214,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	groupID, err := jsonparser.GetInt(respBody, "messages", "[0]", "status", "groupId")
 	if err != nil || (groupID != 1 && groupID != 3) {
-		return courier.ErrResponseUnexpected
+		return courier.ErrResponseContent
 	}
 
 	externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "messageId")

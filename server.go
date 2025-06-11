@@ -16,8 +16,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -36,7 +38,7 @@ const (
 type Server interface {
 	Config() *Config
 
-	AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.LogType, handlerFunc ChannelHandleFunc)
+	AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.Type, handlerFunc ChannelHandleFunc)
 	GetHandler(Channel) ChannelHandler
 
 	Backend() Backend
@@ -225,7 +227,7 @@ func (s *server) initializeChannelHandlers() {
 	sort.Strings(s.chanRoutes)
 }
 
-func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc, logType clogs.LogType) http.HandlerFunc {
+func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc, logType clogs.Type) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// stuff a few things in our context that help with logging
 		baseCtx := context.WithValue(r.Context(), contextRequestURL, r.URL.String())
@@ -256,10 +258,11 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 
 		defer func() {
 			// catch any panics and recover
-			panicLog := recover()
-			if panicLog != nil {
+			if panicVal := recover(); panicVal != nil {
 				debug.PrintStack()
-				slog.Error("panic handling request", "error", err, "channel_uuid", channelUUID, "request", recorder.Trace.RequestTrace, "trace", panicLog)
+
+				sentry.CurrentHub().Recover(panicVal)
+
 				writeAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
 			}
 		}()
@@ -284,10 +287,8 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			for _, event := range events {
 				switch e := event.(type) {
 				case MsgIn:
-					clog.SetAttached(true)
 					LogMsgReceived(r, e)
 				case StatusUpdate:
-					clog.SetAttached(true)
 					LogMsgStatusReceived(r, e)
 				case ChannelEvent:
 					LogChannelEventReceived(r, e)
@@ -307,7 +308,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 	}
 }
 
-func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.LogType, handlerFunc ChannelHandleFunc) {
+func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.Type, handlerFunc ChannelHandleFunc) {
 	method = strings.ToLower(method)
 	channelType := strings.ToLower(string(handler.ChannelType()))
 
@@ -393,7 +394,8 @@ func (s *server) basicAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if s.config.StatusUsername != "" {
 			user, pass, ok := r.BasicAuth()
-			if !ok || user != s.config.StatusUsername || pass != s.config.StatusPassword {
+
+			if !ok || !utils.SecretEqual(user, s.config.StatusUsername) || !utils.SecretEqual(pass, s.config.StatusPassword) {
 				w.Header().Set("Content-Type", "text/plain")
 				w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
 				w.WriteHeader(http.StatusUnauthorized)
@@ -409,7 +411,7 @@ func (s *server) basicAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 func (s *server) tokenAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") || authHeader[7:] != s.config.AuthToken {
+		if !strings.HasPrefix(authHeader, "Bearer ") || !utils.SecretEqual(authHeader[7:], s.config.AuthToken) {
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorized"))

@@ -1,39 +1,19 @@
 package rapidpro
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
-	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/aws/dynamo"
-	"github.com/nyaruka/gocommon/dbutil"
-	"github.com/nyaruka/gocommon/jsonx"
-	"github.com/nyaruka/gocommon/syncx"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
-const sqlInsertChannelLog = `
-INSERT INTO channels_channellog( uuid,  log_type,  channel_id,  http_logs,  errors,  is_error,  created_on,  elapsed_ms)
-                         VALUES(:uuid, :log_type, :channel_id, :http_logs, :errors, :is_error, :created_on, :elapsed_ms)`
-
-// channel log to be inserted into the database
-type dbChannelLog struct {
-	UUID      clogs.LogUUID     `db:"uuid"`
-	Type      clogs.LogType     `db:"log_type"`
-	ChannelID courier.ChannelID `db:"channel_id"`
-	HTTPLogs  json.RawMessage   `db:"http_logs"`
-	Errors    json.RawMessage   `db:"errors"`
-	IsError   bool              `db:"is_error"`
-	CreatedOn time.Time         `db:"created_on"`
-	ElapsedMS int               `db:"elapsed_ms"`
-}
+const (
+	dynamoChannelLogTTL = 7 * 24 * time.Hour // 1 week
+)
 
 // queues the passed in channel log to a writer
 func queueChannelLog(b *backend, clog *courier.ChannelLog) {
@@ -46,103 +26,48 @@ func queueChannelLog(b *backend, clog *courier.ChannelLog) {
 		return
 	}
 
-	if b.dyLogWriter.Queue(clog.Log) <= 0 {
-		log.With("storage", "dynamo").Error("channel log writer buffer full")
+	dynLog, err := NewDynamoChannelLog(clog)
+	if err != nil {
+		log.Error("error creating dynamo channel log", "error", err)
+		return
 	}
 
-	// if log is not attached to a call or message, need to write it to the database so that it is retrievable
-	if !clog.Attached() {
-		v := &dbChannelLog{
-			UUID:      clog.UUID,
-			Type:      clog.Type,
-			ChannelID: dbChan.ID(),
-			HTTPLogs:  jsonx.MustMarshal(clog.HttpLogs),
-			Errors:    jsonx.MustMarshal(clog.Errors),
-			IsError:   isError,
-			CreatedOn: clog.CreatedOn,
-			ElapsedMS: int(clog.Elapsed / time.Millisecond),
-		}
-		if b.dbLogWriter.Queue(v) <= 0 {
-			log.With("storage", "db").Error("channel log writer buffer full")
-		}
+	if b.dynamoWriter.Queue(dynLog) <= 0 {
+		log.With("storage", "dynamo").Error("channel log writer buffer full")
 	}
 
 	log.Debug("channel log queued")
 }
 
-type DBLogWriter struct {
-	*syncx.Batcher[*dbChannelLog]
-}
+func NewDynamoChannelLog(clog *courier.ChannelLog) (*DynamoItem, error) {
+	key := GetChannelLogKey(clog)
 
-func NewDBLogWriter(db *sqlx.DB, wg *sync.WaitGroup) *DBLogWriter {
-	return &DBLogWriter{
-		Batcher: syncx.NewBatcher(func(batch []*dbChannelLog) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-			defer cancel()
-
-			writeDBChannelLogs(ctx, db, batch)
-		}, 1000, time.Millisecond*500, 1000, wg),
+	type DataGZ struct {
+		HttpLogs []*httpx.Log   `json:"http_logs"`
+		Errors   []*clogs.Error `json:"errors"`
 	}
-}
 
-func writeDBChannelLogs(ctx context.Context, db *sqlx.DB, batch []*dbChannelLog) {
-	err := dbutil.BulkQuery(ctx, db, sqlInsertChannelLog, batch)
-
-	// if we received an error, try again one at a time (in case it is one value hanging us up)
+	dataGZ, err := dynamo.MarshalJSONGZ(&DataGZ{HttpLogs: clog.HttpLogs, Errors: clog.Errors})
 	if err != nil {
-		for _, v := range batch {
-			err = dbutil.BulkQuery(ctx, db, sqlInsertChannelLog, []*dbChannelLog{v})
-			if err != nil {
-				log := slog.With("comp", "db log writer", "log_uuid", v.UUID)
-
-				if qerr := dbutil.AsQueryError(err); qerr != nil {
-					query, params := qerr.Query()
-					log = log.With("sql", query, "sql_params", params)
-				}
-
-				log.Error("error writing channel log", "error", err)
-			}
-		}
+		return nil, fmt.Errorf("error encoding http logs as JSON+GZip: %w", err)
 	}
+
+	return &DynamoItem{
+		DynamoKey: key,
+		OrgID:     int(clog.Channel().(*Channel).OrgID()),
+		TTL:       clog.CreatedOn.Add(dynamoChannelLogTTL),
+		Data: map[string]any{
+			"type":       clog.Type,
+			"elapsed_ms": int(clog.Elapsed / time.Millisecond),
+			"created_on": clog.CreatedOn,
+			"is_error":   clog.IsError(),
+		},
+		DataGZ: dataGZ,
+	}, nil
 }
 
-type DynamoLogWriter struct {
-	*syncx.Batcher[*clogs.Log]
-}
-
-func NewDynamoLogWriter(dy *dynamo.Service, wg *sync.WaitGroup) *DynamoLogWriter {
-	return &DynamoLogWriter{
-		Batcher: syncx.NewBatcher(func(batch []*clogs.Log) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-			defer cancel()
-
-			if err := writeDynamoChannelLogs(ctx, dy, batch); err != nil {
-				slog.Error("error writing logs to dynamo", "error", err)
-			}
-		}, 25, time.Millisecond*500, 1000, wg),
-	}
-}
-
-func writeDynamoChannelLogs(ctx context.Context, ds *dynamo.Service, batch []*clogs.Log) error {
-	writeReqs := make([]types.WriteRequest, len(batch))
-
-	for i, l := range batch {
-		d, err := l.MarshalDynamo()
-		if err != nil {
-			return fmt.Errorf("error marshalling log for dynamo: %w", err)
-		}
-		writeReqs[i] = types.WriteRequest{PutRequest: &types.PutRequest{Item: d}}
-	}
-
-	resp, err := ds.Client.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
-		RequestItems: map[string][]types.WriteRequest{ds.TableName("ChannelLogs"): writeReqs},
-	})
-	if err != nil {
-		return err
-	}
-	if len(resp.UnprocessedItems) > 0 {
-		// TODO shouldn't happend.. but need to figure out how we would retry these
-		slog.Error("unprocessed items writing logs to dynamo", "count", len(resp.UnprocessedItems))
-	}
-	return nil
+func GetChannelLogKey(l *courier.ChannelLog) DynamoKey {
+	pk := fmt.Sprintf("cha#%s#%s", l.Channel().UUID(), l.UUID[len(l.UUID)-1:]) // 16 buckets for each channel
+	sk := fmt.Sprintf("log#%s", l.UUID)
+	return DynamoKey{PK: pk, SK: sk}
 }

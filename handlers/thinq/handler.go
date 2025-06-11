@@ -74,12 +74,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	var msg courier.MsgIn
 
 	if form.Type == "sms" {
-		msg = h.Backend().NewIncomingMsg(channel, urn, form.Message, "", clog)
+		msg = h.Backend().NewIncomingMsg(ctx, channel, urn, form.Message, "", clog)
 	} else if form.Type == "mms" {
 		if strings.HasPrefix(form.Message, "http://") || strings.HasPrefix(form.Message, "https://") {
-			msg = h.Backend().NewIncomingMsg(channel, urn, "", "", clog).WithAttachment(form.Message)
+			msg = h.Backend().NewIncomingMsg(ctx, channel, urn, "", "", clog).WithAttachment(form.Message)
 		} else {
-			msg = h.Backend().NewIncomingMsg(channel, urn, "", "", clog).WithAttachment("data:" + form.Message)
+			msg = h.Backend().NewIncomingMsg(ctx, channel, urn, "", "", clog).WithAttachment("data:" + form.Message)
 		}
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown message type: %s", form.Type))
@@ -173,7 +173,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		externalID, err := jsonparser.GetString(respBody, "guid")
 		if err != nil {
 			clog.Error(courier.ErrorResponseValueMissing("guid"))
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseContent
 		}
 
 		res.AddExternalID(externalID)
@@ -207,7 +207,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			externalID, err := jsonparser.GetString(respBody, "guid")
 			if err != nil {
 				clog.Error(courier.ErrorResponseValueMissing("guid"))
-				return courier.ErrResponseUnexpected
+				return courier.ErrResponseContent
 			}
 
 			res.AddExternalID(externalID)

@@ -69,7 +69,7 @@ type IncomingTestCase struct {
 	ExpectedMsgID         int64
 	ExpectedStatuses      []ExpectedStatus
 	ExpectedEvents        []ExpectedEvent
-	ExpectedErrors        []*clogs.LogError
+	ExpectedErrors        []*clogs.Error
 	NoLogsExpected        bool
 }
 
@@ -228,7 +228,7 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 				if assert.Equal(t, 1, len(mb.WrittenChannelLogs()), "expected a channel log") {
 
 					clog := mb.WrittenChannelLogs()[0]
-					assert.Equal(t, append([]*clogs.LogError{}, tc.ExpectedErrors...), clog.Errors, "unexpected errors logged")
+					assert.Equal(t, append([]*clogs.Error{}, tc.ExpectedErrors...), clog.Errors, "unexpected errors logged")
 				}
 			}
 		})
@@ -299,9 +299,8 @@ type OutgoingTestCase struct {
 	MsgURN                  string
 	MsgURNAuth              string
 	MsgAttachments          []string
-	MsgQuickReplies         []string
+	MsgQuickReplies         []courier.QuickReply
 	MsgLocale               i18n.Locale
-	MsgTopic                string
 	MsgTemplating           string
 	MsgHighPriority         bool
 	MsgResponseToExternalID string
@@ -316,7 +315,7 @@ type OutgoingTestCase struct {
 	ExpectedRequests    []ExpectedRequest
 	ExpectedExtIDs      []string
 	ExpectedError       error
-	ExpectedLogErrors   []*clogs.LogError
+	ExpectedLogErrors   []*clogs.Error
 	ExpectedContactURNs map[string]bool
 	ExpectedNewURN      string
 }
@@ -328,7 +327,7 @@ func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch courier.Channel) courie
 		msgOrigin = tc.MsgOrigin
 	}
 
-	m := mb.NewOutgoingMsg(ch, 10, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgTopic, tc.MsgResponseToExternalID, msgOrigin, tc.MsgContactLastSeenOn).(*test.MockMsg)
+	m := mb.NewOutgoingMsg(ch, 10, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgResponseToExternalID, msgOrigin, tc.MsgContactLastSeenOn).(*test.MockMsg)
 	m.WithLocale(tc.MsgLocale)
 	m.WithUserID(tc.MsgUserID)
 
@@ -409,12 +408,12 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 
 			assert.Equal(t, tc.ExpectedExtIDs, externalIDs, "external IDs mismatch")
 			assert.Equal(t, tc.ExpectedError, serr, "send method error mismatch")
-			assert.Equal(t, append([]*clogs.LogError{}, tc.ExpectedLogErrors...), clog.Errors, "channel log errors mismatch")
+			assert.Equal(t, append([]*clogs.Error{}, tc.ExpectedLogErrors...), clog.Errors, "channel log errors mismatch")
 
 			if tc.ExpectedContactURNs != nil {
 				var contactUUID courier.ContactUUID
 				for urn, shouldBePresent := range tc.ExpectedContactURNs {
-					contact, _ := mb.GetContact(ctx, channel, urns.URN(urn), nil, "", clog)
+					contact, _ := mb.GetContact(ctx, channel, urns.URN(urn), nil, "", true, clog)
 					if contactUUID == courier.NilContactUUID && shouldBePresent {
 						contactUUID = contact.UUID()
 					}

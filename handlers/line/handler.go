@@ -154,7 +154,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid line id"))
 		}
 
-		msg := h.Backend().NewIncomingMsg(channel, urn, text, lineEvent.ReplyToken, clog).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, lineEvent.ReplyToken, clog).WithReceivedOn(date)
 
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)
@@ -335,8 +335,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			for j, qr := range qrs {
 				items[j] = QuickReplyItem{Type: "action"}
 				items[j].Action.Type = "message"
-				items[j].Action.Label = qr
-				items[j].Action.Text = qr
+				items[j].Action.Label = qr.Text
+				items[j].Action.Text = qr.Text
 			}
 			if len(items) > 0 {
 				mtTextMsg.QuickReply = &mtQuickReply{Items: items}

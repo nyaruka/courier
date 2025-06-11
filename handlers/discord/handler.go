@@ -95,7 +95,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, "", clog).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, "", clog).WithReceivedOn(date)
 
 	for _, attachment := range r.Form["attachments"] {
 		msg.WithAttachment(attachment)
@@ -171,7 +171,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		To:           msg.URN().Path(),
 		Channel:      string(msg.Channel().UUID()),
 		Attachments:  attachmentURLs,
-		QuickReplies: msg.QuickReplies(),
+		QuickReplies: handlers.TextOnlyQuickReplies(msg.QuickReplies()),
 	}
 
 	var body io.Reader

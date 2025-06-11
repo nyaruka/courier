@@ -100,7 +100,7 @@ func (mb *MockBackend) DeleteMsgByExternalID(ctx context.Context, channel courie
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.MsgIn {
+func (mb *MockBackend) NewIncomingMsg(ctx context.Context, channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.MsgIn {
 	m := &MockMsg{
 		channel: channel, urn: urn, text: text, externalID: extID,
 	}
@@ -115,8 +115,8 @@ func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, tex
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, id courier.MsgID, urn urns.URN, text string, highPriority bool, quickReplies []string,
-	topic string, responseToExternalID string, origin courier.MsgOrigin, contactLastSeenOn *time.Time) courier.MsgOut {
+func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, id courier.MsgID, urn urns.URN, text string, highPriority bool, quickReplies []courier.QuickReply,
+	responseToExternalID string, origin courier.MsgOrigin, contactLastSeenOn *time.Time) courier.MsgOut {
 
 	return &MockMsg{
 		channel:              channel,
@@ -125,7 +125,6 @@ func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, id courier.MsgID,
 		text:                 text,
 		highPriority:         highPriority,
 		quickReplies:         quickReplies,
-		topic:                topic,
 		responseToExternalID: responseToExternalID,
 		origin:               origin,
 		contactLastSeenOn:    contactLastSeenOn,
@@ -299,9 +298,13 @@ func (mb *MockBackend) GetChannelByAddress(ctx context.Context, cType courier.Ch
 }
 
 // GetContact creates a new contact with the passed in channel and URN
-func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, urn urns.URN, authTokens map[string]string, name string, clog *courier.ChannelLog) (courier.Contact, error) {
+func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *courier.ChannelLog) (courier.Contact, error) {
 	contact, found := mb.contacts[urn]
 	if !found {
+		if !allowCreate {
+			return nil, nil
+		}
+
 		contact = &mockContact{channel, urn, authTokens, courier.ContactUUID(uuids.NewV4())}
 		mb.contacts[urn] = contact
 	}

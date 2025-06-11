@@ -37,13 +37,6 @@ var (
 		369239343222814: "👍", // medium
 		369239383222810: "👍", // big
 	}
-
-	tagByTopic = map[string]string{
-		"event":    "CONFIRMED_EVENT_UPDATE",
-		"purchase": "POST_PURCHASE_UPDATE",
-		"account":  "ACCOUNT_UPDATE",
-		"agent":    "HUMAN_AGENT",
-	}
 )
 
 // keys for extra in channel events
@@ -87,7 +80,7 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 
 	// verify the token against our secret, if the same return the challenge FB sent us
 	secret := r.URL.Query().Get("hub.verify_token")
-	if secret != channel.StringConfigForKey(courier.ConfigSecret, "") {
+	if !utils.SecretEqual(secret, channel.StringConfigForKey(courier.ConfigSecret, "")) {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("token does not match secret"))
 	}
 
@@ -390,7 +383,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			}
 
 			// create our message
-			event := h.Backend().NewIncomingMsg(channel, urn, text, msg.Message.MID, clog).WithReceivedOn(date)
+			event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, msg.Message.MID, clog).WithReceivedOn(date)
 
 			// add any attachment URL found
 			for _, attURL := range attachmentURLs {
@@ -476,15 +469,11 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	if accessToken == "" {
 		return courier.ErrChannelConfig
 	}
-	topic := msg.Topic()
 	payload := mtPayload{}
 
 	// set our message type
 	if msg.ResponseToExternalID() != "" {
 		payload.MessagingType = "RESPONSE"
-	} else if topic != "" {
-		payload.MessagingType = "MESSAGE_TAG"
-		payload.Tag = tagByTopic[topic]
 	} else {
 		payload.MessagingType = "NON_PROMOTIONAL_SUBSCRIPTION" // only allowed until Jan 15, 2020
 	}
@@ -530,7 +519,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		// include any quick replies on the last piece we send
 		if i == (len(msgParts)+len(msg.Attachments()))-1 {
 			for _, qr := range msg.QuickReplies() {
-				payload.Message.QuickReplies = append(payload.Message.QuickReplies, mtQuickReply{qr, qr, "text"})
+				payload.Message.QuickReplies = append(payload.Message.QuickReplies, mtQuickReply{qr.Text, qr.Text, "text"})
 			}
 		} else {
 			payload.Message.QuickReplies = nil
@@ -572,7 +561,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 				clog.RawError(fmt.Errorf("unable to make facebook urn from %s", recipientID))
 			}
 
-			contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", clog)
+			contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", true, clog)
 			if err != nil {
 				clog.RawError(fmt.Errorf("unable to get contact for %s", msg.URN().String()))
 			}

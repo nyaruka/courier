@@ -313,7 +313,7 @@ var longSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Long Send",
 		MsgText: "This is a long message that will be longer than 30....... characters", MsgURN: "tel:+250788383383",
-		MsgQuickReplies: []string{"One"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "One"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://example.com/send*": {
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
@@ -627,7 +627,7 @@ var jsonSendTestCases = []OutgoingTestCase{
 		Label:           "Send Quick Replies",
 		MsgText:         "Some message",
 		MsgURN:          "tel:+250788383383",
-		MsgQuickReplies: []string{"One", "Two", "Three"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "One"}, {Text: "Two"}, {Text: "Three"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://example.com/send": {
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
@@ -645,7 +645,7 @@ var jsonLongSendTestCases = []OutgoingTestCase{
 		Label:           "Send Long message JSON",
 		MsgText:         "This is a long message that will be longer than 30....... characters",
 		MsgURN:          "tel:+250788383383",
-		MsgQuickReplies: []string{"One", "Two", "Three"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "One"}, {Text: "Two"}, {Text: "Three"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*": {
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
@@ -733,7 +733,7 @@ var xmlSendTestCases = []OutgoingTestCase{
 		Label:           "Send Quick Replies",
 		MsgText:         "Some message",
 		MsgURN:          "tel:+250788383383",
-		MsgQuickReplies: []string{"One", "Two", "Three"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "One"}, {Text: "Two"}, {Text: "Three"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://example.com/send": {
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
@@ -751,7 +751,7 @@ var xmlLongSendTestCases = []OutgoingTestCase{
 		Label:           "Send Long message XML",
 		MsgText:         "This is a long message that will be longer than 30....... characters",
 		MsgURN:          "tel:+250788383383",
-		MsgQuickReplies: []string{"One", "Two", "Three"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "One"}, {Text: "Two"}, {Text: "Three"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*": {
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
@@ -834,7 +834,7 @@ var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:          "Send Attachment",
@@ -855,7 +855,7 @@ var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
 		Label:           "Send Quick Replies",
 		MsgText:         "Some message",
 		MsgURN:          "tel:+250788383383",
-		MsgQuickReplies: []string{"One", "Two", "Three"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "One"}, {Text: "Two"}, {Text: "Three"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://example.com/send": {
 				httpx.NewMockResponse(200, nil, []byte(`<return>0</return>`)),

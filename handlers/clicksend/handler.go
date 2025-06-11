@@ -93,14 +93,14 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		s, _ := jsonparser.GetString(respBody, "data", "messages", "[0]", "status")
 		if s != "SUCCESS" {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseContent
 		}
 
 		id, _ := jsonparser.GetString(respBody, "data", "messages", "[0]", "message_id")
 		if id != "" {
 			res.AddExternalID(id)
 		} else {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseContent
 		}
 	}
 

@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/buger/jsonparser"
 	filetype "github.com/h2non/filetype"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
@@ -45,24 +44,22 @@ const (
 
 // Msg is our base struct to represent msgs both in our JSON and db representations
 type Msg struct {
-	OrgID_        OrgID               `json:"org_id"          db:"org_id"`
-	ID_           courier.MsgID       `json:"id"              db:"id"`
-	UUID_         courier.MsgUUID     `json:"uuid"            db:"uuid"`
-	Direction_    MsgDirection        `                       db:"direction"`
-	Status_       courier.MsgStatus   `                       db:"status"`
-	Visibility_   MsgVisibility       `                       db:"visibility"`
-	HighPriority_ bool                `json:"high_priority"   db:"high_priority"`
-	Text_         string              `json:"text"            db:"text"`
-	Attachments_  pq.StringArray      `json:"attachments"     db:"attachments"`
-	QuickReplies_ pq.StringArray      `json:"quick_replies"   db:"quick_replies"`
-	Locale_       null.String         `json:"locale"          db:"locale"`
-	Templating_   *courier.Templating `json:"templating"      db:"templating"`
-	ExternalID_   null.String         `                       db:"external_id"`
-	Metadata_     json.RawMessage     `json:"metadata"        db:"metadata"`
-
-	ChannelID_    courier.ChannelID `                       db:"channel_id"`
-	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
-	ContactURNID_ ContactURNID      `json:"contact_urn_id"  db:"contact_urn_id"`
+	OrgID_        OrgID                `json:"org_id"          db:"org_id"`
+	ID_           courier.MsgID        `json:"id"              db:"id"`
+	UUID_         courier.MsgUUID      `json:"uuid"            db:"uuid"`
+	Direction_    MsgDirection         `                       db:"direction"`
+	Status_       courier.MsgStatus    `                       db:"status"`
+	Visibility_   MsgVisibility        `                       db:"visibility"`
+	HighPriority_ bool                 `json:"high_priority"   db:"high_priority"`
+	Text_         string               `json:"text"            db:"text"`
+	Attachments_  pq.StringArray       `json:"attachments"     db:"attachments"`
+	QuickReplies_ []courier.QuickReply `json:"quick_replies"`
+	Locale_       null.String          `json:"locale"          db:"locale"`
+	Templating_   *courier.Templating  `json:"templating"      db:"templating"`
+	ExternalID_   null.String          `                       db:"external_id"`
+	ChannelID_    courier.ChannelID    `                       db:"channel_id"`
+	ContactID_    ContactID            `json:"contact_id"      db:"contact_id"`
+	ContactURNID_ ContactURNID         `json:"contact_urn_id"  db:"contact_urn_id"`
 
 	MessageCount_ int         `                     db:"msg_count"`
 	ErrorCount_   int         `                     db:"error_count"`
@@ -85,12 +82,7 @@ type Msg struct {
 	UserID_               courier.UserID          `json:"user_id"`
 	Origin_               courier.MsgOrigin       `json:"origin"`
 	ContactLastSeenOn_    *time.Time              `json:"contact_last_seen_on"`
-
-	// extra fields used to allow courier to update a session's timeout to *after* the message has been sent
-	SessionID_            SessionID  `json:"session_id"`
-	SessionTimeout_       int        `json:"session_timeout"`
-	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on"`
-	SessionStatus_        string     `json:"session_status"`
+	Session_              *courier.Session        `json:"session"`
 
 	ContactName_   string            `json:"contact_name"`
 	URNAuthTokens_ map[string]string `json:"auth_tokens"`
@@ -106,7 +98,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 
 	return &Msg{
 		OrgID_:        dbChannel.OrgID(),
-		UUID_:         courier.MsgUUID(uuids.NewV4()),
+		UUID_:         courier.MsgUUID(uuids.NewV7()),
 		Direction_:    direction,
 		Status_:       courier.MsgStatusPending,
 		Visibility_:   MsgVisible,
@@ -140,30 +132,20 @@ func (m *Msg) URN() urns.URN            { return m.URN_ }
 func (m *Msg) Channel() courier.Channel { return m.channel }
 
 // outgoing specific
-func (m *Msg) QuickReplies() []string          { return m.QuickReplies_ }
-func (m *Msg) Locale() i18n.Locale             { return i18n.Locale(string(m.Locale_)) }
-func (m *Msg) Templating() *courier.Templating { return m.Templating_ }
-func (m *Msg) URNAuth() string                 { return m.URNAuth_ }
-func (m *Msg) Origin() courier.MsgOrigin       { return m.Origin_ }
-func (m *Msg) ContactLastSeenOn() *time.Time   { return m.ContactLastSeenOn_ }
-func (m *Msg) Topic() string {
-	if m.Metadata_ == nil {
-		return ""
-	}
-	topic, _, _, _ := jsonparser.Get(m.Metadata_, "topic")
-	return string(topic)
-}
-func (m *Msg) Metadata() json.RawMessage {
-	return m.Metadata_
-}
-func (m *Msg) ResponseToExternalID() string   { return m.ResponseToExternalID_ }
-func (m *Msg) SentOn() *time.Time             { return m.SentOn_ }
-func (m *Msg) IsResend() bool                 { return m.IsResend_ }
-func (m *Msg) Flow() *courier.FlowReference   { return m.Flow_ }
-func (m *Msg) OptIn() *courier.OptInReference { return m.OptIn_ }
-func (m *Msg) UserID() courier.UserID         { return m.UserID_ }
-func (m *Msg) SessionStatus() string          { return m.SessionStatus_ }
-func (m *Msg) HighPriority() bool             { return m.HighPriority_ }
+func (m *Msg) QuickReplies() []courier.QuickReply { return m.QuickReplies_ }
+func (m *Msg) Locale() i18n.Locale                { return i18n.Locale(string(m.Locale_)) }
+func (m *Msg) Templating() *courier.Templating    { return m.Templating_ }
+func (m *Msg) URNAuth() string                    { return m.URNAuth_ }
+func (m *Msg) Origin() courier.MsgOrigin          { return m.Origin_ }
+func (m *Msg) ContactLastSeenOn() *time.Time      { return m.ContactLastSeenOn_ }
+func (m *Msg) ResponseToExternalID() string       { return m.ResponseToExternalID_ }
+func (m *Msg) SentOn() *time.Time                 { return m.SentOn_ }
+func (m *Msg) IsResend() bool                     { return m.IsResend_ }
+func (m *Msg) Flow() *courier.FlowReference       { return m.Flow_ }
+func (m *Msg) OptIn() *courier.OptInReference     { return m.OptIn_ }
+func (m *Msg) UserID() courier.UserID             { return m.UserID_ }
+func (m *Msg) Session() *courier.Session          { return m.Session_ }
+func (m *Msg) HighPriority() bool                 { return m.HighPriority_ }
 
 // incoming specific
 func (m *Msg) ReceivedOn() *time.Time { return m.SentOn_ }
@@ -236,7 +218,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.MsgIn, clog *courier.
 	}
 
 	// mark this msg as having been seen
-	b.recordMsgReceived(m)
+	b.recordMsgReceived(ctx, m)
 
 	return err
 }
@@ -250,7 +232,7 @@ INSERT INTO
 RETURNING id`
 
 func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.ChannelLog) error {
-	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, clog)
+	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 
 	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
@@ -325,7 +307,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 //-----------------------------------------------------------------------------
 
 // checks to see if this message has already been received and if so returns its UUID
-func (b *backend) checkMsgAlreadyReceived(msg *Msg) courier.MsgUUID {
+func (b *backend) checkMsgAlreadyReceived(ctx context.Context, msg *Msg) courier.MsgUUID {
 	rc := b.rp.Get()
 	defer rc.Close()
 
@@ -333,14 +315,14 @@ func (b *backend) checkMsgAlreadyReceived(msg *Msg) courier.MsgUUID {
 	if msg.ExternalID_ != "" {
 		fingerprint := fmt.Sprintf("%s|%s|%s", msg.Channel().UUID(), msg.URN().Identity(), msg.ExternalID())
 
-		if uuid, _ := b.receivedExternalIDs.Get(rc, fingerprint); uuid != "" {
+		if uuid, _ := b.receivedExternalIDs.Get(ctx, rc, fingerprint); uuid != "" {
 			return courier.MsgUUID(uuid)
 		}
 	} else {
 		// otherwise de-dup based on text received from that channel+urn since last send
 		fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
 
-		if uuidAndHash, _ := b.receivedMsgs.Get(rc, fingerprint); uuidAndHash != "" {
+		if uuidAndHash, _ := b.receivedMsgs.Get(ctx, rc, fingerprint); uuidAndHash != "" {
 			prevUUID := uuidAndHash[:36]
 			prevHash := uuidAndHash[37:]
 
@@ -355,33 +337,33 @@ func (b *backend) checkMsgAlreadyReceived(msg *Msg) courier.MsgUUID {
 }
 
 // records that the given message has been received and written to the database
-func (b *backend) recordMsgReceived(msg *Msg) {
+func (b *backend) recordMsgReceived(ctx context.Context, msg *Msg) {
 	rc := b.rp.Get()
 	defer rc.Close()
 
 	if msg.ExternalID_ != "" {
 		fingerprint := fmt.Sprintf("%s|%s|%s", msg.Channel().UUID(), msg.URN().Identity(), msg.ExternalID())
 
-		if err := b.receivedExternalIDs.Set(rc, fingerprint, string(msg.UUID())); err != nil {
+		if err := b.receivedExternalIDs.Set(ctx, rc, fingerprint, string(msg.UUID())); err != nil {
 			slog.Error("error recording received external id", "msg", msg.UUID(), "error", err)
 		}
 	} else {
 		fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
 
-		if err := b.receivedMsgs.Set(rc, fingerprint, fmt.Sprintf("%s|%s", msg.UUID(), msg.hash())); err != nil {
+		if err := b.receivedMsgs.Set(ctx, rc, fingerprint, fmt.Sprintf("%s|%s", msg.UUID(), msg.hash())); err != nil {
 			slog.Error("error recording received msg", "msg", msg.UUID(), "error", err)
 		}
 	}
 }
 
 // clearMsgSeen clears our seen incoming messages for the passed in channel and URN
-func (b *backend) clearMsgSeen(msg *Msg) {
+func (b *backend) clearMsgSeen(ctx context.Context, msg *Msg) {
 	rc := b.rp.Get()
 	defer rc.Close()
 
 	fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
 
-	if err := b.receivedMsgs.Del(rc, fingerprint); err != nil {
+	if err := b.receivedMsgs.Del(ctx, rc, fingerprint); err != nil {
 		slog.Error("error clearing received msgs", "urn", msg.URN().Identity(), "error", err)
 	}
 }

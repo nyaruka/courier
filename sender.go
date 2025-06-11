@@ -83,13 +83,22 @@ var ErrConnectionThrottled error = &SendError{
 	clogMsg:   "Connection to server has been rate limited.",
 }
 
-// ErrResponseStatus should be returned when channel the response has a non-success status code
+// ErrResponseStatus should be returned when the response from the channel has a non-success status code
 var ErrResponseStatus error = &SendError{
 	msg:       "response status code",
 	retryable: false,
 	loggable:  false,
 	clogCode:  "response_status",
 	clogMsg:   "Response has non-success status code.",
+}
+
+// ErrResponseContent should be returned when the response content from the channel indicates non-succeess
+var ErrResponseContent error = &SendError{
+	msg:       "response content",
+	retryable: false,
+	loggable:  false,
+	clogCode:  "response_content",
+	clogMsg:   "Response content indicates non-success.",
 }
 
 // ErrResponseUnparseable should be returned when channel response can't be parsed in expected format
@@ -269,7 +278,6 @@ func (w *Sender) Stop() {
 }
 
 func (w *Sender) sendMessage(msg MsgOut) {
-
 	log := slog.With("comp", "sender", "sender_id", w.id, "channel_uuid", msg.Channel().UUID())
 
 	server := w.foreman.server
@@ -326,20 +334,18 @@ func (w *Sender) sendMessage(msg MsgOut) {
 		status = w.sendByHandler(sendCTX, handler, msg, clog, log)
 	}
 
-	// we allot 10 seconds to write our status to the db
-	writeCTX, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	// we allot 15 seconds to write our status to the db
+	writeCTX, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	err = backend.WriteStatusUpdate(writeCTX, status)
-	if err != nil {
+	if err := backend.WriteStatusUpdate(writeCTX, status); err != nil {
 		log.Info("error writing msg status", "error", err)
 	}
 
 	clog.End()
 
 	// write our logs as well
-	err = backend.WriteChannelLog(writeCTX, clog)
-	if err != nil {
+	if err := backend.WriteChannelLog(writeCTX, clog); err != nil {
 		log.Info("error writing msg logs", "error", err)
 	}
 
@@ -377,7 +383,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 			status.SetStatus(MsgStatusFailed)
 		}
 
-		clog.Error(clogs.NewLogError(serr.clogCode, serr.clogExtCode, serr.clogMsg))
+		clog.Error(&clogs.Error{Code: serr.clogCode, ExtCode: serr.clogExtCode, Message: serr.clogMsg})
 
 		// if handler returned ErrContactStopped need to write a stop event
 		if serr == ErrContactStopped {
@@ -392,7 +398,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 
 		status.SetStatus(MsgStatusErrored)
 
-		clog.Error(clogs.NewLogError("internal_error", "", "An internal error occured."))
+		clog.Error(&clogs.Error{Code: "internal_error", Message: "An internal error occured."})
 	}
 
 	return status

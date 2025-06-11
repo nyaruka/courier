@@ -17,6 +17,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
@@ -196,7 +197,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	// check shared secret key before proceeding
 	secret := channel.StringConfigForKey(courier.ConfigSecret, "")
 
-	if payload.SecretKey != secret {
+	if !utils.SecretEqual(payload.SecretKey, secret) {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("wrong secret key"))
 	}
 	// check event type and decode body to correspondent struct
@@ -241,7 +242,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := time.Unix(payload.Object.Message.Date, 0).UTC()
 	text := payload.Object.Message.Text
 	externalId := strconv.FormatInt(payload.Object.Message.Id, 10)
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, externalId, clog).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, externalId, clog).WithReceivedOn(date)
 
 	if attachment := takeFirstAttachmentUrl(*payload); attachment != "" {
 		msg.WithAttachment(attachment)
@@ -406,7 +407,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	externalMsgId, err := jsonparser.GetInt(respBody, responseOutgoingMessageKey)
 	if err != nil {
-		return courier.ErrResponseUnexpected
+		return courier.ErrResponseContent
 	}
 
 	res.AddExternalID(strconv.FormatInt(externalMsgId, 10))

@@ -199,7 +199,7 @@ var sendAPIkeyTestCases = []OutgoingTestCase{
 		MsgText:         "Simple Message",
 		MsgURN:          "fcm:250788123123",
 		MsgURNAuth:      "auth1",
-		MsgQuickReplies: []string{"yes", "no"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "yes"}, {Text: "no"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://fcm.googleapis.com/fcm/send": {
@@ -226,7 +226,7 @@ var sendAPIkeyTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "key=FCMKey"},
 			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:      "No Multicast ID",
@@ -242,7 +242,7 @@ var sendAPIkeyTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "key=FCMKey"},
 			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:      "Request Error",
@@ -326,7 +326,7 @@ var sendTestCases = []OutgoingTestCase{
 		MsgText:         "Simple Message",
 		MsgURN:          "fcm:250788123123",
 		MsgURNAuth:      "auth1",
-		MsgQuickReplies: []string{"yes", "no"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "yes"}, {Text: "no"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
@@ -353,7 +353,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
 			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:      "No Multicast ID",
@@ -369,7 +369,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
 			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:      "Request Error",
@@ -386,6 +386,54 @@ var sendTestCases = []OutgoingTestCase{
 			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
 		ExpectedError: courier.ErrConnectionFailed,
+	},
+	{
+		Label:      "Response Unexpected",
+		MsgText:    "Simple Message",
+		MsgURN:     "fcm:250788123123",
+		MsgURNAuth: "auth1",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"missing_name":"projects/foo-project-id/messages/123456-a"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
+		}},
+		ExpectedError: courier.ErrResponseContent,
+	},
+	{
+		Label:      "Response Unexpected",
+		MsgText:    "Simple Message",
+		MsgURN:     "fcm:250788123123",
+		MsgURNAuth: "auth1",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"name":"projects/not-our-project-id/messages/123456-a"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
+		}},
+		ExpectedError: courier.ErrResponseContent,
+	},
+	{
+		Label:      "Response Unexpected",
+		MsgText:    "Simple Message",
+		MsgURN:     "fcm:250788123123",
+		MsgURNAuth: "auth1",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"name":"projects/foo-project-id/messages/"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":"10","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
+		}},
+		ExpectedError: courier.ErrResponseContent,
 	},
 }
 

@@ -59,7 +59,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Message, "", clog)
+	dbMsg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Message, "", clog)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{dbMsg}, w, r, clog)
@@ -108,8 +108,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		}
 
 		if !strings.Contains(string(respBody), "Success") {
-			clog.Error(clogs.NewLogError("", "", "Received invalid response content: %s", string(respBody)))
-			return courier.ErrResponseUnexpected
+			clog.Error(&clogs.Error{Message: fmt.Sprintf("Received invalid response content: %s", string(respBody))})
+			return courier.ErrResponseContent
 		}
 	}
 

@@ -206,6 +206,23 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 	},
+	{
+		Label:   "Response unexpected",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"code":"001","desc":"Database SQL Error"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-Type": "application/json"},
+				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Simple Message"}`,
+			},
+		},
+		ExpectedError: courier.ErrResponseContent,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

@@ -16,6 +16,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -210,7 +211,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, "", clog).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, "", clog).WithReceivedOn(date)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
@@ -298,7 +299,10 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			"from":           channel.Address(),
 			"from_no_plus":   strings.TrimPrefix(channel.Address(), "+"),
 			"channel":        string(channel.UUID()),
-			"session_status": msg.SessionStatus(),
+			"session_status": "",
+		}
+		if msg.Session() != nil {
+			form["session_status"] = msg.Session().Status
 		}
 
 		useNationalStr := channel.ConfigForKey(courier.ConfigUseNational, false)
@@ -325,7 +329,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		if i == len(parts)-1 {
 			formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentURLEncoded)
 		} else {
-			formEncoded["quick_replies"] = buildQuickRepliesResponse([]string{}, sendMethod, contentURLEncoded)
+			formEncoded["quick_replies"] = buildQuickRepliesResponse([]courier.QuickReply{}, sendMethod, contentURLEncoded)
 		}
 		url := replaceVariables(sendURL, formEncoded)
 
@@ -336,7 +340,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			if i == len(parts)-1 {
 				formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentType)
 			} else {
-				formEncoded["quick_replies"] = buildQuickRepliesResponse([]string{}, sendMethod, contentType)
+				formEncoded["quick_replies"] = buildQuickRepliesResponse([]courier.QuickReply{}, sendMethod, contentType)
 			}
 			body = strings.NewReader(replaceVariables(sendBody, formEncoded))
 		}
@@ -366,7 +370,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		}
 
 		if responseCheck != "" && !strings.Contains(string(respBody), responseCheck) {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseContent
 		}
 	}
 
@@ -378,18 +382,17 @@ type quickReplyXMLItem struct {
 	Value   string   `xml:",chardata"`
 }
 
-func buildQuickRepliesResponse(quickReplies []string, sendMethod string, contentType string) string {
+func buildQuickRepliesResponse(quickReplies []courier.QuickReply, sendMethod string, contentType string) string {
 	if quickReplies == nil {
-		quickReplies = []string{}
+		quickReplies = []courier.QuickReply{}
 	}
 	if (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentJSON {
-		marshalled, _ := json.Marshal(quickReplies)
-		return string(marshalled)
+		return string(jsonx.MustMarshal(handlers.TextOnlyQuickReplies(quickReplies)))
 	} else if (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentXML {
 		items := make([]quickReplyXMLItem, len(quickReplies))
 
 		for i, v := range quickReplies {
-			items[i] = quickReplyXMLItem{Value: v}
+			items[i] = quickReplyXMLItem{Value: v.Text}
 		}
 		marshalled, _ := xml.Marshal(items)
 		return string(marshalled)
@@ -397,8 +400,8 @@ func buildQuickRepliesResponse(quickReplies []string, sendMethod string, content
 		response := bytes.Buffer{}
 
 		for _, reply := range quickReplies {
-			reply = url.QueryEscape(reply)
-			response.WriteString(fmt.Sprintf("&quick_reply=%s", reply))
+			reply.Text = url.QueryEscape(reply.Text)
+			response.WriteString(fmt.Sprintf("&quick_reply=%s", reply.Text))
 		}
 		return response.String()
 	}

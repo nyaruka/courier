@@ -23,8 +23,10 @@ var (
 )
 
 const (
-	configAccountID     = "account_id"
-	configApplicationID = "application_id"
+	configAccountID        = "account_id"
+	configMsgApplicationID = "messaging_application_id"
+
+	oldApplicationID = "application_id"
 )
 
 func init() {
@@ -96,7 +98,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, messagePayload.Message.Text, messagePayload.Message.ID, clog).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, messagePayload.Message.Text, messagePayload.Message.ID, clog).WithReceivedOn(date)
 
 	for _, attURL := range messagePayload.Message.Media {
 		msg.WithAttachment(attURL)
@@ -177,7 +179,10 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
-	applicationID := msg.Channel().StringConfigForKey(configApplicationID, "")
+	applicationID := msg.Channel().StringConfigForKey(configMsgApplicationID, "")
+	if applicationID == "" {
+		applicationID = msg.Channel().StringConfigForKey(oldApplicationID, "")
+	}
 
 	if username == "" || password == "" || accountID == "" || applicationID == "" {
 		return courier.ErrChannelConfig

@@ -36,6 +36,7 @@ const (
 	configSendURL             = "send_url"
 	configBaseURL             = "base_url"
 	configIgnoreDLRs          = "ignore_dlrs"
+	configLinkShortening      = "link_shortening"
 
 	signatureHeader     = "X-Twilio-Signature"
 	forwardedPathHeader = "X-Forwarded-Path"
@@ -144,7 +145,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, form.MessageSID, clog)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, form.MessageSID, clog)
 
 	// process any attached media
 	for i := 0; i < form.NumMedia; i++ {
@@ -348,6 +349,11 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			// set our from, either as a messaging service or from our address
 			serviceSID := channel.StringConfigForKey(configMessagingServiceSID, "")
 			if serviceSID != "" {
+				linkShortening := channel.BoolConfigForKey(configLinkShortening, false)
+				if linkShortening {
+					form["ShortenUrls"] = []string{"true"}
+				}
+
 				form["MessagingServiceSid"] = []string{serviceSID}
 			}
 
@@ -559,7 +565,7 @@ func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter
 }
 
 // https://www.twilio.com/docs/api/errors
-func twilioError(code int64) *clogs.LogError {
+func twilioError(code int64) *clogs.Error {
 	codeAsStr := strconv.Itoa(int(code))
 	errMsg, _ := jsonparser.GetString(errorCodes, codeAsStr)
 	return courier.ErrorExternal(codeAsStr, errMsg)

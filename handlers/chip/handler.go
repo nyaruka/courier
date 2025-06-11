@@ -8,6 +8,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -59,7 +60,7 @@ type receivePayload struct {
 // receiveMessage is our HTTP handler function for incoming events
 func (h *handler) receive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *receivePayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	secret := c.StringConfigForKey(courier.ConfigSecret, "")
-	if payload.Secret != secret {
+	if !utils.SecretEqual(payload.Secret, secret) {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("secret incorrect"))
 	}
 
@@ -73,7 +74,7 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 
 	for _, event := range payload.Events {
 		if event.Type == "msg_in" {
-			msg := h.Backend().NewIncomingMsg(c, urn, event.Msg.Text, "", clog)
+			msg := h.Backend().NewIncomingMsg(ctx, c, urn, event.Msg.Text, "", clog)
 
 			if err = h.Backend().WriteMsg(ctx, msg, clog); err != nil {
 				return nil, err
@@ -110,11 +111,12 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 }
 
 type sendMsg struct {
-	ID          courier.MsgID     `json:"id"`
-	Text        string            `json:"text"`
-	Attachments []string          `json:"attachments,omitempty"`
-	Origin      courier.MsgOrigin `json:"origin"`
-	UserID      courier.UserID    `json:"user_id,omitempty"`
+	ID           courier.MsgID     `json:"id"`
+	Text         string            `json:"text"`
+	Attachments  []string          `json:"attachments,omitempty"`
+	QuickReplies []string          `json:"quick_replies,omitempty"`
+	Origin       courier.MsgOrigin `json:"origin"`
+	UserID       courier.UserID    `json:"user_id,omitempty"`
 }
 
 type sendPayload struct {
@@ -134,11 +136,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		ChatID: msg.URN().Path(),
 		Secret: secret,
 		Msg: sendMsg{
-			ID:          msg.ID(),
-			Text:        msg.Text(),
-			Attachments: msg.Attachments(),
-			Origin:      msg.Origin(),
-			UserID:      msg.UserID(),
+			ID:           msg.ID(),
+			Text:         msg.Text(),
+			Attachments:  msg.Attachments(),
+			QuickReplies: handlers.TextOnlyQuickReplies(msg.QuickReplies()),
+			Origin:       msg.Origin(),
+			UserID:       msg.UserID(),
 		},
 	}
 	req, _ := http.NewRequest("POST", sendURL+"/"+string(msg.Channel().UUID())+"/", bytes.NewReader(jsonx.MustMarshal(payload)))

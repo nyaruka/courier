@@ -224,7 +224,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"content": {"Error Message"}, "to": {"250788383383"}, "from": {"2020"}, "apiKey": {"API-KEY"}}},
 		},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
 	},
 }
 

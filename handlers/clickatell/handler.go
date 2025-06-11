@@ -129,7 +129,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, payload.MessageID, clog).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, payload.MessageID, clog).WithReceivedOn(date.UTC())
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
@@ -188,7 +188,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		if externalID != "" {
 			res.AddExternalID(externalID)
 		} else {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseContent
 		}
 	}
 

@@ -1,3 +1,10 @@
+DROP TABLE IF EXISTS users_user CASCADE;
+CREATE TABLE users_user (
+    id serial primary key,
+    email character varying(254) NOT NULL,
+    first_name character varying(150) NOT NULL
+);
+
 DROP TABLE IF EXISTS orgs_org CASCADE;
 CREATE TABLE orgs_org (
     id serial primary key,
@@ -36,8 +43,8 @@ CREATE TABLE contacts_contact (
     uuid character varying(36) NOT NULL,
     name character varying(128),
     language character varying(3),
-    created_by_id integer NOT NULL,
-    modified_by_id integer NOT NULL,
+    created_by_id integer references users_user(id) NOT NULL,
+    modified_by_id integer references users_user(id) NOT NULL,
     org_id integer references orgs_org(id) on delete cascade
 );
 
@@ -54,6 +61,19 @@ CREATE TABLE contacts_contacturn (
     org_id integer NOT NULL references orgs_org(id) on delete cascade,
     auth_tokens jsonb,
     UNIQUE (org_id, identity)
+);
+
+DROP TABLE IF EXISTS contacts_contactfire CASCADE;
+CREATE TABLE IF NOT EXISTS contacts_contactfire (
+    id serial primary key,
+    org_id integer NOT NULL,
+    contact_id integer references contacts_contact(id) on delete cascade,
+    fire_type character varying(1) NOT NULL,
+    scope character varying(128) NOT NULL,
+    fire_on timestamp with time zone NOT NULL,
+    session_uuid uuid,
+    sprint_uuid uuid,
+    UNIQUE (contact_id, fire_type, scope)
 );
 
 DROP TABLE IF EXISTS msgs_optin CASCADE;
@@ -75,7 +95,7 @@ CREATE TABLE msgs_msg (
     --broadcast_id integer REFERENCES msgs_broadcast(id) ON DELETE CASCADE,
     --flow_id integer REFERENCES flows_flow(id) ON DELETE CASCADE,
     --ticket_id integer REFERENCES tickets_ticket(id) ON DELETE CASCADE,
-    --created_by_id integer REFERENCES auth_user(id) ON DELETE CASCADE,
+    created_by_id integer REFERENCES users_user(id),
     text text NOT NULL,
     attachments character varying(255)[] NULL,
     quick_replies character varying(64)[] NULL,
@@ -99,22 +119,10 @@ CREATE TABLE msgs_msg (
     log_uuids uuid[]
 );
 
-DROP TABLE IF EXISTS channels_channellog CASCADE;
-CREATE TABLE channels_channellog (
-    id serial primary key,
-    uuid uuid NOT NULL,
-    channel_id integer NOT NULL references channels_channel(id) on delete cascade,
-    log_type character varying(16),
-    http_logs jsonb,
-    errors jsonb,
-    is_error boolean NOT NULL,
-    created_on timestamp with time zone NOT NULL,
-    elapsed_ms integer
-);
-
 DROP TABLE IF EXISTS channels_channelevent CASCADE;
 CREATE TABLE channels_channelevent (
     id serial primary key,
+    uuid uuid NOT NULL,
     event_type character varying(16) NOT NULL,
     status character varying(1) NOT NULL,
     extra text,
@@ -126,14 +134,6 @@ CREATE TABLE channels_channelevent (
     optin_id integer references msgs_optin(id) on delete cascade,
     org_id integer NOT NULL references orgs_org(id) on delete cascade,
     log_uuids uuid[]
-);
-
-DROP TABLE IF EXISTS flows_flowsession CASCADE;
-CREATE TABLE flows_flowsession (
-    id serial primary key,
-    status character varying(1) NOT NULL,
-    timeout_on timestamp with time zone NULL,
-    wait_started_on timestamp with time zone
 );
 
 DROP TABLE IF EXISTS msgs_media CASCADE;

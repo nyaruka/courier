@@ -1,5 +1,6 @@
 # 🛫 Courier
 
+[![tag](https://img.shields.io/github/tag/nyaruka/courier.svg)](https://github.com/nyaruka/courier/releases)
 [![Build Status](https://github.com/nyaruka/courier/workflows/CI/badge.svg)](https://github.com/nyaruka/courier/actions?query=workflow%3ACI) 
 [![codecov](https://codecov.io/gh/nyaruka/courier/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/courier)
 [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/courier)](https://goreportcard.com/report/github.com/nyaruka/courier)
@@ -42,7 +43,7 @@ environment variables and parameters and for more details on each option.
 ### AWS services:
 
  * `COURIER_AWS_ACCESS_KEY_ID`: AWS access key id used to authenticate to AWS
- * `COURIER_AWS_SECRET_ACCESS_KEY` AWS secret access key used to authenticate to AWS
+ * `COURIER_AWS_SECRET_ACCESS_KEY`: AWS secret access key used to authenticate to AWS
  * `COURIER_AWS_REGION`: AWS region (ex: `eu-west-1`)
  * `COURIER_S3_ATTACHMENTS_BUCKET`: name of your S3 bucket (ex: `rp-attachments`)
 

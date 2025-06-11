@@ -52,8 +52,8 @@ type Contact struct {
 	CreatedOn_  time.Time `db:"created_on"`
 	ModifiedOn_ time.Time `db:"modified_on"`
 
-	CreatedBy_  int `db:"created_by_id"`
-	ModifiedBy_ int `db:"modified_by_id"`
+	CreatedBy_  UserID `db:"created_by_id"`
+	ModifiedBy_ UserID `db:"modified_by_id"`
 
 	IsNew_ bool
 }
@@ -61,7 +61,7 @@ type Contact struct {
 // UUID returns the UUID for this contact
 func (c *Contact) UUID() courier.ContactUUID { return c.UUID_ }
 
-const insertContactSQL = `
+const sqlInsertContact = `
 INSERT INTO 
 	contacts_contact(org_id, is_active, status, uuid, created_on, modified_on, created_by_id, modified_by_id, name, ticket_count) 
               VALUES(:org_id, TRUE, 'A', :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name, 0)
@@ -70,7 +70,7 @@ RETURNING id
 
 // insertContact inserts the passed in contact, the id field will be populated with the result on success
 func insertContact(tx *sqlx.Tx, contact *Contact) error {
-	rows, err := tx.NamedQuery(insertContactSQL, contact)
+	rows, err := tx.NamedQuery(sqlInsertContact, contact)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ WHERE
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
-func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel, urn urns.URN, authTokens map[string]string, name string, clog *courier.ChannelLog) (*Contact, error) {
+func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *courier.ChannelLog) (*Contact, error) {
 	log := slog.With("org_id", org, "urn", urn.Identity(), "channel_uuid", channel.UUID(), "log_uuid", clog.UUID)
 
 	// try to look up our contact by URN
@@ -130,11 +130,17 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 		return contact, tx.Commit()
 	}
 
+	if !allowCreate {
+		return nil, nil
+	}
+
 	// didn't find it, we need to create it instead
 	contact.OrgID_ = org
 	contact.UUID_ = courier.ContactUUID(uuids.NewV4())
 	contact.CreatedOn_ = time.Now()
+	contact.CreatedBy_ = b.systemUserID
 	contact.ModifiedOn_ = time.Now()
+	contact.ModifiedBy_ = b.systemUserID
 	contact.IsNew_ = true
 
 	// if we aren't an anonymous org, we want to look up a name if possible and set it
@@ -166,10 +172,6 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 		}
 	}
 
-	// TODO: Set these to a system user
-	contact.CreatedBy_ = 1
-	contact.ModifiedBy_ = 1
-
 	// insert it
 	tx, err := b.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -196,7 +198,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 
 		if dbutil.IsUniqueViolation(err) {
 			// if this was a duplicate URN, start over with a contact lookup
-			return contactForURN(ctx, b, org, channel, urn, authTokens, name, clog)
+			return contactForURN(ctx, b, org, channel, urn, authTokens, name, true, clog)
 		}
 		return nil, fmt.Errorf("error getting URN for contact: %w", err)
 	}
@@ -204,7 +206,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 	// we stole the URN from another contact, roll back and start over
 	if contactURN.PrevContactID != NilContactID {
 		tx.Rollback()
-		return contactForURN(ctx, b, org, channel, urn, authTokens, name, clog)
+		return contactForURN(ctx, b, org, channel, urn, authTokens, name, true, clog)
 	}
 
 	// all is well, we created the new contact, commit and move forward

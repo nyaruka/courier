@@ -124,7 +124,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, fmt.Sprintf("%d", payload.Message.MessageID), clog).WithReceivedOn(date).WithContactName(name)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, fmt.Sprintf("%d", payload.Message.MessageID), clog).WithReceivedOn(date).WithContactName(name)
 
 	if mediaURL != "" {
 		msg.WithAttachment(mediaURL)
@@ -179,7 +179,7 @@ func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.V
 	if response.Result.MessageID > 0 {
 		return strconv.FormatInt(response.Result.MessageID, 10), nil
 	}
-	return "", courier.ErrResponseUnexpected
+	return "", courier.ErrResponseContent
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {

@@ -213,7 +213,29 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"channel":"U0123ABCDEF","text":"Hello"}`,
 		}},
 		ExpectedError:     courier.ErrFailedWithReason("", "invalid_auth"),
-		ExpectedLogErrors: []*clogs.LogError{clogs.NewLogError("", "", "invalid_auth")},
+		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "invalid_auth"}},
+	},
+	{
+		Label:   "Response Unexpected",
+		MsgText: "Simple Message",
+		MsgURN:  "slack:U0123ABCDEF",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/chat.postMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{"channel":"U0123ABCDEF"}`)),
+			},
+		},
+		ExpectedError: courier.ErrResponseContent,
+	},
+	{
+		Label:   "Response Unexpected",
+		MsgText: "Simple Message",
+		MsgURN:  "slack:U0123ABCDEF",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/chat.postMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{"ok":false,"channel":"U0123ABCDEF"}`)),
+			},
+		},
+		ExpectedError: courier.ErrResponseContent,
 	},
 }
 
@@ -235,6 +257,25 @@ var fileSendTestCases = []OutgoingTestCase{
 			{},
 			{BodyContains: "image.png"},
 		},
+	},
+	{
+		Label:          "Unexpected Response",
+		MsgText:        "",
+		MsgURN:         "slack:U0123ABCDEF",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.png"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/image.png": {
+				httpx.NewMockResponse(200, nil, []byte(`filetype... ...file bytes... ...end`)),
+			},
+			"*/files.upload": {
+				httpx.NewMockResponse(200, nil, []byte(`{"ok":false,"file":{"id":"F1L3SL4CK1D"}}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{},
+			{BodyContains: "image.png"},
+		},
+		ExpectedError: courier.ErrResponseContent,
 	},
 }
 

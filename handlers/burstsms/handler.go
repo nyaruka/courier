@@ -94,7 +94,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		if response.MessageID != 0 {
 			res.AddExternalID(fmt.Sprintf("%d", response.MessageID))
 		} else {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseContent
 		}
 	}
 

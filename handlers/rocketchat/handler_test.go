@@ -178,6 +178,20 @@ var sendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrConnectionFailed,
 	},
+	{
+		Label:   "Response Unexpected",
+		MsgText: "Simple Message",
+		MsgURN:  "rocketchat:direct:john.doe#john.doe",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": {
+				httpx.NewMockResponse(201, nil, []byte(`{"missing":"0"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message"}`,
+		}},
+		ExpectedError: courier.ErrResponseContent,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

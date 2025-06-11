@@ -88,7 +88,7 @@ var outgoingCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`<response><code>501</code><text>failure</text><message_id></message_id></response>`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
 	},
 	{
 		Label:   "Error Sending",

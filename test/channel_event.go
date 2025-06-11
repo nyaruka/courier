@@ -8,6 +8,7 @@ import (
 )
 
 type mockChannelEvent struct {
+	uuid       courier.ChannelEventUUID
 	channel    courier.Channel
 	eventType  courier.ChannelEventType
 	urn        urns.URN
@@ -20,6 +21,7 @@ type mockChannelEvent struct {
 }
 
 func (e *mockChannelEvent) EventID() int64                      { return 0 }
+func (e *mockChannelEvent) UUID() courier.ChannelEventUUID      { return e.uuid }
 func (e *mockChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.channel.UUID() }
 func (e *mockChannelEvent) EventType() courier.ChannelEventType { return e.eventType }
 func (e *mockChannelEvent) CreatedOn() time.Time                { return e.createdOn }

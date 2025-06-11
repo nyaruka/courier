@@ -32,7 +32,7 @@ type Backend interface {
 	GetChannelByAddress(context.Context, ChannelType, ChannelAddress) (Channel, error)
 
 	// GetContact returns (or creates) the contact for the passed in channel and URN
-	GetContact(context.Context, Channel, urns.URN, map[string]string, string, *ChannelLog) (Contact, error)
+	GetContact(context.Context, Channel, urns.URN, map[string]string, string, bool, *ChannelLog) (Contact, error)
 
 	// AddURNtoContact adds a URN to the passed in contact
 	AddURNtoContact(context context.Context, channel Channel, contact Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error)
@@ -44,7 +44,7 @@ type Backend interface {
 	DeleteMsgByExternalID(ctx context.Context, channel Channel, externalID string) error
 
 	// NewIncomingMsg creates a new message from the given params
-	NewIncomingMsg(Channel, urns.URN, string, string, *ChannelLog) MsgIn
+	NewIncomingMsg(context.Context, Channel, urns.URN, string, string, *ChannelLog) MsgIn
 
 	// WriteMsg writes the passed in message to our backend
 	WriteMsg(context.Context, MsgIn, *ChannelLog) error
@@ -61,7 +61,7 @@ type Backend interface {
 	// NewChannelEvent creates a new channel event for the given channel and event type
 	NewChannelEvent(Channel, ChannelEventType, urns.URN, *ChannelLog) ChannelEvent
 
-	// WriteChannelEvent writes the passed in channel even returning any error
+	// WriteChannelEvent writes the passed in channel event returning any error
 	WriteChannelEvent(context.Context, ChannelEvent, *ChannelLog) error
 
 	// WriteChannelLog writes the passed in channel log to our backend

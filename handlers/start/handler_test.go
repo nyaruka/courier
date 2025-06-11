@@ -260,6 +260,24 @@ var defaultSendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{
+		Label:   "Response Unexpected",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://bulk.startmobile.ua/clients.php": {
+				httpx.NewMockResponse(200, nil, []byte(`<status date='Wed, 25 May 2016 17:29:56 +0300'><id></id><state>Accepted</state></status>`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/xml; charset=utf8",
+				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+			},
+			Body: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">Simple Message ☺</body></message>`,
+		}},
+		ExpectedError: courier.ErrResponseContent,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

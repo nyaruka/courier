@@ -473,7 +473,7 @@ var outgoingCases = []OutgoingTestCase{
 		Label:           "Send keyboard",
 		MsgText:         "Send keyboard",
 		MsgURN:          "vk:123456789",
-		MsgQuickReplies: []string{"A", "B", "C", "D", "E"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}, {Text: "E"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.vk.com/method/messages.send.json?*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
@@ -501,6 +501,22 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedError: courier.ErrConnectionFailed,
+	},
+	{
+		Label:   "Response unexpected",
+		MsgText: "Simple message",
+		MsgURN:  "vk:123456789",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.vk.com/method/messages.send.json?*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"missing": 1}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
+			},
+		},
+		ExpectedError: courier.ErrResponseContent,
 	},
 }
 

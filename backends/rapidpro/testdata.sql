@@ -1,3 +1,6 @@
+DELETE FROM users_user;
+INSERT INTO users_user("id", "email", "first_name") VALUES(1, 'system', 'System');
+              
 /* Org with id 1 */
 DELETE FROM orgs_org;
 INSERT INTO orgs_org("id", "name", "language", "is_anon", "config")
@@ -66,8 +69,3 @@ INSERT INTO msgs_media("id", "uuid", "org_id", "content_type", "url", "path", "s
 INSERT INTO msgs_media("id", "uuid", "org_id", "content_type", "url", "path", "size", "duration", "width", "height", "original_id")
                 VALUES(102, '514c552c-e585-40e2-938a-fe9450172da8', 1, 'audio/mp4', 'http://nyaruka.s3.com/orgs/1/media/514c/514c552c-e585-40e2-938a-fe9450172da8/test.m4a', '/orgs/1/media/514c/514c552c-e585-40e2-938a-fe9450172da8/test.m4a', 114, 500, 0, 0, 101);
 
-/** Simple session */
-DELETE from flows_flowsession;
-INSERT INTO flows_flowsession("id", "status", "wait_started_on")
-                       VALUES(1, 'W', '2018-12-04 11:52:20.958955-08'),
-                             (2, 'C', '2018-12-04 11:52:20.958955-08');

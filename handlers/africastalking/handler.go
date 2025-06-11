@@ -11,6 +11,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -74,7 +75,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text, form.ID, clog).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Text, form.ID, clog).WithReceivedOn(date)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
@@ -138,13 +139,14 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		form["from"] = []string{msg.Channel().Address()}
 	}
 
-	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	req, err := httpx.NewRequest(ctx, http.MethodPost, sendURL, strings.NewReader(form.Encode()), map[string]string{
+		"Content-Type": "application/x-www-form-urlencoded",
+		"Accept":       "application/json",
+		"apikey":       apiKey,
+	})
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("apikey", apiKey)
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
@@ -156,7 +158,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	// was this request successful?
 	msgStatus, _ := jsonparser.GetString(respBody, "SMSMessageData", "Recipients", "[0]", "status")
 	if msgStatus != "Success" {
-		return courier.ErrResponseUnexpected
+		return courier.ErrResponseContent
 	}
 
 	// grab the external id if we can

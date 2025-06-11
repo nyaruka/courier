@@ -671,7 +671,7 @@ var testCases = []IncomingTestCase{
 		Data:                 invalidFileID,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
-		ExpectedErrors:       []*clogs.LogError{courier.ErrorResponseUnparseable("JSON")},
+		ExpectedErrors:       []*clogs.Error{courier.ErrorResponseUnparseable("JSON")},
 	},
 	{
 		Label:                "Receive NoOk FileID",
@@ -686,7 +686,7 @@ var testCases = []IncomingTestCase{
 		Data:                 invalidJsonFile,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
-		ExpectedErrors:       []*clogs.LogError{courier.ErrorResponseUnparseable("JSON")},
+		ExpectedErrors:       []*clogs.Error{courier.ErrorResponseUnparseable("JSON")},
 	},
 	{
 		Label:                "Receive error File response",
@@ -694,7 +694,7 @@ var testCases = []IncomingTestCase{
 		Data:                 errorFile,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
-		ExpectedErrors:       []*clogs.LogError{courier.ErrorExternal("500", "error loading file")},
+		ExpectedErrors:       []*clogs.Error{courier.ErrorExternal("500", "error loading file")},
 	},
 	{
 		Label:                "Receive NotOk FileID",
@@ -798,7 +798,7 @@ var outgoingCases = []OutgoingTestCase{
 		Label:           "Quick Reply",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
-		MsgQuickReplies: []string{"Yes", "No"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
@@ -813,7 +813,7 @@ var outgoingCases = []OutgoingTestCase{
 		Label:           "Quick Reply with multiple attachments",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
-		MsgQuickReplies: []string{"Yes", "No"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MsgAttachments:  []string{"application/pdf:https://foo.bar/doc1.pdf", "application/pdf:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {
@@ -920,11 +920,25 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
+		Label:   "Response Unexpected",
+		MsgText: "Simple Message",
+		MsgURN:  "telegram:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 0 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Simple Message"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+		},
+		ExpectedError: courier.ErrResponseContent,
+	},
+	{
 		Label:             "Unknown attachment type",
 		MsgText:           "My foo!",
 		MsgURN:            "telegram:12345",
 		MsgAttachments:    []string{"unknown/foo:https://foo.bar/unknown.foo"},
-		ExpectedLogErrors: []*clogs.LogError{courier.ErrorMediaUnsupported("unknown/foo")},
+		ExpectedLogErrors: []*clogs.Error{courier.ErrorMediaUnsupported("unknown/foo")},
 	},
 }
 

@@ -2,11 +2,11 @@ package courier
 
 import (
 	"database/sql/driver"
-	"encoding/json"
 	"strconv"
 	"time"
 
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
@@ -31,6 +31,23 @@ type MsgUUID uuids.UUID
 
 // NilMsgUUID is a "zero value" message UUID
 const NilMsgUUID = MsgUUID("")
+
+type QuickReply struct {
+	Text  string `json:"text"`
+	Extra string `json:"extra,omitempty"`
+}
+
+func (q *QuickReply) UnmarshalJSON(d []byte) error {
+	// if we just have a string we unmarshal it into the text field
+	if len(d) > 2 && d[0] == '"' && d[len(d)-1] == '"' {
+		return jsonx.Unmarshal(d, &q.Text)
+	}
+
+	// alias our type so we don't end up here again
+	type alias QuickReply
+
+	return jsonx.Unmarshal(d, (*alias)(q))
+}
 
 type FlowReference struct {
 	UUID string `json:"uuid" validate:"uuid4"`
@@ -74,6 +91,13 @@ type Templating struct {
 	ExternalID string               `json:"external_id"`
 }
 
+type Session struct {
+	UUID       string `json:"uuid"`
+	Status     string `json:"status"`
+	SprintUUID string `json:"sprint_uuid"`
+	Timeout    int    `json:"timeout"`
+}
+
 //-----------------------------------------------------------------------------
 // Msg interface
 //-----------------------------------------------------------------------------
@@ -96,22 +120,20 @@ type MsgOut interface {
 	Msg
 
 	// outgoing specific
-	QuickReplies() []string
+	QuickReplies() []QuickReply
 	Locale() i18n.Locale
 	Templating() *Templating
 	URNAuth() string
 	Origin() MsgOrigin
 	ContactLastSeenOn() *time.Time
-	Topic() string
-	Metadata() json.RawMessage
 	ResponseToExternalID() string
 	SentOn() *time.Time
 	IsResend() bool
 	Flow() *FlowReference
 	OptIn() *OptInReference
 	UserID() UserID
-	SessionStatus() string
 	HighPriority() bool
+	Session() *Session
 }
 
 // MsgIn is our interface to represent an incoming

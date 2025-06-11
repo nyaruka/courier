@@ -8,6 +8,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -157,6 +158,22 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
 		ExpectedError: courier.ErrConnectionFailed,
+	},
+	{
+		Label:   "Response Unexpected",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+252788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://telesom.com/sendsms_other*": {
+				httpx.NewMockResponse(200, nil, []byte(`<return>Missing</return>`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form:    url.Values{"msg": {"Simple Message"}, "to": {"0788383383"}, "from": {"2020"}, "key": {"D69BB824F88F20482B94ECF3822EBD84"}},
+			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		}},
+		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "Received invalid response content: <return>Missing</return>"}},
+		ExpectedError:     courier.ErrResponseContent,
 	},
 }
 

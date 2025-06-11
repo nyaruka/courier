@@ -116,7 +116,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(c, urn, payload.Data.Content, fmt.Sprint(payload.Data.MessageID), clog).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(ctx, c, urn, payload.Data.Content, fmt.Sprint(payload.Data.MessageID), clog).WithReceivedOn(date)
 
 	if len(payload.Data.MMS) > 0 {
 		msg.WithAttachment(payload.Data.MMS[0].MediaURL)
@@ -199,7 +199,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		clog.Error(courier.ErrorResponseValueMissing("status"))
 	}
 	if respStatus != "success" {
-		return courier.ErrResponseUnexpected
+		return courier.ErrResponseContent
 
 	}
 

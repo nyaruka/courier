@@ -78,7 +78,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Text, payload.ReferenceID, clog)
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, payload.Text, payload.ReferenceID, clog)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
@@ -146,7 +146,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		responseCode, _ := jsonparser.GetString(respBody, "code")
 		if responseCode != "000" {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseContent
 		}
 	}
 

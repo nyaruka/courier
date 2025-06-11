@@ -192,7 +192,7 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/error_msg.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		ExpectedErrors:        []*clogs.LogError{courier.ErrorExternal("131051", "Unsupported message type")},
+		ExpectedErrors:        []*clogs.Error{courier.ErrorExternal("131051", "Unsupported message type")},
 		NoInvalidChannelCheck: true,
 		PrepRequest:           addValidSignature,
 	},
@@ -202,7 +202,7 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/error_errors.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		ExpectedErrors:        []*clogs.LogError{courier.ErrorExternal("0", "We were unable to authenticate the app user")},
+		ExpectedErrors:        []*clogs.Error{courier.ErrorExternal("0", "We were unable to authenticate the app user")},
 		NoInvalidChannelCheck: true,
 		PrepRequest:           addValidSignature,
 	},
@@ -226,7 +226,7 @@ var whatsappIncomingTests = []IncomingTestCase{
 		ExpectedStatuses: []ExpectedStatus{
 			{ExternalID: "external_id", Status: courier.MsgStatusFailed},
 		},
-		ExpectedErrors: []*clogs.LogError{
+		ExpectedErrors: []*clogs.Error{
 			courier.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)"),
 		},
 		PrepRequest: addValidSignature,
@@ -517,7 +517,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		Label:           "Interactive Button Message Send",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"BUTTON1"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "BUTTON1"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -529,25 +529,59 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:           "Interactive List Message Send",
-		MsgText:         "Interactive List Msg",
+		Label:           "Interactive List QRs Extra Send",
+		MsgText:         "Interactive List QRs Extra Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "OPTION1", Extra: "This option is the most popular"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
+			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List QRs Extra Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"OPTION1","description":"This option is the most popular"}]}]}}}`,
 		}},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:           "Interactive List Message Send, more than 10 QRs",
+		Label:           "Interactive List QRs Extra Empty Send",
+		MsgText:         "Interactive List QRs Extra Empty",
+		MsgURN:          "whatsapp:250788123123",
+		MsgQuickReplies: []courier.QuickReply{{Text: "OPTION1", Extra: ""}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/12345_ID/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive List QRs Extra Empty"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"OPTION1"}}]}}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:           "Interactive List Message Send",
 		MsgText:         "Interactive List Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4", "ROW5", "ROW6", "ROW7", "ROW8", "ROW9", "ROW10", "ROW11", "ROW12"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3", Extra: "Third description"}, {Text: "ROW4"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/12345_ID/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3","description":"Third description"},{"id":"3","title":"ROW4"}]}]}}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:   "Interactive List Message Send, more than 10 QRs",
+		MsgText: "Interactive List Msg",
+		MsgURN:  "whatsapp:250788123123",
+		MsgQuickReplies: []courier.QuickReply{
+			{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}, {Text: "ROW4"},
+			{Text: "ROW5"}, {Text: "ROW6"}, {Text: "ROW7"}, {Text: "ROW8"},
+			{Text: "ROW9"}, {Text: "ROW10"}, {Text: "ROW11"}, {Text: "ROW12"},
+		},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -557,14 +591,14 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"},{"id":"4","title":"ROW5"},{"id":"5","title":"ROW6"},{"id":"6","title":"ROW7"},{"id":"7","title":"ROW8"},{"id":"8","title":"ROW9"},{"id":"9","title":"ROW10"}]}]}}}`,
 		}},
 		ExpectedExtIDs:    []string{"157b5e14568e8"},
-		ExpectedLogErrors: []*clogs.LogError{clogs.NewLogError("", "", "too many quick replies WAC supports only up to 10 quick replies")},
+		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "too many quick replies WhatsApp supports only up to 10 quick replies"}},
 	},
 	{
 		Label:           "Interactive List Message Send In Spanish",
 		MsgText:         "Hola",
 		MsgURN:          "whatsapp:250788123123",
 		MsgLocale:       "spa",
-		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}, {Text: "ROW4"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -579,7 +613,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		Label:           "Interactive Button Message Send with image attachment",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"BUTTON1"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "BUTTON1"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
@@ -598,7 +632,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		Label:           "Interactive Button Message Send with video attachment",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"BUTTON1"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "BUTTON1"}},
 		MsgAttachments:  []string{"video/mp4:https://foo.bar/video.mp4"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
@@ -617,7 +651,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		Label:           "Interactive Button Message Send with document attachment",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"BUTTON1"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "BUTTON1"}},
 		MsgAttachments:  []string{"document/pdf:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
@@ -636,7 +670,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		Label:           "Interactive Button Message Send with audio attachment",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}},
 		MsgAttachments:  []string{"audio/mp3:https://foo.bar/audio.mp3"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
@@ -654,7 +688,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		Label:           "Interactive List Message Send with attachment",
 		MsgText:         "Interactive List Msg",
 		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		MsgQuickReplies: []courier.QuickReply{{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}, {Text: "ROW4"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {

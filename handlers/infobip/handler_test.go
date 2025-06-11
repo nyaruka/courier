@@ -335,7 +335,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"☺","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
-		ExpectedLogErrors: []*clogs.LogError{courier.ErrorResponseValueMissing("messageId")},
+		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("messageId")},
 	},
 	{
 		Label:          "Send Attachment",
@@ -355,7 +355,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"My pic!\nhttps://foo.bar/image.jpg","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
-		ExpectedLogErrors: []*clogs.LogError{courier.ErrorResponseValueMissing("messageId")},
+		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("messageId")},
 	},
 	{
 		Label:   "Error Sending",
@@ -393,7 +393,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseContent,
 	},
 }
 

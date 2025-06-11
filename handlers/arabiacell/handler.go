@@ -100,7 +100,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		if response.Code == "204" {
 			res.AddExternalID(response.MessageID)
 		} else {
-			return courier.ErrResponseUnexpected
+			return courier.ErrResponseContent
 		}
 	}
 

@@ -1,7 +1,6 @@
 package test
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/nyaruka/courier"
@@ -23,14 +22,13 @@ type MockMsg struct {
 	externalID           string
 	contactName          string
 	highPriority         bool
-	quickReplies         []string
+	quickReplies         []courier.QuickReply
 	origin               courier.MsgOrigin
 	contactLastSeenOn    *time.Time
-	topic                string
 	responseToExternalID string
-	metadata             json.RawMessage
 	alreadyWritten       bool
 	isResend             bool
+	session              *courier.Session
 
 	flow   *courier.FlowReference
 	optIn  *courier.OptInReference
@@ -61,22 +59,20 @@ func (m *MockMsg) URN() urns.URN            { return m.urn }
 func (m *MockMsg) Channel() courier.Channel { return m.channel }
 
 // outgoing specific
-func (m *MockMsg) QuickReplies() []string          { return m.quickReplies }
-func (m *MockMsg) Locale() i18n.Locale             { return m.locale }
-func (m *MockMsg) Templating() *courier.Templating { return m.templating }
-func (m *MockMsg) URNAuth() string                 { return m.urnAuth }
-func (m *MockMsg) Origin() courier.MsgOrigin       { return m.origin }
-func (m *MockMsg) ContactLastSeenOn() *time.Time   { return m.contactLastSeenOn }
-func (m *MockMsg) Topic() string                   { return m.topic }
-func (m *MockMsg) Metadata() json.RawMessage       { return m.metadata }
-func (m *MockMsg) ResponseToExternalID() string    { return m.responseToExternalID }
-func (m *MockMsg) SentOn() *time.Time              { return m.sentOn }
-func (m *MockMsg) IsResend() bool                  { return m.isResend }
-func (m *MockMsg) Flow() *courier.FlowReference    { return m.flow }
-func (m *MockMsg) OptIn() *courier.OptInReference  { return m.optIn }
-func (m *MockMsg) UserID() courier.UserID          { return m.userID }
-func (m *MockMsg) SessionStatus() string           { return "" }
-func (m *MockMsg) HighPriority() bool              { return m.highPriority }
+func (m *MockMsg) QuickReplies() []courier.QuickReply { return m.quickReplies }
+func (m *MockMsg) Locale() i18n.Locale                { return m.locale }
+func (m *MockMsg) Templating() *courier.Templating    { return m.templating }
+func (m *MockMsg) URNAuth() string                    { return m.urnAuth }
+func (m *MockMsg) Origin() courier.MsgOrigin          { return m.origin }
+func (m *MockMsg) ContactLastSeenOn() *time.Time      { return m.contactLastSeenOn }
+func (m *MockMsg) ResponseToExternalID() string       { return m.responseToExternalID }
+func (m *MockMsg) SentOn() *time.Time                 { return m.sentOn }
+func (m *MockMsg) IsResend() bool                     { return m.isResend }
+func (m *MockMsg) Flow() *courier.FlowReference       { return m.flow }
+func (m *MockMsg) OptIn() *courier.OptInReference     { return m.optIn }
+func (m *MockMsg) UserID() courier.UserID             { return m.userID }
+func (m *MockMsg) Session() *courier.Session          { return m.session }
+func (m *MockMsg) HighPriority() bool                 { return m.highPriority }
 
 // incoming specific
 func (m *MockMsg) ReceivedOn() *time.Time { return m.receivedOn }
