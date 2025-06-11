@@ -1,3 +1,7 @@
+v10.1.28 (2025-06-11)
+-------------------------
+ * Give OnSendComplete more logging and time
+
 v10.1.27 (2025-06-10)
 -------------------------
  * Update to latest redisx which requires use of context
