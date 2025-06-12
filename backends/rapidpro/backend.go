@@ -534,7 +534,9 @@ func (b *backend) OnReceiveComplete(ctx context.Context, ch courier.Channel, eve
 }
 
 // WriteMsg writes the passed in message to our store
-func (b *backend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *courier.ChannelLog) error {
+func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier.ChannelLog) error {
+	m := msg.(*Msg)
+
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
@@ -542,7 +544,7 @@ func (b *backend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *courier.C
 		return err
 	}
 
-	b.recordMsgReceived(ctx, m.(*Msg))
+	b.recordMsgReceived(ctx, m)
 
 	return nil
 }

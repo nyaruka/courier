@@ -166,9 +166,7 @@ func (m *Msg) hash() string {
 }
 
 // WriteMsg creates a message given the passed in arguments
-func writeMsg(ctx context.Context, b *backend, msg courier.MsgIn, clog *courier.ChannelLog) error {
-	m := msg.(*Msg)
-
+func writeMsg(ctx context.Context, b *backend, m *Msg, clog *courier.ChannelLog) error {
 	// this msg has already been written (we received it twice), we are a no op
 	if m.alreadyWritten {
 		return nil
