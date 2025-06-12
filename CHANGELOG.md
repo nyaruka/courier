@@ -1,3 +1,7 @@
+v10.1.30 (2025-06-12)
+-------------------------
+ * Clearer log messages and errors relating to writing and queuing messages
+
 v10.1.29 (2025-06-12)
 -------------------------
  * Update to latest redisx which is now vkutil
