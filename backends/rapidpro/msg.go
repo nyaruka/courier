@@ -308,27 +308,27 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 //-----------------------------------------------------------------------------
 
 // checks to see if this message has already been received and if so returns its UUID
-func (b *backend) checkMsgAlreadyReceived(ctx context.Context, msg *Msg) courier.MsgUUID {
+func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *Msg) courier.MsgUUID {
 	rc := b.rp.Get()
 	defer rc.Close()
 
 	// if we have an external id use that
-	if msg.ExternalID_ != "" {
-		fingerprint := fmt.Sprintf("%s|%s|%s", msg.Channel().UUID(), msg.URN().Identity(), msg.ExternalID())
+	if m.ExternalID_ != "" {
+		fingerprint := fmt.Sprintf("%s|%s|%s", m.Channel().UUID(), m.URN().Identity(), m.ExternalID())
 
 		if uuid, _ := b.receivedExternalIDs.Get(ctx, rc, fingerprint); uuid != "" {
 			return courier.MsgUUID(uuid)
 		}
 	} else {
 		// otherwise de-dup based on text received from that channel+urn since last send
-		fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
+		fingerprint := fmt.Sprintf("%s|%s", m.Channel().UUID(), m.URN().Identity())
 
 		if uuidAndHash, _ := b.receivedMsgs.Get(ctx, rc, fingerprint); uuidAndHash != "" {
 			prevUUID := uuidAndHash[:36]
 			prevHash := uuidAndHash[37:]
 
 			// if it is the same hash, return the UUID
-			if prevHash == msg.hash() {
+			if prevHash == m.hash() {
 				return courier.MsgUUID(prevUUID)
 			}
 		}
@@ -338,33 +338,33 @@ func (b *backend) checkMsgAlreadyReceived(ctx context.Context, msg *Msg) courier
 }
 
 // records that the given message has been received and written to the database
-func (b *backend) recordMsgReceived(ctx context.Context, msg *Msg) {
+func (b *backend) recordMsgReceived(ctx context.Context, m *Msg) {
 	rc := b.rp.Get()
 	defer rc.Close()
 
-	if msg.ExternalID_ != "" {
-		fingerprint := fmt.Sprintf("%s|%s|%s", msg.Channel().UUID(), msg.URN().Identity(), msg.ExternalID())
+	if m.ExternalID_ != "" {
+		fingerprint := fmt.Sprintf("%s|%s|%s", m.Channel().UUID(), m.URN().Identity(), m.ExternalID())
 
-		if err := b.receivedExternalIDs.Set(ctx, rc, fingerprint, string(msg.UUID())); err != nil {
-			slog.Error("error recording received external id", "msg", msg.UUID(), "error", err)
+		if err := b.receivedExternalIDs.Set(ctx, rc, fingerprint, string(m.UUID())); err != nil {
+			slog.Error("error recording received external id", "msg", m.UUID(), "error", err)
 		}
 	} else {
-		fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
+		fingerprint := fmt.Sprintf("%s|%s", m.Channel().UUID(), m.URN().Identity())
 
-		if err := b.receivedMsgs.Set(ctx, rc, fingerprint, fmt.Sprintf("%s|%s", msg.UUID(), msg.hash())); err != nil {
-			slog.Error("error recording received msg", "msg", msg.UUID(), "error", err)
+		if err := b.receivedMsgs.Set(ctx, rc, fingerprint, fmt.Sprintf("%s|%s", m.UUID(), m.hash())); err != nil {
+			slog.Error("error recording received msg", "msg", m.UUID(), "error", err)
 		}
 	}
 }
 
 // clearMsgSeen clears our seen incoming messages for the passed in channel and URN
-func (b *backend) clearMsgSeen(ctx context.Context, msg *Msg) {
+func (b *backend) clearMsgSeen(ctx context.Context, m *Msg) {
 	rc := b.rp.Get()
 	defer rc.Close()
 
-	fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
+	fingerprint := fmt.Sprintf("%s|%s", m.Channel().UUID(), m.URN().Identity())
 
 	if err := b.receivedMsgs.Del(ctx, rc, fingerprint); err != nil {
-		slog.Error("error clearing received msgs", "urn", msg.URN().Identity(), "error", err)
+		slog.Error("error clearing received msgs", "urn", m.URN().Identity(), "error", err)
 	}
 }
