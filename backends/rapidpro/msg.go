@@ -205,20 +205,24 @@ func writeMsg(ctx context.Context, b *backend, msg courier.MsgIn, clog *courier.
 	}
 
 	// try to write it our db
-	err := writeMsgToDB(ctx, b, m, clog)
-
-	// fail? log
+	contact, err := writeMsgToDB(ctx, b, m, clog)
 	if err != nil {
+		// if we failed, log and write to spool
 		slog.Error("error writing to db", "error", err, "msg", m.UUID())
+
+		if err := courier.WriteToSpool(b.config.SpoolDir, "msgs", m); err != nil {
+			return fmt.Errorf("error writing msg to spool: %w", err)
+		}
+		return nil
 	}
 
-	// if we failed write to spool
-	if err != nil {
-		err = courier.WriteToSpool(b.config.SpoolDir, "msgs", m)
-	}
+	rc := b.rp.Get()
+	defer rc.Close()
 
-	// mark this msg as having been seen
-	b.recordMsgReceived(ctx, m)
+	// queue to mailroom for handling
+	if err := queueMsgHandling(ctx, rc, contact, m); err != nil {
+		slog.Error("error queueing msg handling", "error", err, "msg", m.ID_, "contact", contact.ID_)
+	}
 
 	return err
 }
@@ -231,12 +235,12 @@ INSERT INTO
            :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :sent_on, :log_uuids)
 RETURNING id`
 
-func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.ChannelLog) error {
+func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.ChannelLog) (*Contact, error) {
 	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 
-	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
-		return fmt.Errorf("error getting contact for message: %w", err)
+		// our db is down, write to the spool, we will write/queue this later
+		return nil, fmt.Errorf("error getting contact for message: %w", err)
 	}
 
 	// set our contact and urn id
@@ -245,28 +249,17 @@ func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.Channel
 
 	rows, err := b.db.NamedQueryContext(ctx, sqlInsertMsg, m)
 	if err != nil {
-		return fmt.Errorf("error inserting message: %w", err)
+		return nil, fmt.Errorf("error inserting message: %w", err)
 	}
 	defer rows.Close()
 
 	rows.Next()
-	err = rows.Scan(&m.ID_)
-	if err != nil {
-		return fmt.Errorf("error scanning for inserted message id: %w", err)
+
+	if err := rows.Scan(&m.ID_); err != nil {
+		return nil, fmt.Errorf("error scanning for inserted message id: %w", err)
 	}
 
-	// queue this up to be handled by RapidPro
-	rc := b.rp.Get()
-	defer rc.Close()
-	err = queueMsgHandling(ctx, rc, contact, m)
-
-	// if we had a problem queueing the handling, log it, but our message is written, it'll
-	// get picked up by our rapidpro catch-all after a period
-	if err != nil {
-		slog.Error("error queueing msg handling", "error", err, "msg_id", m.ID_)
-	}
-
-	return nil
+	return contact, nil
 }
 
 //-----------------------------------------------------------------------------
@@ -277,8 +270,8 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	msg := &Msg{}
-	err := json.Unmarshal(contents, msg)
+	m := &Msg{}
+	err := json.Unmarshal(contents, m)
 	if err != nil {
 		log.Printf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err)
 		os.Rename(filename, fmt.Sprintf("%s.error", filename))
@@ -286,20 +279,30 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	}
 
 	// look up our channel
-	channel, err := b.GetChannel(ctx, courier.AnyChannelType, msg.ChannelUUID_)
+	channel, err := b.GetChannel(ctx, courier.AnyChannelType, m.ChannelUUID_)
 	if err != nil {
 		return err
 	}
-	msg.channel = channel.(*Channel)
+	m.channel = channel.(*Channel)
 
 	// create log tho it won't be written
 	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgReceive, channel, nil)
 
 	// try to write it our db
-	err = writeMsgToDB(ctx, b, msg, clog)
+	contact, err := writeMsgToDB(ctx, b, m, clog)
+	if err != nil {
+		return err // fail? oh well, we'll try again later
+	}
 
-	// fail? oh well, we'll try again later
-	return err
+	rc := b.rp.Get()
+	defer rc.Close()
+
+	// queue to mailroom for handling
+	if err := queueMsgHandling(ctx, rc, contact, m); err != nil {
+		slog.Error("error queueing handling for de-spooled message", "error", err, "msg", m.ID_, "contact", contact.ID_)
+	}
+
+	return nil
 }
 
 //-----------------------------------------------------------------------------

@@ -1206,20 +1206,20 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 
 	// msg with null bytes in it, that's fine for a request body
 	msg4 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test456\x00456", "ext456", clog).(*Msg)
-	err = writeMsgToDB(ctx, ts.b, msg4, clog)
+	_, err = writeMsgToDB(ctx, ts.b, msg4, clog)
 	ts.NoError(err)
 
 	// more null bytes
 	text, _ := url.PathUnescape("%1C%00%00%00%00%00%07%E0%00")
 	msg5 := ts.b.NewIncomingMsg(ctx, knChannel, urn, text, "", clog).(*Msg)
-	err = writeMsgToDB(ctx, ts.b, msg5, clog)
+	_, err = writeMsgToDB(ctx, ts.b, msg5, clog)
 	ts.NoError(err)
 
 	ts.clearRedis()
 
-	// check that our mailroom queue has an item
+	// check that msg is queued to mailroom for handling
 	msg6 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "hello 1 2 3", "", clog).(*Msg)
-	err = writeMsgToDB(ctx, ts.b, msg6, clog)
+	err = ts.b.WriteMsg(ctx, msg6, clog)
 	ts.NoError(err)
 
 	ts.assertQueuedContactTask(msg6.ContactID_, "msg_received", map[string]any{
