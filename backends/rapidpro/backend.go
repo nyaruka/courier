@@ -398,7 +398,7 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Cha
 		rc := b.rp.Get()
 		defer rc.Close()
 
-		if err := queueMsgDeleted(rc, ch, msgID, contactID); err != nil {
+		if err := queueMsgDeleted(ctx, rc, ch, msgID, contactID); err != nil {
 			return fmt.Errorf("error queuing message deleted task: %w", err)
 		}
 	}

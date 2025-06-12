@@ -1,6 +1,7 @@
 package rapidpro
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 )
 
-func queueMsgHandling(rc redis.Conn, c *Contact, m *Msg) error {
+func queueMsgHandling(ctx context.Context, rc redis.Conn, c *Contact, m *Msg) error {
 	channel := m.Channel().(*Channel)
 
 	body := map[string]any{
@@ -24,10 +25,10 @@ func queueMsgHandling(rc redis.Conn, c *Contact, m *Msg) error {
 		"new_contact":     c.IsNew_,
 	}
 
-	return queueMailroomTask(rc, "msg_received", m.OrgID_, m.ContactID_, body)
+	return queueMailroomTask(ctx, rc, "msg_received", m.OrgID_, m.ContactID_, body)
 }
 
-func queueEventHandling(rc redis.Conn, c *Contact, e *ChannelEvent) error {
+func queueEventHandling(ctx context.Context, rc redis.Conn, c *Contact, e *ChannelEvent) error {
 	body := map[string]any{
 		"event_id":    e.ID_,
 		"event_type":  e.EventType_,
@@ -42,16 +43,16 @@ func queueEventHandling(rc redis.Conn, c *Contact, e *ChannelEvent) error {
 		body["optin_id"] = e.OptInID_
 	}
 
-	return queueMailroomTask(rc, "event_received", e.OrgID_, e.ContactID_, body)
+	return queueMailroomTask(ctx, rc, "event_received", e.OrgID_, e.ContactID_, body)
 }
 
-func queueMsgDeleted(rc redis.Conn, ch *Channel, msgID courier.MsgID, contactID ContactID) error {
-	return queueMailroomTask(rc, "msg_deleted", ch.OrgID_, contactID, map[string]any{"msg_id": msgID})
+func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *Channel, msgID courier.MsgID, contactID ContactID) error {
+	return queueMailroomTask(ctx, rc, "msg_deleted", ch.OrgID_, contactID, map[string]any{"msg_id": msgID})
 }
 
 // queueMailroomTask queues the passed in task to mailroom. Mailroom processes both messages and
 // channel event tasks through the same ordered queue.
-func queueMailroomTask(rc redis.Conn, taskType string, orgID OrgID, contactID ContactID, body map[string]any) (err error) {
+func queueMailroomTask(ctx context.Context, rc redis.Conn, taskType string, orgID OrgID, contactID ContactID, body map[string]any) (err error) {
 	// create our event task
 	eventJSON := jsonx.MustMarshal(mrTask{
 		Type:     taskType,
@@ -75,7 +76,7 @@ func queueMailroomTask(rc redis.Conn, taskType string, orgID OrgID, contactID Co
 	rc.Send("RPUSH", contactQueue, eventJSON)
 	rc.Send("ZADD", fmt.Sprintf("tasks:handler:%d", orgID), fmt.Sprintf("%.5f", epochFloat-10000000), contactJSON)
 	rc.Send("ZINCRBY", "tasks:handler:active", 0, orgID)
-	_, err = rc.Do("EXEC")
+	_, err = redis.DoContext(rc, ctx, "EXEC")
 
 	return err
 }
