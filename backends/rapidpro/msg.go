@@ -258,7 +258,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.Channel
 	// queue this up to be handled by RapidPro
 	rc := b.rp.Get()
 	defer rc.Close()
-	err = queueMsgHandling(rc, contact, m)
+	err = queueMsgHandling(ctx, rc, contact, m)
 
 	// if we had a problem queueing the handling, log it, but our message is written, it'll
 	// get picked up by our rapidpro catch-all after a period

@@ -171,7 +171,7 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clo
 	defer rc.Close()
 
 	// if we had a problem queueing the event, log it
-	err = queueEventHandling(rc, contact, e)
+	err = queueEventHandling(ctx, rc, contact, e)
 	if err != nil {
 		slog.Error("error queueing channel event", "error", err, "evt_id", e.ID_)
 	}
