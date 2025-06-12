@@ -24,7 +24,7 @@ import (
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/redisx"
+	"github.com/nyaruka/vkutil"
 	"github.com/patrickmn/go-cache"
 	"golang.org/x/mod/semver"
 )
@@ -825,7 +825,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL string, clog *courier.ChannelLog) (string, error) {
 	// check in cache first
 	cacheKey := fmt.Sprintf(mediaCacheKeyPattern, msg.Channel().UUID())
-	mediaCache := redisx.NewIntervalHash(cacheKey, time.Hour*24, 2)
+	mediaCache := vkutil.NewIntervalHash(cacheKey, time.Hour*24, 2)
 
 	var mediaID string
 	var err error
