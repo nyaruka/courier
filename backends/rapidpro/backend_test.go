@@ -34,7 +34,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
-	"github.com/nyaruka/redisx/assertredis"
+	"github.com/nyaruka/vkutil/assertvk"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -753,7 +753,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	keys, err := redis.Strings(rc.Do("KEYS", "sent-external-ids:*"))
 	ts.NoError(err)
 	ts.Len(keys, 1)
-	assertredis.HGetAll(ts.T(), rc, keys[0], map[string]string{"10|ex457": "10000"})
+	assertvk.HGetAll(ts.T(), rc, keys[0], map[string]string{"10|ex457": "10000"})
 
 	// mimic a delay in that status being written by reverting the db changes
 	ts.b.db.MustExec(`UPDATE msgs_msg SET status = 'W', external_id = NULL WHERE id = 10000`)
@@ -800,7 +800,7 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	keys, err := redis.Strings(rc.Do("KEYS", "seen-msgs:*"))
 	ts.NoError(err)
 	ts.Len(keys, 1)
-	assertredis.HGetAll(ts.T(), rc, keys[0], map[string]string{
+	assertvk.HGetAll(ts.T(), rc, keys[0], map[string]string{
 		"dbc126ed-66bc-4e28-b67b-81dc3327c95d|tel:+12065551215": string(msg1.UUID()) + "|fb826459f96c6e3ee563238d158a24702afbdd78",
 	})
 
@@ -1537,25 +1537,25 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 	}
 
 	// check we've cached 3 media lookups
-	assertredis.HLen(ts.T(), rc, fmt.Sprintf("media-lookups:%s", time.Now().In(time.UTC).Format("2006-01-02")), 3)
+	assertvk.HLen(ts.T(), rc, fmt.Sprintf("media-lookups:%s", time.Now().In(time.UTC).Format("2006-01-02")), 3)
 }
 
 func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {
 	rc := ts.b.rp.Get()
 	defer rc.Close()
 
-	assertredis.ZCard(ts.T(), rc, "tasks:handler:1", 0)
-	assertredis.ZCard(ts.T(), rc, "tasks:handler:active", 0)
-	assertredis.LLen(ts.T(), rc, fmt.Sprintf("c:1:%d", contactID), 0)
+	assertvk.ZCard(ts.T(), rc, "tasks:handler:1", 0)
+	assertvk.ZCard(ts.T(), rc, "tasks:handler:active", 0)
+	assertvk.LLen(ts.T(), rc, fmt.Sprintf("c:1:%d", contactID), 0)
 }
 
 func (ts *BackendTestSuite) assertQueuedContactTask(contactID ContactID, expectedType string, expectedBody map[string]any) {
 	rc := ts.b.rp.Get()
 	defer rc.Close()
 
-	assertredis.ZCard(ts.T(), rc, "tasks:handler:1", 1)
-	assertredis.ZCard(ts.T(), rc, "tasks:handler:active", 1)
-	assertredis.LLen(ts.T(), rc, fmt.Sprintf("c:1:%d", contactID), 1)
+	assertvk.ZCard(ts.T(), rc, "tasks:handler:1", 1)
+	assertvk.ZCard(ts.T(), rc, "tasks:handler:active", 1)
+	assertvk.LLen(ts.T(), rc, fmt.Sprintf("c:1:%d", contactID), 1)
 
 	data, err := redis.Bytes(rc.Do("LPOP", fmt.Sprintf("c:1:%d", contactID)))
 	ts.NoError(err)

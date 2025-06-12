@@ -35,7 +35,7 @@ import (
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
-	"github.com/nyaruka/redisx"
+	"github.com/nyaruka/vkutil"
 )
 
 // the name for our message queue
@@ -74,18 +74,18 @@ type backend struct {
 	httpClientInsecure *http.Client
 	httpAccess         *httpx.AccessConfig
 
-	mediaCache   *redisx.IntervalHash
+	mediaCache   *vkutil.IntervalHash
 	mediaMutexes syncx.HashMutex
 
 	// tracking of recent messages received to avoid creating duplicates
-	receivedExternalIDs *redisx.IntervalHash // using external id
-	receivedMsgs        *redisx.IntervalHash // using content hash
+	receivedExternalIDs *vkutil.IntervalHash // using external id
+	receivedMsgs        *vkutil.IntervalHash // using content hash
 
 	// tracking of sent message ids to avoid dupe sends
-	sentIDs *redisx.IntervalSet
+	sentIDs *vkutil.IntervalSet
 
 	// tracking of external ids of messages we've sent in case we need one before its status update has been written
-	sentExternalIDs *redisx.IntervalHash
+	sentExternalIDs *vkutil.IntervalHash
 
 	stats *StatsCollector
 
@@ -122,13 +122,13 @@ func newBackend(cfg *courier.Config) courier.Backend {
 
 		writerWG: &sync.WaitGroup{},
 
-		mediaCache:   redisx.NewIntervalHash("media-lookups", time.Hour*24, 2),
+		mediaCache:   vkutil.NewIntervalHash("media-lookups", time.Hour*24, 2),
 		mediaMutexes: *syncx.NewHashMutex(8),
 
-		receivedMsgs:        redisx.NewIntervalHash("seen-msgs", time.Second*2, 2),        // 2 - 4 seconds
-		receivedExternalIDs: redisx.NewIntervalHash("seen-external-ids", time.Hour*24, 2), // 24 - 48 hours
-		sentIDs:             redisx.NewIntervalSet("sent-ids", time.Hour, 2),              // 1 - 2 hours
-		sentExternalIDs:     redisx.NewIntervalHash("sent-external-ids", time.Hour, 2),    // 1 - 2 hours
+		receivedMsgs:        vkutil.NewIntervalHash("seen-msgs", time.Second*2, 2),        // 2 - 4 seconds
+		receivedExternalIDs: vkutil.NewIntervalHash("seen-external-ids", time.Hour*24, 2), // 24 - 48 hours
+		sentIDs:             vkutil.NewIntervalSet("sent-ids", time.Hour, 2),              // 1 - 2 hours
+		sentExternalIDs:     vkutil.NewIntervalHash("sent-external-ids", time.Hour, 2),    // 1 - 2 hours
 
 		stats: NewStatsCollector(),
 	}
@@ -161,7 +161,7 @@ func (b *backend) Start() error {
 		log.Info("db ok")
 	}
 
-	b.rp, err = redisx.NewPool(b.config.Redis, redisx.WithMaxActive(b.config.MaxWorkers*2))
+	b.rp, err = vkutil.NewPool(b.config.Redis, vkutil.WithMaxActive(b.config.MaxWorkers*2))
 	if err != nil {
 		log.Error("redis not reachable", "error", err)
 	} else {
