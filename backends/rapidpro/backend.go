@@ -538,7 +538,13 @@ func (b *backend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *courier.C
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	return writeMsg(timeout, b, m, clog)
+	if err := writeMsg(timeout, b, m, clog); err != nil {
+		return err
+	}
+
+	b.recordMsgReceived(ctx, m.(*Msg))
+
+	return nil
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
