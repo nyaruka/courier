@@ -1,3 +1,8 @@
+v10.1.29 (2025-06-12)
+-------------------------
+ * Update to latest redisx which is now vkutil
+ * Pass context to the task queueing
+
 v10.1.28 (2025-06-11)
 -------------------------
  * Give OnSendComplete more logging and time
