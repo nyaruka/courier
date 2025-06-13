@@ -37,7 +37,7 @@ environment variables and parameters and for more details on each option.
  * `COURIER_DOMAIN`: The root domain which courier is exposed as (ex `textit.in`)
  * `COURIER_SPOOL_DIR`: A local path where courier can spool files if the database is down, should be writable. (ex: `/home/courier/spool`)
  * `COURIER_DB`: Details parameters used to connect to the Postgres RapidPro database (ex: `postgres://textit:fooman@rds.courier.io/5432/textit`)
- * `COURIER_REDIS`: Details parameters to use to connect to Redis RapidPro database (ex: `redis://redis-internal.courier.io:6379/13`)
+ * `COURIER_VALKEY`: Details parameters to use to connect to Valkey RapidPro database (ex: `valkey://valkey.courier.io:6379/13`)
  * `COURIER_AUTH_TOKEN`: authentication token to require for requests from Mailroom
 
 ### AWS services:

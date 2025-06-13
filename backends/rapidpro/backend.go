@@ -161,11 +161,11 @@ func (b *backend) Start() error {
 		log.Info("db ok")
 	}
 
-	b.rp, err = vkutil.NewPool(b.config.Redis, vkutil.WithMaxActive(b.config.MaxWorkers*2))
+	b.rp, err = vkutil.NewPool(b.config.Valkey, vkutil.WithMaxActive(b.config.MaxWorkers*2))
 	if err != nil {
-		log.Error("redis not reachable", "error", err)
+		log.Error("valkey not reachable", "error", err)
 	} else {
-		log.Info("redis ok")
+		log.Info("valkey ok")
 	}
 
 	// start our dethrottler if we are going to be doing some sending

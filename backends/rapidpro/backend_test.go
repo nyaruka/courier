@@ -46,7 +46,7 @@ type BackendTestSuite struct {
 func testConfig() *courier.Config {
 	config := courier.NewDefaultConfig()
 	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
-	config.Redis = "redis://localhost:6379/0"
+	config.Valkey = "valkey://localhost:6379/0"
 	config.MediaDomain = "nyaruka.s3.com"
 
 	// configure S3 to use a local minio instance
@@ -117,7 +117,7 @@ func (ts *BackendTestSuite) SetupSuite() {
 	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
 	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-logs")})
 
-	ts.clearRedis()
+	ts.clearValkey()
 }
 
 func (ts *BackendTestSuite) TearDownSuite() {
@@ -128,8 +128,8 @@ func (ts *BackendTestSuite) TearDownSuite() {
 	ts.b.s3.EmptyBucket(context.Background(), "test-attachments")
 }
 
-func (ts *BackendTestSuite) clearRedis() {
-	// clear redis
+func (ts *BackendTestSuite) clearValkey() {
+	// clear valkey
 	r := ts.b.rp.Get()
 	defer r.Close()
 	_, err := r.Do("FLUSHDB")
@@ -211,7 +211,7 @@ func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ctx := context.Background()
 
-	ts.clearRedis()
+	ts.clearValkey()
 
 	// noop for invalid external ID
 	err := ts.b.DeleteMsgByExternalID(ctx, knChannel, "ext-invalid")
@@ -739,7 +739,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 
-	ts.clearRedis()
+	ts.clearValkey()
 
 	// create a status update from a send which will have id and external id
 	status1 := ts.b.NewStatusUpdate(channel, 10000, courier.MsgStatusSent, clog)
@@ -1215,7 +1215,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	_, err = writeMsgToDB(ctx, ts.b, msg5, clog)
 	ts.NoError(err)
 
-	ts.clearRedis()
+	ts.clearValkey()
 
 	// check that msg is queued to mailroom for handling
 	msg6 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "hello 1 2 3", "", clog).(*Msg)
@@ -1398,7 +1398,7 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 func (ts *BackendTestSuite) TestMailroomEvents() {
 	ctx := context.Background()
 
-	ts.clearRedis()
+	ts.clearValkey()
 
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)

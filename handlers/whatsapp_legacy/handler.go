@@ -834,7 +834,7 @@ func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL
 	})
 
 	if err != nil {
-		return "", fmt.Errorf("error reading media id from redis: %s : %s: %w", cacheKey, mediaURL, err)
+		return "", fmt.Errorf("error reading media id from valkey: %s : %s: %w", cacheKey, mediaURL, err)
 	} else if mediaID != "" {
 		return mediaID, nil
 	}
