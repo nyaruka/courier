@@ -1,3 +1,7 @@
+v10.1.31 (2025-06-13)
+-------------------------
+ * Update name of valkey config var
+
 v10.1.30 (2025-06-12)
 -------------------------
  * Clearer log messages and errors relating to writing and queuing messages
