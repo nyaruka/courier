@@ -23,7 +23,7 @@ type Config struct {
 	Address   string `help:"the network interface address courier will bind to"`
 	Port      int    `help:"the port courier will listen on"`
 	DB        string `validate:"url,startswith=postgres:"   help:"URL for your Postgres database"`
-	Redis     string `validate:"url,startswith=redis:"      help:"URL for your Redis instance"`
+	Valkey    string `validate:"url,startswith=valkey:"     help:"URL for your Valkey instance"`
 	SpoolDir  string `help:"the local directory where courier will write statuses or msgs that need to be retried (needs to be writable)"`
 
 	AWSAccessKeyID     string `help:"access key ID to use for AWS services"`
@@ -72,7 +72,7 @@ func NewDefaultConfig() *Config {
 		Address:  "",
 		Port:     8080,
 		DB:       "postgres://temba:temba@localhost/temba?sslmode=disable",
-		Redis:    "redis://localhost:6379/15",
+		Valkey:   "valkey://localhost:6379/15",
 		SpoolDir: "/var/spool/courier",
 
 		AWSAccessKeyID:     "",

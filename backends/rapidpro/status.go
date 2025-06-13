@@ -269,7 +269,7 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*Sta
 	cachedIDs, err := b.sentExternalIDs.MGet(ctx, rc, chAndExtKeys...)
 	if err != nil {
 		// log error but we continue and try to get ids from the database
-		slog.Error("error looking up sent message ids in redis", "error", err)
+		slog.Error("error looking up sent message ids in valkey", "error", err)
 	}
 
 	// collect the statuses that couldn't be resolved from cache, update the ones that could

@@ -377,7 +377,7 @@ func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 	return token, nil
 }
 
-// fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
+// fetchAccessToken tries to fetch a new token for our channel, setting the result in valkey
 func (h *handler) fetchAccessToken(channel courier.Channel) (string, time.Duration, error) {
 	credentialsJSONRaw := channel.ConfigForKey(configCredentialsFile, nil)
 	credentialsJSON, _ := credentialsJSONRaw.(map[string]any)

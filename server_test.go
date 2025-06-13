@@ -23,7 +23,7 @@ import (
 func testConfig() *courier.Config {
 	config := courier.NewDefaultConfig()
 	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
-	config.Redis = "redis://localhost:6379/0"
+	config.Valkey = "valkey://localhost:6379/0"
 	config.Port = 8081
 	return config
 }
