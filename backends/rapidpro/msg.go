@@ -220,8 +220,6 @@ func writeMsg(ctx context.Context, b *backend, m *Msg, clog *courier.ChannelLog)
 	// queue to mailroom for handling
 	if err := queueMsgHandling(ctx, rc, contact, m); err != nil {
 		slog.Error("error queueing msg handling", "error", err, "msg", m.ID_, "contact", contact.ID_)
-	} else {
-		slog.Warn("ctask queued", "type", "msg_received", "contact", contact.ID_, "msg", m.ID_)
 	}
 
 	return err
