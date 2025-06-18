@@ -183,7 +183,7 @@ func (h *handler) getAccessToken(channel courier.Channel, clog *courier.ChannelL
 
 	var token string
 	var err error
-	h.WithRedisConn(func(rc redis.Conn) {
+	h.WithValkeyConn(func(rc redis.Conn) {
 		token, err = redis.String(rc.Do("GET", tokenKey))
 	})
 
@@ -200,7 +200,7 @@ func (h *handler) getAccessToken(channel courier.Channel, clog *courier.ChannelL
 		return "", fmt.Errorf("error fetching new access token: %w", err)
 	}
 
-	h.WithRedisConn(func(rc redis.Conn) {
+	h.WithValkeyConn(func(rc redis.Conn) {
 		_, err = rc.Do("SET", tokenKey, token, "EX", int(expires/time.Second))
 	})
 
