@@ -829,7 +829,7 @@ func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL
 
 	var mediaID string
 	var err error
-	h.WithRedisConn(func(rc redis.Conn) {
+	h.WithValkeyConn(func(rc redis.Conn) {
 		mediaID, err = mediaCache.Get(ctx, rc, mediaURL)
 	})
 
@@ -893,7 +893,7 @@ func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL
 	}
 
 	// put in cache
-	h.WithRedisConn(func(rc redis.Conn) {
+	h.WithValkeyConn(func(rc redis.Conn) {
 		err = mediaCache.Set(ctx, rc, mediaURL, mediaID)
 	})
 
@@ -918,7 +918,7 @@ func (h *handler) sendWhatsAppMsg(msg courier.MsgOut, sendPath *url.URL, payload
 	if resp != nil && (resp.StatusCode == 429 || resp.StatusCode == 503) {
 		rateLimitKey := fmt.Sprintf("rate_limit:%s", msg.Channel().UUID())
 
-		h.WithRedisConn(func(rc redis.Conn) {
+		h.WithValkeyConn(func(rc redis.Conn) {
 			rc.Do("SET", rateLimitKey, "engaged")
 
 			// The rate limit is 50 requests per second
@@ -938,7 +938,7 @@ func (h *handler) sendWhatsAppMsg(msg courier.MsgOut, sendPath *url.URL, payload
 		if hasTiersError(*errPayload) {
 			rateLimitBulkKey := fmt.Sprintf("rate_limit_bulk:%s", msg.Channel().UUID())
 
-			h.WithRedisConn(func(rc redis.Conn) {
+			h.WithValkeyConn(func(rc redis.Conn) {
 				rc.Do("SET", rateLimitBulkKey, "engaged")
 
 				// The WA tiers spam rate limit hit

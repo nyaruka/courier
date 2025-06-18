@@ -150,8 +150,8 @@ func (h *BaseHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWr
 	return courier.WriteIgnored(w, details)
 }
 
-// WithRedisConn is a utility to execute some code with a redis connection
-func (h *BaseHandler) WithRedisConn(fn func(rc redis.Conn)) {
+// WithValkeyConn is a utility to execute some code with a valkey connection
+func (h *BaseHandler) WithValkeyConn(fn func(rc redis.Conn)) {
 	rc := h.Backend().RedisPool().Get()
 	defer rc.Close()
 	fn(rc)
