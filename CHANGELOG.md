@@ -1,3 +1,7 @@
+v10.1.35 (2025-06-20)
+-------------------------
+ * Update deps (includes go-chi security fix)
+
 v10.1.34 (2025-06-18)
 -------------------------
  * Rename valkey cloudwatch metrics
