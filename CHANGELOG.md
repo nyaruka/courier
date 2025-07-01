@@ -1,3 +1,7 @@
+v10.2.0 (2025-07-01)
+-------------------------
+ * Update dependencies
+
 v10.1.35 (2025-06-20)
 -------------------------
  * Update deps (includes go-chi security fix)
