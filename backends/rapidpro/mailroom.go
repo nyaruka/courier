@@ -8,7 +8,10 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/vkutil/queues"
 )
+
+var mrQueue = queues.NewFair("tasks-realtime", 100)
 
 func queueMsgHandling(ctx context.Context, rc redis.Conn, c *Contact, m *Msg) error {
 	channel := m.Channel().(*Channel)
@@ -53,12 +56,17 @@ func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *Channel, msgID cour
 // queueMailroomTask queues the passed in task to mailroom. Mailroom processes both messages and
 // channel event tasks through the same ordered queue.
 func queueMailroomTask(ctx context.Context, rc redis.Conn, taskType string, orgID OrgID, contactID ContactID, body map[string]any) (err error) {
-	// create our event task
 	eventJSON := jsonx.MustMarshal(mrTask{
 		Type:     taskType,
 		Task:     body,
 		QueuedOn: time.Now(),
 	})
+
+	// push task onto the contact queue
+	contactQueue := fmt.Sprintf("c:%d:%d", orgID, contactID)
+	if _, err := redis.DoContext(rc, ctx, "RPUSH", contactQueue, eventJSON); err != nil {
+		return fmt.Errorf("error pushing task onto contact queue: %w", err)
+	}
 
 	// create our org task
 	contactJSON := jsonx.MustMarshal(mrTask{
@@ -67,18 +75,11 @@ func queueMailroomTask(ctx context.Context, rc redis.Conn, taskType string, orgI
 		QueuedOn: time.Now(),
 	})
 
-	now := time.Now().UTC()
-	epochFloat := float64(now.UnixNano()) / float64(time.Second)
+	if err := mrQueue.Push(ctx, rc, fmt.Sprint(orgID), false, contactJSON); err != nil {
+		return fmt.Errorf("error pushing task onto org queue: %w", err)
+	}
 
-	// we do all our queueing in a transaction
-	contactQueue := fmt.Sprintf("c:%d:%d", orgID, contactID)
-	rc.Send("MULTI")
-	rc.Send("RPUSH", contactQueue, eventJSON)
-	rc.Send("ZADD", fmt.Sprintf("tasks:handler:%d", orgID), fmt.Sprintf("%.5f", epochFloat-10000000), contactJSON)
-	rc.Send("ZINCRBY", "tasks:handler:active", 0, orgID)
-	_, err = redis.DoContext(rc, ctx, "EXEC")
-
-	return err
+	return nil
 }
 
 type mrContactTask struct {
