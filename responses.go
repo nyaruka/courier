@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/nyaruka/gocommon/urns"
-	validator "gopkg.in/go-playground/validator.v9"
 )
 
 // writeAndLogRequestError writes a JSON response for the passed in message and logs an info messages
