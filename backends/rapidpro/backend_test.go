@@ -750,7 +750,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	// give batcher time to write it
 	time.Sleep(time.Millisecond * 600)
 
-	keys, err := redis.Strings(rc.Do("KEYS", "sent-external-ids:*"))
+	keys, err := redis.Strings(rc.Do("KEYS", "{sent-external-ids}:*"))
 	ts.NoError(err)
 	ts.Len(keys, 1)
 	assertvk.HGetAll(ts.T(), rc, keys[0], map[string]string{"10|ex457": "10000"})
@@ -797,7 +797,7 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	msg1 := createAndWriteMsg(knChannel, urn, "ping", "")
 	ts.False(msg1.alreadyWritten)
 
-	keys, err := redis.Strings(rc.Do("KEYS", "seen-msgs:*"))
+	keys, err := redis.Strings(rc.Do("KEYS", "{seen-msgs}:*"))
 	ts.NoError(err)
 	ts.Len(keys, 1)
 	assertvk.HGetAll(ts.T(), rc, keys[0], map[string]string{
@@ -1537,7 +1537,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 	}
 
 	// check we've cached 3 media lookups
-	assertvk.HLen(ts.T(), rc, fmt.Sprintf("media-lookups:%s", time.Now().In(time.UTC).Format("2006-01-02")), 3)
+	assertvk.HLen(ts.T(), rc, fmt.Sprintf("{media-lookups}:%s", time.Now().In(time.UTC).Format("2006-01-02")), 3)
 }
 
 func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {

@@ -7,9 +7,9 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.36.5
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.19.4
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.44.0
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.82.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.83.0
 	github.com/buger/jsonparser v1.1.1
-	github.com/getsentry/sentry-go v0.34.0
+	github.com/getsentry/sentry-go v0.34.1
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/gomodule/redigo v1.9.2
@@ -20,7 +20,7 @@ require (
 	github.com/nyaruka/ezconf v0.3.0
 	github.com/nyaruka/gocommon v1.64.1
 	github.com/nyaruka/null/v3 v3.0.0
-	github.com/nyaruka/vkutil v0.12.0
+	github.com/nyaruka/vkutil v0.16.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/samber/slog-multi v1.4.1
 	github.com/samber/slog-sentry/v2 v2.9.3
