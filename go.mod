@@ -20,7 +20,7 @@ require (
 	github.com/nyaruka/ezconf v0.3.0
 	github.com/nyaruka/gocommon v1.64.1
 	github.com/nyaruka/null/v3 v3.0.0
-	github.com/nyaruka/vkutil v0.16.0
+	github.com/nyaruka/vkutil v0.17.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/samber/slog-multi v1.4.1
 	github.com/samber/slog-sentry/v2 v2.9.3
