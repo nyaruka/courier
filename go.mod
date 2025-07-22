@@ -29,8 +29,6 @@ require (
 	golang.org/x/oauth2 v0.30.0
 )
 
-require github.com/golang/protobuf v1.5.4 // indirect
-
 require (
 	cloud.google.com/go/compute/metadata v0.7.0 // indirect
 	github.com/antchfx/xpath v1.3.4 // indirect
