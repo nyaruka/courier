@@ -1,3 +1,8 @@
+v10.3.1 (2025-07-28)
+-------------------------
+ * Update deps including phonenumbers
+ * Queue to new mailroom realtime queue
+
 v10.3.0 (2025-07-08)
 -------------------------
  * Update to latest vkutil
