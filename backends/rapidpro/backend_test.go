@@ -1546,6 +1546,7 @@ func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {
 
 	assertvk.ZCard(ts.T(), rc, "{tasks:realtime}:queued", 0)
 	assertvk.LLen(ts.T(), rc, "{tasks:realtime}:o:1/0", 0)
+	assertvk.LLen(ts.T(), rc, "{tasks:realtime}:o:1/1", 0)
 	assertvk.LLen(ts.T(), rc, fmt.Sprintf("c:1:%d", contactID), 0)
 }
 
@@ -1554,7 +1555,8 @@ func (ts *BackendTestSuite) assertQueuedContactTask(contactID ContactID, expecte
 	defer rc.Close()
 
 	assertvk.ZCard(ts.T(), rc, "{tasks:realtime}:queued", 1)
-	assertvk.LLen(ts.T(), rc, "{tasks:realtime}:o:1/0", 1)
+	assertvk.LLen(ts.T(), rc, "{tasks:realtime}:o:1/0", 0)
+	assertvk.LLen(ts.T(), rc, "{tasks:realtime}:o:1/1", 1)
 	assertvk.LLen(ts.T(), rc, fmt.Sprintf("c:1:%d", contactID), 1)
 
 	data, err := redis.Bytes(rc.Do("LPOP", fmt.Sprintf("c:1:%d", contactID)))
