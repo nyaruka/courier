@@ -11,7 +11,7 @@ import (
 	"github.com/nyaruka/vkutil/queues"
 )
 
-var mrQueue = queues.NewFair("tasks-realtime", 100)
+var mrQueue = queues.NewFair("tasks:realtime", 100)
 
 func queueMsgHandling(ctx context.Context, rc redis.Conn, c *Contact, m *Msg) error {
 	channel := m.Channel().(*Channel)
