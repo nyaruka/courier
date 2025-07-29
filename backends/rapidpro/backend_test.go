@@ -40,7 +40,9 @@ import (
 
 type BackendTestSuite struct {
 	suite.Suite
-	b *backend
+
+	b      *backend
+	dynamo *dynamodb.Client
 }
 
 func testConfig() *courier.Config {
@@ -78,9 +80,6 @@ func (ts *BackendTestSuite) SetupSuite() {
 	log.SetOutput(io.Discard)
 
 	// create dynamo tables prior to starting backend, as it will check they exist
-	dyn, err := dynamo.NewClient(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.DynamoEndpoint)
-	noError(err)
-
 	tablesFile, err := os.Open("dynamo.json")
 	noError(err)
 	defer tablesFile.Close()
@@ -91,16 +90,19 @@ func (ts *BackendTestSuite) SetupSuite() {
 	inputs := []*dynamodb.CreateTableInput{}
 	jsonx.MustUnmarshal(tablesJSON, &inputs)
 
+	ts.dynamo, err = dynamo.NewClient(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.DynamoEndpoint)
+	noError(err)
+
 	for _, input := range inputs {
 		input.TableName = aws.String(cfg.DynamoTablePrefix + *input.TableName) // add table prefix
 
 		// delete table if it exists
-		if _, err := dyn.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: input.TableName}); err == nil {
-			_, err := dyn.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: input.TableName})
+		if _, err := ts.dynamo.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: input.TableName}); err == nil {
+			_, err := ts.dynamo.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: input.TableName})
 			must(err)
 		}
 
-		_, err := dyn.CreateTable(ctx, input)
+		_, err := ts.dynamo.CreateTable(ctx, input)
 		noError(err)
 	}
 
@@ -121,11 +123,12 @@ func (ts *BackendTestSuite) SetupSuite() {
 }
 
 func (ts *BackendTestSuite) TearDownSuite() {
+	ctx := context.Background()
 	ts.b.Stop()
 	ts.b.Cleanup()
 
-	ts.b.dynamo.Purge(context.Background())
-	ts.b.s3.EmptyBucket(context.Background(), "test-attachments")
+	dynamo.Truncate(ctx, ts.dynamo, ts.b.config.DynamoTablePrefix+"Main")
+	ts.b.s3.EmptyBucket(ctx, "test-attachments")
 }
 
 func (ts *BackendTestSuite) clearValkey() {
@@ -1031,6 +1034,10 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
+	getClogFromDynamo := func(clog *courier.ChannelLog) (*DynamoItem, error) {
+		return dynamo.GetItem[DynamoKey, DynamoItem](ctx, ts.dynamo, ts.b.dynamoWriter.Table(), (&ChannelLog{clog}).DynamoKey())
+	}
+
 	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
@@ -1053,7 +1060,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	time.Sleep(time.Second) // give writer time to write this
 
 	// check that we can read the log back from DynamoDB
-	item1, err := ts.b.dynamo.GetItem(ctx, GetChannelLogKey(clog1))
+	item1, err := getClogFromDynamo(clog1)
 	ts.NoError(err)
 	ts.Equal(1, item1.OrgID)
 	ts.Equal("token_refresh", item1.Data["type"])
@@ -1074,7 +1081,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	time.Sleep(time.Second) // give writer time to write this
 
 	// check that we can read the log back from DynamoDB
-	item2, err := ts.b.dynamo.GetItem(ctx, GetChannelLogKey(clog2))
+	item2, err := getClogFromDynamo(clog2)
 	ts.NoError(err)
 	ts.Equal("msg_send", item2.Data["type"])
 
@@ -1087,7 +1094,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	time.Sleep(time.Second) // give writer time to.. not write this
 
-	item3, err := ts.b.dynamo.GetItem(ctx, GetChannelLogKey(clog3))
+	item3, err := getClogFromDynamo(clog3)
 	ts.NoError(err)
 	ts.Nil(item3)
 
@@ -1098,7 +1105,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	time.Sleep(time.Second) // give writer time to write this because it's an error
 
-	item4, err := ts.b.dynamo.GetItem(ctx, GetChannelLogKey(clog4))
+	item4, err := getClogFromDynamo(clog4)
 	ts.NoError(err)
 	ts.NotNil(item4)
 
@@ -1112,11 +1119,11 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	time.Sleep(time.Second) // give writer time to.. not write this
 
-	item5, err := ts.b.dynamo.GetItem(ctx, GetChannelLogKey(clog5))
+	item5, err := getClogFromDynamo(clog5)
 	ts.NoError(err)
 	ts.Nil(item5)
 
-	count, err := ts.b.dynamo.Count(ctx)
+	count, err := dynamo.Count(ctx, ts.dynamo, ts.b.dynamoWriter.Table())
 	ts.NoError(err)
 	ts.Equal(3, count)
 }
