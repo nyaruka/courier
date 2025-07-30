@@ -1,3 +1,8 @@
+v10.3.2 (2025-07-30)
+-------------------------
+ * Add new DynamoDB writer and spool for channel logs
+ * Handle deactivated users on Telgram as stopped contacts
+
 v10.3.1 (2025-07-28)
 -------------------------
  * Update deps including phonenumbers
