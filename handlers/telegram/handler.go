@@ -167,7 +167,7 @@ func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.V
 	err = json.Unmarshal(respBody, response)
 
 	if err != nil || resp.StatusCode/100 != 2 || !response.Ok {
-		if response.ErrorCode == 403 && response.Description == "Forbidden: bot was blocked by the user" {
+		if response.ErrorCode == 403 && (response.Description == "Forbidden: bot was blocked by the user" || response.Description == "Forbidden: user is deactivated") {
 			return "", courier.ErrContactStopped
 		} else if response.ErrorCode > 0 {
 			return "", courier.ErrFailedWithReason(strconv.Itoa(response.ErrorCode), response.Description)
