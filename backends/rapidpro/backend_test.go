@@ -26,6 +26,7 @@ import (
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/aws/dynamo"
+	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/httpx"
@@ -80,31 +81,11 @@ func (ts *BackendTestSuite) SetupSuite() {
 	log.SetOutput(io.Discard)
 
 	// create dynamo tables prior to starting backend, as it will check they exist
-	tablesFile, err := os.Open("dynamo.json")
+	dyn, err := dynamo.NewClient(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.DynamoEndpoint)
 	noError(err)
-	defer tablesFile.Close()
+	ts.dynamo = dyn
 
-	tablesJSON, err := io.ReadAll(tablesFile)
-	noError(err)
-
-	inputs := []*dynamodb.CreateTableInput{}
-	jsonx.MustUnmarshal(tablesJSON, &inputs)
-
-	ts.dynamo, err = dynamo.NewClient(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.DynamoEndpoint)
-	noError(err)
-
-	for _, input := range inputs {
-		input.TableName = aws.String(cfg.DynamoTablePrefix + *input.TableName) // add table prefix
-
-		// delete table if it exists
-		if _, err := ts.dynamo.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: input.TableName}); err == nil {
-			_, err := ts.dynamo.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: input.TableName})
-			must(err)
-		}
-
-		_, err := ts.dynamo.CreateTable(ctx, input)
-		noError(err)
-	}
+	dyntest.CreateTables(ts.T(), ts.dynamo, "dynamo.json")
 
 	b, err := courier.NewBackend(cfg)
 	noError(err)
@@ -127,7 +108,7 @@ func (ts *BackendTestSuite) TearDownSuite() {
 	ts.b.Stop()
 	ts.b.Cleanup()
 
-	dynamo.Truncate(ctx, ts.dynamo, ts.b.config.DynamoTablePrefix+"Main")
+	dyntest.Truncate(ts.T(), ts.dynamo, ts.b.dynamoWriter.Table())
 	ts.b.s3.EmptyBucket(ctx, "test-attachments")
 }
 
@@ -1123,9 +1104,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.NoError(err)
 	ts.Nil(item5)
 
-	count, err := dynamo.Count(ctx, ts.dynamo, ts.b.dynamoWriter.Table())
-	ts.NoError(err)
-	ts.Equal(3, count)
+	dyntest.AssertCount(ts.T(), ts.dynamo, ts.b.dynamoWriter.Table(), 3)
 }
 
 func (ts *BackendTestSuite) TestSaveAttachment() {
