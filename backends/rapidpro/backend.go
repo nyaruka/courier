@@ -53,16 +53,16 @@ func init() {
 type backend struct {
 	config *courier.Config
 
-	statusWriter *StatusWriter
-	dynamoWriter *DynamoWriter // all logs being written to dynamo
-	writerWG     *sync.WaitGroup
-
 	db           *sqlx.DB
 	rp           *redis.Pool
-	dynamo       *dynamo.Table[DynamoKey, DynamoItem]
 	s3           *s3x.Service
 	cw           *cwatch.Service
 	systemUserID UserID
+
+	statusWriter *StatusWriter
+	dynamoWriter *dynamo.Writer
+	dynamoSpool  *dynamo.Spool
+	writerWG     *sync.WaitGroup
 
 	channelsByUUID *cache.Local[courier.ChannelUUID, *Channel]
 	channelsByAddr *cache.Local[courier.ChannelAddress, *Channel]
@@ -173,18 +173,25 @@ func (b *backend) Start() error {
 		queue.StartDethrottler(b.rp, b.stopChan, b.waitGroup, msgQueueName)
 	}
 
-	// setup DynamoDB main table
-	dc, err := dynamo.NewClient(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.DynamoEndpoint)
+	// setup DynamoDB
+	dynamoTable := b.config.DynamoTablePrefix + "Main"
+	dynamoClient, err := dynamo.NewClient(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.DynamoEndpoint)
 	if err != nil {
 		return err
 	}
-	b.dynamo = dynamo.NewTable[DynamoKey, DynamoItem](dc, b.config.DynamoTablePrefix+"Main")
-
-	if err := b.dynamo.Test(ctx); err != nil {
+	if err := dynamo.Test(ctx, dynamoClient, dynamoTable); err != nil {
 		log.Error("dynamodb not reachable", "error", err)
 	} else {
 		log.Info("dynamodb ok")
 	}
+
+	b.dynamoSpool = dynamo.NewSpool(dynamoClient, b.config.SpoolDir+"/dynamo", 30*time.Second, b.writerWG)
+	if err := b.dynamoSpool.Start(); err != nil {
+		log.Error("error starting dynamo spool", "error", err)
+	}
+
+	b.dynamoWriter = dynamo.NewWriter(dynamoClient, dynamoTable, 500*time.Millisecond, 1000, b.dynamoSpool, b.writerWG)
+	b.dynamoWriter.Start()
 
 	// setup S3 storage
 	b.s3, err = s3x.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.S3Endpoint, b.config.S3Minio)
@@ -227,9 +234,6 @@ func (b *backend) Start() error {
 	// create our batched writers and start them
 	b.statusWriter = NewStatusWriter(b, b.config.SpoolDir, b.writerWG)
 	b.statusWriter.Start()
-
-	b.dynamoWriter = NewDynamoWriter(b.dynamo, b.writerWG)
-	b.dynamoWriter.Start()
 
 	// store the system user id
 	b.systemUserID, err = getSystemUserID(ctx, b.db)
@@ -837,6 +841,7 @@ func (b *backend) reportMetrics(ctx context.Context) (int, error) {
 		cwatch.Datum("ValkeyConnectionsWaitDuration", float64(redisWaitDurationInPeriod)/float64(time.Second), cwtypes.StandardUnitSeconds, hostDim),
 		cwatch.Datum("QueuedMsgs", float64(bulkSize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "bulk")),
 		cwatch.Datum("QueuedMsgs", float64(prioritySize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "priority")),
+		cwatch.Datum("DynamoSpoolSize", float64(b.dynamoSpool.Size()), cwtypes.StandardUnitCount, hostDim),
 	)
 
 	if err := b.cw.Send(ctx, metrics...); err != nil {
