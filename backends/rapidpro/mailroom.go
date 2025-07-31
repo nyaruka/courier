@@ -75,7 +75,7 @@ func queueMailroomTask(ctx context.Context, rc redis.Conn, taskType string, orgI
 		QueuedOn: time.Now(),
 	})
 
-	if err := mrQueue.Push(ctx, rc, fmt.Sprint(orgID), true, contactJSON); err != nil {
+	if _, err := mrQueue.Push(ctx, rc, queues.OwnerID(fmt.Sprint(orgID)), true, contactJSON); err != nil {
 		return fmt.Errorf("error pushing task onto org queue: %w", err)
 	}
 
