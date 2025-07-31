@@ -1,3 +1,7 @@
+v10.3.3 (2025-07-31)
+-------------------------
+ * Update to latest vkutil that adds ids to tasks
+
 v10.3.2 (2025-07-30)
 -------------------------
  * Add new DynamoDB writer and spool for channel logs
