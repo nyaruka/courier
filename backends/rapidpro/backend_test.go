@@ -1247,7 +1247,7 @@ func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
 	// should have actually fetched and saved it to storage, with the correct content type
 	err = ts.b.WriteMsg(ctx, msg2, clog)
 	ts.NoError(err)
-	ts.Equal([]string{"image/jpeg:http://localhost:9000/test-attachments/attachments/1/9b95/5e36/9b955e36-ac16-4c6b-8ab6-9b9af5cd042a.jpg"}, msg2.Attachments())
+	ts.Equal([]string{"image/jpeg:http://localhost:9000/test-attachments/attachments/1/37c5/fddb/37c5fddb-8512-4a80-8c21-38b6e22ef940.jpg"}, msg2.Attachments())
 
 	// try an invalid embedded attachment
 	msg3 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "invalid embedded attachment data", "", clog).(*Msg)
