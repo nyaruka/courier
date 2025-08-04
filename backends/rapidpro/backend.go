@@ -189,12 +189,12 @@ func (b *backend) Start() error {
 	}
 
 	b.dynamoSpool = dynamo.NewSpool(dynamoClient, b.config.SpoolDir+"/dynamo", 30*time.Second)
-	if err := b.dynamoSpool.Start(b.writerWG); err != nil {
+	if err := b.dynamoSpool.Start(); err != nil {
 		log.Error("error starting dynamo spool", "error", err)
 	}
 
 	b.dynamoWriter = dynamo.NewWriter(dynamoClient, dynamoTable, 500*time.Millisecond, 1000, b.dynamoSpool)
-	b.dynamoWriter.Start(b.writerWG)
+	b.dynamoWriter.Start()
 
 	// setup S3 storage
 	b.s3, err = s3x.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.S3Endpoint, b.config.S3Minio)
@@ -336,6 +336,9 @@ func (b *backend) Stop() error {
 	// wait for our threads to exit
 	b.waitGroup.Wait()
 
+	b.dynamoWriter.Stop()
+	b.dynamoSpool.Stop()
+
 	if err := b.recordShutdown(context.TODO()); err != nil {
 		return fmt.Errorf("error recording shutdown: %w", err)
 	}
@@ -348,9 +351,6 @@ func (b *backend) Cleanup() error {
 	// stop our batched writers
 	if b.statusWriter != nil {
 		b.statusWriter.Stop()
-	}
-	if b.dynamoWriter != nil {
-		b.dynamoWriter.Stop()
 	}
 
 	// wait for them to flush fully
