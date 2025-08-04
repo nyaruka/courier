@@ -1,3 +1,9 @@
+v10.3.4 (2025-08-04)
+-------------------------
+ * Cleanup startup and shutdown logging
+ * Add same check for improper shutdowns as mailroom
+ * Update to latest gocommon
+
 v10.3.3 (2025-07-31)
 -------------------------
  * Update to latest vkutil that adds ids to tasks
