@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/nyaruka/courier"
@@ -169,7 +168,7 @@ type StatusWriter struct {
 }
 
 // NewStatusWriter creates a new status update writer
-func NewStatusWriter(b *backend, spoolDir string, wg *sync.WaitGroup) *StatusWriter {
+func NewStatusWriter(b *backend, spoolDir string) *StatusWriter {
 	return &StatusWriter{
 		Batcher: syncx.NewBatcher[*StatusUpdate](func(batch []*StatusUpdate) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -177,7 +176,7 @@ func NewStatusWriter(b *backend, spoolDir string, wg *sync.WaitGroup) *StatusWri
 
 			b.writeStatuseUpdates(ctx, spoolDir, batch)
 
-		}, 1000, time.Millisecond*500, 1000, wg),
+		}, 1000, time.Millisecond*500, 1000),
 	}
 }
 
