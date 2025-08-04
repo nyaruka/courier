@@ -1,3 +1,7 @@
+v10.3.5 (2025-08-04)
+-------------------------
+ * Update to latest gocommon
+
 v10.3.4 (2025-08-04)
 -------------------------
  * Cleanup startup and shutdown logging
