@@ -140,12 +140,11 @@ func newBackend(cfg *courier.Config) courier.Backend {
 
 // Start starts our RapidPro backend, this tests our various connections and starts our spool flushers
 func (b *backend) Start() error {
+	log := slog.With("comp", "backend")
+	log.Info("backend starting")
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-
-	// parse and test our redis config
-	log := slog.With("comp", "backend", "state", "starting")
-	log.Info("starting backend")
 
 	// build our db
 	db, err := sqlx.Open("postgres", b.config.DB)
@@ -256,7 +255,7 @@ func (b *backend) Start() error {
 		return err
 	}
 
-	slog.Info("backend started", "comp", "backend", "state", "started")
+	log.Info("backend started")
 	return nil
 }
 
@@ -271,7 +270,7 @@ func (b *backend) checkLastShutdown(ctx context.Context) error {
 	}
 
 	if exists {
-		slog.Error("mailroom node did not shutdown cleanly last time")
+		slog.Error("node did not shutdown cleanly last time")
 	} else {
 		if _, err := redis.DoContext(vc, ctx, "HSET", appNodesRunningKey, nodeID, time.Now().UTC().Format(time.RFC3339)); err != nil {
 			return fmt.Errorf("error setting app node state: %w", err)
@@ -325,6 +324,9 @@ func (b *backend) startMetricsReporter(interval time.Duration) {
 
 // Stop stops our RapidPro backend, closing our db and redis connections
 func (b *backend) Stop() error {
+	log := slog.With("comp", "backend")
+	log.Info("backend stopping")
+
 	// close our stop channel
 	close(b.stopChan)
 
@@ -338,6 +340,7 @@ func (b *backend) Stop() error {
 		return fmt.Errorf("error recording shutdown: %w", err)
 	}
 
+	log.Info("backend stopped")
 	return nil
 }
 
