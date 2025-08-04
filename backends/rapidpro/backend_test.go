@@ -1043,7 +1043,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	// check that we can read the log back from DynamoDB
 	item1, err := getClogFromDynamo(clog1)
 	ts.NoError(err)
-	ts.Equal(1, item1.OrgID)
+	ts.Equal(OrgID(1), item1.OrgID)
 	ts.Equal("token_refresh", item1.Data["type"])
 	ts.NotNil(item1.DataGZ)
 

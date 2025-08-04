@@ -14,7 +14,7 @@ type DynamoKey struct {
 type DynamoItem struct {
 	DynamoKey
 
-	OrgID  int            `dynamodbav:"OrgID"`
+	OrgID  OrgID          `dynamodbav:"OrgID"`
 	TTL    time.Time      `dynamodbav:"TTL,unixtime,omitempty"`
 	Data   map[string]any `dynamodbav:"Data"`
 	DataGZ []byte         `dynamodbav:"DataGZ,omitempty"`

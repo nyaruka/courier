@@ -40,7 +40,7 @@ func (l *ChannelLog) MarshalDynamo() (map[string]types.AttributeValue, error) {
 
 	return dynamo.Marshal(&DynamoItem{
 		DynamoKey: l.DynamoKey(),
-		OrgID:     int(l.Channel().(*Channel).OrgID()),
+		OrgID:     l.Channel().(*Channel).OrgID(),
 		TTL:       l.CreatedOn.Add(dynamoChannelLogTTL),
 		Data: map[string]any{
 			"type":       l.Type,
