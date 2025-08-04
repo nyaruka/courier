@@ -185,13 +185,13 @@ func (b *backend) Start() error {
 		log.Info("dynamodb ok")
 	}
 
-	b.dynamoSpool = dynamo.NewSpool(dynamoClient, b.config.SpoolDir+"/dynamo", 30*time.Second, b.writerWG)
-	if err := b.dynamoSpool.Start(); err != nil {
+	b.dynamoSpool = dynamo.NewSpool(dynamoClient, b.config.SpoolDir+"/dynamo", 30*time.Second)
+	if err := b.dynamoSpool.Start(b.writerWG); err != nil {
 		log.Error("error starting dynamo spool", "error", err)
 	}
 
-	b.dynamoWriter = dynamo.NewWriter(dynamoClient, dynamoTable, 500*time.Millisecond, 1000, b.dynamoSpool, b.writerWG)
-	b.dynamoWriter.Start()
+	b.dynamoWriter = dynamo.NewWriter(dynamoClient, dynamoTable, 500*time.Millisecond, 1000, b.dynamoSpool)
+	b.dynamoWriter.Start(b.writerWG)
 
 	// setup S3 storage
 	b.s3, err = s3x.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.S3Endpoint, b.config.S3Minio)
@@ -232,8 +232,8 @@ func (b *backend) Start() error {
 	}
 
 	// create our batched writers and start them
-	b.statusWriter = NewStatusWriter(b, b.config.SpoolDir, b.writerWG)
-	b.statusWriter.Start()
+	b.statusWriter = NewStatusWriter(b, b.config.SpoolDir)
+	b.statusWriter.Start(b.writerWG)
 
 	// store the system user id
 	b.systemUserID, err = getSystemUserID(ctx, b.db)
