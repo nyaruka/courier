@@ -38,11 +38,15 @@ import (
 	"github.com/nyaruka/vkutil"
 )
 
-// the name for our message queue
-const msgQueueName = "msgs"
+const (
+	appNodesRunningKey = "app-nodes:running"
 
-// our timeout for backend operations
-const backendTimeout = time.Second * 20
+	// the name for our message queue
+	msgQueueName = "msgs"
+
+	// our timeout for backend operations
+	backendTimeout = time.Second * 20
+)
 
 var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
@@ -248,7 +252,42 @@ func (b *backend) Start() error {
 
 	b.startMetricsReporter(time.Minute)
 
+	if err := b.checkLastShutdown(ctx); err != nil {
+		return err
+	}
+
 	slog.Info("backend started", "comp", "backend", "state", "started")
+	return nil
+}
+
+func (b *backend) checkLastShutdown(ctx context.Context) error {
+	nodeID := fmt.Sprintf("courier:%s", b.config.InstanceID)
+	vc := b.rp.Get()
+	defer vc.Close()
+
+	exists, err := redis.Bool(redis.DoContext(vc, ctx, "HEXISTS", appNodesRunningKey, nodeID))
+	if err != nil {
+		return fmt.Errorf("error checking last shutdown: %w", err)
+	}
+
+	if exists {
+		slog.Error("mailroom node did not shutdown cleanly last time")
+	} else {
+		if _, err := redis.DoContext(vc, ctx, "HSET", appNodesRunningKey, nodeID, time.Now().UTC().Format(time.RFC3339)); err != nil {
+			return fmt.Errorf("error setting app node state: %w", err)
+		}
+	}
+	return nil
+}
+
+func (b *backend) recordShutdown(ctx context.Context) error {
+	nodeID := fmt.Sprintf("courier:%s", b.config.InstanceID)
+	vc := b.rp.Get()
+	defer vc.Close()
+
+	if _, err := redis.DoContext(vc, ctx, "HDEL", appNodesRunningKey, nodeID); err != nil {
+		return fmt.Errorf("error recording shutdown: %w", err)
+	}
 	return nil
 }
 
@@ -294,6 +333,10 @@ func (b *backend) Stop() error {
 
 	// wait for our threads to exit
 	b.waitGroup.Wait()
+
+	if err := b.recordShutdown(context.TODO()); err != nil {
+		return fmt.Errorf("error recording shutdown: %w", err)
+	}
 
 	return nil
 }
