@@ -17,6 +17,7 @@ import (
 
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
@@ -139,7 +140,7 @@ func newServer(backend courier.Backend) courier.Server {
 	logger := slog.Default()
 	log.SetOutput(io.Discard)
 
-	config := courier.NewDefaultConfig()
+	config := runtime.NewDefaultConfig()
 	config.FacebookWebhookSecret = "fb_webhook_secret"
 	config.FacebookApplicationSecret = "fb_app_secret"
 	config.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"

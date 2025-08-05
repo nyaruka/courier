@@ -5,22 +5,11 @@
 [![codecov](https://codecov.io/gh/nyaruka/courier/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/courier)
 [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/courier)](https://goreportcard.com/report/github.com/nyaruka/courier)
 
-Courier is a messaging gateway for text-based messaging channels. It abstracts out various different
-texting mediums and providers, allowing applications to focus on the creation and processing of those messages.
-
-Currently it supports over 50 different channel types, ranging for SMS aggregators like Twilio to
-IP channels like Facebook and Telegram messenger. The goal is for Courier to support all popular
-messaging channels and aggregators and we are happy to accept pull requests to help accomplish that.
-
-Courier is currently used to power [RapidPro](https://rapidpro.io) and [TextIt](https://textit.com)
-but the backend is pluggable, so you can add your own backend to read and write messages.
+Messaging gateway service for [RapidPro](https://rapidpro.io) and [TextIt](https://textit.com).
 
 ## Deploying
 
-As a Go application, it compiles to a binary and that binary along with the config file is all
-you need to run it on your server. You can find bundles for each platform in the
-[releases directory](https://github.com/nyaruka/courier/releases). We recommend running it
-behind a reverse proxy such as nginx or Elastic Load Balancer that provides HTTPs encryption.
+It compiles to a binary and can find bundles for each platform in the [releases directory](https://github.com/nyaruka/courier/releases).
 
 ## Configuration
 

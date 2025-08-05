@@ -5,18 +5,19 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/utils/clogs"
 )
 
 type MockServer struct {
 	backend courier.Backend
-	config  *courier.Config
+	config  *runtime.Config
 
 	stopChan chan bool
 	stopped  bool
 }
 
-func NewMockServer(config *courier.Config, backend courier.Backend) courier.Server {
+func NewMockServer(config *runtime.Config, backend courier.Backend) courier.Server {
 	return &MockServer{
 		backend:  backend,
 		config:   config,
@@ -24,7 +25,7 @@ func NewMockServer(config *courier.Config, backend courier.Backend) courier.Serv
 	}
 }
 
-func (ms *MockServer) Config() *courier.Config {
+func (ms *MockServer) Config() *runtime.Config {
 	return ms.config
 }
 

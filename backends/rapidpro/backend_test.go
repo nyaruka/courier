@@ -24,6 +24,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
+	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
@@ -46,8 +47,8 @@ type BackendTestSuite struct {
 	dynamo *dynamodb.Client
 }
 
-func testConfig() *courier.Config {
-	config := courier.NewDefaultConfig()
+func testConfig() *runtime.Config {
+	config := runtime.NewDefaultConfig()
 	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
 	config.Valkey = "valkey://localhost:6379/0"
 	config.MediaDomain = "nyaruka.s3.com"
