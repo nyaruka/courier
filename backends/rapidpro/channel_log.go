@@ -63,7 +63,7 @@ func queueChannelLog(b *backend, clog *courier.ChannelLog) {
 		return
 	}
 
-	capacity, err := b.dynamoWriter.Write(&ChannelLog{clog})
+	capacity, err := b.dynamoWriter.Queue(&ChannelLog{clog})
 	if err != nil {
 		log.Error("error writing channel log to dynamo writer", "error", err)
 		return

@@ -90,7 +90,7 @@ func (ts *BackendTestSuite) SetupSuite() {
 	noError(err)
 	ts.dynamo = dyn
 
-	dyntest.CreateTables(ts.T(), ts.dynamo, "dynamo.json")
+	dyntest.CreateTables(ts.T(), ts.dynamo, "dynamo.json", false)
 
 	b := NewBackend(rt)
 	ts.b = b.(*backend)
