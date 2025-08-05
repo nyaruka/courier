@@ -73,6 +73,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/whatsapp_legacy"
 	_ "github.com/nyaruka/courier/handlers/yo"
 	_ "github.com/nyaruka/courier/handlers/zenvia"
+	"github.com/nyaruka/courier/runtime"
 
 	// load available backends
 	_ "github.com/nyaruka/courier/backends/rapidpro"
@@ -85,7 +86,7 @@ var (
 )
 
 func main() {
-	config := courier.LoadConfig()
+	config := runtime.LoadConfig()
 	config.Version = version
 
 	// configure our logger
