@@ -16,7 +16,7 @@ import (
 	filetype "github.com/h2non/filetype"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/queue"
+	"github.com/nyaruka/courier/utils/queue"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"

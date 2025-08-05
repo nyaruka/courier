@@ -1,4 +1,4 @@
-package queue
+package queue_test
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/nyaruka/courier/utils/queue"
 	"github.com/nyaruka/vkutil/assertvk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -47,14 +48,14 @@ func TestLua(t *testing.T) {
 	// start our dethrottler
 	quitter := make(chan bool)
 	wg := &sync.WaitGroup{}
-	StartDethrottler(rp, quitter, wg, "msgs")
+	queue.StartDethrottler(rp, quitter, wg, "msgs")
 	defer close(quitter)
 
 	rate := 10
 
 	// add 20 messages with ids 0-19
-	for i := 0; i < 20; i++ {
-		err := PushOntoQueue(rc, "msgs", "chan1", rate, fmt.Sprintf(`[{"id":%d}]`, i), LowPriority)
+	for i := range 20 {
+		err := queue.PushOntoQueue(rc, "msgs", "chan1", rate, fmt.Sprintf(`[{"id":%d}]`, i), queue.LowPriority)
 		require.NoError(t, err)
 	}
 
@@ -67,27 +68,27 @@ func TestLua(t *testing.T) {
 	rc.Do("EXPIRE", "rate_limit_bulk:chan1", 5)
 
 	// popping shouldn't error or return a value
-	queue, value, err := PopFromQueue(rc, "msgs")
+	q, value, err := queue.PopFromQueue(rc, "msgs")
 	assert.NoError(t, err)
 	assert.Equal(t, "", value)
-	assert.Equal(t, Retry, queue)
+	assert.Equal(t, queue.Retry, q)
 
 	// unmark chan1 as rate limited
 	rc.Do("DEL", "rate_limit_bulk:chan1")
 
 	// pop 10 items off
 	for i := 0; i < 10; i++ {
-		queue, value, err := PopFromQueue(rc, "msgs")
+		q, value, err := queue.PopFromQueue(rc, "msgs")
 		assert.NoError(t, err)
-		assert.NotEqual(t, queue, EmptyQueue)
+		assert.NotEqual(t, q, queue.EmptyQueue)
 		assert.Equal(t, fmt.Sprintf(`{"id":%d}`, i), value)
 	}
 
 	// next value should be throttled
-	queue, value, err = PopFromQueue(rc, "msgs")
+	q, value, err = queue.PopFromQueue(rc, "msgs")
 	assert.NoError(t, err)
 	assert.Equal(t, "", value)
-	assert.Equal(t, Retry, queue)
+	assert.Equal(t, queue.Retry, q)
 
 	// check our redis state
 	assertvk.ZGetAll(t, rc, "msgs:active", map[string]float64{})
@@ -95,7 +96,7 @@ func TestLua(t *testing.T) {
 	assertvk.ZGetAll(t, rc, "msgs:future", map[string]float64{})
 
 	// adding more items shouldn't change that
-	err = PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":30}]`, LowPriority)
+	err = queue.PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":30}]`, queue.LowPriority)
 	assert.NoError(t, err)
 
 	assertvk.ZGetAll(t, rc, "msgs:active", map[string]float64{})
@@ -105,16 +106,16 @@ func TestLua(t *testing.T) {
 	// but if we wait, our next msg should be our highest priority
 	time.Sleep(time.Second)
 
-	err = PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":31}]`, HighPriority)
+	err = queue.PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":31}]`, queue.HighPriority)
 	assert.NoError(t, err)
 
 	// make sure pause bulk key do not prevent use to get from the high priority queue
 	rc.Do("SET", "rate_limit_bulk:chan1", "engaged")
 	rc.Do("EXPIRE", "rate_limit_bulk:chan1", 5)
 
-	queue, value, err = PopFromQueue(rc, "msgs")
+	q, value, err = queue.PopFromQueue(rc, "msgs")
 	assert.NoError(t, err)
-	assert.Equal(t, WorkerToken("msgs:chan1|10"), queue)
+	assert.Equal(t, queue.WorkerToken("msgs:chan1|10"), q)
 	assert.Equal(t, `{"id":31}`, value)
 
 	// make sure paused is not present for more tests
@@ -122,20 +123,20 @@ func TestLua(t *testing.T) {
 
 	// should get next five bulk msgs fine
 	for i := 10; i < 15; i++ {
-		queue, value, err := PopFromQueue(rc, "msgs")
+		q, value, err := queue.PopFromQueue(rc, "msgs")
 		assert.NoError(t, err)
-		assert.NotEqual(t, queue, EmptyQueue)
+		assert.NotEqual(t, q, queue.EmptyQueue)
 		assert.Equal(t, fmt.Sprintf(`{"id":%d}`, i), value)
 
 	}
 
 	// push a multi-message batch for a single contact
-	err = PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":32}, {"id":33}]`, HighPriority)
+	err = queue.PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":32}, {"id":33}]`, queue.HighPriority)
 	assert.NoError(t, err)
 
-	queue, value, err = PopFromQueue(rc, "msgs")
+	q, value, err = queue.PopFromQueue(rc, "msgs")
 	assert.NoError(t, err)
-	assert.Equal(t, WorkerToken("msgs:chan1|10"), queue)
+	assert.Equal(t, queue.WorkerToken("msgs:chan1|10"), q)
 	assert.Equal(t, `{"id":32}`, value)
 
 	assertvk.ZGetAll(t, rc, "msgs:active", map[string]float64{"msgs:chan1|10": 17})
@@ -147,63 +148,63 @@ func TestLua(t *testing.T) {
 
 	// pop remaining bulk off
 	for i := 15; i < 20; i++ {
-		queue, value, err := PopFromQueue(rc, "msgs")
+		q, value, err := queue.PopFromQueue(rc, "msgs")
 		assert.NoError(t, err)
-		assert.NotEqual(t, queue, EmptyQueue)
+		assert.NotEqual(t, q, queue.EmptyQueue)
 		assert.Equal(t, fmt.Sprintf(`{"id":%d}`, i), value)
 	}
 
 	// next should be 30
-	queue, value, err = PopFromQueue(rc, "msgs")
+	q, value, err = queue.PopFromQueue(rc, "msgs")
 	assert.NoError(t, err)
-	assert.NotEqual(t, queue, EmptyQueue)
+	assert.NotEqual(t, q, queue.EmptyQueue)
 	assert.Equal(t, `{"id":30}`, value)
 
 	// popping again should give us nothing since it is too soon to send 33
-	queue = Retry
-	for queue == Retry {
-		queue, value, err = PopFromQueue(rc, "msgs")
+	q = queue.Retry
+	for q == queue.Retry {
+		q, value, err = queue.PopFromQueue(rc, "msgs")
 	}
 	assert.NoError(t, err)
-	assert.Equal(t, EmptyQueue, queue)
+	assert.Equal(t, queue.EmptyQueue, q)
 	assert.Empty(t, value)
 
 	// but if we sleep 6 seconds should get it
 	time.Sleep(time.Second * 6)
 
-	queue, value, err = PopFromQueue(rc, "msgs")
+	q, value, err = queue.PopFromQueue(rc, "msgs")
 	assert.NoError(t, err)
-	assert.Equal(t, WorkerToken("msgs:chan1|10"), queue)
+	assert.Equal(t, queue.WorkerToken("msgs:chan1|10"), q)
 	assert.Equal(t, `{"id":33}`, value)
 
 	// nothing should be left
-	queue = Retry
-	for queue == Retry {
-		queue, value, err = PopFromQueue(rc, "msgs")
+	q = queue.Retry
+	for q == queue.Retry {
+		q, value, err = queue.PopFromQueue(rc, "msgs")
 	}
 	assert.NoError(t, err)
-	assert.Equal(t, EmptyQueue, queue)
+	assert.Equal(t, queue.EmptyQueue, q)
 	assert.Empty(t, value)
 
-	err = PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":34}]`, HighPriority)
+	err = queue.PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":34}]`, queue.HighPriority)
 	assert.NoError(t, err)
 
 	rc.Do("SET", "rate_limit:chan1", "engaged")
 	rc.Do("EXPIRE", "rate_limit:chan1", 5)
 
 	// we have the rate limit set
-	queue, value, err = PopFromQueue(rc, "msgs")
+	q, value, err = queue.PopFromQueue(rc, "msgs")
 	assert.NoError(t, err)
-	if value != "" && queue != EmptyQueue {
+	if value != "" && q != queue.EmptyQueue {
 		t.Fatal("Should be throttled")
 	}
 
 	time.Sleep(2 * time.Second)
 
-	queue, value, err = PopFromQueue(rc, "msgs")
+	q, value, err = queue.PopFromQueue(rc, "msgs")
 	assert.NoError(t, err)
 	assert.Equal(t, "", value)
-	assert.Equal(t, Retry, queue)
+	assert.Equal(t, queue.Retry, q)
 
 	assertvk.ZGetAll(t, rc, "msgs:active", map[string]float64{})
 	assertvk.ZGetAll(t, rc, "msgs:throttled", map[string]float64{"msgs:chan1|10": 0})
@@ -213,18 +214,18 @@ func TestLua(t *testing.T) {
 	time.Sleep(3 * time.Second)
 
 	// next should be 34
-	queue, value, err = PopFromQueue(rc, "msgs")
+	q, value, err = queue.PopFromQueue(rc, "msgs")
 	assert.NoError(t, err)
-	assert.NotEqual(t, queue, EmptyQueue)
+	assert.NotEqual(t, q, queue.EmptyQueue)
 	assert.Equal(t, `{"id":34}`, value)
 
 	// nothing should be left
-	queue = Retry
-	for queue == Retry {
-		queue, value, err = PopFromQueue(rc, "msgs")
+	q = queue.Retry
+	for q == queue.Retry {
+		q, value, err = queue.PopFromQueue(rc, "msgs")
 	}
 	assert.NoError(t, err)
-	assert.Equal(t, EmptyQueue, queue)
+	assert.Equal(t, queue.EmptyQueue, q)
 	assert.Empty(t, value)
 }
 
@@ -237,14 +238,14 @@ func TestThrottle(t *testing.T) {
 	// start our dethrottler
 	quitter := make(chan bool)
 	wg := &sync.WaitGroup{}
-	StartDethrottler(pool, quitter, wg, "msgs")
+	queue.StartDethrottler(pool, quitter, wg, "msgs")
 
 	insertCount := 30
 	rate := 10
 
 	// insert items with our set limit
-	for i := 0; i < insertCount; i++ {
-		err := PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf(`[{"id":%d}]`, i), HighPriority)
+	for i := range insertCount {
+		err := queue.PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf(`[{"id":%d}]`, i), queue.HighPriority)
 		assert.NoError(err)
 		time.Sleep(1 * time.Microsecond)
 	}
@@ -252,11 +253,11 @@ func TestThrottle(t *testing.T) {
 	// start timing
 	start := time.Now()
 	curr := 0
-	var task WorkerToken
+	var task queue.WorkerToken
 	var err error
 	var value string
 	for curr < insertCount {
-		task, value, err = PopFromQueue(conn, "msgs")
+		task, value, err = queue.PopFromQueue(conn, "msgs")
 		assert.NoError(err)
 
 		// if this wasn't throttled
@@ -265,7 +266,7 @@ func TestThrottle(t *testing.T) {
 			assert.Equal(expected, value, "Out of order msg")
 			curr++
 
-			err = MarkComplete(conn, "msgs", task)
+			err = queue.MarkComplete(conn, "msgs", task)
 			assert.NoError(err)
 		} else {
 			// otherwise sleep a bit
@@ -286,25 +287,4 @@ func TestThrottle(t *testing.T) {
 	// close our dethrottler
 	close(quitter)
 	wg.Wait()
-}
-
-func BenchmarkQueue(b *testing.B) {
-	assert := assert.New(b)
-	pool := getPool()
-	conn := pool.Get()
-	defer conn.Close()
-
-	for i := 0; i < b.N; i++ {
-		insertValue := fmt.Sprintf(`{"id":%d}`, i)
-		err := PushOntoQueue(conn, "msgs", "chan1", 0, "["+insertValue+"]", HighPriority)
-		assert.NoError(err)
-
-		queue, value, err := PopFromQueue(conn, "msgs")
-		assert.NoError(err)
-		assert.Equal(WorkerToken("msgs:chan1|0"), queue, "Mismatched queue")
-		assert.Equal(insertValue, value, "Mismatched value")
-
-		err = MarkComplete(conn, "msgs", queue)
-		assert.NoError(err)
-	}
 }
