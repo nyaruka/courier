@@ -27,7 +27,6 @@ import (
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
-	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/cache"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/httpx"
@@ -51,9 +50,8 @@ const (
 var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
 type backend struct {
-	rt           *runtime.Runtime
-	s3           *s3x.Service
-	cw           *cwatch.Service
+	rt *runtime.Runtime
+
 	systemUserID UserID
 
 	statusWriter *StatusWriter
@@ -155,6 +153,13 @@ func (b *backend) Start() error {
 		log.Info("valkey ok")
 	}
 
+	// test S3 bucket access
+	if err := b.rt.S3.Test(ctx, b.rt.Config.S3AttachmentsBucket); err != nil {
+		log.Error("attachments bucket not accessible", "error", err)
+	} else {
+		log.Info("attachments bucket ok")
+	}
+
 	var err error
 
 	// start our dethrottler if we are going to be doing some sending
@@ -181,24 +186,6 @@ func (b *backend) Start() error {
 
 	b.dynamoWriter = dynamo.NewWriter(dynamoClient, dynamoTable, 500*time.Millisecond, 1000, b.dynamoSpool)
 	b.dynamoWriter.Start()
-
-	// setup S3 storage
-	b.s3, err = s3x.NewService(b.rt.Config.AWSAccessKeyID, b.rt.Config.AWSSecretAccessKey, b.rt.Config.AWSRegion, b.rt.Config.S3Endpoint, b.rt.Config.S3Minio)
-	if err != nil {
-		return err
-	}
-
-	b.cw, err = cwatch.NewService(b.rt.Config.AWSAccessKeyID, b.rt.Config.AWSSecretAccessKey, b.rt.Config.AWSRegion, b.rt.Config.CloudwatchNamespace, b.rt.Config.DeploymentID)
-	if err != nil {
-		return err
-	}
-
-	// check attachment bucket access
-	if err := b.s3.Test(ctx, b.rt.Config.S3AttachmentsBucket); err != nil {
-		log.Error("attachments bucket not accessible", "error", err)
-	} else {
-		log.Info("attachments bucket ok")
-	}
 
 	// create and start channel caches...
 	b.channelsByUUID = cache.NewLocal(b.loadChannelByUUID, time.Minute)
@@ -730,7 +717,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 
 	path := filepath.Join("attachments", strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 
-	storageURL, err := b.s3.PutObject(ctx, b.rt.Config.S3AttachmentsBucket, path, contentType, data, s3types.ObjectCannedACLPublicRead)
+	storageURL, err := b.rt.S3.PutObject(ctx, b.rt.Config.S3AttachmentsBucket, path, contentType, data, s3types.ObjectCannedACLPublicRead)
 	if err != nil {
 		return "", fmt.Errorf("error saving attachment to storage (bytes=%d): %w", len(data), err)
 	}
@@ -876,7 +863,7 @@ func (b *backend) reportMetrics(ctx context.Context) (int, error) {
 		cwatch.Datum("DynamoSpoolSize", float64(b.dynamoSpool.Size()), cwtypes.StandardUnitCount, hostDim),
 	)
 
-	if err := b.cw.Send(ctx, metrics...); err != nil {
+	if err := b.rt.CW.Send(ctx, metrics...); err != nil {
 		return 0, fmt.Errorf("error sending metrics: %w", err)
 	}
 

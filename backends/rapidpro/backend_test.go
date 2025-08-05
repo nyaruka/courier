@@ -101,8 +101,8 @@ func (ts *BackendTestSuite) SetupSuite() {
 
 	must(ts.b.Start())
 
-	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
-	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-logs")})
+	ts.b.rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
+	ts.b.rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-logs")})
 
 	ts.clearValkey()
 }
@@ -113,7 +113,7 @@ func (ts *BackendTestSuite) TearDownSuite() {
 	ts.b.Cleanup()
 
 	dyntest.Truncate(ts.T(), ts.dynamo, ts.b.dynamoWriter.Table())
-	ts.b.s3.EmptyBucket(ctx, "test-attachments")
+	ts.b.rt.S3.EmptyBucket(ctx, "test-attachments")
 }
 
 func (ts *BackendTestSuite) clearValkey() {
