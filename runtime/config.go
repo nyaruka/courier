@@ -17,7 +17,6 @@ import (
 
 // Config is our top level configuration object
 type Config struct {
-	Backend   string `help:"the backend that will be used by courier (currently only rapidpro is supported)"`
 	SentryDSN string `help:"the DSN used for logging errors to Sentry"`
 	Domain    string `help:"the domain courier is exposed on"`
 	Address   string `help:"the network interface address courier will bind to"`
@@ -67,7 +66,6 @@ type Config struct {
 func NewDefaultConfig() *Config {
 	hostname, _ := os.Hostname()
 	return &Config{
-		Backend:  "rapidpro",
 		Domain:   "localhost",
 		Address:  "",
 		Port:     8080,

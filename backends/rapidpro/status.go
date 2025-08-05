@@ -242,7 +242,7 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*Status
 		}
 	}
 
-	err := dbutil.BulkQuery(ctx, b.db, sqlUpdateMsgByID, resolved)
+	err := dbutil.BulkQuery(ctx, b.rt.DB, sqlUpdateMsgByID, resolved)
 	if err != nil {
 		return nil, fmt.Errorf("error updating status: %w", err)
 	}
@@ -258,7 +258,7 @@ SELECT id, channel_id, external_id
 // resolveStatusUpdateMsgIDs tries to resolve msg IDs for the given statuses - if there's no matching channel id + external id pair
 // found for a status, that status will be left with a nil msg ID.
 func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*StatusUpdate) error {
-	rc := b.rp.Get()
+	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	chAndExtKeys := make([]string, len(statuses))
@@ -296,12 +296,12 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*Sta
 		statusesByExt[ext{s.ChannelID_, s.ExternalID_}] = s
 	}
 
-	sql, params, err := dbutil.BulkSQL(b.db, sqlResolveStatusMsgIDs, notInCache)
+	sql, params, err := dbutil.BulkSQL(b.rt.DB, sqlResolveStatusMsgIDs, notInCache)
 	if err != nil {
 		return err
 	}
 
-	rows, err := b.db.QueryContext(ctx, sql, params...)
+	rows, err := b.rt.DB.QueryContext(ctx, sql, params...)
 	if err != nil {
 		return err
 	}

@@ -12,20 +12,11 @@ import (
 	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 )
-
-func init() {
-	courier.RegisterBackend("mock", buildMockBackend)
-}
-
-func buildMockBackend(config *runtime.Config) courier.Backend {
-	return NewMockBackend()
-}
 
 type SavedAttachment struct {
 	Channel     courier.Channel

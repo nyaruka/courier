@@ -22,13 +22,11 @@ import (
 	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/gomodule/redigo/redis"
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
-	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/cache"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/httpx"
@@ -51,17 +49,9 @@ const (
 
 var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
-func init() {
-	courier.RegisterBackend("rapidpro", newBackend)
-}
-
 type backend struct {
-	config *runtime.Config
+	rt *runtime.Runtime
 
-	db           *sqlx.DB
-	rp           *redis.Pool
-	s3           *s3x.Service
-	cw           *cwatch.Service
 	systemUserID UserID
 
 	statusWriter *StatusWriter
@@ -101,7 +91,7 @@ type backend struct {
 }
 
 // NewBackend creates a new RapidPro backend
-func newBackend(cfg *runtime.Config) courier.Backend {
+func NewBackend(rt *runtime.Runtime) courier.Backend {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConns = 64
 	transport.MaxIdleConnsPerHost = 8
@@ -113,10 +103,10 @@ func newBackend(cfg *runtime.Config) courier.Backend {
 	insecureTransport.IdleConnTimeout = 15 * time.Second
 	insecureTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	disallowedIPs, disallowedNets, _ := cfg.ParseDisallowedNetworks()
+	disallowedIPs, disallowedNets, _ := rt.Config.ParseDisallowedNetworks()
 
 	return &backend{
-		config: cfg,
+		rt: rt,
 
 		httpClient:         &http.Client{Transport: transport, Timeout: 30 * time.Second},
 		httpClientInsecure: &http.Client{Transport: insecureTransport, Timeout: 30 * time.Second},
@@ -147,39 +137,39 @@ func (b *backend) Start() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// build our db
-	db, err := sqlx.Open("postgres", b.config.DB)
-	if err != nil {
-		return fmt.Errorf("unable to open DB with config: '%s': %s", b.config.DB, err)
-	}
-
-	// configure our pool
-	b.db = db
-	b.db.SetMaxIdleConns(4)
-	b.db.SetMaxOpenConns(16)
-
-	// try connecting
-	if err := b.db.PingContext(ctx); err != nil {
+	// test Postgres
+	if err := b.rt.DB.PingContext(ctx); err != nil {
 		log.Error("db not reachable", "error", err)
 	} else {
 		log.Info("db ok")
 	}
 
-	b.rp, err = vkutil.NewPool(b.config.Valkey, vkutil.WithMaxActive(b.config.MaxWorkers*2))
-	if err != nil {
+	// test Valkey
+	vc := b.rt.VK.Get()
+	defer vc.Close()
+	if _, err := vc.Do("PING"); err != nil {
 		log.Error("valkey not reachable", "error", err)
 	} else {
 		log.Info("valkey ok")
 	}
 
+	// test S3 bucket access
+	if err := b.rt.S3.Test(ctx, b.rt.Config.S3AttachmentsBucket); err != nil {
+		log.Error("attachments bucket not accessible", "error", err)
+	} else {
+		log.Info("attachments bucket ok")
+	}
+
+	var err error
+
 	// start our dethrottler if we are going to be doing some sending
-	if b.config.MaxWorkers > 0 {
-		queue.StartDethrottler(b.rp, b.stopChan, b.waitGroup, msgQueueName)
+	if b.rt.Config.MaxWorkers > 0 {
+		queue.StartDethrottler(b.rt.VK, b.stopChan, b.waitGroup, msgQueueName)
 	}
 
 	// setup DynamoDB
-	dynamoTable := b.config.DynamoTablePrefix + "Main"
-	dynamoClient, err := dynamo.NewClient(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.DynamoEndpoint)
+	dynamoTable := b.rt.Config.DynamoTablePrefix + "Main"
+	dynamoClient, err := dynamo.NewClient(b.rt.Config.AWSAccessKeyID, b.rt.Config.AWSSecretAccessKey, b.rt.Config.AWSRegion, b.rt.Config.DynamoEndpoint)
 	if err != nil {
 		return err
 	}
@@ -189,31 +179,13 @@ func (b *backend) Start() error {
 		log.Info("dynamodb ok")
 	}
 
-	b.dynamoSpool = dynamo.NewSpool(dynamoClient, b.config.SpoolDir+"/dynamo", 30*time.Second)
+	b.dynamoSpool = dynamo.NewSpool(dynamoClient, b.rt.Config.SpoolDir+"/dynamo", 30*time.Second)
 	if err := b.dynamoSpool.Start(); err != nil {
 		log.Error("error starting dynamo spool", "error", err)
 	}
 
 	b.dynamoWriter = dynamo.NewWriter(dynamoClient, dynamoTable, 500*time.Millisecond, 1000, b.dynamoSpool)
 	b.dynamoWriter.Start()
-
-	// setup S3 storage
-	b.s3, err = s3x.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.S3Endpoint, b.config.S3Minio)
-	if err != nil {
-		return err
-	}
-
-	b.cw, err = cwatch.NewService(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, b.config.AWSRegion, b.config.CloudwatchNamespace, b.config.DeploymentID)
-	if err != nil {
-		return err
-	}
-
-	// check attachment bucket access
-	if err := b.s3.Test(ctx, b.config.S3AttachmentsBucket); err != nil {
-		log.Error("attachments bucket not accessible", "error", err)
-	} else {
-		log.Info("attachments bucket ok")
-	}
 
 	// create and start channel caches...
 	b.channelsByUUID = cache.NewLocal(b.loadChannelByUUID, time.Minute)
@@ -222,12 +194,12 @@ func (b *backend) Start() error {
 	b.channelsByAddr.Start()
 
 	// make sure our spool dirs are writable
-	err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "msgs")
+	err = courier.EnsureSpoolDirPresent(b.rt.Config.SpoolDir, "msgs")
 	if err == nil {
-		err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "statuses")
+		err = courier.EnsureSpoolDirPresent(b.rt.Config.SpoolDir, "statuses")
 	}
 	if err == nil {
-		err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "events")
+		err = courier.EnsureSpoolDirPresent(b.rt.Config.SpoolDir, "events")
 	}
 	if err != nil {
 		log.Error("spool directories not writable", "error", err)
@@ -236,19 +208,19 @@ func (b *backend) Start() error {
 	}
 
 	// create our batched writers and start them
-	b.statusWriter = NewStatusWriter(b, b.config.SpoolDir)
+	b.statusWriter = NewStatusWriter(b, b.rt.Config.SpoolDir)
 	b.statusWriter.Start(b.writerWG)
 
 	// store the system user id
-	b.systemUserID, err = getSystemUserID(ctx, b.db)
+	b.systemUserID, err = getSystemUserID(ctx, b.rt.DB)
 	if err != nil {
 		return err
 	}
 
 	// register and start our spool flushers
-	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "msgs"), b.flushMsgFile)
-	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "statuses"), b.flushStatusFile)
-	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "events"), b.flushChannelEventFile)
+	courier.RegisterFlusher(path.Join(b.rt.Config.SpoolDir, "msgs"), b.flushMsgFile)
+	courier.RegisterFlusher(path.Join(b.rt.Config.SpoolDir, "statuses"), b.flushStatusFile)
+	courier.RegisterFlusher(path.Join(b.rt.Config.SpoolDir, "events"), b.flushChannelEventFile)
 
 	b.startMetricsReporter(time.Minute)
 
@@ -261,8 +233,8 @@ func (b *backend) Start() error {
 }
 
 func (b *backend) checkLastShutdown(ctx context.Context) error {
-	nodeID := fmt.Sprintf("courier:%s", b.config.InstanceID)
-	vc := b.rp.Get()
+	nodeID := fmt.Sprintf("courier:%s", b.rt.Config.InstanceID)
+	vc := b.rt.VK.Get()
 	defer vc.Close()
 
 	exists, err := redis.Bool(redis.DoContext(vc, ctx, "HEXISTS", appNodesRunningKey, nodeID))
@@ -281,8 +253,8 @@ func (b *backend) checkLastShutdown(ctx context.Context) error {
 }
 
 func (b *backend) recordShutdown(ctx context.Context) error {
-	nodeID := fmt.Sprintf("courier:%s", b.config.InstanceID)
-	vc := b.rp.Get()
+	nodeID := fmt.Sprintf("courier:%s", b.rt.Config.InstanceID)
+	vc := b.rt.VK.Get()
 	defer vc.Close()
 
 	if _, err := redis.DoContext(vc, ctx, "HDEL", appNodesRunningKey, nodeID); err != nil {
@@ -358,10 +330,10 @@ func (b *backend) Cleanup() error {
 	b.writerWG.Wait()
 
 	// close our db and redis pool
-	if b.db != nil {
-		b.db.Close()
+	if b.rt.DB != nil {
+		b.rt.DB.Close()
 	}
-	return b.rp.Close()
+	return b.rt.VK.Close()
 }
 
 // GetChannel returns the channel for the passed in type and UUID
@@ -406,7 +378,7 @@ func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.UR
 
 // AddURNtoContact adds a URN to the passed in contact
 func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error) {
-	tx, err := b.db.BeginTxx(ctx, nil)
+	tx, err := b.rt.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		return urns.NilURN, err
 	}
@@ -427,7 +399,7 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 // RemoveURNFromcontact removes a URN from the passed in contact
 func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
 	dbContact := contact.(*Contact)
-	_, err := b.db.ExecContext(ctx, `UPDATE contacts_contacturn SET contact_id = NULL WHERE contact_id = $1 AND identity = $2`, dbContact.ID_, urn.Identity().String())
+	_, err := b.rt.DB.ExecContext(ctx, `UPDATE contacts_contacturn SET contact_id = NULL WHERE contact_id = $1 AND identity = $2`, dbContact.ID_, urn.Identity().String())
 	if err != nil {
 		return urns.NilURN, err
 	}
@@ -437,7 +409,7 @@ func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, c
 // DeleteMsgByExternalID resolves a message external id and quees a task to mailroom to delete it
 func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
 	ch := channel.(*Channel)
-	row := b.db.QueryRowContext(ctx, `SELECT id, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_id = $2 AND direction = 'I'`, ch.ID(), externalID)
+	row := b.rt.DB.QueryRowContext(ctx, `SELECT id, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_id = $2 AND direction = 'I'`, ch.ID(), externalID)
 
 	var msgID courier.MsgID
 	var contactID ContactID
@@ -446,7 +418,7 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Cha
 	}
 
 	if msgID != courier.NilMsgID && contactID != NilContactID {
-		rc := b.rp.Get()
+		rc := b.rt.VK.Get()
 		defer rc.Close()
 
 		if err := queueMsgDeleted(ctx, rc, ch, msgID, contactID); err != nil {
@@ -479,13 +451,13 @@ func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, u
 // PopNextOutgoingMsg pops the next message that needs to be sent
 func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error) {
 	tryToPop := func() (queue.WorkerToken, string, error) {
-		rc := b.rp.Get()
+		rc := b.rt.VK.Get()
 		defer rc.Close()
 		return queue.PopFromQueue(rc, msgQueueName)
 	}
 
 	markComplete := func(token queue.WorkerToken) {
-		rc := b.rp.Get()
+		rc := b.rt.VK.Get()
 		defer rc.Close()
 		if err := queue.MarkComplete(rc, msgQueueName, token); err != nil {
 			slog.Error("error marking queue task complete", "error", err)
@@ -535,14 +507,14 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 
 // WasMsgSent returns whether the passed in message has already been sent
 func (b *backend) WasMsgSent(ctx context.Context, id courier.MsgID) (bool, error) {
-	rc := b.rp.Get()
+	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	return b.sentIDs.IsMember(ctx, rc, id.String())
 }
 
 func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
-	rc := b.rp.Get()
+	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	return b.sentIDs.Rem(ctx, rc, id.String())
@@ -552,7 +524,7 @@ func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
 func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate, clog *courier.ChannelLog) {
 	log := slog.With("channel", msg.Channel().UUID(), "msg", msg.UUID(), "clog", clog.UUID, "status", status)
 
-	rc := b.rp.Get()
+	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	dbMsg := msg.(*Msg)
@@ -631,7 +603,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 	if status.MsgID() != courier.NilMsgID {
 		// this is a message we've just sent and were given an external id for
 		if status.ExternalID() != "" {
-			rc := b.rp.Get()
+			rc := b.rt.VK.Get()
 			defer rc.Close()
 
 			err := b.sentExternalIDs.Set(ctx, rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalID_), fmt.Sprintf("%d", status.MsgID()))
@@ -666,7 +638,7 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 		return fmt.Errorf("error retrieving channel: %w", err)
 	}
 	dbChannel := channel.(*Channel)
-	tx, err := b.db.BeginTxx(ctx, nil)
+	tx, err := b.rt.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -745,7 +717,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 
 	path := filepath.Join("attachments", strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 
-	storageURL, err := b.s3.PutObject(ctx, b.config.S3AttachmentsBucket, path, contentType, data, s3types.ObjectCannedACLPublicRead)
+	storageURL, err := b.rt.S3.PutObject(ctx, b.rt.Config.S3AttachmentsBucket, path, contentType, data, s3types.ObjectCannedACLPublicRead)
 	if err != nil {
 		return "", fmt.Errorf("error saving attachment to storage (bytes=%d): %w", len(data), err)
 	}
@@ -763,14 +735,14 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 	mediaUUID := uuidRegex.FindString(u.Path)
 
 	// if hostname isn't our media domain, or path doesn't contain a UUID, don't try to resolve
-	if strings.Replace(u.Hostname(), fmt.Sprintf("%s.", b.config.AWSRegion), "", -1) != b.config.MediaDomain || mediaUUID == "" {
+	if strings.Replace(u.Hostname(), fmt.Sprintf("%s.", b.rt.Config.AWSRegion), "", -1) != b.rt.Config.MediaDomain || mediaUUID == "" {
 		return nil, nil
 	}
 
 	unlock := b.mediaMutexes.Lock(mediaUUID)
 	defer unlock()
 
-	rc := b.rp.Get()
+	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	var media *Media
@@ -782,7 +754,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 		jsonx.MustUnmarshal([]byte(mediaJSON), &media)
 	} else {
 		// lookup media in our database
-		media, err = lookupMediaFromUUID(ctx, b.db, uuids.UUID(mediaUUID))
+		media, err = lookupMediaFromUUID(ctx, b.rt.DB, uuids.UUID(mediaUUID))
 		if err != nil {
 			return nil, fmt.Errorf("error looking up media: %w", err)
 		}
@@ -792,7 +764,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 	}
 
 	// if we found a media record but it doesn't match the URL, don't use it
-	if media == nil || (media.URL() != mediaUrl && media.URL() != strings.Replace(mediaUrl, fmt.Sprintf("%s.", b.config.AWSRegion), "", -1)) {
+	if media == nil || (media.URL() != mediaUrl && media.URL() != strings.Replace(mediaUrl, fmt.Sprintf("%s.", b.rt.Config.AWSRegion), "", -1)) {
 		return nil, nil
 	}
 
@@ -814,7 +786,7 @@ func (b *backend) HttpAccess() *httpx.AccessConfig {
 func (b *backend) Health() string {
 	// test redis
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	rc, redisErr := b.rp.GetContext(ctx)
+	rc, redisErr := b.rt.VK.GetContext(ctx)
 	cancel()
 
 	if redisErr == nil {
@@ -824,7 +796,7 @@ func (b *backend) Health() string {
 
 	// test our db
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
-	dbErr := b.db.PingContext(ctx)
+	dbErr := b.rt.DB.PingContext(ctx)
 	cancel()
 
 	health := bytes.Buffer{}
@@ -842,7 +814,7 @@ func (b *backend) reportMetrics(ctx context.Context) (int, error) {
 	metrics := b.stats.Extract().ToMetrics()
 
 	// get queue sizes
-	rc := b.rp.Get()
+	rc := b.rt.VK.Get()
 	defer rc.Close()
 	active, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("%s:active", msgQueueName), "0", "-1"))
 	if err != nil {
@@ -873,14 +845,14 @@ func (b *backend) reportMetrics(ctx context.Context) (int, error) {
 	}
 
 	// calculate DB and redis pool metrics
-	dbStats := b.db.Stats()
-	redisStats := b.rp.Stats()
+	dbStats := b.rt.DB.Stats()
+	redisStats := b.rt.VK.Stats()
 	dbWaitDurationInPeriod := dbStats.WaitDuration - b.dbWaitDuration
 	redisWaitDurationInPeriod := redisStats.WaitDuration - b.redisWaitDuration
 	b.dbWaitDuration = dbStats.WaitDuration
 	b.redisWaitDuration = redisStats.WaitDuration
 
-	hostDim := cwatch.Dimension("Host", b.config.InstanceID)
+	hostDim := cwatch.Dimension("Host", b.rt.Config.InstanceID)
 	metrics = append(metrics,
 		cwatch.Datum("DBConnectionsInUse", float64(dbStats.InUse), cwtypes.StandardUnitCount, hostDim),
 		cwatch.Datum("DBConnectionWaitDuration", float64(dbWaitDurationInPeriod)/float64(time.Second), cwtypes.StandardUnitSeconds, hostDim),
@@ -891,7 +863,7 @@ func (b *backend) reportMetrics(ctx context.Context) (int, error) {
 		cwatch.Datum("DynamoSpoolSize", float64(b.dynamoSpool.Size()), cwtypes.StandardUnitCount, hostDim),
 	)
 
-	if err := b.cw.Send(ctx, metrics...); err != nil {
+	if err := b.rt.CW.Send(ctx, metrics...); err != nil {
 		return 0, fmt.Errorf("error sending metrics: %w", err)
 	}
 
@@ -900,7 +872,7 @@ func (b *backend) reportMetrics(ctx context.Context) (int, error) {
 
 // Status returns information on our queue sizes, number of workers etc..
 func (b *backend) Status() string {
-	rc := b.rp.Get()
+	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	status := bytes.Buffer{}
@@ -969,5 +941,5 @@ func (b *backend) Status() string {
 
 // RedisPool returns the redisPool for this backend
 func (b *backend) RedisPool() *redis.Pool {
-	return b.rp
+	return b.rt.VK
 }

@@ -76,6 +76,7 @@ import (
 	"github.com/nyaruka/courier/runtime"
 
 	// load available backends
+	"github.com/nyaruka/courier/backends/rapidpro"
 	_ "github.com/nyaruka/courier/backends/rapidpro"
 )
 
@@ -86,18 +87,18 @@ var (
 )
 
 func main() {
-	config := runtime.LoadConfig()
-	config.Version = version
+	cfg := runtime.LoadConfig()
+	cfg.Version = version
 
 	// configure our logger
-	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: config.LogLevel})
+	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel})
 	slog.SetDefault(slog.New(logHandler))
 
 	// if we have a DSN entry, try to initialize it
-	if config.SentryDSN != "" {
-		err := sentry.Init(sentry.ClientOptions{Dsn: config.SentryDSN, ServerName: config.InstanceID, Release: version, AttachStacktrace: true})
+	if cfg.SentryDSN != "" {
+		err := sentry.Init(sentry.ClientOptions{Dsn: cfg.SentryDSN, ServerName: cfg.InstanceID, Release: version, AttachStacktrace: true})
 		if err != nil {
-			slog.Error("error initiating sentry client", "error", err, "dsn", config.SentryDSN)
+			slog.Error("error initiating sentry client", "error", err, "dsn", cfg.SentryDSN)
 			os.Exit(1)
 		}
 
@@ -114,16 +115,16 @@ func main() {
 	log := slog.With("comp", "main")
 	log.Info("starting courier", "version", version, "released", date)
 
-	// load our backend
-	backend, err := courier.NewBackend(config)
+	rt, err := runtime.NewRuntime(cfg)
 	if err != nil {
-		log.Error("error creating backend", "error", err)
+		slog.Error("error creating runtime", "error", err)
 		os.Exit(1)
 	}
 
-	server := courier.NewServer(config, backend)
-	err = server.Start()
-	if err != nil {
+	backend := rapidpro.NewBackend(rt)
+
+	server := courier.NewServer(cfg, backend)
+	if err := server.Start(); err != nil {
 		log.Error("unable to start server", "error", err)
 		os.Exit(1)
 	}

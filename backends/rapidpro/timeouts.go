@@ -20,7 +20,7 @@ ON CONFLICT DO NOTHING`
 func (b *backend) insertTimeoutFire(ctx context.Context, m *Msg) error {
 	timeoutOn := dates.Now().Add(time.Duration(m.Session_.Timeout) * time.Second)
 
-	_, err := b.db.ExecContext(ctx, sqlInsertTimeoutFire, m.OrgID_, m.ContactID_, timeoutOn, m.Session_.UUID, m.Session_.SprintUUID)
+	_, err := b.rt.DB.ExecContext(ctx, sqlInsertTimeoutFire, m.OrgID_, m.ContactID_, timeoutOn, m.Session_.UUID, m.Session_.SprintUUID)
 	if err != nil {
 		return fmt.Errorf("error inserting session timeout contact fire for session %s: %w", m.Session_.UUID, err)
 	}

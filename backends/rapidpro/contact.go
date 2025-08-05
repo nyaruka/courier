@@ -106,7 +106,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 
 	// try to look up our contact by URN
 	contact := &Contact{}
-	err := b.db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
+	err := b.rt.DB.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
 	if err != nil && err != sql.ErrNoRows {
 		log.Error("error looking up contact by URN", "error", err)
 		return nil, fmt.Errorf("error looking up contact by URN: %w", err)
@@ -114,7 +114,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 
 	// we found it, return it
 	if err != sql.ErrNoRows {
-		tx, err := b.db.BeginTxx(ctx, nil)
+		tx, err := b.rt.DB.BeginTxx(ctx, nil)
 		if err != nil {
 			log.Error("error beginning transaction", "error", err)
 			return nil, fmt.Errorf("error beginning transaction: %w", err)
@@ -173,7 +173,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 	}
 
 	// insert it
-	tx, err := b.db.BeginTxx(ctx, nil)
+	tx, err := b.rt.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error beginning transaction: %w", err)
 	}

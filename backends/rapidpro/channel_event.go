@@ -130,7 +130,7 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 	}
 
 	if err != nil {
-		err = courier.WriteToSpool(b.config.SpoolDir, "events", dbEvent)
+		err = courier.WriteToSpool(b.rt.Config.SpoolDir, "events", dbEvent)
 	}
 
 	return err
@@ -154,7 +154,7 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clo
 	e.ContactID_ = contact.ID_
 	e.ContactURNID_ = contact.URNID_
 
-	rows, err := b.db.NamedQueryContext(ctx, sqlInsertChannelEvent, e)
+	rows, err := b.rt.DB.NamedQueryContext(ctx, sqlInsertChannelEvent, e)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clo
 	}
 
 	// queue it up for handling by RapidPro
-	rc := b.rp.Get()
+	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	// if we had a problem queueing the event, log it

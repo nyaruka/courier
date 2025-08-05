@@ -66,17 +66,21 @@ func testConfig() *runtime.Config {
 }
 
 func (ts *BackendTestSuite) loadSQL(path string) {
-	db, err := sqlx.Open("postgres", ts.b.config.DB)
+	db, err := sqlx.Open("postgres", ts.b.rt.Config.DB)
 	noError(err)
 
 	sql, err := os.ReadFile(path)
 	noError(err)
 	db.MustExec(string(sql))
+	db.Close()
 }
 
 func (ts *BackendTestSuite) SetupSuite() {
 	ctx := context.Background()
 	cfg := testConfig()
+
+	rt, err := runtime.NewRuntime(cfg)
+	ts.Require().NoError(err)
 
 	// turn off logging
 	log.SetOutput(io.Discard)
@@ -88,8 +92,7 @@ func (ts *BackendTestSuite) SetupSuite() {
 
 	dyntest.CreateTables(ts.T(), ts.dynamo, "dynamo.json")
 
-	b, err := courier.NewBackend(cfg)
-	noError(err)
+	b := NewBackend(rt)
 	ts.b = b.(*backend)
 
 	// load our test schema and data
@@ -98,8 +101,8 @@ func (ts *BackendTestSuite) SetupSuite() {
 
 	must(ts.b.Start())
 
-	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
-	ts.b.s3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-logs")})
+	ts.b.rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
+	ts.b.rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-logs")})
 
 	ts.clearValkey()
 }
@@ -110,12 +113,12 @@ func (ts *BackendTestSuite) TearDownSuite() {
 	ts.b.Cleanup()
 
 	dyntest.Truncate(ts.T(), ts.dynamo, ts.b.dynamoWriter.Table())
-	ts.b.s3.EmptyBucket(ctx, "test-attachments")
+	ts.b.rt.S3.EmptyBucket(ctx, "test-attachments")
 }
 
 func (ts *BackendTestSuite) clearValkey() {
 	// clear valkey
-	r := ts.b.rp.Get()
+	r := ts.b.rt.VK.Get()
 	defer r.Close()
 	_, err := r.Do("FLUSHDB")
 	ts.Require().NoError(err)
@@ -306,7 +309,7 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	ts.NoError(err)
 	ts.NotNil(contact)
 
-	tx, err := ts.b.db.Beginx()
+	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
 
 	contactURNs, err := getURNsForContact(tx, contact.ID_)
@@ -318,7 +321,7 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	ts.NoError(err)
 	ts.NotNil(addedURN)
 
-	tx, err = ts.b.db.Beginx()
+	tx, err = ts.b.rt.DB.Beginx()
 	ts.NoError(err)
 
 	contactURNs, err = getURNsForContact(tx, contact.ID_)
@@ -329,7 +332,7 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	ts.NoError(err)
 	ts.NotNil(removedURN)
 
-	tx, err = ts.b.db.Beginx()
+	tx, err = ts.b.rt.DB.Beginx()
 	ts.NoError(err)
 	contactURNs, err = getURNsForContact(tx, contact.ID_)
 	ts.NoError(err)
@@ -348,7 +351,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.NoError(err)
 	ts.NotNil(contact)
 
-	tx, err := ts.b.db.Beginx()
+	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
 
 	contact, err = contactForURN(ctx, ts.b, fbChannel.OrgID_, fbChannel, urn, map[string]string{"token1": "chestnut"}, "", true, clog)
@@ -366,7 +369,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.Equal(knURN.OrgID, knChannel.OrgID_)
 	ts.Equal(null.Map[string]{"token1": "chestnut", "token2": "sesame"}, knURN.AuthTokens)
 
-	tx, err = ts.b.db.Beginx()
+	tx, err = ts.b.rt.DB.Beginx()
 	ts.NoError(err)
 
 	// then with our twilio channel
@@ -386,7 +389,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	// auth should be unchanged
 	ts.Equal(null.Map[string]{"token1": "chestnut", "token2": "sesame"}, fbURN.AuthTokens)
 
-	tx, err = ts.b.db.Beginx()
+	tx, err = ts.b.rt.DB.Beginx()
 	ts.NoError(err)
 
 	// again with different auth
@@ -409,7 +412,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.Equal(tgContact.URNID_, displayContact.URNID_)
 	ts.Equal(tgContact.ID_, displayContact.ID_)
 
-	tx, err = ts.b.db.Beginx()
+	tx, err = ts.b.rt.DB.Beginx()
 	ts.NoError(err)
 
 	tgContactURN, err := getOrCreateContactURN(tx, tgChannel, tgContact.ID_, tgURNDisplay, nil)
@@ -454,7 +457,7 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 	knContact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, knURN, nil, "", true, clog)
 	ts.NoError(err)
 
-	tx, err := ts.b.db.Beginx()
+	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
 
 	_, err = getOrCreateContactURN(tx, fbChannel, knContact.ID_, fbURN, nil)
@@ -469,7 +472,7 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 	ts.Equal(fbContact.ID_, knContact.ID_)
 
 	// get all the URNs for this contact
-	tx, err = ts.b.db.Beginx()
+	tx, err = ts.b.rt.DB.Beginx()
 	ts.NoError(err)
 
 	urns, err := getURNsForContact(tx, fbContact.ID_)
@@ -510,7 +513,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	}
 
 	// put test message back into queued state
-	ts.b.db.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL WHERE id = $1`, 10001)
+	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL WHERE id = $1`, 10001)
 
 	// update to WIRED using id and provide new external ID
 	clog1 := updateStatusByID(10001, courier.MsgStatusWired, "ext0")
@@ -592,7 +595,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.True(m.SentOn_.Equal(sentOn)) // no change
 
 	// put test outgoing messages back into queued state
-	ts.b.db.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL WHERE id IN ($1, $2)`, 10002, 10001)
+	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL WHERE id IN ($1, $2)`, 10002, 10001)
 
 	// can skip WIRED and go straight to SENT or DELIVERED
 	updateStatusByExtID("ext1", courier.MsgStatusSent)
@@ -652,7 +655,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(null.String("E"), m.FailedReason_)
 
 	// update URN when the new doesn't exist
-	tx, _ := ts.b.db.BeginTxx(ctx, nil)
+	tx, _ := ts.b.rt.DB.BeginTxx(ctx, nil)
 	oldURN := urns.URN("whatsapp:55988776655")
 	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, NilContactID, oldURN, nil))
 
@@ -664,7 +667,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
 
-	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	tx, _ = ts.b.rt.DB.BeginTxx(ctx, nil)
 	contactURN, err := getContactURNByIdentity(tx, channel.OrgID_, newURN)
 
 	ts.NoError(err)
@@ -674,7 +677,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// new URN already exits but don't have an associated contact
 	oldURN = urns.URN("whatsapp:55999887766")
 	newURN = urns.URN("whatsapp:5599887766")
-	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	tx, _ = ts.b.rt.DB.BeginTxx(ctx, nil)
 	contact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, nil, "", true, clog6)
 	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, NilContactID, newURN, nil))
 
@@ -685,7 +688,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
 
-	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	tx, _ = ts.b.rt.DB.BeginTxx(ctx, nil)
 	newContactURN, _ := getContactURNByIdentity(tx, channel.OrgID_, newURN)
 	oldContactURN, _ := getContactURNByIdentity(tx, channel.OrgID_, oldURN)
 
@@ -696,7 +699,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// new URN already exits and have an associated contact
 	oldURN = urns.URN("whatsapp:55988776655")
 	newURN = urns.URN("whatsapp:5588776655")
-	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	tx, _ = ts.b.rt.DB.BeginTxx(ctx, nil)
 	_, _ = contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, nil, "", true, clog6)
 	otherContact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, newURN, nil, "", true, clog6)
 
@@ -707,7 +710,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
 
-	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	tx, _ = ts.b.rt.DB.BeginTxx(ctx, nil)
 	oldContactURN, _ = getContactURNByIdentity(tx, channel.OrgID_, oldURN)
 	newContactURN, _ = getContactURNByIdentity(tx, channel.OrgID_, newURN)
 
@@ -717,7 +720,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 }
 
 func (ts *BackendTestSuite) TestSentExternalIDCaching() {
-	rc := ts.b.rp.Get()
+	rc := ts.b.rt.VK.Get()
 	defer rc.Close()
 
 	ctx := context.Background()
@@ -741,7 +744,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	assertvk.HGetAll(ts.T(), rc, keys[0], map[string]string{"10|ex457": "10000"})
 
 	// mimic a delay in that status being written by reverting the db changes
-	ts.b.db.MustExec(`UPDATE msgs_msg SET status = 'W', external_id = NULL WHERE id = 10000`)
+	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'W', external_id = NULL WHERE id = 10000`)
 
 	// create a callback status update which only has external id
 	status2 := ts.b.NewStatusUpdateByExternalID(channel, "ex457", courier.MsgStatusDelivered, clog)
@@ -753,7 +756,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	time.Sleep(time.Millisecond * 700)
 
 	// msg status successfully updated in the database
-	assertdb.Query(ts.T(), ts.b.db, `SELECT status FROM msgs_msg WHERE id = 10000`).Returns("D")
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT status FROM msgs_msg WHERE id = 10000`).Returns("D")
 }
 
 func (ts *BackendTestSuite) TestHealth() {
@@ -762,7 +765,7 @@ func (ts *BackendTestSuite) TestHealth() {
 }
 
 func (ts *BackendTestSuite) TestCheckForDuplicate() {
-	rc := ts.b.rp.Get()
+	rc := ts.b.rt.VK.Get()
 	defer rc.Close()
 
 	ctx := context.Background()
@@ -842,7 +845,7 @@ func (ts *BackendTestSuite) TestStatus() {
 	ts.True(strings.Contains(ts.b.Status(), "Channel"), ts.b.Status())
 
 	// add a message to our queue
-	r := ts.b.rp.Get()
+	r := ts.b.rt.VK.Get()
 	defer r.Close()
 
 	dbMsg := readMsgFromDB(ts.b, 10000)
@@ -863,7 +866,7 @@ func (ts *BackendTestSuite) TestStatus() {
 func (ts *BackendTestSuite) TestOutgoingQueue() {
 	// add one of our outgoing messages to the queue
 	ctx := context.Background()
-	r := ts.b.rp.Get()
+	r := ts.b.rt.VK.Get()
 	defer r.Close()
 
 	dbMsg := readMsgFromDB(ts.b, 10000)
@@ -1150,7 +1153,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	// load it back from the id
 	m := readMsgFromDB(ts.b, msg1.ID())
 
-	tx, err := ts.b.db.Beginx()
+	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
 
 	// load our URN
@@ -1287,7 +1290,7 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 	// load it back from the id
 	m := readMsgFromDB(ts.b, msg.ID())
 
-	tx, err := ts.b.db.Beginx()
+	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
 
 	// load our URN
@@ -1365,7 +1368,7 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 	err := ts.b.insertTimeoutFire(ctx, msg)
 	ts.NoError(err)
 
-	assertdb.Query(ts.T(), ts.b.db, `SELECT org_id, contact_id, fire_type, scope, session_uuid::text, sprint_uuid::text FROM contacts_contactfire`).
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT org_id, contact_id, fire_type, scope, session_uuid::text, sprint_uuid::text FROM contacts_contactfire`).
 		Columns(map[string]any{
 			"org_id":       int64(1),
 			"contact_id":   int64(100),
@@ -1379,7 +1382,7 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 	err = ts.b.insertTimeoutFire(ctx, msg)
 	ts.NoError(err)
 
-	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM contacts_contactfire`).Returns(1)
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM contacts_contactfire`).Returns(1)
 }
 
 func (ts *BackendTestSuite) TestMailroomEvents() {
@@ -1423,7 +1426,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 
 func (ts *BackendTestSuite) TestResolveMedia() {
 	ctx := context.Background()
-	rc := ts.b.rp.Get()
+	rc := ts.b.rt.VK.Get()
 	defer rc.Close()
 
 	tcs := []struct {
@@ -1528,7 +1531,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 }
 
 func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {
-	rc := ts.b.rp.Get()
+	rc := ts.b.rt.VK.Get()
 	defer rc.Close()
 
 	assertvk.ZCard(ts.T(), rc, "{tasks:realtime}:queued", 0)
@@ -1538,7 +1541,7 @@ func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {
 }
 
 func (ts *BackendTestSuite) assertQueuedContactTask(contactID ContactID, expectedType string, expectedBody map[string]any) {
-	rc := ts.b.rp.Get()
+	rc := ts.b.rt.VK.Get()
 	defer rc.Close()
 
 	assertvk.ZCard(ts.T(), rc, "{tasks:realtime}:queued", 1)
@@ -1575,7 +1578,7 @@ func readMsgFromDB(b *backend, id courier.MsgID) *Msg {
 	m := &Msg{
 		ID_: id,
 	}
-	err := b.db.Get(m, sqlSelectMsg, id)
+	err := b.rt.DB.Get(m, sqlSelectMsg, id)
 	if err != nil {
 		panic(err)
 	}
@@ -1583,7 +1586,7 @@ func readMsgFromDB(b *backend, id courier.MsgID) *Msg {
 	ch := &Channel{
 		ID_: m.ChannelID_,
 	}
-	err = b.db.Get(ch, selectChannelSQL, m.ChannelID_)
+	err = b.rt.DB.Get(ch, selectChannelSQL, m.ChannelID_)
 	if err != nil {
 		panic(err)
 	}
@@ -1644,7 +1647,7 @@ SELECT id, uuid, org_id, channel_id, contact_id, contact_urn_id, event_type, opt
 
 func readChannelEventFromDB(b *backend, id ChannelEventID) *ChannelEvent {
 	e := &ChannelEvent{}
-	err := b.db.Get(e, sqlSelectEvent, id)
+	err := b.rt.DB.Get(e, sqlSelectEvent, id)
 	if err != nil {
 		panic(err)
 	}
