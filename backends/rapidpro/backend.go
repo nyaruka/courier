@@ -856,7 +856,7 @@ func (b *backend) reportMetrics(ctx context.Context) (int, error) {
 		cwatch.Datum("ValkeyConnectionsWaitDuration", float64(redisWaitDurationInPeriod)/float64(time.Second), cwtypes.StandardUnitSeconds, hostDim),
 		cwatch.Datum("QueuedMsgs", float64(bulkSize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "bulk")),
 		cwatch.Datum("QueuedMsgs", float64(prioritySize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "priority")),
-		cwatch.Datum("DynamoSpoolSize", float64(b.dynamoSpool.Size()), cwtypes.StandardUnitCount, hostDim),
+		cwatch.Datum("DynamoSpooledItems", float64(b.dynamoSpool.Size()), cwtypes.StandardUnitCount, hostDim),
 	)
 
 	if err := b.rt.CW.Send(ctx, metrics...); err != nil {
