@@ -17,13 +17,14 @@ import (
 
 // Config is our top level configuration object
 type Config struct {
-	SentryDSN string `help:"the DSN used for logging errors to Sentry"`
-	Domain    string `help:"the domain courier is exposed on"`
-	Address   string `help:"the network interface address courier will bind to"`
-	Port      int    `help:"the port courier will listen on"`
 	DB        string `validate:"url,startswith=postgres:"   help:"URL for your Postgres database"`
 	Valkey    string `validate:"url,startswith=valkey:"     help:"URL for your Valkey instance"`
 	SpoolDir  string `help:"the local directory where courier will write statuses or msgs that need to be retried (needs to be writable)"`
+	SentryDSN string `help:"the DSN used for logging errors to Sentry"`
+
+	Domain  string `help:"the domain courier is exposed on"`
+	Address string `help:"the network interface address courier will bind to"`
+	Port    int    `help:"the port courier will listen on"`
 
 	AWSAccessKeyID     string `help:"access key ID to use for AWS services"`
 	AWSSecretAccessKey string `help:"secret access key to use for AWS services"`
@@ -66,12 +67,13 @@ type Config struct {
 func NewDefaultConfig() *Config {
 	hostname, _ := os.Hostname()
 	return &Config{
-		Domain:   "localhost",
-		Address:  "",
-		Port:     8080,
 		DB:       "postgres://temba:temba@localhost/temba?sslmode=disable",
 		Valkey:   "valkey://localhost:6379/15",
 		SpoolDir: "/var/spool/courier",
+
+		Domain:  "localhost",
+		Address: "",
+		Port:    8080,
 
 		AWSAccessKeyID:     "",
 		AWSSecretAccessKey: "",

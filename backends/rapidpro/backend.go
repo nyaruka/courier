@@ -144,6 +144,13 @@ func (b *backend) Start() error {
 		log.Info("db ok")
 	}
 
+	// test DynamoDB
+	if err := dynamo.Test(ctx, b.rt.Dynamo, b.rt.Config.DynamoTablePrefix+"Main"); err != nil {
+		log.Error("dynamodb not reachable", "error", err)
+	} else {
+		log.Info("dynamodb ok")
+	}
+
 	// test Valkey
 	vc := b.rt.VK.Get()
 	defer vc.Close()
@@ -167,24 +174,13 @@ func (b *backend) Start() error {
 		queue.StartDethrottler(b.rt.VK, b.stopChan, b.waitGroup, msgQueueName)
 	}
 
-	// setup DynamoDB
-	dynamoTable := b.rt.Config.DynamoTablePrefix + "Main"
-	dynamoClient, err := dynamo.NewClient(b.rt.Config.AWSAccessKeyID, b.rt.Config.AWSSecretAccessKey, b.rt.Config.AWSRegion, b.rt.Config.DynamoEndpoint)
-	if err != nil {
-		return err
-	}
-	if err := dynamo.Test(ctx, dynamoClient, dynamoTable); err != nil {
-		log.Error("dynamodb not reachable", "error", err)
-	} else {
-		log.Info("dynamodb ok")
-	}
-
-	b.dynamoSpool = dynamo.NewSpool(dynamoClient, b.rt.Config.SpoolDir+"/dynamo", 30*time.Second)
+	// setup DynamoDB spool and writer
+	b.dynamoSpool = dynamo.NewSpool(b.rt.Dynamo, b.rt.Config.SpoolDir+"/dynamo", 30*time.Second)
 	if err := b.dynamoSpool.Start(); err != nil {
 		log.Error("error starting dynamo spool", "error", err)
 	}
 
-	b.dynamoWriter = dynamo.NewWriter(dynamoClient, dynamoTable, 500*time.Millisecond, 1000, b.dynamoSpool)
+	b.dynamoWriter = dynamo.NewWriter(b.rt.Dynamo, b.rt.Config.DynamoTablePrefix+"Main", 500*time.Millisecond, 1000, b.dynamoSpool)
 	b.dynamoWriter.Start()
 
 	// create and start channel caches...
