@@ -1,3 +1,8 @@
+v10.3.6 (2025-08-05)
+-------------------------
+ * Update to latest gocommon
+ * Add runtime package and move config and services into it
+
 v10.3.5 (2025-08-04)
 -------------------------
  * Update to latest gocommon
