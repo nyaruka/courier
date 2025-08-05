@@ -48,21 +48,21 @@ type BackendTestSuite struct {
 }
 
 func testConfig() *runtime.Config {
-	config := runtime.NewDefaultConfig()
-	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
-	config.Valkey = "valkey://localhost:6379/0"
-	config.MediaDomain = "nyaruka.s3.com"
+	cfg := runtime.NewDefaultConfig()
+	cfg.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
+	cfg.Valkey = "valkey://localhost:6379/0"
+	cfg.MediaDomain = "nyaruka.s3.com"
 
 	// configure S3 to use a local minio instance
-	config.AWSAccessKeyID = "root"
-	config.AWSSecretAccessKey = "tembatemba"
-	config.S3Endpoint = "http://localhost:9000"
-	config.S3AttachmentsBucket = "test-attachments"
-	config.S3Minio = true
-	config.DynamoEndpoint = "http://localhost:6000"
-	config.DynamoTablePrefix = "Test"
+	cfg.AWSAccessKeyID = "root"
+	cfg.AWSSecretAccessKey = "tembatemba"
+	cfg.S3Endpoint = "http://localhost:9000"
+	cfg.S3AttachmentsBucket = "test-attachments"
+	cfg.S3Minio = true
+	cfg.DynamoEndpoint = "http://localhost:6000"
+	cfg.DynamoTablePrefix = "Test"
 
-	return config
+	return cfg
 }
 
 func (ts *BackendTestSuite) loadSQL(path string) {

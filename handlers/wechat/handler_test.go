@@ -217,10 +217,10 @@ func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
 	logger := slog.Default()
 	log.SetOutput(io.Discard)
-	config := runtime.NewDefaultConfig()
-	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
-	config.Valkey = "valkey://localhost:6379/0"
-	return courier.NewServerWithLogger(config, backend, logger)
+	cfg := runtime.NewDefaultConfig()
+	cfg.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
+	cfg.Valkey = "valkey://localhost:6379/0"
+	return courier.NewServerWithLogger(cfg, backend, logger)
 }
 
 func TestDescribeURN(t *testing.T) {

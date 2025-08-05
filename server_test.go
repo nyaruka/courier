@@ -22,23 +22,23 @@ import (
 )
 
 func testConfig() *runtime.Config {
-	config := runtime.NewDefaultConfig()
-	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
-	config.Valkey = "valkey://localhost:6379/0"
-	config.Port = 8081
-	return config
+	cfg := runtime.NewDefaultConfig()
+	cfg.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
+	cfg.Valkey = "valkey://localhost:6379/0"
+	cfg.Port = 8081
+	return cfg
 }
 
 func TestServerURLs(t *testing.T) {
 	logger := slog.Default()
-	config := testConfig()
-	config.StatusUsername = "admin"
-	config.StatusPassword = "password123"
+	cfg := testConfig()
+	cfg.StatusUsername = "admin"
+	cfg.StatusPassword = "password123"
 
 	mb := test.NewMockBackend()
 	mb.AddChannel(test.NewMockChannel("95710b36-855d-4832-a723-5f71f73688a0", "MCK", "12345", "RW", []string{urns.Phone.Prefix}, nil))
 
-	server := courier.NewServerWithLogger(config, mb, logger)
+	server := courier.NewServerWithLogger(cfg, mb, logger)
 	server.Start()
 	defer server.Stop()
 
@@ -244,15 +244,15 @@ func TestFetchAttachment(t *testing.T) {
 	uuids.SetGenerator(uuids.NewSeededGenerator(1234, dates.NewSequentialNow(time.Date(2024, 9, 11, 14, 33, 0, 0, time.UTC), time.Second)))
 
 	logger := slog.Default()
-	config := runtime.NewDefaultConfig()
-	config.AuthToken = "sesame"
-	config.Port = 8081
+	cfg := runtime.NewDefaultConfig()
+	cfg.AuthToken = "sesame"
+	cfg.Port = 8081
 
 	mb := test.NewMockBackend()
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 	mb.AddChannel(mockChannel)
 
-	server := courier.NewServerWithLogger(config, mb, logger)
+	server := courier.NewServerWithLogger(cfg, mb, logger)
 	server.Start()
 	defer server.Stop()
 

@@ -102,16 +102,16 @@ func NewDefaultConfig() *Config {
 }
 
 func LoadConfig() *Config {
-	config := NewDefaultConfig()
-	loader := ezconf.NewLoader(config, "courier", "Courier - A fast message broker for SMS and IP messages", []string{"config.toml"})
+	cfg := NewDefaultConfig()
+	loader := ezconf.NewLoader(cfg, "courier", "Courier - A fast message broker for SMS and IP messages", []string{"config.toml"})
 	loader.MustLoad()
 
 	// ensure config is valid
-	if err := config.Validate(); err != nil {
+	if err := cfg.Validate(); err != nil {
 		log.Fatalf("invalid config: %s", err)
 	}
 
-	return config
+	return cfg
 }
 
 // Validate validates the config

@@ -140,12 +140,12 @@ func newServer(backend courier.Backend) courier.Server {
 	logger := slog.Default()
 	log.SetOutput(io.Discard)
 
-	config := runtime.NewDefaultConfig()
-	config.FacebookWebhookSecret = "fb_webhook_secret"
-	config.FacebookApplicationSecret = "fb_app_secret"
-	config.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
+	cfg := runtime.NewDefaultConfig()
+	cfg.FacebookWebhookSecret = "fb_webhook_secret"
+	cfg.FacebookApplicationSecret = "fb_app_secret"
+	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
 
-	return courier.NewServerWithLogger(config, backend, logger)
+	return courier.NewServerWithLogger(cfg, backend, logger)
 
 }
 
