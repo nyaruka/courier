@@ -208,13 +208,13 @@ func writeMsg(ctx context.Context, b *backend, m *Msg, clog *courier.ChannelLog)
 		// if we failed, log and write to spool
 		slog.Error("error writing to db", "error", err, "msg", m.UUID())
 
-		if err := courier.WriteToSpool(b.config.SpoolDir, "msgs", m); err != nil {
+		if err := courier.WriteToSpool(b.rt.Config.SpoolDir, "msgs", m); err != nil {
 			return fmt.Errorf("error writing msg to spool: %w", err)
 		}
 		return nil
 	}
 
-	rc := b.rp.Get()
+	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	// queue to mailroom for handling
@@ -245,7 +245,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.Channel
 	m.ContactID_ = contact.ID_
 	m.ContactURNID_ = contact.URNID_
 
-	rows, err := b.db.NamedQueryContext(ctx, sqlInsertMsg, m)
+	rows, err := b.rt.DB.NamedQueryContext(ctx, sqlInsertMsg, m)
 	if err != nil {
 		return nil, fmt.Errorf("error inserting message: %w", err)
 	}
@@ -292,7 +292,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 		return err // fail? oh well, we'll try again later
 	}
 
-	rc := b.rp.Get()
+	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	// queue to mailroom for handling
@@ -309,7 +309,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 
 // checks to see if this message has already been received and if so returns its UUID
 func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *Msg) courier.MsgUUID {
-	rc := b.rp.Get()
+	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	// if we have an external id use that
@@ -339,7 +339,7 @@ func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *Msg) courier.M
 
 // records that the given message has been received and written to the database
 func (b *backend) recordMsgReceived(ctx context.Context, m *Msg) {
-	rc := b.rp.Get()
+	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	if m.ExternalID_ != "" {
@@ -359,7 +359,7 @@ func (b *backend) recordMsgReceived(ctx context.Context, m *Msg) {
 
 // clearMsgSeen clears our seen incoming messages for the passed in channel and URN
 func (b *backend) clearMsgSeen(ctx context.Context, m *Msg) {
-	rc := b.rp.Get()
+	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	fingerprint := fmt.Sprintf("%s|%s", m.Channel().UUID(), m.URN().Identity())

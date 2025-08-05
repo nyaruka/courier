@@ -168,7 +168,7 @@ SELECT
 
 func (b *backend) loadChannelByUUID(ctx context.Context, uuid courier.ChannelUUID) (*Channel, error) {
 	channel := &Channel{}
-	err := b.db.GetContext(ctx, channel, sqlLookupChannelFromUUID, uuid)
+	err := b.rt.DB.GetContext(ctx, channel, sqlLookupChannelFromUUID, uuid)
 
 	if err == sql.ErrNoRows {
 		return nil, courier.ErrChannelNotFound
@@ -197,7 +197,7 @@ SELECT
 
 func (b *backend) loadChannelByAddress(ctx context.Context, address courier.ChannelAddress) (*Channel, error) {
 	channel := &Channel{}
-	err := b.db.GetContext(ctx, channel, sqlLookupChannelFromAddress, address)
+	err := b.rt.DB.GetContext(ctx, channel, sqlLookupChannelFromAddress, address)
 
 	if err == sql.ErrNoRows {
 		return nil, courier.ErrChannelNotFound
