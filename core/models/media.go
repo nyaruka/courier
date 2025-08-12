@@ -1,4 +1,4 @@
-package rapidpro
+package models
 
 import (
 	"context"
@@ -40,16 +40,16 @@ func (m *Media) Alternates() []courier.Media {
 
 var _ courier.Media = &Media{}
 
-var sqlLookupMediaFromUUID = `
+var sqlSelectMediaFromUUID = `
 SELECT m.uuid, m.path, m.content_type, m.url, m.size, m.width, m.height, m.duration
 FROM msgs_media m
 INNER JOIN msgs_media m0 ON m0.id = m.id OR m0.id = m.original_id
 WHERE m0.uuid = $1
 ORDER BY m.id`
 
-func lookupMediaFromUUID(ctx context.Context, db *sqlx.DB, uuid uuids.UUID) (*Media, error) {
+func LoadMediaByUUID(ctx context.Context, db *sqlx.DB, uuid uuids.UUID) (*Media, error) {
 	var records []*Media
-	err := db.SelectContext(ctx, &records, sqlLookupMediaFromUUID, uuid)
+	err := db.SelectContext(ctx, &records, sqlSelectMediaFromUUID, uuid)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}

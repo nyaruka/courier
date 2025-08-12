@@ -12,6 +12,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -42,7 +43,7 @@ func (i ContactID) String() string {
 
 // Contact is our struct for a contact in the database
 type Contact struct {
-	OrgID_ OrgID               `db:"org_id"`
+	OrgID_ models.OrgID        `db:"org_id"`
 	ID_    ContactID           `db:"id"`
 	UUID_  courier.ContactUUID `db:"uuid"`
 	Name_  null.String         `db:"name"`
@@ -52,8 +53,8 @@ type Contact struct {
 	CreatedOn_  time.Time `db:"created_on"`
 	ModifiedOn_ time.Time `db:"modified_on"`
 
-	CreatedBy_  UserID `db:"created_by_id"`
-	ModifiedBy_ UserID `db:"modified_by_id"`
+	CreatedBy_  models.UserID `db:"created_by_id"`
+	ModifiedBy_ models.UserID `db:"modified_by_id"`
 
 	IsNew_ bool
 }
@@ -101,7 +102,7 @@ WHERE
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
-func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *courier.ChannelLog) (*Contact, error) {
+func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *courier.ChannelLog) (*Contact, error) {
 	log := slog.With("org_id", org, "urn", urn.Identity(), "channel_uuid", channel.UUID(), "log_uuid", clog.UUID)
 
 	// try to look up our contact by URN

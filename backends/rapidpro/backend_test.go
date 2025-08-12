@@ -23,6 +23,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/queue"
@@ -1019,8 +1020,8 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
-	getClogFromDynamo := func(clog *courier.ChannelLog) (*DynamoItem, error) {
-		return dynamo.GetItem[DynamoKey, DynamoItem](ctx, ts.dynamo, ts.b.dynamoWriter.Table(), (&ChannelLog{clog}).DynamoKey())
+	getClogFromDynamo := func(clog *courier.ChannelLog) (*models.DynamoItem, error) {
+		return dynamo.GetItem[models.DynamoKey, models.DynamoItem](ctx, ts.dynamo, ts.b.dynamoWriter.Table(), (&ChannelLog{clog}).DynamoKey())
 	}
 
 	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
@@ -1047,7 +1048,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	// check that we can read the log back from DynamoDB
 	item1, err := getClogFromDynamo(clog1)
 	ts.NoError(err)
-	ts.Equal(OrgID(1), item1.OrgID)
+	ts.Equal(models.OrgID(1), item1.OrgID)
 	ts.Equal("token_refresh", item1.Data["type"])
 	ts.NotNil(item1.DataGZ)
 
@@ -1436,7 +1437,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 	}{
 		{ // image upload that can be resolved
 			url: "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
-			media: &Media{
+			media: &models.Media{
 				UUID_:        "ec6972be-809c-4c8d-be59-ba9dbd74c977",
 				Path_:        "/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
 				ContentType_: "image/jpeg",
@@ -1444,12 +1445,12 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 				Size_:        123,
 				Width_:       1024,
 				Height_:      768,
-				Alternates_:  []*Media{},
+				Alternates_:  []*models.Media{},
 			},
 		},
 		{ // image upload that can be resolved
 			url: "http://nyaruka.us-east-1.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
-			media: &Media{
+			media: &models.Media{
 				UUID_:        "ec6972be-809c-4c8d-be59-ba9dbd74c977",
 				Path_:        "/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
 				ContentType_: "image/jpeg",
@@ -1457,12 +1458,12 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 				Size_:        123,
 				Width_:       1024,
 				Height_:      768,
-				Alternates_:  []*Media{},
+				Alternates_:  []*models.Media{},
 			},
 		},
 		{ // same image upload, this time from cache
 			url: "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
-			media: &Media{
+			media: &models.Media{
 				UUID_:        "ec6972be-809c-4c8d-be59-ba9dbd74c977",
 				Path_:        "/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
 				ContentType_: "image/jpeg",
@@ -1470,7 +1471,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 				Size_:        123,
 				Width_:       1024,
 				Height_:      768,
-				Alternates_:  []*Media{},
+				Alternates_:  []*models.Media{},
 			},
 		},
 		{ // image upload that can't be resolved
@@ -1491,14 +1492,14 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 		},
 		{ // audio upload
 			url: "http://nyaruka.s3.com/orgs/1/media/5310/5310f50f-9c8e-4035-9150-be5a1f78f21a/test.mp3",
-			media: &Media{
+			media: &models.Media{
 				UUID_:        "5310f50f-9c8e-4035-9150-be5a1f78f21a",
 				Path_:        "/orgs/1/media/5310/5310f50f-9c8e-4035-9150-be5a1f78f21a/test.mp3",
 				ContentType_: "audio/mp3",
 				URL_:         "http://nyaruka.s3.com/orgs/1/media/5310/5310f50f-9c8e-4035-9150-be5a1f78f21a/test.mp3",
 				Size_:        123,
 				Duration_:    500,
-				Alternates_: []*Media{
+				Alternates_: []*models.Media{
 					{
 						UUID_:        "514c552c-e585-40e2-938a-fe9450172da8",
 						Path_:        "/orgs/1/media/514c/514c552c-e585-40e2-938a-fe9450172da8/test.m4a",

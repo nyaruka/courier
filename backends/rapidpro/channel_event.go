@@ -13,6 +13,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
@@ -40,7 +41,7 @@ func (i ChannelEventID) String() string {
 type ChannelEvent struct {
 	ID_          ChannelEventID           `                               db:"id"`
 	UUID_        courier.ChannelEventUUID `json:"uuid"                    db:"uuid"`
-	OrgID_       OrgID                    `json:"org_id"                  db:"org_id"`
+	OrgID_       models.OrgID             `json:"org_id"                  db:"org_id"`
 	ChannelUUID_ courier.ChannelUUID      `json:"channel_uuid"            db:"channel_uuid"`
 	ChannelID_   courier.ChannelID        `json:"channel_id"              db:"channel_id"`
 	URN_         urns.URN                 `json:"urn"                     db:"urn"`

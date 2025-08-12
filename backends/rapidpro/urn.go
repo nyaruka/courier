@@ -8,6 +8,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null/v3"
@@ -27,7 +28,7 @@ func (i ContactURNID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i)
 // ContactURN is our struct to map to database level URNs
 type ContactURN struct {
 	ID            ContactURNID      `db:"id"`
-	OrgID         OrgID             `db:"org_id"`
+	OrgID         models.OrgID      `db:"org_id"`
 	ContactID     ContactID         `db:"contact_id"`
 	Identity      string            `db:"identity"`
 	Scheme        string            `db:"scheme"`
@@ -40,7 +41,7 @@ type ContactURN struct {
 }
 
 // returns a new ContactURN object for the passed in org, contact and string URN
-func newContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, authTokens map[string]string) *ContactURN {
+func newContactURN(org models.OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, authTokens map[string]string) *ContactURN {
 	return &ContactURN{
 		OrgID:      org,
 		ChannelID:  channelID,
@@ -159,7 +160,7 @@ func setDefaultURN(db *sqlx.Tx, channel *Channel, contact *Contact, urn urns.URN
 }
 
 // getContactURNByIdentity returns the ContactURN for the passed in org and identity
-func getContactURNByIdentity(db *sqlx.Tx, org OrgID, urn urns.URN) (*ContactURN, error) {
+func getContactURNByIdentity(db *sqlx.Tx, org models.OrgID, urn urns.URN) (*ContactURN, error) {
 	contactURN := newContactURN(org, courier.NilChannelID, NilContactID, urn, map[string]string{})
 	err := db.Get(contactURN, sqlSelectURNByIdentity, org, urn.Identity())
 	if err != nil {
