@@ -16,6 +16,7 @@ import (
 	filetype "github.com/h2non/filetype"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils/queue"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
@@ -44,7 +45,7 @@ const (
 
 // Msg is our base struct to represent msgs both in our JSON and db representations
 type Msg struct {
-	OrgID_        OrgID                `json:"org_id"          db:"org_id"`
+	OrgID_        models.OrgID         `json:"org_id"          db:"org_id"`
 	ID_           courier.MsgID        `json:"id"              db:"id"`
 	UUID_         courier.MsgUUID      `json:"uuid"            db:"uuid"`
 	Direction_    MsgDirection         `                       db:"direction"`

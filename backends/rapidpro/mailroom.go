@@ -7,6 +7,7 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/vkutil/queues"
 )
@@ -55,7 +56,7 @@ func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *Channel, msgID cour
 
 // queueMailroomTask queues the passed in task to mailroom. Mailroom processes both messages and
 // channel event tasks through the same ordered queue.
-func queueMailroomTask(ctx context.Context, rc redis.Conn, taskType string, orgID OrgID, contactID ContactID, body map[string]any) (err error) {
+func queueMailroomTask(ctx context.Context, rc redis.Conn, taskType string, orgID models.OrgID, contactID ContactID, body map[string]any) (err error) {
 	eventJSON := jsonx.MustMarshal(mrTask{
 		Type:     taskType,
 		Task:     body,

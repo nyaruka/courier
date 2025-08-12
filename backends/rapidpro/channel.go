@@ -8,6 +8,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null/v3"
@@ -23,7 +24,7 @@ const (
 
 // Channel is the RapidPro specific concrete type satisfying the courier.Channel interface
 type Channel struct {
-	OrgID_       OrgID               `db:"org_id"`
+	OrgID_       models.OrgID        `db:"org_id"`
 	UUID_        courier.ChannelUUID `db:"uuid"`
 	ID_          courier.ChannelID   `db:"id"`
 	ChannelType_ courier.ChannelType `db:"channel_type"`
@@ -41,7 +42,7 @@ type Channel struct {
 
 func (c *Channel) ID() courier.ChannelID            { return c.ID_ }
 func (c *Channel) UUID() courier.ChannelUUID        { return c.UUID_ }
-func (c *Channel) OrgID() OrgID                     { return c.OrgID_ }
+func (c *Channel) OrgID() models.OrgID              { return c.OrgID_ }
 func (c *Channel) OrgIsAnon() bool                  { return c.OrgIsAnon_ }
 func (c *Channel) ChannelType() courier.ChannelType { return c.ChannelType_ }
 func (c *Channel) Name() string                     { return c.Name_.String }

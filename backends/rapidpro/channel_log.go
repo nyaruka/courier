@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/httpx"
@@ -21,10 +22,10 @@ type ChannelLog struct {
 	*courier.ChannelLog
 }
 
-func (l *ChannelLog) DynamoKey() DynamoKey {
+func (l *ChannelLog) DynamoKey() models.DynamoKey {
 	pk := fmt.Sprintf("cha#%s#%s", l.Channel().UUID(), l.UUID[len(l.UUID)-1:]) // 16 buckets for each channel
 	sk := fmt.Sprintf("log#%s", l.UUID)
-	return DynamoKey{PK: pk, SK: sk}
+	return models.DynamoKey{PK: pk, SK: sk}
 }
 
 func (l *ChannelLog) MarshalDynamo() (map[string]types.AttributeValue, error) {
@@ -38,10 +39,12 @@ func (l *ChannelLog) MarshalDynamo() (map[string]types.AttributeValue, error) {
 		return nil, fmt.Errorf("error encoding http logs as JSON+GZip: %w", err)
 	}
 
-	return dynamo.Marshal(&DynamoItem{
+	ttl := l.CreatedOn.Add(dynamoChannelLogTTL)
+
+	return dynamo.Marshal(&models.DynamoItem{
 		DynamoKey: l.DynamoKey(),
 		OrgID:     l.Channel().(*Channel).OrgID(),
-		TTL:       l.CreatedOn.Add(dynamoChannelLogTTL),
+		TTL:       &ttl,
 		Data: map[string]any{
 			"type":       l.Type,
 			"elapsed_ms": int(l.Elapsed / time.Millisecond),

@@ -23,6 +23,7 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/utils/queue"
 	"github.com/nyaruka/gocommon/aws/cwatch"
@@ -52,7 +53,7 @@ var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]
 type backend struct {
 	rt *runtime.Runtime
 
-	systemUserID UserID
+	systemUserID models.UserID
 
 	statusWriter *StatusWriter
 	dynamoWriter *dynamo.Writer
@@ -208,7 +209,7 @@ func (b *backend) Start() error {
 	b.statusWriter.Start(b.writerWG)
 
 	// store the system user id
-	b.systemUserID, err = getSystemUserID(ctx, b.rt.DB)
+	b.systemUserID, err = models.GetSystemUserID(ctx, b.rt.DB)
 	if err != nil {
 		return err
 	}
@@ -741,7 +742,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
-	var media *Media
+	var media *models.Media
 	mediaJSON, err := b.mediaCache.Get(ctx, rc, mediaUUID)
 	if err != nil {
 		return nil, fmt.Errorf("error looking up cached media: %w", err)
@@ -750,7 +751,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 		jsonx.MustUnmarshal([]byte(mediaJSON), &media)
 	} else {
 		// lookup media in our database
-		media, err = lookupMediaFromUUID(ctx, b.rt.DB, uuids.UUID(mediaUUID))
+		media, err = models.LoadMediaByUUID(ctx, b.rt.DB, uuids.UUID(mediaUUID))
 		if err != nil {
 			return nil, fmt.Errorf("error looking up media: %w", err)
 		}
