@@ -1,3 +1,8 @@
+v10.3.8 (2025-08-12)
+-------------------------
+ * Update deps
+ * Expose fetch attachment endpoint with new /ci/ prefix for internal endpoints
+
 v10.3.7 (2025-08-05)
 -------------------------
  * Twewak metric name
