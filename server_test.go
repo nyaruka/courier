@@ -260,7 +260,7 @@ func TestFetchAttachment(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	submit := func(body, authToken string) (int, []byte) {
-		req, _ := http.NewRequest("POST", "http://localhost:8081/c/_fetch-attachment", strings.NewReader(body))
+		req, _ := http.NewRequest("POST", "http://localhost:8081/ci/attachment/fetch", strings.NewReader(body))
 		if authToken != "" {
 			req.Header.Set("Authorization", "Bearer "+authToken)
 		}

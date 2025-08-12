@@ -107,6 +107,9 @@ func (s *server) Start() error {
 	s.router.MethodNotAllowed(s.handle405)
 	s.router.Get("/", s.handleIndex)
 	s.router.Get("/status", s.basicAuthRequired(s.handleStatus))
+	s.router.Post("/ci/attachment/fetch", s.tokenAuthRequired(s.handleFetchAttachment))
+
+	// deprecated - kept for backwards compatibility
 	s.publicRouter.Post("/_fetch-attachment", s.tokenAuthRequired(s.handleFetchAttachment)) // becomes /c/_fetch-attachment
 
 	// initialize our handlers
