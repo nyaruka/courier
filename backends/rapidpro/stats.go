@@ -63,20 +63,22 @@ func newStats() *Stats {
 	}
 }
 
-func (s *Stats) ToMetrics() []types.MetricDatum {
+func (s *Stats) ToMetrics(advanced bool) []types.MetricDatum {
 	metrics := make([]types.MetricDatum, 0, 20)
-	metrics = append(metrics, s.IncomingRequests.metrics("IncomingRequests")...)
 	metrics = append(metrics, s.IncomingMessages.metrics("IncomingMessages")...)
-	metrics = append(metrics, s.IncomingStatuses.metrics("IncomingStatuses")...)
-	metrics = append(metrics, s.IncomingEvents.metrics("IncomingEvents")...)
-	metrics = append(metrics, s.IncomingIgnored.metrics("IncomingIgnored")...)
-	metrics = append(metrics, s.IncomingDuration.metrics("IncomingDuration", func(typ courier.ChannelType) int { return s.IncomingRequests[typ] })...)
-
 	metrics = append(metrics, s.OutgoingSends.metrics("OutgoingSends")...)
 	metrics = append(metrics, s.OutgoingErrors.metrics("OutgoingErrors")...)
-	metrics = append(metrics, s.OutgoingDuration.metrics("OutgoingDuration", func(typ courier.ChannelType) int { return s.OutgoingSends[typ] + s.OutgoingErrors[typ] })...)
 
-	metrics = append(metrics, cwatch.Datum("ContactsCreated", float64(s.ContactsCreated), types.StandardUnitCount))
+	if advanced {
+		metrics = append(metrics, s.IncomingRequests.metrics("IncomingRequests")...)
+		metrics = append(metrics, s.IncomingStatuses.metrics("IncomingStatuses")...)
+		metrics = append(metrics, s.IncomingEvents.metrics("IncomingEvents")...)
+		metrics = append(metrics, s.IncomingIgnored.metrics("IncomingIgnored")...)
+		metrics = append(metrics, s.IncomingDuration.metrics("IncomingDuration", func(typ courier.ChannelType) int { return s.IncomingRequests[typ] })...)
+		metrics = append(metrics, s.OutgoingDuration.metrics("OutgoingDuration", func(typ courier.ChannelType) int { return s.OutgoingSends[typ] + s.OutgoingErrors[typ] })...)
+		metrics = append(metrics, cwatch.Datum("ContactsCreated", float64(s.ContactsCreated), types.StandardUnitCount))
+	}
+
 	return metrics
 }
 
