@@ -30,6 +30,7 @@ type Config struct {
 	AWSSecretAccessKey string `help:"secret access key to use for AWS services"`
 	AWSRegion          string `help:"region to use for AWS services, e.g. us-east-1"`
 
+	MetricsReporting    string `validate:"eq=off|eq=basic|eq=advanced"     help:"the level of metrics reporting"`
 	CloudwatchNamespace string `help:"the namespace to use for cloudwatch metrics"`
 	DeploymentID        string `help:"the deployment identifier to use for metrics"`
 	InstanceID          string `help:"the instance identifier to use for metrics"`
@@ -48,8 +49,6 @@ type Config struct {
 	DisallowedNetworks string     `help:"comma separated list of IP addresses and networks which we disallow fetching attachments from"`
 	MediaDomain        string     `help:"the domain on which we'll try to resolve outgoing media URLs"`
 	MaxWorkers         int        `help:"the maximum number of go routines that will be used for sending (set to 0 to disable sending)"`
-	LibratoUsername    string     `help:"the username that will be used to authenticate to Librato"`
-	LibratoToken       string     `help:"the token that will be used to authenticate to Librato"`
 	StatusUsername     string     `help:"the username that is needed to authenticate against the /status endpoint"`
 	StatusPassword     string     `help:"the password that is needed to authenticate against the /status endpoint"`
 	AuthToken          string     `help:"the authentication token need to access non-channel endpoints"`
@@ -79,6 +78,7 @@ func NewDefaultConfig() *Config {
 		AWSSecretAccessKey: "",
 		AWSRegion:          "us-east-1",
 
+		MetricsReporting:    "off",
 		CloudwatchNamespace: "Temba/Courier",
 		DeploymentID:        "dev",
 		InstanceID:          hostname,

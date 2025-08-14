@@ -808,7 +808,11 @@ func (b *backend) Health() string {
 }
 
 func (b *backend) reportMetrics(ctx context.Context) (int, error) {
-	metrics := b.stats.Extract().ToMetrics()
+	if b.rt.Config.MetricsReporting == "off" {
+		return 0, nil
+	}
+
+	metrics := b.stats.Extract().ToMetrics(b.rt.Config.MetricsReporting == "advanced")
 
 	// get queue sizes
 	rc := b.rt.VK.Get()
