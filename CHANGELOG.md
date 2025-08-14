@@ -1,3 +1,7 @@
+v10.3.9 (2025-08-14)
+-------------------------
+ * Allow metrics reporting to be off, basic or advanced
+
 v10.3.8 (2025-08-12)
 -------------------------
  * Update deps
