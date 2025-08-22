@@ -168,16 +168,13 @@ func (s *server) Stop() error {
 	close(s.stopChan)
 
 	// stop our backend
-	err := s.backend.Stop()
-	if err != nil {
+	if err := s.backend.Stop(); err != nil {
 		return err
 	}
 
 	// wait for everything to stop
 	s.waitGroup.Wait()
 
-	// clean things up, tearing down any connections
-	s.backend.Cleanup()
 	log.Info("server stopped", "state", "stopped")
 	return nil
 }

@@ -18,9 +18,6 @@ type Backend interface {
 	// Stop stops any backend processes
 	Stop() error
 
-	// Cleanup closes any active connections to databases
-	Cleanup() error
-
 	// GetChannel returns the channel with the passed in type and UUID
 	GetChannel(context.Context, models.ChannelType, models.ChannelUUID) (Channel, error)
 

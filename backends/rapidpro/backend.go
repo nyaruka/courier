@@ -313,15 +313,6 @@ func (b *backend) Stop() error {
 	b.dynamoWriter.Stop()
 	b.dynamoSpool.Stop()
 
-	if err := b.recordShutdown(context.TODO()); err != nil {
-		return fmt.Errorf("error recording shutdown: %w", err)
-	}
-
-	log.Info("backend stopped")
-	return nil
-}
-
-func (b *backend) Cleanup() error {
 	// stop our batched writers
 	if b.statusWriter != nil {
 		b.statusWriter.Stop()
@@ -330,6 +321,11 @@ func (b *backend) Cleanup() error {
 	// wait for them to flush fully
 	b.writerWG.Wait()
 
+	if err := b.recordShutdown(context.TODO()); err != nil {
+		return fmt.Errorf("error recording shutdown: %w", err)
+	}
+
+	log.Info("backend stopped")
 	return nil
 }
 

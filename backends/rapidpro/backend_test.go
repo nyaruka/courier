@@ -48,18 +48,20 @@ func (ts *BackendTestSuite) SetupSuite() {
 	b := NewBackend(rt)
 	ts.b = b.(*backend)
 
-	must(ts.b.Start())
+	err := ts.b.Start()
+	ts.Require().NoError(err)
 
 	ts.b.rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
 	ts.b.rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-logs")})
-
-	testsuite.ResetValkey(ts.T(), ts.b.rt)
 }
 
 func (ts *BackendTestSuite) TearDownSuite() {
 	ctx := context.Background()
 	ts.b.Stop()
-	ts.b.Cleanup()
+
+	// TODO figure out why this hangs
+	// testsuite.ResetDB(ts.T(), ts.b.rt)
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	dyntest.Truncate(ts.T(), ts.b.rt.Dynamo, ts.b.dynamoWriter.Table())
 	ts.b.rt.S3.EmptyBucket(ctx, "test-attachments")
@@ -1594,13 +1596,3 @@ func readChannelEventFromDB(b *backend, id ChannelEventID) *ChannelEvent {
 	}
 	return e
 }
-
-// convenience way to call a func and panic if it errors, e.g. must(foo())
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-// if just checking an error is nil noError(err) reads better than must(err)
-var noError = must

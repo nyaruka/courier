@@ -325,9 +325,6 @@ func (mb *MockBackend) Start() error { return nil }
 // Stop stops our mock backend
 func (mb *MockBackend) Stop() error { return nil }
 
-// Cleanup cleans up any connections that are open
-func (mb *MockBackend) Cleanup() error { return nil }
-
 // SaveAttachment saves an attachment to backend storage
 func (mb *MockBackend) SaveAttachment(ctx context.Context, ch courier.Channel, contentType string, data []byte, extension string) (string, error) {
 	if mb.storageError != nil {
