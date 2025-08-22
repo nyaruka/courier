@@ -330,11 +330,7 @@ func (b *backend) Cleanup() error {
 	// wait for them to flush fully
 	b.writerWG.Wait()
 
-	// close our db and redis pool
-	if b.rt.DB != nil {
-		b.rt.DB.Close()
-	}
-	return b.rt.VK.Close()
+	return nil
 }
 
 // GetChannel returns the channel for the passed in type and UUID
