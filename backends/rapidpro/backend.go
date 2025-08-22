@@ -344,7 +344,7 @@ func (b *backend) GetChannel(ctx context.Context, typ models.ChannelType, uuid m
 	}
 
 	if typ != models.AnyChannelType && ch.ChannelType() != typ {
-		return nil, courier.ErrChannelWrongType
+		return nil, models.ErrChannelWrongType
 	}
 
 	return ch, nil
@@ -361,7 +361,7 @@ func (b *backend) GetChannelByAddress(ctx context.Context, typ models.ChannelTyp
 	}
 
 	if typ != models.AnyChannelType && ch.ChannelType() != typ {
-		return nil, courier.ErrChannelWrongType
+		return nil, models.ErrChannelWrongType
 	}
 
 	return ch, nil

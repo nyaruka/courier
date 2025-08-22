@@ -276,7 +276,7 @@ func (mb *MockBackend) WriteChannelEvent(ctx context.Context, event courier.Chan
 func (mb *MockBackend) GetChannel(ctx context.Context, cType models.ChannelType, uuid models.ChannelUUID) (courier.Channel, error) {
 	channel, found := mb.channels[uuid]
 	if !found {
-		return nil, courier.ErrChannelNotFound
+		return nil, models.ErrChannelNotFound
 	}
 	return channel, nil
 }
@@ -285,7 +285,7 @@ func (mb *MockBackend) GetChannel(ctx context.Context, cType models.ChannelType,
 func (mb *MockBackend) GetChannelByAddress(ctx context.Context, cType models.ChannelType, address models.ChannelAddress) (courier.Channel, error) {
 	channel, found := mb.channelsByAddress[address]
 	if !found {
-		return nil, courier.ErrChannelNotFound
+		return nil, models.ErrChannelNotFound
 	}
 	return channel, nil
 }

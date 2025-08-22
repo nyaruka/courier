@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/lib/pq"
-	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
@@ -164,7 +163,7 @@ func (b *backend) loadChannelByUUID(ctx context.Context, uuid models.ChannelUUID
 	err := b.rt.DB.GetContext(ctx, channel, sqlLookupChannelFromUUID, uuid)
 
 	if err == sql.ErrNoRows {
-		return nil, courier.ErrChannelNotFound
+		return nil, models.ErrChannelNotFound
 	}
 	return channel, err
 }
@@ -193,7 +192,7 @@ func (b *backend) loadChannelByAddress(ctx context.Context, address models.Chann
 	err := b.rt.DB.GetContext(ctx, channel, sqlLookupChannelFromAddress, address)
 
 	if err == sql.ErrNoRows {
-		return nil, courier.ErrChannelNotFound
+		return nil, models.ErrChannelNotFound
 	}
 	return channel, err
 }

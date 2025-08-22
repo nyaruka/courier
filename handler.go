@@ -8,11 +8,6 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-// Event is our interface for the types of things a ChannelHandleFunc can return.
-type Event interface {
-	EventID() int64
-}
-
 // ChannelHandleFunc is the interface ChannelHandlers must satisfy to handle incoming requests.
 // The Server will take care of looking up the channel by UUID before passing it to this function.
 // Errors in format of the request or by the caller should be handled and logged internally. Errors in

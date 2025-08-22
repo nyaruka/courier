@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql/driver"
+	"errors"
 
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
@@ -110,3 +111,12 @@ const (
 	// ConfigSendHeaders is a constant key for channel configs
 	ConfigSendHeaders = "headers"
 )
+
+// ErrChannelExpired is returned when our cached channel has outlived it's TTL
+var ErrChannelExpired = errors.New("channel expired")
+
+// ErrChannelNotFound is returned when we fail to find a channel in the db
+var ErrChannelNotFound = errors.New("channel not found")
+
+// ErrChannelWrongType is returned when we find a channel with the set UUID but with a different type
+var ErrChannelWrongType = errors.New("channel type wrong")
