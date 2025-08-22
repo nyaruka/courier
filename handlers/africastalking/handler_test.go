@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -88,7 +89,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Success",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "ATXid_dda018a640edfcc5d2ce455de3e4a6e7", Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "ATXid_dda018a640edfcc5d2ce455de3e4a6e7", Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Status Expired",
@@ -96,7 +97,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Expired",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "ATXid_dda018a640edfcc5d2ce455de3e4a6e7", Status: courier.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "ATXid_dda018a640edfcc5d2ce455de3e4a6e7", Status: models.MsgStatusFailed}},
 	},
 }
 

@@ -531,14 +531,14 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 	}
 
 	// if message won't be retried, mark as sent to avoid dupe sends
-	if status.Status() != courier.MsgStatusErrored {
+	if status.Status() != models.MsgStatusErrored {
 		if err := b.sentIDs.Add(ctx, rc, msg.ID().String()); err != nil {
 			log.Error("unable to mark message sent", "error", err)
 		}
 	}
 
 	// if message was successfully sent, and we have a session timeout, update it
-	wasSuccess := status.Status() == courier.MsgStatusWired || status.Status() == courier.MsgStatusSent || status.Status() == courier.MsgStatusDelivered || status.Status() == courier.MsgStatusRead
+	wasSuccess := status.Status() == models.MsgStatusWired || status.Status() == models.MsgStatusSent || status.Status() == models.MsgStatusDelivered || status.Status() == models.MsgStatusRead
 	if wasSuccess && dbMsg.Session_ != nil && dbMsg.Session_.Timeout > 0 {
 		if err := b.insertTimeoutFire(ctx, dbMsg); err != nil {
 			log.Error("unable to update session timeout", "error", err, "session_uuid", dbMsg.Session_.UUID)
@@ -570,12 +570,12 @@ func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdate(channel courier.Channel, id models.MsgID, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (b *backend) NewStatusUpdate(channel courier.Channel, id models.MsgID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return newStatusUpdate(channel, id, "", status, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return newStatusUpdate(channel, models.NilMsgID, externalID, status, clog)
 }
 
@@ -610,7 +610,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 		}
 
 		// we sent a message that errored so clear our sent flag to allow it to be retried
-		if status.Status() == courier.MsgStatusErrored {
+		if status.Status() == models.MsgStatusErrored {
 			err := b.ClearMsgSent(ctx, status.MsgID())
 			if err != nil {
 				log.Error("error clearing sent flags", "error", err)

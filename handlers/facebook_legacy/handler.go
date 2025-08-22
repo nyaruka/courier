@@ -13,6 +13,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -402,7 +403,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 		} else if msg.Delivery != nil {
 			// this is a delivery report
 			for _, mid := range msg.Delivery.MIDs {
-				event := h.Backend().NewStatusUpdateByExternalID(channel, mid, courier.MsgStatusDelivered, clog)
+				event := h.Backend().NewStatusUpdateByExternalID(channel, mid, models.MsgStatusDelivered, clog)
 				err := h.Backend().WriteStatusUpdate(ctx, event)
 				if err != nil {
 					return nil, err

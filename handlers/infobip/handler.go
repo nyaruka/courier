@@ -11,6 +11,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -40,12 +41,12 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"PENDING":       courier.MsgStatusSent,
-	"EXPIRED":       courier.MsgStatusSent,
-	"DELIVERED":     courier.MsgStatusDelivered,
-	"REJECTED":      courier.MsgStatusFailed,
-	"UNDELIVERABLE": courier.MsgStatusFailed,
+var statusMapping = map[string]models.MsgStatus{
+	"PENDING":       models.MsgStatusSent,
+	"EXPIRED":       models.MsgStatusSent,
+	"DELIVERED":     models.MsgStatusDelivered,
+	"REJECTED":      models.MsgStatusFailed,
+	"UNDELIVERABLE": models.MsgStatusFailed,
 }
 
 type statusPayload struct {

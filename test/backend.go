@@ -218,7 +218,7 @@ func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *cour
 }
 
 // NewStatusUpdate creates a new Status object for the given message id
-func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, id models.MsgID, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, id models.MsgID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return &MockStatusUpdate{
 		channel:   channel,
 		msgID:     id,
@@ -228,7 +228,7 @@ func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, id models.MsgID,
 }
 
 // NewStatusUpdateByExternalID creates a new Status object for the given external id
-func (mb *MockBackend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (mb *MockBackend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return &MockStatusUpdate{
 		channel:    channel,
 		externalID: externalID,

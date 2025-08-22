@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -200,7 +201,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	case "failed":
 		clog.Type = courier.ChannelLogTypeMsgStatus
 
-		msgStatus := h.Backend().NewStatusUpdateByExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgStatusFailed, clog)
+		msgStatus := h.Backend().NewStatusUpdateByExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), models.MsgStatusFailed, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "delivered":

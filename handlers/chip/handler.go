@@ -17,10 +17,10 @@ import (
 var (
 	defaultSendURL = "http://textit.com/wc/send"
 
-	statuses = map[string]courier.MsgStatus{
-		"sent":      courier.MsgStatusSent,
-		"delivered": courier.MsgStatusDelivered,
-		"failed":    courier.MsgStatusFailed,
+	statuses = map[string]models.MsgStatus{
+		"sent":      models.MsgStatusSent,
+		"delivered": models.MsgStatusDelivered,
+		"failed":    models.MsgStatusFailed,
 	}
 )
 

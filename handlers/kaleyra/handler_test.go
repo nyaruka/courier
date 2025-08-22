@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -74,7 +75,7 @@ var incomingCases = []IncomingTestCase{
 		URL:                  receiveStatusURL + "?id=58f86fab-85c5-4f7c-9b68-9c323248afc4%3A0&status=read",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "58f86fab-85c5-4f7c-9b68-9c323248afc4:0", Status: courier.MsgStatusRead}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "58f86fab-85c5-4f7c-9b68-9c323248afc4:0", Status: models.MsgStatusRead}},
 	},
 	{
 		Label:                "Receive Invalid Status",

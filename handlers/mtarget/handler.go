@@ -12,6 +12,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -33,13 +34,13 @@ func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("MT"), "Mtarget")}
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"0": courier.MsgStatusWired,
-	"1": courier.MsgStatusWired,
-	"2": courier.MsgStatusSent,
-	"3": courier.MsgStatusDelivered,
-	"4": courier.MsgStatusFailed,
-	"6": courier.MsgStatusFailed,
+var statusMapping = map[string]models.MsgStatus{
+	"0": models.MsgStatusWired,
+	"1": models.MsgStatusWired,
+	"2": models.MsgStatusSent,
+	"3": models.MsgStatusDelivered,
+	"4": models.MsgStatusFailed,
+	"6": models.MsgStatusFailed,
 }
 
 // Initialize is called by the engine once everything is loaded

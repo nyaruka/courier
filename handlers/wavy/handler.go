@@ -10,6 +10,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
@@ -40,20 +41,20 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-var statusMapping = map[int]courier.MsgStatus{
-	2:   courier.MsgStatusSent,
-	4:   courier.MsgStatusDelivered,
-	101: courier.MsgStatusFailed,
-	102: courier.MsgStatusFailed,
-	103: courier.MsgStatusFailed,
-	104: courier.MsgStatusSent,
-	201: courier.MsgStatusFailed,
-	202: courier.MsgStatusFailed,
-	203: courier.MsgStatusFailed,
-	204: courier.MsgStatusFailed,
-	205: courier.MsgStatusFailed,
-	207: courier.MsgStatusFailed,
-	301: courier.MsgStatusErrored,
+var statusMapping = map[int]models.MsgStatus{
+	2:   models.MsgStatusSent,
+	4:   models.MsgStatusDelivered,
+	101: models.MsgStatusFailed,
+	102: models.MsgStatusFailed,
+	103: models.MsgStatusFailed,
+	104: models.MsgStatusSent,
+	201: models.MsgStatusFailed,
+	202: models.MsgStatusFailed,
+	203: models.MsgStatusFailed,
+	204: models.MsgStatusFailed,
+	205: models.MsgStatusFailed,
+	207: models.MsgStatusFailed,
+	301: models.MsgStatusErrored,
 }
 
 type sentStatusPayload struct {

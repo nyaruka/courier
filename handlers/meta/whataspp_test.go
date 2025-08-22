@@ -215,7 +215,7 @@ var whatsappIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "external_id", Status: courier.MsgStatusSent},
+			{ExternalID: "external_id", Status: models.MsgStatusSent},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -226,7 +226,7 @@ var whatsappIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "external_id", Status: courier.MsgStatusFailed},
+			{ExternalID: "external_id", Status: models.MsgStatusFailed},
 		},
 		ExpectedErrors: []*clogs.Error{
 			courier.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)"),

@@ -26,13 +26,13 @@ type StatusUpdate struct {
 	OldURN_      urns.URN            `json:"old_urn"                  db:"old_urn"`
 	NewURN_      urns.URN            `json:"new_urn"                  db:"new_urn"`
 	ExternalID_  string              `json:"external_id,omitempty"    db:"external_id"`
-	Status_      courier.MsgStatus   `json:"status"                   db:"status"`
+	Status_      models.MsgStatus    `json:"status"                   db:"status"`
 	ModifiedOn_  time.Time           `json:"modified_on"              db:"modified_on"`
 	LogUUID      clogs.UUID          `json:"log_uuid"                 db:"log_uuid"`
 }
 
 // creates a new message status update
-func newStatusUpdate(channel courier.Channel, id models.MsgID, externalID string, status courier.MsgStatus, clog *courier.ChannelLog) *StatusUpdate {
+func newStatusUpdate(channel courier.Channel, id models.MsgID, externalID string, status models.MsgStatus, clog *courier.ChannelLog) *StatusUpdate {
 	dbChannel := channel.(*Channel)
 
 	return &StatusUpdate{
@@ -160,8 +160,8 @@ func (s *StatusUpdate) URNUpdate() (urns.URN, urns.URN) {
 func (s *StatusUpdate) ExternalID() string      { return s.ExternalID_ }
 func (s *StatusUpdate) SetExternalID(id string) { s.ExternalID_ = id }
 
-func (s *StatusUpdate) Status() courier.MsgStatus          { return s.Status_ }
-func (s *StatusUpdate) SetStatus(status courier.MsgStatus) { s.Status_ = status }
+func (s *StatusUpdate) Status() models.MsgStatus          { return s.Status_ }
+func (s *StatusUpdate) SetStatus(status models.MsgStatus) { s.Status_ = status }
 
 // StatusWriter handles batched writes of status updates to the database
 type StatusWriter struct {

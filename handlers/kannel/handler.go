@@ -82,12 +82,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
-var statusMapping = map[int]courier.MsgStatus{
-	1:  courier.MsgStatusDelivered,
-	2:  courier.MsgStatusErrored,
-	4:  courier.MsgStatusSent,
-	8:  courier.MsgStatusSent,
-	16: courier.MsgStatusErrored,
+var statusMapping = map[int]models.MsgStatus{
+	1:  models.MsgStatusDelivered,
+	2:  models.MsgStatusErrored,
+	4:  models.MsgStatusSent,
+	8:  models.MsgStatusSent,
+	16: models.MsgStatusErrored,
 }
 
 type statusForm struct {
@@ -110,7 +110,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
-	if channel.BoolConfigForKey(configIgnoreSent, false) && msgStatus == courier.MsgStatusSent {
+	if channel.BoolConfigForKey(configIgnoreSent, false) && msgStatus == models.MsgStatusSent {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring sent report (message aready wired)")
 	}
 

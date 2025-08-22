@@ -49,7 +49,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "secret": "sesame", "events": [{"type": "msg_status", "status": {"msg_id": 10, "status": "sent"}}]}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Events Handled",
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 10, Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 10, Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Missing fields",

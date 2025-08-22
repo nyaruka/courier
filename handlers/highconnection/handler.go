@@ -93,16 +93,16 @@ type statusForm struct {
 	Status int   `name:"status" validate:"required"`
 }
 
-var statusMapping = map[int]courier.MsgStatus{
-	2:  courier.MsgStatusFailed,
-	4:  courier.MsgStatusSent,
-	6:  courier.MsgStatusDelivered,
-	11: courier.MsgStatusFailed,
-	12: courier.MsgStatusFailed,
-	13: courier.MsgStatusFailed,
-	14: courier.MsgStatusFailed,
-	15: courier.MsgStatusFailed,
-	16: courier.MsgStatusFailed,
+var statusMapping = map[int]models.MsgStatus{
+	2:  models.MsgStatusFailed,
+	4:  models.MsgStatusSent,
+	6:  models.MsgStatusDelivered,
+	11: models.MsgStatusFailed,
+	12: models.MsgStatusFailed,
+	13: models.MsgStatusFailed,
+	14: models.MsgStatusFailed,
+	15: models.MsgStatusFailed,
+	16: models.MsgStatusFailed,
 }
 
 // receiveStatus is our HTTP handler function for status updates

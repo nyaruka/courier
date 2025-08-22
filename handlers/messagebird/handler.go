@@ -54,13 +54,13 @@ type ReceivedStatus struct {
 	StatusErrorCode int       `schema:"statusErrorCode"`
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"scheduled":       courier.MsgStatusSent,
-	"delivery_failed": courier.MsgStatusFailed,
-	"sent":            courier.MsgStatusSent,
-	"buffered":        courier.MsgStatusSent,
-	"delivered":       courier.MsgStatusDelivered,
-	"expired":         courier.MsgStatusFailed,
+var statusMapping = map[string]models.MsgStatus{
+	"scheduled":       models.MsgStatusSent,
+	"delivery_failed": models.MsgStatusFailed,
+	"sent":            models.MsgStatusSent,
+	"buffered":        models.MsgStatusSent,
+	"delivered":       models.MsgStatusDelivered,
+	"expired":         models.MsgStatusFailed,
 }
 
 type formMessage struct {

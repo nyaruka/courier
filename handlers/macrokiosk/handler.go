@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
@@ -54,11 +55,11 @@ type statusForm struct {
 	Status string `name:"status" validate:"required"`
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"ACCEPTED":    courier.MsgStatusSent,
-	"DELIVERED":   courier.MsgStatusDelivered,
-	"UNDELIVERED": courier.MsgStatusFailed,
-	"PROCESSING":  courier.MsgStatusWired,
+var statusMapping = map[string]models.MsgStatus{
+	"ACCEPTED":    models.MsgStatusSent,
+	"DELIVERED":   models.MsgStatusDelivered,
+	"UNDELIVERED": models.MsgStatusFailed,
+	"PROCESSING":  models.MsgStatusWired,
 }
 
 // receiveStatus is our HTTP handler function for status updates

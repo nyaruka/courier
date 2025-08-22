@@ -46,10 +46,10 @@ type Backend interface {
 	WriteMsg(context.Context, MsgIn, *ChannelLog) error
 
 	// NewStatusUpdate creates a new status update for the given message id
-	NewStatusUpdate(Channel, models.MsgID, MsgStatus, *ChannelLog) StatusUpdate
+	NewStatusUpdate(Channel, models.MsgID, models.MsgStatus, *ChannelLog) StatusUpdate
 
 	// NewStatusUpdateByExternalID creates a new status update for the given external id
-	NewStatusUpdateByExternalID(Channel, string, MsgStatus, *ChannelLog) StatusUpdate
+	NewStatusUpdateByExternalID(Channel, string, models.MsgStatus, *ChannelLog) StatusUpdate
 
 	// WriteStatusUpdate writes the passed in status update to our backend
 	WriteStatusUpdate(context.Context, StatusUpdate) error

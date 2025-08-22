@@ -15,6 +15,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -49,17 +50,17 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"DELIVRD":             courier.MsgStatusDelivered,
-	"DeliveredToTerminal": courier.MsgStatusDelivered,
-	"DeliveryUncertain":   courier.MsgStatusSent,
-	"EXPIRED":             courier.MsgStatusFailed,
-	"DeliveryImpossible":  courier.MsgStatusErrored,
-	"DeliveredToNetwork":  courier.MsgStatusSent,
+var statusMapping = map[string]models.MsgStatus{
+	"DELIVRD":             models.MsgStatusDelivered,
+	"DeliveredToTerminal": models.MsgStatusDelivered,
+	"DeliveryUncertain":   models.MsgStatusSent,
+	"EXPIRED":             models.MsgStatusFailed,
+	"DeliveryImpossible":  models.MsgStatusErrored,
+	"DeliveredToNetwork":  models.MsgStatusSent,
 
 	// no changes
-	"MessageWaiting":                   courier.MsgStatusWired,
-	"DeliveryNotificationNotSupported": courier.MsgStatusWired,
+	"MessageWaiting":                   models.MsgStatusWired,
+	"DeliveryNotificationNotSupported": models.MsgStatusWired,
 }
 
 type moPayload struct {
@@ -102,7 +103,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				fmt.Errorf("unknown status '%s'", payload.DeliveryStatus))
 		}
 
-		if msgStatus == courier.MsgStatusWired {
+		if msgStatus == models.MsgStatusWired {
 			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no status changed, ignored")
 		}
 

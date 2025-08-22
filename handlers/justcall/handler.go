@@ -12,6 +12,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
@@ -126,11 +127,11 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"delivered":   courier.MsgStatusDelivered,
-	"sent":        courier.MsgStatusSent,
-	"undelivered": courier.MsgStatusErrored,
-	"failed":      courier.MsgStatusFailed,
+var statusMapping = map[string]models.MsgStatus{
+	"delivered":   models.MsgStatusDelivered,
+	"sent":        models.MsgStatusSent,
+	"undelivered": models.MsgStatusErrored,
+	"failed":      models.MsgStatusFailed,
 }
 
 func (h *handler) statusMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {

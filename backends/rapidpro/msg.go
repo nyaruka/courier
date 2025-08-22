@@ -49,7 +49,7 @@ type Msg struct {
 	ID_           models.MsgID        `json:"id"              db:"id"`
 	UUID_         models.MsgUUID      `json:"uuid"            db:"uuid"`
 	Direction_    MsgDirection        `                       db:"direction"`
-	Status_       courier.MsgStatus   `                       db:"status"`
+	Status_       models.MsgStatus    `                       db:"status"`
 	Visibility_   MsgVisibility       `                       db:"visibility"`
 	HighPriority_ bool                `json:"high_priority"   db:"high_priority"`
 	Text_         string              `json:"text"            db:"text"`
@@ -101,7 +101,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 		OrgID_:        dbChannel.OrgID(),
 		UUID_:         models.MsgUUID(uuids.NewV7()),
 		Direction_:    direction,
-		Status_:       courier.MsgStatusPending,
+		Status_:       models.MsgStatusPending,
 		Visibility_:   MsgVisible,
 		HighPriority_: false,
 		Text_:         text,

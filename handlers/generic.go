@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -35,7 +36,7 @@ func NewTelReceiveHandler(h courier.ChannelHandler, fromField string, bodyField 
 }
 
 // NewExternalIDStatusHandler creates a new status handler given the passed in status map and fields
-func NewExternalIDStatusHandler(h courier.ChannelHandler, statuses map[string]courier.MsgStatus, externalIDField string, statusField string) courier.ChannelHandleFunc {
+func NewExternalIDStatusHandler(h courier.ChannelHandler, statuses map[string]models.MsgStatus, externalIDField string, statusField string) courier.ChannelHandleFunc {
 	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 		err := r.ParseForm()
 		if err != nil {

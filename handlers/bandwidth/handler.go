@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
@@ -117,10 +118,10 @@ type moStatusData struct {
 	} `json:"message" validate:"required"`
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"message-sending":   courier.MsgStatusSent,
-	"message-delivered": courier.MsgStatusDelivered,
-	"message-failed":    courier.MsgStatusFailed,
+var statusMapping = map[string]models.MsgStatus{
+	"message-sending":   models.MsgStatusSent,
+	"message-delivered": models.MsgStatusDelivered,
+	"message-failed":    models.MsgStatusFailed,
 }
 
 // receiveMessage is our HTTP handler function for incoming messages

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -101,7 +102,7 @@ var incomingCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "rrt-58503", Status: courier.MsgStatusDelivered},
+			{ExternalID: "rrt-58503", Status: models.MsgStatusDelivered},
 		},
 	},
 	{
@@ -111,7 +112,7 @@ var incomingCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "rrt-58503", Status: courier.MsgStatusDelivered},
+			{ExternalID: "rrt-58503", Status: models.MsgStatusDelivered},
 		},
 	},
 	{
@@ -135,7 +136,7 @@ var incomingCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "rrt-58503", Status: courier.MsgStatusFailed},
+			{ExternalID: "rrt-58503", Status: models.MsgStatusFailed},
 		},
 	},
 	{

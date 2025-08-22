@@ -599,7 +599,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 		} else if msg.Delivery != nil {
 			// this is a delivery report
 			for _, mid := range msg.Delivery.MIDs {
-				event := h.Backend().NewStatusUpdateByExternalID(channel, mid, courier.MsgStatusDelivered, clog)
+				event := h.Backend().NewStatusUpdateByExternalID(channel, mid, models.MsgStatusDelivered, clog)
 				err := h.Backend().WriteStatusUpdate(ctx, event)
 				if err != nil {
 					return nil, nil, err

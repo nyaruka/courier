@@ -599,7 +599,7 @@ var testCases = []IncomingTestCase{
 		Data:                 failedStatusReport,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "4912661846655238145", Status: courier.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "4912661846655238145", Status: models.MsgStatusFailed}},
 		PrepRequest:          addValidSignature,
 	},
 	{Label: "Delivered Status Report", URL: receiveURL, Data: deliveredStatusReport, ExpectedRespStatus: 200, ExpectedBodyContains: `Ignored`, PrepRequest: addValidSignature},

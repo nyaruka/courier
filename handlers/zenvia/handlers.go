@@ -11,6 +11,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
@@ -130,12 +131,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"REJECTED":      courier.MsgStatusFailed,
-	"NOT_DELIVERED": courier.MsgStatusFailed,
-	"SENT":          courier.MsgStatusSent,
-	"DELIVERED":     courier.MsgStatusDelivered,
-	"READ":          courier.MsgStatusRead,
+var statusMapping = map[string]models.MsgStatus{
+	"REJECTED":      models.MsgStatusFailed,
+	"NOT_DELIVERED": models.MsgStatusFailed,
+	"SENT":          models.MsgStatusSent,
+	"DELIVERED":     models.MsgStatusDelivered,
+	"READ":          models.MsgStatusRead,
 }
 
 type statusPayload struct {
@@ -156,7 +157,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 	msgStatus, found := statusMapping[strings.ToUpper(payload.MessageStatus.Code)]
 	if !found {
-		msgStatus = courier.MsgStatusErrored
+		msgStatus = models.MsgStatusErrored
 	}
 
 	// write our status

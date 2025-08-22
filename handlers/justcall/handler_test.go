@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -243,7 +244,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "26523491", Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "26523491", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Receive invalid status direction",

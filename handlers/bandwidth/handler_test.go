@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -213,7 +214,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 validStatusSent,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Status delivered",
@@ -221,7 +222,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 validStatusDelivered,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Status failed",
@@ -229,7 +230,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 validStatusFailed,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "14762070468292kw2fuqty55yp2b2", Status: courier.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "14762070468292kw2fuqty55yp2b2", Status: models.MsgStatusFailed}},
 		ExpectedErrors:       []*clogs.Error{courier.ErrorExternal("4432", "forbidden to country")},
 	},
 }

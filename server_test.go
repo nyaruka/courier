@@ -147,7 +147,7 @@ func TestOutgoing(t *testing.T) {
 	// message should have failed...
 	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
 	assert.Equal(t, msg.ID(), mb.WrittenMsgStatuses()[0].MsgID())
-	assert.Equal(t, courier.MsgStatusFailed, mb.WrittenMsgStatuses()[0].Status())
+	assert.Equal(t, models.MsgStatusFailed, mb.WrittenMsgStatuses()[0].Status())
 	assert.Equal(t, 1, len(mb.WrittenChannelLogs()))
 	mb.Reset()
 
@@ -159,7 +159,7 @@ func TestOutgoing(t *testing.T) {
 	assert.Len(t, mb.WrittenMsgStatuses(), 1)
 	status := mb.WrittenMsgStatuses()[0]
 	assert.Equal(t, msg.ID(), status.MsgID())
-	assert.Equal(t, courier.MsgStatusWired, status.Status())
+	assert.Equal(t, models.MsgStatusWired, status.Status())
 
 	// and we should have a channel log with redacted errors and traces
 	assert.Len(t, mb.WrittenChannelLogs(), 1)
@@ -182,7 +182,7 @@ func TestOutgoing(t *testing.T) {
 	// message should be marked as wired
 	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
 	assert.Equal(t, msg.ID(), mb.WrittenMsgStatuses()[0].MsgID())
-	assert.Equal(t, courier.MsgStatusWired, mb.WrittenMsgStatuses()[0].Status())
+	assert.Equal(t, models.MsgStatusWired, mb.WrittenMsgStatuses()[0].Status())
 	mb.Reset()
 
 	// send message which will have mocked connection error
@@ -190,7 +190,7 @@ func TestOutgoing(t *testing.T) {
 
 	// message should be marked as errored (retryable)
 	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
-	assert.Equal(t, courier.MsgStatusErrored, mb.WrittenMsgStatuses()[0].Status())
+	assert.Equal(t, models.MsgStatusErrored, mb.WrittenMsgStatuses()[0].Status())
 	mb.Reset()
 
 	// send message which will have mocked channel config error
@@ -198,7 +198,7 @@ func TestOutgoing(t *testing.T) {
 
 	// message should be marked as failed (non-retryable)
 	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
-	assert.Equal(t, courier.MsgStatusFailed, mb.WrittenMsgStatuses()[0].Status())
+	assert.Equal(t, models.MsgStatusFailed, mb.WrittenMsgStatuses()[0].Status())
 	mb.Reset()
 
 	// send message which will have mocked rate limiting error
@@ -206,7 +206,7 @@ func TestOutgoing(t *testing.T) {
 
 	// message should be marked as errored (retryable)
 	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
-	assert.Equal(t, courier.MsgStatusErrored, mb.WrittenMsgStatuses()[0].Status())
+	assert.Equal(t, models.MsgStatusErrored, mb.WrittenMsgStatuses()[0].Status())
 	mb.Reset()
 
 	// send message which will have mocked contact-stopped error
@@ -214,7 +214,7 @@ func TestOutgoing(t *testing.T) {
 
 	// message should be marked as failed (non-retryable)
 	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
-	assert.Equal(t, courier.MsgStatusFailed, mb.WrittenMsgStatuses()[0].Status())
+	assert.Equal(t, models.MsgStatusFailed, mb.WrittenMsgStatuses()[0].Status())
 
 	// and we should have created a contact stop event
 	assert.Equal(t, 1, len(mb.WrittenChannelEvents()))

@@ -36,7 +36,7 @@ type RequestPrepFunc func(*http.Request)
 type ExpectedStatus struct {
 	MsgID      models.MsgID
 	ExternalID string
-	Status     courier.MsgStatus
+	Status     models.MsgStatus
 }
 
 // ExpectedEvent is an expected channel event

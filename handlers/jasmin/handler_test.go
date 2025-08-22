@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -52,7 +53,7 @@ var handleTestCases = []IncomingTestCase{
 		Data:                 "id=external1&dlvrd=1",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "ACK/Jasmin",
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external1", Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external1", Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Status Failed",
@@ -60,7 +61,7 @@ var handleTestCases = []IncomingTestCase{
 		Data:                 "id=external1&err=1",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "ACK/Jasmin",
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external1", Status: courier.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external1", Status: models.MsgStatusFailed}},
 	},
 	{
 		Label:                "Status Missing",

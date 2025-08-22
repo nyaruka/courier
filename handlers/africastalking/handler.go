@@ -10,6 +10,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -86,13 +87,13 @@ type statusForm struct {
 	Status string `validate:"required" name:"status"`
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"Success":  courier.MsgStatusDelivered,
-	"Sent":     courier.MsgStatusSent,
-	"Buffered": courier.MsgStatusSent,
-	"Rejected": courier.MsgStatusFailed,
-	"Failed":   courier.MsgStatusFailed,
-	"Expired":  courier.MsgStatusFailed,
+var statusMapping = map[string]models.MsgStatus{
+	"Success":  models.MsgStatusDelivered,
+	"Sent":     models.MsgStatusSent,
+	"Buffered": models.MsgStatusSent,
+	"Rejected": models.MsgStatusFailed,
+	"Failed":   models.MsgStatusFailed,
+	"Expired":  models.MsgStatusFailed,
 }
 
 // receiveStatus is our HTTP handler function for status updates

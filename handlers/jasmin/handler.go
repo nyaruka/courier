@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
@@ -52,11 +53,11 @@ func (h *handler) receiveStatus(ctx context.Context, c courier.Channel, w http.R
 	}
 
 	// should have either delivered or err
-	reqStatus := courier.NilMsgStatus
+	reqStatus := models.NilMsgStatus
 	if form.Delivered == 1 {
-		reqStatus = courier.MsgStatusDelivered
+		reqStatus = models.MsgStatusDelivered
 	} else if form.Err == 1 {
-		reqStatus = courier.MsgStatusFailed
+		reqStatus = models.MsgStatusFailed
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("must have either dlvrd or err set to 1"))
 	}

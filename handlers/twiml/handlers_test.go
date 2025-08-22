@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -136,7 +137,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusFailed},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusFailed},
 		},
 		ExpectedEvents: []ExpectedEvent{
 			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
@@ -167,7 +168,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -178,7 +179,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"R"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusRead},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusRead},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -189,7 +190,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+			{MsgID: 12345, Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -200,7 +201,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -234,7 +235,7 @@ var tmsTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusFailed},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusFailed},
 		},
 		ExpectedEvents: []ExpectedEvent{
 			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
@@ -249,7 +250,7 @@ var tmsTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SM0b6e2697aae04182a9f5b5c7a8994c7f", Status: courier.MsgStatusSent},
+			{ExternalID: "SM0b6e2697aae04182a9f5b5c7a8994c7f", Status: models.MsgStatusSent},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -276,7 +277,7 @@ var tmsTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -287,7 +288,7 @@ var tmsTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+			{MsgID: 12345, Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -298,7 +299,7 @@ var tmsTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -334,7 +335,7 @@ var twTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusFailed},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusFailed},
 		},
 		ExpectedEvents: []ExpectedEvent{
 			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
@@ -353,7 +354,7 @@ var twTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -364,7 +365,7 @@ var twTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+			{MsgID: 12345, Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -375,7 +376,7 @@ var twTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -398,7 +399,7 @@ var swTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusFailed},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusFailed},
 		},
 		ExpectedEvents: []ExpectedEvent{
 			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
@@ -415,7 +416,7 @@ var swTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -426,7 +427,7 @@ var swTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+			{MsgID: 12345, Status: models.MsgStatusDelivered},
 		},
 	},
 	{
@@ -436,7 +437,7 @@ var swTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 	},
 }
@@ -468,7 +469,7 @@ var twaTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -479,7 +480,7 @@ var twaTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+			{MsgID: 12345, Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -490,7 +491,7 @@ var twaTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"E"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusErrored},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusErrored},
 		},
 		PrepRequest:    addValidSignature,
 		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("63018", "Rate limit exceeded for Channel")},
@@ -502,7 +503,7 @@ var twaTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},

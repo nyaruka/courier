@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -51,21 +52,21 @@ var daTestCases = []IncomingTestCase{
 		URL:                  statusURL + "?status=10&messageid=12345",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "000",
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Valid Status",
 		URL:                  statusURL + "?status=10&messageid=12345.2",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "000",
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Failed Status",
 		URL:                  statusURL + "?status=30&messageid=12345",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "000",
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusFailed}},
 	},
 	{
 		Label:                "Missing Status",

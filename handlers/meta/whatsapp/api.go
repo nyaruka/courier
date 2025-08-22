@@ -1,13 +1,13 @@
 package whatsapp
 
-import "github.com/nyaruka/courier"
+import "github.com/nyaruka/courier/core/models"
 
 // see https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples#message-status-updates
-var StatusMapping = map[string]courier.MsgStatus{
-	"sent":      courier.MsgStatusSent,
-	"delivered": courier.MsgStatusDelivered,
-	"read":      courier.MsgStatusRead,
-	"failed":    courier.MsgStatusFailed,
+var StatusMapping = map[string]models.MsgStatus{
+	"sent":      models.MsgStatusSent,
+	"delivered": models.MsgStatusDelivered,
+	"read":      models.MsgStatusRead,
+	"failed":    models.MsgStatusFailed,
 }
 
 var IgnoreStatuses = map[string]bool{

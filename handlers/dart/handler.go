@@ -113,13 +113,13 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parsing failed: status '%s' is not an integer", form.Status))
 	}
 
-	msgStatus := courier.MsgStatusSent
+	msgStatus := models.MsgStatusSent
 	if statusInt >= 10 && statusInt <= 12 {
-		msgStatus = courier.MsgStatusDelivered
+		msgStatus = models.MsgStatusDelivered
 	}
 
 	if statusInt > 20 {
-		msgStatus = courier.MsgStatusFailed
+		msgStatus = models.MsgStatusFailed
 	}
 
 	msgID, err := strconv.ParseInt(strings.Split(form.MessageID, ".")[0], 10, 64)

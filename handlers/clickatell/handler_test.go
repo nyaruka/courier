@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -110,7 +111,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 `{"messageId": "msg1", "statusCode": 5}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "msg1", Status: courier.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "msg1", Status: models.MsgStatusFailed}},
 	},
 	{
 		Label:                "Valid Delivered status report",
@@ -118,7 +119,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 `{"messageId": "msg1", "statusCode": 4}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "msg1", Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "msg1", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Unexpected status report",

@@ -107,13 +107,13 @@ type statusForm struct {
 	To            string
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"queued":      courier.MsgStatusSent,
-	"failed":      courier.MsgStatusFailed,
-	"sent":        courier.MsgStatusSent,
-	"delivered":   courier.MsgStatusDelivered,
-	"read":        courier.MsgStatusRead,
-	"undelivered": courier.MsgStatusFailed,
+var statusMapping = map[string]models.MsgStatus{
+	"queued":      models.MsgStatusSent,
+	"failed":      models.MsgStatusFailed,
+	"sent":        models.MsgStatusSent,
+	"delivered":   models.MsgStatusDelivered,
+	"read":        models.MsgStatusRead,
+	"undelivered": models.MsgStatusFailed,
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -176,7 +176,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
-	if channel.BoolConfigForKey(configIgnoreDLRs, false) && msgStatus != courier.MsgStatusFailed {
+	if channel.BoolConfigForKey(configIgnoreDLRs, false) && msgStatus != models.MsgStatusFailed {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring non error delivery report")
 	}
 
@@ -214,7 +214,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		}
 		clog.Error(twilioError(errorCode))
 		if errorCode == errorThrottled {
-			status = h.Backend().NewStatusUpdateByExternalID(channel, form.MessageSID, courier.MsgStatusErrored, clog)
+			status = h.Backend().NewStatusUpdateByExternalID(channel, form.MessageSID, models.MsgStatusErrored, clog)
 		}
 	}
 

@@ -476,7 +476,7 @@ var waTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "9712A34B4A8B6AD50F", Status: courier.MsgStatusSent},
+			{ExternalID: "9712A34B4A8B6AD50F", Status: models.MsgStatusSent},
 		},
 	},
 	{

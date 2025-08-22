@@ -322,12 +322,12 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
-var waStatusMapping = map[string]courier.MsgStatus{
-	"sending":   courier.MsgStatusWired,
-	"sent":      courier.MsgStatusSent,
-	"delivered": courier.MsgStatusDelivered,
-	"read":      courier.MsgStatusRead,
-	"failed":    courier.MsgStatusFailed,
+var waStatusMapping = map[string]models.MsgStatus{
+	"sending":   models.MsgStatusWired,
+	"sent":      models.MsgStatusSent,
+	"delivered": models.MsgStatusDelivered,
+	"read":      models.MsgStatusRead,
+	"failed":    models.MsgStatusFailed,
 }
 
 var waIgnoreStatuses = map[string]bool{

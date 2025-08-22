@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/httpx"
 )
@@ -16,11 +17,11 @@ import (
 var (
 	sendURL      = "https://api.transmitsms.com/send-sms.json"
 	maxMsgLength = 612
-	statusMap    = map[string]courier.MsgStatus{
-		"delivered":   courier.MsgStatusDelivered,
-		"pending":     courier.MsgStatusSent,
-		"soft-bounce": courier.MsgStatusErrored,
-		"hard-bounce": courier.MsgStatusFailed,
+	statusMap    = map[string]models.MsgStatus{
+		"delivered":   models.MsgStatusDelivered,
+		"pending":     models.MsgStatusSent,
+		"soft-bounce": models.MsgStatusErrored,
+		"hard-bounce": models.MsgStatusFailed,
 	}
 )
 
