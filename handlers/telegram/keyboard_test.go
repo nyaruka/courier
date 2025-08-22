@@ -3,19 +3,19 @@ package telegram_test
 import (
 	"testing"
 
-	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers/telegram"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestKeyboardFromReplies(t *testing.T) {
 	tcs := []struct {
-		replies  []courier.QuickReply
+		replies  []models.QuickReply
 		expected *telegram.ReplyKeyboardMarkup
 	}{
 		{
 
-			[]courier.QuickReply{{Text: "OK"}},
+			[]models.QuickReply{{Text: "OK"}},
 			&telegram.ReplyKeyboardMarkup{
 				[][]telegram.KeyboardButton{
 					{{Text: "OK"}},
@@ -24,7 +24,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			},
 		},
 		{
-			[]courier.QuickReply{{Text: "Yes"}, {Text: "No"}, {Text: "Maybe"}},
+			[]models.QuickReply{{Text: "Yes"}, {Text: "No"}, {Text: "Maybe"}},
 			&telegram.ReplyKeyboardMarkup{
 				[][]telegram.KeyboardButton{
 					{{Text: "Yes"}, {Text: "No"}, {Text: "Maybe"}},
@@ -33,7 +33,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			},
 		},
 		{
-			[]courier.QuickReply{{Text: "Vanilla"}, {Text: "Chocolate"}, {Text: "Mint"}, {Text: "Lemon Sorbet"}, {Text: "Papaya"}, {Text: "Strawberry"}},
+			[]models.QuickReply{{Text: "Vanilla"}, {Text: "Chocolate"}, {Text: "Mint"}, {Text: "Lemon Sorbet"}, {Text: "Papaya"}, {Text: "Strawberry"}},
 			&telegram.ReplyKeyboardMarkup{
 				[][]telegram.KeyboardButton{
 					{{Text: "Vanilla"}, {Text: "Chocolate"}},
@@ -44,7 +44,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			},
 		},
 		{
-			[]courier.QuickReply{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}, {Text: "Chicken"}, {Text: "Fish"}, {Text: "Peanut Butter Pickle"}},
+			[]models.QuickReply{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}, {Text: "Chicken"}, {Text: "Fish"}, {Text: "Peanut Butter Pickle"}},
 			&telegram.ReplyKeyboardMarkup{
 				[][]telegram.KeyboardButton{
 					{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}},

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/vkutil/queues"
@@ -50,7 +49,7 @@ func queueEventHandling(ctx context.Context, rc redis.Conn, c *Contact, e *Chann
 	return queueMailroomTask(ctx, rc, "event_received", e.OrgID_, e.ContactID_, body)
 }
 
-func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *Channel, msgID courier.MsgID, contactID ContactID) error {
+func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *Channel, msgID models.MsgID, contactID ContactID) error {
 	return queueMailroomTask(ctx, rc, "msg_deleted", ch.OrgID_, contactID, map[string]any{"msg_id": msgID})
 }
 

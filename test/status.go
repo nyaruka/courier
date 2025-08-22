@@ -4,12 +4,13 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/urns"
 )
 
 type MockStatusUpdate struct {
 	channel    courier.Channel
-	msgID      courier.MsgID
+	msgID      models.MsgID
 	oldURN     urns.URN
 	newURN     urns.URN
 	externalID string
@@ -19,7 +20,7 @@ type MockStatusUpdate struct {
 
 func (m *MockStatusUpdate) EventID() int64                   { return int64(m.msgID) }
 func (m *MockStatusUpdate) ChannelUUID() courier.ChannelUUID { return m.channel.UUID() }
-func (m *MockStatusUpdate) MsgID() courier.MsgID             { return m.msgID }
+func (m *MockStatusUpdate) MsgID() models.MsgID              { return m.msgID }
 
 func (m *MockStatusUpdate) SetURNUpdate(old, new urns.URN) error {
 	m.oldURN = old

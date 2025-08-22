@@ -12,6 +12,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -31,7 +32,7 @@ type MockBackend struct {
 	channelsByAddress map[courier.ChannelAddress]courier.Channel
 	contacts          map[urns.URN]courier.Contact
 	outgoingMsgs      []courier.MsgOut
-	media             map[string]courier.Media // url -> Media
+	media             map[string]*models.Media // url -> Media
 	errorOnQueue      bool
 
 	mutex     sync.RWMutex
@@ -44,11 +45,11 @@ type MockBackend struct {
 	savedAttachments     []*SavedAttachment
 	storageError         error
 
-	lastMsgID       courier.MsgID
+	lastMsgID       models.MsgID
 	lastContactName string
 	urnAuthTokens   map[urns.URN]map[string]string
-	sentMsgs        map[courier.MsgID]bool
-	seenExternalIDs map[string]courier.MsgUUID
+	sentMsgs        map[models.MsgID]bool
+	seenExternalIDs map[string]models.MsgUUID
 }
 
 // NewMockBackend returns a new mock backend suitable for testing
@@ -79,9 +80,9 @@ func NewMockBackend() *MockBackend {
 		channels:          make(map[courier.ChannelUUID]courier.Channel),
 		channelsByAddress: make(map[courier.ChannelAddress]courier.Channel),
 		contacts:          make(map[urns.URN]courier.Contact),
-		media:             make(map[string]courier.Media),
-		sentMsgs:          make(map[courier.MsgID]bool),
-		seenExternalIDs:   make(map[string]courier.MsgUUID),
+		media:             make(map[string]*models.Media),
+		sentMsgs:          make(map[models.MsgID]bool),
+		seenExternalIDs:   make(map[string]models.MsgUUID),
 		redisPool:         redisPool,
 	}
 }
@@ -107,8 +108,8 @@ func (mb *MockBackend) NewIncomingMsg(ctx context.Context, channel courier.Chann
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, id courier.MsgID, urn urns.URN, text string, highPriority bool, quickReplies []courier.QuickReply,
-	responseToExternalID string, origin courier.MsgOrigin, contactLastSeenOn *time.Time) courier.MsgOut {
+func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, id models.MsgID, urn urns.URN, text string, highPriority bool, quickReplies []models.QuickReply,
+	responseToExternalID string, origin models.MsgOrigin, contactLastSeenOn *time.Time) courier.MsgOut {
 
 	return &MockMsg{
 		channel:              channel,
@@ -146,14 +147,14 @@ func (mb *MockBackend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, 
 }
 
 // WasMsgSent returns whether the passed in msg was already sent
-func (mb *MockBackend) WasMsgSent(ctx context.Context, id courier.MsgID) (bool, error) {
+func (mb *MockBackend) WasMsgSent(ctx context.Context, id models.MsgID) (bool, error) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
 	return mb.sentMsgs[id], nil
 }
 
-func (mb *MockBackend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
+func (mb *MockBackend) ClearMsgSent(ctx context.Context, id models.MsgID) error {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -217,7 +218,7 @@ func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *cour
 }
 
 // NewStatusUpdate creates a new Status object for the given message id
-func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, id courier.MsgID, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, id models.MsgID, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return &MockStatusUpdate{
 		channel:   channel,
 		msgID:     id,
@@ -343,7 +344,7 @@ func (mb *MockBackend) SaveAttachment(ctx context.Context, ch courier.Channel, c
 }
 
 // ResolveMedia resolves the passed in media URL to a media object
-func (mb *MockBackend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Media, error) {
+func (mb *MockBackend) ResolveMedia(ctx context.Context, mediaUrl string) (*models.Media, error) {
 	media := mb.media[mediaUrl]
 	if media == nil {
 		return nil, nil
@@ -392,7 +393,7 @@ func (mb *MockBackend) LastContactName() string {
 }
 
 // MockMedia adds the given media to the mocked backend
-func (mb *MockBackend) MockMedia(media courier.Media) {
+func (mb *MockBackend) MockMedia(media *models.Media) {
 	mb.media[media.URL()] = media
 }
 
@@ -410,8 +411,8 @@ func (mb *MockBackend) ClearChannels() {
 
 // Reset clears our queued messages, seen external IDs, and channel logs
 func (mb *MockBackend) Reset() {
-	mb.lastMsgID = courier.NilMsgID
-	mb.seenExternalIDs = make(map[string]courier.MsgUUID)
+	mb.lastMsgID = models.NilMsgID
+	mb.seenExternalIDs = make(map[string]models.MsgUUID)
 
 	mb.writtenMsgs = nil
 	mb.writtenMsgStatuses = nil

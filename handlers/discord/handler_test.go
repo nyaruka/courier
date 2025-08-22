@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -115,7 +116,7 @@ var sendTestCases = []OutgoingTestCase{
 		Label:           "Attachement and quick replies",
 		MsgText:         "Hello World",
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MsgQuickReplies: []courier.QuickReply{{Text: "hello"}, {Text: "world"}},
+		MsgQuickReplies: []models.QuickReply{{Text: "hello"}, {Text: "world"}},
 		MsgURN:          "discord:694634743521607802",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://example.com/discord/rp/send": {

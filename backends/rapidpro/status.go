@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/syncx"
@@ -21,7 +22,7 @@ import (
 type StatusUpdate struct {
 	ChannelUUID_ courier.ChannelUUID `json:"channel_uuid"             db:"channel_uuid"`
 	ChannelID_   courier.ChannelID   `json:"channel_id"               db:"channel_id"`
-	MsgID_       courier.MsgID       `json:"msg_id,omitempty"         db:"msg_id"`
+	MsgID_       models.MsgID        `json:"msg_id,omitempty"         db:"msg_id"`
 	OldURN_      urns.URN            `json:"old_urn"                  db:"old_urn"`
 	NewURN_      urns.URN            `json:"new_urn"                  db:"new_urn"`
 	ExternalID_  string              `json:"external_id,omitempty"    db:"external_id"`
@@ -31,7 +32,7 @@ type StatusUpdate struct {
 }
 
 // creates a new message status update
-func newStatusUpdate(channel courier.Channel, id courier.MsgID, externalID string, status courier.MsgStatus, clog *courier.ChannelLog) *StatusUpdate {
+func newStatusUpdate(channel courier.Channel, id models.MsgID, externalID string, status courier.MsgStatus, clog *courier.ChannelLog) *StatusUpdate {
 	dbChannel := channel.(*Channel)
 
 	return &StatusUpdate{
@@ -133,7 +134,7 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 
 func (s *StatusUpdate) EventID() int64                   { return int64(s.MsgID_) }
 func (s *StatusUpdate) ChannelUUID() courier.ChannelUUID { return s.ChannelUUID_ }
-func (s *StatusUpdate) MsgID() courier.MsgID             { return s.MsgID_ }
+func (s *StatusUpdate) MsgID() models.MsgID              { return s.MsgID_ }
 
 func (s *StatusUpdate) SetURNUpdate(old, new urns.URN) error {
 	// check by nil URN
@@ -219,7 +220,7 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*Status
 	// get the statuses which have external ID instead of a message ID
 	missingID := make([]*StatusUpdate, 0, 500)
 	for _, s := range statuses {
-		if s.MsgID_ == courier.NilMsgID {
+		if s.MsgID_ == models.NilMsgID {
 			missingID = append(missingID, s)
 		}
 	}
@@ -235,7 +236,7 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*Status
 	unresolved := make([]*StatusUpdate, 0, len(statuses))
 
 	for _, s := range statuses {
-		if s.MsgID_ != courier.NilMsgID {
+		if s.MsgID_ != models.NilMsgID {
 			resolved = append(resolved, s)
 		} else {
 			unresolved = append(unresolved, s)
@@ -278,7 +279,7 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*Sta
 		if err != nil {
 			notInCache = append(notInCache, statuses[i])
 		} else {
-			statuses[i].MsgID_ = courier.MsgID(id)
+			statuses[i].MsgID_ = models.MsgID(id)
 		}
 	}
 
@@ -307,7 +308,7 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*Sta
 	}
 	defer rows.Close()
 
-	var msgID courier.MsgID
+	var msgID models.MsgID
 	var channelID courier.ChannelID
 	var externalID string
 

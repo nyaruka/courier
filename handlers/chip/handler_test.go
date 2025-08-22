@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -94,7 +95,7 @@ var outgoingCases = []OutgoingTestCase{
 		Label:   "Flow message with quick replies",
 		MsgText: "Simple message ☺",
 		MsgURN:  "webchat:65vbbDAQCdPdEWlEhDGy4utO",
-		MsgQuickReplies: []courier.QuickReply{
+		MsgQuickReplies: []models.QuickReply{
 			{Text: "Yes"},
 			{Text: "No"},
 		},

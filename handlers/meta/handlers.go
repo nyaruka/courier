@@ -18,6 +18,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/handlers/meta/messenger"
 	"github.com/nyaruka/courier/handlers/meta/whatsapp"
@@ -633,7 +634,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 		return courier.ErrChannelConfig
 	}
 
-	isHuman := msg.Origin() == courier.MsgOriginChat || msg.Origin() == courier.MsgOriginTicket
+	isHuman := msg.Origin() == models.MsgOriginChat || msg.Origin() == models.MsgOriginTicket
 	payload := &messenger.SendRequest{}
 
 	// build our recipient

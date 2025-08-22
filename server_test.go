@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -140,7 +141,7 @@ func TestOutgoing(t *testing.T) {
 	mb.AddChannel(mockChannel)
 
 	// try to send message via unregistered channel
-	msg := test.NewMockMsg(courier.MsgID(101), courier.NilMsgUUID, brokenChannel, "tel:+250788383383", "test message", nil)
+	msg := test.NewMockMsg(models.MsgID(101), models.NilMsgUUID, brokenChannel, "tel:+250788383383", "test message", nil)
 	sendAndWait(mb, msg)
 
 	// message should have failed...
@@ -151,7 +152,7 @@ func TestOutgoing(t *testing.T) {
 	mb.Reset()
 
 	// send message via registered channel
-	msg = test.NewMockMsg(courier.MsgID(102), courier.NilMsgUUID, mockChannel, "tel:+250788383383", "test message 2", nil)
+	msg = test.NewMockMsg(models.MsgID(102), models.NilMsgUUID, mockChannel, "tel:+250788383383", "test message 2", nil)
 	sendAndWait(mb, msg)
 
 	// message should be marked as wired
@@ -185,7 +186,7 @@ func TestOutgoing(t *testing.T) {
 	mb.Reset()
 
 	// send message which will have mocked connection error
-	sendAndWait(mb, test.NewMockMsg(courier.MsgID(103), courier.NilMsgUUID, mockChannel, "tel:+250788383383", "3", nil))
+	sendAndWait(mb, test.NewMockMsg(103, models.NilMsgUUID, mockChannel, "tel:+250788383383", "3", nil))
 
 	// message should be marked as errored (retryable)
 	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
@@ -193,7 +194,7 @@ func TestOutgoing(t *testing.T) {
 	mb.Reset()
 
 	// send message which will have mocked channel config error
-	sendAndWait(mb, test.NewMockMsg(courier.MsgID(104), courier.NilMsgUUID, mockChannel, "tel:+250788383383", "err:config", nil))
+	sendAndWait(mb, test.NewMockMsg(104, models.NilMsgUUID, mockChannel, "tel:+250788383383", "err:config", nil))
 
 	// message should be marked as failed (non-retryable)
 	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
@@ -201,7 +202,7 @@ func TestOutgoing(t *testing.T) {
 	mb.Reset()
 
 	// send message which will have mocked rate limiting error
-	sendAndWait(mb, test.NewMockMsg(courier.MsgID(105), courier.NilMsgUUID, mockChannel, "tel:+250788383383", "5", nil))
+	sendAndWait(mb, test.NewMockMsg(105, models.NilMsgUUID, mockChannel, "tel:+250788383383", "5", nil))
 
 	// message should be marked as errored (retryable)
 	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
@@ -209,7 +210,7 @@ func TestOutgoing(t *testing.T) {
 	mb.Reset()
 
 	// send message which will have mocked contact-stopped error
-	sendAndWait(mb, test.NewMockMsg(courier.MsgID(106), courier.NilMsgUUID, mockChannel, "tel:+250788383383", "6", nil))
+	sendAndWait(mb, test.NewMockMsg(106, models.NilMsgUUID, mockChannel, "tel:+250788383383", "6", nil))
 
 	// message should be marked as failed (non-retryable)
 	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))

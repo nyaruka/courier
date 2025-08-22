@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
@@ -90,8 +91,8 @@ var statusMapping = map[int]courier.MsgStatus{
 }
 
 type statusForm struct {
-	ID     courier.MsgID `validate:"required" name:"id"`
-	Status int           `validate:"required" name:"status"`
+	ID     models.MsgID `validate:"required" name:"id"`
+	Status int          `validate:"required" name:"status"`
 }
 
 // receiveStatus is our HTTP handler function for status updates

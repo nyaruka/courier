@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils"
 )
 
@@ -36,7 +37,7 @@ func SplitAttachment(attachment string) (string, string) {
 }
 
 // TextOnlyQuickReplies returns the text of a list of quick replies
-func TextOnlyQuickReplies(qrs []courier.QuickReply) []string {
+func TextOnlyQuickReplies(qrs []models.QuickReply) []string {
 	t := make([]string, len(qrs))
 	for i, qr := range qrs {
 		t[i] = qr.Text

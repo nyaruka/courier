@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 )
 
@@ -39,7 +39,7 @@ const (
 var textSizes = map[string]bool{"small": true, "regular": true, "large": true}
 
 // NewKeyboardFromReplies create a keyboard from the given quick replies
-func NewKeyboardFromReplies(replies []courier.QuickReply, buttonConfig map[string]any) *Keyboard {
+func NewKeyboardFromReplies(replies []models.QuickReply, buttonConfig map[string]any) *Keyboard {
 	rows := StringsToRows(handlers.TextOnlyQuickReplies(replies), maxColumns, maxRowRunes, paddingRunes)
 	buttons := []KeyboardButton{}
 

@@ -17,6 +17,7 @@ import (
 
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -33,7 +34,7 @@ type RequestPrepFunc func(*http.Request)
 
 // ExpectedStatus is an expected status update
 type ExpectedStatus struct {
-	MsgID      courier.MsgID
+	MsgID      models.MsgID
 	ExternalID string
 	Status     courier.MsgStatus
 }
@@ -300,15 +301,15 @@ type OutgoingTestCase struct {
 	MsgURN                  string
 	MsgURNAuth              string
 	MsgAttachments          []string
-	MsgQuickReplies         []courier.QuickReply
+	MsgQuickReplies         []models.QuickReply
 	MsgLocale               i18n.Locale
 	MsgTemplating           string
 	MsgHighPriority         bool
 	MsgResponseToExternalID string
-	MsgFlow                 *courier.FlowReference
-	MsgOptIn                *courier.OptInReference
-	MsgUserID               courier.UserID
-	MsgOrigin               courier.MsgOrigin
+	MsgFlow                 *models.FlowReference
+	MsgOptIn                *models.OptInReference
+	MsgUserID               models.UserID
+	MsgOrigin               models.MsgOrigin
 	MsgContactLastSeenOn    *time.Time
 
 	MockResponses map[string][]*httpx.MockResponse
@@ -323,7 +324,7 @@ type OutgoingTestCase struct {
 
 // Msg creates the test message for this test case
 func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch courier.Channel) courier.MsgOut {
-	msgOrigin := courier.MsgOriginFlow
+	msgOrigin := models.MsgOriginFlow
 	if tc.MsgOrigin != "" {
 		msgOrigin = tc.MsgOrigin
 	}
@@ -339,7 +340,7 @@ func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch courier.Channel) courie
 		m.WithURNAuth(tc.MsgURNAuth)
 	}
 	if tc.MsgTemplating != "" {
-		templating := &courier.Templating{}
+		templating := &models.Templating{}
 		jsonx.MustUnmarshal([]byte(tc.MsgTemplating), templating)
 		m.WithTemplating(templating)
 	}

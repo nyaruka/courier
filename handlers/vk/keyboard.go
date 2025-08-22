@@ -1,7 +1,7 @@
 package vk
 
 import (
-	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -25,7 +25,7 @@ type ButtonAction struct {
 }
 
 // NewKeyboardFromReplies creates a keyboard from the given quick replies
-func NewKeyboardFromReplies(replies []courier.QuickReply) *Keyboard {
+func NewKeyboardFromReplies(replies []models.QuickReply) *Keyboard {
 	rows := utils.StringsToRows(handlers.TextOnlyQuickReplies(replies), 10, 30, 2)
 	buttons := make([][]ButtonPayload, len(rows))
 

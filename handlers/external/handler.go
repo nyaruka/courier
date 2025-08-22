@@ -14,6 +14,7 @@ import (
 
 	"github.com/antchfx/xmlquery"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -264,7 +265,7 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdate(channel, courier.MsgID(form.ID), msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, models.MsgID(form.ID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -329,7 +330,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		if i == len(parts)-1 {
 			formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentURLEncoded)
 		} else {
-			formEncoded["quick_replies"] = buildQuickRepliesResponse([]courier.QuickReply{}, sendMethod, contentURLEncoded)
+			formEncoded["quick_replies"] = buildQuickRepliesResponse([]models.QuickReply{}, sendMethod, contentURLEncoded)
 		}
 		url := replaceVariables(sendURL, formEncoded)
 
@@ -340,7 +341,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			if i == len(parts)-1 {
 				formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentType)
 			} else {
-				formEncoded["quick_replies"] = buildQuickRepliesResponse([]courier.QuickReply{}, sendMethod, contentType)
+				formEncoded["quick_replies"] = buildQuickRepliesResponse([]models.QuickReply{}, sendMethod, contentType)
 			}
 			body = strings.NewReader(replaceVariables(sendBody, formEncoded))
 		}
@@ -382,9 +383,9 @@ type quickReplyXMLItem struct {
 	Value   string   `xml:",chardata"`
 }
 
-func buildQuickRepliesResponse(quickReplies []courier.QuickReply, sendMethod string, contentType string) string {
+func buildQuickRepliesResponse(quickReplies []models.QuickReply, sendMethod string, contentType string) string {
 	if quickReplies == nil {
-		quickReplies = []courier.QuickReply{}
+		quickReplies = []models.QuickReply{}
 	}
 	if (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentJSON {
 		return string(jsonx.MustMarshal(handlers.TextOnlyQuickReplies(quickReplies)))

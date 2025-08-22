@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -51,8 +52,8 @@ type receivePayload struct {
 			Text string `json:"text"`
 		} `json:"msg"`
 		Status struct {
-			MsgID  courier.MsgID `json:"msg_id"`
-			Status string        `json:"status"`
+			MsgID  models.MsgID `json:"msg_id"`
+			Status string       `json:"status"`
 		} `json:"status"`
 	}
 }
@@ -111,12 +112,12 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 }
 
 type sendMsg struct {
-	ID           courier.MsgID     `json:"id"`
-	Text         string            `json:"text"`
-	Attachments  []string          `json:"attachments,omitempty"`
-	QuickReplies []string          `json:"quick_replies,omitempty"`
-	Origin       courier.MsgOrigin `json:"origin"`
-	UserID       courier.UserID    `json:"user_id,omitempty"`
+	ID           models.MsgID     `json:"id"`
+	Text         string           `json:"text"`
+	Attachments  []string         `json:"attachments,omitempty"`
+	QuickReplies []string         `json:"quick_replies,omitempty"`
+	Origin       models.MsgOrigin `json:"origin"`
+	UserID       models.UserID    `json:"user_id,omitempty"`
 }
 
 type sendPayload struct {

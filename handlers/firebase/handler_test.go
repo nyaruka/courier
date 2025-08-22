@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -199,7 +200,7 @@ var sendAPIkeyTestCases = []OutgoingTestCase{
 		MsgText:         "Simple Message",
 		MsgURN:          "fcm:250788123123",
 		MsgURNAuth:      "auth1",
-		MsgQuickReplies: []courier.QuickReply{{Text: "yes"}, {Text: "no"}},
+		MsgQuickReplies: []models.QuickReply{{Text: "yes"}, {Text: "no"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://fcm.googleapis.com/fcm/send": {
@@ -326,7 +327,7 @@ var sendTestCases = []OutgoingTestCase{
 		MsgText:         "Simple Message",
 		MsgURN:          "fcm:250788123123",
 		MsgURNAuth:      "auth1",
-		MsgQuickReplies: []courier.QuickReply{{Text: "yes"}, {Text: "no"}},
+		MsgQuickReplies: []models.QuickReply{{Text: "yes"}, {Text: "no"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {

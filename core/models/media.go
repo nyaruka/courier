@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/uuids"
 )
 
@@ -22,23 +21,15 @@ type Media struct {
 	Alternates_  []*Media   `                  json:"alternates"`
 }
 
-func (m *Media) UUID() uuids.UUID    { return m.UUID_ }
-func (m *Media) Name() string        { return filepath.Base(m.Path_) }
-func (m *Media) ContentType() string { return m.ContentType_ }
-func (m *Media) URL() string         { return m.URL_ }
-func (m *Media) Size() int           { return m.Size_ }
-func (m *Media) Width() int          { return m.Width_ }
-func (m *Media) Height() int         { return m.Height_ }
-func (m *Media) Duration() int       { return m.Duration_ }
-func (m *Media) Alternates() []courier.Media {
-	as := make([]courier.Media, len(m.Alternates_))
-	for i, alt := range m.Alternates_ {
-		as[i] = alt
-	}
-	return as
-}
-
-var _ courier.Media = &Media{}
+func (m *Media) UUID() uuids.UUID     { return m.UUID_ }
+func (m *Media) Name() string         { return filepath.Base(m.Path_) }
+func (m *Media) ContentType() string  { return m.ContentType_ }
+func (m *Media) URL() string          { return m.URL_ }
+func (m *Media) Size() int            { return m.Size_ }
+func (m *Media) Width() int           { return m.Width_ }
+func (m *Media) Height() int          { return m.Height_ }
+func (m *Media) Duration() int        { return m.Duration_ }
+func (m *Media) Alternates() []*Media { return m.Alternates_ }
 
 var sqlSelectMediaFromUUID = `
 SELECT m.uuid, m.path, m.content_type, m.url, m.size, m.width, m.height, m.duration
