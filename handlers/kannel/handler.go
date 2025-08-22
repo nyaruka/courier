@@ -121,9 +121,9 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
+	sendURL := msg.Channel().StringConfigForKey(models.ConfigSendURL, "")
 	if username == "" || password == "" || sendURL == "" {
 		return courier.ErrChannelConfig
 	}
@@ -147,7 +147,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		form["priority"] = []string{"1"}
 	}
 
-	useNationalStr := msg.Channel().ConfigForKey(courier.ConfigUseNational, false)
+	useNationalStr := msg.Channel().ConfigForKey(models.ConfigUseNational, false)
 	useNational, _ := useNationalStr.(bool)
 
 	// if we are meant to use national formatting (no country code) pull that out

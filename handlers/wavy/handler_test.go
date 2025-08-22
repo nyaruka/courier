@@ -214,8 +214,8 @@ func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WV", "2020", "BR",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigUsername:  "user1",
-			courier.ConfigAuthToken: "token",
+			models.ConfigUsername:  "user1",
+			models.ConfigAuthToken: "token",
 		})
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingCases, []string{"token"}, nil)
 }

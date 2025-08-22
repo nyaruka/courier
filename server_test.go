@@ -218,7 +218,7 @@ func TestOutgoing(t *testing.T) {
 
 	// and we should have created a contact stop event
 	assert.Equal(t, 1, len(mb.WrittenChannelEvents()))
-	assert.Equal(t, courier.EventTypeStopContact, mb.WrittenChannelEvents()[0].EventType())
+	assert.Equal(t, models.EventTypeStopContact, mb.WrittenChannelEvents()[0].EventType())
 	mb.Reset()
 }
 

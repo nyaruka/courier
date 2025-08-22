@@ -206,7 +206,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 			}
 
 			// create a stop channel event
-			channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeStopContact, urn, clog)
+			channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
 			err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 			if err != nil {
 				return nil, err
@@ -227,7 +227,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(string(h.ChannelType())), msg.Channel().UUID(), msg.ID())
 
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
-	accountToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	accountToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if accountSID == "" || accountToken == "" {
 		return courier.ErrChannelConfig
 	}
@@ -431,7 +431,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 		return nil, fmt.Errorf("missing account sid for %s channel", h.ChannelName())
 	}
 
-	accountToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	accountToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if accountToken == "" {
 		return nil, fmt.Errorf("missing account auth token for %s channel", h.ChannelName())
 	}
@@ -447,7 +447,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	return []string{
-		httpx.BasicAuth(ch.StringConfigForKey(configAccountSID, ""), ch.StringConfigForKey(courier.ConfigAuthToken, "")),
+		httpx.BasicAuth(ch.StringConfigForKey(configAccountSID, ""), ch.StringConfigForKey(models.ConfigAuthToken, "")),
 	}
 }
 
@@ -493,7 +493,7 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 		return err
 	}
 
-	confAuth := c.ConfigForKey(courier.ConfigAuthToken, "")
+	confAuth := c.ConfigForKey(models.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
 		return fmt.Errorf("invalid or missing auth token in config")

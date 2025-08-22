@@ -177,8 +177,8 @@ type mtResponse struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
 	applicationID := msg.Channel().StringConfigForKey(configMsgApplicationID, "")
 	if applicationID == "" {
@@ -249,12 +249,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 // BuildAttachmentRequest to download media for message attachment with Basic auth set
 func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
-	username := channel.StringConfigForKey(courier.ConfigUsername, "")
+	username := channel.StringConfigForKey(models.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for BW channel")
 	}
 
-	password := channel.StringConfigForKey(courier.ConfigPassword, "")
+	password := channel.StringConfigForKey(models.ConfigPassword, "")
 	if password == "" {
 		return nil, fmt.Errorf("no password set for BW channel")
 	}
@@ -267,6 +267,6 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	return []string{
-		httpx.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
+		httpx.BasicAuth(ch.StringConfigForKey(models.ConfigUsername, ""), ch.StringConfigForKey(models.ConfigPassword, "")),
 	}
 }

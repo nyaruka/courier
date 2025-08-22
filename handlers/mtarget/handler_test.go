@@ -55,7 +55,7 @@ var incomingCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeStopContact, URN: "tel:+923161909799"},
+			{Type: models.EventTypeStopContact, URN: "tel:+923161909799"},
 		},
 	},
 	{

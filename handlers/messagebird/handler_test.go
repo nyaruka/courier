@@ -181,7 +181,7 @@ var defaultReceiveTestCases = []IncomingTestCase{
 		ExpectedRespStatus: 200,
 		ExpectedStatuses:   []ExpectedStatus{{MsgID: 26, Status: models.MsgStatusFailed}},
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeStopContact, URN: "tel:+18885551515"},
+			{Type: models.EventTypeStopContact, URN: "tel:+18885551515"},
 		},
 		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("103", "Contact has sent 'stop'")},
 	},

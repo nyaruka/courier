@@ -34,7 +34,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "secret": "sesame", "events": [{"type": "chat_started"}]}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Events Handled",
-		ExpectedEvents:       []ExpectedEvent{{Type: courier.EventTypeNewConversation, URN: "webchat:65vbbDAQCdPdEWlEhDGy4utO"}},
+		ExpectedEvents:       []ExpectedEvent{{Type: models.EventTypeNewConversation, URN: "webchat:65vbbDAQCdPdEWlEhDGy4utO"}},
 	},
 	{
 		Label:                "Chat started event with invalid chat ID",

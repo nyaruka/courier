@@ -41,7 +41,7 @@ type ExpectedStatus struct {
 
 // ExpectedEvent is an expected channel event
 type ExpectedEvent struct {
-	Type  courier.ChannelEventType
+	Type  models.ChannelEventType
 	URN   urns.URN
 	Time  time.Time
 	Extra map[string]string

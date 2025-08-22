@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
@@ -27,7 +28,7 @@ import (
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US",
 		[]string{urns.WeChat.Prefix},
-		map[string]any{courier.ConfigSecret: "secret123", configAppSecret: "app-secret123", configAppID: "app-id"}),
+		map[string]any{models.ConfigSecret: "secret123", configAppSecret: "app-secret123", configAppID: "app-id"}),
 }
 
 var (
@@ -161,7 +162,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Event Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeNewConversation, URN: "wechat:1234"},
+			{Type: models.EventTypeNewConversation, URN: "wechat:1234"},
 		},
 	},
 

@@ -1072,7 +1072,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.Equal("msg_send", item2.Data["type"])
 
 	// channel channel log policy to only write errors
-	channel.LogPolicy = LogPolicyErrors
+	channel.LogPolicy = models.LogPolicyErrors
 
 	clog3 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog3.HTTP(trace)
@@ -1096,7 +1096,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.NotNil(item4)
 
 	// channel channel log policy to discard all
-	channel.LogPolicy = LogPolicyNone
+	channel.LogPolicy = models.LogPolicyNone
 
 	clog5 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog5.HTTP(trace)
@@ -1309,7 +1309,7 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
 	urn := urns.URN("tel:+12065551616")
 
-	event := ts.b.NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).WithExtra(map[string]string{"ref_id": "12345"}).WithContactName("kermit frog")
+	event := ts.b.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithExtra(map[string]string{"ref_id": "12345"}).WithContactName("kermit frog")
 	err := ts.b.WriteChannelEvent(ctx, event, clog)
 	ts.NoError(err)
 
@@ -1319,18 +1319,18 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 
 	dbE := event.(*ChannelEvent)
 	dbE = readChannelEventFromDB(ts.b, dbE.ID_)
-	ts.Equal(dbE.EventType_, courier.EventTypeReferral)
+	ts.Equal(dbE.EventType_, models.EventTypeReferral)
 	ts.Equal(map[string]string{"ref_id": "12345"}, dbE.Extra())
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 
-	event = ts.b.NewChannelEvent(channel, courier.EventTypeOptIn, urn, clog).WithExtra(map[string]string{"title": "Polls", "payload": "1"})
+	event = ts.b.NewChannelEvent(channel, models.EventTypeOptIn, urn, clog).WithExtra(map[string]string{"title": "Polls", "payload": "1"})
 	err = ts.b.WriteChannelEvent(ctx, event, clog)
 	ts.NoError(err)
 
 	dbE = event.(*ChannelEvent)
 	dbE = readChannelEventFromDB(ts.b, dbE.ID_)
-	ts.Equal(dbE.EventType_, courier.EventTypeOptIn)
+	ts.Equal(dbE.EventType_, models.EventTypeOptIn)
 	ts.Equal(map[string]string{"title": "Polls", "payload": "1"}, dbE.Extra())
 	ts.Equal(null.Int(1), dbE.OptInID_)
 }
@@ -1395,7 +1395,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
 	urn := urns.URN("tel:+12065551616")
 
-	event := ts.b.NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).
+	event := ts.b.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).
 		WithExtra(map[string]string{"ref_id": "12345"}).
 		WithContactName("kermit frog").
 		WithOccurredOn(time.Date(2020, 8, 5, 13, 30, 0, 123456789, time.UTC))
@@ -1409,7 +1409,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 
 	dbE := event.(*ChannelEvent)
 	dbE = readChannelEventFromDB(ts.b, dbE.ID_)
-	ts.Equal(dbE.EventType_, courier.EventTypeReferral)
+	ts.Equal(dbE.EventType_, models.EventTypeReferral)
 	ts.Equal(map[string]string{"ref_id": "12345"}, dbE.Extra())
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)

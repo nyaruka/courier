@@ -20,7 +20,7 @@ import (
 )
 
 var instgramTestChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "IG", "12345", "", []string{urns.Instagram.Prefix}, map[string]any{courier.ConfigAuthToken: "a123"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "IG", "12345", "", []string{urns.Instagram.Prefix}, map[string]any{models.ConfigAuthToken: "a123"}),
 }
 
 var instagramIncomingTests = []IncomingTestCase{
@@ -90,7 +90,7 @@ var instagramIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeNewConversation, URN: "instagram:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "icebreaker question", "payload": "get_started"}},
+			{Type: models.EventTypeNewConversation, URN: "instagram:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "icebreaker question", "payload": "get_started"}},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -394,7 +394,7 @@ func TestInstagramOutgoing(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
 
-	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IG", "12345", "", []string{urns.Instagram.Prefix}, map[string]any{courier.ConfigAuthToken: "a123"})
+	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IG", "12345", "", []string{urns.Instagram.Prefix}, map[string]any{models.ConfigAuthToken: "a123"})
 
 	checkRedacted := []string{"wac_admin_system_user_token", "missing_facebook_app_secret", "missing_facebook_webhook_secret", "a123"}
 

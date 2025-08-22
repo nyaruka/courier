@@ -122,8 +122,8 @@ type mtPayload struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	token := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	token := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if username == "" || token == "" {
 		return courier.ErrChannelConfig
 	}

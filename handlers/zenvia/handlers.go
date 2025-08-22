@@ -182,7 +182,7 @@ type mtPayload struct {
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	channel := msg.Channel()
-	token := channel.StringConfigForKey(courier.ConfigAPIKey, "")
+	token := channel.StringConfigForKey(models.ConfigAPIKey, "")
 	if token == "" {
 		return courier.ErrChannelConfig
 	}

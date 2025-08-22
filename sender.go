@@ -388,7 +388,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 
 		// if handler returned ErrContactStopped need to write a stop event
 		if serr == ErrContactStopped {
-			channelEvent := backend.NewChannelEvent(m.Channel(), EventTypeStopContact, m.URN(), clog)
+			channelEvent := backend.NewChannelEvent(m.Channel(), models.EventTypeStopContact, m.URN(), clog)
 			if err = backend.WriteChannelEvent(ctx, channelEvent, clog); err != nil {
 				log.Error("error writing stop event", "error", err)
 			}

@@ -330,28 +330,28 @@ func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			"password":            "Password",
-			"username":            "Username",
-			courier.ConfigSendURL: "http://example.com/send",
+			"password":           "Password",
+			"username":           "Username",
+			models.ConfigSendURL: "http://example.com/send",
 		})
 
 	var customParamsChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			"password":            "Password",
-			"username":            "Username",
-			courier.ConfigSendURL: "http://example.com/send?auth=foo",
+			"password":           "Password",
+			"username":           "Username",
+			models.ConfigSendURL: "http://example.com/send?auth=foo",
 		})
 
 	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			"password":            "Password",
-			"username":            "Username",
-			"use_national":        true,
-			"verify_ssl":          false,
-			"dlr_mask":            "3",
-			courier.ConfigSendURL: "http://example.com/send",
+			"password":           "Password",
+			"username":           "Username",
+			"use_national":       true,
+			"verify_ssl":         false,
+			"dlr_mask":           "3",
+			models.ConfigSendURL: "http://example.com/send",
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)

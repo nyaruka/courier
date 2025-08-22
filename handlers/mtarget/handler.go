@@ -136,7 +136,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 
 	// if this a stop command, shortcut stopping that contact
 	if keyword == "Stop" {
-		stop := h.Backend().NewChannelEvent(c, courier.EventTypeStopContact, urn, clog)
+		stop := h.Backend().NewChannelEvent(c, models.EventTypeStopContact, urn, clog)
 		err := h.Backend().WriteChannelEvent(ctx, stop, clog)
 		if err != nil {
 			return nil, err
@@ -150,8 +150,8 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	if username == "" || password == "" {
 		return courier.ErrChannelConfig
 	}

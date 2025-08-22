@@ -182,7 +182,7 @@ var outgoingCases = []OutgoingTestCase{
 func TestOutgoing(t *testing.T) {
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BL", "2020", "KE",
 		[]string{urns.Phone.Prefix},
-		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1"},
+		map[string]any{models.ConfigUsername: "user1", models.ConfigPassword: "pass1"},
 	)
 
 	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"pass1"}, nil)

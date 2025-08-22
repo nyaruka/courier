@@ -74,7 +74,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	dictOrder := []string{channel.StringConfigForKey(courier.ConfigSecret, ""), form.Timestamp, form.Nonce}
+	dictOrder := []string{channel.StringConfigForKey(models.ConfigSecret, ""), form.Timestamp, form.Nonce}
 	sort.Strings(dictOrder)
 
 	combinedParams := strings.Join(dictOrder, "")
@@ -129,7 +129,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	if payload.MsgType == "event" && payload.Event == "subscribe" {
 		clog.Type = courier.ChannelLogTypeEventReceive
 
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeNewConversation, urn, clog)
+		channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog)
 
 		err := h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
@@ -250,7 +250,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	return []string{
-		ch.StringConfigForKey(courier.ConfigSecret, ""),
+		ch.StringConfigForKey(models.ConfigSecret, ""),
 		ch.StringConfigForKey(configAppSecret, ""),
 	}
 }

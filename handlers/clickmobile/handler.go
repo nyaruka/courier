@@ -100,15 +100,15 @@ type mtPayload struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	appID := msg.Channel().StringConfigForKey(configAppID, "")
 	orgID := msg.Channel().StringConfigForKey(configOrgID, "")
 	if username == "" || password == "" || appID == "" || orgID == "" {
 		return courier.ErrChannelConfig
 	}
 
-	cmSendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, sendURL)
+	cmSendURL := msg.Channel().StringConfigForKey(models.ConfigSendURL, sendURL)
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 

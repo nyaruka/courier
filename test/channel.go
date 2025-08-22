@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
@@ -59,7 +58,7 @@ func (c *MockChannel) SetConfig(key string, value any) {
 
 // CallbackDomain returns the callback domain to use for this channel
 func (c *MockChannel) CallbackDomain(fallbackDomain string) string {
-	value, found := c.config[courier.ConfigCallbackDomain]
+	value, found := c.config[models.ConfigCallbackDomain]
 	if !found {
 		return fallbackDomain
 	}

@@ -55,7 +55,7 @@ type Backend interface {
 	WriteStatusUpdate(context.Context, StatusUpdate) error
 
 	// NewChannelEvent creates a new channel event for the given channel and event type
-	NewChannelEvent(Channel, ChannelEventType, urns.URN, *ChannelLog) ChannelEvent
+	NewChannelEvent(Channel, models.ChannelEventType, urns.URN, *ChannelLog) ChannelEvent
 
 	// WriteChannelEvent writes the passed in channel event returning any error
 	WriteChannelEvent(context.Context, ChannelEvent, *ChannelLog) error

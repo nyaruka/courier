@@ -222,9 +222,9 @@ func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JS", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			"password":            "Password",
-			"username":            "Username",
-			courier.ConfigSendURL: "http://example.com/send",
+			"password":           "Password",
+			"username":           "Username",
+			models.ConfigSendURL: "http://example.com/send",
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)

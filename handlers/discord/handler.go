@@ -144,7 +144,7 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 
-	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
+	sendURL := msg.Channel().StringConfigForKey(models.ConfigSendURL, "")
 	if sendURL == "" {
 		return courier.ErrChannelConfig
 	}
@@ -188,7 +188,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 	req.Header.Set("Content-Type", contentTypeHeader)
 
-	authorization := msg.Channel().StringConfigForKey(courier.ConfigSendAuthorization, "")
+	authorization := msg.Channel().StringConfigForKey(models.ConfigSendAuthorization, "")
 	if authorization != "" {
 		req.Header.Set("Authorization", authorization)
 	}

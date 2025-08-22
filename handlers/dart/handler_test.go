@@ -188,8 +188,8 @@ func TestOutgoing(t *testing.T) {
 	var defaultDAChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DA", "2020", "ID",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigUsername: "Username",
-			courier.ConfigPassword: "Password",
+			models.ConfigUsername: "Username",
+			models.ConfigPassword: "Password",
 		})
 
 	RunOutgoingTestCases(t, defaultDAChannel, NewHandler("DA", "Dartmedia", sendURL, maxMsgLength), defaultSendTestCases, []string{"Password"}, nil)

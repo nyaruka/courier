@@ -196,7 +196,7 @@ type mediaUploadInfoPayload struct {
 // receiveEvent handles request event type
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// check shared secret key before proceeding
-	secret := channel.StringConfigForKey(courier.ConfigSecret, "")
+	secret := channel.StringConfigForKey(models.ConfigSecret, "")
 
 	if !utils.SecretEqual(payload.SecretKey, secret) {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("wrong secret key"))
@@ -302,7 +302,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 func buildApiBaseParams(channel courier.Channel) url.Values {
 	return url.Values{
 		paramApiVersion:  []string{apiVersion},
-		paramAccessToken: []string{channel.StringConfigForKey(courier.ConfigAuthToken, "")},
+		paramAccessToken: []string{channel.StringConfigForKey(models.ConfigAuthToken, "")},
 	}
 }
 

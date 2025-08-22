@@ -11,7 +11,7 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 )
 
-var defaultRedactConfigKeys = []string{courier.ConfigAuthToken, courier.ConfigAPIKey, courier.ConfigSecret, courier.ConfigPassword, courier.ConfigSendAuthorization}
+var defaultRedactConfigKeys = []string{models.ConfigAuthToken, models.ConfigAPIKey, models.ConfigSecret, models.ConfigPassword, models.ConfigSendAuthorization}
 
 // BaseHandler is the base class for most handlers, it just stored the server, name and channel type for the handler
 type BaseHandler struct {

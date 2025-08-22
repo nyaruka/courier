@@ -14,14 +14,6 @@ import (
 	"github.com/nyaruka/null/v3"
 )
 
-type LogPolicy string
-
-const (
-	LogPolicyNone   = "N"
-	LogPolicyErrors = "E"
-	LogPolicyAll    = "A"
-)
-
 // Channel is the RapidPro specific concrete type satisfying the courier.Channel interface
 type Channel struct {
 	OrgID_       models.OrgID       `db:"org_id"`
@@ -34,7 +26,7 @@ type Channel struct {
 	Country_     sql.NullString     `db:"country"`
 	Config_      null.Map[any]      `db:"config"`
 	Role_        string             `db:"role"`
-	LogPolicy    LogPolicy          `db:"log_policy"`
+	LogPolicy    models.LogPolicy   `db:"log_policy"`
 
 	OrgConfig_ null.Map[any] `db:"org_config"`
 	OrgIsAnon_ bool          `db:"org_is_anon"`
@@ -145,7 +137,7 @@ func (c *Channel) IntConfigForKey(key string, defaultValue int) int {
 
 // CallbackDomain is convenience utility to get the callback domain configured for this channel
 func (c *Channel) CallbackDomain(fallbackDomain string) string {
-	return c.StringConfigForKey(courier.ConfigCallbackDomain, fallbackDomain)
+	return c.StringConfigForKey(models.ConfigCallbackDomain, fallbackDomain)
 }
 
 const sqlLookupChannelFromUUID = `

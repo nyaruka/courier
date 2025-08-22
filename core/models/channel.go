@@ -55,3 +55,58 @@ const NilChannelAddress = ChannelAddress("")
 func (a ChannelAddress) String() string {
 	return string(a)
 }
+
+type LogPolicy string
+
+const (
+	LogPolicyNone   = "N"
+	LogPolicyErrors = "E"
+	LogPolicyAll    = "A"
+)
+
+const (
+	// ConfigAPIKey is a constant key for channel configs
+	ConfigAPIKey = "api_key"
+
+	// ConfigAuthToken is a constant key for channel configs
+	ConfigAuthToken = "auth_token"
+
+	// ConfigBaseURL is a constant key for channel configs
+	ConfigBaseURL = "base_url"
+
+	// ConfigCallbackDomain is the domain that should be used for this channel when registering callbacks
+	ConfigCallbackDomain = "callback_domain"
+
+	// ConfigContentType is a constant key for channel configs
+	ConfigContentType = "content_type"
+
+	// ConfigMaxLength is the maximum size of a message in characters
+	ConfigMaxLength = "max_length"
+
+	// ConfigPassword is a constant key for channel configs
+	ConfigPassword = "password"
+
+	// ConfigSecret is the secret used for signing commands by the channel
+	ConfigSecret = "secret"
+
+	// ConfigSendAuthorization is a constant key for channel configs
+	ConfigSendAuthorization = "send_authorization"
+
+	// ConfigSendBody is a constant key for channel configs
+	ConfigSendBody = "body"
+
+	// ConfigSendMethod is a constant key for channel configs
+	ConfigSendMethod = "method"
+
+	// ConfigSendURL is a constant key for channel configs
+	ConfigSendURL = "send_url"
+
+	// ConfigUsername is a constant key for channel configs
+	ConfigUsername = "username"
+
+	// ConfigUseNational is a constant key for channel configs
+	ConfigUseNational = "use_national"
+
+	// ConfigSendHeaders is a constant key for channel configs
+	ConfigSendHeaders = "headers"
+)

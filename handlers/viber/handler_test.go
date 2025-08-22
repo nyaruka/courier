@@ -301,7 +301,7 @@ func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		[]string{urns.Viber.Prefix},
 		map[string]any{
-			courier.ConfigAuthToken: "Token",
+			models.ConfigAuthToken: "Token",
 		})
 	var invalidTokenChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		[]string{urns.Viber.Prefix},
@@ -310,8 +310,8 @@ func TestOutgoing(t *testing.T) {
 	var buttonLayoutChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2021", "",
 		[]string{urns.Viber.Prefix},
 		map[string]any{
-			courier.ConfigAuthToken: "Token",
-			"button_layout":         map[string]any{"bg_color": "#f7bb3f", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
+			models.ConfigAuthToken: "Token",
+			"button_layout":        map[string]any{"bg_color": "#f7bb3f", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
 		})
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Token"}, nil)
 	RunOutgoingTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases, []string{"Token"}, nil)
@@ -320,13 +320,13 @@ func TestOutgoing(t *testing.T) {
 
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", []string{urns.Viber.Prefix}, map[string]any{
-		courier.ConfigAuthToken: "Token",
+		models.ConfigAuthToken: "Token",
 	}),
 }
 
 var testChannelsWithWelcomeMessage = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", []string{urns.Viber.Prefix}, map[string]any{
-		courier.ConfigAuthToken:   "Token",
+		models.ConfigAuthToken:    "Token",
 		configViberWelcomeMessage: "Welcome to VP, Please subscribe here for more.",
 	}),
 }
@@ -610,7 +610,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeNewConversation, URN: "viber:01234567890A="},
+			{Type: models.EventTypeNewConversation, URN: "viber:01234567890A="},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -629,7 +629,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeStopContact, URN: "viber:01234567890A="},
+			{Type: models.EventTypeStopContact, URN: "viber:01234567890A="},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -674,7 +674,7 @@ var testWelcomeMessageCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0"}`,
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeWelcomeMessage, URN: "viber:xy5/5y6O81+/kbWHpLhBoA=="},
+			{Type: models.EventTypeWelcomeMessage, URN: "viber:xy5/5y6O81+/kbWHpLhBoA=="},
 		},
 		PrepRequest: addValidSignature,
 	},

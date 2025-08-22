@@ -239,7 +239,7 @@ func TestIncoming(t *testing.T) {
 	chs := []courier.Channel{
 		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
 			[]string{urns.Phone.Prefix},
-			map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
+			map[string]any{models.ConfigUsername: "user1", models.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
 		),
 	}
 
@@ -358,7 +358,7 @@ var outgoingCases = []OutgoingTestCase{
 func TestOutgoing(t *testing.T) {
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
 		[]string{urns.Phone.Prefix},
-		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
+		map[string]any{models.ConfigUsername: "user1", models.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
 	)
 
 	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)
@@ -368,7 +368,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
 		[]string{urns.Phone.Prefix},
-		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
+		map[string]any{models.ConfigUsername: "user1", models.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
 	)
 
 	bwHandler := &handler{NewBaseHandler(models.ChannelType("BW"), "Bandwidth")}

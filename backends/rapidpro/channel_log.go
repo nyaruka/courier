@@ -62,7 +62,7 @@ func queueChannelLog(b *backend, clog *courier.ChannelLog) {
 	isError := clog.IsError()
 
 	// depending on the channel log policy, we might be able to discard this log
-	if dbChan.LogPolicy == LogPolicyNone || (dbChan.LogPolicy == LogPolicyErrors && !isError) {
+	if dbChan.LogPolicy == models.LogPolicyNone || (dbChan.LogPolicy == models.LogPolicyErrors && !isError) {
 		return
 	}
 

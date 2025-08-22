@@ -121,9 +121,9 @@ func writeJasminACK(w http.ResponseWriter) error {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
+	sendURL := msg.Channel().StringConfigForKey(models.ConfigSendURL, "")
 	if username == "" || password == "" || sendURL == "" {
 		return courier.ErrChannelConfig
 	}

@@ -684,7 +684,7 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
+func (b *backend) NewChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
 	return newChannelEvent(channel, eventType, urn, clog)
 }
 

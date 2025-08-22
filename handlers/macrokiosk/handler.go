@@ -152,8 +152,8 @@ type mtPayload struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	servID := msg.Channel().StringConfigForKey(configMacrokioskServiceID, "")
 	senderID := msg.Channel().StringConfigForKey(configMacrokioskSenderID, "")
 	if username == "" || password == "" || servID == "" || senderID == "" {

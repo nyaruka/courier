@@ -134,7 +134,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 		// create a stop channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeStopContact, urn, clog)
+		channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
 		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
 			return nil, err
@@ -204,7 +204,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
 		return courier.ErrChannelConfig
 	}
@@ -299,7 +299,7 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if headerSignature == "" {
 		return fmt.Errorf("missing request signature")
 	}
-	configsecret := c.StringConfigForKey(courier.ConfigSecret, "")
+	configsecret := c.StringConfigForKey(models.ConfigSecret, "")
 	if configsecret == "" {
 		return fmt.Errorf("missing configsecret")
 	}

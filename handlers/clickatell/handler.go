@@ -156,7 +156,7 @@ func decodeUTF16BE(b []byte) (string, error) {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
+	apiKey := msg.Channel().StringConfigForKey(models.ConfigAPIKey, "")
 	if apiKey == "" {
 		return courier.ErrChannelConfig
 	}

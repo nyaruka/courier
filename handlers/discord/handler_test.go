@@ -20,7 +20,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", []string{urns.Discord.Prefix}, map[string]any{courier.ConfigSendAuthorization: "sesame", courier.ConfigSendURL: "http://example.com/discord/rp/send"}),
+	test.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", []string{urns.Discord.Prefix}, map[string]any{models.ConfigSendAuthorization: "sesame", models.ConfigSendURL: "http://example.com/discord/rp/send"}),
 }
 
 var testCases = []IncomingTestCase{

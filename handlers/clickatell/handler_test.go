@@ -146,7 +146,7 @@ var incomingCases = []IncomingTestCase{
 
 func TestIncoming(t *testing.T) {
 	chs := []courier.Channel{
-		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{courier.ConfigAPIKey: "12345"}),
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{models.ConfigAPIKey: "12345"}),
 	}
 
 	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
@@ -231,7 +231,7 @@ var outgoingCases = []OutgoingTestCase{
 
 func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
-	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{courier.ConfigAPIKey: "API-KEY"})
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{models.ConfigAPIKey: "API-KEY"})
 
 	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"API-KEY"}, nil)
 }

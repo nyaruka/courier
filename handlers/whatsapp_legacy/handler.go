@@ -293,7 +293,7 @@ func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
 		return "", nil
 	}
 
-	urlStr := channel.StringConfigForKey(courier.ConfigBaseURL, "")
+	urlStr := channel.StringConfigForKey(models.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
 	if err != nil {
 		return "", fmt.Errorf("invalid base url set for WA channel: %s", err)
@@ -309,7 +309,7 @@ func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set
 func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
-	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	token := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if token == "" {
 		return nil, fmt.Errorf("missing token for WA channel")
 	}
@@ -497,8 +497,8 @@ const maxMsgLength = 4096
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	// get our token
-	token := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
-	urlStr := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
+	token := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
+	urlStr := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
 
 	if token == "" || err != nil {
@@ -862,7 +862,7 @@ func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL
 	}
 
 	// upload media to WhatsApp
-	baseURL := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
+	baseURL := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "")
 	url, err := url.Parse(baseURL)
 	if err != nil {
 		return "", fmt.Errorf("invalid base url set for WA channel: %s: %w", baseURL, err)
@@ -1029,7 +1029,7 @@ func (h *handler) sendWhatsAppMsg(msg courier.MsgOut, sendPath *url.URL, payload
 }
 
 func setWhatsAppAuthHeader(header *http.Header, channel courier.Channel) {
-	authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	authToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
 
 	if channel.ChannelType() == channelTypeD3 {
 		header.Set(d3AuthorizationKey, authToken)

@@ -109,7 +109,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	// get our authentication token
-	auth := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	auth := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if auth == "" {
 		return courier.ErrChannelConfig
 	}

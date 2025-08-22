@@ -171,8 +171,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	return []string{
-		ch.StringConfigForKey(courier.ConfigAPIKey, ""),
-		ch.StringConfigForKey(courier.ConfigAuthToken, ""),
+		ch.StringConfigForKey(models.ConfigAPIKey, ""),
+		ch.StringConfigForKey(models.ConfigAuthToken, ""),
 	}
 }
 
@@ -215,8 +215,8 @@ func (h *handler) getAccessToken(channel courier.Channel, clog *courier.ChannelL
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(channel courier.Channel, clog *courier.ChannelLog) (string, time.Duration, error) {
 	form := url.Values{
-		"client_id":     []string{channel.StringConfigForKey(courier.ConfigAPIKey, "")},
-		"client_secret": []string{channel.StringConfigForKey(courier.ConfigAuthToken, "")},
+		"client_id":     []string{channel.StringConfigForKey(models.ConfigAPIKey, "")},
+		"client_secret": []string{channel.StringConfigForKey(models.ConfigAuthToken, "")},
 	}
 
 	baseURL := channel.StringConfigForKey(configAPIHost, apiHostURL)

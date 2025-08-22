@@ -74,7 +74,7 @@ func SplitMsg(m courier.MsgOut, opts SplitOptions) []MsgPart {
 
 // deprecated use SplitMsg instead
 func SplitMsgByChannel(channel courier.Channel, text string, maxLength int) []string {
-	max := channel.IntConfigForKey(courier.ConfigMaxLength, maxLength)
+	max := channel.IntConfigForKey(models.ConfigMaxLength, maxLength)
 
 	return SplitText(text, max)
 }

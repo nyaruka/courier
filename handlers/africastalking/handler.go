@@ -121,8 +121,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	isSharedStr := msg.Channel().ConfigForKey(configIsShared, false)
 	isShared, _ := isSharedStr.(bool)
 
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	apiKey := msg.Channel().StringConfigForKey(models.ConfigAPIKey, "")
 
 	if username == "" || apiKey == "" {
 		return courier.ErrChannelConfig

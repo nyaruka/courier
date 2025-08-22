@@ -33,8 +33,8 @@ var testChannels = []courier.Channel{
 		"",
 		[]string{urns.VK.Prefix},
 		map[string]any{
-			courier.ConfigAuthToken:        "token123xyz",
-			courier.ConfigSecret:           "abc123xyz",
+			models.ConfigAuthToken:         "token123xyz",
+			models.ConfigSecret:            "abc123xyz",
 			configServerVerificationString: "a1b2c3",
 		}),
 }
