@@ -5,8 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,7 +14,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
@@ -44,8 +41,7 @@ import (
 type BackendTestSuite struct {
 	suite.Suite
 
-	b      *backend
-	dynamo *dynamodb.Client
+	b *backend
 }
 
 func (ts *BackendTestSuite) loadSQL(path string) {
@@ -60,14 +56,6 @@ func (ts *BackendTestSuite) loadSQL(path string) {
 
 func (ts *BackendTestSuite) SetupSuite() {
 	ctx, rt := testsuite.Runtime(ts.T())
-
-	// turn off logging
-	log.SetOutput(io.Discard)
-
-	// create dynamo tables prior to starting backend, as it will check they exist
-	dyn, err := dynamo.NewClient(rt.Config.AWSAccessKeyID, rt.Config.AWSSecretAccessKey, rt.Config.AWSRegion, rt.Config.DynamoEndpoint)
-	noError(err)
-	ts.dynamo = dyn
 
 	b := NewBackend(rt)
 	ts.b = b.(*backend)
@@ -89,7 +77,7 @@ func (ts *BackendTestSuite) TearDownSuite() {
 	ts.b.Stop()
 	ts.b.Cleanup()
 
-	dyntest.Truncate(ts.T(), ts.dynamo, ts.b.dynamoWriter.Table())
+	dyntest.Truncate(ts.T(), ts.b.rt.Dynamo, ts.b.dynamoWriter.Table())
 	ts.b.rt.S3.EmptyBucket(ctx, "test-attachments")
 }
 
@@ -989,7 +977,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
 	getClogFromDynamo := func(clog *courier.ChannelLog) (*models.DynamoItem, error) {
-		return dynamo.GetItem[models.DynamoKey, models.DynamoItem](ctx, ts.dynamo, ts.b.dynamoWriter.Table(), (&ChannelLog{clog}).DynamoKey())
+		return dynamo.GetItem[models.DynamoKey, models.DynamoItem](ctx, ts.b.rt.Dynamo, ts.b.dynamoWriter.Table(), (&ChannelLog{clog}).DynamoKey())
 	}
 
 	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
@@ -1077,7 +1065,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.NoError(err)
 	ts.Nil(item5)
 
-	dyntest.AssertCount(ts.T(), ts.dynamo, ts.b.dynamoWriter.Table(), 3)
+	dyntest.AssertCount(ts.T(), ts.b.rt.Dynamo, ts.b.dynamoWriter.Table(), 3)
 }
 
 func (ts *BackendTestSuite) TestSaveAttachment() {
