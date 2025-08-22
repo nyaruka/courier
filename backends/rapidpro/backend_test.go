@@ -24,8 +24,8 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/testsuite"
 	"github.com/nyaruka/courier/utils/queue"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
@@ -48,24 +48,6 @@ type BackendTestSuite struct {
 	dynamo *dynamodb.Client
 }
 
-func testConfig() *runtime.Config {
-	cfg := runtime.NewDefaultConfig()
-	cfg.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
-	cfg.Valkey = "valkey://localhost:6379/0"
-	cfg.MediaDomain = "nyaruka.s3.com"
-
-	// configure S3 to use a local minio instance
-	cfg.AWSAccessKeyID = "root"
-	cfg.AWSSecretAccessKey = "tembatemba"
-	cfg.S3Endpoint = "http://localhost:9000"
-	cfg.S3AttachmentsBucket = "test-attachments"
-	cfg.S3Minio = true
-	cfg.DynamoEndpoint = "http://localhost:6000"
-	cfg.DynamoTablePrefix = "Test"
-
-	return cfg
-}
-
 func (ts *BackendTestSuite) loadSQL(path string) {
 	db, err := sqlx.Open("postgres", ts.b.rt.Config.DB)
 	noError(err)
@@ -77,21 +59,15 @@ func (ts *BackendTestSuite) loadSQL(path string) {
 }
 
 func (ts *BackendTestSuite) SetupSuite() {
-	ctx := context.Background()
-	cfg := testConfig()
-
-	rt, err := runtime.NewRuntime(cfg)
-	ts.Require().NoError(err)
+	ctx, rt := testsuite.Runtime(ts.T())
 
 	// turn off logging
 	log.SetOutput(io.Discard)
 
 	// create dynamo tables prior to starting backend, as it will check they exist
-	dyn, err := dynamo.NewClient(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.DynamoEndpoint)
+	dyn, err := dynamo.NewClient(rt.Config.AWSAccessKeyID, rt.Config.AWSSecretAccessKey, rt.Config.AWSRegion, rt.Config.DynamoEndpoint)
 	noError(err)
 	ts.dynamo = dyn
-
-	dyntest.CreateTables(ts.T(), ts.dynamo, "dynamo.json", false)
 
 	b := NewBackend(rt)
 	ts.b = b.(*backend)
@@ -105,7 +81,7 @@ func (ts *BackendTestSuite) SetupSuite() {
 	ts.b.rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
 	ts.b.rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-logs")})
 
-	ts.clearValkey()
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
 }
 
 func (ts *BackendTestSuite) TearDownSuite() {
@@ -115,14 +91,6 @@ func (ts *BackendTestSuite) TearDownSuite() {
 
 	dyntest.Truncate(ts.T(), ts.dynamo, ts.b.dynamoWriter.Table())
 	ts.b.rt.S3.EmptyBucket(ctx, "test-attachments")
-}
-
-func (ts *BackendTestSuite) clearValkey() {
-	// clear valkey
-	r := ts.b.rt.VK.Get()
-	defer r.Close()
-	_, err := r.Do("FLUSHDB")
-	ts.Require().NoError(err)
 }
 
 func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *models.Channel {
@@ -200,7 +168,7 @@ func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ctx := context.Background()
 
-	ts.clearValkey()
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	// noop for invalid external ID
 	err := ts.b.DeleteMsgByExternalID(ctx, knChannel, "ext-invalid")
@@ -728,7 +696,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 
-	ts.clearValkey()
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	// create a status update from a send which will have id and external id
 	status1 := ts.b.NewStatusUpdate(channel, 10000, models.MsgStatusSent, clog)
@@ -1206,7 +1174,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	_, err = writeMsgToDB(ctx, ts.b, msg5, clog)
 	ts.NoError(err)
 
-	ts.clearValkey()
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	// check that msg is queued to mailroom for handling
 	msg6 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "hello 1 2 3", "", clog).(*Msg)
@@ -1389,7 +1357,7 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 func (ts *BackendTestSuite) TestMailroomEvents() {
 	ctx := context.Background()
 
-	ts.clearValkey()
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
