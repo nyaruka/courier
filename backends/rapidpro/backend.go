@@ -60,8 +60,8 @@ type backend struct {
 	dynamoSpool  *dynamo.Spool
 	writerWG     *sync.WaitGroup
 
-	channelsByUUID *cache.Local[models.ChannelUUID, *Channel]
-	channelsByAddr *cache.Local[models.ChannelAddress, *Channel]
+	channelsByUUID *cache.Local[models.ChannelUUID, *models.Channel]
+	channelsByAddr *cache.Local[models.ChannelAddress, *models.Channel]
 
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
@@ -185,9 +185,13 @@ func (b *backend) Start() error {
 	b.dynamoWriter.Start()
 
 	// create and start channel caches...
-	b.channelsByUUID = cache.NewLocal(b.loadChannelByUUID, time.Minute)
+	b.channelsByUUID = cache.NewLocal(func(ctx context.Context, uuid models.ChannelUUID) (*models.Channel, error) {
+		return models.GetChannelByUUID(ctx, b.rt, uuid)
+	}, time.Minute)
 	b.channelsByUUID.Start()
-	b.channelsByAddr = cache.NewLocal(b.loadChannelByAddress, time.Minute)
+	b.channelsByAddr = cache.NewLocal(func(ctx context.Context, addr models.ChannelAddress) (*models.Channel, error) {
+		return models.GetChannelByAddress(ctx, b.rt, addr)
+	}, time.Minute)
 	b.channelsByAddr.Start()
 
 	// make sure our spool dirs are writable
@@ -369,7 +373,7 @@ func (b *backend) GetChannelByAddress(ctx context.Context, typ models.ChannelTyp
 
 // GetContact returns the contact for the passed in channel and URN
 func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *courier.ChannelLog) (courier.Contact, error) {
-	dbChannel := c.(*Channel)
+	dbChannel := c.(*models.Channel)
 	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, authTokens, name, allowCreate, clog)
 }
 
@@ -379,8 +383,8 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 	if err != nil {
 		return urns.NilURN, err
 	}
-	dbChannel := c.(*Channel)
-	dbContact := contact.(*Contact)
+	dbChannel := c.(*models.Channel)
+	dbContact := contact.(*models.Contact)
 	_, err = getOrCreateContactURN(tx, dbChannel, dbContact.ID_, urn, authTokens)
 	if err != nil {
 		return urns.NilURN, err
@@ -395,7 +399,7 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 
 // RemoveURNFromcontact removes a URN from the passed in contact
 func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
-	dbContact := contact.(*Contact)
+	dbContact := contact.(*models.Contact)
 	_, err := b.rt.DB.ExecContext(ctx, `UPDATE contacts_contacturn SET contact_id = NULL WHERE contact_id = $1 AND identity = $2`, dbContact.ID_, urn.Identity().String())
 	if err != nil {
 		return urns.NilURN, err
@@ -405,7 +409,7 @@ func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, c
 
 // DeleteMsgByExternalID resolves a message external id and quees a task to mailroom to delete it
 func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
-	ch := channel.(*Channel)
+	ch := channel.(*models.Channel)
 	row := b.rt.DB.QueryRowContext(ctx, `SELECT id, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_id = $2 AND direction = 'I'`, ch.ID(), externalID)
 
 	var msgID models.MsgID
@@ -493,7 +497,7 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 	}
 
 	dbMsg.Direction_ = models.MsgOutgoing
-	dbMsg.channel = channel.(*Channel)
+	dbMsg.channel = channel.(*models.Channel)
 	dbMsg.workerToken = token
 
 	// clear out our seen incoming messages
@@ -634,7 +638,7 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 	if err != nil {
 		return fmt.Errorf("error retrieving channel: %w", err)
 	}
-	dbChannel := channel.(*Channel)
+	dbChannel := channel.(*models.Channel)
 	tx, err := b.rt.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
@@ -710,7 +714,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 		filename = fmt.Sprintf("%s.%s", filename, extension)
 	}
 
-	orgID := ch.(*Channel).OrgID()
+	orgID := ch.(*models.Channel).OrgID()
 
 	path := filepath.Join("attachments", strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 

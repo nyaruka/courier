@@ -33,7 +33,7 @@ type StatusUpdate struct {
 
 // creates a new message status update
 func newStatusUpdate(channel courier.Channel, id models.MsgID, externalID string, status models.MsgStatus, clog *courier.ChannelLog) *StatusUpdate {
-	dbChannel := channel.(*Channel)
+	dbChannel := channel.(*models.Channel)
 
 	return &StatusUpdate{
 		ChannelUUID_: channel.UUID(),

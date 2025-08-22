@@ -125,14 +125,14 @@ func (ts *BackendTestSuite) clearValkey() {
 	ts.Require().NoError(err)
 }
 
-func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *Channel {
+func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *models.Channel {
 	channelUUID := models.ChannelUUID(cUUID)
 
 	channel, err := ts.b.GetChannel(context.Background(), models.ChannelType(cType), channelUUID)
 	ts.Require().NoError(err, "error getting channel")
 	ts.Require().NotNil(channel)
 
-	return channel.(*Channel)
+	return channel.(*models.Channel)
 }
 
 func (ts *BackendTestSuite) TestMsgUnmarshal() {
@@ -282,7 +282,7 @@ func (ts *BackendTestSuite) TestContactRace() {
 	ctx := context.Background()
 
 	// create our contact twice
-	var contact1, contact2 *Contact
+	var contact1, contact2 *models.Contact
 	var err1, err2 error
 
 	go func() {
@@ -425,7 +425,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	// try to create two contacts at the same time in goroutines, this tests our transaction rollbacks
 	urn2 := urns.URN("tel:+12065551616")
 	var wait sync.WaitGroup
-	var contact2, contact3 *Contact
+	var contact2, contact3 *models.Contact
 	wait.Add(2)
 	go func() {
 		var err2 error
@@ -1584,7 +1584,7 @@ func readMsgFromDB(b *backend, id models.MsgID) *Msg {
 		panic(err)
 	}
 
-	ch := &Channel{
+	ch := &models.Channel{
 		ID_: m.ChannelID_,
 	}
 	err = b.rt.DB.Get(ch, selectChannelSQL, m.ChannelID_)

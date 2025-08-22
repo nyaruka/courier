@@ -59,12 +59,12 @@ type ChannelEvent struct {
 	ContactName_   string            `json:"contact_name"`
 	URNAuthTokens_ map[string]string `json:"auth_tokens"`
 
-	channel *Channel
+	channel *models.Channel
 }
 
 // newChannelEvent creates a new channel event
 func newChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) *ChannelEvent {
-	dbChannel := channel.(*Channel)
+	dbChannel := channel.(*models.Channel)
 
 	return &ChannelEvent{
 		UUID_:        models.ChannelEventUUID(uuids.NewV7()),
@@ -89,7 +89,7 @@ func (e *ChannelEvent) URN() urns.URN                      { return e.URN_ }
 func (e *ChannelEvent) Extra() map[string]string           { return e.Extra_ }
 func (e *ChannelEvent) OccurredOn() time.Time              { return e.OccurredOn_ }
 func (e *ChannelEvent) CreatedOn() time.Time               { return e.CreatedOn_ }
-func (e *ChannelEvent) Channel() *Channel                  { return e.channel }
+func (e *ChannelEvent) Channel() *models.Channel           { return e.channel }
 
 func (e *ChannelEvent) WithContactName(name string) courier.ChannelEvent {
 	e.ContactName_ = name
@@ -197,7 +197,7 @@ func (b *backend) flushChannelEventFile(filename string, contents []byte) error 
 	if err != nil {
 		return err
 	}
-	event.channel = channel.(*Channel)
+	event.channel = channel.(*models.Channel)
 
 	// create log tho it won't be written
 	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgReceive, channel, nil)
