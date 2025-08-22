@@ -29,7 +29,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("HX"), "High Connection")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("HX"), "High Connection")}
 }
 
 // Initialize is called by the engine once everything is loaded

@@ -68,7 +68,7 @@ type handler struct {
 	validateSignatures bool
 }
 
-func newTWIMLHandler(channelType courier.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
+func newTWIMLHandler(channelType models.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(channelType, name), validateSignatures}
 }
 

@@ -22,10 +22,10 @@ type Backend interface {
 	Cleanup() error
 
 	// GetChannel returns the channel with the passed in type and UUID
-	GetChannel(context.Context, ChannelType, ChannelUUID) (Channel, error)
+	GetChannel(context.Context, models.ChannelType, models.ChannelUUID) (Channel, error)
 
 	// GetChannelByAddress returns the channel with the passed in type and address
-	GetChannelByAddress(context.Context, ChannelType, ChannelAddress) (Channel, error)
+	GetChannelByAddress(context.Context, models.ChannelType, models.ChannelAddress) (Channel, error)
 
 	// GetContact returns (or creates) the contact for the passed in channel and URN
 	GetContact(context.Context, Channel, urns.URN, map[string]string, string, bool, *ChannelLog) (Contact, error)

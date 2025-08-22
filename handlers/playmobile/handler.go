@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -37,7 +38,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("PM"), "Play Mobile")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("PM"), "Play Mobile")}
 }
 
 // Initialize is called by the engine once everything is loaded

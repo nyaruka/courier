@@ -29,7 +29,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("AT"), "Africas Talking")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("AT"), "Africas Talking")}
 }
 
 type moForm struct {

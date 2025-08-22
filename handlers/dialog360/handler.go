@@ -13,6 +13,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/handlers/meta/whatsapp"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -29,14 +30,14 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newWAHandler(courier.ChannelType("D3C"), "360Dialog"))
+	courier.RegisterHandler(newWAHandler(models.ChannelType("D3C"), "360Dialog"))
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newWAHandler(channelType courier.ChannelType, name string) courier.ChannelHandler {
+func newWAHandler(channelType models.ChannelType, name string) courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(channelType, name)}
 }
 

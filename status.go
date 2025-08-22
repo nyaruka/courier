@@ -13,7 +13,7 @@ import (
 type StatusUpdate interface {
 	Event
 
-	ChannelUUID() ChannelUUID
+	ChannelUUID() models.ChannelUUID
 	MsgID() models.MsgID
 
 	SetURNUpdate(old, new urns.URN) error

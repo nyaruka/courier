@@ -33,7 +33,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("CHP"), "Chip Web Chat", handlers.WithRedactConfigKeys(courier.ConfigSecret))}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("CHP"), "Chip Web Chat", handlers.WithRedactConfigKeys(courier.ConfigSecret))}
 }
 
 // Initialize is called by the engine once everything is loaded

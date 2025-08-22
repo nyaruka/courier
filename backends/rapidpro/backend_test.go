@@ -126,9 +126,9 @@ func (ts *BackendTestSuite) clearValkey() {
 }
 
 func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *Channel {
-	channelUUID := courier.ChannelUUID(cUUID)
+	channelUUID := models.ChannelUUID(cUUID)
 
-	channel, err := ts.b.GetChannel(context.Background(), courier.ChannelType(cType), channelUUID)
+	channel, err := ts.b.GetChannel(context.Background(), models.ChannelType(cType), channelUUID)
 	ts.Require().NoError(err, "error getting channel")
 	ts.Require().NotNil(channel)
 
@@ -159,7 +159,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	msg := Msg{}
 	err := json.Unmarshal([]byte(msgJSON), &msg)
 	ts.NoError(err)
-	ts.Equal(courier.ChannelUUID("f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba"), msg.ChannelUUID_)
+	ts.Equal(models.ChannelUUID("f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba"), msg.ChannelUUID_)
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	ts.Equal("5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2", msg.URNAuth_)
 	ts.Equal("", msg.ExternalID())
@@ -850,7 +850,7 @@ func (ts *BackendTestSuite) TestStatus() {
 	defer r.Close()
 
 	dbMsg := readMsgFromDB(ts.b, 10000)
-	dbMsg.ChannelUUID_ = courier.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	dbMsg.ChannelUUID_ = models.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ts.NotNil(dbMsg)
 
 	// serialize our message
@@ -871,7 +871,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	defer r.Close()
 
 	dbMsg := readMsgFromDB(ts.b, 10000)
-	dbMsg.ChannelUUID_ = courier.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	dbMsg.ChannelUUID_ = models.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ts.NotNil(dbMsg)
 
 	// serialize our message
@@ -926,18 +926,18 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 func (ts *BackendTestSuite) TestChannel() {
 	noAddress := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c99a")
 	ts.Equal(i18n.Country("US"), noAddress.Country())
-	ts.Equal(courier.NilChannelAddress, noAddress.ChannelAddress())
+	ts.Equal(models.NilChannelAddress, noAddress.ChannelAddress())
 
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
 	ts.Equal("2500", knChannel.Address())
-	ts.Equal(courier.ChannelAddress("2500"), knChannel.ChannelAddress())
+	ts.Equal(models.ChannelAddress("2500"), knChannel.ChannelAddress())
 	ts.Equal(i18n.Country("RW"), knChannel.Country())
-	ts.Equal([]courier.ChannelRole{courier.ChannelRoleSend, courier.ChannelRoleReceive}, knChannel.Roles())
-	ts.True(knChannel.HasRole(courier.ChannelRoleSend))
-	ts.True(knChannel.HasRole(courier.ChannelRoleReceive))
-	ts.False(knChannel.HasRole(courier.ChannelRoleCall))
-	ts.False(knChannel.HasRole(courier.ChannelRoleAnswer))
+	ts.Equal([]models.ChannelRole{models.ChannelRoleSend, models.ChannelRoleReceive}, knChannel.Roles())
+	ts.True(knChannel.HasRole(models.ChannelRoleSend))
+	ts.True(knChannel.HasRole(models.ChannelRoleReceive))
+	ts.False(knChannel.HasRole(models.ChannelRoleCall))
+	ts.False(knChannel.HasRole(models.ChannelRoleAnswer))
 
 	// assert our config values
 	val := knChannel.ConfigForKey("use_national", false)
@@ -976,41 +976,41 @@ func (ts *BackendTestSuite) TestChannel() {
 	ts.Equal("missingValue", val)
 
 	exChannel := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327100a")
-	ts.Equal([]courier.ChannelRole{courier.ChannelRoleReceive}, exChannel.Roles())
-	ts.False(exChannel.HasRole(courier.ChannelRoleSend))
-	ts.True(exChannel.HasRole(courier.ChannelRoleReceive))
-	ts.False(exChannel.HasRole(courier.ChannelRoleCall))
-	ts.False(exChannel.HasRole(courier.ChannelRoleAnswer))
+	ts.Equal([]models.ChannelRole{models.ChannelRoleReceive}, exChannel.Roles())
+	ts.False(exChannel.HasRole(models.ChannelRoleSend))
+	ts.True(exChannel.HasRole(models.ChannelRoleReceive))
+	ts.False(exChannel.HasRole(models.ChannelRoleCall))
+	ts.False(exChannel.HasRole(models.ChannelRoleAnswer))
 
 	exChannel2 := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327222a")
-	ts.False(exChannel2.HasRole(courier.ChannelRoleSend))
-	ts.False(exChannel2.HasRole(courier.ChannelRoleReceive))
-	ts.False(exChannel2.HasRole(courier.ChannelRoleCall))
-	ts.False(exChannel2.HasRole(courier.ChannelRoleAnswer))
+	ts.False(exChannel2.HasRole(models.ChannelRoleSend))
+	ts.False(exChannel2.HasRole(models.ChannelRoleReceive))
+	ts.False(exChannel2.HasRole(models.ChannelRoleCall))
+	ts.False(exChannel2.HasRole(models.ChannelRoleAnswer))
 }
 
 func (ts *BackendTestSuite) TestGetChannel() {
 	ctx := context.Background()
 
-	knUUID := courier.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	xxUUID := courier.ChannelUUID("0a1256fe-c6e4-494d-99d3-576286f31d3b") // doesn't exist
+	knUUID := models.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	xxUUID := models.ChannelUUID("0a1256fe-c6e4-494d-99d3-576286f31d3b") // doesn't exist
 
-	ch, err := ts.b.GetChannel(ctx, courier.ChannelType("KN"), knUUID)
+	ch, err := ts.b.GetChannel(ctx, models.ChannelType("KN"), knUUID)
 	ts.Assert().NoError(err)
 	ts.Assert().NotNil(ch)
 	ts.Assert().Equal(knUUID, ch.UUID())
 
-	ch, err = ts.b.GetChannel(ctx, courier.ChannelType("KN"), knUUID) // from cache
+	ch, err = ts.b.GetChannel(ctx, models.ChannelType("KN"), knUUID) // from cache
 	ts.Assert().NoError(err)
 	ts.Assert().NotNil(ch)
 	ts.Assert().Equal(knUUID, ch.UUID())
 
-	ch, err = ts.b.GetChannel(ctx, courier.ChannelType("KN"), xxUUID)
+	ch, err = ts.b.GetChannel(ctx, models.ChannelType("KN"), xxUUID)
 	ts.Assert().Error(err)
 	ts.Assert().Nil(ch)
 	ts.Assert().True(ch == nil) // https://github.com/stretchr/testify/issues/503
 
-	ch, err = ts.b.GetChannel(ctx, courier.ChannelType("KN"), xxUUID) // from cache
+	ch, err = ts.b.GetChannel(ctx, models.ChannelType("KN"), xxUUID) // from cache
 	ts.Assert().Error(err)
 	ts.Assert().Nil(ch)
 	ts.Assert().True(ch == nil) // https://github.com/stretchr/testify/issues/503
@@ -1300,7 +1300,7 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 		ts.FailNow("failed writing contact urn")
 	}
 
-	ts.Equal(exContactURN.ChannelID, courier.NilChannelID)
+	ts.Equal(exContactURN.ChannelID, models.NilChannelID)
 }
 
 func (ts *BackendTestSuite) TestChannelEvent() {

@@ -52,9 +52,9 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeWa), "WhatsApp"))
-	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeD3), "360Dialog"))
-	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeTXW), "TextIt"))
+	courier.RegisterHandler(newWAHandler(models.ChannelType(channelTypeWa), "WhatsApp"))
+	courier.RegisterHandler(newWAHandler(models.ChannelType(channelTypeD3), "360Dialog"))
+	courier.RegisterHandler(newWAHandler(models.ChannelType(channelTypeTXW), "TextIt"))
 
 	failedMediaCache = cache.New(15*time.Minute, 15*time.Minute)
 }
@@ -63,7 +63,7 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-func newWAHandler(channelType courier.ChannelType, name string) courier.ChannelHandler {
+func newWAHandler(channelType models.ChannelType, name string) courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(channelType, name)}
 }
 

@@ -472,7 +472,7 @@ func TestInstagramBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 	s := courier.NewServer(runtime.NewDefaultConfig(), mb)
 
-	handler := &handler{NewBaseHandler(courier.ChannelType("IG"), "Instagram", DisableUUIDRouting())}
+	handler := &handler{NewBaseHandler(models.ChannelType("IG"), "Instagram", DisableUUIDRouting())}
 	handler.Initialize(s)
 	req, _ := handler.BuildAttachmentRequest(context.Background(), mb, facebookTestChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())

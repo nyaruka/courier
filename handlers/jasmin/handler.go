@@ -27,7 +27,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("JS"), "Jasmin")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("JS"), "Jasmin")}
 }
 
 // Initialize is called by the engine once everything is loaded

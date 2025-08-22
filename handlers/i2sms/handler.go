@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -33,7 +34,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("I2"), "I2SMS", handlers.WithRedactConfigKeys(courier.ConfigPassword, configChannelHash))}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("I2"), "I2SMS", handlers.WithRedactConfigKeys(courier.ConfigPassword, configChannelHash))}
 }
 
 // Initialize is called by the engine once everything is loaded

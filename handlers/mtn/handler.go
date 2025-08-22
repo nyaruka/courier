@@ -38,7 +38,7 @@ type handler struct {
 
 func newHandler() courier.ChannelHandler {
 	return &handler{
-		BaseHandler:     handlers.NewBaseHandler(courier.ChannelType("MTN"), "MTN Developer Portal"),
+		BaseHandler:     handlers.NewBaseHandler(models.ChannelType("MTN"), "MTN Developer Portal"),
 		fetchTokenMutex: sync.Mutex{},
 	}
 }

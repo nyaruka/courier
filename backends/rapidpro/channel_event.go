@@ -42,8 +42,8 @@ type ChannelEvent struct {
 	ID_          ChannelEventID           `                               db:"id"`
 	UUID_        courier.ChannelEventUUID `json:"uuid"                    db:"uuid"`
 	OrgID_       models.OrgID             `json:"org_id"                  db:"org_id"`
-	ChannelUUID_ courier.ChannelUUID      `json:"channel_uuid"            db:"channel_uuid"`
-	ChannelID_   courier.ChannelID        `json:"channel_id"              db:"channel_id"`
+	ChannelUUID_ models.ChannelUUID       `json:"channel_uuid"            db:"channel_uuid"`
+	ChannelID_   models.ChannelID         `json:"channel_id"              db:"channel_id"`
 	URN_         urns.URN                 `json:"urn"                     db:"urn"`
 	EventType_   courier.ChannelEventType `json:"event_type"              db:"event_type"`
 	OptInID_     null.Int                 `json:"optin_id"                db:"optin_id"`
@@ -82,8 +82,8 @@ func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType
 
 func (e *ChannelEvent) EventID() int64                      { return int64(e.ID_) }
 func (e *ChannelEvent) UUID() courier.ChannelEventUUID      { return e.UUID_ }
-func (e *ChannelEvent) ChannelID() courier.ChannelID        { return e.ChannelID_ }
-func (e *ChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
+func (e *ChannelEvent) ChannelID() models.ChannelID         { return e.ChannelID_ }
+func (e *ChannelEvent) ChannelUUID() models.ChannelUUID     { return e.ChannelUUID_ }
 func (e *ChannelEvent) EventType() courier.ChannelEventType { return e.EventType_ }
 func (e *ChannelEvent) URN() urns.URN                       { return e.URN_ }
 func (e *ChannelEvent) Extra() map[string]string            { return e.Extra_ }
@@ -193,7 +193,7 @@ func (b *backend) flushChannelEventFile(filename string, contents []byte) error 
 	}
 
 	// look up our channel
-	channel, err := b.GetChannel(ctx, courier.AnyChannelType, event.ChannelUUID_)
+	channel, err := b.GetChannel(ctx, models.AnyChannelType, event.ChannelUUID_)
 	if err != nil {
 		return err
 	}

@@ -39,7 +39,7 @@ type Msg struct {
 	Locale_       null.String          `json:"locale"          db:"locale"`
 	Templating_   *models.Templating   `json:"templating"      db:"templating"`
 	ExternalID_   null.String          `                       db:"external_id"`
-	ChannelID_    courier.ChannelID    `                       db:"channel_id"`
+	ChannelID_    models.ChannelID     `                       db:"channel_id"`
 	ContactID_    ContactID            `json:"contact_id"      db:"contact_id"`
 	ContactURNID_ ContactURNID         `json:"contact_urn_id"  db:"contact_urn_id"`
 
@@ -54,7 +54,7 @@ type Msg struct {
 	LogUUIDs     pq.StringArray `                     db:"log_uuids"`
 
 	// extra non-model fields that mailroom will include in queued payload
-	ChannelUUID_          courier.ChannelUUID    `json:"channel_uuid"`
+	ChannelUUID_          models.ChannelUUID     `json:"channel_uuid"`
 	URN_                  urns.URN               `json:"urn"`
 	URNAuth_              string                 `json:"urn_auth"`
 	ResponseToExternalID_ string                 `json:"response_to_external_id"`
@@ -259,7 +259,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	}
 
 	// look up our channel
-	channel, err := b.GetChannel(ctx, courier.AnyChannelType, m.ChannelUUID_)
+	channel, err := b.GetChannel(ctx, models.AnyChannelType, m.ChannelUUID_)
 	if err != nil {
 		return err
 	}

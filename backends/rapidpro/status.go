@@ -20,15 +20,15 @@ import (
 
 // StatusUpdate represents a status update on a message
 type StatusUpdate struct {
-	ChannelUUID_ courier.ChannelUUID `json:"channel_uuid"             db:"channel_uuid"`
-	ChannelID_   courier.ChannelID   `json:"channel_id"               db:"channel_id"`
-	MsgID_       models.MsgID        `json:"msg_id,omitempty"         db:"msg_id"`
-	OldURN_      urns.URN            `json:"old_urn"                  db:"old_urn"`
-	NewURN_      urns.URN            `json:"new_urn"                  db:"new_urn"`
-	ExternalID_  string              `json:"external_id,omitempty"    db:"external_id"`
-	Status_      models.MsgStatus    `json:"status"                   db:"status"`
-	ModifiedOn_  time.Time           `json:"modified_on"              db:"modified_on"`
-	LogUUID      clogs.UUID          `json:"log_uuid"                 db:"log_uuid"`
+	ChannelUUID_ models.ChannelUUID `json:"channel_uuid"             db:"channel_uuid"`
+	ChannelID_   models.ChannelID   `json:"channel_id"               db:"channel_id"`
+	MsgID_       models.MsgID       `json:"msg_id,omitempty"         db:"msg_id"`
+	OldURN_      urns.URN           `json:"old_urn"                  db:"old_urn"`
+	NewURN_      urns.URN           `json:"new_urn"                  db:"new_urn"`
+	ExternalID_  string             `json:"external_id,omitempty"    db:"external_id"`
+	Status_      models.MsgStatus   `json:"status"                   db:"status"`
+	ModifiedOn_  time.Time          `json:"modified_on"              db:"modified_on"`
+	LogUUID      clogs.UUID         `json:"log_uuid"                 db:"log_uuid"`
 }
 
 // creates a new message status update
@@ -132,9 +132,9 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 	return err
 }
 
-func (s *StatusUpdate) EventID() int64                   { return int64(s.MsgID_) }
-func (s *StatusUpdate) ChannelUUID() courier.ChannelUUID { return s.ChannelUUID_ }
-func (s *StatusUpdate) MsgID() models.MsgID              { return s.MsgID_ }
+func (s *StatusUpdate) EventID() int64                  { return int64(s.MsgID_) }
+func (s *StatusUpdate) ChannelUUID() models.ChannelUUID { return s.ChannelUUID_ }
+func (s *StatusUpdate) MsgID() models.MsgID             { return s.MsgID_ }
 
 func (s *StatusUpdate) SetURNUpdate(old, new urns.URN) error {
 	// check by nil URN
@@ -289,7 +289,7 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*Sta
 
 	// create a mapping of channel id + external id -> status
 	type ext struct {
-		channelID  courier.ChannelID
+		channelID  models.ChannelID
 		externalID string
 	}
 	statusesByExt := make(map[ext]*StatusUpdate, len(notInCache))
@@ -309,7 +309,7 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*Sta
 	defer rows.Close()
 
 	var msgID models.MsgID
-	var channelID courier.ChannelID
+	var channelID models.ChannelID
 	var externalID string
 
 	for rows.Next() {

@@ -61,7 +61,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("EX"), "External")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("EX"), "External")}
 }
 
 // Initialize is called by the engine once everything is loaded

@@ -16,6 +16,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
@@ -85,7 +86,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("VK"), "VK")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("VK"), "VK")}
 }
 
 func (h *handler) Initialize(s courier.Server) error {

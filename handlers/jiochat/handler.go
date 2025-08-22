@@ -18,6 +18,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -46,7 +47,7 @@ type handler struct {
 
 func newHandler() courier.ChannelHandler {
 	return &handler{
-		BaseHandler:     handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat"),
+		BaseHandler:     handlers.NewBaseHandler(models.ChannelType("JC"), "Jiochat"),
 		fetchTokenMutex: sync.Mutex{},
 	}
 }

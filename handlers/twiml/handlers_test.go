@@ -1432,7 +1432,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken"})
 
-	twHandler := &handler{NewBaseHandler(courier.ChannelType("T"), "Twilio"), true}
+	twHandler := &handler{NewBaseHandler(models.ChannelType("T"), "Twilio"), true}
 	req, _ := twHandler.BuildAttachmentRequest(context.Background(), mb, defaultChannel, "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=", req.Header.Get("Authorization"))
@@ -1444,7 +1444,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 			courier.ConfigAuthToken: "authToken",
 			configSendURL:           "BASE_URL",
 		})
-	swHandler := &handler{NewBaseHandler(courier.ChannelType("SW"), "SignalWire"), false}
+	swHandler := &handler{NewBaseHandler(models.ChannelType("SW"), "SignalWire"), false}
 	req, _ = swHandler.BuildAttachmentRequest(context.Background(), mb, swChannel, "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "", req.Header.Get("Authorization"))

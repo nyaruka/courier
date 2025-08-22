@@ -18,9 +18,9 @@ type MockStatusUpdate struct {
 	createdOn  time.Time
 }
 
-func (m *MockStatusUpdate) EventID() int64                   { return int64(m.msgID) }
-func (m *MockStatusUpdate) ChannelUUID() courier.ChannelUUID { return m.channel.UUID() }
-func (m *MockStatusUpdate) MsgID() models.MsgID              { return m.msgID }
+func (m *MockStatusUpdate) EventID() int64                  { return int64(m.msgID) }
+func (m *MockStatusUpdate) ChannelUUID() models.ChannelUUID { return m.channel.UUID() }
+func (m *MockStatusUpdate) MsgID() models.MsgID             { return m.msgID }
 
 func (m *MockStatusUpdate) SetURNUpdate(old, new urns.URN) error {
 	m.oldURN = old

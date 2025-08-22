@@ -59,7 +59,7 @@ const (
 	payloadKey    = "payload"
 )
 
-func newHandler(channelType courier.ChannelType, name string) courier.ChannelHandler {
+func newHandler(channelType models.ChannelType, name string) courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(channelType, name, handlers.DisableUUIDRouting(), handlers.WithRedactConfigKeys(courier.ConfigAuthToken))}
 }
 
@@ -149,10 +149,10 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 	//if object is 'page' returns type FBA, if object is 'instagram' returns type IG
 	if payload.Object == "page" {
 		channelAddress = payload.Entry[0].ID
-		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("FBA"), courier.ChannelAddress(channelAddress))
+		return h.Backend().GetChannelByAddress(ctx, models.ChannelType("FBA"), models.ChannelAddress(channelAddress))
 	} else if payload.Object == "instagram" {
 		channelAddress = payload.Entry[0].ID
-		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("IG"), courier.ChannelAddress(channelAddress))
+		return h.Backend().GetChannelByAddress(ctx, models.ChannelType("IG"), models.ChannelAddress(channelAddress))
 	} else {
 		if len(payload.Entry[0].Changes) == 0 {
 			return nil, fmt.Errorf("no changes found")
@@ -162,7 +162,7 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 		if channelAddress == "" {
 			return nil, fmt.Errorf("no channel address found")
 		}
-		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("WAC"), courier.ChannelAddress(channelAddress))
+		return h.Backend().GetChannelByAddress(ctx, models.ChannelType("WAC"), models.ChannelAddress(channelAddress))
 	}
 }
 

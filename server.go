@@ -19,6 +19,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -255,7 +256,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			return
 		}
 
-		var channelUUID ChannelUUID
+		var channelUUID models.ChannelUUID
 		if channel != nil {
 			channelUUID = channel.UUID()
 		}

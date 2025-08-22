@@ -75,14 +75,14 @@ func WriteDataResponse(w http.ResponseWriter, statusCode int, message string, da
 
 // MsgReceiveData is our response payload for a received message
 type MsgReceiveData struct {
-	Type        string         `json:"type"`
-	ChannelUUID ChannelUUID    `json:"channel_uuid"`
-	MsgUUID     models.MsgUUID `json:"msg_uuid"`
-	Text        string         `json:"text"`
-	URN         urns.URN       `json:"urn"`
-	Attachments []string       `json:"attachments,omitempty"`
-	ExternalID  string         `json:"external_id,omitempty"`
-	ReceivedOn  *time.Time     `json:"received_on,omitempty"`
+	Type        string             `json:"type"`
+	ChannelUUID models.ChannelUUID `json:"channel_uuid"`
+	MsgUUID     models.MsgUUID     `json:"msg_uuid"`
+	Text        string             `json:"text"`
+	URN         urns.URN           `json:"urn"`
+	Attachments []string           `json:"attachments,omitempty"`
+	ExternalID  string             `json:"external_id,omitempty"`
+	ReceivedOn  *time.Time         `json:"received_on,omitempty"`
 }
 
 // NewMsgReceiveData creates a new data response for the passed in msg parameters
@@ -101,12 +101,12 @@ func NewMsgReceiveData(msg MsgIn) MsgReceiveData {
 
 // EventReceiveData is our response payload for a channel event
 type EventReceiveData struct {
-	Type        string            `json:"type"`
-	ChannelUUID ChannelUUID       `json:"channel_uuid"`
-	EventType   ChannelEventType  `json:"event_type"`
-	URN         urns.URN          `json:"urn"`
-	ReceivedOn  time.Time         `json:"received_on"`
-	Extra       map[string]string `json:"extra,omitempty"`
+	Type        string             `json:"type"`
+	ChannelUUID models.ChannelUUID `json:"channel_uuid"`
+	EventType   ChannelEventType   `json:"event_type"`
+	URN         urns.URN           `json:"urn"`
+	ReceivedOn  time.Time          `json:"received_on"`
+	Extra       map[string]string  `json:"extra,omitempty"`
 }
 
 // NewEventReceiveData creates a new receive data for the passed in event
@@ -123,11 +123,11 @@ func NewEventReceiveData(event ChannelEvent) EventReceiveData {
 
 // StatusData is our response payload for a status update
 type StatusData struct {
-	Type        string           `json:"type"`
-	ChannelUUID ChannelUUID      `json:"channel_uuid"`
-	Status      models.MsgStatus `json:"status"`
-	MsgID       models.MsgID     `json:"msg_id,omitempty"`
-	ExternalID  string           `json:"external_id,omitempty"`
+	Type        string             `json:"type"`
+	ChannelUUID models.ChannelUUID `json:"channel_uuid"`
+	Status      models.MsgStatus   `json:"status"`
+	MsgID       models.MsgID       `json:"msg_id,omitempty"`
+	ExternalID  string             `json:"external_id,omitempty"`
 }
 
 // NewStatusData creates a new status data object for the passed in status

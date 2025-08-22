@@ -85,8 +85,8 @@ type handler struct {
 	validateSignatures bool
 }
 
-func newHandler(channelType courier.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("MBD"), "Messagebird"), validateSignatures}
+func newHandler(channelType models.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandler(models.ChannelType("MBD"), "Messagebird"), validateSignatures}
 }
 
 // Initialize is called by the engine once everything is loaded

@@ -32,7 +32,7 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler(channelType courier.ChannelType, name string) courier.ChannelHandler {
+func newHandler(channelType models.ChannelType, name string) courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(channelType, name)}
 }
 

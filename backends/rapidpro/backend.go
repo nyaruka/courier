@@ -60,8 +60,8 @@ type backend struct {
 	dynamoSpool  *dynamo.Spool
 	writerWG     *sync.WaitGroup
 
-	channelsByUUID *cache.Local[courier.ChannelUUID, *Channel]
-	channelsByAddr *cache.Local[courier.ChannelAddress, *Channel]
+	channelsByUUID *cache.Local[models.ChannelUUID, *Channel]
+	channelsByAddr *cache.Local[models.ChannelAddress, *Channel]
 
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
@@ -334,7 +334,7 @@ func (b *backend) Cleanup() error {
 }
 
 // GetChannel returns the channel for the passed in type and UUID
-func (b *backend) GetChannel(ctx context.Context, typ courier.ChannelType, uuid courier.ChannelUUID) (courier.Channel, error) {
+func (b *backend) GetChannel(ctx context.Context, typ models.ChannelType, uuid models.ChannelUUID) (courier.Channel, error) {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
@@ -343,7 +343,7 @@ func (b *backend) GetChannel(ctx context.Context, typ courier.ChannelType, uuid 
 		return nil, err // so we don't return a non-nil interface and nil ptr
 	}
 
-	if typ != courier.AnyChannelType && ch.ChannelType() != typ {
+	if typ != models.AnyChannelType && ch.ChannelType() != typ {
 		return nil, courier.ErrChannelWrongType
 	}
 
@@ -351,7 +351,7 @@ func (b *backend) GetChannel(ctx context.Context, typ courier.ChannelType, uuid 
 }
 
 // GetChannelByAddress returns the channel with the passed in type and address
-func (b *backend) GetChannelByAddress(ctx context.Context, typ courier.ChannelType, address courier.ChannelAddress) (courier.Channel, error) {
+func (b *backend) GetChannelByAddress(ctx context.Context, typ models.ChannelType, address models.ChannelAddress) (courier.Channel, error) {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
@@ -360,7 +360,7 @@ func (b *backend) GetChannelByAddress(ctx context.Context, typ courier.ChannelTy
 		return nil, err // so we don't return a non-nil interface and nil ptr
 	}
 
-	if typ != courier.AnyChannelType && ch.ChannelType() != typ {
+	if typ != models.AnyChannelType && ch.ChannelType() != typ {
 		return nil, courier.ErrChannelWrongType
 	}
 
@@ -486,7 +486,7 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 	}
 
 	// populate the channel on our db msg
-	channel, err := b.GetChannel(ctx, courier.AnyChannelType, dbMsg.ChannelUUID_)
+	channel, err := b.GetChannel(ctx, models.AnyChannelType, dbMsg.ChannelUUID_)
 	if err != nil {
 		markComplete(token)
 		return nil, err
@@ -630,7 +630,7 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 	old, new := status.URNUpdate()
 
 	// retrieve channel
-	channel, err := b.GetChannel(ctx, courier.AnyChannelType, status.ChannelUUID())
+	channel, err := b.GetChannel(ctx, models.AnyChannelType, status.ChannelUUID())
 	if err != nil {
 		return fmt.Errorf("error retrieving channel: %w", err)
 	}
@@ -915,8 +915,8 @@ func (b *backend) Status() string {
 		tps := parts[1]
 
 		// try to look up our channel
-		channelUUID := courier.ChannelUUID(uuid)
-		channel, err := b.GetChannel(context.Background(), courier.AnyChannelType, channelUUID)
+		channelUUID := models.ChannelUUID(uuid)
+		channel, err := b.GetChannel(context.Background(), models.AnyChannelType, channelUUID)
 		channelType := "!!"
 		if err == nil {
 			channelType = string(channel.ChannelType())

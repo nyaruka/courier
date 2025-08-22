@@ -28,7 +28,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("JCL"), "JustCall")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("JCL"), "JustCall")}
 }
 
 func init() {

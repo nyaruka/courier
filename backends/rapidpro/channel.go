@@ -24,38 +24,38 @@ const (
 
 // Channel is the RapidPro specific concrete type satisfying the courier.Channel interface
 type Channel struct {
-	OrgID_       models.OrgID        `db:"org_id"`
-	UUID_        courier.ChannelUUID `db:"uuid"`
-	ID_          courier.ChannelID   `db:"id"`
-	ChannelType_ courier.ChannelType `db:"channel_type"`
-	Schemes_     pq.StringArray      `db:"schemes"`
-	Name_        sql.NullString      `db:"name"`
-	Address_     sql.NullString      `db:"address"`
-	Country_     sql.NullString      `db:"country"`
-	Config_      null.Map[any]       `db:"config"`
-	Role_        string              `db:"role"`
-	LogPolicy    LogPolicy           `db:"log_policy"`
+	OrgID_       models.OrgID       `db:"org_id"`
+	UUID_        models.ChannelUUID `db:"uuid"`
+	ID_          models.ChannelID   `db:"id"`
+	ChannelType_ models.ChannelType `db:"channel_type"`
+	Schemes_     pq.StringArray     `db:"schemes"`
+	Name_        sql.NullString     `db:"name"`
+	Address_     sql.NullString     `db:"address"`
+	Country_     sql.NullString     `db:"country"`
+	Config_      null.Map[any]      `db:"config"`
+	Role_        string             `db:"role"`
+	LogPolicy    LogPolicy          `db:"log_policy"`
 
 	OrgConfig_ null.Map[any] `db:"org_config"`
 	OrgIsAnon_ bool          `db:"org_is_anon"`
 }
 
-func (c *Channel) ID() courier.ChannelID            { return c.ID_ }
-func (c *Channel) UUID() courier.ChannelUUID        { return c.UUID_ }
-func (c *Channel) OrgID() models.OrgID              { return c.OrgID_ }
-func (c *Channel) OrgIsAnon() bool                  { return c.OrgIsAnon_ }
-func (c *Channel) ChannelType() courier.ChannelType { return c.ChannelType_ }
-func (c *Channel) Name() string                     { return c.Name_.String }
-func (c *Channel) Schemes() []string                { return []string(c.Schemes_) }
-func (c *Channel) Address() string                  { return c.Address_.String }
+func (c *Channel) ID() models.ChannelID            { return c.ID_ }
+func (c *Channel) UUID() models.ChannelUUID        { return c.UUID_ }
+func (c *Channel) OrgID() models.OrgID             { return c.OrgID_ }
+func (c *Channel) OrgIsAnon() bool                 { return c.OrgIsAnon_ }
+func (c *Channel) ChannelType() models.ChannelType { return c.ChannelType_ }
+func (c *Channel) Name() string                    { return c.Name_.String }
+func (c *Channel) Schemes() []string               { return []string(c.Schemes_) }
+func (c *Channel) Address() string                 { return c.Address_.String }
 
 // ChannelAddress returns the address of this channel
-func (c *Channel) ChannelAddress() courier.ChannelAddress {
+func (c *Channel) ChannelAddress() models.ChannelAddress {
 	if !c.Address_.Valid {
-		return courier.NilChannelAddress
+		return models.NilChannelAddress
 	}
 
-	return courier.ChannelAddress(c.Address_.String)
+	return models.ChannelAddress(c.Address_.String)
 }
 
 // Country returns the country code for this channel if any
@@ -67,16 +67,16 @@ func (c *Channel) IsScheme(scheme *urns.Scheme) bool {
 }
 
 // Roles returns the roles of this channel
-func (c *Channel) Roles() []courier.ChannelRole {
-	roles := []courier.ChannelRole{}
+func (c *Channel) Roles() []models.ChannelRole {
+	roles := []models.ChannelRole{}
 	for _, char := range strings.Split(c.Role_, "") {
-		roles = append(roles, courier.ChannelRole(char))
+		roles = append(roles, models.ChannelRole(char))
 	}
 	return roles
 }
 
 // HasRole returns whether the passed in channel supports the passed role
-func (c *Channel) HasRole(role courier.ChannelRole) bool {
+func (c *Channel) HasRole(role models.ChannelRole) bool {
 	for _, r := range c.Roles() {
 		if r == role {
 			return true
@@ -167,7 +167,7 @@ SELECT
   JOIN orgs_org o ON c.org_id = o.id
  WHERE c.uuid = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
 
-func (b *backend) loadChannelByUUID(ctx context.Context, uuid courier.ChannelUUID) (*Channel, error) {
+func (b *backend) loadChannelByUUID(ctx context.Context, uuid models.ChannelUUID) (*Channel, error) {
 	channel := &Channel{}
 	err := b.rt.DB.GetContext(ctx, channel, sqlLookupChannelFromUUID, uuid)
 
@@ -196,7 +196,7 @@ SELECT
   JOIN orgs_org o ON c.org_id = o.id
  WHERE c.address = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
 
-func (b *backend) loadChannelByAddress(ctx context.Context, address courier.ChannelAddress) (*Channel, error) {
+func (b *backend) loadChannelByAddress(ctx context.Context, address models.ChannelAddress) (*Channel, error) {
 	channel := &Channel{}
 	err := b.rt.DB.GetContext(ctx, channel, sqlLookupChannelFromAddress, address)
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 )
 
@@ -30,7 +31,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("AC"), "Arabia Cell")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("AC"), "Arabia Cell")}
 }
 
 // Initialize is called by the engine once everything is loaded

@@ -31,7 +31,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("MT"), "Mtarget")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("MT"), "Mtarget")}
 }
 
 var statusMapping = map[string]models.MsgStatus{

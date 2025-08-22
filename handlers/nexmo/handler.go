@@ -89,7 +89,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("NX"), "Nexmo", handlers.WithRedactConfigKeys(configNexmoAPISecret, configNexmoAppPrivateKey))}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("NX"), "Nexmo", handlers.WithRedactConfigKeys(configNexmoAPISecret, configNexmoAppPrivateKey))}
 }
 
 // Initialize is called by the engine once everything is loaded

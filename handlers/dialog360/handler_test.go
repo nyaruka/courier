@@ -298,19 +298,19 @@ func TestIncoming(t *testing.T) {
 	d3MediaService := buildMockD3MediaService(testChannels, testCasesD3C)
 	defer d3MediaService.Close()
 
-	RunIncomingTestCases(t, testChannels, newWAHandler(courier.ChannelType("D3C"), "360Dialog"), testCasesD3C)
+	RunIncomingTestCases(t, testChannels, newWAHandler(models.ChannelType("D3C"), "360Dialog"), testCasesD3C)
 }
 
 func BenchmarkHandler(b *testing.B) {
 	d3MediaService := buildMockD3MediaService(testChannels, testCasesD3C)
 	defer d3MediaService.Close()
-	RunChannelBenchmarks(b, testChannels, newWAHandler(courier.ChannelType("D3C"), "360Dialog"), testCasesD3C)
+	RunChannelBenchmarks(b, testChannels, newWAHandler(models.ChannelType("D3C"), "360Dialog"), testCasesD3C)
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 
-	d3CHandler := &handler{NewBaseHandler(courier.ChannelType("D3C"), "360Dialog")}
+	d3CHandler := &handler{NewBaseHandler(models.ChannelType("D3C"), "360Dialog")}
 	req, _ := d3CHandler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "the-auth-token", req.Header.Get("D360-API-KEY"))
@@ -753,5 +753,5 @@ func TestOutgoing(t *testing.T) {
 	})
 	checkRedacted := []string{"the-auth-token"}
 
-	RunOutgoingTestCases(t, ChannelWAC, newWAHandler(courier.ChannelType("D3C"), "360Dialog"), SendTestCasesD3C, checkRedacted, nil)
+	RunOutgoingTestCases(t, ChannelWAC, newWAHandler(models.ChannelType("D3C"), "360Dialog"), SendTestCasesD3C, checkRedacted, nil)
 }

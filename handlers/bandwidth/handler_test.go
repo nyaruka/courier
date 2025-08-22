@@ -371,7 +371,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
 	)
 
-	bwHandler := &handler{NewBaseHandler(courier.ChannelType("BW"), "Bandwidth")}
+	bwHandler := &handler{NewBaseHandler(models.ChannelType("BW"), "Bandwidth")}
 	req, _ := bwHandler.BuildAttachmentRequest(context.Background(), mb, ch, "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Basic dXNlcjE6cGFzczE=", req.Header.Get("Authorization"))

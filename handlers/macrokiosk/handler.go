@@ -37,7 +37,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("MK"), "Macrokiosk")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("MK"), "Macrokiosk")}
 }
 
 // Initialize is called by the engine once everything is loaded

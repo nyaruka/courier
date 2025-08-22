@@ -25,7 +25,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("WV"), "Wavy")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("WV"), "Wavy")}
 }
 
 func init() {

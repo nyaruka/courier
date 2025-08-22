@@ -814,7 +814,7 @@ func TestWhatsAppDescribeURN(t *testing.T) {
 func TestWhatsAppBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 	s := newServerWithWAC(mb)
-	handler := &handler{NewBaseHandler(courier.ChannelType("WAC"), "WhatsApp Cloud", DisableUUIDRouting())}
+	handler := &handler{NewBaseHandler(models.ChannelType("WAC"), "WhatsApp Cloud", DisableUUIDRouting())}
 	handler.Initialize(s)
 	req, _ := handler.BuildAttachmentRequest(context.Background(), mb, whatsappTestChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())

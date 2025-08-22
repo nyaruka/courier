@@ -59,7 +59,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("FB"), "Facebook")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("FB"), "Facebook")}
 }
 
 // Initialize is called by the engine once everything is loaded

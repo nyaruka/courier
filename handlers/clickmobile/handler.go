@@ -11,6 +11,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -34,7 +35,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("CM"), "Click Mobile")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("CM"), "Click Mobile")}
 }
 
 func (h *handler) Initialize(s courier.Server) error {

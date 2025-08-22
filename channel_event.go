@@ -3,6 +3,7 @@ package courier
 import (
 	"time"
 
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 )
@@ -32,7 +33,7 @@ type ChannelEvent interface {
 	Event
 
 	UUID() ChannelEventUUID
-	ChannelUUID() ChannelUUID
+	ChannelUUID() models.ChannelUUID
 	URN() urns.URN
 	EventType() ChannelEventType
 	Extra() map[string]string

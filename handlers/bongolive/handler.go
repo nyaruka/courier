@@ -27,7 +27,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("BL"), "Bongo Live")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("BL"), "Bongo Live")}
 }
 
 func init() {

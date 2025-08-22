@@ -31,7 +31,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("MB"), "Mblox")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("MB"), "Mblox")}
 }
 
 // Initialize is called by the engine once everything is loaded

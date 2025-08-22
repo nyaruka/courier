@@ -6,10 +6,11 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 )
 
-type CountByType map[courier.ChannelType]int
+type CountByType map[models.ChannelType]int
 
 // converts per channel counts into a set of cloudwatch metrics with type as a dimension, and a total count without type
 func (c CountByType) metrics(name string) []types.MetricDatum {
@@ -20,9 +21,9 @@ func (c CountByType) metrics(name string) []types.MetricDatum {
 	return m
 }
 
-type DurationByType map[courier.ChannelType]time.Duration
+type DurationByType map[models.ChannelType]time.Duration
 
-func (c DurationByType) metrics(name string, avgDenom func(courier.ChannelType) int) []types.MetricDatum {
+func (c DurationByType) metrics(name string, avgDenom func(models.ChannelType) int) []types.MetricDatum {
 	m := make([]types.MetricDatum, 0, len(c)+1)
 	for typ, d := range c { // convert to averages
 		avgTime := d / time.Duration(avgDenom(typ))
@@ -74,8 +75,8 @@ func (s *Stats) ToMetrics(advanced bool) []types.MetricDatum {
 		metrics = append(metrics, s.IncomingStatuses.metrics("IncomingStatuses")...)
 		metrics = append(metrics, s.IncomingEvents.metrics("IncomingEvents")...)
 		metrics = append(metrics, s.IncomingIgnored.metrics("IncomingIgnored")...)
-		metrics = append(metrics, s.IncomingDuration.metrics("IncomingDuration", func(typ courier.ChannelType) int { return s.IncomingRequests[typ] })...)
-		metrics = append(metrics, s.OutgoingDuration.metrics("OutgoingDuration", func(typ courier.ChannelType) int { return s.OutgoingSends[typ] + s.OutgoingErrors[typ] })...)
+		metrics = append(metrics, s.IncomingDuration.metrics("IncomingDuration", func(typ models.ChannelType) int { return s.IncomingRequests[typ] })...)
+		metrics = append(metrics, s.OutgoingDuration.metrics("OutgoingDuration", func(typ models.ChannelType) int { return s.OutgoingSends[typ] + s.OutgoingErrors[typ] })...)
 		metrics = append(metrics, cwatch.Datum("ContactsCreated", float64(s.ContactsCreated), types.StandardUnitCount))
 	}
 
@@ -93,7 +94,7 @@ func NewStatsCollector() *StatsCollector {
 	return &StatsCollector{stats: newStats()}
 }
 
-func (c *StatsCollector) RecordIncoming(typ courier.ChannelType, evts []courier.Event, d time.Duration) {
+func (c *StatsCollector) RecordIncoming(typ models.ChannelType, evts []courier.Event, d time.Duration) {
 	c.mutex.Lock()
 	c.stats.IncomingRequests[typ]++
 
@@ -115,7 +116,7 @@ func (c *StatsCollector) RecordIncoming(typ courier.ChannelType, evts []courier.
 	c.mutex.Unlock()
 }
 
-func (c *StatsCollector) RecordOutgoing(typ courier.ChannelType, success bool, d time.Duration) {
+func (c *StatsCollector) RecordOutgoing(typ models.ChannelType, success bool, d time.Duration) {
 	c.mutex.Lock()
 	if success {
 		c.stats.OutgoingSends[typ]++

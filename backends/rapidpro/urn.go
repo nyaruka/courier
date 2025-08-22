@@ -7,7 +7,6 @@ import (
 	"log/slog"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
@@ -27,21 +26,21 @@ func (i ContactURNID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i)
 
 // ContactURN is our struct to map to database level URNs
 type ContactURN struct {
-	ID            ContactURNID      `db:"id"`
-	OrgID         models.OrgID      `db:"org_id"`
-	ContactID     ContactID         `db:"contact_id"`
-	Identity      string            `db:"identity"`
-	Scheme        string            `db:"scheme"`
-	Path          string            `db:"path"`
-	Display       null.String       `db:"display"`
-	AuthTokens    null.Map[string]  `db:"auth_tokens"`
-	Priority      int               `db:"priority"`
-	ChannelID     courier.ChannelID `db:"channel_id"`
+	ID            ContactURNID     `db:"id"`
+	OrgID         models.OrgID     `db:"org_id"`
+	ContactID     ContactID        `db:"contact_id"`
+	Identity      string           `db:"identity"`
+	Scheme        string           `db:"scheme"`
+	Path          string           `db:"path"`
+	Display       null.String      `db:"display"`
+	AuthTokens    null.Map[string] `db:"auth_tokens"`
+	Priority      int              `db:"priority"`
+	ChannelID     models.ChannelID `db:"channel_id"`
 	PrevContactID ContactID
 }
 
 // returns a new ContactURN object for the passed in org, contact and string URN
-func newContactURN(org models.OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, authTokens map[string]string) *ContactURN {
+func newContactURN(org models.OrgID, channelID models.ChannelID, contactID ContactID, urn urns.URN, authTokens map[string]string) *ContactURN {
 	return &ContactURN{
 		OrgID:      org,
 		ChannelID:  channelID,
@@ -115,7 +114,7 @@ func setDefaultURN(db *sqlx.Tx, channel *Channel, contact *Contact, urn urns.URN
 		if string(contactURNs[0].Display) != display || contactURNs[0].ChannelID != channel.ID() || (authTokens != nil && !utils.MapContains(contactURNs[0].AuthTokens, authTokens)) {
 			contactURNs[0].Display = null.String(display)
 
-			if channel.HasRole(courier.ChannelRoleSend) {
+			if channel.HasRole(models.ChannelRoleSend) {
 				contactURNs[0].ChannelID = channel.ID()
 			}
 
@@ -136,7 +135,7 @@ func setDefaultURN(db *sqlx.Tx, channel *Channel, contact *Contact, urn urns.URN
 		if existing.Identity == string(urn.Identity()) {
 			existing.Priority = topPriority
 
-			if channel.HasRole(courier.ChannelRoleSend) {
+			if channel.HasRole(models.ChannelRoleSend) {
 				existing.ChannelID = channel.ID()
 			}
 
@@ -145,7 +144,7 @@ func setDefaultURN(db *sqlx.Tx, channel *Channel, contact *Contact, urn urns.URN
 			existing.Priority = currPriority
 
 			// if this is a phone number and we just received a message on a tel scheme, set that as our new preferred channel
-			if existing.Scheme == urns.Phone.Prefix && scheme == urns.Phone.Prefix && channel.HasRole(courier.ChannelRoleSend) {
+			if existing.Scheme == urns.Phone.Prefix && scheme == urns.Phone.Prefix && channel.HasRole(models.ChannelRoleSend) {
 				existing.ChannelID = channel.ID()
 			}
 			currPriority--
@@ -161,7 +160,7 @@ func setDefaultURN(db *sqlx.Tx, channel *Channel, contact *Contact, urn urns.URN
 
 // getContactURNByIdentity returns the ContactURN for the passed in org and identity
 func getContactURNByIdentity(db *sqlx.Tx, org models.OrgID, urn urns.URN) (*ContactURN, error) {
-	contactURN := newContactURN(org, courier.NilChannelID, NilContactID, urn, map[string]string{})
+	contactURN := newContactURN(org, models.NilChannelID, NilContactID, urn, map[string]string{})
 	err := db.Get(contactURN, sqlSelectURNByIdentity, org, urn.Identity())
 	if err != nil {
 		return nil, err
@@ -172,8 +171,8 @@ func getContactURNByIdentity(db *sqlx.Tx, org models.OrgID, urn urns.URN) (*Cont
 // getOrCreateContactURN returns the ContactURN for the passed in org and URN, creating and associating
 // it with the passed in contact if necessary
 func getOrCreateContactURN(db *sqlx.Tx, channel *Channel, contactID ContactID, urn urns.URN, authTokens map[string]string) (*ContactURN, error) {
-	contactURN := newContactURN(channel.OrgID(), courier.NilChannelID, contactID, urn, authTokens)
-	if channel.HasRole(courier.ChannelRoleSend) {
+	contactURN := newContactURN(channel.OrgID(), models.NilChannelID, contactID, urn, authTokens)
+	if channel.HasRole(models.ChannelRoleSend) {
 		contactURN.ChannelID = channel.ID()
 	}
 	err := db.Get(contactURN, sqlSelectURNByIdentity, channel.OrgID(), urn.Identity())
@@ -192,9 +191,9 @@ func getOrCreateContactURN(db *sqlx.Tx, channel *Channel, contactID ContactID, u
 	display := null.String(urn.Display())
 
 	// make sure our contact URN is up to date
-	if (channel.HasRole(courier.ChannelRoleSend) && contactURN.ChannelID != channel.ID()) || contactURN.ContactID != contactID || contactURN.Display != display {
+	if (channel.HasRole(models.ChannelRoleSend) && contactURN.ChannelID != channel.ID()) || contactURN.ContactID != contactID || contactURN.Display != display {
 		contactURN.PrevContactID = contactURN.ContactID
-		if channel.HasRole(courier.ChannelRoleSend) {
+		if channel.HasRole(models.ChannelRoleSend) {
 			contactURN.ChannelID = channel.ID()
 		}
 		contactURN.ContactID = contactID
