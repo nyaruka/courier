@@ -13,7 +13,9 @@ import (
 )
 
 const (
-	dynamoTablesPath = "./testsuite/testdata/dynamo.json"
+	postgresSchemaPath = "./testsuite/testdata/schema.sql"
+	postgresDataPath   = "./testsuite/testdata/data.sql"
+	dynamoTablesPath   = "./testsuite/testdata/dynamo.json"
 )
 
 func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
@@ -34,12 +36,28 @@ func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
 	rt, err := runtime.NewRuntime(cfg)
 	require.NoError(t, err)
 
+	// create Postgres tables if necessary
+	_, err = rt.DB.Exec("SELECT * from orgs_org")
+	if err != nil {
+		ResetDB(t, rt)
+	}
+
 	// create Dynamo tables if necessary
 	dyntest.CreateTables(t, rt.Dynamo, absPath(dynamoTablesPath), false)
 
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
 
+	t.Cleanup(func() {
+		rt.DB.Close()
+		rt.VK.Close()
+	})
+
 	return t.Context(), rt
+}
+
+func ResetDB(t *testing.T, rt *runtime.Runtime) {
+	rt.DB.MustExec(string(ReadFile(t, absPath(postgresSchemaPath))))
+	rt.DB.MustExec(string(ReadFile(t, absPath(postgresDataPath))))
 }
 
 func ResetValkey(t *testing.T, rt *runtime.Runtime) {
@@ -62,4 +80,12 @@ func absPath(p string) string {
 		dir = path.Dir(dir)
 	}
 	return path.Join(dir, p)
+}
+
+func ReadFile(t *testing.T, path string) []byte {
+	t.Helper()
+
+	d, err := os.ReadFile(path)
+	require.NoError(t, err)
+	return d
 }

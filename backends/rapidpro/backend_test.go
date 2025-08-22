@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -17,7 +16,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
-	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
@@ -44,25 +42,11 @@ type BackendTestSuite struct {
 	b *backend
 }
 
-func (ts *BackendTestSuite) loadSQL(path string) {
-	db, err := sqlx.Open("postgres", ts.b.rt.Config.DB)
-	noError(err)
-
-	sql, err := os.ReadFile(path)
-	noError(err)
-	db.MustExec(string(sql))
-	db.Close()
-}
-
 func (ts *BackendTestSuite) SetupSuite() {
 	ctx, rt := testsuite.Runtime(ts.T())
 
 	b := NewBackend(rt)
 	ts.b = b.(*backend)
-
-	// load our test schema and data
-	ts.loadSQL("schema.sql")
-	ts.loadSQL("testdata.sql")
 
 	must(ts.b.Start())
 

@@ -41,29 +41,3 @@ environment variables and parameters and for more details on each option.
  * `COURIER_DEPLOYMENT_ID`: used for metrics reporting
  * `COURIER_SENTRY_DSN`: DSN to use when logging errors to Sentry
  * `COURIER_LOG_LEVEL`: logging level to use (default is `warn`)
-
-## Development
-
-Once you've checked out the code, you can build it with:
-
-```
-go install github.com/nyaruka/courier/cmd/courier
-```
-
-This will create a new executable in $GOPATH/bin called `courier`. 
-
-To run the tests you need to create the test database:
-
-```
-$ createdb courier_test
-$ createuser -P -E courier_test
-$ psql -d courier_test -f backends/rapidpro/schema.sql
-$ psql -d courier_test -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO courier;"
-$ psql -d courier_test -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO courier;"
-```
-
-To run all of the tests including benchmarks:
-
-```
-go test ./... -p=1 -bench=.
-```
