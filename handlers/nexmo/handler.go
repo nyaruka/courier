@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
@@ -88,7 +89,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("NX"), "Nexmo", handlers.WithRedactConfigKeys(configNexmoAPISecret, configNexmoAppPrivateKey))}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("NX"), "Nexmo", handlers.WithRedactConfigKeys(configNexmoAPISecret, configNexmoAppPrivateKey))}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -109,14 +110,14 @@ type statusForm struct {
 	ErrCode   int    `name:"err-code"`
 }
 
-var statusMappings = map[string]courier.MsgStatus{
-	"failed":    courier.MsgStatusFailed,
-	"expired":   courier.MsgStatusFailed,
-	"rejected":  courier.MsgStatusFailed,
-	"buffered":  courier.MsgStatusSent,
-	"accepted":  courier.MsgStatusSent,
-	"unknown":   courier.MsgStatusWired,
-	"delivered": courier.MsgStatusDelivered,
+var statusMappings = map[string]models.MsgStatus{
+	"failed":    models.MsgStatusFailed,
+	"expired":   models.MsgStatusFailed,
+	"rejected":  models.MsgStatusFailed,
+	"buffered":  models.MsgStatusSent,
+	"accepted":  models.MsgStatusSent,
+	"unknown":   models.MsgStatusWired,
+	"delivered": models.MsgStatusDelivered,
 }
 
 // receiveStatus is our HTTP handler function for status updates

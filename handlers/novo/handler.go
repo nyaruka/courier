@@ -11,6 +11,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
@@ -35,7 +36,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("NV"), "Novo")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("NV"), "Novo")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -48,7 +49,7 @@ func (h *handler) Initialize(s courier.Server) error {
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// check authentication
-	secret := c.StringConfigForKey(courier.ConfigSecret, "")
+	secret := c.StringConfigForKey(models.ConfigSecret, "")
 	if secret != "" {
 		authorization := r.Header.Get("Authorization")
 		if authorization != secret {

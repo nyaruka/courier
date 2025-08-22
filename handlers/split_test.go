@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
@@ -53,14 +54,14 @@ func TestSplitMsg(t *testing.T) {
 func TestSplitMsgByChannel(t *testing.T) {
 	var channelWithMaxLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US", []string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigUsername:  "user1",
-			courier.ConfigPassword:  "pass1",
-			courier.ConfigMaxLength: 25,
+			models.ConfigUsername:  "user1",
+			models.ConfigPassword:  "pass1",
+			models.ConfigMaxLength: 25,
 		})
 	var channelWithoutMaxLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US", []string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigUsername: "user1",
-			courier.ConfigPassword: "pass1",
+			models.ConfigUsername: "user1",
+			models.ConfigPassword: "pass1",
 		})
 
 	assert.Equal(t, []string{""}, handlers.SplitMsgByChannel(channelWithoutMaxLength, "", 160))

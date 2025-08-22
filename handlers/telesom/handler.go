@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/dates"
@@ -30,7 +31,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("TS"), "Telesom")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("TS"), "Telesom")}
 }
 
 func (h *handler) Initialize(s courier.Server) error {
@@ -67,13 +68,13 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	privateKey := msg.Channel().StringConfigForKey(courier.ConfigSecret, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
+	privateKey := msg.Channel().StringConfigForKey(models.ConfigSecret, "")
 	if username == "" || password == "" || privateKey == "" {
 		return courier.ErrChannelConfig
 	}
-	tsSendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, sendURL)
+	tsSendURL := msg.Channel().StringConfigForKey(models.ConfigSendURL, sendURL)
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		from := strings.TrimPrefix(msg.Channel().Address(), "+")

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
@@ -38,7 +39,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("BW"), "Bandwidth")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("BW"), "Bandwidth")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -117,10 +118,10 @@ type moStatusData struct {
 	} `json:"message" validate:"required"`
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"message-sending":   courier.MsgStatusSent,
-	"message-delivered": courier.MsgStatusDelivered,
-	"message-failed":    courier.MsgStatusFailed,
+var statusMapping = map[string]models.MsgStatus{
+	"message-sending":   models.MsgStatusSent,
+	"message-delivered": models.MsgStatusDelivered,
+	"message-failed":    models.MsgStatusFailed,
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -176,8 +177,8 @@ type mtResponse struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
 	applicationID := msg.Channel().StringConfigForKey(configMsgApplicationID, "")
 	if applicationID == "" {
@@ -248,12 +249,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 // BuildAttachmentRequest to download media for message attachment with Basic auth set
 func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
-	username := channel.StringConfigForKey(courier.ConfigUsername, "")
+	username := channel.StringConfigForKey(models.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for BW channel")
 	}
 
-	password := channel.StringConfigForKey(courier.ConfigPassword, "")
+	password := channel.StringConfigForKey(models.ConfigPassword, "")
 	if password == "" {
 		return nil, fmt.Errorf("no password set for BW channel")
 	}
@@ -266,6 +267,6 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	return []string{
-		httpx.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
+		httpx.BasicAuth(ch.StringConfigForKey(models.ConfigUsername, ""), ch.StringConfigForKey(models.ConfigPassword, "")),
 	}
 }

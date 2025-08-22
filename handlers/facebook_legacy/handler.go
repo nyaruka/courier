@@ -13,6 +13,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -58,7 +59,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("FB"), "Facebook")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("FB"), "Facebook")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -80,12 +81,12 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 
 	// verify the token against our secret, if the same return the challenge FB sent us
 	secret := r.URL.Query().Get("hub.verify_token")
-	if !utils.SecretEqual(secret, channel.StringConfigForKey(courier.ConfigSecret, "")) {
+	if !utils.SecretEqual(secret, channel.StringConfigForKey(models.ConfigSecret, "")) {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("token does not match secret"))
 	}
 
 	// make sure we have an auth token
-	authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	authToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing auth token for FB channel"))
 	}
@@ -263,7 +264,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 				}
 			}
 
-			event := h.Backend().NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]string{referrerIDKey: msg.OptIn.Ref}
@@ -279,9 +280,9 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 
 		} else if msg.Postback != nil {
 			// by default postbacks are treated as new conversations, unless we have referral information
-			eventType := courier.EventTypeNewConversation
+			eventType := models.EventTypeNewConversation
 			if msg.Postback.Referral.Ref != "" {
-				eventType = courier.EventTypeReferral
+				eventType = models.EventTypeReferral
 			}
 			event := h.Backend().NewChannelEvent(channel, eventType, urn, clog).WithOccurredOn(date)
 
@@ -292,7 +293,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			}
 
 			// add in referral information if we have it
-			if eventType == courier.EventTypeReferral {
+			if eventType == models.EventTypeReferral {
 				extra[referrerIDKey] = msg.Postback.Referral.Ref
 				extra[sourceKey] = msg.Postback.Referral.Source
 				extra[typeKey] = msg.Postback.Referral.Type
@@ -314,7 +315,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 
 		} else if msg.Referral != nil {
 			// this is an incoming referral
-			event := h.Backend().NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]string{sourceKey: msg.Referral.Source, typeKey: msg.Referral.Type}
@@ -402,7 +403,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 		} else if msg.Delivery != nil {
 			// this is a delivery report
 			for _, mid := range msg.Delivery.MIDs {
-				event := h.Backend().NewStatusUpdateByExternalID(channel, mid, courier.MsgStatusDelivered, clog)
+				event := h.Backend().NewStatusUpdateByExternalID(channel, mid, models.MsgStatusDelivered, clog)
 				err := h.Backend().WriteStatusUpdate(ctx, event)
 				if err != nil {
 					return nil, err
@@ -465,7 +466,7 @@ type mtQuickReply struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	accessToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if accessToken == "" {
 		return courier.ErrChannelConfig
 	}
@@ -596,7 +597,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 		return map[string]string{}, nil
 	}
 
-	accessToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	accessToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if accessToken == "" {
 		return nil, fmt.Errorf("missing access token")
 	}

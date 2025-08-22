@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -213,7 +214,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 validStatusSent,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Status delivered",
@@ -221,7 +222,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 validStatusDelivered,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Status failed",
@@ -229,7 +230,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 validStatusFailed,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "14762070468292kw2fuqty55yp2b2", Status: courier.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "14762070468292kw2fuqty55yp2b2", Status: models.MsgStatusFailed}},
 		ExpectedErrors:       []*clogs.Error{courier.ErrorExternal("4432", "forbidden to country")},
 	},
 }
@@ -238,7 +239,7 @@ func TestIncoming(t *testing.T) {
 	chs := []courier.Channel{
 		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
 			[]string{urns.Phone.Prefix},
-			map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
+			map[string]any{models.ConfigUsername: "user1", models.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
 		),
 	}
 
@@ -357,7 +358,7 @@ var outgoingCases = []OutgoingTestCase{
 func TestOutgoing(t *testing.T) {
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
 		[]string{urns.Phone.Prefix},
-		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
+		map[string]any{models.ConfigUsername: "user1", models.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
 	)
 
 	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)
@@ -367,10 +368,10 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
 		[]string{urns.Phone.Prefix},
-		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
+		map[string]any{models.ConfigUsername: "user1", models.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
 	)
 
-	bwHandler := &handler{NewBaseHandler(courier.ChannelType("BW"), "Bandwidth")}
+	bwHandler := &handler{NewBaseHandler(models.ChannelType("BW"), "Bandwidth")}
 	req, _ := bwHandler.BuildAttachmentRequest(context.Background(), mb, ch, "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Basic dXNlcjE6cGFzczE=", req.Header.Get("Authorization"))

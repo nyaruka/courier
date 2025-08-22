@@ -17,10 +17,10 @@ import (
 var (
 	defaultSendURL = "http://textit.com/wc/send"
 
-	statuses = map[string]courier.MsgStatus{
-		"sent":      courier.MsgStatusSent,
-		"delivered": courier.MsgStatusDelivered,
-		"failed":    courier.MsgStatusFailed,
+	statuses = map[string]models.MsgStatus{
+		"sent":      models.MsgStatusSent,
+		"delivered": models.MsgStatusDelivered,
+		"failed":    models.MsgStatusFailed,
 	}
 )
 
@@ -33,7 +33,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("CHP"), "Chip Web Chat", handlers.WithRedactConfigKeys(courier.ConfigSecret))}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("CHP"), "Chip Web Chat", handlers.WithRedactConfigKeys(models.ConfigSecret))}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -60,7 +60,7 @@ type receivePayload struct {
 
 // receiveMessage is our HTTP handler function for incoming events
 func (h *handler) receive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *receivePayload, clog *courier.ChannelLog) ([]courier.Event, error) {
-	secret := c.StringConfigForKey(courier.ConfigSecret, "")
+	secret := c.StringConfigForKey(models.ConfigSecret, "")
 	if !utils.SecretEqual(payload.Secret, secret) {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("secret incorrect"))
 	}
@@ -85,7 +85,7 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 			data = append(data, courier.NewMsgReceiveData(msg))
 
 		} else if event.Type == "chat_started" {
-			evt := h.Backend().NewChannelEvent(c, courier.EventTypeNewConversation, urn, clog)
+			evt := h.Backend().NewChannelEvent(c, models.EventTypeNewConversation, urn, clog)
 
 			if err := h.Backend().WriteChannelEvent(ctx, evt, clog); err != nil {
 				return nil, err
@@ -127,8 +127,8 @@ type sendPayload struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	secret := msg.Channel().StringConfigForKey(courier.ConfigSecret, "")
-	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, defaultSendURL)
+	secret := msg.Channel().StringConfigForKey(models.ConfigSecret, "")
+	sendURL := msg.Channel().StringConfigForKey(models.ConfigSendURL, defaultSendURL)
 	if secret == "" || sendURL == "" {
 		return courier.ErrChannelConfig
 	}

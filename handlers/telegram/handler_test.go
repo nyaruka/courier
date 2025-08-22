@@ -539,7 +539,7 @@ var testCases = []IncomingTestCase{
 		ExpectedBodyContains: "Accepted",
 		ExpectedContactName:  Sp("Nic Pottier"),
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeNewConversation, URN: "telegram:3527065#nicpottier", Time: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
+			{Type: models.EventTypeNewConversation, URN: "telegram:3527065#nicpottier", Time: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
 		},
 	},
 	{
@@ -946,7 +946,7 @@ var outgoingCases = []OutgoingTestCase{
 func TestOutgoing(t *testing.T) {
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US",
 		[]string{urns.Telegram.Prefix},
-		map[string]any{courier.ConfigAuthToken: "auth_token"},
+		map[string]any{models.ConfigAuthToken: "auth_token"},
 	)
 
 	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"auth_token"}, nil)

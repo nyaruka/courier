@@ -13,6 +13,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
@@ -43,7 +44,7 @@ type handler struct {
 
 func newHandler() courier.ChannelHandler {
 	return &handler{
-		BaseHandler:     handlers.NewBaseHandler(courier.ChannelType("FCM"), "Firebase", handlers.WithRedactConfigKeys(configKey)),
+		BaseHandler:     handlers.NewBaseHandler(models.ChannelType("FCM"), "Firebase", handlers.WithRedactConfigKeys(configKey)),
 		fetchTokenMutex: sync.Mutex{},
 	}
 }

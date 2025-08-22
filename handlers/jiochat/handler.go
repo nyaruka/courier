@@ -18,6 +18,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -46,7 +47,7 @@ type handler struct {
 
 func newHandler() courier.ChannelHandler {
 	return &handler{
-		BaseHandler:     handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat"),
+		BaseHandler:     handlers.NewBaseHandler(models.ChannelType("JC"), "Jiochat"),
 		fetchTokenMutex: sync.Mutex{},
 	}
 }
@@ -123,7 +124,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// subscribe event, trigger a new conversation
 	if payload.MsgType == "event" && payload.Event == "subscribe" {
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeNewConversation, urn, clog)
+		channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog)
 
 		err := h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {

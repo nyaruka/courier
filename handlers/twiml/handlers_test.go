@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -136,10 +137,10 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusFailed},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusFailed},
 		},
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
+			{Type: models.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
 		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
@@ -167,7 +168,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -178,7 +179,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"R"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusRead},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusRead},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -189,7 +190,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+			{MsgID: 12345, Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -200,7 +201,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -234,10 +235,10 @@ var tmsTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusFailed},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusFailed},
 		},
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
+			{Type: models.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
 		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
@@ -249,7 +250,7 @@ var tmsTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SM0b6e2697aae04182a9f5b5c7a8994c7f", Status: courier.MsgStatusSent},
+			{ExternalID: "SM0b6e2697aae04182a9f5b5c7a8994c7f", Status: models.MsgStatusSent},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -276,7 +277,7 @@ var tmsTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -287,7 +288,7 @@ var tmsTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+			{MsgID: 12345, Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -298,7 +299,7 @@ var tmsTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -334,10 +335,10 @@ var twTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusFailed},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusFailed},
 		},
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
+			{Type: models.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
 		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
@@ -353,7 +354,7 @@ var twTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -364,7 +365,7 @@ var twTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+			{MsgID: 12345, Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -375,7 +376,7 @@ var twTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -398,10 +399,10 @@ var swTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusFailed},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusFailed},
 		},
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
+			{Type: models.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
 		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
@@ -415,7 +416,7 @@ var swTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -426,7 +427,7 @@ var swTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+			{MsgID: 12345, Status: models.MsgStatusDelivered},
 		},
 	},
 	{
@@ -436,7 +437,7 @@ var swTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 	},
 }
@@ -468,7 +469,7 @@ var twaTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -479,7 +480,7 @@ var twaTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+			{MsgID: 12345, Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -490,7 +491,7 @@ var twaTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"E"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusErrored},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusErrored},
 		},
 		PrepRequest:    addValidSignature,
 		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("63018", "Rate limit exceeded for Channel")},
@@ -502,7 +503,7 @@ var twaTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -534,8 +535,8 @@ func TestIncoming(t *testing.T) {
 	waChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
 		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
-			configAccountSID:        "accountSID",
-			courier.ConfigAuthToken: "6789",
+			configAccountSID:       "accountSID",
+			models.ConfigAuthToken: "6789",
 		},
 	)
 	RunIncomingTestCases(t, []courier.Channel{waChannel}, newTWIMLHandler("T", "TwilioWhatsApp", true), waTestCases)
@@ -543,8 +544,8 @@ func TestIncoming(t *testing.T) {
 	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
 		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
-			configAccountSID:        "accountSID",
-			courier.ConfigAuthToken: "6789",
+			configAccountSID:       "accountSID",
+			models.ConfigAuthToken: "6789",
 		},
 	)
 	RunIncomingTestCases(t, []courier.Channel{twaChannel}, newTWIMLHandler("TWA", "Twilio WhatsApp", true), twaTestCases)
@@ -1359,15 +1360,15 @@ func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			configAccountSID:        "accountSID",
-			courier.ConfigAuthToken: "authToken"})
+			configAccountSID:       "accountSID",
+			models.ConfigAuthToken: "authToken"})
 
 	var tmsDefaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56cd", "TMS", "", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
 			configMessagingServiceSID: "messageServiceSID",
 			configAccountSID:          "accountSID",
-			courier.ConfigAuthToken:   "authToken"})
+			models.ConfigAuthToken:    "authToken"})
 
 	var tmsShortenLinksChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56cd", "TMS", "", "US",
 		[]string{urns.Phone.Prefix},
@@ -1375,22 +1376,22 @@ func TestOutgoing(t *testing.T) {
 			configLinkShortening:      true,
 			configMessagingServiceSID: "messageServiceSID",
 			configAccountSID:          "accountSID",
-			courier.ConfigAuthToken:   "authToken"})
+			models.ConfigAuthToken:    "authToken"})
 
 	var twDefaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TW", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			configAccountSID:        "accountSID",
-			courier.ConfigAuthToken: "authToken",
-			configSendURL:           "http://example.com/twiml_api/",
+			configAccountSID:       "accountSID",
+			models.ConfigAuthToken: "authToken",
+			configSendURL:          "http://example.com/twiml_api/",
 		})
 
 	var swChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			configAccountSID:        "accountSID",
-			courier.ConfigAuthToken: "authToken",
-			configSendURL:           "http://example.com/sigware_api/",
+			configAccountSID:       "accountSID",
+			models.ConfigAuthToken: "authToken",
+			configSendURL:          "http://example.com/sigware_api/",
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newTWIMLHandler("T", "Twilio", true), defaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
@@ -1402,9 +1403,9 @@ func TestOutgoing(t *testing.T) {
 	waChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
 		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
-			configAccountSID:        "accountSID",
-			courier.ConfigAuthToken: "authToken",
-			configSendURL:           "http://example.com/sigware_api/",
+			configAccountSID:       "accountSID",
+			models.ConfigAuthToken: "authToken",
+			configSendURL:          "http://example.com/sigware_api/",
 		},
 	)
 
@@ -1414,7 +1415,7 @@ func TestOutgoing(t *testing.T) {
 		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
 			configAccountSID:          "accountSID",
-			courier.ConfigAuthToken:   "authToken",
+			models.ConfigAuthToken:    "authToken",
 			configMessagingServiceSID: "messageServiceSID",
 		},
 	)
@@ -1428,10 +1429,10 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			configAccountSID:        "accountSID",
-			courier.ConfigAuthToken: "authToken"})
+			configAccountSID:       "accountSID",
+			models.ConfigAuthToken: "authToken"})
 
-	twHandler := &handler{NewBaseHandler(courier.ChannelType("T"), "Twilio"), true}
+	twHandler := &handler{NewBaseHandler(models.ChannelType("T"), "Twilio"), true}
 	req, _ := twHandler.BuildAttachmentRequest(context.Background(), mb, defaultChannel, "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=", req.Header.Get("Authorization"))
@@ -1439,11 +1440,11 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	var swChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US",
 		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
-			configAccountSID:        "accountSID",
-			courier.ConfigAuthToken: "authToken",
-			configSendURL:           "BASE_URL",
+			configAccountSID:       "accountSID",
+			models.ConfigAuthToken: "authToken",
+			configSendURL:          "BASE_URL",
 		})
-	swHandler := &handler{NewBaseHandler(courier.ChannelType("SW"), "SignalWire"), false}
+	swHandler := &handler{NewBaseHandler(models.ChannelType("SW"), "SignalWire"), false}
 	req, _ = swHandler.BuildAttachmentRequest(context.Background(), mb, swChannel, "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "", req.Header.Get("Authorization"))

@@ -5,17 +5,17 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 )
 
 // MockChannel implements the Channel interface and is used in our tests
 type MockChannel struct {
-	uuid        courier.ChannelUUID
-	channelType courier.ChannelType
+	uuid        models.ChannelUUID
+	channelType models.ChannelType
 	schemes     []string
-	address     courier.ChannelAddress
+	address     models.ChannelAddress
 	country     i18n.Country
 	role        string
 	config      map[string]any
@@ -23,13 +23,13 @@ type MockChannel struct {
 }
 
 // UUID returns the uuid for this channel
-func (c *MockChannel) UUID() courier.ChannelUUID { return c.uuid }
+func (c *MockChannel) UUID() models.ChannelUUID { return c.uuid }
 
 // Name returns the name of this channel, we just return our UUID for our mock instances
 func (c *MockChannel) Name() string { return fmt.Sprintf("Channel: %s", c.uuid) }
 
 // ChannelType returns the type of this channel
-func (c *MockChannel) ChannelType() courier.ChannelType { return c.channelType }
+func (c *MockChannel) ChannelType() models.ChannelType { return c.channelType }
 
 // SetScheme sets the scheme for this channel
 func (c *MockChannel) SetScheme(scheme string) { c.schemes = []string{scheme} }
@@ -46,7 +46,7 @@ func (c *MockChannel) IsScheme(scheme *urns.Scheme) bool {
 func (c *MockChannel) Address() string { return c.address.String() }
 
 // ChannelAddress returns the address of this channel
-func (c *MockChannel) ChannelAddress() courier.ChannelAddress { return c.address }
+func (c *MockChannel) ChannelAddress() models.ChannelAddress { return c.address }
 
 // Country returns the country this channel is for (if any)
 func (c *MockChannel) Country() i18n.Country { return c.country }
@@ -58,7 +58,7 @@ func (c *MockChannel) SetConfig(key string, value any) {
 
 // CallbackDomain returns the callback domain to use for this channel
 func (c *MockChannel) CallbackDomain(fallbackDomain string) string {
-	value, found := c.config[courier.ConfigCallbackDomain]
+	value, found := c.config[models.ConfigCallbackDomain]
 	if !found {
 		return fallbackDomain
 	}
@@ -130,21 +130,21 @@ func (c *MockChannel) OrgConfigForKey(key string, defaultValue any) any {
 }
 
 // SetRoles sets the role on the channel
-func (c *MockChannel) SetRoles(roles []courier.ChannelRole) {
+func (c *MockChannel) SetRoles(roles []models.ChannelRole) {
 	c.role = fmt.Sprint(roles)
 }
 
 // Roles returns the roles of this channel
-func (c *MockChannel) Roles() []courier.ChannelRole {
-	roles := []courier.ChannelRole{}
+func (c *MockChannel) Roles() []models.ChannelRole {
+	roles := []models.ChannelRole{}
 	for _, char := range strings.Split(c.role, "") {
-		roles = append(roles, courier.ChannelRole(char))
+		roles = append(roles, models.ChannelRole(char))
 	}
 	return roles
 }
 
 // HasRole returns whether the passed in channel supports the passed role
-func (c *MockChannel) HasRole(role courier.ChannelRole) bool {
+func (c *MockChannel) HasRole(role models.ChannelRole) bool {
 	for _, r := range c.Roles() {
 		if r == role {
 			return true
@@ -156,10 +156,10 @@ func (c *MockChannel) HasRole(role courier.ChannelRole) bool {
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
 func NewMockChannel(uuid string, channelType string, address string, country i18n.Country, schemes []string, config map[string]any) *MockChannel {
 	return &MockChannel{
-		uuid:        courier.ChannelUUID(uuid),
-		channelType: courier.ChannelType(channelType),
+		uuid:        models.ChannelUUID(uuid),
+		channelType: models.ChannelType(channelType),
 		schemes:     schemes,
-		address:     courier.ChannelAddress(address),
+		address:     models.ChannelAddress(address),
 		country:     country,
 		config:      config,
 		role:        "SR",

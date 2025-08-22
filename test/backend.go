@@ -28,8 +28,8 @@ type SavedAttachment struct {
 
 // MockBackend is a mocked version of a backend which doesn't require a real database or cache
 type MockBackend struct {
-	channels          map[courier.ChannelUUID]courier.Channel
-	channelsByAddress map[courier.ChannelAddress]courier.Channel
+	channels          map[models.ChannelUUID]courier.Channel
+	channelsByAddress map[models.ChannelAddress]courier.Channel
 	contacts          map[urns.URN]courier.Contact
 	outgoingMsgs      []courier.MsgOut
 	media             map[string]*models.Media // url -> Media
@@ -77,8 +77,8 @@ func NewMockBackend() *MockBackend {
 	}
 
 	return &MockBackend{
-		channels:          make(map[courier.ChannelUUID]courier.Channel),
-		channelsByAddress: make(map[courier.ChannelAddress]courier.Channel),
+		channels:          make(map[models.ChannelUUID]courier.Channel),
+		channelsByAddress: make(map[models.ChannelAddress]courier.Channel),
 		contacts:          make(map[urns.URN]courier.Contact),
 		media:             make(map[string]*models.Media),
 		sentMsgs:          make(map[models.MsgID]bool),
@@ -218,7 +218,7 @@ func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *cour
 }
 
 // NewStatusUpdate creates a new Status object for the given message id
-func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, id models.MsgID, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, id models.MsgID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return &MockStatusUpdate{
 		channel:   channel,
 		msgID:     id,
@@ -228,7 +228,7 @@ func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, id models.MsgID,
 }
 
 // NewStatusUpdateByExternalID creates a new Status object for the given external id
-func (mb *MockBackend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (mb *MockBackend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return &MockStatusUpdate{
 		channel:    channel,
 		externalID: externalID,
@@ -247,7 +247,7 @@ func (mb *MockBackend) WriteStatusUpdate(ctx context.Context, status courier.Sta
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (mb *MockBackend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
+func (mb *MockBackend) NewChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
 	return &mockChannelEvent{
 		channel:   channel,
 		eventType: eventType,
@@ -273,7 +273,7 @@ func (mb *MockBackend) WriteChannelEvent(ctx context.Context, event courier.Chan
 }
 
 // GetChannel returns the channel with the passed in type and channel uuid
-func (mb *MockBackend) GetChannel(ctx context.Context, cType courier.ChannelType, uuid courier.ChannelUUID) (courier.Channel, error) {
+func (mb *MockBackend) GetChannel(ctx context.Context, cType models.ChannelType, uuid models.ChannelUUID) (courier.Channel, error) {
 	channel, found := mb.channels[uuid]
 	if !found {
 		return nil, courier.ErrChannelNotFound
@@ -282,7 +282,7 @@ func (mb *MockBackend) GetChannel(ctx context.Context, cType courier.ChannelType
 }
 
 // GetChannelByAddress returns the channel with the passed in type and channel address
-func (mb *MockBackend) GetChannelByAddress(ctx context.Context, cType courier.ChannelType, address courier.ChannelAddress) (courier.Channel, error) {
+func (mb *MockBackend) GetChannelByAddress(ctx context.Context, cType models.ChannelType, address models.ChannelAddress) (courier.Channel, error) {
 	channel, found := mb.channelsByAddress[address]
 	if !found {
 		return nil, courier.ErrChannelNotFound
@@ -298,7 +298,7 @@ func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, 
 			return nil, nil
 		}
 
-		contact = &mockContact{channel, urn, authTokens, courier.ContactUUID(uuids.NewV4())}
+		contact = &mockContact{channel, urn, authTokens, models.ContactUUID(uuids.NewV4())}
 		mb.contacts[urn] = contact
 	}
 	return contact, nil

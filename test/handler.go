@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -27,7 +28,7 @@ func NewMockHandler() courier.ChannelHandler {
 
 func (h *mockHandler) Server() courier.Server                { return h.server }
 func (h *mockHandler) ChannelName() string                   { return "Mock Handler" }
-func (h *mockHandler) ChannelType() courier.ChannelType      { return courier.ChannelType("MCK") }
+func (h *mockHandler) ChannelType() models.ChannelType       { return models.ChannelType("MCK") }
 func (h *mockHandler) UseChannelRouteUUID() bool             { return true }
 func (h *mockHandler) RedactValues(courier.Channel) []string { return []string{"sesame"} }
 

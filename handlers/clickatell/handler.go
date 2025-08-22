@@ -14,6 +14,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -32,7 +33,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("CT"), "Clickatell")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("CT"), "Clickatell")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -48,20 +49,20 @@ type statusPayload struct {
 	StatusCode int    `name:"statusCode"`
 }
 
-var statusMapping = map[int]courier.MsgStatus{
-	1:  courier.MsgStatusFailed, // incorrect msg id
-	2:  courier.MsgStatusWired,  // queued
-	3:  courier.MsgStatusSent,   // delivered to upstream gateway
-	4:  courier.MsgStatusSent,   // delivered to upstream gateway
-	5:  courier.MsgStatusFailed, // error in message
-	6:  courier.MsgStatusFailed, // terminated by user
-	7:  courier.MsgStatusFailed, // error delivering
-	8:  courier.MsgStatusWired,  // msg received
-	9:  courier.MsgStatusFailed, // error routing
-	10: courier.MsgStatusFailed, // expired
-	11: courier.MsgStatusWired,  // delayed but queued
-	12: courier.MsgStatusFailed, // out of credit
-	14: courier.MsgStatusFailed, // too long
+var statusMapping = map[int]models.MsgStatus{
+	1:  models.MsgStatusFailed, // incorrect msg id
+	2:  models.MsgStatusWired,  // queued
+	3:  models.MsgStatusSent,   // delivered to upstream gateway
+	4:  models.MsgStatusSent,   // delivered to upstream gateway
+	5:  models.MsgStatusFailed, // error in message
+	6:  models.MsgStatusFailed, // terminated by user
+	7:  models.MsgStatusFailed, // error delivering
+	8:  models.MsgStatusWired,  // msg received
+	9:  models.MsgStatusFailed, // error routing
+	10: models.MsgStatusFailed, // expired
+	11: models.MsgStatusWired,  // delayed but queued
+	12: models.MsgStatusFailed, // out of credit
+	14: models.MsgStatusFailed, // too long
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -155,7 +156,7 @@ func decodeUTF16BE(b []byte) (string, error) {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
+	apiKey := msg.Channel().StringConfigForKey(models.ConfigAPIKey, "")
 	if apiKey == "" {
 		return courier.ErrChannelConfig
 	}

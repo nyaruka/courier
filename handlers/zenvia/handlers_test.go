@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -184,7 +185,7 @@ var testWhatappCases = []IncomingTestCase{
 		Data:                 validStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `Accepted`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "hs765939216", Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "hs765939216", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Unkown Status",
@@ -192,7 +193,7 @@ var testWhatappCases = []IncomingTestCase{
 		Data:                 unknownStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "hs765939216", Status: courier.MsgStatusErrored}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "hs765939216", Status: models.MsgStatusErrored}},
 	},
 	{Label: "Not JSON body", URL: statusWhatsppURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse request JSON"},
 	{Label: "Wrong JSON schema", URL: statusWhatsppURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedBodyContains: "request JSON doesn't match required schema"},
@@ -219,7 +220,7 @@ var testSMSCases = []IncomingTestCase{
 		Data:                 validStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `Accepted`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "hs765939216", Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "hs765939216", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Unknown Status",
@@ -227,7 +228,7 @@ var testSMSCases = []IncomingTestCase{
 		Data:                 unknownStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "hs765939216", Status: courier.MsgStatusErrored}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "hs765939216", Status: models.MsgStatusErrored}},
 	},
 	{Label: "Not JSON body", URL: statusSMSURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse request JSON"},
 	{Label: "Wrong JSON schema", URL: statusSMSURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedBodyContains: "request JSON doesn't match required schema"},

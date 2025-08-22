@@ -15,6 +15,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -37,7 +38,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("KWA"), "Kaleyra WhatsApp")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("KWA"), "Kaleyra WhatsApp")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -103,11 +104,11 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"0":         courier.MsgStatusFailed,
-	"sent":      courier.MsgStatusWired,
-	"delivered": courier.MsgStatusDelivered,
-	"read":      courier.MsgStatusRead,
+var statusMapping = map[string]models.MsgStatus{
+	"0":         models.MsgStatusFailed,
+	"sent":      models.MsgStatusWired,
+	"delivered": models.MsgStatusDelivered,
+	"read":      models.MsgStatusRead,
 }
 
 // receiveStatus is our HTTP handler function for outgoing messages statuses

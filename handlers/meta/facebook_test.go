@@ -21,7 +21,7 @@ import (
 )
 
 var facebookTestChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FBA", "12345", "", []string{urns.Facebook.Prefix}, map[string]any{courier.ConfigAuthToken: "a123"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FBA", "12345", "", []string{urns.Facebook.Prefix}, map[string]any{models.ConfigAuthToken: "a123"}),
 }
 
 var facebookIncomingTests = []IncomingTestCase{
@@ -104,7 +104,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeReferral, URN: "facebook:ref:optin_user_ref", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"referrer_id": "optin_ref"}},
+			{Type: models.EventTypeReferral, URN: "facebook:ref:optin_user_ref", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"referrer_id": "optin_ref"}},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -115,7 +115,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"referrer_id": "optin_ref"}},
+			{Type: models.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"referrer_id": "optin_ref"}},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -126,7 +126,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeOptIn, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "Bird Facts", "payload": "3456"}},
+			{Type: models.EventTypeOptIn, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "Bird Facts", "payload": "3456"}},
 		},
 		ExpectedURNAuthTokens: map[urns.URN]map[string]string{"facebook:5678": {"optin:3456": "12345678901234567890"}},
 		PrepRequest:           addValidSignature,
@@ -138,7 +138,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeOptOut, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "Bird Facts", "payload": "3456"}},
+			{Type: models.EventTypeOptOut, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "Bird Facts", "payload": "3456"}},
 		},
 		ExpectedURNAuthTokens: map[urns.URN]map[string]string{"facebook:5678": {}},
 		PrepRequest:           addValidSignature,
@@ -150,7 +150,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeNewConversation, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "postback title", "payload": "get_started"}},
+			{Type: models.EventTypeNewConversation, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "postback title", "payload": "get_started"}},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -161,7 +161,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"}},
+			{Type: models.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"}},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -172,7 +172,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"}},
+			{Type: models.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"}},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -183,7 +183,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"referrer_id":"referral id"`,
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"}},
+			{Type: models.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"}},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -194,7 +194,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"referrer_id":"referral id"`,
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2023, 12, 3, 10, 25, 11, 0, time.UTC), Extra: map[string]string{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"}},
+			{Type: models.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2023, 12, 3, 10, 25, 11, 0, time.UTC), Extra: map[string]string{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"}},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -220,7 +220,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		Data:                 string(test.ReadFile("./testdata/fba/dlr.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "mid.1458668856218:ed81099e15d3f4f233", Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "mid.1458668856218:ed81099e15d3f4f233", Status: models.MsgStatusDelivered}},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -642,7 +642,7 @@ func TestFacebookOutgoing(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
 
-	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", []string{urns.Facebook.Prefix}, map[string]any{courier.ConfigAuthToken: "a123"})
+	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", []string{urns.Facebook.Prefix}, map[string]any{models.ConfigAuthToken: "a123"})
 
 	checkRedacted := []string{"wac_admin_system_user_token", "missing_facebook_app_secret", "missing_facebook_webhook_secret", "a123"}
 
@@ -675,7 +675,7 @@ func TestFacebookBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 	s := courier.NewServer(runtime.NewDefaultConfig(), mb)
 
-	handler := &handler{NewBaseHandler(courier.ChannelType("FBA"), "Facebook", DisableUUIDRouting())}
+	handler := &handler{NewBaseHandler(models.ChannelType("FBA"), "Facebook", DisableUUIDRouting())}
 	handler.Initialize(s)
 	req, _ := handler.BuildAttachmentRequest(context.Background(), mb, facebookTestChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())

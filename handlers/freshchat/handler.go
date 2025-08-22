@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
@@ -38,8 +39,8 @@ type handler struct {
 	validateSignatures bool
 }
 
-func newHandler(channelType courier.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("FC"), "FreshChat"), validateSignatures}
+func newHandler(channelType models.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandler(models.ChannelType("FC"), "FreshChat"), validateSignatures}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -98,8 +99,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 
-	agentID := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	agentID := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 
 	if agentID == "" || authToken == "" {
 		return courier.ErrChannelConfig
@@ -170,7 +171,7 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if !h.validateSignatures {
 		return nil
 	}
-	key := c.StringConfigForKey(courier.ConfigSecret, "")
+	key := c.StringConfigForKey(models.ConfigSecret, "")
 	if key == "" {
 		return fmt.Errorf("missing config 'secret' for FC channel")
 	}

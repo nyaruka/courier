@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
@@ -26,7 +27,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("JS"), "Jasmin")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("JS"), "Jasmin")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -52,11 +53,11 @@ func (h *handler) receiveStatus(ctx context.Context, c courier.Channel, w http.R
 	}
 
 	// should have either delivered or err
-	reqStatus := courier.NilMsgStatus
+	reqStatus := models.NilMsgStatus
 	if form.Delivered == 1 {
-		reqStatus = courier.MsgStatusDelivered
+		reqStatus = models.MsgStatusDelivered
 	} else if form.Err == 1 {
-		reqStatus = courier.MsgStatusFailed
+		reqStatus = models.MsgStatusFailed
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("must have either dlvrd or err set to 1"))
 	}
@@ -120,9 +121,9 @@ func writeJasminACK(w http.ResponseWriter) error {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
+	sendURL := msg.Channel().StringConfigForKey(models.ConfigSendURL, "")
 	if username == "" || password == "" || sendURL == "" {
 		return courier.ErrChannelConfig
 	}

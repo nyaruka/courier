@@ -39,21 +39,21 @@ func (i ChannelEventID) String() string {
 
 // ChannelEvent represents an event on a channel.. that isn't a new message or status update
 type ChannelEvent struct {
-	ID_          ChannelEventID           `                               db:"id"`
-	UUID_        courier.ChannelEventUUID `json:"uuid"                    db:"uuid"`
-	OrgID_       models.OrgID             `json:"org_id"                  db:"org_id"`
-	ChannelUUID_ courier.ChannelUUID      `json:"channel_uuid"            db:"channel_uuid"`
-	ChannelID_   courier.ChannelID        `json:"channel_id"              db:"channel_id"`
-	URN_         urns.URN                 `json:"urn"                     db:"urn"`
-	EventType_   courier.ChannelEventType `json:"event_type"              db:"event_type"`
-	OptInID_     null.Int                 `json:"optin_id"                db:"optin_id"`
-	Extra_       null.Map[string]         `json:"extra"                   db:"extra"`
-	OccurredOn_  time.Time                `json:"occurred_on"             db:"occurred_on"`
-	CreatedOn_   time.Time                `json:"created_on"              db:"created_on"`
-	LogUUIDs     pq.StringArray           `json:"log_uuids"               db:"log_uuids"`
+	ID_          ChannelEventID          `                               db:"id"`
+	UUID_        models.ChannelEventUUID `json:"uuid"                    db:"uuid"`
+	OrgID_       models.OrgID            `json:"org_id"                  db:"org_id"`
+	ChannelUUID_ models.ChannelUUID      `json:"channel_uuid"            db:"channel_uuid"`
+	ChannelID_   models.ChannelID        `json:"channel_id"              db:"channel_id"`
+	URN_         urns.URN                `json:"urn"                     db:"urn"`
+	EventType_   models.ChannelEventType `json:"event_type"              db:"event_type"`
+	OptInID_     null.Int                `json:"optin_id"                db:"optin_id"`
+	Extra_       null.Map[string]        `json:"extra"                   db:"extra"`
+	OccurredOn_  time.Time               `json:"occurred_on"             db:"occurred_on"`
+	CreatedOn_   time.Time               `json:"created_on"              db:"created_on"`
+	LogUUIDs     pq.StringArray          `json:"log_uuids"               db:"log_uuids"`
 
-	ContactID_    ContactID    `json:"-"               db:"contact_id"`
-	ContactURNID_ ContactURNID `json:"-"               db:"contact_urn_id"`
+	ContactID_    models.ContactID    `json:"-"               db:"contact_id"`
+	ContactURNID_ models.ContactURNID `json:"-"               db:"contact_urn_id"`
 
 	// used to update contact
 	ContactName_   string            `json:"contact_name"`
@@ -63,11 +63,11 @@ type ChannelEvent struct {
 }
 
 // newChannelEvent creates a new channel event
-func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) *ChannelEvent {
+func newChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) *ChannelEvent {
 	dbChannel := channel.(*Channel)
 
 	return &ChannelEvent{
-		UUID_:        courier.ChannelEventUUID(uuids.NewV7()),
+		UUID_:        models.ChannelEventUUID(uuids.NewV7()),
 		ChannelUUID_: dbChannel.UUID_,
 		OrgID_:       dbChannel.OrgID_,
 		ChannelID_:   dbChannel.ID_,
@@ -80,16 +80,16 @@ func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType
 	}
 }
 
-func (e *ChannelEvent) EventID() int64                      { return int64(e.ID_) }
-func (e *ChannelEvent) UUID() courier.ChannelEventUUID      { return e.UUID_ }
-func (e *ChannelEvent) ChannelID() courier.ChannelID        { return e.ChannelID_ }
-func (e *ChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
-func (e *ChannelEvent) EventType() courier.ChannelEventType { return e.EventType_ }
-func (e *ChannelEvent) URN() urns.URN                       { return e.URN_ }
-func (e *ChannelEvent) Extra() map[string]string            { return e.Extra_ }
-func (e *ChannelEvent) OccurredOn() time.Time               { return e.OccurredOn_ }
-func (e *ChannelEvent) CreatedOn() time.Time                { return e.CreatedOn_ }
-func (e *ChannelEvent) Channel() *Channel                   { return e.channel }
+func (e *ChannelEvent) EventID() int64                     { return int64(e.ID_) }
+func (e *ChannelEvent) UUID() models.ChannelEventUUID      { return e.UUID_ }
+func (e *ChannelEvent) ChannelID() models.ChannelID        { return e.ChannelID_ }
+func (e *ChannelEvent) ChannelUUID() models.ChannelUUID    { return e.ChannelUUID_ }
+func (e *ChannelEvent) EventType() models.ChannelEventType { return e.EventType_ }
+func (e *ChannelEvent) URN() urns.URN                      { return e.URN_ }
+func (e *ChannelEvent) Extra() map[string]string           { return e.Extra_ }
+func (e *ChannelEvent) OccurredOn() time.Time              { return e.OccurredOn_ }
+func (e *ChannelEvent) CreatedOn() time.Time               { return e.CreatedOn_ }
+func (e *ChannelEvent) Channel() *Channel                  { return e.channel }
 
 func (e *ChannelEvent) WithContactName(name string) courier.ChannelEvent {
 	e.ContactName_ = name
@@ -102,7 +102,7 @@ func (e *ChannelEvent) WithURNAuthTokens(tokens map[string]string) courier.Chann
 }
 
 func (e *ChannelEvent) WithExtra(extra map[string]string) courier.ChannelEvent {
-	if e.EventType_ == courier.EventTypeOptIn || e.EventType_ == courier.EventTypeOptOut {
+	if e.EventType_ == models.EventTypeOptIn || e.EventType_ == models.EventTypeOptOut {
 		optInID := extra["payload"]
 		if optInID != "" {
 			asInt, _ := strconv.Atoi(optInID)
@@ -193,7 +193,7 @@ func (b *backend) flushChannelEventFile(filename string, contents []byte) error 
 	}
 
 	// look up our channel
-	channel, err := b.GetChannel(ctx, courier.AnyChannelType, event.ChannelUUID_)
+	channel, err := b.GetChannel(ctx, models.AnyChannelType, event.ChannelUUID_)
 	if err != nil {
 		return err
 	}

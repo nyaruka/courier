@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
@@ -195,7 +196,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Event Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeNewConversation, URN: "jiochat:1234"},
+			{Type: models.EventTypeNewConversation, URN: "jiochat:1234"},
 		},
 	},
 	{

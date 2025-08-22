@@ -29,6 +29,41 @@ type MsgUUID uuids.UUID
 // NilMsgUUID is a "zero value" message UUID
 const NilMsgUUID = MsgUUID("")
 
+// MsgStatus is the status of a message
+type MsgStatus string
+
+// Possible values for MsgStatus
+const (
+	MsgStatusPending   MsgStatus = "P"
+	MsgStatusQueued    MsgStatus = "Q"
+	MsgStatusSent      MsgStatus = "S"
+	MsgStatusWired     MsgStatus = "W"
+	MsgStatusErrored   MsgStatus = "E"
+	MsgStatusDelivered MsgStatus = "D"
+	MsgStatusRead      MsgStatus = "R"
+	MsgStatusFailed    MsgStatus = "F"
+	NilMsgStatus       MsgStatus = ""
+)
+
+// MsgDirection is the direction of a message
+type MsgDirection string
+
+// Possible values for MsgDirection
+const (
+	MsgIncoming MsgDirection = "I"
+	MsgOutgoing MsgDirection = "O"
+)
+
+// MsgVisibility is the visibility of a message
+type MsgVisibility string
+
+// Possible values for MsgVisibility
+const (
+	MsgVisible  MsgVisibility = "V"
+	MsgDeleted  MsgVisibility = "D"
+	MsgArchived MsgVisibility = "A"
+)
+
 type MsgOrigin string
 
 const (

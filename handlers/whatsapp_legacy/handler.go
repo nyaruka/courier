@@ -52,9 +52,9 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeWa), "WhatsApp"))
-	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeD3), "360Dialog"))
-	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeTXW), "TextIt"))
+	courier.RegisterHandler(newWAHandler(models.ChannelType(channelTypeWa), "WhatsApp"))
+	courier.RegisterHandler(newWAHandler(models.ChannelType(channelTypeD3), "360Dialog"))
+	courier.RegisterHandler(newWAHandler(models.ChannelType(channelTypeTXW), "TextIt"))
 
 	failedMediaCache = cache.New(15*time.Minute, 15*time.Minute)
 }
@@ -63,7 +63,7 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-func newWAHandler(channelType courier.ChannelType, name string) courier.ChannelHandler {
+func newWAHandler(channelType models.ChannelType, name string) courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(channelType, name)}
 }
 
@@ -293,7 +293,7 @@ func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
 		return "", nil
 	}
 
-	urlStr := channel.StringConfigForKey(courier.ConfigBaseURL, "")
+	urlStr := channel.StringConfigForKey(models.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
 	if err != nil {
 		return "", fmt.Errorf("invalid base url set for WA channel: %s", err)
@@ -309,7 +309,7 @@ func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set
 func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
-	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	token := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if token == "" {
 		return nil, fmt.Errorf("missing token for WA channel")
 	}
@@ -322,12 +322,12 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
-var waStatusMapping = map[string]courier.MsgStatus{
-	"sending":   courier.MsgStatusWired,
-	"sent":      courier.MsgStatusSent,
-	"delivered": courier.MsgStatusDelivered,
-	"read":      courier.MsgStatusRead,
-	"failed":    courier.MsgStatusFailed,
+var waStatusMapping = map[string]models.MsgStatus{
+	"sending":   models.MsgStatusWired,
+	"sent":      models.MsgStatusSent,
+	"delivered": models.MsgStatusDelivered,
+	"read":      models.MsgStatusRead,
+	"failed":    models.MsgStatusFailed,
 }
 
 var waIgnoreStatuses = map[string]bool{
@@ -497,8 +497,8 @@ const maxMsgLength = 4096
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	// get our token
-	token := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
-	urlStr := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
+	token := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
+	urlStr := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
 
 	if token == "" || err != nil {
@@ -862,7 +862,7 @@ func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL
 	}
 
 	// upload media to WhatsApp
-	baseURL := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
+	baseURL := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "")
 	url, err := url.Parse(baseURL)
 	if err != nil {
 		return "", fmt.Errorf("invalid base url set for WA channel: %s: %w", baseURL, err)
@@ -1029,7 +1029,7 @@ func (h *handler) sendWhatsAppMsg(msg courier.MsgOut, sendPath *url.URL, payload
 }
 
 func setWhatsAppAuthHeader(header *http.Header, channel courier.Channel) {
-	authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	authToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
 
 	if channel.ChannelType() == channelTypeD3 {
 		header.Set(d3AuthorizationKey, authToken)

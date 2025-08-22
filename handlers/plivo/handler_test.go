@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -43,7 +44,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "12345", Status: courier.MsgStatusDelivered},
+			{ExternalID: "12345", Status: models.MsgStatusDelivered},
 		},
 	},
 	{
@@ -53,7 +54,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "12345", Status: courier.MsgStatusSent},
+			{ExternalID: "12345", Status: models.MsgStatusSent},
 		},
 	},
 	{Label: "Invalid Status Address", URL: statusURL, Data: invalidStatusAddress, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid to number [1515], expecting [2020]"},

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
@@ -26,7 +27,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("BL"), "Bongo Live")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("BL"), "Bongo Live")}
 }
 
 func init() {
@@ -40,18 +41,18 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-var statusMapping = map[int]courier.MsgStatus{
-	1:  courier.MsgStatusDelivered,
-	2:  courier.MsgStatusSent,
-	3:  courier.MsgStatusErrored,
-	4:  courier.MsgStatusErrored,
-	5:  courier.MsgStatusErrored,
-	6:  courier.MsgStatusErrored,
-	7:  courier.MsgStatusErrored,
-	8:  courier.MsgStatusSent,
-	9:  courier.MsgStatusErrored,
-	10: courier.MsgStatusErrored,
-	11: courier.MsgStatusErrored,
+var statusMapping = map[int]models.MsgStatus{
+	1:  models.MsgStatusDelivered,
+	2:  models.MsgStatusSent,
+	3:  models.MsgStatusErrored,
+	4:  models.MsgStatusErrored,
+	5:  models.MsgStatusErrored,
+	6:  models.MsgStatusErrored,
+	7:  models.MsgStatusErrored,
+	8:  models.MsgStatusSent,
+	9:  models.MsgStatusErrored,
+	10: models.MsgStatusErrored,
+	11: models.MsgStatusErrored,
 }
 
 type moForm struct {
@@ -127,8 +128,8 @@ func writeBongoLiveResponse(w http.ResponseWriter) error {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	if username == "" || password == "" {
 		return courier.ErrChannelConfig
 	}

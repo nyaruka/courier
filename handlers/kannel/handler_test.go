@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -84,7 +85,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=4",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusSent}},
 	},
 }
 
@@ -105,7 +106,7 @@ var ignoreTestCases = []IncomingTestCase{
 		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=1",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Ignore Status Wired",
@@ -329,28 +330,28 @@ func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			"password":            "Password",
-			"username":            "Username",
-			courier.ConfigSendURL: "http://example.com/send",
+			"password":           "Password",
+			"username":           "Username",
+			models.ConfigSendURL: "http://example.com/send",
 		})
 
 	var customParamsChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			"password":            "Password",
-			"username":            "Username",
-			courier.ConfigSendURL: "http://example.com/send?auth=foo",
+			"password":           "Password",
+			"username":           "Username",
+			models.ConfigSendURL: "http://example.com/send?auth=foo",
 		})
 
 	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			"password":            "Password",
-			"username":            "Username",
-			"use_national":        true,
-			"verify_ssl":          false,
-			"dlr_mask":            "3",
-			courier.ConfigSendURL: "http://example.com/send",
+			"password":           "Password",
+			"username":           "Username",
+			"use_national":       true,
+			"verify_ssl":         false,
+			"dlr_mask":           "3",
+			models.ConfigSendURL: "http://example.com/send",
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)

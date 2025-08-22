@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 )
 
@@ -30,7 +31,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("AC"), "Arabia Cell")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("AC"), "Arabia Cell")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -55,8 +56,8 @@ type mtResponse struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	serviceID := msg.Channel().StringConfigForKey(configServiceID, "")
 	chargingLevel := msg.Channel().StringConfigForKey(configChargingLevel, "")
 

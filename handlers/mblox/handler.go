@@ -12,6 +12,7 @@ import (
 	"github.com/buger/jsonparser"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -30,7 +31,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("MB"), "Mblox")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("MB"), "Mblox")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -51,13 +52,13 @@ type eventPayload struct {
 	ReceivedAt string `json:"received_at"`
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"Delivered":  courier.MsgStatusDelivered,
-	"Dispatched": courier.MsgStatusSent,
-	"Aborted":    courier.MsgStatusFailed,
-	"Rejected":   courier.MsgStatusFailed,
-	"Failed":     courier.MsgStatusFailed,
-	"Expired":    courier.MsgStatusFailed,
+var statusMapping = map[string]models.MsgStatus{
+	"Delivered":  models.MsgStatusDelivered,
+	"Dispatched": models.MsgStatusSent,
+	"Aborted":    models.MsgStatusFailed,
+	"Rejected":   models.MsgStatusFailed,
+	"Failed":     models.MsgStatusFailed,
+	"Expired":    models.MsgStatusFailed,
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
@@ -115,8 +116,8 @@ type mtPayload struct {
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	if username == "" || password == "" {
 		return courier.ErrChannelConfig
 	}

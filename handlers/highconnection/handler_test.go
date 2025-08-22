@@ -77,7 +77,7 @@ var testCases = []IncomingTestCase{
 		URL:                  statusURL + "?ret_id=12345&status=6",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusDelivered}},
 	},
 }
 
@@ -244,8 +244,8 @@ func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "HX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigPassword: "Password",
-			courier.ConfigUsername: "Username",
+			models.ConfigPassword: "Password",
+			models.ConfigUsername: "Username",
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)

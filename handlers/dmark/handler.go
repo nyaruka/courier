@@ -10,6 +10,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -28,7 +29,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("DK"), "dmark")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("DK"), "dmark")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -79,12 +80,12 @@ type statusForm struct {
 	Status string `validate:"required" name:"status"`
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"1":  courier.MsgStatusDelivered,
-	"2":  courier.MsgStatusErrored,
-	"4":  courier.MsgStatusSent,
-	"8":  courier.MsgStatusSent,
-	"16": courier.MsgStatusErrored,
+var statusMapping = map[string]models.MsgStatus{
+	"1":  models.MsgStatusDelivered,
+	"2":  models.MsgStatusErrored,
+	"4":  models.MsgStatusSent,
+	"8":  models.MsgStatusSent,
+	"16": models.MsgStatusErrored,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -108,7 +109,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	// get our authentication token
-	auth := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	auth := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if auth == "" {
 		return courier.ErrChannelConfig
 	}

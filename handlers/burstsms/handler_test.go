@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -36,7 +37,7 @@ var testCases = []IncomingTestCase{
 		URL:                  statusURL + "?message_id=12345&status=pending",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Status Update Accepted",
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Receive Invalid Status",
@@ -141,7 +142,7 @@ var outgoingCases = []OutgoingTestCase{
 func TestOutgoing(t *testing.T) {
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BS", "2020", "US",
 		[]string{urns.Phone.Prefix},
-		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1"},
+		map[string]any{models.ConfigUsername: "user1", models.ConfigPassword: "pass1"},
 	)
 
 	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)

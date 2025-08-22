@@ -49,13 +49,13 @@ func queueEventHandling(ctx context.Context, rc redis.Conn, c *Contact, e *Chann
 	return queueMailroomTask(ctx, rc, "event_received", e.OrgID_, e.ContactID_, body)
 }
 
-func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *Channel, msgID models.MsgID, contactID ContactID) error {
+func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *Channel, msgID models.MsgID, contactID models.ContactID) error {
 	return queueMailroomTask(ctx, rc, "msg_deleted", ch.OrgID_, contactID, map[string]any{"msg_id": msgID})
 }
 
 // queueMailroomTask queues the passed in task to mailroom. Mailroom processes both messages and
 // channel event tasks through the same ordered queue.
-func queueMailroomTask(ctx context.Context, rc redis.Conn, taskType string, orgID models.OrgID, contactID ContactID, body map[string]any) (err error) {
+func queueMailroomTask(ctx context.Context, rc redis.Conn, taskType string, orgID models.OrgID, contactID models.ContactID, body map[string]any) (err error) {
 	eventJSON := jsonx.MustMarshal(mrTask{
 		Type:     taskType,
 		Task:     body,
@@ -83,7 +83,7 @@ func queueMailroomTask(ctx context.Context, rc redis.Conn, taskType string, orgI
 }
 
 type mrContactTask struct {
-	ContactID ContactID `json:"contact_id"`
+	ContactID models.ContactID `json:"contact_id"`
 }
 
 type mrTask struct {

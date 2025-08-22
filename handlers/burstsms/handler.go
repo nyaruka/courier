@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/httpx"
 )
@@ -16,11 +17,11 @@ import (
 var (
 	sendURL      = "https://api.transmitsms.com/send-sms.json"
 	maxMsgLength = 612
-	statusMap    = map[string]courier.MsgStatus{
-		"delivered":   courier.MsgStatusDelivered,
-		"pending":     courier.MsgStatusSent,
-		"soft-bounce": courier.MsgStatusErrored,
-		"hard-bounce": courier.MsgStatusFailed,
+	statusMap    = map[string]models.MsgStatus{
+		"delivered":   models.MsgStatusDelivered,
+		"pending":     models.MsgStatusSent,
+		"soft-bounce": models.MsgStatusErrored,
+		"hard-bounce": models.MsgStatusFailed,
 	}
 )
 
@@ -33,7 +34,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("BS"), "Burst SMS")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("BS"), "Burst SMS")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -57,8 +58,8 @@ type mtResponse struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	if username == "" || password == "" {
 		return courier.ErrChannelConfig
 	}
@@ -103,6 +104,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	return []string{
-		httpx.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
+		httpx.BasicAuth(ch.StringConfigForKey(models.ConfigUsername, ""), ch.StringConfigForKey(models.ConfigPassword, "")),
 	}
 }

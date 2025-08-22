@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -28,7 +29,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("SQ"), "Shaqodoon")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("SQ"), "Shaqodoon")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -84,10 +85,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
+	sendURL := msg.Channel().StringConfigForKey(models.ConfigSendURL, "")
 
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	if username == "" || password == "" || sendURL == "" {
 		return courier.ErrChannelConfig
 	}

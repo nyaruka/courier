@@ -15,6 +15,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -37,7 +38,7 @@ type handler struct {
 
 func newHandler() courier.ChannelHandler {
 	return &handler{
-		BaseHandler:     handlers.NewBaseHandler(courier.ChannelType("MTN"), "MTN Developer Portal"),
+		BaseHandler:     handlers.NewBaseHandler(models.ChannelType("MTN"), "MTN Developer Portal"),
 		fetchTokenMutex: sync.Mutex{},
 	}
 }
@@ -49,17 +50,17 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"DELIVRD":             courier.MsgStatusDelivered,
-	"DeliveredToTerminal": courier.MsgStatusDelivered,
-	"DeliveryUncertain":   courier.MsgStatusSent,
-	"EXPIRED":             courier.MsgStatusFailed,
-	"DeliveryImpossible":  courier.MsgStatusErrored,
-	"DeliveredToNetwork":  courier.MsgStatusSent,
+var statusMapping = map[string]models.MsgStatus{
+	"DELIVRD":             models.MsgStatusDelivered,
+	"DeliveredToTerminal": models.MsgStatusDelivered,
+	"DeliveryUncertain":   models.MsgStatusSent,
+	"EXPIRED":             models.MsgStatusFailed,
+	"DeliveryImpossible":  models.MsgStatusErrored,
+	"DeliveredToNetwork":  models.MsgStatusSent,
 
 	// no changes
-	"MessageWaiting":                   courier.MsgStatusWired,
-	"DeliveryNotificationNotSupported": courier.MsgStatusWired,
+	"MessageWaiting":                   models.MsgStatusWired,
+	"DeliveryNotificationNotSupported": models.MsgStatusWired,
 }
 
 type moPayload struct {
@@ -102,7 +103,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				fmt.Errorf("unknown status '%s'", payload.DeliveryStatus))
 		}
 
-		if msgStatus == courier.MsgStatusWired {
+		if msgStatus == models.MsgStatusWired {
 			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no status changed, ignored")
 		}
 
@@ -170,8 +171,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	return []string{
-		ch.StringConfigForKey(courier.ConfigAPIKey, ""),
-		ch.StringConfigForKey(courier.ConfigAuthToken, ""),
+		ch.StringConfigForKey(models.ConfigAPIKey, ""),
+		ch.StringConfigForKey(models.ConfigAuthToken, ""),
 	}
 }
 
@@ -214,8 +215,8 @@ func (h *handler) getAccessToken(channel courier.Channel, clog *courier.ChannelL
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(channel courier.Channel, clog *courier.ChannelLog) (string, time.Duration, error) {
 	form := url.Values{
-		"client_id":     []string{channel.StringConfigForKey(courier.ConfigAPIKey, "")},
-		"client_secret": []string{channel.StringConfigForKey(courier.ConfigAuthToken, "")},
+		"client_id":     []string{channel.StringConfigForKey(models.ConfigAPIKey, "")},
+		"client_secret": []string{channel.StringConfigForKey(models.ConfigAuthToken, "")},
 	}
 
 	baseURL := channel.StringConfigForKey(configAPIHost, apiHostURL)

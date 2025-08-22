@@ -22,10 +22,10 @@ type Backend interface {
 	Cleanup() error
 
 	// GetChannel returns the channel with the passed in type and UUID
-	GetChannel(context.Context, ChannelType, ChannelUUID) (Channel, error)
+	GetChannel(context.Context, models.ChannelType, models.ChannelUUID) (Channel, error)
 
 	// GetChannelByAddress returns the channel with the passed in type and address
-	GetChannelByAddress(context.Context, ChannelType, ChannelAddress) (Channel, error)
+	GetChannelByAddress(context.Context, models.ChannelType, models.ChannelAddress) (Channel, error)
 
 	// GetContact returns (or creates) the contact for the passed in channel and URN
 	GetContact(context.Context, Channel, urns.URN, map[string]string, string, bool, *ChannelLog) (Contact, error)
@@ -46,16 +46,16 @@ type Backend interface {
 	WriteMsg(context.Context, MsgIn, *ChannelLog) error
 
 	// NewStatusUpdate creates a new status update for the given message id
-	NewStatusUpdate(Channel, models.MsgID, MsgStatus, *ChannelLog) StatusUpdate
+	NewStatusUpdate(Channel, models.MsgID, models.MsgStatus, *ChannelLog) StatusUpdate
 
 	// NewStatusUpdateByExternalID creates a new status update for the given external id
-	NewStatusUpdateByExternalID(Channel, string, MsgStatus, *ChannelLog) StatusUpdate
+	NewStatusUpdateByExternalID(Channel, string, models.MsgStatus, *ChannelLog) StatusUpdate
 
 	// WriteStatusUpdate writes the passed in status update to our backend
 	WriteStatusUpdate(context.Context, StatusUpdate) error
 
 	// NewChannelEvent creates a new channel event for the given channel and event type
-	NewChannelEvent(Channel, ChannelEventType, urns.URN, *ChannelLog) ChannelEvent
+	NewChannelEvent(Channel, models.ChannelEventType, urns.URN, *ChannelLog) ChannelEvent
 
 	// WriteChannelEvent writes the passed in channel event returning any error
 	WriteChannelEvent(context.Context, ChannelEvent, *ChannelLog) error

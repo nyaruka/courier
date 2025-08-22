@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -107,7 +108,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validSentStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Status Update Accepted",
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Unknown Sent Status Valid",
@@ -136,7 +137,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validDeliveredStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Status Update Accepted",
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Unknown Delivered Status Valid",
@@ -213,8 +214,8 @@ func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WV", "2020", "BR",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigUsername:  "user1",
-			courier.ConfigAuthToken: "token",
+			models.ConfigUsername:  "user1",
+			models.ConfigAuthToken: "token",
 		})
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingCases, []string{"token"}, nil)
 }

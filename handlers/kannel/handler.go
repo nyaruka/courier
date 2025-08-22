@@ -39,7 +39,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("KN"), "Kannel")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("KN"), "Kannel")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -82,12 +82,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
-var statusMapping = map[int]courier.MsgStatus{
-	1:  courier.MsgStatusDelivered,
-	2:  courier.MsgStatusErrored,
-	4:  courier.MsgStatusSent,
-	8:  courier.MsgStatusSent,
-	16: courier.MsgStatusErrored,
+var statusMapping = map[int]models.MsgStatus{
+	1:  models.MsgStatusDelivered,
+	2:  models.MsgStatusErrored,
+	4:  models.MsgStatusSent,
+	8:  models.MsgStatusSent,
+	16: models.MsgStatusErrored,
 }
 
 type statusForm struct {
@@ -110,7 +110,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
-	if channel.BoolConfigForKey(configIgnoreSent, false) && msgStatus == courier.MsgStatusSent {
+	if channel.BoolConfigForKey(configIgnoreSent, false) && msgStatus == models.MsgStatusSent {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring sent report (message aready wired)")
 	}
 
@@ -121,9 +121,9 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
+	sendURL := msg.Channel().StringConfigForKey(models.ConfigSendURL, "")
 	if username == "" || password == "" || sendURL == "" {
 		return courier.ErrChannelConfig
 	}
@@ -147,7 +147,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		form["priority"] = []string{"1"}
 	}
 
-	useNationalStr := msg.Channel().ConfigForKey(courier.ConfigUseNational, false)
+	useNationalStr := msg.Channel().ConfigForKey(models.ConfigUseNational, false)
 	useNational, _ := useNationalStr.(bool)
 
 	// if we are meant to use national formatting (no country code) pull that out

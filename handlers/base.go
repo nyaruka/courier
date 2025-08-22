@@ -7,14 +7,15 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/httpx"
 )
 
-var defaultRedactConfigKeys = []string{courier.ConfigAuthToken, courier.ConfigAPIKey, courier.ConfigSecret, courier.ConfigPassword, courier.ConfigSendAuthorization}
+var defaultRedactConfigKeys = []string{models.ConfigAuthToken, models.ConfigAPIKey, models.ConfigSecret, models.ConfigPassword, models.ConfigSendAuthorization}
 
 // BaseHandler is the base class for most handlers, it just stored the server, name and channel type for the handler
 type BaseHandler struct {
-	channelType        courier.ChannelType
+	channelType        models.ChannelType
 	name               string
 	server             courier.Server
 	backend            courier.Backend
@@ -23,7 +24,7 @@ type BaseHandler struct {
 }
 
 // NewBaseHandler returns a newly constructed BaseHandler with the passed in parameters
-func NewBaseHandler(channelType courier.ChannelType, name string, options ...func(*BaseHandler)) BaseHandler {
+func NewBaseHandler(channelType models.ChannelType, name string, options ...func(*BaseHandler)) BaseHandler {
 	h := &BaseHandler{
 		channelType:        channelType,
 		name:               name,
@@ -65,7 +66,7 @@ func (h *BaseHandler) Backend() courier.Backend {
 }
 
 // ChannelType returns the channel type that this handler deals with
-func (h *BaseHandler) ChannelType() courier.ChannelType {
+func (h *BaseHandler) ChannelType() models.ChannelType {
 	return h.channelType
 }
 
@@ -96,7 +97,7 @@ func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
 
 // GetChannel returns the channel
 func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
-	uuid := courier.ChannelUUID(r.PathValue("uuid"))
+	uuid := models.ChannelUUID(r.PathValue("uuid"))
 	return h.backend.GetChannel(ctx, h.ChannelType(), uuid)
 }
 

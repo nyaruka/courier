@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -135,8 +136,8 @@ func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SC", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigPassword: "Password",
-			courier.ConfigUsername: "Username",
+			models.ConfigPassword: "Password",
+			models.ConfigUsername: "Username",
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)

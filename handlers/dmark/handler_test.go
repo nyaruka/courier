@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -80,7 +81,7 @@ var testCases = []IncomingTestCase{
 		Data:                 "id=12345&status=1",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusDelivered}},
 	},
 }
 
@@ -159,7 +160,7 @@ func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigAuthToken: "Authy",
+			models.ConfigAuthToken: "Authy",
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Authy"}, nil)

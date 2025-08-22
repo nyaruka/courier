@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -172,15 +173,15 @@ var defaultReceiveTestCases = []IncomingTestCase{
 		Label:              "Status Valid",
 		URL:                statusBaseURL + "&status=sent",
 		ExpectedRespStatus: 200,
-		ExpectedStatuses:   []ExpectedStatus{{MsgID: 26, Status: courier.MsgStatusSent}},
+		ExpectedStatuses:   []ExpectedStatus{{MsgID: 26, Status: models.MsgStatusSent}},
 	},
 	{
 		Label:              "Status- Stop Received",
 		URL:                statusBaseURL + "&status=delivery_failed&statusErrorCode=103",
 		ExpectedRespStatus: 200,
-		ExpectedStatuses:   []ExpectedStatus{{MsgID: 26, Status: courier.MsgStatusFailed}},
+		ExpectedStatuses:   []ExpectedStatus{{MsgID: 26, Status: models.MsgStatusFailed}},
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeStopContact, URN: "tel:+18885551515"},
+			{Type: models.EventTypeStopContact, URN: "tel:+18885551515"},
 		},
 		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("103", "Contact has sent 'stop'")},
 	},

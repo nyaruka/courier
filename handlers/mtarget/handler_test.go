@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -54,7 +55,7 @@ var incomingCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeStopContact, URN: "tel:+923161909799"},
+			{Type: models.EventTypeStopContact, URN: "tel:+923161909799"},
 		},
 	},
 	{
@@ -87,7 +88,7 @@ var incomingCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "12a7ee90-50ce-11e7-80ae-00000a0a643c", Status: courier.MsgStatusDelivered},
+			{ExternalID: "12a7ee90-50ce-11e7-80ae-00000a0a643c", Status: models.MsgStatusDelivered},
 		},
 	},
 	{
@@ -97,7 +98,7 @@ var incomingCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "12a7ee90-50ce-11e7-80ae-00000a0a643c", Status: courier.MsgStatusFailed},
+			{ExternalID: "12a7ee90-50ce-11e7-80ae-00000a0a643c", Status: models.MsgStatusFailed},
 		},
 	},
 	{

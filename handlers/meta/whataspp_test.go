@@ -17,7 +17,7 @@ import (
 )
 
 var whatsappTestChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WAC", "12345", "", []string{urns.WhatsApp.Prefix}, map[string]any{courier.ConfigAuthToken: "a123"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WAC", "12345", "", []string{urns.WhatsApp.Prefix}, map[string]any{models.ConfigAuthToken: "a123"}),
 }
 
 var whatappReceiveURL = "/c/wac/receive"
@@ -215,7 +215,7 @@ var whatsappIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "external_id", Status: courier.MsgStatusSent},
+			{ExternalID: "external_id", Status: models.MsgStatusSent},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -226,7 +226,7 @@ var whatsappIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "external_id", Status: courier.MsgStatusFailed},
+			{ExternalID: "external_id", Status: models.MsgStatusFailed},
 		},
 		ExpectedErrors: []*clogs.Error{
 			courier.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)"),
@@ -782,7 +782,7 @@ func TestWhatsAppOutgoing(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
 
-	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WAC", "12345_ID", "", []string{urns.WhatsApp.Prefix}, map[string]any{courier.ConfigAuthToken: "a123"})
+	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WAC", "12345_ID", "", []string{urns.WhatsApp.Prefix}, map[string]any{models.ConfigAuthToken: "a123"})
 
 	checkRedacted := []string{"wac_admin_system_user_token", "missing_facebook_app_secret", "missing_facebook_webhook_secret", "a123"}
 
@@ -814,7 +814,7 @@ func TestWhatsAppDescribeURN(t *testing.T) {
 func TestWhatsAppBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 	s := newServerWithWAC(mb)
-	handler := &handler{NewBaseHandler(courier.ChannelType("WAC"), "WhatsApp Cloud", DisableUUIDRouting())}
+	handler := &handler{NewBaseHandler(models.ChannelType("WAC"), "WhatsApp Cloud", DisableUUIDRouting())}
 	handler.Initialize(s)
 	req, _ := handler.BuildAttachmentRequest(context.Background(), mb, whatsappTestChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())

@@ -61,7 +61,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("EX"), "External")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("EX"), "External")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -111,7 +111,7 @@ func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channe
 	}
 
 	// create a stop channel event
-	channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeStopContact, urn, clog)
+	channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
 	err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 	if err != nil {
 		return nil, err
@@ -244,10 +244,10 @@ type statusForm struct {
 	ID int64 `name:"id" validate:"required"`
 }
 
-var statusMappings = map[string]courier.MsgStatus{
-	"failed":    courier.MsgStatusFailed,
-	"sent":      courier.MsgStatusSent,
-	"delivered": courier.MsgStatusDelivered,
+var statusMappings = map[string]models.MsgStatus{
+	"failed":    models.MsgStatusFailed,
+	"sent":      models.MsgStatusSent,
+	"delivered": models.MsgStatusDelivered,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -272,7 +272,7 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	channel := msg.Channel()
 
-	sendURL := channel.StringConfigForKey(courier.ConfigSendURL, "")
+	sendURL := channel.StringConfigForKey(models.ConfigSendURL, "")
 	if sendURL == "" {
 		return courier.ErrChannelConfig
 	}
@@ -280,10 +280,10 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	// figure out what encoding to tell kannel to send as
 	encoding := channel.StringConfigForKey(configEncoding, encodingDefault)
 	responseCheck := channel.StringConfigForKey(configMTResponseCheck, "")
-	sendMethod := channel.StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
-	sendBody := channel.StringConfigForKey(courier.ConfigSendBody, "")
-	sendMaxLength := channel.IntConfigForKey(courier.ConfigMaxLength, 160)
-	contentType := channel.StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
+	sendMethod := channel.StringConfigForKey(models.ConfigSendMethod, http.MethodPost)
+	sendBody := channel.StringConfigForKey(models.ConfigSendBody, "")
+	sendMaxLength := channel.IntConfigForKey(models.ConfigMaxLength, 160)
+	contentType := channel.StringConfigForKey(models.ConfigContentType, contentURLEncoded)
 	contentTypeHeader := contentTypeMappings[contentType]
 	if contentTypeHeader == "" {
 		contentTypeHeader = contentType
@@ -306,7 +306,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			form["session_status"] = msg.Session().Status
 		}
 
-		useNationalStr := channel.ConfigForKey(courier.ConfigUseNational, false)
+		useNationalStr := channel.ConfigForKey(models.ConfigUseNational, false)
 		useNational, _ := useNationalStr.(bool)
 
 		// if we are meant to use national formatting (no country code) pull that out
@@ -353,12 +353,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		req.Header.Set("Content-Type", contentTypeHeader)
 
 		// TODO can drop this when channels have been migrated to use ConfigSendHeaders
-		authorization := channel.StringConfigForKey(courier.ConfigSendAuthorization, "")
+		authorization := channel.StringConfigForKey(models.ConfigSendAuthorization, "")
 		if authorization != "" {
 			req.Header.Set("Authorization", authorization)
 		}
 
-		headers := channel.ConfigForKey(courier.ConfigSendHeaders, map[string]any{}).(map[string]any)
+		headers := channel.ConfigForKey(models.ConfigSendHeaders, map[string]any{}).(map[string]any)
 		for hKey, hValue := range headers {
 			req.Header.Set(hKey, fmt.Sprint(hValue))
 		}

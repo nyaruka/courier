@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -88,7 +89,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Success",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "ATXid_dda018a640edfcc5d2ce455de3e4a6e7", Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "ATXid_dda018a640edfcc5d2ce455de3e4a6e7", Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Status Expired",
@@ -96,7 +97,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Expired",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "ATXid_dda018a640edfcc5d2ce455de3e4a6e7", Status: courier.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "ATXid_dda018a640edfcc5d2ce455de3e4a6e7", Status: models.MsgStatusFailed}},
 	},
 }
 
@@ -194,15 +195,15 @@ func TestOutgoing(t *testing.T) {
 	defaultChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigUsername: "Username",
-			courier.ConfigAPIKey:   "KEY",
+			models.ConfigUsername: "Username",
+			models.ConfigAPIKey:   "KEY",
 		})
 	sharedChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigUsername: "Username",
-			courier.ConfigAPIKey:   "KEY",
-			configIsShared:         true,
+			models.ConfigUsername: "Username",
+			models.ConfigAPIKey:   "KEY",
+			configIsShared:        true,
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingCases, []string{"KEY"}, nil)

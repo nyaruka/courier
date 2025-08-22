@@ -31,10 +31,10 @@ type Attachment struct {
 }
 
 type fetchAttachmentRequest struct {
-	ChannelType ChannelType  `json:"channel_type" validate:"required"`
-	ChannelUUID ChannelUUID  `json:"channel_uuid" validate:"required,uuid"`
-	URL         string       `json:"url"          validate:"required"`
-	MsgID       models.MsgID `json:"msg_id"`
+	ChannelType models.ChannelType `json:"channel_type" validate:"required"`
+	ChannelUUID models.ChannelUUID `json:"channel_uuid" validate:"required,uuid"`
+	URL         string             `json:"url"          validate:"required"`
+	MsgID       models.MsgID       `json:"msg_id"`
 }
 
 type fetchAttachmentResponse struct {

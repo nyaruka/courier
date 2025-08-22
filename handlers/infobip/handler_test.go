@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -247,7 +248,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusDelivered,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Status rejected",
@@ -255,7 +256,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusRejected,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusFailed}},
 	},
 	{
 		Label:                "Status undeliverable",
@@ -263,7 +264,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusUndeliverable,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusFailed}},
 	},
 	{
 		Label:                "Status pending",
@@ -271,7 +272,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusPending,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusSent}, {ExternalID: "12347", Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusSent}, {ExternalID: "12347", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Status expired",
@@ -279,7 +280,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusExpired,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Status group name unexpected",
@@ -423,8 +424,8 @@ func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigPassword: "Password",
-			courier.ConfigUsername: "Username",
+			models.ConfigPassword: "Password",
+			models.ConfigUsername: "Username",
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
@@ -432,9 +433,9 @@ func TestOutgoing(t *testing.T) {
 	var transChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigPassword: "Password",
-			courier.ConfigUsername: "Username",
-			configTransliteration:  "COLOMBIAN",
+			models.ConfigPassword: "Password",
+			models.ConfigUsername: "Username",
+			configTransliteration: "COLOMBIAN",
 		})
 
 	RunOutgoingTestCases(t, transChannel, newHandler(), transSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)

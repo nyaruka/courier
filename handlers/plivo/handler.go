@@ -19,6 +19,7 @@ import (
 	"github.com/buger/jsonparser"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -44,7 +45,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("PL"), "Plivo")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("PL"), "Plivo")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -63,12 +64,12 @@ type statusForm struct {
 	ParentMessageUUID string `name:"ParentMessageUUID"`
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"queued":      courier.MsgStatusWired,
-	"delivered":   courier.MsgStatusDelivered,
-	"undelivered": courier.MsgStatusSent,
-	"sent":        courier.MsgStatusSent,
-	"rejected":    courier.MsgStatusFailed,
+var statusMapping = map[string]models.MsgStatus{
+	"queued":      models.MsgStatusWired,
+	"delivered":   models.MsgStatusDelivered,
+	"undelivered": models.MsgStatusSent,
+	"sent":        models.MsgStatusSent,
+	"rejected":    models.MsgStatusFailed,
 }
 
 // receiveStatus is our HTTP handler function for status updates

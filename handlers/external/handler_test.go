@@ -130,7 +130,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/?id=12345",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusFailed}},
 	},
 	{
 		Label:                "Invalid Status",
@@ -144,7 +144,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/?id=12345",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Delivered Valid",
@@ -152,7 +152,7 @@ var handleTestCases = []IncomingTestCase{
 		Data:                 "nothing",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Delivered Valid Post",
@@ -160,7 +160,7 @@ var handleTestCases = []IncomingTestCase{
 		Data:                 "id=12345",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Stopped Event",
@@ -169,7 +169,7 @@ var handleTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeStopContact, URN: "tel:+2349067554729"},
+			{Type: models.EventTypeStopContact, URN: "tel:+2349067554729"},
 		},
 	},
 	{
@@ -179,7 +179,7 @@ var handleTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeStopContact, URN: "tel:+2349067554729"},
+			{Type: models.EventTypeStopContact, URN: "tel:+2349067554729"},
 		},
 	},
 	{
@@ -894,66 +894,66 @@ func TestOutgoing(t *testing.T) {
 	var getChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			courier.ConfigSendMethod: http.MethodGet})
+			models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+			models.ConfigSendMethod: http.MethodGet})
 
 	var getSmartChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			configEncoding:           encodingSmart,
-			courier.ConfigSendMethod: http.MethodGet})
+			models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+			configEncoding:          encodingSmart,
+			models.ConfigSendMethod: http.MethodGet})
 
 	var postChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigSendURL:    "http://example.com/send",
-			courier.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			courier.ConfigSendMethod: http.MethodPost})
+			models.ConfigSendURL:    "http://example.com/send",
+			models.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+			models.ConfigSendMethod: http.MethodPost})
 
 	var postChannelCustomContentType = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigSendURL:     "http://example.com/send",
-			courier.ConfigSendBody:    "to={{to_no_plus}}&text={{text}}&from={{from_no_plus}}{{quick_replies}}",
-			courier.ConfigContentType: "application/x-www-form-urlencoded; charset=utf-8",
-			courier.ConfigSendMethod:  http.MethodPost})
+			models.ConfigSendURL:     "http://example.com/send",
+			models.ConfigSendBody:    "to={{to_no_plus}}&text={{text}}&from={{from_no_plus}}{{quick_replies}}",
+			models.ConfigContentType: "application/x-www-form-urlencoded; charset=utf-8",
+			models.ConfigSendMethod:  http.MethodPost})
 
 	var postSmartChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigSendURL:    "http://example.com/send",
-			courier.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			configEncoding:           encodingSmart,
-			courier.ConfigSendMethod: http.MethodPost})
+			models.ConfigSendURL:    "http://example.com/send",
+			models.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+			configEncoding:          encodingSmart,
+			models.ConfigSendMethod: http.MethodPost})
 
 	var jsonChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigSendURL:     "http://example.com/send",
-			courier.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
-			courier.ConfigContentType: contentJSON,
-			courier.ConfigSendMethod:  http.MethodPost,
-			courier.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
+			models.ConfigSendURL:     "http://example.com/send",
+			models.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
+			models.ConfigContentType: contentJSON,
+			models.ConfigSendMethod:  http.MethodPost,
+			models.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
 	var xmlChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigSendURL:     "http://example.com/send",
-			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
-			courier.ConfigContentType: contentXML,
-			courier.ConfigSendMethod:  http.MethodPut,
+			models.ConfigSendURL:     "http://example.com/send",
+			models.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
+			models.ConfigContentType: contentXML,
+			models.ConfigSendMethod:  http.MethodPut,
 		})
 
 	var xmlChannelWithResponseContent = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigSendURL:     "http://example.com/send",
-			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
-			configMTResponseCheck:     "<return>0</return>",
-			courier.ConfigContentType: contentXML,
-			courier.ConfigSendMethod:  http.MethodPut,
+			models.ConfigSendURL:     "http://example.com/send",
+			models.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
+			configMTResponseCheck:    "<return>0</return>",
+			models.ConfigContentType: contentXML,
+			models.ConfigSendMethod:  http.MethodPut,
 		})
 
 	RunOutgoingTestCases(t, getChannel, newHandler(), getSendTestCases, nil, nil)
@@ -970,37 +970,37 @@ func TestOutgoing(t *testing.T) {
 	var getChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigMaxLength:  30,
-			courier.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			courier.ConfigSendMethod: http.MethodGet})
+			models.ConfigMaxLength:  30,
+			models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+			models.ConfigSendMethod: http.MethodGet})
 
 	var getChannel30StrLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigMaxLength:  "30",
-			courier.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			courier.ConfigSendMethod: http.MethodGet})
+			models.ConfigMaxLength:  "30",
+			models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+			models.ConfigSendMethod: http.MethodGet})
 
 	var jsonChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigSendURL:     "http://example.com/send",
-			courier.ConfigMaxLength:   30,
-			courier.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
-			courier.ConfigContentType: contentJSON,
-			courier.ConfigSendMethod:  http.MethodPost,
-			courier.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
+			models.ConfigSendURL:     "http://example.com/send",
+			models.ConfigMaxLength:   30,
+			models.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
+			models.ConfigContentType: contentJSON,
+			models.ConfigSendMethod:  http.MethodPost,
+			models.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
 	var xmlChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigSendURL:     "http://example.com/send",
-			courier.ConfigMaxLength:   30,
-			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
-			courier.ConfigContentType: contentXML,
-			courier.ConfigSendMethod:  http.MethodPost,
-			courier.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
+			models.ConfigSendURL:     "http://example.com/send",
+			models.ConfigMaxLength:   30,
+			models.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
+			models.ConfigContentType: contentXML,
+			models.ConfigSendMethod:  http.MethodPost,
+			models.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
 	RunOutgoingTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil, nil)
@@ -1011,20 +1011,20 @@ func TestOutgoing(t *testing.T) {
 	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			"use_national":           true,
-			courier.ConfigSendMethod: http.MethodGet})
+			models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+			"use_national":          true,
+			models.ConfigSendMethod: http.MethodGet})
 
 	RunOutgoingTestCases(t, nationalChannel, newHandler(), nationalGetSendTestCases, nil, nil)
 
 	var jsonChannelWithSendAuthorization = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			courier.ConfigSendURL:           "http://example.com/send",
-			courier.ConfigSendBody:          `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
-			courier.ConfigContentType:       contentJSON,
-			courier.ConfigSendMethod:        http.MethodPost,
-			courier.ConfigSendAuthorization: "Token ABCDEF",
+			models.ConfigSendURL:           "http://example.com/send",
+			models.ConfigSendBody:          `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
+			models.ConfigContentType:       contentJSON,
+			models.ConfigSendMethod:        http.MethodPost,
+			models.ConfigSendAuthorization: "Token ABCDEF",
 		})
 	RunOutgoingTestCases(t, jsonChannelWithSendAuthorization, newHandler(), jsonSendTestCases, []string{"Token ABCDEF"}, nil)
 }

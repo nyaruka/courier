@@ -60,8 +60,8 @@ type backend struct {
 	dynamoSpool  *dynamo.Spool
 	writerWG     *sync.WaitGroup
 
-	channelsByUUID *cache.Local[courier.ChannelUUID, *Channel]
-	channelsByAddr *cache.Local[courier.ChannelAddress, *Channel]
+	channelsByUUID *cache.Local[models.ChannelUUID, *Channel]
+	channelsByAddr *cache.Local[models.ChannelAddress, *Channel]
 
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
@@ -334,7 +334,7 @@ func (b *backend) Cleanup() error {
 }
 
 // GetChannel returns the channel for the passed in type and UUID
-func (b *backend) GetChannel(ctx context.Context, typ courier.ChannelType, uuid courier.ChannelUUID) (courier.Channel, error) {
+func (b *backend) GetChannel(ctx context.Context, typ models.ChannelType, uuid models.ChannelUUID) (courier.Channel, error) {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
@@ -343,7 +343,7 @@ func (b *backend) GetChannel(ctx context.Context, typ courier.ChannelType, uuid 
 		return nil, err // so we don't return a non-nil interface and nil ptr
 	}
 
-	if typ != courier.AnyChannelType && ch.ChannelType() != typ {
+	if typ != models.AnyChannelType && ch.ChannelType() != typ {
 		return nil, courier.ErrChannelWrongType
 	}
 
@@ -351,7 +351,7 @@ func (b *backend) GetChannel(ctx context.Context, typ courier.ChannelType, uuid 
 }
 
 // GetChannelByAddress returns the channel with the passed in type and address
-func (b *backend) GetChannelByAddress(ctx context.Context, typ courier.ChannelType, address courier.ChannelAddress) (courier.Channel, error) {
+func (b *backend) GetChannelByAddress(ctx context.Context, typ models.ChannelType, address models.ChannelAddress) (courier.Channel, error) {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
@@ -360,7 +360,7 @@ func (b *backend) GetChannelByAddress(ctx context.Context, typ courier.ChannelTy
 		return nil, err // so we don't return a non-nil interface and nil ptr
 	}
 
-	if typ != courier.AnyChannelType && ch.ChannelType() != typ {
+	if typ != models.AnyChannelType && ch.ChannelType() != typ {
 		return nil, courier.ErrChannelWrongType
 	}
 
@@ -409,12 +409,12 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Cha
 	row := b.rt.DB.QueryRowContext(ctx, `SELECT id, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_id = $2 AND direction = 'I'`, ch.ID(), externalID)
 
 	var msgID models.MsgID
-	var contactID ContactID
+	var contactID models.ContactID
 	if err := row.Scan(&msgID, &contactID); err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("error querying deleted msg: %w", err)
 	}
 
-	if msgID != models.NilMsgID && contactID != NilContactID {
+	if msgID != models.NilMsgID && contactID != models.NilContactID {
 		rc := b.rt.VK.Get()
 		defer rc.Close()
 
@@ -433,7 +433,7 @@ func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, u
 	text = dbutil.ToValidUTF8(text)
 	extID = dbutil.ToValidUTF8(extID)
 
-	msg := newMsg(MsgIncoming, channel, urn, text, extID, clog)
+	msg := newMsg(models.MsgIncoming, channel, urn, text, extID, clog)
 	msg.WithReceivedOn(time.Now().UTC())
 
 	// check if this message could be a duplicate and if so use the original's UUID
@@ -486,13 +486,13 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 	}
 
 	// populate the channel on our db msg
-	channel, err := b.GetChannel(ctx, courier.AnyChannelType, dbMsg.ChannelUUID_)
+	channel, err := b.GetChannel(ctx, models.AnyChannelType, dbMsg.ChannelUUID_)
 	if err != nil {
 		markComplete(token)
 		return nil, err
 	}
 
-	dbMsg.Direction_ = MsgOutgoing
+	dbMsg.Direction_ = models.MsgOutgoing
 	dbMsg.channel = channel.(*Channel)
 	dbMsg.workerToken = token
 
@@ -531,14 +531,14 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 	}
 
 	// if message won't be retried, mark as sent to avoid dupe sends
-	if status.Status() != courier.MsgStatusErrored {
+	if status.Status() != models.MsgStatusErrored {
 		if err := b.sentIDs.Add(ctx, rc, msg.ID().String()); err != nil {
 			log.Error("unable to mark message sent", "error", err)
 		}
 	}
 
 	// if message was successfully sent, and we have a session timeout, update it
-	wasSuccess := status.Status() == courier.MsgStatusWired || status.Status() == courier.MsgStatusSent || status.Status() == courier.MsgStatusDelivered || status.Status() == courier.MsgStatusRead
+	wasSuccess := status.Status() == models.MsgStatusWired || status.Status() == models.MsgStatusSent || status.Status() == models.MsgStatusDelivered || status.Status() == models.MsgStatusRead
 	if wasSuccess && dbMsg.Session_ != nil && dbMsg.Session_.Timeout > 0 {
 		if err := b.insertTimeoutFire(ctx, dbMsg); err != nil {
 			log.Error("unable to update session timeout", "error", err, "session_uuid", dbMsg.Session_.UUID)
@@ -570,12 +570,12 @@ func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdate(channel courier.Channel, id models.MsgID, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (b *backend) NewStatusUpdate(channel courier.Channel, id models.MsgID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return newStatusUpdate(channel, id, "", status, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return newStatusUpdate(channel, models.NilMsgID, externalID, status, clog)
 }
 
@@ -610,7 +610,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 		}
 
 		// we sent a message that errored so clear our sent flag to allow it to be retried
-		if status.Status() == courier.MsgStatusErrored {
+		if status.Status() == models.MsgStatusErrored {
 			err := b.ClearMsgSent(ctx, status.MsgID())
 			if err != nil {
 				log.Error("error clearing sent flags", "error", err)
@@ -630,7 +630,7 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 	old, new := status.URNUpdate()
 
 	// retrieve channel
-	channel, err := b.GetChannel(ctx, courier.AnyChannelType, status.ChannelUUID())
+	channel, err := b.GetChannel(ctx, models.AnyChannelType, status.ChannelUUID())
 	if err != nil {
 		return fmt.Errorf("error retrieving channel: %w", err)
 	}
@@ -663,11 +663,11 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 	}
 
 	// only update the new URN if it doesn't have an associated contact
-	if newContactURN.ContactID == NilContactID {
+	if newContactURN.ContactID == models.NilContactID {
 		newContactURN.ContactID = oldContactURN.ContactID
 	}
 	// remove contact association from old URN
-	oldContactURN.ContactID = NilContactID
+	oldContactURN.ContactID = models.NilContactID
 
 	// update URNs
 	err = fullyUpdateContactURN(tx, newContactURN)
@@ -684,7 +684,7 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
+func (b *backend) NewChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
 	return newChannelEvent(channel, eventType, urn, clog)
 }
 
@@ -915,8 +915,8 @@ func (b *backend) Status() string {
 		tps := parts[1]
 
 		// try to look up our channel
-		channelUUID := courier.ChannelUUID(uuid)
-		channel, err := b.GetChannel(context.Background(), courier.AnyChannelType, channelUUID)
+		channelUUID := models.ChannelUUID(uuid)
+		channel, err := b.GetChannel(context.Background(), models.AnyChannelType, channelUUID)
 		channelType := "!!"
 		if err == nil {
 			channelType = string(channel.ChannelType())

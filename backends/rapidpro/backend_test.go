@@ -126,9 +126,9 @@ func (ts *BackendTestSuite) clearValkey() {
 }
 
 func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *Channel {
-	channelUUID := courier.ChannelUUID(cUUID)
+	channelUUID := models.ChannelUUID(cUUID)
 
-	channel, err := ts.b.GetChannel(context.Background(), courier.ChannelType(cType), channelUUID)
+	channel, err := ts.b.GetChannel(context.Background(), models.ChannelType(cType), channelUUID)
 	ts.Require().NoError(err, "error getting channel")
 	ts.Require().NotNil(channel)
 
@@ -159,7 +159,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	msg := Msg{}
 	err := json.Unmarshal([]byte(msgJSON), &msg)
 	ts.NoError(err)
-	ts.Equal(courier.ChannelUUID("f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba"), msg.ChannelUUID_)
+	ts.Equal(models.ChannelUUID("f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba"), msg.ChannelUUID_)
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	ts.Equal("5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2", msg.URNAuth_)
 	ts.Equal("", msg.ExternalID())
@@ -210,13 +210,13 @@ func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
 	err = ts.b.DeleteMsgByExternalID(ctx, knChannel, "ext1")
 	ts.Nil(err)
 
-	ts.assertNoQueuedContactTask(ContactID(100))
+	ts.assertNoQueuedContactTask(100)
 
 	// a valid external id becomes a queued task
 	err = ts.b.DeleteMsgByExternalID(ctx, knChannel, "ext2")
 	ts.Nil(err)
 
-	ts.assertQueuedContactTask(ContactID(100), "msg_deleted", map[string]any{"msg_id": float64(10002)})
+	ts.assertQueuedContactTask(100, "msg_deleted", map[string]any{"msg_id": float64(10002)})
 }
 
 func (ts *BackendTestSuite) TestContact() {
@@ -257,7 +257,7 @@ func (ts *BackendTestSuite) TestContact() {
 	ts.NotNil(contact)
 
 	ts.Equal(null.String(""), contact.Name_)
-	ts.Equal(courier.ContactUUID("a984069d-0008-4d8c-a772-b14a8a6acccc"), contact.UUID_)
+	ts.Equal(models.ContactUUID("a984069d-0008-4d8c-a772-b14a8a6acccc"), contact.UUID_)
 
 	urn = urns.URN("tel:+12065551519")
 
@@ -492,7 +492,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	now := time.Now().In(time.UTC)
 
-	updateStatusByID := func(id models.MsgID, status courier.MsgStatus, newExtID string) *courier.ChannelLog {
+	updateStatusByID := func(id models.MsgID, status models.MsgStatus, newExtID string) *courier.ChannelLog {
 		clog := courier.NewChannelLog(courier.ChannelLogTypeMsgStatus, channel, nil)
 		statusObj := ts.b.NewStatusUpdate(channel, id, status, clog)
 		if newExtID != "" {
@@ -504,7 +504,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 		return clog
 	}
 
-	updateStatusByExtID := func(extID string, status courier.MsgStatus) *courier.ChannelLog {
+	updateStatusByExtID := func(extID string, status models.MsgStatus) *courier.ChannelLog {
 		clog := courier.NewChannelLog(courier.ChannelLogTypeMsgStatus, channel, nil)
 		statusObj := ts.b.NewStatusUpdateByExternalID(channel, extID, status, clog)
 		err := ts.b.WriteStatusUpdate(ctx, statusObj)
@@ -517,10 +517,10 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL WHERE id = $1`, 10001)
 
 	// update to WIRED using id and provide new external ID
-	clog1 := updateStatusByID(10001, courier.MsgStatusWired, "ext0")
+	clog1 := updateStatusByID(10001, models.MsgStatusWired, "ext0")
 
 	m := readMsgFromDB(ts.b, 10001)
-	ts.Equal(courier.MsgStatusWired, m.Status_)
+	ts.Equal(models.MsgStatusWired, m.Status_)
 	ts.Equal(null.String("ext0"), m.ExternalID_)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.After(now))
@@ -530,46 +530,46 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	sentOn := *m.SentOn_
 
 	// update to SENT using id
-	clog2 := updateStatusByID(10001, courier.MsgStatusSent, "")
+	clog2 := updateStatusByID(10001, models.MsgStatusSent, "")
 
 	m = readMsgFromDB(ts.b, 10001)
-	ts.Equal(courier.MsgStatusSent, m.Status_)
+	ts.Equal(models.MsgStatusSent, m.Status_)
 	ts.Equal(null.String("ext0"), m.ExternalID_) // no change
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.Equal(sentOn)) // no change
 	ts.Equal(pq.StringArray([]string{string(clog1.UUID), string(clog2.UUID)}), m.LogUUIDs)
 
 	// update to DELIVERED using id
-	clog3 := updateStatusByID(10001, courier.MsgStatusDelivered, "")
+	clog3 := updateStatusByID(10001, models.MsgStatusDelivered, "")
 
 	m = readMsgFromDB(ts.b, 10001)
-	ts.Equal(m.Status_, courier.MsgStatusDelivered)
+	ts.Equal(m.Status_, models.MsgStatusDelivered)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.Equal(sentOn)) // no change
 	ts.Equal(pq.StringArray([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID)}), m.LogUUIDs)
 
 	// update to READ using id
-	clog4 := updateStatusByID(10001, courier.MsgStatusRead, "")
+	clog4 := updateStatusByID(10001, models.MsgStatusRead, "")
 
 	m = readMsgFromDB(ts.b, 10001)
-	ts.Equal(m.Status_, courier.MsgStatusRead)
+	ts.Equal(m.Status_, models.MsgStatusRead)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.Equal(sentOn)) // no change
 	ts.Equal(pq.StringArray([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID), string(clog4.UUID)}), m.LogUUIDs)
 
 	// no change for incoming messages
-	updateStatusByID(10002, courier.MsgStatusSent, "")
+	updateStatusByID(10002, models.MsgStatusSent, "")
 
 	m = readMsgFromDB(ts.b, 10002)
-	ts.Equal(courier.MsgStatusPending, m.Status_)
+	ts.Equal(models.MsgStatusPending, m.Status_)
 	ts.Equal(m.ExternalID_, null.String("ext2"))
 	ts.Equal(pq.StringArray(nil), m.LogUUIDs)
 
 	// update to FAILED using external id
-	clog5 := updateStatusByExtID("ext1", courier.MsgStatusFailed)
+	clog5 := updateStatusByExtID("ext1", models.MsgStatusFailed)
 
 	m = readMsgFromDB(ts.b, 10000)
-	ts.Equal(courier.MsgStatusFailed, m.Status_)
+	ts.Equal(models.MsgStatusFailed, m.Status_)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.Nil(m.SentOn_)
 	ts.Equal(pq.StringArray([]string{string(clog5.UUID)}), m.LogUUIDs)
@@ -578,20 +578,20 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	time.Sleep(2 * time.Millisecond)
 
 	// update to WIRED using external id
-	clog6 := updateStatusByExtID("ext1", courier.MsgStatusWired)
+	clog6 := updateStatusByExtID("ext1", models.MsgStatusWired)
 
 	m = readMsgFromDB(ts.b, 10000)
-	ts.Equal(courier.MsgStatusWired, m.Status_)
+	ts.Equal(models.MsgStatusWired, m.Status_)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.After(now))
 
 	sentOn = *m.SentOn_
 
 	// update to SENT using external id
-	updateStatusByExtID("ext1", courier.MsgStatusSent)
+	updateStatusByExtID("ext1", models.MsgStatusSent)
 
 	m = readMsgFromDB(ts.b, 10000)
-	ts.Equal(courier.MsgStatusSent, m.Status_)
+	ts.Equal(models.MsgStatusSent, m.Status_)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.Equal(sentOn)) // no change
 
@@ -599,18 +599,18 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL WHERE id IN ($1, $2)`, 10002, 10001)
 
 	// can skip WIRED and go straight to SENT or DELIVERED
-	updateStatusByExtID("ext1", courier.MsgStatusSent)
-	updateStatusByID(10001, courier.MsgStatusDelivered, "")
+	updateStatusByExtID("ext1", models.MsgStatusSent)
+	updateStatusByID(10001, models.MsgStatusDelivered, "")
 
 	m = readMsgFromDB(ts.b, 10000)
-	ts.Equal(courier.MsgStatusSent, m.Status_)
+	ts.Equal(models.MsgStatusSent, m.Status_)
 	ts.NotNil(m.SentOn_)
 	m = readMsgFromDB(ts.b, 10001)
-	ts.Equal(courier.MsgStatusDelivered, m.Status_)
+	ts.Equal(models.MsgStatusDelivered, m.Status_)
 	ts.NotNil(m.SentOn_)
 
 	// reset our status to sent
-	status := ts.b.NewStatusUpdateByExternalID(channel, "ext1", courier.MsgStatusSent, clog6)
+	status := ts.b.NewStatusUpdateByExternalID(channel, "ext1", models.MsgStatusSent, clog6)
 	err := ts.b.WriteStatusUpdate(ctx, status)
 	ts.NoError(err)
 	time.Sleep(time.Second)
@@ -618,52 +618,52 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// error our msg
 	now = time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)
-	status = ts.b.NewStatusUpdateByExternalID(channel, "ext1", courier.MsgStatusErrored, clog6)
+	status = ts.b.NewStatusUpdateByExternalID(channel, "ext1", models.MsgStatusErrored, clog6)
 	err = ts.b.WriteStatusUpdate(ctx, status)
 	ts.NoError(err)
 
 	time.Sleep(time.Second) // give committer time to write this
 
 	m = readMsgFromDB(ts.b, 10000)
-	ts.Equal(m.Status_, courier.MsgStatusErrored)
+	ts.Equal(m.Status_, models.MsgStatusErrored)
 	ts.Equal(m.ErrorCount_, 1)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.NextAttempt_.After(now))
 	ts.Equal(null.NullString, m.FailedReason_)
 
 	// second go
-	status = ts.b.NewStatusUpdateByExternalID(channel, "ext1", courier.MsgStatusErrored, clog6)
+	status = ts.b.NewStatusUpdateByExternalID(channel, "ext1", models.MsgStatusErrored, clog6)
 	err = ts.b.WriteStatusUpdate(ctx, status)
 	ts.NoError(err)
 
 	time.Sleep(time.Second) // give committer time to write this
 
 	m = readMsgFromDB(ts.b, 10000)
-	ts.Equal(m.Status_, courier.MsgStatusErrored)
+	ts.Equal(m.Status_, models.MsgStatusErrored)
 	ts.Equal(m.ErrorCount_, 2)
 	ts.Equal(null.NullString, m.FailedReason_)
 
 	// third go
-	status = ts.b.NewStatusUpdateByExternalID(channel, "ext1", courier.MsgStatusErrored, clog6)
+	status = ts.b.NewStatusUpdateByExternalID(channel, "ext1", models.MsgStatusErrored, clog6)
 	err = ts.b.WriteStatusUpdate(ctx, status)
 
 	time.Sleep(time.Second) // give committer time to write this
 
 	ts.NoError(err)
 	m = readMsgFromDB(ts.b, 10000)
-	ts.Equal(m.Status_, courier.MsgStatusFailed)
+	ts.Equal(m.Status_, models.MsgStatusFailed)
 	ts.Equal(m.ErrorCount_, 3)
 	ts.Equal(null.String("E"), m.FailedReason_)
 
 	// update URN when the new doesn't exist
 	tx, _ := ts.b.rt.DB.BeginTxx(ctx, nil)
 	oldURN := urns.URN("whatsapp:55988776655")
-	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, NilContactID, oldURN, nil))
+	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, models.NilContactID, oldURN, nil))
 
 	ts.NoError(tx.Commit())
 
 	newURN := urns.URN("whatsapp:5588776655")
-	status = ts.b.NewStatusUpdate(channel, 10000, courier.MsgStatusSent, clog6)
+	status = ts.b.NewStatusUpdate(channel, 10000, models.MsgStatusSent, clog6)
 	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
@@ -680,11 +680,11 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	newURN = urns.URN("whatsapp:5599887766")
 	tx, _ = ts.b.rt.DB.BeginTxx(ctx, nil)
 	contact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, nil, "", true, clog6)
-	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, NilContactID, newURN, nil))
+	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, models.NilContactID, newURN, nil))
 
 	ts.NoError(tx.Commit())
 
-	status = ts.b.NewStatusUpdate(channel, 10007, courier.MsgStatusSent, clog6)
+	status = ts.b.NewStatusUpdate(channel, 10007, models.MsgStatusSent, clog6)
 	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
@@ -694,7 +694,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	oldContactURN, _ := getContactURNByIdentity(tx, channel.OrgID_, oldURN)
 
 	ts.Equal(newContactURN.ContactID, contact.ID_)
-	ts.Equal(oldContactURN.ContactID, NilContactID)
+	ts.Equal(oldContactURN.ContactID, models.NilContactID)
 	ts.NoError(tx.Commit())
 
 	// new URN already exits and have an associated contact
@@ -706,7 +706,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	ts.NoError(tx.Commit())
 
-	status = ts.b.NewStatusUpdate(channel, 10007, courier.MsgStatusSent, clog6)
+	status = ts.b.NewStatusUpdate(channel, 10007, models.MsgStatusSent, clog6)
 	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
@@ -715,7 +715,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	oldContactURN, _ = getContactURNByIdentity(tx, channel.OrgID_, oldURN)
 	newContactURN, _ = getContactURNByIdentity(tx, channel.OrgID_, newURN)
 
-	ts.Equal(oldContactURN.ContactID, NilContactID)
+	ts.Equal(oldContactURN.ContactID, models.NilContactID)
 	ts.Equal(newContactURN.ContactID, otherContact.ID_)
 	ts.NoError(tx.Commit())
 }
@@ -731,7 +731,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	ts.clearValkey()
 
 	// create a status update from a send which will have id and external id
-	status1 := ts.b.NewStatusUpdate(channel, 10000, courier.MsgStatusSent, clog)
+	status1 := ts.b.NewStatusUpdate(channel, 10000, models.MsgStatusSent, clog)
 	status1.SetExternalID("ex457")
 	err := ts.b.WriteStatusUpdate(ctx, status1)
 	ts.NoError(err)
@@ -748,7 +748,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'W', external_id = NULL WHERE id = 10000`)
 
 	// create a callback status update which only has external id
-	status2 := ts.b.NewStatusUpdateByExternalID(channel, "ex457", courier.MsgStatusDelivered, clog)
+	status2 := ts.b.NewStatusUpdateByExternalID(channel, "ex457", models.MsgStatusDelivered, clog)
 
 	err = ts.b.WriteStatusUpdate(ctx, status2)
 	ts.NoError(err)
@@ -850,7 +850,7 @@ func (ts *BackendTestSuite) TestStatus() {
 	defer r.Close()
 
 	dbMsg := readMsgFromDB(ts.b, 10000)
-	dbMsg.ChannelUUID_ = courier.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	dbMsg.ChannelUUID_ = models.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ts.NotNil(dbMsg)
 
 	// serialize our message
@@ -871,7 +871,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	defer r.Close()
 
 	dbMsg := readMsgFromDB(ts.b, 10000)
-	dbMsg.ChannelUUID_ = courier.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	dbMsg.ChannelUUID_ = models.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ts.NotNil(dbMsg)
 
 	// serialize our message
@@ -895,7 +895,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.Equal(msg.Text(), "test message")
 
 	// mark this message as dealt with
-	ts.b.OnSendComplete(ctx, msg, ts.b.NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusWired, clog), clog)
+	ts.b.OnSendComplete(ctx, msg, ts.b.NewStatusUpdate(msg.Channel(), msg.ID(), models.MsgStatusWired, clog), clog)
 
 	// this message should now be marked as sent
 	sent, err := ts.b.WasMsgSent(ctx, msg.ID())
@@ -914,7 +914,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.False(sent)
 
 	// write an error for our original message
-	err = ts.b.WriteStatusUpdate(ctx, ts.b.NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog))
+	err = ts.b.WriteStatusUpdate(ctx, ts.b.NewStatusUpdate(msg.Channel(), msg.ID(), models.MsgStatusErrored, clog))
 	ts.NoError(err)
 
 	// message should no longer be considered sent
@@ -926,18 +926,18 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 func (ts *BackendTestSuite) TestChannel() {
 	noAddress := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c99a")
 	ts.Equal(i18n.Country("US"), noAddress.Country())
-	ts.Equal(courier.NilChannelAddress, noAddress.ChannelAddress())
+	ts.Equal(models.NilChannelAddress, noAddress.ChannelAddress())
 
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
 	ts.Equal("2500", knChannel.Address())
-	ts.Equal(courier.ChannelAddress("2500"), knChannel.ChannelAddress())
+	ts.Equal(models.ChannelAddress("2500"), knChannel.ChannelAddress())
 	ts.Equal(i18n.Country("RW"), knChannel.Country())
-	ts.Equal([]courier.ChannelRole{courier.ChannelRoleSend, courier.ChannelRoleReceive}, knChannel.Roles())
-	ts.True(knChannel.HasRole(courier.ChannelRoleSend))
-	ts.True(knChannel.HasRole(courier.ChannelRoleReceive))
-	ts.False(knChannel.HasRole(courier.ChannelRoleCall))
-	ts.False(knChannel.HasRole(courier.ChannelRoleAnswer))
+	ts.Equal([]models.ChannelRole{models.ChannelRoleSend, models.ChannelRoleReceive}, knChannel.Roles())
+	ts.True(knChannel.HasRole(models.ChannelRoleSend))
+	ts.True(knChannel.HasRole(models.ChannelRoleReceive))
+	ts.False(knChannel.HasRole(models.ChannelRoleCall))
+	ts.False(knChannel.HasRole(models.ChannelRoleAnswer))
 
 	// assert our config values
 	val := knChannel.ConfigForKey("use_national", false)
@@ -976,41 +976,41 @@ func (ts *BackendTestSuite) TestChannel() {
 	ts.Equal("missingValue", val)
 
 	exChannel := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327100a")
-	ts.Equal([]courier.ChannelRole{courier.ChannelRoleReceive}, exChannel.Roles())
-	ts.False(exChannel.HasRole(courier.ChannelRoleSend))
-	ts.True(exChannel.HasRole(courier.ChannelRoleReceive))
-	ts.False(exChannel.HasRole(courier.ChannelRoleCall))
-	ts.False(exChannel.HasRole(courier.ChannelRoleAnswer))
+	ts.Equal([]models.ChannelRole{models.ChannelRoleReceive}, exChannel.Roles())
+	ts.False(exChannel.HasRole(models.ChannelRoleSend))
+	ts.True(exChannel.HasRole(models.ChannelRoleReceive))
+	ts.False(exChannel.HasRole(models.ChannelRoleCall))
+	ts.False(exChannel.HasRole(models.ChannelRoleAnswer))
 
 	exChannel2 := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327222a")
-	ts.False(exChannel2.HasRole(courier.ChannelRoleSend))
-	ts.False(exChannel2.HasRole(courier.ChannelRoleReceive))
-	ts.False(exChannel2.HasRole(courier.ChannelRoleCall))
-	ts.False(exChannel2.HasRole(courier.ChannelRoleAnswer))
+	ts.False(exChannel2.HasRole(models.ChannelRoleSend))
+	ts.False(exChannel2.HasRole(models.ChannelRoleReceive))
+	ts.False(exChannel2.HasRole(models.ChannelRoleCall))
+	ts.False(exChannel2.HasRole(models.ChannelRoleAnswer))
 }
 
 func (ts *BackendTestSuite) TestGetChannel() {
 	ctx := context.Background()
 
-	knUUID := courier.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	xxUUID := courier.ChannelUUID("0a1256fe-c6e4-494d-99d3-576286f31d3b") // doesn't exist
+	knUUID := models.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	xxUUID := models.ChannelUUID("0a1256fe-c6e4-494d-99d3-576286f31d3b") // doesn't exist
 
-	ch, err := ts.b.GetChannel(ctx, courier.ChannelType("KN"), knUUID)
+	ch, err := ts.b.GetChannel(ctx, models.ChannelType("KN"), knUUID)
 	ts.Assert().NoError(err)
 	ts.Assert().NotNil(ch)
 	ts.Assert().Equal(knUUID, ch.UUID())
 
-	ch, err = ts.b.GetChannel(ctx, courier.ChannelType("KN"), knUUID) // from cache
+	ch, err = ts.b.GetChannel(ctx, models.ChannelType("KN"), knUUID) // from cache
 	ts.Assert().NoError(err)
 	ts.Assert().NotNil(ch)
 	ts.Assert().Equal(knUUID, ch.UUID())
 
-	ch, err = ts.b.GetChannel(ctx, courier.ChannelType("KN"), xxUUID)
+	ch, err = ts.b.GetChannel(ctx, models.ChannelType("KN"), xxUUID)
 	ts.Assert().Error(err)
 	ts.Assert().Nil(ch)
 	ts.Assert().True(ch == nil) // https://github.com/stretchr/testify/issues/503
 
-	ch, err = ts.b.GetChannel(ctx, courier.ChannelType("KN"), xxUUID) // from cache
+	ch, err = ts.b.GetChannel(ctx, models.ChannelType("KN"), xxUUID) // from cache
 	ts.Assert().Error(err)
 	ts.Assert().Nil(ch)
 	ts.Assert().True(ch == nil) // https://github.com/stretchr/testify/issues/503
@@ -1072,7 +1072,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.Equal("msg_send", item2.Data["type"])
 
 	// channel channel log policy to only write errors
-	channel.LogPolicy = LogPolicyErrors
+	channel.LogPolicy = models.LogPolicyErrors
 
 	clog3 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog3.HTTP(trace)
@@ -1096,7 +1096,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.NotNil(item4)
 
 	// channel channel log policy to discard all
-	channel.LogPolicy = LogPolicyNone
+	channel.LogPolicy = models.LogPolicyNone
 
 	clog5 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog5.HTTP(trace)
@@ -1169,8 +1169,8 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.Equal(knChannel.OrgID_, m.OrgID_)
 	ts.Equal(contactURN.ContactID, m.ContactID_)
 	ts.Equal(contactURN.ID, m.ContactURNID_)
-	ts.Equal(MsgIncoming, m.Direction_)
-	ts.Equal(courier.MsgStatusPending, m.Status_)
+	ts.Equal(models.MsgIncoming, m.Direction_)
+	ts.Equal(models.MsgStatusPending, m.Status_)
 	ts.False(m.HighPriority_)
 	ts.Equal("ext123", m.ExternalID())
 	ts.Equal("test123", m.Text_)
@@ -1300,7 +1300,7 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 		ts.FailNow("failed writing contact urn")
 	}
 
-	ts.Equal(exContactURN.ChannelID, courier.NilChannelID)
+	ts.Equal(exContactURN.ChannelID, models.NilChannelID)
 }
 
 func (ts *BackendTestSuite) TestChannelEvent() {
@@ -1309,7 +1309,7 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
 	urn := urns.URN("tel:+12065551616")
 
-	event := ts.b.NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).WithExtra(map[string]string{"ref_id": "12345"}).WithContactName("kermit frog")
+	event := ts.b.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithExtra(map[string]string{"ref_id": "12345"}).WithContactName("kermit frog")
 	err := ts.b.WriteChannelEvent(ctx, event, clog)
 	ts.NoError(err)
 
@@ -1319,18 +1319,18 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 
 	dbE := event.(*ChannelEvent)
 	dbE = readChannelEventFromDB(ts.b, dbE.ID_)
-	ts.Equal(dbE.EventType_, courier.EventTypeReferral)
+	ts.Equal(dbE.EventType_, models.EventTypeReferral)
 	ts.Equal(map[string]string{"ref_id": "12345"}, dbE.Extra())
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 
-	event = ts.b.NewChannelEvent(channel, courier.EventTypeOptIn, urn, clog).WithExtra(map[string]string{"title": "Polls", "payload": "1"})
+	event = ts.b.NewChannelEvent(channel, models.EventTypeOptIn, urn, clog).WithExtra(map[string]string{"title": "Polls", "payload": "1"})
 	err = ts.b.WriteChannelEvent(ctx, event, clog)
 	ts.NoError(err)
 
 	dbE = event.(*ChannelEvent)
 	dbE = readChannelEventFromDB(ts.b, dbE.ID_)
-	ts.Equal(dbE.EventType_, courier.EventTypeOptIn)
+	ts.Equal(dbE.EventType_, models.EventTypeOptIn)
 	ts.Equal(map[string]string{"title": "Polls", "payload": "1"}, dbE.Extra())
 	ts.Equal(null.Int(1), dbE.OptInID_)
 }
@@ -1395,7 +1395,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
 	urn := urns.URN("tel:+12065551616")
 
-	event := ts.b.NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).
+	event := ts.b.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).
 		WithExtra(map[string]string{"ref_id": "12345"}).
 		WithContactName("kermit frog").
 		WithOccurredOn(time.Date(2020, 8, 5, 13, 30, 0, 123456789, time.UTC))
@@ -1409,7 +1409,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 
 	dbE := event.(*ChannelEvent)
 	dbE = readChannelEventFromDB(ts.b, dbE.ID_)
-	ts.Equal(dbE.EventType_, courier.EventTypeReferral)
+	ts.Equal(dbE.EventType_, models.EventTypeReferral)
 	ts.Equal(map[string]string{"ref_id": "12345"}, dbE.Extra())
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
@@ -1531,7 +1531,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 	assertvk.HLen(ts.T(), rc, fmt.Sprintf("{media-lookups}:%s", time.Now().In(time.UTC).Format("2006-01-02")), 3)
 }
 
-func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {
+func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID models.ContactID) {
 	rc := ts.b.rt.VK.Get()
 	defer rc.Close()
 
@@ -1541,7 +1541,7 @@ func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {
 	assertvk.LLen(ts.T(), rc, fmt.Sprintf("c:1:%d", contactID), 0)
 }
 
-func (ts *BackendTestSuite) assertQueuedContactTask(contactID ContactID, expectedType string, expectedBody map[string]any) {
+func (ts *BackendTestSuite) assertQueuedContactTask(contactID models.ContactID, expectedType string, expectedBody map[string]any) {
 	rc := ts.b.rt.VK.Get()
 	defer rc.Close()
 

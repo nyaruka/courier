@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -67,7 +68,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("VP"), "Viber")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("VP"), "Viber")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -146,7 +147,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid viber id"))
 		}
 		// build the channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeWelcomeMessage, urn, clog).WithContactName(ContactName)
+		channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeWelcomeMessage, urn, clog).WithContactName(ContactName)
 
 		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
@@ -168,7 +169,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// build the channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeNewConversation, urn, clog).WithContactName(ContactName)
+		channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog).WithContactName(ContactName)
 
 		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
@@ -188,7 +189,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid viber id"))
 		}
 		// build the channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeStopContact, urn, clog)
+		channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
 
 		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
@@ -200,7 +201,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	case "failed":
 		clog.Type = courier.ChannelLogTypeMsgStatus
 
-		msgStatus := h.Backend().NewStatusUpdateByExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgStatusFailed, clog)
+		msgStatus := h.Backend().NewStatusUpdateByExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), models.MsgStatusFailed, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "delivered":
@@ -275,7 +276,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 func writeWelcomeMessageResponse(w http.ResponseWriter, channel courier.Channel, event courier.Event) error {
 
-	authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	authToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	msgText := channel.StringConfigForKey(configViberWelcomeMessage, "")
 	payload := welcomeMessagePayload{
 		AuthToken:    authToken,
@@ -302,7 +303,7 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 		return fmt.Errorf("missing request signature")
 	}
 
-	authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	authToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
 		return fmt.Errorf("invalid or missing auth token in config")
 	}
@@ -349,7 +350,7 @@ type mtResponse struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
 		return courier.ErrChannelConfig
 	}

@@ -5,22 +5,6 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-// MsgStatus is the status of a message
-type MsgStatus string
-
-// Possible values for MsgStatus
-const (
-	MsgStatusPending   MsgStatus = "P"
-	MsgStatusQueued    MsgStatus = "Q"
-	MsgStatusSent      MsgStatus = "S"
-	MsgStatusWired     MsgStatus = "W"
-	MsgStatusErrored   MsgStatus = "E"
-	MsgStatusDelivered MsgStatus = "D"
-	MsgStatusRead      MsgStatus = "R"
-	MsgStatusFailed    MsgStatus = "F"
-	NilMsgStatus       MsgStatus = ""
-)
-
 //-----------------------------------------------------------------------------
 // StatusUpdate Interface
 //-----------------------------------------------------------------------------
@@ -29,7 +13,7 @@ const (
 type StatusUpdate interface {
 	Event
 
-	ChannelUUID() ChannelUUID
+	ChannelUUID() models.ChannelUUID
 	MsgID() models.MsgID
 
 	SetURNUpdate(old, new urns.URN) error
@@ -38,6 +22,6 @@ type StatusUpdate interface {
 	ExternalID() string
 	SetExternalID(string)
 
-	Status() MsgStatus
-	SetStatus(MsgStatus)
+	Status() models.MsgStatus
+	SetStatus(models.MsgStatus)
 }

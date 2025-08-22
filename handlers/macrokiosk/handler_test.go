@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -54,7 +55,7 @@ var incomingTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "12345", Status: courier.MsgStatusSent},
+			{ExternalID: "12345", Status: models.MsgStatusSent},
 		},
 	},
 	{
@@ -64,7 +65,7 @@ var incomingTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"W"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "12345", Status: courier.MsgStatusWired},
+			{ExternalID: "12345", Status: models.MsgStatusWired},
 		},
 	},
 	{Label: "Unknown Status", URL: statusURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `ignoring unknown status 'UNKNOWN'`},

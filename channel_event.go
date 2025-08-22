@@ -3,24 +3,8 @@ package courier
 import (
 	"time"
 
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/gocommon/uuids"
-)
-
-// ChannelEventType is the type of channel event this is
-type ChannelEventType string
-
-// ChannelEvent is our typing of a channelevent's UUID
-type ChannelEventUUID uuids.UUID
-
-// Possible values for ChannelEventTypes
-const (
-	EventTypeNewConversation ChannelEventType = "new_conversation"
-	EventTypeReferral        ChannelEventType = "referral"
-	EventTypeStopContact     ChannelEventType = "stop_contact"
-	EventTypeWelcomeMessage  ChannelEventType = "welcome_message"
-	EventTypeOptIn           ChannelEventType = "optin"
-	EventTypeOptOut          ChannelEventType = "optout"
 )
 
 //-----------------------------------------------------------------------------
@@ -31,10 +15,10 @@ const (
 type ChannelEvent interface {
 	Event
 
-	UUID() ChannelEventUUID
-	ChannelUUID() ChannelUUID
+	UUID() models.ChannelEventUUID
+	ChannelUUID() models.ChannelUUID
 	URN() urns.URN
-	EventType() ChannelEventType
+	EventType() models.ChannelEventType
 	Extra() map[string]string
 	CreatedOn() time.Time
 	OccurredOn() time.Time

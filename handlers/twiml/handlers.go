@@ -68,7 +68,7 @@ type handler struct {
 	validateSignatures bool
 }
 
-func newTWIMLHandler(channelType courier.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
+func newTWIMLHandler(channelType models.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(channelType, name), validateSignatures}
 }
 
@@ -107,13 +107,13 @@ type statusForm struct {
 	To            string
 }
 
-var statusMapping = map[string]courier.MsgStatus{
-	"queued":      courier.MsgStatusSent,
-	"failed":      courier.MsgStatusFailed,
-	"sent":        courier.MsgStatusSent,
-	"delivered":   courier.MsgStatusDelivered,
-	"read":        courier.MsgStatusRead,
-	"undelivered": courier.MsgStatusFailed,
+var statusMapping = map[string]models.MsgStatus{
+	"queued":      models.MsgStatusSent,
+	"failed":      models.MsgStatusFailed,
+	"sent":        models.MsgStatusSent,
+	"delivered":   models.MsgStatusDelivered,
+	"read":        models.MsgStatusRead,
+	"undelivered": models.MsgStatusFailed,
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -176,7 +176,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
-	if channel.BoolConfigForKey(configIgnoreDLRs, false) && msgStatus != courier.MsgStatusFailed {
+	if channel.BoolConfigForKey(configIgnoreDLRs, false) && msgStatus != models.MsgStatusFailed {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring non error delivery report")
 	}
 
@@ -206,7 +206,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 			}
 
 			// create a stop channel event
-			channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeStopContact, urn, clog)
+			channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
 			err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 			if err != nil {
 				return nil, err
@@ -214,7 +214,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		}
 		clog.Error(twilioError(errorCode))
 		if errorCode == errorThrottled {
-			status = h.Backend().NewStatusUpdateByExternalID(channel, form.MessageSID, courier.MsgStatusErrored, clog)
+			status = h.Backend().NewStatusUpdateByExternalID(channel, form.MessageSID, models.MsgStatusErrored, clog)
 		}
 	}
 
@@ -227,7 +227,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(string(h.ChannelType())), msg.Channel().UUID(), msg.ID())
 
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
-	accountToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	accountToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if accountSID == "" || accountToken == "" {
 		return courier.ErrChannelConfig
 	}
@@ -431,7 +431,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 		return nil, fmt.Errorf("missing account sid for %s channel", h.ChannelName())
 	}
 
-	accountToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	accountToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if accountToken == "" {
 		return nil, fmt.Errorf("missing account auth token for %s channel", h.ChannelName())
 	}
@@ -447,7 +447,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	return []string{
-		httpx.BasicAuth(ch.StringConfigForKey(configAccountSID, ""), ch.StringConfigForKey(courier.ConfigAuthToken, "")),
+		httpx.BasicAuth(ch.StringConfigForKey(configAccountSID, ""), ch.StringConfigForKey(models.ConfigAuthToken, "")),
 	}
 }
 
@@ -493,7 +493,7 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 		return err
 	}
 
-	confAuth := c.ConfigForKey(courier.ConfigAuthToken, "")
+	confAuth := c.ConfigForKey(models.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
 		return fmt.Errorf("invalid or missing auth token in config")

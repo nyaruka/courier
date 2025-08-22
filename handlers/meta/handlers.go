@@ -59,8 +59,8 @@ const (
 	payloadKey    = "payload"
 )
 
-func newHandler(channelType courier.ChannelType, name string) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(channelType, name, handlers.DisableUUIDRouting(), handlers.WithRedactConfigKeys(courier.ConfigAuthToken))}
+func newHandler(channelType models.ChannelType, name string) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandler(channelType, name, handlers.DisableUUIDRouting(), handlers.WithRedactConfigKeys(models.ConfigAuthToken))}
 }
 
 func init() {
@@ -149,10 +149,10 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 	//if object is 'page' returns type FBA, if object is 'instagram' returns type IG
 	if payload.Object == "page" {
 		channelAddress = payload.Entry[0].ID
-		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("FBA"), courier.ChannelAddress(channelAddress))
+		return h.Backend().GetChannelByAddress(ctx, models.ChannelType("FBA"), models.ChannelAddress(channelAddress))
 	} else if payload.Object == "instagram" {
 		channelAddress = payload.Entry[0].ID
-		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("IG"), courier.ChannelAddress(channelAddress))
+		return h.Backend().GetChannelByAddress(ctx, models.ChannelType("IG"), models.ChannelAddress(channelAddress))
 	} else {
 		if len(payload.Entry[0].Changes) == 0 {
 			return nil, fmt.Errorf("no changes found")
@@ -162,7 +162,7 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 		if channelAddress == "" {
 			return nil, fmt.Errorf("no channel address found")
 		}
-		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("WAC"), courier.ChannelAddress(channelAddress))
+		return h.Backend().GetChannelByAddress(ctx, models.ChannelType("WAC"), models.ChannelAddress(channelAddress))
 	}
 }
 
@@ -432,11 +432,11 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			var event courier.ChannelEvent
 
 			if msg.OptIn.Type == "notification_messages" {
-				eventType := courier.EventTypeOptIn
+				eventType := models.EventTypeOptIn
 				authToken := msg.OptIn.NotificationMessagesToken
 
 				if msg.OptIn.NotificationMessagesStatus == "STOP_NOTIFICATIONS" {
-					eventType = courier.EventTypeOptOut
+					eventType = models.EventTypeOptOut
 					authToken = "" // so that we remove it
 				}
 
@@ -459,7 +459,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 					}
 				}
 
-				event = h.Backend().NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).
+				event = h.Backend().NewChannelEvent(channel, models.EventTypeReferral, urn, clog).
 					WithOccurredOn(date).
 					WithExtra(map[string]string{referrerIDKey: msg.OptIn.Ref})
 			}
@@ -474,9 +474,9 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 		} else if msg.Postback != nil {
 			// by default postbacks are treated as new conversations, unless we have referral information
-			eventType := courier.EventTypeNewConversation
+			eventType := models.EventTypeNewConversation
 			if msg.Postback.Referral.Ref != "" {
-				eventType = courier.EventTypeReferral
+				eventType = models.EventTypeReferral
 			}
 			event := h.Backend().NewChannelEvent(channel, eventType, urn, clog).WithOccurredOn(date)
 
@@ -484,7 +484,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			extra := map[string]string{titleKey: msg.Postback.Title, payloadKey: msg.Postback.Payload}
 
 			// add in referral information if we have it
-			if eventType == courier.EventTypeReferral {
+			if eventType == models.EventTypeReferral {
 				extra[referrerIDKey] = msg.Postback.Referral.Ref
 				extra[sourceKey] = msg.Postback.Referral.Source
 				extra[typeKey] = msg.Postback.Referral.Type
@@ -506,7 +506,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 		} else if msg.Referral != nil {
 			// this is an incoming referral
-			event := h.Backend().NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]string{sourceKey: msg.Referral.Source, typeKey: msg.Referral.Type}
@@ -599,7 +599,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 		} else if msg.Delivery != nil {
 			// this is a delivery report
 			for _, mid := range msg.Delivery.MIDs {
-				event := h.Backend().NewStatusUpdateByExternalID(channel, mid, courier.MsgStatusDelivered, clog)
+				event := h.Backend().NewStatusUpdateByExternalID(channel, mid, models.MsgStatusDelivered, clog)
 				err := h.Backend().WriteStatusUpdate(ctx, event)
 				if err != nil {
 					return nil, nil, err
@@ -629,7 +629,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	// can't do anything without an access token
-	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	accessToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if accessToken == "" {
 		return courier.ErrChannelConfig
 	}
@@ -843,7 +843,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 		return map[string]string{}, nil
 	}
 
-	accessToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	accessToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if accessToken == "" {
 		return nil, fmt.Errorf("missing access token")
 	}

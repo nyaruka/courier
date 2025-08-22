@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -110,7 +111,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 `{"messageId": "msg1", "statusCode": 5}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "msg1", Status: courier.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "msg1", Status: models.MsgStatusFailed}},
 	},
 	{
 		Label:                "Valid Delivered status report",
@@ -118,7 +119,7 @@ var incomingCases = []IncomingTestCase{
 		Data:                 `{"messageId": "msg1", "statusCode": 4}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "msg1", Status: courier.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "msg1", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Unexpected status report",
@@ -145,7 +146,7 @@ var incomingCases = []IncomingTestCase{
 
 func TestIncoming(t *testing.T) {
 	chs := []courier.Channel{
-		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{courier.ConfigAPIKey: "12345"}),
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{models.ConfigAPIKey: "12345"}),
 	}
 
 	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
@@ -230,7 +231,7 @@ var outgoingCases = []OutgoingTestCase{
 
 func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
-	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{courier.ConfigAPIKey: "API-KEY"})
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{models.ConfigAPIKey: "API-KEY"})
 
 	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"API-KEY"}, nil)
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
 )
@@ -25,7 +26,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("RR"), "Red Rabbit")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("RR"), "Red Rabbit")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -35,8 +36,8 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	if username == "" || password == "" {
 		return courier.ErrChannelConfig
 	}

@@ -17,6 +17,7 @@ import (
 	"errors"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -48,7 +49,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("LN"), "Line")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("LN"), "Line")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -178,7 +179,7 @@ func buildMediaURL(mediaID string) string {
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set
 func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
-	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	token := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if token == "" {
 		return nil, fmt.Errorf("missing token for LN channel")
 	}
@@ -197,7 +198,7 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 		return fmt.Errorf("missing request signature")
 	}
 
-	confSecret := channel.ConfigForKey(courier.ConfigSecret, "")
+	confSecret := channel.ConfigForKey(models.ConfigSecret, "")
 	secret, isStr := confSecret.(string)
 	if !isStr || secret == "" {
 		return fmt.Errorf("invalid or missing auth token in config")
@@ -284,7 +285,7 @@ type mtResponse struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
 		return courier.ErrChannelConfig
 	}

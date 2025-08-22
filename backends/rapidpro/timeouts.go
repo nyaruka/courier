@@ -8,9 +8,6 @@ import (
 	"github.com/nyaruka/gocommon/dates"
 )
 
-// SessionID is our type for RapidPro session ids
-type SessionID int64
-
 const sqlInsertTimeoutFire = `
 INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, fire_on, session_uuid, sprint_uuid)
                           VALUES($1, $2, 'T', '', $3, $4, $5)

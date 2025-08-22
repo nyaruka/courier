@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
@@ -56,7 +57,7 @@ func TestWriteMsgSuccess(t *testing.T) {
 
 func TestWriteChannelEventSuccess(t *testing.T) {
 	ch := test.NewMockChannel("5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec", "NX", "+1234567890", "US", []string{urns.Phone.Prefix}, nil)
-	evt := test.NewMockBackend().NewChannelEvent(ch, courier.EventTypeStopContact, "tel:+0987654321", nil).WithOccurredOn(time.Date(2022, 9, 15, 12, 7, 30, 0, time.UTC))
+	evt := test.NewMockBackend().NewChannelEvent(ch, models.EventTypeStopContact, "tel:+0987654321", nil).WithOccurredOn(time.Date(2022, 9, 15, 12, 7, 30, 0, time.UTC))
 	w := httptest.NewRecorder()
 
 	err := courier.WriteChannelEventSuccess(w, evt)

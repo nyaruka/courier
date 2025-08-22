@@ -31,7 +31,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("DS"), "Discord")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("DS"), "Discord")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -117,10 +117,10 @@ type statusForm struct {
 	ID int64 `name:"id" validate:"required"`
 }
 
-var statusMappings = map[string]courier.MsgStatus{
-	"failed":    courier.MsgStatusFailed,
-	"sent":      courier.MsgStatusSent,
-	"delivered": courier.MsgStatusDelivered,
+var statusMappings = map[string]models.MsgStatus{
+	"failed":    models.MsgStatusFailed,
+	"sent":      models.MsgStatusSent,
+	"delivered": models.MsgStatusDelivered,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -144,7 +144,7 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 
-	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
+	sendURL := msg.Channel().StringConfigForKey(models.ConfigSendURL, "")
 	if sendURL == "" {
 		return courier.ErrChannelConfig
 	}
@@ -188,7 +188,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 	req.Header.Set("Content-Type", contentTypeHeader)
 
-	authorization := msg.Channel().StringConfigForKey(courier.ConfigSendAuthorization, "")
+	authorization := msg.Channel().StringConfigForKey(models.ConfigSendAuthorization, "")
 	if authorization != "" {
 		req.Header.Set("Authorization", authorization)
 	}

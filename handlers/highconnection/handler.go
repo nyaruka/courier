@@ -29,7 +29,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("HX"), "High Connection")}
+	return &handler{handlers.NewBaseHandler(models.ChannelType("HX"), "High Connection")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -93,16 +93,16 @@ type statusForm struct {
 	Status int   `name:"status" validate:"required"`
 }
 
-var statusMapping = map[int]courier.MsgStatus{
-	2:  courier.MsgStatusFailed,
-	4:  courier.MsgStatusSent,
-	6:  courier.MsgStatusDelivered,
-	11: courier.MsgStatusFailed,
-	12: courier.MsgStatusFailed,
-	13: courier.MsgStatusFailed,
-	14: courier.MsgStatusFailed,
-	15: courier.MsgStatusFailed,
-	16: courier.MsgStatusFailed,
+var statusMapping = map[int]models.MsgStatus{
+	2:  models.MsgStatusFailed,
+	4:  models.MsgStatusSent,
+	6:  models.MsgStatusDelivered,
+	11: models.MsgStatusFailed,
+	12: models.MsgStatusFailed,
+	13: models.MsgStatusFailed,
+	14: models.MsgStatusFailed,
+	15: models.MsgStatusFailed,
+	16: models.MsgStatusFailed,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -124,8 +124,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	if username == "" || password == "" {
 		return courier.ErrChannelConfig
 	}
