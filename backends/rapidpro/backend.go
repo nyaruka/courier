@@ -433,7 +433,7 @@ func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, u
 	text = dbutil.ToValidUTF8(text)
 	extID = dbutil.ToValidUTF8(extID)
 
-	msg := newMsg(MsgIncoming, channel, urn, text, extID, clog)
+	msg := newMsg(models.MsgIncoming, channel, urn, text, extID, clog)
 	msg.WithReceivedOn(time.Now().UTC())
 
 	// check if this message could be a duplicate and if so use the original's UUID
@@ -492,7 +492,7 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 		return nil, err
 	}
 
-	dbMsg.Direction_ = MsgOutgoing
+	dbMsg.Direction_ = models.MsgOutgoing
 	dbMsg.channel = channel.(*Channel)
 	dbMsg.workerToken = token
 

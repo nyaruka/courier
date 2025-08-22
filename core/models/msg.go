@@ -45,6 +45,25 @@ const (
 	NilMsgStatus       MsgStatus = ""
 )
 
+// MsgDirection is the direction of a message
+type MsgDirection string
+
+// Possible values for MsgDirection
+const (
+	MsgIncoming MsgDirection = "I"
+	MsgOutgoing MsgDirection = "O"
+)
+
+// MsgVisibility is the visibility of a message
+type MsgVisibility string
+
+// Possible values for MsgVisibility
+const (
+	MsgVisible  MsgVisibility = "V"
+	MsgDeleted  MsgVisibility = "D"
+	MsgArchived MsgVisibility = "A"
+)
+
 type MsgOrigin string
 
 const (

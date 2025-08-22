@@ -24,43 +24,24 @@ import (
 	"github.com/nyaruka/null/v3"
 )
 
-// MsgDirection is the direction of a message
-type MsgDirection string
-
-// Possible values for MsgDirection
-const (
-	MsgIncoming MsgDirection = "I"
-	MsgOutgoing MsgDirection = "O"
-)
-
-// MsgVisibility is the visibility of a message
-type MsgVisibility string
-
-// Possible values for MsgVisibility
-const (
-	MsgVisible  MsgVisibility = "V"
-	MsgDeleted  MsgVisibility = "D"
-	MsgArchived MsgVisibility = "A"
-)
-
 // Msg is our base struct to represent msgs both in our JSON and db representations
 type Msg struct {
-	OrgID_        models.OrgID        `json:"org_id"          db:"org_id"`
-	ID_           models.MsgID        `json:"id"              db:"id"`
-	UUID_         models.MsgUUID      `json:"uuid"            db:"uuid"`
-	Direction_    MsgDirection        `                       db:"direction"`
-	Status_       models.MsgStatus    `                       db:"status"`
-	Visibility_   MsgVisibility       `                       db:"visibility"`
-	HighPriority_ bool                `json:"high_priority"   db:"high_priority"`
-	Text_         string              `json:"text"            db:"text"`
-	Attachments_  pq.StringArray      `json:"attachments"     db:"attachments"`
-	QuickReplies_ []models.QuickReply `json:"quick_replies"`
-	Locale_       null.String         `json:"locale"          db:"locale"`
-	Templating_   *models.Templating  `json:"templating"      db:"templating"`
-	ExternalID_   null.String         `                       db:"external_id"`
-	ChannelID_    courier.ChannelID   `                       db:"channel_id"`
-	ContactID_    ContactID           `json:"contact_id"      db:"contact_id"`
-	ContactURNID_ ContactURNID        `json:"contact_urn_id"  db:"contact_urn_id"`
+	OrgID_        models.OrgID         `json:"org_id"          db:"org_id"`
+	ID_           models.MsgID         `json:"id"              db:"id"`
+	UUID_         models.MsgUUID       `json:"uuid"            db:"uuid"`
+	Direction_    models.MsgDirection  `                       db:"direction"`
+	Status_       models.MsgStatus     `                       db:"status"`
+	Visibility_   models.MsgVisibility `                       db:"visibility"`
+	HighPriority_ bool                 `json:"high_priority"   db:"high_priority"`
+	Text_         string               `json:"text"            db:"text"`
+	Attachments_  pq.StringArray       `json:"attachments"     db:"attachments"`
+	QuickReplies_ []models.QuickReply  `json:"quick_replies"`
+	Locale_       null.String          `json:"locale"          db:"locale"`
+	Templating_   *models.Templating   `json:"templating"      db:"templating"`
+	ExternalID_   null.String          `                       db:"external_id"`
+	ChannelID_    courier.ChannelID    `                       db:"channel_id"`
+	ContactID_    ContactID            `json:"contact_id"      db:"contact_id"`
+	ContactURNID_ ContactURNID         `json:"contact_urn_id"  db:"contact_urn_id"`
 
 	MessageCount_ int         `                     db:"msg_count"`
 	ErrorCount_   int         `                     db:"error_count"`
@@ -93,7 +74,7 @@ type Msg struct {
 }
 
 // newMsg creates a new DBMsg object with the passed in parameters
-func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) *Msg {
+func newMsg(direction models.MsgDirection, channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) *Msg {
 	now := time.Now()
 	dbChannel := channel.(*Channel)
 
@@ -102,7 +83,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 		UUID_:         models.MsgUUID(uuids.NewV7()),
 		Direction_:    direction,
 		Status_:       models.MsgStatusPending,
-		Visibility_:   MsgVisible,
+		Visibility_:   models.MsgVisible,
 		HighPriority_: false,
 		Text_:         text,
 		ExternalID_:   null.String(extID),

@@ -1169,7 +1169,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.Equal(knChannel.OrgID_, m.OrgID_)
 	ts.Equal(contactURN.ContactID, m.ContactID_)
 	ts.Equal(contactURN.ID, m.ContactURNID_)
-	ts.Equal(MsgIncoming, m.Direction_)
+	ts.Equal(models.MsgIncoming, m.Direction_)
 	ts.Equal(models.MsgStatusPending, m.Status_)
 	ts.False(m.HighPriority_)
 	ts.Equal("ext123", m.ExternalID())
