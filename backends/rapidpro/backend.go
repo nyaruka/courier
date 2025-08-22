@@ -56,8 +56,6 @@ type backend struct {
 	systemUserID models.UserID
 
 	statusWriter *StatusWriter
-	dynamoWriter *dynamo.Writer
-	dynamoSpool  *dynamo.Spool
 	writerWG     *sync.WaitGroup
 
 	channelsByUUID *cache.Local[models.ChannelUUID, *models.Channel]
@@ -168,21 +166,18 @@ func (b *backend) Start() error {
 		log.Info("attachments bucket ok")
 	}
 
+	if err := b.rt.Start(); err != nil {
+		return fmt.Errorf("error starting runtime: %w", err)
+	} else {
+		log.Info("runtime started")
+	}
+
 	var err error
 
 	// start our dethrottler if we are going to be doing some sending
 	if b.rt.Config.MaxWorkers > 0 {
 		queue.StartDethrottler(b.rt.VK, b.stopChan, b.waitGroup, msgQueueName)
 	}
-
-	// setup DynamoDB spool and writer
-	b.dynamoSpool = dynamo.NewSpool(b.rt.Dynamo, b.rt.Config.SpoolDir+"/dynamo", 30*time.Second)
-	if err := b.dynamoSpool.Start(); err != nil {
-		log.Error("error starting dynamo spool", "error", err)
-	}
-
-	b.dynamoWriter = dynamo.NewWriter(b.rt.Dynamo, b.rt.Config.DynamoTablePrefix+"Main", 500*time.Millisecond, 1000, b.dynamoSpool)
-	b.dynamoWriter.Start()
 
 	// create and start channel caches...
 	b.channelsByUUID = cache.NewLocal(func(ctx context.Context, uuid models.ChannelUUID) (*models.Channel, error) {
@@ -310,9 +305,6 @@ func (b *backend) Stop() error {
 	// wait for our threads to exit
 	b.waitGroup.Wait()
 
-	b.dynamoWriter.Stop()
-	b.dynamoSpool.Stop()
-
 	// stop our batched writers
 	if b.statusWriter != nil {
 		b.statusWriter.Stop()
@@ -320,6 +312,8 @@ func (b *backend) Stop() error {
 
 	// wait for them to flush fully
 	b.writerWG.Wait()
+
+	b.rt.Stop()
 
 	if err := b.recordShutdown(context.TODO()); err != nil {
 		return fmt.Errorf("error recording shutdown: %w", err)
@@ -857,7 +851,7 @@ func (b *backend) reportMetrics(ctx context.Context) (int, error) {
 		cwatch.Datum("ValkeyConnectionsWaitDuration", float64(redisWaitDurationInPeriod)/float64(time.Second), cwtypes.StandardUnitSeconds, hostDim),
 		cwatch.Datum("QueuedMsgs", float64(bulkSize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "bulk")),
 		cwatch.Datum("QueuedMsgs", float64(prioritySize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "priority")),
-		cwatch.Datum("DynamoSpooledItems", float64(b.dynamoSpool.Size()), cwtypes.StandardUnitCount, hostDim),
+		cwatch.Datum("DynamoSpooledItems", float64(b.rt.Spool.Size()), cwtypes.StandardUnitCount, hostDim),
 	)
 
 	if err := b.rt.CW.Send(ctx, metrics...); err != nil {
