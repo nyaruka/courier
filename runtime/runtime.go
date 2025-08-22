@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/gomodule/redigo/redis"
@@ -19,6 +20,9 @@ type Runtime struct {
 	VK     *redis.Pool
 	S3     *s3x.Service
 	CW     *cwatch.Service
+
+	Writer *dynamo.Writer
+	Spool  *dynamo.Spool
 }
 
 func NewRuntime(cfg *Config) (*Runtime, error) {
@@ -53,5 +57,22 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 		return nil, fmt.Errorf("error creating Cloudwatch service: %w", err)
 	}
 
+	rt.Spool = dynamo.NewSpool(rt.Dynamo, rt.Config.SpoolDir+"/dynamo", 30*time.Second)
+	rt.Writer = dynamo.NewWriter(rt.Dynamo, rt.Config.DynamoTablePrefix+"Main", 500*time.Millisecond, 1000, rt.Spool)
+
 	return rt, nil
+}
+
+func (r *Runtime) Start() error {
+	if err := r.Spool.Start(); err != nil {
+		return fmt.Errorf("error starting dynamo spool: %w", err)
+	}
+
+	r.Writer.Start()
+	return nil
+}
+
+func (r *Runtime) Stop() {
+	r.Writer.Stop()
+	r.Spool.Stop()
 }

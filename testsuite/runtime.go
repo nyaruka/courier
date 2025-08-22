@@ -32,6 +32,7 @@ func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
 	cfg.S3Minio = true
 	cfg.DynamoEndpoint = "http://localhost:6000"
 	cfg.DynamoTablePrefix = "Test"
+	cfg.SpoolDir = absPath("./_test_spool")
 
 	rt, err := runtime.NewRuntime(cfg)
 	require.NoError(t, err)
