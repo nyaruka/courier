@@ -298,7 +298,7 @@ func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, 
 			return nil, nil
 		}
 
-		contact = &mockContact{channel, urn, authTokens, courier.ContactUUID(uuids.NewV4())}
+		contact = &mockContact{channel, urn, authTokens, models.ContactUUID(uuids.NewV4())}
 		mb.contacts[urn] = contact
 	}
 	return contact, nil

@@ -409,12 +409,12 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Cha
 	row := b.rt.DB.QueryRowContext(ctx, `SELECT id, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_id = $2 AND direction = 'I'`, ch.ID(), externalID)
 
 	var msgID models.MsgID
-	var contactID ContactID
+	var contactID models.ContactID
 	if err := row.Scan(&msgID, &contactID); err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("error querying deleted msg: %w", err)
 	}
 
-	if msgID != models.NilMsgID && contactID != NilContactID {
+	if msgID != models.NilMsgID && contactID != models.NilContactID {
 		rc := b.rt.VK.Get()
 		defer rc.Close()
 
@@ -663,11 +663,11 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 	}
 
 	// only update the new URN if it doesn't have an associated contact
-	if newContactURN.ContactID == NilContactID {
+	if newContactURN.ContactID == models.NilContactID {
 		newContactURN.ContactID = oldContactURN.ContactID
 	}
 	// remove contact association from old URN
-	oldContactURN.ContactID = NilContactID
+	oldContactURN.ContactID = models.NilContactID
 
 	// update URNs
 	err = fullyUpdateContactURN(tx, newContactURN)

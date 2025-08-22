@@ -2,7 +2,6 @@ package rapidpro
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"fmt"
 	"log/slog"
 
@@ -13,34 +12,23 @@ import (
 	"github.com/nyaruka/null/v3"
 )
 
-// ContactURNID represents a contact urn's id
-type ContactURNID null.Int
-
-// NilContactURNID is our constant for a nil contact URN id
-const NilContactURNID = ContactURNID(0)
-
-func (i *ContactURNID) Scan(value any) error         { return null.ScanInt(value, i) }
-func (i ContactURNID) Value() (driver.Value, error)  { return null.IntValue(i) }
-func (i *ContactURNID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
-func (i ContactURNID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
-
 // ContactURN is our struct to map to database level URNs
 type ContactURN struct {
-	ID            ContactURNID     `db:"id"`
-	OrgID         models.OrgID     `db:"org_id"`
-	ContactID     ContactID        `db:"contact_id"`
-	Identity      string           `db:"identity"`
-	Scheme        string           `db:"scheme"`
-	Path          string           `db:"path"`
-	Display       null.String      `db:"display"`
-	AuthTokens    null.Map[string] `db:"auth_tokens"`
-	Priority      int              `db:"priority"`
-	ChannelID     models.ChannelID `db:"channel_id"`
-	PrevContactID ContactID
+	ID            models.ContactURNID `db:"id"`
+	OrgID         models.OrgID        `db:"org_id"`
+	ContactID     models.ContactID    `db:"contact_id"`
+	Identity      string              `db:"identity"`
+	Scheme        string              `db:"scheme"`
+	Path          string              `db:"path"`
+	Display       null.String         `db:"display"`
+	AuthTokens    null.Map[string]    `db:"auth_tokens"`
+	Priority      int                 `db:"priority"`
+	ChannelID     models.ChannelID    `db:"channel_id"`
+	PrevContactID models.ContactID
 }
 
 // returns a new ContactURN object for the passed in org, contact and string URN
-func newContactURN(org models.OrgID, channelID models.ChannelID, contactID ContactID, urn urns.URN, authTokens map[string]string) *ContactURN {
+func newContactURN(org models.OrgID, channelID models.ChannelID, contactID models.ContactID, urn urns.URN, authTokens map[string]string) *ContactURN {
 	return &ContactURN{
 		OrgID:      org,
 		ChannelID:  channelID,
@@ -67,7 +55,7 @@ ORDER BY priority DESC
    LIMIT 1`
 
 // returns all the ContactURNs for the passed in contact, sorted by priority
-func getURNsForContact(db *sqlx.Tx, contactID ContactID) ([]*ContactURN, error) {
+func getURNsForContact(db *sqlx.Tx, contactID models.ContactID) ([]*ContactURN, error) {
 	// select all the URNs for this contact
 	rows, err := db.Queryx(sqlSelectURNsByContact, contactID)
 	if err != nil {
@@ -160,7 +148,7 @@ func setDefaultURN(db *sqlx.Tx, channel *Channel, contact *Contact, urn urns.URN
 
 // getContactURNByIdentity returns the ContactURN for the passed in org and identity
 func getContactURNByIdentity(db *sqlx.Tx, org models.OrgID, urn urns.URN) (*ContactURN, error) {
-	contactURN := newContactURN(org, models.NilChannelID, NilContactID, urn, map[string]string{})
+	contactURN := newContactURN(org, models.NilChannelID, models.NilContactID, urn, map[string]string{})
 	err := db.Get(contactURN, sqlSelectURNByIdentity, org, urn.Identity())
 	if err != nil {
 		return nil, err
@@ -170,7 +158,7 @@ func getContactURNByIdentity(db *sqlx.Tx, org models.OrgID, urn urns.URN) (*Cont
 
 // getOrCreateContactURN returns the ContactURN for the passed in org and URN, creating and associating
 // it with the passed in contact if necessary
-func getOrCreateContactURN(db *sqlx.Tx, channel *Channel, contactID ContactID, urn urns.URN, authTokens map[string]string) (*ContactURN, error) {
+func getOrCreateContactURN(db *sqlx.Tx, channel *Channel, contactID models.ContactID, urn urns.URN, authTokens map[string]string) (*ContactURN, error) {
 	contactURN := newContactURN(channel.OrgID(), models.NilChannelID, contactID, urn, authTokens)
 	if channel.HasRole(models.ChannelRoleSend) {
 		contactURN.ChannelID = channel.ID()

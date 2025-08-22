@@ -413,10 +413,10 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			assert.Equal(t, append([]*clogs.Error{}, tc.ExpectedLogErrors...), clog.Errors, "channel log errors mismatch")
 
 			if tc.ExpectedContactURNs != nil {
-				var contactUUID courier.ContactUUID
+				var contactUUID models.ContactUUID
 				for urn, shouldBePresent := range tc.ExpectedContactURNs {
 					contact, _ := mb.GetContact(ctx, channel, urns.URN(urn), nil, "", true, clog)
-					if contactUUID == courier.NilContactUUID && shouldBePresent {
+					if contactUUID == models.NilContactUUID && shouldBePresent {
 						contactUUID = contact.UUID()
 					}
 					if shouldBePresent {

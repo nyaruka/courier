@@ -3,10 +3,8 @@ package rapidpro
 import (
 	"context"
 	"database/sql"
-	"database/sql/driver"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"time"
 	"unicode/utf8"
 
@@ -22,33 +20,14 @@ import (
 // used by unit tests to slow down urn operations to test races
 var urnSleep bool
 
-// ContactID is our representation of our database contact id
-type ContactID null.Int
-
-// NilContactID represents our nil value for ContactID
-var NilContactID = ContactID(0)
-
-func (i *ContactID) Scan(value any) error         { return null.ScanInt(value, i) }
-func (i ContactID) Value() (driver.Value, error)  { return null.IntValue(i) }
-func (i *ContactID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
-func (i ContactID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
-
-// String returns a string representation of the id
-func (i ContactID) String() string {
-	if i != NilContactID {
-		return strconv.FormatInt(int64(i), 10)
-	}
-	return "null"
-}
-
 // Contact is our struct for a contact in the database
 type Contact struct {
-	OrgID_ models.OrgID        `db:"org_id"`
-	ID_    ContactID           `db:"id"`
-	UUID_  courier.ContactUUID `db:"uuid"`
-	Name_  null.String         `db:"name"`
+	OrgID_ models.OrgID       `db:"org_id"`
+	ID_    models.ContactID   `db:"id"`
+	UUID_  models.ContactUUID `db:"uuid"`
+	Name_  null.String        `db:"name"`
 
-	URNID_ ContactURNID `db:"urn_id"`
+	URNID_ models.ContactURNID `db:"urn_id"`
 
 	CreatedOn_  time.Time `db:"created_on"`
 	ModifiedOn_ time.Time `db:"modified_on"`
@@ -60,7 +39,7 @@ type Contact struct {
 }
 
 // UUID returns the UUID for this contact
-func (c *Contact) UUID() courier.ContactUUID { return c.UUID_ }
+func (c *Contact) UUID() models.ContactUUID { return c.UUID_ }
 
 const sqlInsertContact = `
 INSERT INTO 
@@ -137,7 +116,7 @@ func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *C
 
 	// didn't find it, we need to create it instead
 	contact.OrgID_ = org
-	contact.UUID_ = courier.ContactUUID(uuids.NewV4())
+	contact.UUID_ = models.ContactUUID(uuids.NewV4())
 	contact.CreatedOn_ = time.Now()
 	contact.CreatedBy_ = b.systemUserID
 	contact.ModifiedOn_ = time.Now()
@@ -205,7 +184,7 @@ func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *C
 	}
 
 	// we stole the URN from another contact, roll back and start over
-	if contactURN.PrevContactID != NilContactID {
+	if contactURN.PrevContactID != models.NilContactID {
 		tx.Rollback()
 		return contactForURN(ctx, b, org, channel, urn, authTokens, name, true, clog)
 	}

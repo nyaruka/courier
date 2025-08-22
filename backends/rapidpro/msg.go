@@ -40,8 +40,8 @@ type Msg struct {
 	Templating_   *models.Templating   `json:"templating"      db:"templating"`
 	ExternalID_   null.String          `                       db:"external_id"`
 	ChannelID_    models.ChannelID     `                       db:"channel_id"`
-	ContactID_    ContactID            `json:"contact_id"      db:"contact_id"`
-	ContactURNID_ ContactURNID         `json:"contact_urn_id"  db:"contact_urn_id"`
+	ContactID_    models.ContactID     `json:"contact_id"      db:"contact_id"`
+	ContactURNID_ models.ContactURNID  `json:"contact_urn_id"  db:"contact_urn_id"`
 
 	MessageCount_ int         `                     db:"msg_count"`
 	ErrorCount_   int         `                     db:"error_count"`

@@ -210,13 +210,13 @@ func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
 	err = ts.b.DeleteMsgByExternalID(ctx, knChannel, "ext1")
 	ts.Nil(err)
 
-	ts.assertNoQueuedContactTask(ContactID(100))
+	ts.assertNoQueuedContactTask(100)
 
 	// a valid external id becomes a queued task
 	err = ts.b.DeleteMsgByExternalID(ctx, knChannel, "ext2")
 	ts.Nil(err)
 
-	ts.assertQueuedContactTask(ContactID(100), "msg_deleted", map[string]any{"msg_id": float64(10002)})
+	ts.assertQueuedContactTask(100, "msg_deleted", map[string]any{"msg_id": float64(10002)})
 }
 
 func (ts *BackendTestSuite) TestContact() {
@@ -257,7 +257,7 @@ func (ts *BackendTestSuite) TestContact() {
 	ts.NotNil(contact)
 
 	ts.Equal(null.String(""), contact.Name_)
-	ts.Equal(courier.ContactUUID("a984069d-0008-4d8c-a772-b14a8a6acccc"), contact.UUID_)
+	ts.Equal(models.ContactUUID("a984069d-0008-4d8c-a772-b14a8a6acccc"), contact.UUID_)
 
 	urn = urns.URN("tel:+12065551519")
 
@@ -658,7 +658,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update URN when the new doesn't exist
 	tx, _ := ts.b.rt.DB.BeginTxx(ctx, nil)
 	oldURN := urns.URN("whatsapp:55988776655")
-	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, NilContactID, oldURN, nil))
+	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, models.NilContactID, oldURN, nil))
 
 	ts.NoError(tx.Commit())
 
@@ -680,7 +680,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	newURN = urns.URN("whatsapp:5599887766")
 	tx, _ = ts.b.rt.DB.BeginTxx(ctx, nil)
 	contact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, nil, "", true, clog6)
-	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, NilContactID, newURN, nil))
+	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, models.NilContactID, newURN, nil))
 
 	ts.NoError(tx.Commit())
 
@@ -694,7 +694,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	oldContactURN, _ := getContactURNByIdentity(tx, channel.OrgID_, oldURN)
 
 	ts.Equal(newContactURN.ContactID, contact.ID_)
-	ts.Equal(oldContactURN.ContactID, NilContactID)
+	ts.Equal(oldContactURN.ContactID, models.NilContactID)
 	ts.NoError(tx.Commit())
 
 	// new URN already exits and have an associated contact
@@ -715,7 +715,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	oldContactURN, _ = getContactURNByIdentity(tx, channel.OrgID_, oldURN)
 	newContactURN, _ = getContactURNByIdentity(tx, channel.OrgID_, newURN)
 
-	ts.Equal(oldContactURN.ContactID, NilContactID)
+	ts.Equal(oldContactURN.ContactID, models.NilContactID)
 	ts.Equal(newContactURN.ContactID, otherContact.ID_)
 	ts.NoError(tx.Commit())
 }
@@ -1531,7 +1531,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 	assertvk.HLen(ts.T(), rc, fmt.Sprintf("{media-lookups}:%s", time.Now().In(time.UTC).Format("2006-01-02")), 3)
 }
 
-func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {
+func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID models.ContactID) {
 	rc := ts.b.rt.VK.Get()
 	defer rc.Close()
 
@@ -1541,7 +1541,7 @@ func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {
 	assertvk.LLen(ts.T(), rc, fmt.Sprintf("c:1:%d", contactID), 0)
 }
 
-func (ts *BackendTestSuite) assertQueuedContactTask(contactID ContactID, expectedType string, expectedBody map[string]any) {
+func (ts *BackendTestSuite) assertQueuedContactTask(contactID models.ContactID, expectedType string, expectedBody map[string]any) {
 	rc := ts.b.rt.VK.Get()
 	defer rc.Close()
 

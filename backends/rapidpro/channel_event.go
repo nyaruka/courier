@@ -52,8 +52,8 @@ type ChannelEvent struct {
 	CreatedOn_   time.Time                `json:"created_on"              db:"created_on"`
 	LogUUIDs     pq.StringArray           `json:"log_uuids"               db:"log_uuids"`
 
-	ContactID_    ContactID    `json:"-"               db:"contact_id"`
-	ContactURNID_ ContactURNID `json:"-"               db:"contact_urn_id"`
+	ContactID_    models.ContactID    `json:"-"               db:"contact_id"`
+	ContactURNID_ models.ContactURNID `json:"-"               db:"contact_urn_id"`
 
 	// used to update contact
 	ContactName_   string            `json:"contact_name"`
