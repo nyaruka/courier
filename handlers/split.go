@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 )
 
 type MsgPartType int
@@ -22,7 +23,7 @@ type MsgPart struct {
 	Type       MsgPartType
 	Text       string
 	Attachment string
-	OptIn      *courier.OptInReference
+	OptIn      *models.OptInReference
 	IsFirst    bool
 	IsLast     bool
 }

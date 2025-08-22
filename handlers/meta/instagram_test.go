@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
@@ -189,7 +190,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		Label:     "Text only chat message",
 		MsgText:   "Simple Message",
 		MsgURN:    "instagram:12345",
-		MsgOrigin: courier.MsgOriginChat,
+		MsgOrigin: models.MsgOriginChat,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
@@ -205,7 +206,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		Label:     "Text only broadcast message",
 		MsgText:   "Simple Message",
 		MsgURN:    "instagram:12345",
-		MsgOrigin: courier.MsgOriginBroadcast,
+		MsgOrigin: models.MsgOriginBroadcast,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
@@ -221,7 +222,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		Label:                   "Text only flow response",
 		MsgText:                 "Simple Message",
 		MsgURN:                  "instagram:12345",
-		MsgOrigin:               courier.MsgOriginFlow,
+		MsgOrigin:               models.MsgOriginFlow,
 		MsgResponseToExternalID: "23526",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v18.0/me/messages*": {
@@ -238,8 +239,8 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		Label:           "Quick replies on a broadcast message",
 		MsgText:         "Are you happy?",
 		MsgURN:          "instagram:12345",
-		MsgOrigin:       courier.MsgOriginBroadcast,
-		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
+		MsgOrigin:       models.MsgOriginBroadcast,
+		MsgQuickReplies: []models.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
@@ -255,7 +256,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		Label:           "Message that exceeds max text length",
 		MsgText:         "This is a long message which spans more than one part, what will actually be sent in the end if we exceed the max length?",
 		MsgURN:          "instagram:12345",
-		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
+		MsgQuickReplies: []models.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
@@ -294,7 +295,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 		MsgText:         "This is some text.",
 		MsgURN:          "instagram:12345",
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
+		MsgQuickReplies: []models.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v18.0/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),

@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
@@ -474,7 +475,7 @@ var outgoingCases = []OutgoingTestCase{
 		Label:           "Send keyboard",
 		MsgText:         "Send keyboard",
 		MsgURN:          "vk:123456789",
-		MsgQuickReplies: []courier.QuickReply{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}, {Text: "E"}},
+		MsgQuickReplies: []models.QuickReply{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}, {Text: "E"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.vk.com/method/messages.send.json?*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),

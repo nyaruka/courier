@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 )
 
 type MediaType string
@@ -30,8 +31,8 @@ type Attachment struct {
 	Name        string
 	ContentType string
 	URL         string
-	Media       courier.Media
-	Thumbnail   courier.Media
+	Media       *models.Media
+	Thumbnail   *models.Media
 }
 
 // ResolveAttachments resolves the given attachment strings (content-type:url) into attachment objects
@@ -87,7 +88,7 @@ func resolveAttachment(ctx context.Context, b courier.Backend, contentType, medi
 	mediaSupport := support[mediaType]
 
 	// our candidates are the uploaded media and any alternates of the same media type
-	candidates := append([]courier.Media{media}, filterMediaByType(media.Alternates(), mediaType)...)
+	candidates := append([]*models.Media{media}, filterMediaByType(media.Alternates(), mediaType)...)
 
 	// narrow down the candidates to the ones we support
 	if len(mediaSupport.Types) > 0 {
@@ -106,7 +107,7 @@ func resolveAttachment(ctx context.Context, b courier.Backend, contentType, medi
 	media = candidates[0]
 
 	// if we have an image alternate, that can be a thumbnail
-	var thumbnail courier.Media
+	var thumbnail *models.Media
 	thumbnails := filterMediaByType(media.Alternates(), MediaTypeImage)
 	if len(thumbnails) > 0 {
 		thumbnail = thumbnails[0]
@@ -122,15 +123,15 @@ func resolveAttachment(ctx context.Context, b courier.Backend, contentType, medi
 	}, nil
 }
 
-func filterMediaByType(in []courier.Media, mediaType MediaType) []courier.Media {
-	return filterMedia(in, func(m courier.Media) bool {
+func filterMediaByType(in []*models.Media, mediaType MediaType) []*models.Media {
+	return filterMedia(in, func(m *models.Media) bool {
 		mt, _ := parseContentType(m.ContentType())
 		return mt == mediaType
 	})
 }
 
-func filterMediaByContentTypes(in []courier.Media, types []string) []courier.Media {
-	return filterMedia(in, func(m courier.Media) bool {
+func filterMediaByContentTypes(in []*models.Media, types []string) []*models.Media {
+	return filterMedia(in, func(m *models.Media) bool {
 		for _, t := range types {
 			if m.ContentType() == t {
 				return true
@@ -140,12 +141,12 @@ func filterMediaByContentTypes(in []courier.Media, types []string) []courier.Med
 	})
 }
 
-func filterMediaBySize(in []courier.Media, maxBytes int) []courier.Media {
-	return filterMedia(in, func(m courier.Media) bool { return m.Size() <= maxBytes })
+func filterMediaBySize(in []*models.Media, maxBytes int) []*models.Media {
+	return filterMedia(in, func(m *models.Media) bool { return m.Size() <= maxBytes })
 }
 
-func filterMedia(in []courier.Media, f func(courier.Media) bool) []courier.Media {
-	filtered := make([]courier.Media, 0, len(in))
+func filterMedia(in []*models.Media, f func(*models.Media) bool) []*models.Media {
+	filtered := make([]*models.Media, 0, len(in))
 	for _, m := range in {
 		if f(m) {
 			filtered = append(filtered, m)

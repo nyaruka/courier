@@ -408,13 +408,13 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Cha
 	ch := channel.(*Channel)
 	row := b.rt.DB.QueryRowContext(ctx, `SELECT id, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_id = $2 AND direction = 'I'`, ch.ID(), externalID)
 
-	var msgID courier.MsgID
+	var msgID models.MsgID
 	var contactID ContactID
 	if err := row.Scan(&msgID, &contactID); err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("error querying deleted msg: %w", err)
 	}
 
-	if msgID != courier.NilMsgID && contactID != NilContactID {
+	if msgID != models.NilMsgID && contactID != NilContactID {
 		rc := b.rt.VK.Get()
 		defer rc.Close()
 
@@ -437,7 +437,7 @@ func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, u
 	msg.WithReceivedOn(time.Now().UTC())
 
 	// check if this message could be a duplicate and if so use the original's UUID
-	if prevUUID := b.checkMsgAlreadyReceived(ctx, msg); prevUUID != courier.NilMsgUUID {
+	if prevUUID := b.checkMsgAlreadyReceived(ctx, msg); prevUUID != models.NilMsgUUID {
 		msg.UUID_ = prevUUID
 		msg.alreadyWritten = true
 	}
@@ -503,14 +503,14 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 }
 
 // WasMsgSent returns whether the passed in message has already been sent
-func (b *backend) WasMsgSent(ctx context.Context, id courier.MsgID) (bool, error) {
+func (b *backend) WasMsgSent(ctx context.Context, id models.MsgID) (bool, error) {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	return b.sentIDs.IsMember(ctx, rc, id.String())
 }
 
-func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
+func (b *backend) ClearMsgSent(ctx context.Context, id models.MsgID) error {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
@@ -570,13 +570,13 @@ func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdate(channel courier.Channel, id courier.MsgID, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (b *backend) NewStatusUpdate(channel courier.Channel, id models.MsgID, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return newStatusUpdate(channel, id, "", status, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
 func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
-	return newStatusUpdate(channel, courier.NilMsgID, externalID, status, clog)
+	return newStatusUpdate(channel, models.NilMsgID, externalID, status, clog)
 }
 
 // WriteStatusUpdate writes the passed in MsgStatus to our store
@@ -584,7 +584,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 	log := slog.With("msg_id", status.MsgID(), "msg_external_id", status.ExternalID(), "status", status.Status())
 	su := status.(*StatusUpdate)
 
-	if status.MsgID() == courier.NilMsgID && status.ExternalID() == "" {
+	if status.MsgID() == models.NilMsgID && status.ExternalID() == "" {
 		return errors.New("message status with no id or external id")
 	}
 
@@ -597,7 +597,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 		}
 	}
 
-	if status.MsgID() != courier.NilMsgID {
+	if status.MsgID() != models.NilMsgID {
 		// this is a message we've just sent and were given an external id for
 		if status.ExternalID() != "" {
 			rc := b.rt.VK.Get()
@@ -723,7 +723,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 }
 
 // ResolveMedia resolves the passed in attachment URL to a media object
-func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Media, error) {
+func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (*models.Media, error) {
 	u, err := url.Parse(mediaUrl)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing media URL: %w", err)

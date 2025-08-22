@@ -3,7 +3,7 @@ package whatsapp_test
 import (
 	"testing"
 
-	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers/meta/whatsapp"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -195,7 +195,7 @@ func TestGetTemplatePayload(t *testing.T) {
 	}
 
 	for i, tc := range tcs {
-		templating := &courier.Templating{}
+		templating := &models.Templating{}
 		jsonx.MustUnmarshal([]byte(tc.templating), templating)
 
 		msg := test.NewMockMsg(1, "87995844-2017-4ba0-bc73-f3da75b32f9b", nil, "tel:+1234567890", "hi", nil).WithTemplating(templating)

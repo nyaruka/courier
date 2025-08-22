@@ -18,6 +18,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
@@ -723,7 +724,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 
 			for _, comp := range msg.Templating().Components {
 				// get the variables used by this component in order of their names 1, 2 etc
-				compParams := make([]courier.TemplatingVariable, 0, len(comp.Variables))
+				compParams := make([]models.TemplatingVariable, 0, len(comp.Variables))
 
 				for _, varName := range slices.Sorted(maps.Keys(comp.Variables)) {
 					compParams = append(compParams, msg.Templating().Variables[comp.Variables[varName]])

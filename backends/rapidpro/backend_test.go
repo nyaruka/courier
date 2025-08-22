@@ -163,11 +163,11 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	ts.Equal("5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2", msg.URNAuth_)
 	ts.Equal("", msg.ExternalID())
-	ts.Equal([]courier.QuickReply{{Text: "Yes"}, {Text: "No"}}, msg.QuickReplies())
+	ts.Equal([]models.QuickReply{{Text: "Yes"}, {Text: "No"}}, msg.QuickReplies())
 	ts.Equal("external-id", msg.ResponseToExternalID())
 	ts.True(msg.HighPriority())
 	ts.True(msg.IsResend())
-	flow_ref := courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"}
+	flow_ref := models.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"}
 	ts.Equal(&flow_ref, msg.Flow())
 
 	msgJSONNoQR := `{
@@ -492,7 +492,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	now := time.Now().In(time.UTC)
 
-	updateStatusByID := func(id courier.MsgID, status courier.MsgStatus, newExtID string) *courier.ChannelLog {
+	updateStatusByID := func(id models.MsgID, status courier.MsgStatus, newExtID string) *courier.ChannelLog {
 		clog := courier.NewChannelLog(courier.ChannelLogTypeMsgStatus, channel, nil)
 		statusObj := ts.b.NewStatusUpdate(channel, id, status, clog)
 		if newExtID != "" {
@@ -663,7 +663,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.NoError(tx.Commit())
 
 	newURN := urns.URN("whatsapp:5588776655")
-	status = ts.b.NewStatusUpdate(channel, courier.MsgID(10000), courier.MsgStatusSent, clog6)
+	status = ts.b.NewStatusUpdate(channel, 10000, courier.MsgStatusSent, clog6)
 	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
@@ -684,7 +684,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	ts.NoError(tx.Commit())
 
-	status = ts.b.NewStatusUpdate(channel, courier.MsgID(10007), courier.MsgStatusSent, clog6)
+	status = ts.b.NewStatusUpdate(channel, 10007, courier.MsgStatusSent, clog6)
 	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
@@ -706,7 +706,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	ts.NoError(tx.Commit())
 
-	status = ts.b.NewStatusUpdate(channel, courier.MsgID(10007), courier.MsgStatusSent, clog6)
+	status = ts.b.NewStatusUpdate(channel, 10007, courier.MsgStatusSent, clog6)
 	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
@@ -1432,7 +1432,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 
 	tcs := []struct {
 		url   string
-		media courier.Media
+		media *models.Media
 		err   string
 	}{
 		{ // image upload that can be resolved
@@ -1575,7 +1575,7 @@ type ServerTestSuite struct {
 }
 
 // for testing only, returned DBMsg object is not fully populated
-func readMsgFromDB(b *backend, id courier.MsgID) *Msg {
+func readMsgFromDB(b *backend, id models.MsgID) *Msg {
 	m := &Msg{
 		ID_: id,
 	}

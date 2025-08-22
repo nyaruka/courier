@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
@@ -859,7 +860,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		Label:           "Quick Reply",
 		MsgText:         "Are you happy?",
 		MsgURN:          "facebook:12345",
-		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
+		MsgQuickReplies: []models.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v3.3/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
@@ -877,7 +878,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		Label:           "Long Message",
 		MsgText:         "This is a long message which spans more than one part, what will actually be sent in the end if we exceed the max length?",
 		MsgURN:          "facebook:12345",
-		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
+		MsgQuickReplies: []models.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v3.3/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
@@ -922,7 +923,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:         "This is some text.",
 		MsgURN:          "facebook:12345",
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
+		MsgQuickReplies: []models.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v3.3/me/messages*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),

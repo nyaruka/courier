@@ -1,6 +1,9 @@
 package courier
 
-import "github.com/nyaruka/gocommon/urns"
+import (
+	"github.com/nyaruka/courier/core/models"
+	"github.com/nyaruka/gocommon/urns"
+)
 
 // MsgStatus is the status of a message
 type MsgStatus string
@@ -27,7 +30,7 @@ type StatusUpdate interface {
 	Event
 
 	ChannelUUID() ChannelUUID
-	MsgID() MsgID
+	MsgID() models.MsgID
 
 	SetURNUpdate(old, new urns.URN) error
 	URNUpdate() (old, new urns.URN)

@@ -5,12 +5,12 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 )
 
-func GetTemplatePayload(templating *courier.Templating) *Template {
+func GetTemplatePayload(templating *models.Templating) *Template {
 	template := &Template{
 		Name:       templating.Template.Name,
 		Language:   &Language{Policy: "deterministic", Code: templating.Language},
@@ -19,7 +19,7 @@ func GetTemplatePayload(templating *courier.Templating) *Template {
 
 	for _, comp := range templating.Components {
 		// get the variables used by this component in order of their names 1, 2 etc
-		compParams := make([]courier.TemplatingVariable, 0, len(comp.Variables))
+		compParams := make([]models.TemplatingVariable, 0, len(comp.Variables))
 
 		for _, varName := range slices.Sorted(maps.Keys(comp.Variables)) {
 			compParams = append(compParams, templating.Variables[comp.Variables[varName]])

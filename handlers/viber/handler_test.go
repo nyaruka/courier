@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -97,7 +98,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		Label:           "Quick Reply",
 		MsgText:         "Are you happy?",
 		MsgURN:          "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
+		MsgQuickReplies: []models.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://chatapi.viber.com/pa/send_message": {
 				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
@@ -279,7 +280,7 @@ var buttonLayoutSendTestCases = []OutgoingTestCase{
 		Label:           "Quick Reply With Layout With Column, Row and BgColor definitions",
 		MsgText:         "Select a, b, c or d.",
 		MsgURN:          "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MsgQuickReplies: []courier.QuickReply{{Text: "a"}, {Text: "b"}, {Text: "c"}, {Text: "d"}},
+		MsgQuickReplies: []models.QuickReply{{Text: "a"}, {Text: "b"}, {Text: "c"}, {Text: "d"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://chatapi.viber.com/pa/send_message": {
 				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),

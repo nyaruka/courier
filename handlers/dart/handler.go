@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/urns"
@@ -127,7 +128,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdate(channel, courier.MsgID(msgID), msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, models.MsgID(msgID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 

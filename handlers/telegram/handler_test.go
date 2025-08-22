@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -798,7 +799,7 @@ var outgoingCases = []OutgoingTestCase{
 		Label:           "Quick Reply",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
-		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
+		MsgQuickReplies: []models.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
@@ -813,7 +814,7 @@ var outgoingCases = []OutgoingTestCase{
 		Label:           "Quick Reply with multiple attachments",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
-		MsgQuickReplies: []courier.QuickReply{{Text: "Yes"}, {Text: "No"}},
+		MsgQuickReplies: []models.QuickReply{{Text: "Yes"}, {Text: "No"}},
 		MsgAttachments:  []string{"application/pdf:https://foo.bar/doc1.pdf", "application/pdf:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {

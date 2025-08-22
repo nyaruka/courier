@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -18,10 +19,10 @@ func TestResolveAttachments(t *testing.T) {
 	imageJPG := test.NewMockMedia("test.jpg", "image/jpeg", "http://mock.com/1234/test.jpg", 1024*1024, 640, 480, 0, nil)
 
 	audioM4A := test.NewMockMedia("test.m4a", "audio/mp4", "http://mock.com/2345/test.m4a", 1024*1024, 0, 0, 200, nil)
-	audioMP3 := test.NewMockMedia("test.mp3", "audio/mp3", "http://mock.com/3456/test.mp3", 1024*1024, 0, 0, 200, []courier.Media{audioM4A})
+	audioMP3 := test.NewMockMedia("test.mp3", "audio/mp3", "http://mock.com/3456/test.mp3", 1024*1024, 0, 0, 200, []*models.Media{audioM4A})
 
 	thumbJPG := test.NewMockMedia("test.jpg", "image/jpeg", "http://mock.com/4567/test.jpg", 1024*1024, 640, 480, 0, nil)
-	videoMP4 := test.NewMockMedia("test.mp4", "video/mp4", "http://mock.com/5678/test.mp4", 1024*1024, 0, 0, 1000, []courier.Media{thumbJPG})
+	videoMP4 := test.NewMockMedia("test.mp4", "video/mp4", "http://mock.com/5678/test.mp4", 1024*1024, 0, 0, 1000, []*models.Media{thumbJPG})
 
 	videoMOV := test.NewMockMedia("test.mov", "video/quicktime", "http://mock.com/6789/test.mov", 100*1024*1024, 0, 0, 2000, nil)
 

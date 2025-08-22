@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -93,7 +94,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		Label:   "Plain Send",
 		MsgText: "Simple Message",
 		MsgURN:  "tel:+250788383383",
-		MsgFlow: &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
+		MsgFlow: &models.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://highpushfastapi-v2.hcnx.eu/api*": {
 				httpx.NewMockResponse(200, nil, []byte(``)),
@@ -140,7 +141,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		Label:   "Unicode Send",
 		MsgText: "☺",
 		MsgURN:  "tel:+250788383383",
-		MsgFlow: &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
+		MsgFlow: &models.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://highpushfastapi-v2.hcnx.eu/api*": {
 				httpx.NewMockResponse(200, nil, []byte(``)),
@@ -164,7 +165,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		Label:   "Long Send",
 		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
 		MsgURN:  "tel:+250788383383",
-		MsgFlow: &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
+		MsgFlow: &models.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://highpushfastapi-v2.hcnx.eu/api*": {
 				httpx.NewMockResponse(200, nil, []byte(``)),
@@ -205,7 +206,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:        "My pic!",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MsgURN:         "tel:+250788383383",
-		MsgFlow:        &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
+		MsgFlow:        &models.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://highpushfastapi-v2.hcnx.eu/api*": {
 				httpx.NewMockResponse(200, nil, []byte(``)),

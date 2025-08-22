@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -45,7 +46,7 @@ type Backend interface {
 	WriteMsg(context.Context, MsgIn, *ChannelLog) error
 
 	// NewStatusUpdate creates a new status update for the given message id
-	NewStatusUpdate(Channel, MsgID, MsgStatus, *ChannelLog) StatusUpdate
+	NewStatusUpdate(Channel, models.MsgID, MsgStatus, *ChannelLog) StatusUpdate
 
 	// NewStatusUpdateByExternalID creates a new status update for the given external id
 	NewStatusUpdateByExternalID(Channel, string, MsgStatus, *ChannelLog) StatusUpdate
@@ -68,11 +69,11 @@ type Backend interface {
 
 	// WasMsgSent returns whether the backend thinks the passed in message was already sent. This can be used in cases where
 	// a backend wants to implement a failsafe against double sending messages (say if they were double queued)
-	WasMsgSent(context.Context, MsgID) (bool, error)
+	WasMsgSent(context.Context, models.MsgID) (bool, error)
 
 	// ClearMsgSent clears any internal status that a message was previously sent. This can be used in the case where
 	// a message is being forced in being resent by a user
-	ClearMsgSent(context.Context, MsgID) error
+	ClearMsgSent(context.Context, models.MsgID) error
 
 	// OnSendComplete is called when the sender has finished trying to send a message
 	OnSendComplete(context.Context, MsgOut, StatusUpdate, *ChannelLog)
@@ -84,7 +85,7 @@ type Backend interface {
 	SaveAttachment(context.Context, Channel, string, []byte, string) (string, error)
 
 	// ResolveMedia resolves an outgoing attachment URL to a media object
-	ResolveMedia(context.Context, string) (Media, error)
+	ResolveMedia(context.Context, string) (*models.Media, error)
 
 	// HttpClient returns an HTTP client for making external requests
 	HttpClient(bool) *http.Client
@@ -98,16 +99,4 @@ type Backend interface {
 
 	// RedisPool returns the redisPool for this backend
 	RedisPool() *redis.Pool
-}
-
-// Media is a resolved media object that can be used as a message attachment
-type Media interface {
-	Name() string
-	ContentType() string
-	URL() string
-	Size() int
-	Width() int
-	Height() int
-	Duration() int
-	Alternates() []Media
 }
