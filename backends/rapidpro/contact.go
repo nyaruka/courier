@@ -8,7 +8,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/dbutil"
@@ -19,47 +18,6 @@ import (
 
 // used by unit tests to slow down urn operations to test races
 var urnSleep bool
-
-// Contact is our struct for a contact in the database
-type Contact struct {
-	OrgID_ models.OrgID       `db:"org_id"`
-	ID_    models.ContactID   `db:"id"`
-	UUID_  models.ContactUUID `db:"uuid"`
-	Name_  null.String        `db:"name"`
-
-	URNID_ models.ContactURNID `db:"urn_id"`
-
-	CreatedOn_  time.Time `db:"created_on"`
-	ModifiedOn_ time.Time `db:"modified_on"`
-
-	CreatedBy_  models.UserID `db:"created_by_id"`
-	ModifiedBy_ models.UserID `db:"modified_by_id"`
-
-	IsNew_ bool
-}
-
-// UUID returns the UUID for this contact
-func (c *Contact) UUID() models.ContactUUID { return c.UUID_ }
-
-const sqlInsertContact = `
-INSERT INTO 
-	contacts_contact(org_id, is_active, status, uuid, created_on, modified_on, created_by_id, modified_by_id, name, ticket_count) 
-              VALUES(:org_id, TRUE, 'A', :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name, 0)
-RETURNING id
-`
-
-// insertContact inserts the passed in contact, the id field will be populated with the result on success
-func insertContact(tx *sqlx.Tx, contact *Contact) error {
-	rows, err := tx.NamedQuery(sqlInsertContact, contact)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	if rows.Next() {
-		err = rows.Scan(&contact.ID_)
-	}
-	return err
-}
 
 const lookupContactFromURNSQL = `
 SELECT 
@@ -81,11 +39,11 @@ WHERE
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
-func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *courier.ChannelLog) (*Contact, error) {
+func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *models.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *courier.ChannelLog) (*models.Contact, error) {
 	log := slog.With("org_id", org, "urn", urn.Identity(), "channel_uuid", channel.UUID(), "log_uuid", clog.UUID)
 
 	// try to look up our contact by URN
-	contact := &Contact{}
+	contact := &models.Contact{}
 	err := b.rt.DB.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
 	if err != nil && err != sql.ErrNoRows {
 		log.Error("error looking up contact by URN", "error", err)
@@ -158,8 +116,7 @@ func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *C
 		return nil, fmt.Errorf("error beginning transaction: %w", err)
 	}
 
-	err = insertContact(tx, contact)
-	if err != nil {
+	if err := models.InsertContact(ctx, tx, contact); err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("error inserting contact: %w", err)
 	}

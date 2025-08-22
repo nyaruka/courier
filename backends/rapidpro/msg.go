@@ -68,7 +68,7 @@ type Msg struct {
 
 	ContactName_   string            `json:"contact_name"`
 	URNAuthTokens_ map[string]string `json:"auth_tokens"`
-	channel        *Channel
+	channel        *models.Channel
 	workerToken    queue.WorkerToken
 	alreadyWritten bool
 }
@@ -76,7 +76,7 @@ type Msg struct {
 // newMsg creates a new DBMsg object with the passed in parameters
 func newMsg(direction models.MsgDirection, channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) *Msg {
 	now := time.Now()
-	dbChannel := channel.(*Channel)
+	dbChannel := channel.(*models.Channel)
 
 	return &Msg{
 		OrgID_:        dbChannel.OrgID(),
@@ -215,7 +215,7 @@ INSERT INTO
            :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :sent_on, :log_uuids)
 RETURNING id`
 
-func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.ChannelLog) (*Contact, error) {
+func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.ChannelLog) (*models.Contact, error) {
 	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 
 	if err != nil {
@@ -263,7 +263,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	if err != nil {
 		return err
 	}
-	m.channel = channel.(*Channel)
+	m.channel = channel.(*models.Channel)
 
 	// create log tho it won't be written
 	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgReceive, channel, nil)

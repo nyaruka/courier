@@ -43,7 +43,7 @@ func (l *ChannelLog) MarshalDynamo() (map[string]types.AttributeValue, error) {
 
 	return dynamo.Marshal(&models.DynamoItem{
 		DynamoKey: l.DynamoKey(),
-		OrgID:     l.Channel().(*Channel).OrgID(),
+		OrgID:     l.Channel().(*models.Channel).OrgID(),
 		TTL:       &ttl,
 		Data: map[string]any{
 			"type":       l.Type,
@@ -58,7 +58,7 @@ func (l *ChannelLog) MarshalDynamo() (map[string]types.AttributeValue, error) {
 // queues the passed in channel log to a writer
 func queueChannelLog(b *backend, clog *courier.ChannelLog) {
 	log := slog.With("log_uuid", clog.UUID, "log_type", clog.Type, "channel_uuid", clog.Channel().UUID())
-	dbChan := clog.Channel().(*Channel)
+	dbChan := clog.Channel().(*models.Channel)
 	isError := clog.IsError()
 
 	// depending on the channel log policy, we might be able to discard this log
