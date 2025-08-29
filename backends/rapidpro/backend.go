@@ -371,7 +371,7 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 	}
 	dbChannel := c.(*models.Channel)
 	dbContact := contact.(*models.Contact)
-	_, err = getOrCreateContactURN(tx, dbChannel, dbContact.ID_, urn, authTokens)
+	_, err = GetOrCreateContactURN(ctx, tx, dbChannel, dbContact.ID_, urn, authTokens)
 	if err != nil {
 		return urns.NilURN, err
 	}
@@ -630,19 +630,19 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 		return err
 	}
 	// retrieve the old URN
-	oldContactURN, err := getContactURNByIdentity(tx, dbChannel.OrgID(), old)
+	oldContactURN, err := GetContactURNByIdentity(ctx, tx, dbChannel.OrgID(), old)
 	if err != nil {
 		return fmt.Errorf("error retrieving old contact URN: %w", err)
 	}
 	// retrieve the new URN
-	newContactURN, err := getContactURNByIdentity(tx, dbChannel.OrgID(), new)
+	newContactURN, err := GetContactURNByIdentity(ctx, tx, dbChannel.OrgID(), new)
 	if err != nil {
 		// only update the old URN path if the new URN doesn't exist
 		if err == sql.ErrNoRows {
 			oldContactURN.Path = new.Path()
 			oldContactURN.Identity = string(new.Identity())
 
-			err = fullyUpdateContactURN(tx, oldContactURN)
+			err = FullyUpdateContactURN(ctx, tx, oldContactURN)
 			if err != nil {
 				tx.Rollback()
 				return fmt.Errorf("error updating old contact URN: %w", err)
@@ -660,12 +660,12 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 	oldContactURN.ContactID = models.NilContactID
 
 	// update URNs
-	err = fullyUpdateContactURN(tx, newContactURN)
+	err = FullyUpdateContactURN(ctx, tx, newContactURN)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("error updating new contact URN: %w", err)
 	}
-	err = fullyUpdateContactURN(tx, oldContactURN)
+	err = FullyUpdateContactURN(ctx, tx, oldContactURN)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("error updating old contact URN: %w", err)
