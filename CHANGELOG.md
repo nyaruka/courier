@@ -1,3 +1,8 @@
+v10.3.10 (2025-08-29)
+-------------------------
+ * Fix panic in telegram handler
+ * More refactoring of things out of rapidpro package
+
 v10.3.9 (2025-08-14)
 -------------------------
  * Allow metrics reporting to be off, basic or advanced
