@@ -159,7 +159,7 @@ func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.V
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, respBody, _ := h.RequestHTTP(req, clog)
+	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
 		return "", courier.ErrConnectionFailed
 	}
