@@ -572,7 +572,7 @@ func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalI
 // WriteStatusUpdate writes the passed in MsgStatus to our store
 func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUpdate) error {
 	log := slog.With("msg_id", status.MsgID(), "msg_external_id", status.ExternalID(), "status", status.Status())
-	su := status.(*StatusUpdate)
+	su := status.(*models.StatusUpdate)
 
 	if status.MsgID() == models.NilMsgID && status.ExternalID() == "" {
 		return errors.New("message status with no id or external id")
@@ -609,7 +609,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 	}
 
 	// queue the status to written by the batch writer
-	b.statusWriter.Queue(status.(*StatusUpdate))
+	b.statusWriter.Queue(status.(*models.StatusUpdate))
 	log.Debug("status update queued")
 
 	return nil
