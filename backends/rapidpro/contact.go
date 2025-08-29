@@ -59,7 +59,7 @@ func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *m
 		}
 
 		// update contact's URNs so this URN has priority
-		err = SetDefaultURN(ctx, tx, channel, contact, urn, authTokens)
+		err = models.SetDefaultURN(ctx, tx, channel, contact, urn, authTokens)
 		if err != nil {
 			log.Error("error updating default URN for contact", "error", err)
 			tx.Rollback()
@@ -129,7 +129,7 @@ func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *m
 	// associate our URN
 	// If we've inserted a duplicate URN then we'll get a uniqueness violation.
 	// That means this contact URN was written by someone else after we tried to look it up.
-	contactURN, err := GetOrCreateContactURN(ctx, tx, channel, contact.ID_, urn, authTokens)
+	contactURN, err := models.GetOrCreateContactURN(ctx, tx, channel, contact.ID_, urn, authTokens)
 	if err != nil {
 		tx.Rollback()
 
