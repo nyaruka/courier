@@ -139,7 +139,7 @@ func SetDefaultURN(ctx context.Context, db *sqlx.Tx, channel *Channel, contact *
 				existing.ChannelID = channel.ID()
 			}
 
-			utils.MapUpdate(contactURNs[0].AuthTokens, authTokens)
+			utils.MapUpdate(existing.AuthTokens, authTokens)
 		} else {
 			existing.Priority = currPriority
 
