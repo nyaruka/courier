@@ -2,7 +2,6 @@ package rapidpro
 
 import (
 	"context"
-	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -19,27 +18,9 @@ import (
 	"github.com/nyaruka/null/v3"
 )
 
-// ChannelEventID is the type of our channel event ids
-type ChannelEventID null.Int
-
-const NilChannelEventID = ChannelEventID(0)
-
-func (i *ChannelEventID) Scan(value any) error         { return null.ScanInt(value, i) }
-func (i ChannelEventID) Value() (driver.Value, error)  { return null.IntValue(i) }
-func (i *ChannelEventID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
-func (i ChannelEventID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
-
-// String satisfies the Stringer interface
-func (i ChannelEventID) String() string {
-	if i != NilChannelEventID {
-		return strconv.FormatInt(int64(i), 10)
-	}
-	return "null"
-}
-
 // ChannelEvent represents an event on a channel.. that isn't a new message or status update
 type ChannelEvent struct {
-	ID_          ChannelEventID          `                               db:"id"`
+	ID_          models.ChannelEventID   `                               db:"id"`
 	UUID_        models.ChannelEventUUID `json:"uuid"                    db:"uuid"`
 	OrgID_       models.OrgID            `json:"org_id"                  db:"org_id"`
 	ChannelUUID_ models.ChannelUUID      `json:"channel_uuid"            db:"channel_uuid"`

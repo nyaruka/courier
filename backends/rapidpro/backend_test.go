@@ -1589,7 +1589,7 @@ SELECT id, uuid, org_id, channel_id, contact_id, contact_urn_id, event_type, opt
   FROM channels_channelevent
  WHERE id = $1`
 
-func readChannelEventFromDB(b *backend, id ChannelEventID) *ChannelEvent {
+func readChannelEventFromDB(b *backend, id models.ChannelEventID) *ChannelEvent {
 	e := &ChannelEvent{}
 	err := b.rt.DB.Get(e, sqlSelectEvent, id)
 	if err != nil {
