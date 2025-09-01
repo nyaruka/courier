@@ -21,16 +21,7 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-      minio:
-        image: bitnami/minio:latest
-        env:
-          MINIO_ROOT_USER: root
-          MINIO_ROOT_PASSWORD: tembatemba
-          MINIO_DEFAULT_BUCKETS: temba-attachments,temba-logs
-        ports:
-          - 9000:9000
-        options: --health-cmd "mc ready local" --health-interval 10s --health-timeout 5s --health-retries 5
-  
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,6 +35,27 @@ jobs:
         uses: rrainn/dynamodb-action@v4.0.0
         with:
           port: 6000
+
+      - name: Install and start MinIO
+        uses: addnab/docker-run-action@v3
+        with:
+          image: minio/minio:RELEASE.2025-07-23T15-54-02Z
+          options: --detach -p 9000:9000 -p 9001:9001 --env MINIO_ROOT_USER=root --env MINIO_ROOT_PASSWORD=tembatemba --volume ${{ github.workspace }}/data:/data
+          run: minio server /data --console-address ":9001"
+
+      - name: Install MinIO client
+        run: |
+          # Download MinIO client and its checksum
+          sudo curl -O https://dl.min.io/client/mc/release/linux-amd64/mc.RELEASE.2025-07-21T05-28-08Z
+          sudo curl -O https://dl.min.io/client/mc/release/linux-amd64/mc.RELEASE.2025-07-21T05-28-08Z.sha256sum
+          # Verify checksum
+          sha256sum -c mc.RELEASE.2025-07-21T05-28-08Z.sha256sum
+          sudo chmod +x mc.RELEASE.2025-07-21T05-28-08Z
+          sudo mv mc.RELEASE.2025-07-21T05-28-08Z /usr/local/bin/mc
+          mc alias set local http://127.0.0.1:9000 root tembatemba
+          for bucket in test-attachments test-logs; do
+            mc ls local/$bucket || mc mb local/$bucket
+          done
 
       - name: Run tests
         run: go test -p=1 -coverprofile=coverage.text -covermode=atomic ./...
