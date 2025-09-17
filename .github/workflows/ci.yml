@@ -49,20 +49,6 @@ jobs:
             --health-retries 5 \
             minio/minio:RELEASE.2025-07-23T15-54-02Z minio server /data --console-address ":9001"
 
-      - name: Install MinIO client
-        run: |
-          # Download MinIO client and its checksum
-          sudo curl -O https://dl.min.io/client/mc/release/linux-amd64/archive/mc.RELEASE.2025-08-13T08-35-41Z
-          sudo curl -O https://dl.min.io/client/mc/release/linux-amd64/archive/mc.RELEASE.2025-08-13T08-35-41Z.sha256sum
-          # Verify checksum
-          sha256sum -c mc.RELEASE.2025-08-13T08-35-41Z.sha256sum
-          sudo chmod +x mc.RELEASE.2025-08-13T08-35-41Z
-          sudo mv mc.RELEASE.2025-08-13T08-35-41Z /usr/local/bin/mc
-          mc alias set local http://127.0.0.1:9000 root tembatemba
-          for bucket in test-attachments test-logs; do
-            mc ls local/$bucket || mc mb local/$bucket
-          done
-
       - name: Run tests
         run: go test -p=1 -coverprofile=coverage.text -covermode=atomic ./...
 
