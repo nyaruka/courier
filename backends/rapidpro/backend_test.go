@@ -52,7 +52,6 @@ func (ts *BackendTestSuite) SetupSuite() {
 	ts.Require().NoError(err)
 
 	ts.b.rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
-	ts.b.rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-logs")})
 }
 
 func (ts *BackendTestSuite) TearDownSuite() {
