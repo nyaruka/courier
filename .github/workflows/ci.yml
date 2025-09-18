@@ -47,7 +47,7 @@ jobs:
             --health-interval 10s \
             --health-timeout 5s \
             --health-retries 5 \
-            minio/minio:RELEASE.2025-07-23T15-54-02Z minio server /data --console-address ":9001"
+            minio/minio:latest minio server /data --console-address ":9001"
 
       - name: Run tests
         run: go test -p=1 -coverprofile=coverage.text -covermode=atomic ./...
