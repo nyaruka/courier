@@ -1,3 +1,9 @@
+v10.3.11 (2025-10-03)
+-------------------------
+ * Update dependencies
+ * Bump to go 1.25
+ * Rework URN DB functions to take context
+
 v10.3.10 (2025-08-29)
 -------------------------
  * Fix panic in telegram handler
