@@ -21,16 +21,7 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-      minio:
-        image: bitnami/minio:latest
-        env:
-          MINIO_ROOT_USER: root
-          MINIO_ROOT_PASSWORD: tembatemba
-          MINIO_DEFAULT_BUCKETS: temba-attachments,temba-logs
-        ports:
-          - 9000:9000
-        options: --health-cmd "mc ready local" --health-interval 10s --health-timeout 5s --health-retries 5
-  
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,6 +35,19 @@ jobs:
         uses: rrainn/dynamodb-action@v4.0.0
         with:
           port: 6000
+
+      - name: Run MinIO docker container
+        run: |
+          docker run -d --rm \
+            -p 9000:9000 \
+            -p 9001:9001 \
+            --env MINIO_ROOT_USER=root \
+            --env MINIO_ROOT_PASSWORD=tembatemba \
+            --health-cmd "curl -f http://127.0.0.1:9000/minio/health/live" \
+            --health-interval 10s \
+            --health-timeout 5s \
+            --health-retries 5 \
+            minio/minio:latest minio server /data --console-address ":9001"
 
       - name: Run tests
         run: go test -p=1 -coverprofile=coverage.text -covermode=atomic ./...
