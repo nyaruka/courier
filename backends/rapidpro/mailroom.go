@@ -49,8 +49,8 @@ func queueEventHandling(ctx context.Context, rc redis.Conn, c *models.Contact, e
 	return queueMailroomTask(ctx, rc, "event_received", e.OrgID_, e.ContactID_, body)
 }
 
-func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *models.Channel, msgID models.MsgID, contactID models.ContactID) error {
-	return queueMailroomTask(ctx, rc, "msg_deleted", ch.OrgID_, contactID, map[string]any{"msg_id": msgID})
+func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *models.Channel, msgUUID models.MsgUUID, contactID models.ContactID) error {
+	return queueMailroomTask(ctx, rc, "msg_deleted", ch.OrgID_, contactID, map[string]any{"msg_uuid": msgUUID})
 }
 
 // queueMailroomTask queues the passed in task to mailroom. Mailroom processes both messages and

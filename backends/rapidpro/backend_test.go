@@ -157,7 +157,7 @@ func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
 	err = ts.b.DeleteMsgByExternalID(ctx, knChannel, "ext2")
 	ts.Nil(err)
 
-	ts.assertQueuedContactTask(100, "msg_deleted", map[string]any{"msg_id": float64(10002)})
+	ts.assertQueuedContactTask(100, "msg_deleted", map[string]any{"msg_uuid": "0ee51bf5-b285-4c39-95d6-c85d18b23f1e"})
 }
 
 func (ts *BackendTestSuite) TestContact() {
