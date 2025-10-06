@@ -396,19 +396,19 @@ func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, c
 // DeleteMsgByExternalID resolves a message external id and quees a task to mailroom to delete it
 func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
 	ch := channel.(*models.Channel)
-	row := b.rt.DB.QueryRowContext(ctx, `SELECT id, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_id = $2 AND direction = 'I'`, ch.ID(), externalID)
+	row := b.rt.DB.QueryRowContext(ctx, `SELECT uuid, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_id = $2 AND direction = 'I'`, ch.ID(), externalID)
 
-	var msgID models.MsgID
+	var msgUUID models.MsgUUID
 	var contactID models.ContactID
-	if err := row.Scan(&msgID, &contactID); err != nil && err != sql.ErrNoRows {
+	if err := row.Scan(&msgUUID, &contactID); err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("error querying deleted msg: %w", err)
 	}
 
-	if msgID != models.NilMsgID && contactID != models.NilContactID {
+	if msgUUID != "" && contactID != models.NilContactID {
 		rc := b.rt.VK.Get()
 		defer rc.Close()
 
-		if err := queueMsgDeleted(ctx, rc, ch, msgID, contactID); err != nil {
+		if err := queueMsgDeleted(ctx, rc, ch, msgUUID, contactID); err != nil {
 			return fmt.Errorf("error queuing message deleted task: %w", err)
 		}
 	}
