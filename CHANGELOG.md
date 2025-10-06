@@ -1,3 +1,7 @@
+v10.3.12 (2025-10-06)
+-------------------------
+ * Use msg UUID in delete task payloads
+
 v10.3.11 (2025-10-03)
 -------------------------
  * Update dependencies
