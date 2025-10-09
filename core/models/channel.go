@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lib/pq"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
@@ -135,7 +134,7 @@ type Channel struct {
 	UUID_        ChannelUUID    `db:"uuid"`
 	ID_          ChannelID      `db:"id"`
 	ChannelType_ ChannelType    `db:"channel_type"`
-	Schemes_     pq.StringArray `db:"schemes"`
+	Schemes_     StringArray    `db:"schemes"`
 	Name_        sql.NullString `db:"name"`
 	Address_     sql.NullString `db:"address"`
 	Country_     sql.NullString `db:"country"`

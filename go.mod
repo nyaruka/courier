@@ -14,10 +14,10 @@ require (
 	github.com/gomodule/redigo v1.9.2
 	github.com/gorilla/schema v1.4.1
 	github.com/h2non/filetype v1.1.3
+	github.com/jackc/pgx/v5 v5.7.6
 	github.com/jmoiron/sqlx v1.4.0
-	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.4.1
-	github.com/nyaruka/gocommon v1.68.8
+	github.com/nyaruka/gocommon v1.68.9-0.20251009174249-07e481b9b75e
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/vkutil v0.20.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -60,6 +60,9 @@ require (
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jellydator/ttlcache/v3 v3.4.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect

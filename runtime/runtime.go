@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/gomodule/redigo/redis"
+	_ "github.com/jackc/pgx/v5/stdlib" // postgres driver
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
@@ -30,7 +31,7 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 
 	var err error
 
-	rt.DB, err = sqlx.Open("postgres", cfg.DB)
+	rt.DB, err = sqlx.Open("pgx", cfg.DB)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Postgres connection pool: %w", err)
 	}
