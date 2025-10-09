@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null/v3"
+	"github.com/vinovest/sqlx"
 )
 
 // ContactURNID represents a contact urn's id
@@ -223,7 +223,7 @@ INSERT INTO contacts_contacturn(org_id, identity, path, scheme, display, auth_to
 
 // InsertContactURN inserts the passed in urn, the id field will be populated with the result on success
 func InsertContactURN(ctx context.Context, tx *sqlx.Tx, urn *ContactURN) error {
-	// see https://github.com/jmoiron/sqlx/issues/447
+	// see https://github.com/vinovest/sqlx/issues/447
 	rows, err := tx.NamedQuery(sqlInsertURN, urn)
 	if err != nil {
 		return err
@@ -248,7 +248,7 @@ UPDATE contacts_contacturn
 
 // UpdateContactURN updates the channel and contact on an existing URN
 func UpdateContactURN(ctx context.Context, tx *sqlx.Tx, urn *ContactURN) error {
-	// see https://github.com/jmoiron/sqlx/issues/447
+	// see https://github.com/vinovest/sqlx/issues/447
 	rows, err := tx.NamedQuery(sqlUpdateURN, urn)
 	if err != nil {
 		slog.Error("error updating contact urn", "error", err, "urn_id", urn.ID)
@@ -264,7 +264,7 @@ func UpdateContactURN(ctx context.Context, tx *sqlx.Tx, urn *ContactURN) error {
 
 // UpdateContactURNFully updates the identity, channel and contact on an existing URN
 func UpdateContactURNFully(ctx context.Context, tx *sqlx.Tx, urn *ContactURN) error {
-	// see https://github.com/jmoiron/sqlx/issues/447
+	// see https://github.com/vinovest/sqlx/issues/447
 	rows, err := tx.NamedQuery(sqlFullyUpdateURN, urn)
 	if err != nil {
 		slog.Error("error updating contact urn", "error", err, "urn_id", urn.ID)
