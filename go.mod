@@ -15,15 +15,15 @@ require (
 	github.com/gorilla/schema v1.4.1
 	github.com/h2non/filetype v1.1.3
 	github.com/jackc/pgx/v5 v5.7.6
-	github.com/jmoiron/sqlx v1.4.0
 	github.com/nyaruka/ezconf v0.4.1
-	github.com/nyaruka/gocommon v1.68.9-0.20251009174249-07e481b9b75e
+	github.com/nyaruka/gocommon v1.68.9-0.20251009212619-4ffc509956f3
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/vkutil v0.20.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/samber/slog-multi v1.5.0
 	github.com/samber/slog-sentry/v2 v2.9.3
 	github.com/stretchr/testify v1.11.1
+	github.com/vinovest/sqlx v1.7.0
 	golang.org/x/mod v0.28.0
 	golang.org/x/oauth2 v0.31.0
 )
@@ -65,6 +65,8 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jellydator/ttlcache/v3 v3.4.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/mattn/go-sqlite3 v1.14.22 // indirect
+	github.com/muir/sqltoken v0.1.0 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.1 // indirect
 	github.com/nyaruka/phonenumbers v1.6.5 // indirect

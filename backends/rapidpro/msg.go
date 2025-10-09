@@ -17,6 +17,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils/queue"
+	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -33,7 +34,7 @@ type Msg struct {
 	Visibility_   models.MsgVisibility `                       db:"visibility"`
 	HighPriority_ bool                 `json:"high_priority"   db:"high_priority"`
 	Text_         string               `json:"text"            db:"text"`
-	Attachments_  models.StringArray   `json:"attachments"     db:"attachments"`
+	Attachments_  dbutil.StringArray   `json:"attachments"     db:"attachments"`
 	QuickReplies_ []models.QuickReply  `json:"quick_replies"`
 	Locale_       null.String          `json:"locale"          db:"locale"`
 	Templating_   *models.Templating   `json:"templating"      db:"templating"`
@@ -50,7 +51,7 @@ type Msg struct {
 	CreatedOn_   time.Time          `json:"created_on"    db:"created_on"`
 	ModifiedOn_  time.Time          `                     db:"modified_on"`
 	SentOn_      *time.Time         `                     db:"sent_on"`
-	LogUUIDs     models.StringArray `                     db:"log_uuids"`
+	LogUUIDs     dbutil.StringArray `                     db:"log_uuids"`
 
 	// extra non-model fields that mailroom will include in queued payload
 	ChannelUUID_          models.ChannelUUID     `json:"channel_uuid"`
@@ -95,7 +96,7 @@ func newMsg(direction models.MsgDirection, channel courier.Channel, urn urns.URN
 
 		CreatedOn_:  now,
 		ModifiedOn_: now,
-		LogUUIDs:    models.StringArray{string(clog.UUID)},
+		LogUUIDs:    dbutil.StringArray{string(clog.UUID)},
 
 		channel:        dbChannel,
 		workerToken:    "",
