@@ -116,7 +116,7 @@ UPDATE msgs_msg SET
 	modified_on = NOW(),
 	log_uuids = array_append(log_uuids, s.log_uuid)
 FROM
-	(VALUES(CAST(:msg_id AS bigint), CAST(:channel_id AS int), CAST(:status AS varchar), CAST(:external_id AS varchar), CAST(:log_uuid AS uuid))) 
+	(VALUES(:msg_id::bigint, :channel_id::int, :status::varchar, :external_id::varchar, :log_uuid::uuid)) 
 AS 
 	s(msg_id, channel_id, status, external_id, log_uuid) 
 WHERE 
