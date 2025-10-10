@@ -14,10 +14,10 @@ import (
 	"time"
 
 	filetype "github.com/h2non/filetype"
-	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils/queue"
+	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -34,7 +34,7 @@ type Msg struct {
 	Visibility_   models.MsgVisibility `                       db:"visibility"`
 	HighPriority_ bool                 `json:"high_priority"   db:"high_priority"`
 	Text_         string               `json:"text"            db:"text"`
-	Attachments_  pq.StringArray       `json:"attachments"     db:"attachments"`
+	Attachments_  dbutil.StringArray   `json:"attachments"     db:"attachments"`
 	QuickReplies_ []models.QuickReply  `json:"quick_replies"`
 	Locale_       null.String          `json:"locale"          db:"locale"`
 	Templating_   *models.Templating   `json:"templating"      db:"templating"`
@@ -47,11 +47,11 @@ type Msg struct {
 	ErrorCount_   int         `                     db:"error_count"`
 	FailedReason_ null.String `                     db:"failed_reason"`
 
-	NextAttempt_ time.Time      `                     db:"next_attempt"`
-	CreatedOn_   time.Time      `json:"created_on"    db:"created_on"`
-	ModifiedOn_  time.Time      `                     db:"modified_on"`
-	SentOn_      *time.Time     `                     db:"sent_on"`
-	LogUUIDs     pq.StringArray `                     db:"log_uuids"`
+	NextAttempt_ time.Time          `                     db:"next_attempt"`
+	CreatedOn_   time.Time          `json:"created_on"    db:"created_on"`
+	ModifiedOn_  time.Time          `                     db:"modified_on"`
+	SentOn_      *time.Time         `                     db:"sent_on"`
+	LogUUIDs     dbutil.StringArray `                     db:"log_uuids"`
 
 	// extra non-model fields that mailroom will include in queued payload
 	ChannelUUID_          models.ChannelUUID     `json:"channel_uuid"`
@@ -96,7 +96,7 @@ func newMsg(direction models.MsgDirection, channel courier.Channel, urn urns.URN
 
 		CreatedOn_:  now,
 		ModifiedOn_: now,
-		LogUUIDs:    []string{string(clog.UUID)},
+		LogUUIDs:    dbutil.StringArray{string(clog.UUID)},
 
 		channel:        dbChannel,
 		workerToken:    "",
@@ -109,7 +109,7 @@ func (m *Msg) ID() models.MsgID         { return m.ID_ }
 func (m *Msg) UUID() models.MsgUUID     { return m.UUID_ }
 func (m *Msg) ExternalID() string       { return string(m.ExternalID_) }
 func (m *Msg) Text() string             { return m.Text_ }
-func (m *Msg) Attachments() []string    { return m.Attachments_ }
+func (m *Msg) Attachments() []string    { return []string(m.Attachments_) }
 func (m *Msg) URN() urns.URN            { return m.URN_ }
 func (m *Msg) Channel() courier.Channel { return m.channel }
 

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils"

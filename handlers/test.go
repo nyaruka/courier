@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/runtime"

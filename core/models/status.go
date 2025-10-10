@@ -114,14 +114,14 @@ UPDATE msgs_msg SET
 			msgs_msg.external_id
 		END,
 	modified_on = NOW(),
-	log_uuids = array_append(log_uuids, s.log_uuid::uuid)
+	log_uuids = array_append(log_uuids, s.log_uuid)
 FROM
-	(VALUES(:msg_id, :channel_id, :status, :external_id, :log_uuid)) 
+	(VALUES(:msg_id::bigint, :channel_id::int, :status::varchar, :external_id::varchar, :log_uuid::uuid)) 
 AS 
 	s(msg_id, channel_id, status, external_id, log_uuid) 
 WHERE 
-	msgs_msg.id = s.msg_id::bigint AND
-	msgs_msg.channel_id = s.channel_id::int AND 
+	msgs_msg.id = s.msg_id AND
+	msgs_msg.channel_id = s.channel_id AND 
 	msgs_msg.direction = 'O'
 `
 
