@@ -60,66 +60,19 @@ func (s *StatusUpdate) SetStatus(status MsgStatus) { s.Status_ = status }
 const sqlUpdateMsgByID = `
 UPDATE msgs_msg SET 
 	status = CASE 
-		WHEN 
-			s.status = 'E' 
-		THEN CASE 
-			WHEN 
-				error_count >= 2 OR msgs_msg.status = 'F' 
-			THEN 
-				'F' 
-			ELSE 
-				'E' 
-			END 
-		ELSE 
-			s.status 
+		WHEN s.status = 'E' 
+		THEN CASE WHEN error_count >= 2 OR msgs_msg.status = 'F' THEN 'F' ELSE 'E' END 
+		ELSE s.status 
 		END,
-	error_count = CASE 
-		WHEN 
-			s.status = 'E' 
-		THEN 
-			error_count + 1 
-		ELSE 
-			error_count 
-		END,
-	next_attempt = CASE 
-		WHEN 
-			s.status = 'E' 
-		THEN 
-			NOW() + (5 * (error_count+1) * interval '1 minutes') 
-		ELSE 
-			next_attempt 
-		END,
-	failed_reason = CASE
-		WHEN
-			error_count >= 2
-		THEN
-			'E'
-		ELSE
-			failed_reason
-	    END,
-	sent_on = CASE 
-		WHEN
-			s.status IN ('W', 'S', 'D', 'R')
-		THEN
-			COALESCE(sent_on, NOW())
-		ELSE
-			NULL
-		END,
-	external_id = CASE
-		WHEN 
-			s.external_id != ''
-		THEN
-			s.external_id
-		ELSE
-			msgs_msg.external_id
-		END,
+	error_count = CASE WHEN s.status = 'E' THEN error_count + 1 ELSE error_count END,
+	next_attempt = CASE WHEN s.status = 'E' THEN NOW() + (5 * (error_count+1) * interval '1 minutes') ELSE next_attempt END,
+	failed_reason = CASE WHEN error_count >= 2 THEN 'E' ELSE failed_reason END,
+	sent_on = CASE WHEN s.status IN ('W', 'S', 'D', 'R') THEN COALESCE(sent_on, NOW()) ELSE NULL END,
+	external_id = CASE WHEN s.external_id != '' THEN s.external_id ELSE msgs_msg.external_id END,
 	modified_on = NOW(),
 	log_uuids = array_append(log_uuids, s.log_uuid)
-FROM
-	(VALUES(:msg_id::bigint, :channel_id::int, :status, :external_id, :log_uuid::uuid)) AS s(msg_id, channel_id, status, external_id, log_uuid) 
-WHERE 
-	msgs_msg.id = s.msg_id AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O'
-`
+ FROM (VALUES(:msg_id::bigint, :channel_id::int, :status, :external_id, :log_uuid::uuid)) AS s(msg_id, channel_id, status, external_id, log_uuid) 
+WHERE msgs_msg.id = s.msg_id AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O'`
 
 func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*StatusUpdate) error {
 	if err := dbutil.BulkQuery(ctx, rt.DB, sqlUpdateMsgByID, statuses); err != nil {
