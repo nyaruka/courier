@@ -104,7 +104,7 @@ func newMsg(direction models.MsgDirection, channel courier.Channel, urn urns.URN
 	}
 }
 
-func (m *Msg) EventID() int64           { return int64(m.ID_) }
+func (m *Msg) EventUUID() uuids.UUID    { return uuids.UUID(m.UUID_) }
 func (m *Msg) ID() models.MsgID         { return m.ID_ }
 func (m *Msg) UUID() models.MsgUUID     { return m.UUID_ }
 func (m *Msg) ExternalID() string       { return string(m.ExternalID_) }

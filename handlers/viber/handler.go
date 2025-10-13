@@ -282,7 +282,7 @@ func writeWelcomeMessageResponse(w http.ResponseWriter, channel courier.Channel,
 		AuthToken:    authToken,
 		Text:         msgText,
 		Type:         "text",
-		TrackingData: fmt.Sprintf("%d", event.EventID()),
+		TrackingData: string(event.EventUUID()),
 	}
 
 	responseBody := &bytes.Buffer{}

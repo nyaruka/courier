@@ -6,6 +6,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 type mockChannelEvent struct {
@@ -21,7 +22,7 @@ type mockChannelEvent struct {
 	extra         map[string]string
 }
 
-func (e *mockChannelEvent) EventID() int64                     { return 0 }
+func (e *mockChannelEvent) EventUUID() uuids.UUID              { return uuids.UUID(e.uuid) }
 func (e *mockChannelEvent) UUID() models.ChannelEventUUID      { return e.uuid }
 func (e *mockChannelEvent) ChannelUUID() models.ChannelUUID    { return e.channel.UUID() }
 func (e *mockChannelEvent) EventType() models.ChannelEventType { return e.eventType }

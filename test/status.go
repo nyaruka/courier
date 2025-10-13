@@ -6,6 +6,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 type MockStatusUpdate struct {
@@ -18,7 +19,7 @@ type MockStatusUpdate struct {
 	createdOn  time.Time
 }
 
-func (m *MockStatusUpdate) EventID() int64                  { return int64(m.msgID) }
+func (m *MockStatusUpdate) EventUUID() uuids.UUID           { return uuids.NewV4() } // TODO should become message UUID
 func (m *MockStatusUpdate) ChannelUUID() models.ChannelUUID { return m.channel.UUID() }
 func (m *MockStatusUpdate) MsgID() models.MsgID             { return m.msgID }
 

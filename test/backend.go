@@ -249,6 +249,7 @@ func (mb *MockBackend) WriteStatusUpdate(ctx context.Context, status courier.Sta
 // NewChannelEvent creates a new channel event with the passed in parameters
 func (mb *MockBackend) NewChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
 	return &mockChannelEvent{
+		uuid:      models.ChannelEventUUID(uuids.NewV7()),
 		channel:   channel,
 		eventType: eventType,
 		urn:       urn,
