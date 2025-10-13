@@ -1,3 +1,7 @@
+v10.3.14 (2025-10-13)
+-------------------------
+ * Switch from lib/pq to jackc/pgx/stdlib
+
 v10.3.13 (2025-10-10)
 -------------------------
  * Update dependencies including latest phonenumbers
