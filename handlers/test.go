@@ -21,10 +21,12 @@ import (
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -159,6 +161,14 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 		mb.AddChannel(ch)
 	}
 	handler.Initialize(s)
+
+	mockNow := dates.NewSequentialNow(time.Date(2025, 10, 13, 11, 20, 0, 0, time.UTC), time.Second)
+
+	uuids.SetGenerator(uuids.NewSeededGenerator(1234, mockNow))
+	defer uuids.SetGenerator(uuids.DefaultGenerator)
+
+	dates.SetNowFunc(mockNow)
+	defer dates.SetNowFunc(time.Now)
 
 	for _, tc := range testCases {
 		t.Run(tc.Label, func(t *testing.T) {

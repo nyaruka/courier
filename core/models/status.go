@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 // StatusUpdate represents a status update on a message
@@ -25,7 +26,7 @@ type StatusUpdate struct {
 	LogUUID      clogs.UUID  `json:"log_uuid"                 db:"log_uuid"`
 }
 
-func (s *StatusUpdate) EventID() int64           { return int64(s.MsgID_) }
+func (s *StatusUpdate) EventUUID() uuids.UUID    { return uuids.NewV4() } // TODO should become message UUID
 func (s *StatusUpdate) ChannelUUID() ChannelUUID { return s.ChannelUUID_ }
 func (s *StatusUpdate) MsgID() MsgID             { return s.MsgID_ }
 
@@ -72,7 +73,8 @@ UPDATE msgs_msg SET
 	modified_on = NOW(),
 	log_uuids = array_append(log_uuids, s.log_uuid)
  FROM (VALUES(:msg_id::bigint, :channel_id::int, :status, :external_id, :log_uuid::uuid)) AS s(msg_id, channel_id, status, external_id, log_uuid) 
-WHERE msgs_msg.id = s.msg_id AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O'`
+WHERE msgs_msg.id = s.msg_id AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O'
+`
 
 func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*StatusUpdate) error {
 	if err := dbutil.BulkQuery(ctx, rt.DB, sqlUpdateMsgByID, statuses); err != nil {
