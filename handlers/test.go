@@ -20,10 +20,12 @@ import (
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils/clogs"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -158,6 +160,14 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 		mb.AddChannel(ch)
 	}
 	handler.Initialize(s)
+
+	mockNow := dates.NewSequentialNow(time.Date(2025, 10, 13, 11, 20, 0, 0, time.UTC), time.Second)
+
+	uuids.SetGenerator(uuids.NewSeededGenerator(1234, mockNow))
+	defer uuids.SetGenerator(uuids.DefaultGenerator)
+
+	dates.SetNowFunc(mockNow)
+	defer dates.SetNowFunc(time.Now)
 
 	for _, tc := range testCases {
 		t.Run(tc.Label, func(t *testing.T) {
@@ -432,27 +442,6 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			}
 
 			AssertChannelLogRedaction(t, clog, checkRedacted)
-		})
-	}
-}
-
-// RunChannelBenchmarks runs all the passed in test cases for the passed in channels
-func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler courier.ChannelHandler, testCases []IncomingTestCase) {
-	mb := test.NewMockBackend()
-	s := newServer(mb)
-
-	for _, ch := range channels {
-		mb.AddChannel(ch)
-	}
-	handler.Initialize(s)
-
-	for _, testCase := range testCases {
-		mb.Reset()
-
-		b.Run(testCase.Label, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				testHandlerRequest(b, s, testCase.URL, testCase.Headers, testCase.Data, testCase.MultipartForm, testCase.ExpectedRespStatus, "", testCase.PrepRequest)
-			}
 		})
 	}
 }

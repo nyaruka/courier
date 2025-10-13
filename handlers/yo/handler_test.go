@@ -46,10 +46,6 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
-}
-
 var getSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
 		MsgText: "Simple Message", MsgURN: "tel:+250788383383",

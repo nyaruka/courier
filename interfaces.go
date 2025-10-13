@@ -6,6 +6,7 @@ import (
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 // Channel defines the general interface backend Channel implementations must adhere to
@@ -40,7 +41,7 @@ type Contact interface {
 
 // Event is our interface for the types of things a ChannelHandleFunc can return.
 type Event interface {
-	EventID() int64
+	EventUUID() uuids.UUID
 }
 
 // Msg is our interface for common methods for an incoming or outgoing message

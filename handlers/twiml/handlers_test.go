@@ -551,12 +551,6 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, []courier.Channel{twaChannel}, newTWIMLHandler("TWA", "Twilio WhatsApp", true), twaTestCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newTWIMLHandler("T", "Twilio", true), testCases)
-	RunChannelBenchmarks(b, tmsTestChannels, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsTestCases)
-	RunChannelBenchmarks(b, twTestChannels, newTWIMLHandler("TW", "TwiML API", true), twTestCases)
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Plain Send",

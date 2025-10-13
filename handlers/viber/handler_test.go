@@ -633,8 +633,12 @@ var testCases = []IncomingTestCase{
 		},
 		PrepRequest: addValidSignature,
 	},
-	{Label: "Unsubcribe Invalid URN", URL: receiveURL, Data: invalidURNUnsubscribed, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid viber id", PrepRequest: addValidSignature},
-	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, ExpectedRespStatus: 200, ExpectedBodyContains: "ignored conversation start", PrepRequest: addValidSignature},
+	{
+		Label: "Unsubcribe Invalid URN", URL: receiveURL, Data: invalidURNUnsubscribed, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid viber id", PrepRequest: addValidSignature,
+	},
+	{
+		Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, ExpectedRespStatus: 200, ExpectedBodyContains: "ignored conversation start", PrepRequest: addValidSignature,
+	},
 	{Label: "Unexpected event", URL: receiveURL, Data: unexpectedEvent, ExpectedRespStatus: 400,
 		ExpectedBodyContains: "not handled, unknown event: unexpected", PrepRequest: addValidSignature},
 	{Label: "Message missing text", URL: receiveURL, Data: rejectedMessage, ExpectedRespStatus: 400, ExpectedBodyContains: "missing text or media in message in request body", PrepRequest: addValidSignature},
@@ -672,7 +676,7 @@ var testWelcomeMessageCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 validConversationStarted,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0"}`,
+		ExpectedBodyContains: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0199dd4c-8a88-7000-95b3-58675999c4b7"}`,
 		ExpectedEvents: []ExpectedEvent{
 			{Type: models.EventTypeWelcomeMessage, URN: "viber:xy5/5y6O81+/kbWHpLhBoA=="},
 		},
@@ -705,9 +709,4 @@ func addInvalidSignature(r *http.Request) {
 func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 	RunIncomingTestCases(t, testChannelsWithWelcomeMessage, newHandler(), testWelcomeMessageCases)
-}
-
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
-	RunChannelBenchmarks(b, testChannelsWithWelcomeMessage, newHandler(), testWelcomeMessageCases)
 }

@@ -61,7 +61,7 @@ func newChannelEvent(channel courier.Channel, eventType models.ChannelEventType,
 	}
 }
 
-func (e *ChannelEvent) EventID() int64                     { return int64(e.ID_) }
+func (e *ChannelEvent) EventUUID() uuids.UUID              { return uuids.UUID(e.UUID_) }
 func (e *ChannelEvent) UUID() models.ChannelEventUUID      { return e.UUID_ }
 func (e *ChannelEvent) ChannelID() models.ChannelID        { return e.ChannelID_ }
 func (e *ChannelEvent) ChannelUUID() models.ChannelUUID    { return e.ChannelUUID_ }

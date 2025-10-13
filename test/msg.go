@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 type MockMsg struct {
@@ -50,7 +51,7 @@ func NewMockMsg(id models.MsgID, uuid models.MsgUUID, channel courier.Channel, u
 	}
 }
 
-func (m *MockMsg) EventID() int64           { return int64(m.id) }
+func (m *MockMsg) EventUUID() uuids.UUID    { return uuids.UUID(m.uuid) }
 func (m *MockMsg) ID() models.MsgID         { return m.id }
 func (m *MockMsg) UUID() models.MsgUUID     { return m.uuid }
 func (m *MockMsg) ExternalID() string       { return m.externalID }

@@ -1,3 +1,8 @@
+v10.3.13 (2025-10-10)
+-------------------------
+ * Update dependencies including latest phonenumbers
+ * Switch to vinovest/sqlx fork of jmoiron/sqlx
+
 v10.3.12 (2025-10-06)
 -------------------------
  * Use msg UUID in delete task payloads

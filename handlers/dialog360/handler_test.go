@@ -301,12 +301,6 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newWAHandler(models.ChannelType("D3C"), "360Dialog"), testCasesD3C)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	d3MediaService := buildMockD3MediaService(testChannels, testCasesD3C)
-	defer d3MediaService.Close()
-	RunChannelBenchmarks(b, testChannels, newWAHandler(models.ChannelType("D3C"), "360Dialog"), testCasesD3C)
-}
-
 func TestBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 

@@ -196,9 +196,7 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 
 	var b64Sig = []byte(actual)
 	block, _ := pem.Decode(rsaPubKey)
-	if err != nil {
-		return fmt.Errorf("failed to decode public key, %s", err.Error())
-	}
+
 	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
 		return fmt.Errorf("failed to parse DER encoded public key, %s", err.Error())
