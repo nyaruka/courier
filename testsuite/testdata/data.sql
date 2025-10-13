@@ -51,17 +51,17 @@ INSERT INTO msgs_optin(id, uuid, org_id, name) VALUES
 DELETE FROM msgs_msg;
 INSERT INTO msgs_msg("id", "uuid", "text", "high_priority", "created_on", "modified_on", "sent_on", "direction", "status", "visibility", "msg_type", "is_android",
                         "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
-              VALUES(10000, 'b10fff91-4ff6-46d4-b237-caed786e09d3', 'test message', True, now(), now(), now(), 'O', 'W', 'V', 'T', FALSE,
+              VALUES(10000, '0199df0f-9f82-7689-b02d-f34105991321', 'test message', True, now(), now(), now(), 'O', 'W', 'V', 'T', FALSE,
                      1, 0, now(), 'ext1', 10, 100, 1000, 1);
 
 INSERT INTO msgs_msg("id", "uuid", "text", "high_priority", "created_on", "modified_on", "sent_on", "direction", "status", "visibility", "msg_type", "is_android",
                         "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
-              VALUES(10001, '452adaa9-1e4d-4ff3-a3c6-d3867ff2adfb', 'test message without external', True, now(), now(), now(), 'O', 'W', 'V', 'T', FALSE,
+              VALUES(10001, '0199df10-10dc-7e6e-834b-3d959ece93b2', 'test message without external', True, now(), now(), now(), 'O', 'W', 'V', 'T', FALSE,
                      1, 0, now(), '', 10, 100, 1000, 1);
 
 INSERT INTO msgs_msg("id", "uuid", "text", "high_priority", "created_on", "modified_on", "sent_on", "direction", "status", "visibility", "msg_type", "is_android",
                         "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
-              VALUES(10002, '0ee51bf5-b285-4c39-95d6-c85d18b23f1e', 'test message incoming', True, now(), now(), now(), 'I', 'P', 'V', 'T', FALSE,
+              VALUES(10002, '0199df10-9519-7fe2-a29c-c890d1713673', 'test message incoming', True, now(), now(), now(), 'I', 'P', 'V', 'T', FALSE,
                      1, 0, now(), 'ext2', 10, 100, 1000, 1);
 
 INSERT INTO msgs_media("id", "uuid", "org_id", "content_type", "url", "path", "size", "duration", "width", "height", "original_id")

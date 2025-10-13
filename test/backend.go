@@ -48,7 +48,7 @@ type MockBackend struct {
 	lastMsgID       models.MsgID
 	lastContactName string
 	urnAuthTokens   map[urns.URN]map[string]string
-	sentMsgs        map[models.MsgID]bool
+	sentMsgs        map[models.MsgUUID]bool
 	seenExternalIDs map[string]models.MsgUUID
 }
 
@@ -81,7 +81,7 @@ func NewMockBackend() *MockBackend {
 		channelsByAddress: make(map[models.ChannelAddress]courier.Channel),
 		contacts:          make(map[urns.URN]courier.Contact),
 		media:             make(map[string]*models.Media),
-		sentMsgs:          make(map[models.MsgID]bool),
+		sentMsgs:          make(map[models.MsgUUID]bool),
 		seenExternalIDs:   make(map[string]models.MsgUUID),
 		redisPool:         redisPool,
 	}
@@ -147,18 +147,18 @@ func (mb *MockBackend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, 
 }
 
 // WasMsgSent returns whether the passed in msg was already sent
-func (mb *MockBackend) WasMsgSent(ctx context.Context, id models.MsgID) (bool, error) {
+func (mb *MockBackend) WasMsgSent(ctx context.Context, uuid models.MsgUUID) (bool, error) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	return mb.sentMsgs[id], nil
+	return mb.sentMsgs[uuid], nil
 }
 
-func (mb *MockBackend) ClearMsgSent(ctx context.Context, id models.MsgID) error {
+func (mb *MockBackend) ClearMsgSent(ctx context.Context, uuid models.MsgUUID) error {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	delete(mb.sentMsgs, id)
+	delete(mb.sentMsgs, uuid)
 	return nil
 }
 
@@ -167,7 +167,7 @@ func (mb *MockBackend) OnSendComplete(ctx context.Context, msg courier.MsgOut, s
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	mb.sentMsgs[msg.ID()] = true
+	mb.sentMsgs[msg.UUID()] = true
 }
 
 func (mb *MockBackend) OnReceiveComplete(ctx context.Context, ch courier.Channel, events []courier.Event, clog *courier.ChannelLog) {
@@ -218,9 +218,10 @@ func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *cour
 }
 
 // NewStatusUpdate creates a new Status object for the given message id
-func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, id models.MsgID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, uuid models.MsgUUID, id models.MsgID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return &MockStatusUpdate{
 		channel:   channel,
+		msgUUID:   uuid,
 		msgID:     id,
 		status:    status,
 		createdOn: time.Now().In(time.UTC),

@@ -17,6 +17,7 @@ import (
 type StatusUpdate struct {
 	ChannelUUID_ ChannelUUID `json:"channel_uuid"             db:"channel_uuid"`
 	ChannelID_   ChannelID   `json:"channel_id"               db:"channel_id"`
+	MsgUUID_     MsgUUID     `json:"msg_uuid,omitempty"       db:"msg_uuid"`
 	MsgID_       MsgID       `json:"msg_id,omitempty"         db:"msg_id"`
 	OldURN_      urns.URN    `json:"old_urn"                  db:"old_urn"`
 	NewURN_      urns.URN    `json:"new_urn"                  db:"new_urn"`
@@ -26,8 +27,9 @@ type StatusUpdate struct {
 	LogUUID      clogs.UUID  `json:"log_uuid"                 db:"log_uuid"`
 }
 
-func (s *StatusUpdate) EventUUID() uuids.UUID    { return uuids.NewV4() } // TODO should become message UUID
+func (s *StatusUpdate) EventUUID() uuids.UUID    { return uuids.UUID(s.MsgUUID_) }
 func (s *StatusUpdate) ChannelUUID() ChannelUUID { return s.ChannelUUID_ }
+func (s *StatusUpdate) MsgUUID() MsgUUID         { return s.MsgUUID_ }
 func (s *StatusUpdate) MsgID() MsgID             { return s.MsgID_ }
 
 func (s *StatusUpdate) SetURNUpdate(old, new urns.URN) error {
@@ -58,7 +60,7 @@ func (s *StatusUpdate) Status() MsgStatus          { return s.Status_ }
 func (s *StatusUpdate) SetStatus(status MsgStatus) { s.Status_ = status }
 
 // the craziness below lets us update our status to 'F' and schedule retries without knowing anything about the message
-const sqlUpdateMsgByID = `
+const sqlUpdateMsgByUUID = `
 UPDATE msgs_msg SET 
 	status = CASE 
 		WHEN s.status = 'E' 
@@ -72,12 +74,12 @@ UPDATE msgs_msg SET
 	external_id = CASE WHEN s.external_id != '' THEN s.external_id ELSE msgs_msg.external_id END,
 	modified_on = NOW(),
 	log_uuids = array_append(log_uuids, s.log_uuid)
- FROM (VALUES(:msg_id::bigint, :channel_id::int, :status, :external_id, :log_uuid::uuid)) AS s(msg_id, channel_id, status, external_id, log_uuid) 
-WHERE msgs_msg.id = s.msg_id AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O'
+ FROM (VALUES(:msg_uuid::uuid, :channel_id::int, :status, :external_id, :log_uuid::uuid)) AS s(msg_uuid, channel_id, status, external_id, log_uuid) 
+WHERE msgs_msg.uuid = s.msg_uuid AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O'
 `
 
 func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*StatusUpdate) error {
-	if err := dbutil.BulkQuery(ctx, rt.DB, sqlUpdateMsgByID, statuses); err != nil {
+	if err := dbutil.BulkQuery(ctx, rt.DB, sqlUpdateMsgByUUID, statuses); err != nil {
 		return fmt.Errorf("error writing statuses: %w", err)
 	}
 	return nil

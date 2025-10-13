@@ -119,7 +119,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		if err != nil {
 			slog.Error("error converting Messagebird status id to integer", "error", err, "id", receivedStatus.Reference)
 		} else {
-			status = h.Backend().NewStatusUpdate(channel, models.MsgID(msgID), msgStatus, clog)
+			status = h.Backend().NewStatusUpdate(channel, "", models.MsgID(msgID), msgStatus, clog)
 		}
 	}
 

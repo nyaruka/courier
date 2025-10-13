@@ -115,7 +115,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdate(channel, form.ID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, "", form.ID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 

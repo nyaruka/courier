@@ -43,7 +43,7 @@ type Backend interface {
 	WriteMsg(context.Context, MsgIn, *ChannelLog) error
 
 	// NewStatusUpdate creates a new status update for the given message id
-	NewStatusUpdate(Channel, models.MsgID, models.MsgStatus, *ChannelLog) StatusUpdate
+	NewStatusUpdate(Channel, models.MsgUUID, models.MsgID, models.MsgStatus, *ChannelLog) StatusUpdate
 
 	// NewStatusUpdateByExternalID creates a new status update for the given external id
 	NewStatusUpdateByExternalID(Channel, string, models.MsgStatus, *ChannelLog) StatusUpdate
@@ -66,11 +66,11 @@ type Backend interface {
 
 	// WasMsgSent returns whether the backend thinks the passed in message was already sent. This can be used in cases where
 	// a backend wants to implement a failsafe against double sending messages (say if they were double queued)
-	WasMsgSent(context.Context, models.MsgID) (bool, error)
+	WasMsgSent(context.Context, models.MsgUUID) (bool, error)
 
 	// ClearMsgSent clears any internal status that a message was previously sent. This can be used in the case where
 	// a message is being forced in being resent by a user
-	ClearMsgSent(context.Context, models.MsgID) error
+	ClearMsgSent(context.Context, models.MsgUUID) error
 
 	// OnSendComplete is called when the sender has finished trying to send a message
 	OnSendComplete(context.Context, MsgOut, StatusUpdate, *ChannelLog)

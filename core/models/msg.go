@@ -26,9 +26,6 @@ func (i MsgID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
 // MsgUUID is the UUID of a message which has been received
 type MsgUUID uuids.UUID
 
-// NilMsgUUID is a "zero value" message UUID
-const NilMsgUUID = MsgUUID("")
-
 // MsgStatus is the status of a message
 type MsgStatus string
 

@@ -76,7 +76,7 @@ type backend struct {
 	receivedMsgs        *vkutil.IntervalHash // using content hash
 
 	// tracking of sent message ids to avoid dupe sends
-	sentIDs *vkutil.IntervalSet
+	sentMsgs *vkutil.IntervalSet // using msg UUID
 
 	// tracking of external ids of messages we've sent in case we need one before its status update has been written
 	sentExternalIDs *vkutil.IntervalHash
@@ -121,7 +121,7 @@ func NewBackend(rt *runtime.Runtime) courier.Backend {
 
 		receivedMsgs:        vkutil.NewIntervalHash("seen-msgs", time.Second*2, 2),        // 2 - 4 seconds
 		receivedExternalIDs: vkutil.NewIntervalHash("seen-external-ids", time.Hour*24, 2), // 24 - 48 hours
-		sentIDs:             vkutil.NewIntervalSet("sent-ids", time.Hour, 2),              // 1 - 2 hours
+		sentMsgs:            vkutil.NewIntervalSet("sent-msgs", time.Hour, 2),             // 1 - 2 hours
 		sentExternalIDs:     vkutil.NewIntervalHash("sent-external-ids", time.Hour, 2),    // 1 - 2 hours
 
 		stats: NewStatsCollector(),
@@ -427,7 +427,7 @@ func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, u
 	msg.WithReceivedOn(time.Now().UTC())
 
 	// check if this message could be a duplicate and if so use the original's UUID
-	if prevUUID := b.checkMsgAlreadyReceived(ctx, msg); prevUUID != models.NilMsgUUID {
+	if prevUUID := b.checkMsgAlreadyReceived(ctx, msg); prevUUID != "" {
 		msg.UUID_ = prevUUID
 		msg.alreadyWritten = true
 	}
@@ -493,18 +493,18 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 }
 
 // WasMsgSent returns whether the passed in message has already been sent
-func (b *backend) WasMsgSent(ctx context.Context, id models.MsgID) (bool, error) {
+func (b *backend) WasMsgSent(ctx context.Context, uuid models.MsgUUID) (bool, error) {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
-	return b.sentIDs.IsMember(ctx, rc, id.String())
+	return b.sentMsgs.IsMember(ctx, rc, string(uuid))
 }
 
-func (b *backend) ClearMsgSent(ctx context.Context, id models.MsgID) error {
+func (b *backend) ClearMsgSent(ctx context.Context, uuid models.MsgUUID) error {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
-	return b.sentIDs.Rem(ctx, rc, id.String())
+	return b.sentMsgs.Rem(ctx, rc, string(uuid))
 }
 
 // OnSendComplete is called when the sender has finished trying to send a message
@@ -522,7 +522,7 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 
 	// if message won't be retried, mark as sent to avoid dupe sends
 	if status.Status() != models.MsgStatusErrored {
-		if err := b.sentIDs.Add(ctx, rc, msg.ID().String()); err != nil {
+		if err := b.sentMsgs.Add(ctx, rc, string(msg.UUID())); err != nil {
 			log.Error("unable to mark message sent", "error", err)
 		}
 	}
@@ -560,13 +560,13 @@ func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdate(channel courier.Channel, id models.MsgID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
-	return newStatusUpdate(channel, id, "", status, clog)
+func (b *backend) NewStatusUpdate(channel courier.Channel, uuid models.MsgUUID, id models.MsgID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+	return newStatusUpdate(channel, uuid, id, "", status, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
 func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
-	return newStatusUpdate(channel, models.NilMsgID, externalID, status, clog)
+	return newStatusUpdate(channel, "", models.NilMsgID, externalID, status, clog)
 }
 
 // WriteStatusUpdate writes the passed in MsgStatus to our store
@@ -587,13 +587,13 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 		}
 	}
 
-	if status.MsgID() != models.NilMsgID {
+	if status.MsgUUID() != "" {
 		// this is a message we've just sent and were given an external id for
 		if status.ExternalID() != "" {
 			rc := b.rt.VK.Get()
 			defer rc.Close()
 
-			err := b.sentExternalIDs.Set(ctx, rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalID_), fmt.Sprintf("%d", status.MsgID()))
+			err := b.sentExternalIDs.Set(ctx, rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalID_), string(status.MsgUUID()))
 			if err != nil {
 				log.Error("error recording external id", "error", err)
 			}
@@ -601,7 +601,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 
 		// we sent a message that errored so clear our sent flag to allow it to be retried
 		if status.Status() == models.MsgStatusErrored {
-			err := b.ClearMsgSent(ctx, status.MsgID())
+			err := b.ClearMsgSent(ctx, status.MsgUUID())
 			if err != nil {
 				log.Error("error clearing sent flags", "error", err)
 			}
