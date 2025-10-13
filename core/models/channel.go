@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lib/pq"
 	"github.com/nyaruka/courier/runtime"
+	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -131,17 +131,17 @@ var ErrChannelWrongType = errors.New("channel type wrong")
 
 // Channel is the RapidPro specific concrete type satisfying the courier.Channel interface
 type Channel struct {
-	OrgID_       OrgID          `db:"org_id"`
-	UUID_        ChannelUUID    `db:"uuid"`
-	ID_          ChannelID      `db:"id"`
-	ChannelType_ ChannelType    `db:"channel_type"`
-	Schemes_     pq.StringArray `db:"schemes"`
-	Name_        sql.NullString `db:"name"`
-	Address_     sql.NullString `db:"address"`
-	Country_     sql.NullString `db:"country"`
-	Config_      null.Map[any]  `db:"config"`
-	Role_        string         `db:"role"`
-	LogPolicy    LogPolicy      `db:"log_policy"`
+	OrgID_       OrgID              `db:"org_id"`
+	UUID_        ChannelUUID        `db:"uuid"`
+	ID_          ChannelID          `db:"id"`
+	ChannelType_ ChannelType        `db:"channel_type"`
+	Schemes_     dbutil.StringArray `db:"schemes"`
+	Name_        sql.NullString     `db:"name"`
+	Address_     sql.NullString     `db:"address"`
+	Country_     sql.NullString     `db:"country"`
+	Config_      null.Map[any]      `db:"config"`
+	Role_        string             `db:"role"`
+	LogPolicy    LogPolicy          `db:"log_policy"`
 
 	OrgConfig_ null.Map[any] `db:"org_config"`
 	OrgIsAnon_ bool          `db:"org_is_anon"`
