@@ -179,10 +179,6 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
-}
-
 // mocks the call to the WeChat API
 func buildMockWCAPI(testCases []IncomingTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

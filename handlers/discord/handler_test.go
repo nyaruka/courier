@@ -15,10 +15,6 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
-}
-
 var testChannels = []courier.Channel{
 	test.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", []string{urns.Discord.Prefix}, map[string]any{models.ConfigSendAuthorization: "sesame", models.ConfigSendURL: "http://example.com/discord/rp/send"}),
 }

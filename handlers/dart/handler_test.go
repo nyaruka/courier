@@ -92,10 +92,6 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, daTestChannels, NewHandler("DA", "DartMedia", sendURL, maxMsgLength), daTestCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, daTestChannels, NewHandler("DA", "DartMedia", sendURL, maxMsgLength), daTestCases)
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Plain Send",

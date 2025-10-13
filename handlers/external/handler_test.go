@@ -305,11 +305,6 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, extChannels, newHandler(), extReceiveTestCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
-	RunChannelBenchmarks(b, testSOAPReceiveChannels, newHandler(), handleSOAPReceiveTestCases)
-}
-
 var longSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Long Send",

@@ -706,8 +706,3 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 	RunIncomingTestCases(t, testChannelsWithWelcomeMessage, newHandler(), testWelcomeMessageCases)
 }
-
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
-	RunChannelBenchmarks(b, testChannelsWithWelcomeMessage, newHandler(), testWelcomeMessageCases)
-}

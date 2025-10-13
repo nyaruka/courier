@@ -730,13 +730,6 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	fbService := buildMockFBGraph(testCases)
-	defer fbService.Close()
-
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
-}
-
 func TestVerify(t *testing.T) {
 	subscribeCalled := false
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

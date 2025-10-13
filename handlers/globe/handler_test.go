@@ -162,10 +162,6 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
-}
-
 var sendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Plain Send",

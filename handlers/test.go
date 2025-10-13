@@ -437,27 +437,6 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 	}
 }
 
-// RunChannelBenchmarks runs all the passed in test cases for the passed in channels
-func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler courier.ChannelHandler, testCases []IncomingTestCase) {
-	mb := test.NewMockBackend()
-	s := newServer(mb)
-
-	for _, ch := range channels {
-		mb.AddChannel(ch)
-	}
-	handler.Initialize(s)
-
-	for _, testCase := range testCases {
-		mb.Reset()
-
-		b.Run(testCase.Label, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				testHandlerRequest(b, s, testCase.URL, testCase.Headers, testCase.Data, testCase.MultipartForm, testCase.ExpectedRespStatus, "", testCase.PrepRequest)
-			}
-		})
-	}
-}
-
 // asserts that the given channel log doesn't contain any of the given values
 func AssertChannelLogRedaction(t *testing.T, clog *courier.ChannelLog, vals []string) {
 	assertRedacted := func(s string) {

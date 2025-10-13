@@ -239,11 +239,6 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testSMSChannels, newHandler("ZVS", "Zenvia SMS"), testSMSCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testWhatsappChannels, newHandler("ZVW", "Zenvia WhatsApp"), testWhatappCases)
-	RunChannelBenchmarks(b, testSMSChannels, newHandler("ZVS", "Zenvia SMS"), testSMSCases)
-}
-
 var defaultWhatsappSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Plain Send",

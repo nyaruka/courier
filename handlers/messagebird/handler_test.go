@@ -197,10 +197,6 @@ func TestReceiving(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler("MBD", "Messagebird", true), defaultReceiveTestCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler("MBD", "Messagebird", true), defaultReceiveTestCases)
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Plain Send",
