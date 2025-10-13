@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
@@ -31,7 +31,7 @@ type ChannelEvent struct {
 	Extra_       null.Map[string]        `json:"extra"                   db:"extra"`
 	OccurredOn_  time.Time               `json:"occurred_on"             db:"occurred_on"`
 	CreatedOn_   time.Time               `json:"created_on"              db:"created_on"`
-	LogUUIDs     dbutil.StringArray      `json:"log_uuids"               db:"log_uuids"`
+	LogUUIDs     pq.StringArray          `json:"log_uuids"               db:"log_uuids"`
 
 	ContactID_    models.ContactID    `json:"-"               db:"contact_id"`
 	ContactURNID_ models.ContactURNID `json:"-"               db:"contact_urn_id"`
@@ -55,7 +55,7 @@ func newChannelEvent(channel courier.Channel, eventType models.ChannelEventType,
 		URN_:         urn,
 		EventType_:   eventType,
 		OccurredOn_:  time.Now().In(time.UTC),
-		LogUUIDs:     dbutil.StringArray{string(clog.UUID)},
+		LogUUIDs:     pq.StringArray{string(clog.UUID)},
 
 		channel: dbChannel,
 	}

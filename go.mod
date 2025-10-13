@@ -15,8 +15,9 @@ require (
 	github.com/gorilla/schema v1.4.1
 	github.com/h2non/filetype v1.1.3
 	github.com/jackc/pgx/v5 v5.7.6
+	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.4.1
-	github.com/nyaruka/gocommon v1.70.0
+	github.com/nyaruka/gocommon v1.70.1
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/vkutil v0.20.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
