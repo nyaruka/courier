@@ -138,7 +138,7 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 const sqlResolveStatusMsgIDs = `
 SELECT id, channel_id, external_id 
   FROM msgs_msg 
- WHERE (channel_id, external_id) IN (VALUES(CAST(:channel_id AS int), :external_id))`
+ WHERE (channel_id, external_id) IN (VALUES(:channel_id::int, :external_id))`
 
 // resolveStatusUpdateMsgIDs tries to resolve msg IDs for the given statuses - if there's no matching channel id + external id pair
 // found for a status, that status will be left with a nil msg ID.
