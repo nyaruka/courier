@@ -55,7 +55,7 @@ func newChannelEvent(channel courier.Channel, eventType models.ChannelEventType,
 		URN_:         urn,
 		EventType_:   eventType,
 		OccurredOn_:  time.Now().In(time.UTC),
-		LogUUIDs:     []string{string(clog.UUID)},
+		LogUUIDs:     pq.StringArray{string(clog.UUID)},
 
 		channel: dbChannel,
 	}

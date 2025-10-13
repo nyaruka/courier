@@ -16,7 +16,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
-	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/test"
@@ -466,7 +465,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.After(now))
 	ts.Equal(null.NullString, m.FailedReason_)
-	ts.Equal(pq.StringArray([]string{string(clog1.UUID)}), m.LogUUIDs)
+	ts.Equal([]string{string(clog1.UUID)}, []string(m.LogUUIDs))
 
 	sentOn := *m.SentOn_
 
@@ -478,7 +477,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(null.String("ext0"), m.ExternalID_) // no change
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.Equal(sentOn)) // no change
-	ts.Equal(pq.StringArray([]string{string(clog1.UUID), string(clog2.UUID)}), m.LogUUIDs)
+	ts.Equal([]string{string(clog1.UUID), string(clog2.UUID)}, []string(m.LogUUIDs))
 
 	// update to DELIVERED using id
 	clog3 := updateStatusByID(10001, models.MsgStatusDelivered, "")
@@ -487,7 +486,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(m.Status_, models.MsgStatusDelivered)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.Equal(sentOn)) // no change
-	ts.Equal(pq.StringArray([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID)}), m.LogUUIDs)
+	ts.Equal([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID)}, []string(m.LogUUIDs))
 
 	// update to READ using id
 	clog4 := updateStatusByID(10001, models.MsgStatusRead, "")
@@ -496,7 +495,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(m.Status_, models.MsgStatusRead)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.Equal(sentOn)) // no change
-	ts.Equal(pq.StringArray([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID), string(clog4.UUID)}), m.LogUUIDs)
+	ts.Equal([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID), string(clog4.UUID)}, []string(m.LogUUIDs))
 
 	// no change for incoming messages
 	updateStatusByID(10002, models.MsgStatusSent, "")
@@ -504,7 +503,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	m = readMsgFromDB(ts.b, 10002)
 	ts.Equal(models.MsgStatusPending, m.Status_)
 	ts.Equal(m.ExternalID_, null.String("ext2"))
-	ts.Equal(pq.StringArray(nil), m.LogUUIDs)
+	ts.Equal([]string(nil), []string(m.LogUUIDs))
 
 	// update to FAILED using external id
 	clog5 := updateStatusByExtID("ext1", models.MsgStatusFailed)
@@ -513,7 +512,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(models.MsgStatusFailed, m.Status_)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.Nil(m.SentOn_)
-	ts.Equal(pq.StringArray([]string{string(clog5.UUID)}), m.LogUUIDs)
+	ts.Equal([]string{string(clog5.UUID)}, []string(m.LogUUIDs))
 
 	now = time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)

@@ -96,7 +96,7 @@ func newMsg(direction models.MsgDirection, channel courier.Channel, urn urns.URN
 
 		CreatedOn_:  now,
 		ModifiedOn_: now,
-		LogUUIDs:    []string{string(clog.UUID)},
+		LogUUIDs:    pq.StringArray{string(clog.UUID)},
 
 		channel:        dbChannel,
 		workerToken:    "",
@@ -109,7 +109,7 @@ func (m *Msg) ID() models.MsgID         { return m.ID_ }
 func (m *Msg) UUID() models.MsgUUID     { return m.UUID_ }
 func (m *Msg) ExternalID() string       { return string(m.ExternalID_) }
 func (m *Msg) Text() string             { return m.Text_ }
-func (m *Msg) Attachments() []string    { return m.Attachments_ }
+func (m *Msg) Attachments() []string    { return []string(m.Attachments_) }
 func (m *Msg) URN() urns.URN            { return m.URN_ }
 func (m *Msg) Channel() courier.Channel { return m.channel }
 
