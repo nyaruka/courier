@@ -188,7 +188,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		if err != nil {
 			slog.Error("error converting twilio callback id to integer", "error", err, "id", idString)
 		} else {
-			status = h.Backend().NewStatusUpdate(channel, models.MsgID(msgID), msgStatus, clog)
+			status = h.Backend().NewStatusUpdate(channel, "", models.MsgID(msgID), msgStatus, clog)
 		}
 	}
 

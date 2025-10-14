@@ -6,23 +6,25 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"strconv"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 // creates a new message status update
-func newStatusUpdate(channel courier.Channel, id models.MsgID, externalID string, status models.MsgStatus, clog *courier.ChannelLog) *models.StatusUpdate {
+func newStatusUpdate(channel courier.Channel, uuid models.MsgUUID, id models.MsgID, externalID string, status models.MsgStatus, clog *courier.ChannelLog) *models.StatusUpdate {
 	dbChannel := channel.(*models.Channel)
 
 	return &models.StatusUpdate{
 		ChannelUUID_: channel.UUID(),
 		ChannelID_:   dbChannel.ID(),
+		MsgUUID_:     uuid,
 		MsgID_:       id,
 		OldURN_:      urns.NilURN,
 		NewURN_:      urns.NilURN,
@@ -102,17 +104,16 @@ func (b *backend) writeStatuseUpdates(ctx context.Context, spoolDir string, batc
 // writes a batch of msg status updates to the database - messages that can't be resolved are returned and aren't
 // considered an error
 func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models.StatusUpdate) ([]*models.StatusUpdate, error) {
-	// get the statuses which have external ID instead of a message ID
-	missingID := make([]*models.StatusUpdate, 0, 500)
+	// get the statuses which are missing msg UUIDs
+	missingUUID := make([]*models.StatusUpdate, 0, len(statuses))
 	for _, s := range statuses {
-		if s.MsgID_ == models.NilMsgID {
-			missingID = append(missingID, s)
+		if s.MsgUUID_ == "" {
+			missingUUID = append(missingUUID, s)
 		}
 	}
 
-	// try to resolve channel ID + external ID to message IDs
-	if len(missingID) > 0 {
-		if err := b.resolveStatusUpdateMsgIDs(ctx, missingID); err != nil {
+	if len(missingUUID) > 0 {
+		if err := b.resolveStatusUpdateMsgUUIDs(ctx, missingUUID); err != nil {
 			return nil, err
 		}
 	}
@@ -121,7 +122,7 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 	unresolved := make([]*models.StatusUpdate, 0, len(statuses))
 
 	for _, s := range statuses {
-		if s.MsgID_ != models.NilMsgID {
+		if s.MsgUUID_ != "" {
 			resolved = append(resolved, s)
 		} else {
 			unresolved = append(unresolved, s)
@@ -135,14 +136,75 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 	return unresolved, nil
 }
 
-const sqlResolveStatusMsgIDs = `
-SELECT id, channel_id, external_id 
+// tries to resolve msg UUIDs for the given statuses using either the msg database ID or external ID
+func (b *backend) resolveStatusUpdateMsgUUIDs(ctx context.Context, statuses []*models.StatusUpdate) error {
+	byID := make([]*models.StatusUpdate, 0, len(statuses))
+	byExternalID := make([]*models.StatusUpdate, 0, len(statuses))
+
+	for _, s := range statuses {
+		if s.MsgUUID_ == "" {
+			if s.MsgID_ != 0 {
+				byID = append(byID, s)
+			} else if s.ExternalID_ != "" {
+				byExternalID = append(byExternalID, s)
+			}
+		}
+	}
+
+	if len(byID) > 0 {
+		if err := b.resolveStatusUpdateByID(ctx, byID); err != nil {
+			return fmt.Errorf("error resolving status updates by msg ID: %w", err)
+		}
+	}
+	if len(byExternalID) > 0 {
+		if err := b.resolveStatusUpdateByExternalID(ctx, byExternalID); err != nil {
+			return fmt.Errorf("error resolving status updates by external ID: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// tries to resolve msg UUIDs for the given statuses using the database IDs
+func (b *backend) resolveStatusUpdateByID(ctx context.Context, statuses []*models.StatusUpdate) error {
+	// create a mapping of id -> status and set of IDs to look up
+	ids := make([]models.MsgID, len(statuses))
+	statusesByID := make(map[models.MsgID]*models.StatusUpdate, len(statuses))
+	for i, s := range statuses {
+		ids[i] = s.MsgID_
+		statusesByID[s.MsgID_] = s
+	}
+
+	rows, err := b.rt.DB.QueryContext(ctx, `SELECT uuid, id FROM msgs_msg WHERE id = ANY($1)`, pq.Array(ids))
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var msgUUID models.MsgUUID
+	var msgID models.MsgID
+
+	for rows.Next() {
+		if err := rows.Scan(&msgUUID, &msgID); err != nil {
+			return fmt.Errorf("error scanning rows: %w", err)
+		}
+
+		// find the status with this ID and update its msg UUID
+		if s := statusesByID[msgID]; s != nil {
+			s.MsgUUID_ = msgUUID
+		}
+	}
+
+	return rows.Err()
+}
+
+const sqlResolveStatusByExternalID = `
+SELECT uuid, channel_id, external_id 
   FROM msgs_msg 
  WHERE (channel_id, external_id) IN (VALUES(:channel_id::int, :external_id))`
 
-// resolveStatusUpdateMsgIDs tries to resolve msg IDs for the given statuses - if there's no matching channel id + external id pair
-// found for a status, that status will be left with a nil msg ID.
-func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*models.StatusUpdate) error {
+// tries to resolve msg UUIDs for the given statuses using their external IDs
+func (b *backend) resolveStatusUpdateByExternalID(ctx context.Context, statuses []*models.StatusUpdate) error {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
@@ -150,7 +212,7 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*mod
 	for i, s := range statuses {
 		chAndExtKeys[i] = fmt.Sprintf("%d|%s", s.ChannelID_, s.ExternalID_)
 	}
-	cachedIDs, err := b.sentExternalIDs.MGet(ctx, rc, chAndExtKeys...)
+	cachedUUIDs, err := b.sentExternalIDs.MGet(ctx, rc, chAndExtKeys...)
 	if err != nil {
 		// log error but we continue and try to get ids from the database
 		slog.Error("error looking up sent message ids in valkey", "error", err)
@@ -158,12 +220,11 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*mod
 
 	// collect the statuses that couldn't be resolved from cache, update the ones that could
 	notInCache := make([]*models.StatusUpdate, 0, len(statuses))
-	for i := range cachedIDs {
-		id, err := strconv.Atoi(cachedIDs[i])
-		if err != nil {
-			notInCache = append(notInCache, statuses[i])
+	for i, val := range cachedUUIDs {
+		if val != "" && uuids.Is(val) {
+			statuses[i].MsgUUID_ = models.MsgUUID(val)
 		} else {
-			statuses[i].MsgID_ = models.MsgID(id)
+			notInCache = append(notInCache, statuses[i])
 		}
 	}
 
@@ -181,7 +242,7 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*mod
 		statusesByExt[ext{s.ChannelID_, s.ExternalID_}] = s
 	}
 
-	sql, params, err := dbutil.BulkSQL(b.rt.DB, sqlResolveStatusMsgIDs, notInCache)
+	sql, params, err := dbutil.BulkSQL(b.rt.DB, sqlResolveStatusByExternalID, notInCache)
 	if err != nil {
 		return err
 	}
@@ -192,18 +253,18 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*mod
 	}
 	defer rows.Close()
 
-	var msgID models.MsgID
+	var msgUUID models.MsgUUID
 	var channelID models.ChannelID
 	var externalID string
 
 	for rows.Next() {
-		if err := rows.Scan(&msgID, &channelID, &externalID); err != nil {
+		if err := rows.Scan(&msgUUID, &channelID, &externalID); err != nil {
 			return fmt.Errorf("error scanning rows: %w", err)
 		}
 
-		// find the status with this channel ID and external ID and update its msg ID
+		// find the status with this channel ID and external ID and update its msg UUID
 		s := statusesByExt[ext{channelID, externalID}]
-		s.MsgID_ = msgID
+		s.MsgUUID_ = msgUUID
 	}
 
 	return rows.Err()

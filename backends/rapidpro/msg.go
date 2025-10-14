@@ -316,7 +316,7 @@ func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *Msg) models.Ms
 		}
 	}
 
-	return models.NilMsgUUID
+	return ""
 }
 
 // records that the given message has been received and written to the database

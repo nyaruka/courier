@@ -11,6 +11,7 @@ import (
 
 type MockStatusUpdate struct {
 	channel    courier.Channel
+	msgUUID    models.MsgUUID
 	msgID      models.MsgID
 	oldURN     urns.URN
 	newURN     urns.URN
@@ -19,8 +20,9 @@ type MockStatusUpdate struct {
 	createdOn  time.Time
 }
 
-func (m *MockStatusUpdate) EventUUID() uuids.UUID           { return uuids.NewV4() } // TODO should become message UUID
+func (m *MockStatusUpdate) EventUUID() uuids.UUID           { return uuids.UUID(m.msgUUID) }
 func (m *MockStatusUpdate) ChannelUUID() models.ChannelUUID { return m.channel.UUID() }
+func (m *MockStatusUpdate) MsgUUID() models.MsgUUID         { return m.msgUUID }
 func (m *MockStatusUpdate) MsgID() models.MsgID             { return m.msgID }
 
 func (m *MockStatusUpdate) SetURNUpdate(old, new urns.URN) error {

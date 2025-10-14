@@ -156,7 +156,7 @@ func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
 	err = ts.b.DeleteMsgByExternalID(ctx, knChannel, "ext2")
 	ts.Nil(err)
 
-	ts.assertQueuedContactTask(100, "msg_deleted", map[string]any{"msg_uuid": "0ee51bf5-b285-4c39-95d6-c85d18b23f1e"})
+	ts.assertQueuedContactTask(100, "msg_deleted", map[string]any{"msg_uuid": "0199df10-9519-7fe2-a29c-c890d1713673"})
 }
 
 func (ts *BackendTestSuite) TestContact() {
@@ -434,7 +434,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	updateStatusByID := func(id models.MsgID, status models.MsgStatus, newExtID string) *courier.ChannelLog {
 		clog := courier.NewChannelLog(courier.ChannelLogTypeMsgStatus, channel, nil)
-		statusObj := ts.b.NewStatusUpdate(channel, id, status, clog)
+		statusObj := ts.b.NewStatusUpdate(channel, "", id, status, clog)
 		if newExtID != "" {
 			statusObj.SetExternalID(newExtID)
 		}
@@ -604,7 +604,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.NoError(tx.Commit())
 
 	newURN := urns.URN("whatsapp:5588776655")
-	status = ts.b.NewStatusUpdate(channel, 10000, models.MsgStatusSent, clog6)
+	status = ts.b.NewStatusUpdate(channel, "", 10000, models.MsgStatusSent, clog6)
 	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
@@ -625,7 +625,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	ts.NoError(tx.Commit())
 
-	status = ts.b.NewStatusUpdate(channel, 10007, models.MsgStatusSent, clog6)
+	status = ts.b.NewStatusUpdate(channel, "", 10007, models.MsgStatusSent, clog6)
 	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
@@ -647,7 +647,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	ts.NoError(tx.Commit())
 
-	status = ts.b.NewStatusUpdate(channel, 10007, models.MsgStatusSent, clog6)
+	status = ts.b.NewStatusUpdate(channel, "", 10007, models.MsgStatusSent, clog6)
 	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
@@ -671,8 +671,8 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 
 	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
-	// create a status update from a send which will have id and external id
-	status1 := ts.b.NewStatusUpdate(channel, 10000, models.MsgStatusSent, clog)
+	// create a status update from a send which will have a UUID and an external ID
+	status1 := ts.b.NewStatusUpdate(channel, "0199df0f-9f82-7689-b02d-f34105991321", 10000, models.MsgStatusSent, clog)
 	status1.SetExternalID("ex457")
 	err := ts.b.WriteStatusUpdate(ctx, status1)
 	ts.NoError(err)
@@ -683,7 +683,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	keys, err := redis.Strings(rc.Do("KEYS", "{sent-external-ids}:*"))
 	ts.NoError(err)
 	ts.Len(keys, 1)
-	assertvk.HGetAll(ts.T(), rc, keys[0], map[string]string{"10|ex457": "10000"})
+	assertvk.HGetAll(ts.T(), rc, keys[0], map[string]string{"10|ex457": "0199df0f-9f82-7689-b02d-f34105991321"})
 
 	// mimic a delay in that status being written by reverting the db changes
 	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'W', external_id = NULL WHERE id = 10000`)
@@ -836,10 +836,10 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.Equal(msg.Text(), "test message")
 
 	// mark this message as dealt with
-	ts.b.OnSendComplete(ctx, msg, ts.b.NewStatusUpdate(msg.Channel(), msg.ID(), models.MsgStatusWired, clog), clog)
+	ts.b.OnSendComplete(ctx, msg, ts.b.NewStatusUpdate(msg.Channel(), msg.UUID(), msg.ID(), models.MsgStatusWired, clog), clog)
 
 	// this message should now be marked as sent
-	sent, err := ts.b.WasMsgSent(ctx, msg.ID())
+	sent, err := ts.b.WasMsgSent(ctx, msg.UUID())
 	ts.NoError(err)
 	ts.True(sent)
 
@@ -850,16 +850,16 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 
 	// checking another message should show unsent
 	msg3 := readMsgFromDB(ts.b, 10001)
-	sent, err = ts.b.WasMsgSent(ctx, msg3.ID())
+	sent, err = ts.b.WasMsgSent(ctx, msg3.UUID())
 	ts.NoError(err)
 	ts.False(sent)
 
 	// write an error for our original message
-	err = ts.b.WriteStatusUpdate(ctx, ts.b.NewStatusUpdate(msg.Channel(), msg.ID(), models.MsgStatusErrored, clog))
+	err = ts.b.WriteStatusUpdate(ctx, ts.b.NewStatusUpdate(msg.Channel(), msg.UUID(), msg.ID(), models.MsgStatusErrored, clog))
 	ts.NoError(err)
 
 	// message should no longer be considered sent
-	sent, err = ts.b.WasMsgSent(ctx, msg.ID())
+	sent, err = ts.b.WasMsgSent(ctx, msg.UUID())
 	ts.NoError(err)
 	ts.False(sent)
 }
@@ -1539,6 +1539,8 @@ func readMsgFromDB(b *backend, id models.MsgID) *Msg {
 
 const sqlSelectMsg = `
 SELECT
+	uuid,
+	id,
 	org_id,
 	direction,
 	text,
