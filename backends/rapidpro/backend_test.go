@@ -96,13 +96,12 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"is_resend": true
 	}`
 
-	msg := Msg{}
+	msg := MsgOut{}
 	err := json.Unmarshal([]byte(msgJSON), &msg)
 	ts.NoError(err)
 	ts.Equal(models.ChannelUUID("f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba"), msg.ChannelUUID_)
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	ts.Equal("5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2", msg.URNAuth_)
-	ts.Equal("", msg.ExternalID())
 	ts.Equal([]models.QuickReply{{Text: "Yes"}, {Text: "No"}}, msg.QuickReplies())
 	ts.Equal("external-id", msg.ResponseToExternalID())
 	ts.True(msg.HighPriority())
@@ -126,7 +125,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"metadata": null
 	}`
 
-	msg = Msg{}
+	msg = MsgOut{}
 	err = json.Unmarshal([]byte(msgJSONNoQR), &msg)
 	ts.NoError(err)
 	ts.Nil(msg.Attachments())
@@ -1304,7 +1303,7 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 		"session_modified_on": "2025-01-28T20:43:34.157379218Z"
 	}`
 
-	msg := &Msg{}
+	msg := &MsgOut{}
 	jsonx.MustUnmarshal([]byte(msgJSON), msg)
 
 	err := ts.b.insertTimeoutFire(ctx, msg)

@@ -423,7 +423,7 @@ func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, u
 	text = dbutil.ToValidUTF8(text)
 	extID = dbutil.ToValidUTF8(extID)
 
-	msg := newMsg(models.MsgIncoming, channel, urn, text, extID, clog)
+	msg := newMsg(channel, urn, text, extID, clog)
 	msg.WithReceivedOn(time.Now().UTC())
 
 	// check if this message could be a duplicate and if so use the original's UUID
@@ -468,7 +468,7 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 		return nil, nil
 	}
 
-	dbMsg := &Msg{}
+	dbMsg := &MsgOut{}
 	err = json.Unmarshal([]byte(msgJSON), dbMsg)
 	if err != nil {
 		markComplete(token)
@@ -482,7 +482,6 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 		return nil, err
 	}
 
-	dbMsg.Direction_ = models.MsgOutgoing
 	dbMsg.channel = channel.(*models.Channel)
 	dbMsg.workerToken = token
 
@@ -514,7 +513,7 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
-	dbMsg := msg.(*Msg)
+	dbMsg := msg.(*MsgOut)
 
 	if err := queue.MarkComplete(rc, msgQueueName, dbMsg.workerToken); err != nil {
 		log.Error("unable to mark queue task complete", "error", err)

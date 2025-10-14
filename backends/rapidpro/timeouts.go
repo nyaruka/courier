@@ -14,7 +14,7 @@ INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, fire_on, 
 ON CONFLICT DO NOTHING`
 
 // insertTimeoutFire inserts a timeout fire for the session associated with the given msg
-func (b *backend) insertTimeoutFire(ctx context.Context, m *Msg) error {
+func (b *backend) insertTimeoutFire(ctx context.Context, m *MsgOut) error {
 	timeoutOn := dates.Now().Add(time.Duration(m.Session_.Timeout) * time.Second)
 
 	_, err := b.rt.DB.ExecContext(ctx, sqlInsertTimeoutFire, m.OrgID_, m.ContactID_, timeoutOn, m.Session_.UUID, m.Session_.SprintUUID)
