@@ -423,7 +423,7 @@ func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, u
 	text = dbutil.ToValidUTF8(text)
 	extID = dbutil.ToValidUTF8(extID)
 
-	msg := newMsg(channel, urn, text, extID, clog)
+	msg := newIncomingMsg(channel, urn, text, extID, clog)
 	msg.WithReceivedOn(time.Now().UTC())
 
 	// check if this message could be a duplicate and if so use the original's UUID
@@ -513,9 +513,9 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
-	dbMsg := msg.(*MsgOut)
+	mo := msg.(*MsgOut)
 
-	if err := queue.MarkComplete(rc, msgQueueName, dbMsg.workerToken); err != nil {
+	if err := queue.MarkComplete(rc, msgQueueName, mo.workerToken); err != nil {
 		log.Error("unable to mark queue task complete", "error", err)
 	}
 
@@ -528,9 +528,9 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 
 	// if message was successfully sent, and we have a session timeout, update it
 	wasSuccess := status.Status() == models.MsgStatusWired || status.Status() == models.MsgStatusSent || status.Status() == models.MsgStatusDelivered || status.Status() == models.MsgStatusRead
-	if wasSuccess && dbMsg.Session_ != nil && dbMsg.Session_.Timeout > 0 {
-		if err := b.insertTimeoutFire(ctx, dbMsg); err != nil {
-			log.Error("unable to update session timeout", "error", err, "session_uuid", dbMsg.Session_.UUID)
+	if wasSuccess && mo.Session_ != nil && mo.Session_.Timeout > 0 {
+		if err := b.insertTimeoutFire(ctx, mo); err != nil {
+			log.Error("unable to update session timeout", "error", err, "session_uuid", mo.Session_.UUID)
 		}
 	}
 

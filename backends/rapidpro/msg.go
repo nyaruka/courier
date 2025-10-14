@@ -31,7 +31,6 @@ type MsgIn struct {
 	UUID_         models.MsgUUID      `db:"uuid"           json:"uuid"`
 	Text_         string              `db:"text"           json:"text"`
 	Attachments_  pq.StringArray      `db:"attachments"    json:"attachments"`
-	Locale_       null.String         `db:"locale"         json:"locale"`
 	ExternalID_   null.String         `db:"external_id"    json:"external_id"`
 	ChannelID_    models.ChannelID    `db:"channel_id"     json:"channel_id"`
 	ContactID_    models.ContactID    `db:"contact_id"     json:"contact_id"`
@@ -51,8 +50,8 @@ type MsgIn struct {
 	alreadyWritten bool
 }
 
-// newMsg creates a new incoming message
-func newMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) *MsgIn {
+// creates a new incoming message
+func newIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) *MsgIn {
 	now := time.Now()
 	dbChannel := channel.(*models.Channel)
 

@@ -16,7 +16,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
-	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/test"
@@ -459,7 +458,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to WIRED using id and provide new external ID
 	clog1 := updateStatusByID(10001, models.MsgStatusWired, "ext0")
 
-	m := readMsgFromDB(ts.b, 10001)
+	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
 	ts.Equal(models.MsgStatusWired, m.Status)
 	ts.Equal(null.String("ext0"), m.ExternalID)
 	ts.True(m.ModifiedOn.After(now))
@@ -472,7 +471,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to SENT using id
 	clog2 := updateStatusByID(10001, models.MsgStatusSent, "")
 
-	m = readMsgFromDB(ts.b, 10001)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
 	ts.Equal(models.MsgStatusSent, m.Status)
 	ts.Equal(null.String("ext0"), m.ExternalID) // no change
 	ts.True(m.ModifiedOn.After(now))
@@ -482,7 +481,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to DELIVERED using id
 	clog3 := updateStatusByID(10001, models.MsgStatusDelivered, "")
 
-	m = readMsgFromDB(ts.b, 10001)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
 	ts.Equal(m.Status, models.MsgStatusDelivered)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.Equal(sentOn)) // no change
@@ -491,7 +490,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to READ using id
 	clog4 := updateStatusByID(10001, models.MsgStatusRead, "")
 
-	m = readMsgFromDB(ts.b, 10001)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
 	ts.Equal(m.Status, models.MsgStatusRead)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.Equal(sentOn)) // no change
@@ -500,7 +499,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// no change for incoming messages
 	updateStatusByID(10002, models.MsgStatusSent, "")
 
-	m = readMsgFromDB(ts.b, 10002)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10002)
 	ts.Equal(models.MsgStatusPending, m.Status)
 	ts.Equal(m.ExternalID, null.String("ext2"))
 	ts.Equal([]string(nil), []string(m.LogUUIDs))
@@ -508,7 +507,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to FAILED using external id
 	clog5 := updateStatusByExtID("ext1", models.MsgStatusFailed)
 
-	m = readMsgFromDB(ts.b, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
 	ts.Equal(models.MsgStatusFailed, m.Status)
 	ts.True(m.ModifiedOn.After(now))
 	ts.Nil(m.SentOn)
@@ -520,7 +519,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to WIRED using external id
 	clog6 := updateStatusByExtID("ext1", models.MsgStatusWired)
 
-	m = readMsgFromDB(ts.b, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
 	ts.Equal(models.MsgStatusWired, m.Status)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.After(now))
@@ -530,7 +529,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to SENT using external id
 	updateStatusByExtID("ext1", models.MsgStatusSent)
 
-	m = readMsgFromDB(ts.b, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
 	ts.Equal(models.MsgStatusSent, m.Status)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.Equal(sentOn)) // no change
@@ -542,10 +541,10 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	updateStatusByExtID("ext1", models.MsgStatusSent)
 	updateStatusByID(10001, models.MsgStatusDelivered, "")
 
-	m = readMsgFromDB(ts.b, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
 	ts.Equal(models.MsgStatusSent, m.Status)
 	ts.NotNil(m.SentOn)
-	m = readMsgFromDB(ts.b, 10001)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
 	ts.Equal(models.MsgStatusDelivered, m.Status)
 	ts.NotNil(m.SentOn)
 
@@ -564,7 +563,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	time.Sleep(time.Second) // give committer time to write this
 
-	m = readMsgFromDB(ts.b, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
 	ts.Equal(m.Status, models.MsgStatusErrored)
 	ts.Equal(m.ErrorCount, 1)
 	ts.True(m.ModifiedOn.After(now))
@@ -578,7 +577,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	time.Sleep(time.Second) // give committer time to write this
 
-	m = readMsgFromDB(ts.b, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
 	ts.Equal(m.Status, models.MsgStatusErrored)
 	ts.Equal(m.ErrorCount, 2)
 	ts.Equal(null.NullString, m.FailedReason)
@@ -590,7 +589,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	time.Sleep(time.Second) // give committer time to write this
 
 	ts.NoError(err)
-	m = readMsgFromDB(ts.b, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
 	ts.Equal(m.Status, models.MsgStatusFailed)
 	ts.Equal(m.ErrorCount, 3)
 	ts.Equal(null.String("E"), m.FailedReason)
@@ -797,14 +796,21 @@ func (ts *BackendTestSuite) TestStatus() {
 	r := ts.b.rt.VK.Get()
 	defer r.Close()
 
-	dbMsg := readMsgFromDB(ts.b, 10000)
-	ts.NotNil(dbMsg)
+	msgJSON := `[{
+		"org_id": 1,
+		"id": 10000,
+		"uuid": "0199df0f-9f82-7689-b02d-f34105991321",
+		"high_priority": true,
+		"text": "test message",
+		"contact_id": 100,
+		"contact_urn_id": 1000,
+		"created_on": "2025-10-14T20:16:03.821434Z",
+		"channel_uuid": "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
+		"urn": "tel:+12067799192",
+		"origin": "chat"
+	}]`
 
-	// serialize our message
-	msgJSON, err := json.Marshal([]any{dbMsg})
-	ts.NoError(err)
-
-	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
+	err := queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
 	ts.NoError(err)
 
 	// status should now contain that channel
@@ -861,7 +867,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.Nil(err)
 
 	// checking another message should show unsent
-	msg3 := readMsgFromDB(ts.b, 10001)
+	msg3 := testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
 	sent, err = ts.b.WasMsgSent(ctx, msg3.UUID)
 	ts.NoError(err)
 	ts.False(sent)
@@ -1105,7 +1111,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NotZero(msg1.ID)
 
 	// load it back from the id
-	m := readMsgFromDB(ts.b, msg1.ID())
+	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, msg1.ID())
 
 	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
@@ -1236,7 +1242,7 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 	time.Sleep(1 * time.Second)
 
 	// load it back from the id
-	m := readMsgFromDB(ts.b, msg.ID())
+	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, msg.ID())
 
 	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
@@ -1519,45 +1525,6 @@ func TestBackendSuite(t *testing.T) {
 
 type ServerTestSuite struct {
 	suite.Suite
-}
-
-type DBMsg struct {
-	OrgID        models.OrgID         `db:"org_id"`
-	ID           models.MsgID         `db:"id"`
-	UUID         models.MsgUUID       `db:"uuid"`
-	Direction    models.MsgDirection  `db:"direction"`
-	Status       models.MsgStatus     `db:"status"`
-	MsgType      string               `db:"msg_type"`
-	Visibility   models.MsgVisibility `db:"visibility"`
-	HighPriority bool                 `db:"high_priority"`
-	IsAndroid    bool                 `db:"is_android"`
-	Text         string               `db:"text"`
-	Attachments  pq.StringArray       `db:"attachments"`
-	QuickReplies pq.StringArray       `db:"quick_replies"`
-	Locale       null.String          `db:"locale"`
-	Templating   *models.Templating   `db:"templating"`
-	ExternalID   null.String          `db:"external_id"`
-	ChannelID    models.ChannelID     `db:"channel_id"`
-	ContactID    models.ContactID     `db:"contact_id"`
-	ContactURNID models.ContactURNID  `db:"contact_urn_id"`
-	MsgCount     int                  `db:"msg_count"`
-	CreatedByID  null.Int             `db:"created_by_id"`
-	CreatedOn    time.Time            `db:"created_on"`
-	ModifiedOn   time.Time            `db:"modified_on"`
-	SentOn       *time.Time           `db:"sent_on"`
-	ErrorCount   int                  `db:"error_count"`
-	FailedReason null.String          `db:"failed_reason"`
-	NextAttempt  *time.Time           `db:"next_attempt"`
-	OptInID      null.Int             `db:"optin_id"`
-	LogUUIDs     pq.StringArray       `db:"log_uuids"`
-}
-
-func readMsgFromDB(b *backend, id models.MsgID) *DBMsg {
-	m := &DBMsg{}
-	if err := b.rt.DB.Get(m, `SELECT * FROM msgs_msg WHERE id = $1`, id); err != nil {
-		panic(err)
-	}
-	return m
 }
 
 const sqlSelectEvent = `
