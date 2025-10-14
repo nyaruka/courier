@@ -1,3 +1,7 @@
+v10.3.16 (2025-10-14)
+-------------------------
+ * Rework message status updates to be by message UUID
+
 v10.3.15 (2025-10-13)
 -------------------------
  * Revert switch to pgx
