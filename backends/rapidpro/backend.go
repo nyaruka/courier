@@ -468,27 +468,27 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 		return nil, nil
 	}
 
-	dbMsg := &MsgOut{}
-	err = json.Unmarshal([]byte(msgJSON), dbMsg)
+	msg := &MsgOut{}
+	err = json.Unmarshal([]byte(msgJSON), msg)
 	if err != nil {
 		markComplete(token)
 		return nil, fmt.Errorf("unable to unmarshal message: %s: %w", string(msgJSON), err)
 	}
 
-	// populate the channel on our db msg
-	channel, err := b.GetChannel(ctx, models.AnyChannelType, dbMsg.ChannelUUID_)
+	// populate the channel on our msg object
+	channel, err := b.GetChannel(ctx, models.AnyChannelType, msg.ChannelUUID_)
 	if err != nil {
 		markComplete(token)
 		return nil, err
 	}
 
-	dbMsg.channel = channel.(*models.Channel)
-	dbMsg.workerToken = token
+	msg.channel = channel.(*models.Channel)
+	msg.workerToken = token
 
 	// clear out our seen incoming messages
-	b.clearMsgSeen(ctx, dbMsg)
+	b.clearMsgSeen(ctx, msg)
 
-	return dbMsg, nil
+	return msg, nil
 }
 
 // WasMsgSent returns whether the passed in message has already been sent
@@ -544,7 +544,7 @@ func (b *backend) OnReceiveComplete(ctx context.Context, ch courier.Channel, eve
 
 // WriteMsg writes the passed in message to our store
 func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier.ChannelLog) error {
-	m := msg.(*Msg)
+	m := msg.(*MsgIn)
 
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()

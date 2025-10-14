@@ -112,10 +112,9 @@ CREATE TABLE msgs_msg (
     msg_count integer NOT NULL,
     high_priority boolean NULL,
     error_count integer NOT NULL,
-    next_attempt timestamp with time zone NOT NULL,
+    next_attempt timestamp with time zone,
     failed_reason character varying(1),
     external_id character varying(255),
-    metadata text,
     log_uuids uuid[]
 );
 
