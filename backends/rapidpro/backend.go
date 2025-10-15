@@ -513,9 +513,9 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
-	mo := msg.(*MsgOut)
+	m := msg.(*MsgOut)
 
-	if err := queue.MarkComplete(rc, msgQueueName, mo.workerToken); err != nil {
+	if err := queue.MarkComplete(rc, msgQueueName, m.workerToken); err != nil {
 		log.Error("unable to mark queue task complete", "error", err)
 	}
 
@@ -528,9 +528,9 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 
 	// if message was successfully sent, and we have a session timeout, update it
 	wasSuccess := status.Status() == models.MsgStatusWired || status.Status() == models.MsgStatusSent || status.Status() == models.MsgStatusDelivered || status.Status() == models.MsgStatusRead
-	if wasSuccess && mo.Session_ != nil && mo.Session_.Timeout > 0 {
-		if err := b.insertTimeoutFire(ctx, mo); err != nil {
-			log.Error("unable to update session timeout", "error", err, "session_uuid", mo.Session_.UUID)
+	if wasSuccess && m.Session_ != nil && m.Session_.Timeout > 0 {
+		if err := b.insertTimeoutFire(ctx, m); err != nil {
+			log.Error("unable to update session timeout", "error", err, "session_uuid", m.Session_.UUID)
 		}
 	}
 
