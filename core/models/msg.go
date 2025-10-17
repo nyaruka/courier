@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql/driver"
 	"strconv"
+	"time"
 
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/uuids"
@@ -85,6 +86,12 @@ func (q *QuickReply) UnmarshalJSON(d []byte) error {
 	type alias QuickReply
 
 	return jsonx.Unmarshal(d, (*alias)(q))
+}
+
+type ContactReference struct {
+	ID         ContactID   `json:"id"`
+	UUID       ContactUUID `json:"uuid"`
+	LastSeenOn *time.Time  `json:"last_seen_on,omitempty"`
 }
 
 type FlowReference struct {

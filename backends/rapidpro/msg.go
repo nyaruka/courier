@@ -302,29 +302,28 @@ func (b *backend) clearMsgSeen(ctx context.Context, m *MsgOut) {
 }
 
 type MsgOut struct {
-	OrgID_                models.OrgID           `json:"org_id"`
-	ID_                   models.MsgID           `json:"id"`
-	UUID_                 models.MsgUUID         `json:"uuid"`
-	HighPriority_         bool                   `json:"high_priority"`
-	Text_                 string                 `json:"text"`
-	Attachments_          pq.StringArray         `json:"attachments"`
-	QuickReplies_         []models.QuickReply    `json:"quick_replies"`
-	Locale_               null.String            `json:"locale"`
-	Templating_           *models.Templating     `json:"templating"`
-	ContactID_            models.ContactID       `json:"contact_id"`
-	ContactURNID_         models.ContactURNID    `json:"contact_urn_id"`
-	CreatedOn_            time.Time              `json:"created_on"`
-	ChannelUUID_          models.ChannelUUID     `json:"channel_uuid"`
-	URN_                  urns.URN               `json:"urn"`
-	URNAuth_              string                 `json:"urn_auth"`
-	ResponseToExternalID_ string                 `json:"response_to_external_id"`
-	IsResend_             bool                   `json:"is_resend"`
-	Flow_                 *models.FlowReference  `json:"flow"`
-	OptIn_                *models.OptInReference `json:"optin"`
-	UserID_               models.UserID          `json:"user_id"`
-	Origin_               models.MsgOrigin       `json:"origin"`
-	ContactLastSeenOn_    *time.Time             `json:"contact_last_seen_on"`
-	Session_              *models.Session        `json:"session"`
+	OrgID_                models.OrgID             `json:"org_id"`
+	ID_                   models.MsgID             `json:"id"`
+	UUID_                 models.MsgUUID           `json:"uuid"`
+	Contact_              *models.ContactReference `json:"contact"`
+	HighPriority_         bool                     `json:"high_priority"`
+	Text_                 string                   `json:"text"`
+	Attachments_          pq.StringArray           `json:"attachments"`
+	QuickReplies_         []models.QuickReply      `json:"quick_replies"`
+	Locale_               null.String              `json:"locale"`
+	Templating_           *models.Templating       `json:"templating"`
+	ContactURNID_         models.ContactURNID      `json:"contact_urn_id"`
+	CreatedOn_            time.Time                `json:"created_on"`
+	ChannelUUID_          models.ChannelUUID       `json:"channel_uuid"`
+	URN_                  urns.URN                 `json:"urn"`
+	URNAuth_              string                   `json:"urn_auth"`
+	ResponseToExternalID_ string                   `json:"response_to_external_id"`
+	IsResend_             bool                     `json:"is_resend"`
+	Flow_                 *models.FlowReference    `json:"flow"`
+	OptIn_                *models.OptInReference   `json:"optin"`
+	UserID_               models.UserID            `json:"user_id"`
+	Origin_               models.MsgOrigin         `json:"origin"`
+	Session_              *models.Session          `json:"session"`
 
 	channel     *models.Channel
 	workerToken queue.WorkerToken
@@ -333,6 +332,7 @@ type MsgOut struct {
 func (m *MsgOut) EventUUID() uuids.UUID             { return uuids.UUID(m.UUID_) }
 func (m *MsgOut) ID() models.MsgID                  { return m.ID_ }
 func (m *MsgOut) UUID() models.MsgUUID              { return m.UUID_ }
+func (m *MsgOut) Contact() *models.ContactReference { return m.Contact_ }
 func (m *MsgOut) Text() string                      { return m.Text_ }
 func (m *MsgOut) Attachments() []string             { return []string(m.Attachments_) }
 func (m *MsgOut) URN() urns.URN                     { return m.URN_ }
@@ -342,7 +342,6 @@ func (m *MsgOut) Locale() i18n.Locale               { return i18n.Locale(string(
 func (m *MsgOut) Templating() *models.Templating    { return m.Templating_ }
 func (m *MsgOut) URNAuth() string                   { return m.URNAuth_ }
 func (m *MsgOut) Origin() models.MsgOrigin          { return m.Origin_ }
-func (m *MsgOut) ContactLastSeenOn() *time.Time     { return m.ContactLastSeenOn_ }
 func (m *MsgOut) ResponseToExternalID() string      { return m.ResponseToExternalID_ }
 func (m *MsgOut) IsResend() bool                    { return m.IsResend_ }
 func (m *MsgOut) Flow() *models.FlowReference       { return m.Flow_ }

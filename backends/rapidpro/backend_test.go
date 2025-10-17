@@ -80,7 +80,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"attachments": ["https://foo.bar/image.jpg"],
 		"quick_replies": ["Yes", "No"],
 		"text": "Test message 21",
-		"contact_id": 30,
+		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
 		"contact_urn_id": 14,
 		"flow": {"uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", "name": "Favorites"},
 		"id": 204,
@@ -96,9 +96,11 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"is_resend": true
 	}`
 
-	msg := MsgOut{}
-	err := json.Unmarshal([]byte(msgJSON), &msg)
+	msg := &MsgOut{}
+	err := json.Unmarshal([]byte(msgJSON), msg)
 	ts.NoError(err)
+	ts.Equal(models.ContactID(100), msg.Contact_.ID)
+	ts.Equal(models.ContactUUID("a984069d-0008-4d8c-a772-b14a8a6acccc"), msg.Contact_.UUID)
 	ts.Equal(models.ChannelUUID("f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba"), msg.ChannelUUID_)
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	ts.Equal("5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2", msg.URNAuth_)
@@ -111,7 +113,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 
 	msgJSONNoQR := `{
 		"text": "Test message 21",
-		"contact_id": 30,
+		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
 		"contact_urn_id": 14,
 		"id": 204,
 		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba",
@@ -125,8 +127,8 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"metadata": null
 	}`
 
-	msg = MsgOut{}
-	err = json.Unmarshal([]byte(msgJSONNoQR), &msg)
+	msg = &MsgOut{}
+	err = json.Unmarshal([]byte(msgJSONNoQR), msg)
 	ts.NoError(err)
 	ts.Nil(msg.Attachments())
 	ts.Nil(msg.QuickReplies())
@@ -746,7 +748,7 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	// an outgoing message should clear things
 	msgJSON := `[{
 		"text": "test",
-		"contact_id": 30,
+		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
 		"contact_urn_id": 14,
 		"id": 10000,
 		"channel_uuid": "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
@@ -802,7 +804,7 @@ func (ts *BackendTestSuite) TestStatus() {
 		"uuid": "0199df0f-9f82-7689-b02d-f34105991321",
 		"high_priority": true,
 		"text": "test message",
-		"contact_id": 100,
+		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
 		"contact_urn_id": 1000,
 		"created_on": "2025-10-14T20:16:03.821434Z",
 		"channel_uuid": "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
@@ -829,7 +831,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 		"uuid": "0199df0f-9f82-7689-b02d-f34105991321",
 		"high_priority": true,
 		"text": "test message",
-		"contact_id": 100,
+		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
 		"contact_urn_id": 1000,
 		"created_on": "2025-10-14T20:16:03.821434Z",
 		"channel_uuid": "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
@@ -1299,7 +1301,7 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 		"id": 204,
 		"org_id": 1,
 		"text": "Test message 21",
-		"contact_id": 100,
+		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
 		"contact_urn_id": 14,
 		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba",
 		"urn": "telegram:3527065",
