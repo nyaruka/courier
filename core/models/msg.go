@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
 )
@@ -34,13 +33,12 @@ type MsgStatus string
 const (
 	MsgStatusPending   MsgStatus = "P"
 	MsgStatusQueued    MsgStatus = "Q"
-	MsgStatusSent      MsgStatus = "S"
 	MsgStatusWired     MsgStatus = "W"
-	MsgStatusErrored   MsgStatus = "E"
+	MsgStatusSent      MsgStatus = "S"
 	MsgStatusDelivered MsgStatus = "D"
 	MsgStatusRead      MsgStatus = "R"
+	MsgStatusErrored   MsgStatus = "E"
 	MsgStatusFailed    MsgStatus = "F"
-	NilMsgStatus       MsgStatus = ""
 )
 
 // MsgDirection is the direction of a message
@@ -72,30 +70,20 @@ const (
 )
 
 type QuickReply struct {
-	Text  string `json:"text"`
+	Text  string `json:"text"            validate:"required"`
 	Extra string `json:"extra,omitempty"`
 }
 
-func (q *QuickReply) UnmarshalJSON(d []byte) error {
-	// if we just have a string we unmarshal it into the text field
-	if len(d) > 2 && d[0] == '"' && d[len(d)-1] == '"' {
-		return jsonx.Unmarshal(d, &q.Text)
-	}
-
-	// alias our type so we don't end up here again
-	type alias QuickReply
-
-	return jsonx.Unmarshal(d, (*alias)(q))
-}
-
+// ContactReference is information about a contact provided on queued outgoing messages
 type ContactReference struct {
-	ID         ContactID   `json:"id"`
-	UUID       ContactUUID `json:"uuid"`
+	ID         ContactID   `json:"id"   validate:"required"`      // for creating session timeout fires in Postgres
+	UUID       ContactUUID `json:"uuid" validate:"uuid,required"` // for creating status updates in DynamoDB
 	LastSeenOn *time.Time  `json:"last_seen_on,omitempty"`
 }
 
+// FlowReference is a reference to a flow on a queued outgoing message
 type FlowReference struct {
-	UUID string `json:"uuid" validate:"uuid4"`
+	UUID string `json:"uuid" validate:"uuid"`
 	Name string `json:"name"`
 }
 
@@ -112,7 +100,7 @@ type TemplatingVariable struct {
 type Templating struct {
 	Template struct {
 		Name string `json:"name" validate:"required"`
-		UUID string `json:"uuid" validate:"required"`
+		UUID string `json:"uuid" validate:"uuid,required"`
 	} `json:"template" validate:"required,dive"`
 	Namespace  string `json:"namespace"`
 	Components []struct {
@@ -126,8 +114,8 @@ type Templating struct {
 }
 
 type Session struct {
-	UUID       string `json:"uuid"`
+	UUID       string `json:"uuid"        validate:"uuid,required"`
 	Status     string `json:"status"`
-	SprintUUID string `json:"sprint_uuid"`
+	SprintUUID string `json:"sprint_uuid" validate:"omitempty,uuid"`
 	Timeout    int    `json:"timeout"`
 }

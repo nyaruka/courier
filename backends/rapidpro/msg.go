@@ -302,27 +302,26 @@ func (b *backend) clearMsgSeen(ctx context.Context, m *MsgOut) {
 }
 
 type MsgOut struct {
-	OrgID_                models.OrgID             `json:"org_id"`
-	ID_                   models.MsgID             `json:"id"`
-	UUID_                 models.MsgUUID           `json:"uuid"`
-	Contact_              *models.ContactReference `json:"contact"`
+	OrgID_                models.OrgID             `json:"org_id"         validate:"required"`
+	ID_                   models.MsgID             `json:"id"             validate:"required"`
+	UUID_                 models.MsgUUID           `json:"uuid"           validate:"required"`
+	Contact_              *models.ContactReference `json:"contact"        validate:"required"`
 	HighPriority_         bool                     `json:"high_priority"`
 	Text_                 string                   `json:"text"`
-	Attachments_          pq.StringArray           `json:"attachments"`
+	Attachments_          []string                 `json:"attachments"`
 	QuickReplies_         []models.QuickReply      `json:"quick_replies"`
-	Locale_               null.String              `json:"locale"`
+	Locale_               i18n.Locale              `json:"locale"`
 	Templating_           *models.Templating       `json:"templating"`
-	ContactURNID_         models.ContactURNID      `json:"contact_urn_id"`
-	CreatedOn_            time.Time                `json:"created_on"`
-	ChannelUUID_          models.ChannelUUID       `json:"channel_uuid"`
-	URN_                  urns.URN                 `json:"urn"`
+	CreatedOn_            time.Time                `json:"created_on"     validate:"required"`
+	ChannelUUID_          models.ChannelUUID       `json:"channel_uuid"   validate:"required"`
+	URN_                  urns.URN                 `json:"urn"            validate:"required"`
 	URNAuth_              string                   `json:"urn_auth"`
 	ResponseToExternalID_ string                   `json:"response_to_external_id"`
 	IsResend_             bool                     `json:"is_resend"`
 	Flow_                 *models.FlowReference    `json:"flow"`
 	OptIn_                *models.OptInReference   `json:"optin"`
 	UserID_               models.UserID            `json:"user_id"`
-	Origin_               models.MsgOrigin         `json:"origin"`
+	Origin_               models.MsgOrigin         `json:"origin"         validate:"required"`
 	Session_              *models.Session          `json:"session"`
 
 	channel     *models.Channel
@@ -334,11 +333,11 @@ func (m *MsgOut) ID() models.MsgID                  { return m.ID_ }
 func (m *MsgOut) UUID() models.MsgUUID              { return m.UUID_ }
 func (m *MsgOut) Contact() *models.ContactReference { return m.Contact_ }
 func (m *MsgOut) Text() string                      { return m.Text_ }
-func (m *MsgOut) Attachments() []string             { return []string(m.Attachments_) }
+func (m *MsgOut) Attachments() []string             { return m.Attachments_ }
 func (m *MsgOut) URN() urns.URN                     { return m.URN_ }
 func (m *MsgOut) Channel() courier.Channel          { return m.channel }
 func (m *MsgOut) QuickReplies() []models.QuickReply { return m.QuickReplies_ }
-func (m *MsgOut) Locale() i18n.Locale               { return i18n.Locale(string(m.Locale_)) }
+func (m *MsgOut) Locale() i18n.Locale               { return m.Locale_ }
 func (m *MsgOut) Templating() *models.Templating    { return m.Templating_ }
 func (m *MsgOut) URNAuth() string                   { return m.URNAuth_ }
 func (m *MsgOut) Origin() models.MsgOrigin          { return m.Origin_ }
