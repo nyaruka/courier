@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	validate = validator.New()
+	validate = validator.New(validator.WithRequiredStructEnabled())
 )
 
 func Validate(obj any) error {

@@ -107,19 +107,19 @@ func (mb *MockBackend) NewIncomingMsg(ctx context.Context, channel courier.Chann
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, id models.MsgID, urn urns.URN, text string, highPriority bool, quickReplies []models.QuickReply,
-	responseToExternalID string, origin models.MsgOrigin, contactLastSeenOn *time.Time) courier.MsgOut {
+func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, id models.MsgID, contact *models.ContactReference, urn urns.URN, text string, highPriority bool, quickReplies []models.QuickReply,
+	responseToExternalID string, origin models.MsgOrigin) courier.MsgOut {
 
 	return &MockMsg{
 		channel:              channel,
 		id:                   id,
+		contact:              contact,
 		urn:                  urn,
 		text:                 text,
 		highPriority:         highPriority,
 		quickReplies:         quickReplies,
 		responseToExternalID: responseToExternalID,
 		origin:               origin,
-		contactLastSeenOn:    contactLastSeenOn,
 	}
 }
 

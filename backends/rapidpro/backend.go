@@ -25,6 +25,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/runtime"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/courier/utils/queue"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
@@ -469,10 +470,14 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 	}
 
 	msg := &MsgOut{}
-	err = json.Unmarshal([]byte(msgJSON), msg)
-	if err != nil {
+	if err = json.Unmarshal([]byte(msgJSON), msg); err != nil {
 		markComplete(token)
 		return nil, fmt.Errorf("unable to unmarshal message: %s: %w", string(msgJSON), err)
+	}
+
+	if err = utils.Validate(msg); err != nil {
+		markComplete(token)
+		return nil, fmt.Errorf("queued message failed validation: %s: %w", string(msgJSON), err)
 	}
 
 	// populate the channel on our msg object
