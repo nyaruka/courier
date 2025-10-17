@@ -18,7 +18,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils/queue"
-	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
@@ -301,50 +300,13 @@ func (b *backend) clearMsgSeen(ctx context.Context, m *MsgOut) {
 	}
 }
 
+// MsgOut is an outgoing message which is popped from a queue and unmarshaled from JSON
 type MsgOut struct {
-	OrgID_                models.OrgID             `json:"org_id"         validate:"required"`
-	ID_                   models.MsgID             `json:"id"             validate:"required"`
-	UUID_                 models.MsgUUID           `json:"uuid"           validate:"required"`
-	Contact_              *models.ContactReference `json:"contact"        validate:"required"`
-	HighPriority_         bool                     `json:"high_priority"`
-	Text_                 string                   `json:"text"`
-	Attachments_          []string                 `json:"attachments"`
-	QuickReplies_         []models.QuickReply      `json:"quick_replies"`
-	Locale_               i18n.Locale              `json:"locale"`
-	Templating_           *models.Templating       `json:"templating"`
-	CreatedOn_            time.Time                `json:"created_on"     validate:"required"`
-	ChannelUUID_          models.ChannelUUID       `json:"channel_uuid"   validate:"required"`
-	URN_                  urns.URN                 `json:"urn"            validate:"required"`
-	URNAuth_              string                   `json:"urn_auth"`
-	ResponseToExternalID_ string                   `json:"response_to_external_id"`
-	IsResend_             bool                     `json:"is_resend"`
-	Flow_                 *models.FlowReference    `json:"flow"`
-	OptIn_                *models.OptInReference   `json:"optin"`
-	UserID_               models.UserID            `json:"user_id"`
-	Origin_               models.MsgOrigin         `json:"origin"         validate:"required"`
-	Session_              *models.Session          `json:"session"`
+	models.MsgOut
 
+	// extra fields set when popping
 	channel     *models.Channel
 	workerToken queue.WorkerToken
 }
 
-func (m *MsgOut) EventUUID() uuids.UUID             { return uuids.UUID(m.UUID_) }
-func (m *MsgOut) ID() models.MsgID                  { return m.ID_ }
-func (m *MsgOut) UUID() models.MsgUUID              { return m.UUID_ }
-func (m *MsgOut) Contact() *models.ContactReference { return m.Contact_ }
-func (m *MsgOut) Text() string                      { return m.Text_ }
-func (m *MsgOut) Attachments() []string             { return m.Attachments_ }
-func (m *MsgOut) URN() urns.URN                     { return m.URN_ }
-func (m *MsgOut) Channel() courier.Channel          { return m.channel }
-func (m *MsgOut) QuickReplies() []models.QuickReply { return m.QuickReplies_ }
-func (m *MsgOut) Locale() i18n.Locale               { return m.Locale_ }
-func (m *MsgOut) Templating() *models.Templating    { return m.Templating_ }
-func (m *MsgOut) URNAuth() string                   { return m.URNAuth_ }
-func (m *MsgOut) Origin() models.MsgOrigin          { return m.Origin_ }
-func (m *MsgOut) ResponseToExternalID() string      { return m.ResponseToExternalID_ }
-func (m *MsgOut) IsResend() bool                    { return m.IsResend_ }
-func (m *MsgOut) Flow() *models.FlowReference       { return m.Flow_ }
-func (m *MsgOut) OptIn() *models.OptInReference     { return m.OptIn_ }
-func (m *MsgOut) UserID() models.UserID             { return m.UserID_ }
-func (m *MsgOut) Session() *models.Session          { return m.Session_ }
-func (m *MsgOut) HighPriority() bool                { return m.HighPriority_ }
+func (m *MsgOut) Channel() courier.Channel { return m.channel }

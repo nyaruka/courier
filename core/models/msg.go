@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
 )
@@ -119,3 +121,47 @@ type Session struct {
 	SprintUUID string `json:"sprint_uuid" validate:"omitempty,uuid"`
 	Timeout    int    `json:"timeout"`
 }
+
+type MsgOut struct {
+	OrgID_                OrgID             `json:"org_id"         validate:"required"`
+	ID_                   MsgID             `json:"id"             validate:"required"`
+	UUID_                 MsgUUID           `json:"uuid"           validate:"required"`
+	Contact_              *ContactReference `json:"contact"        validate:"required"`
+	HighPriority_         bool              `json:"high_priority"`
+	Text_                 string            `json:"text"`
+	Attachments_          []string          `json:"attachments"`
+	QuickReplies_         []QuickReply      `json:"quick_replies"`
+	Locale_               i18n.Locale       `json:"locale"`
+	Templating_           *Templating       `json:"templating"`
+	CreatedOn_            time.Time         `json:"created_on"     validate:"required"`
+	ChannelUUID_          ChannelUUID       `json:"channel_uuid"   validate:"required"`
+	URN_                  urns.URN          `json:"urn"            validate:"required"`
+	URNAuth_              string            `json:"urn_auth"`
+	ResponseToExternalID_ string            `json:"response_to_external_id"`
+	IsResend_             bool              `json:"is_resend"`
+	Flow_                 *FlowReference    `json:"flow"`
+	OptIn_                *OptInReference   `json:"optin"`
+	UserID_               UserID            `json:"user_id"`
+	Origin_               MsgOrigin         `json:"origin"         validate:"required"`
+	Session_              *Session          `json:"session"`
+}
+
+func (m *MsgOut) EventUUID() uuids.UUID        { return uuids.UUID(m.UUID_) }
+func (m *MsgOut) ID() MsgID                    { return m.ID_ }
+func (m *MsgOut) UUID() MsgUUID                { return m.UUID_ }
+func (m *MsgOut) Contact() *ContactReference   { return m.Contact_ }
+func (m *MsgOut) Text() string                 { return m.Text_ }
+func (m *MsgOut) Attachments() []string        { return m.Attachments_ }
+func (m *MsgOut) URN() urns.URN                { return m.URN_ }
+func (m *MsgOut) QuickReplies() []QuickReply   { return m.QuickReplies_ }
+func (m *MsgOut) Locale() i18n.Locale          { return m.Locale_ }
+func (m *MsgOut) Templating() *Templating      { return m.Templating_ }
+func (m *MsgOut) URNAuth() string              { return m.URNAuth_ }
+func (m *MsgOut) Origin() MsgOrigin            { return m.Origin_ }
+func (m *MsgOut) ResponseToExternalID() string { return m.ResponseToExternalID_ }
+func (m *MsgOut) IsResend() bool               { return m.IsResend_ }
+func (m *MsgOut) Flow() *FlowReference         { return m.Flow_ }
+func (m *MsgOut) OptIn() *OptInReference       { return m.OptIn_ }
+func (m *MsgOut) UserID() UserID               { return m.UserID_ }
+func (m *MsgOut) Session() *Session            { return m.Session_ }
+func (m *MsgOut) HighPriority() bool           { return m.HighPriority_ }
