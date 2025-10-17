@@ -46,11 +46,8 @@ type Event interface {
 
 // Msg is our interface for common methods for an incoming or outgoing message
 type Msg interface {
-	Event
-
 	ID() models.MsgID
 	UUID() models.MsgUUID
-	ExternalID() string
 	Text() string
 	Attachments() []string
 	URN() urns.URN
@@ -69,7 +66,6 @@ type MsgOut interface {
 	Origin() models.MsgOrigin
 	ContactLastSeenOn() *time.Time
 	ResponseToExternalID() string
-	SentOn() *time.Time
 	IsResend() bool
 	Flow() *models.FlowReference
 	OptIn() *models.OptInReference
@@ -80,9 +76,11 @@ type MsgOut interface {
 
 // MsgIn is our interface to represent an incoming
 type MsgIn interface {
+	Event
 	Msg
 
 	// incoming specific
+	ExternalID() string
 	ReceivedOn() *time.Time
 	WithAttachment(url string) MsgIn
 	WithContactName(name string) MsgIn

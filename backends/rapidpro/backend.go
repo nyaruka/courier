@@ -423,7 +423,7 @@ func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, u
 	text = dbutil.ToValidUTF8(text)
 	extID = dbutil.ToValidUTF8(extID)
 
-	msg := newMsg(models.MsgIncoming, channel, urn, text, extID, clog)
+	msg := newIncomingMsg(channel, urn, text, extID, clog)
 	msg.WithReceivedOn(time.Now().UTC())
 
 	// check if this message could be a duplicate and if so use the original's UUID
@@ -468,28 +468,27 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 		return nil, nil
 	}
 
-	dbMsg := &Msg{}
-	err = json.Unmarshal([]byte(msgJSON), dbMsg)
+	msg := &MsgOut{}
+	err = json.Unmarshal([]byte(msgJSON), msg)
 	if err != nil {
 		markComplete(token)
 		return nil, fmt.Errorf("unable to unmarshal message: %s: %w", string(msgJSON), err)
 	}
 
-	// populate the channel on our db msg
-	channel, err := b.GetChannel(ctx, models.AnyChannelType, dbMsg.ChannelUUID_)
+	// populate the channel on our msg object
+	channel, err := b.GetChannel(ctx, models.AnyChannelType, msg.ChannelUUID_)
 	if err != nil {
 		markComplete(token)
 		return nil, err
 	}
 
-	dbMsg.Direction_ = models.MsgOutgoing
-	dbMsg.channel = channel.(*models.Channel)
-	dbMsg.workerToken = token
+	msg.channel = channel.(*models.Channel)
+	msg.workerToken = token
 
 	// clear out our seen incoming messages
-	b.clearMsgSeen(ctx, dbMsg)
+	b.clearMsgSeen(ctx, msg)
 
-	return dbMsg, nil
+	return msg, nil
 }
 
 // WasMsgSent returns whether the passed in message has already been sent
@@ -514,9 +513,9 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
-	dbMsg := msg.(*Msg)
+	m := msg.(*MsgOut)
 
-	if err := queue.MarkComplete(rc, msgQueueName, dbMsg.workerToken); err != nil {
+	if err := queue.MarkComplete(rc, msgQueueName, m.workerToken); err != nil {
 		log.Error("unable to mark queue task complete", "error", err)
 	}
 
@@ -529,9 +528,9 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 
 	// if message was successfully sent, and we have a session timeout, update it
 	wasSuccess := status.Status() == models.MsgStatusWired || status.Status() == models.MsgStatusSent || status.Status() == models.MsgStatusDelivered || status.Status() == models.MsgStatusRead
-	if wasSuccess && dbMsg.Session_ != nil && dbMsg.Session_.Timeout > 0 {
-		if err := b.insertTimeoutFire(ctx, dbMsg); err != nil {
-			log.Error("unable to update session timeout", "error", err, "session_uuid", dbMsg.Session_.UUID)
+	if wasSuccess && m.Session_ != nil && m.Session_.Timeout > 0 {
+		if err := b.insertTimeoutFire(ctx, m); err != nil {
+			log.Error("unable to update session timeout", "error", err, "session_uuid", m.Session_.UUID)
 		}
 	}
 
@@ -545,7 +544,7 @@ func (b *backend) OnReceiveComplete(ctx context.Context, ch courier.Channel, eve
 
 // WriteMsg writes the passed in message to our store
 func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier.ChannelLog) error {
-	m := msg.(*Msg)
+	m := msg.(*MsgIn)
 
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()

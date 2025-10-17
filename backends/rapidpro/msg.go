@@ -24,131 +24,81 @@ import (
 	"github.com/nyaruka/null/v3"
 )
 
-// Msg is our base struct to represent msgs both in our JSON and db representations
-type Msg struct {
-	OrgID_        models.OrgID         `json:"org_id"          db:"org_id"`
-	ID_           models.MsgID         `json:"id"              db:"id"`
-	UUID_         models.MsgUUID       `json:"uuid"            db:"uuid"`
-	Direction_    models.MsgDirection  `                       db:"direction"`
-	Status_       models.MsgStatus     `                       db:"status"`
-	Visibility_   models.MsgVisibility `                       db:"visibility"`
-	HighPriority_ bool                 `json:"high_priority"   db:"high_priority"`
-	Text_         string               `json:"text"            db:"text"`
-	Attachments_  pq.StringArray       `json:"attachments"     db:"attachments"`
-	QuickReplies_ []models.QuickReply  `json:"quick_replies"`
-	Locale_       null.String          `json:"locale"          db:"locale"`
-	Templating_   *models.Templating   `json:"templating"      db:"templating"`
-	ExternalID_   null.String          `                       db:"external_id"`
-	ChannelID_    models.ChannelID     `                       db:"channel_id"`
-	ContactID_    models.ContactID     `json:"contact_id"      db:"contact_id"`
-	ContactURNID_ models.ContactURNID  `json:"contact_urn_id"  db:"contact_urn_id"`
+// MsgIn is an incoming message which can be written to the database or marshaled to a spool file
+type MsgIn struct {
+	OrgID_        models.OrgID        `db:"org_id"         json:"org_id"`
+	ID_           models.MsgID        `db:"id"             json:"id"`
+	UUID_         models.MsgUUID      `db:"uuid"           json:"uuid"`
+	Text_         string              `db:"text"           json:"text"`
+	Attachments_  pq.StringArray      `db:"attachments"    json:"attachments"`
+	ExternalID_   null.String         `db:"external_id"    json:"external_id"`
+	ChannelID_    models.ChannelID    `db:"channel_id"     json:"channel_id"`
+	ContactID_    models.ContactID    `db:"contact_id"     json:"contact_id"`
+	ContactURNID_ models.ContactURNID `db:"contact_urn_id" json:"contact_urn_id"`
+	CreatedOn_    time.Time           `db:"created_on"     json:"created_on"`
+	ModifiedOn_   time.Time           `db:"modified_on"    json:"modified_on"`
+	SentOn_       *time.Time          `db:"sent_on"        json:"sent_on"`
+	LogUUIDs      pq.StringArray      `db:"log_uuids"      json:"log_uuids"`
 
-	MessageCount_ int         `                     db:"msg_count"`
-	ErrorCount_   int         `                     db:"error_count"`
-	FailedReason_ null.String `                     db:"failed_reason"`
+	// extra non-model fields needed for queueing to mailroom
+	ChannelUUID_   models.ChannelUUID `json:"channel_uuid"`
+	URN_           urns.URN           `json:"urn"`
+	ContactName_   string             `json:"contact_name"`
+	URNAuthTokens_ map[string]string  `json:"auth_tokens"`
 
-	NextAttempt_ time.Time      `                     db:"next_attempt"`
-	CreatedOn_   time.Time      `json:"created_on"    db:"created_on"`
-	ModifiedOn_  time.Time      `                     db:"modified_on"`
-	SentOn_      *time.Time     `                     db:"sent_on"`
-	LogUUIDs     pq.StringArray `                     db:"log_uuids"`
-
-	// extra non-model fields that mailroom will include in queued payload
-	ChannelUUID_          models.ChannelUUID     `json:"channel_uuid"`
-	URN_                  urns.URN               `json:"urn"`
-	URNAuth_              string                 `json:"urn_auth"`
-	ResponseToExternalID_ string                 `json:"response_to_external_id"`
-	IsResend_             bool                   `json:"is_resend"`
-	Flow_                 *models.FlowReference  `json:"flow"`
-	OptIn_                *models.OptInReference `json:"optin"`
-	UserID_               models.UserID          `json:"user_id"`
-	Origin_               models.MsgOrigin       `json:"origin"`
-	ContactLastSeenOn_    *time.Time             `json:"contact_last_seen_on"`
-	Session_              *models.Session        `json:"session"`
-
-	ContactName_   string            `json:"contact_name"`
-	URNAuthTokens_ map[string]string `json:"auth_tokens"`
 	channel        *models.Channel
-	workerToken    queue.WorkerToken
 	alreadyWritten bool
 }
 
-// newMsg creates a new DBMsg object with the passed in parameters
-func newMsg(direction models.MsgDirection, channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) *Msg {
+// creates a new incoming message
+func newIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) *MsgIn {
 	now := time.Now()
 	dbChannel := channel.(*models.Channel)
 
-	return &Msg{
-		OrgID_:        dbChannel.OrgID(),
-		UUID_:         models.MsgUUID(uuids.NewV7()),
-		Direction_:    direction,
-		Status_:       models.MsgStatusPending,
-		Visibility_:   models.MsgVisible,
-		HighPriority_: false,
-		Text_:         text,
-		ExternalID_:   null.String(extID),
-
-		ChannelID_:   dbChannel.ID(),
-		ChannelUUID_: dbChannel.UUID(),
-
-		URN_:          urn,
-		MessageCount_: 1,
-
+	return &MsgIn{
+		OrgID_:      dbChannel.OrgID(),
+		UUID_:       models.MsgUUID(uuids.NewV7()),
+		Text_:       text,
+		ExternalID_: null.String(extID),
+		ChannelID_:  dbChannel.ID(),
 		CreatedOn_:  now,
 		ModifiedOn_: now,
 		LogUUIDs:    pq.StringArray{string(clog.UUID)},
 
+		URN_:           urn,
 		channel:        dbChannel,
-		workerToken:    "",
 		alreadyWritten: false,
 	}
 }
 
-func (m *Msg) EventUUID() uuids.UUID    { return uuids.UUID(m.UUID_) }
-func (m *Msg) ID() models.MsgID         { return m.ID_ }
-func (m *Msg) UUID() models.MsgUUID     { return m.UUID_ }
-func (m *Msg) ExternalID() string       { return string(m.ExternalID_) }
-func (m *Msg) Text() string             { return m.Text_ }
-func (m *Msg) Attachments() []string    { return []string(m.Attachments_) }
-func (m *Msg) URN() urns.URN            { return m.URN_ }
-func (m *Msg) Channel() courier.Channel { return m.channel }
+func (m *MsgIn) EventUUID() uuids.UUID    { return uuids.UUID(m.UUID_) }
+func (m *MsgIn) ID() models.MsgID         { return m.ID_ }
+func (m *MsgIn) UUID() models.MsgUUID     { return m.UUID_ }
+func (m *MsgIn) ExternalID() string       { return string(m.ExternalID_) }
+func (m *MsgIn) Text() string             { return m.Text_ }
+func (m *MsgIn) Attachments() []string    { return []string(m.Attachments_) }
+func (m *MsgIn) URN() urns.URN            { return m.URN_ }
+func (m *MsgIn) Channel() courier.Channel { return m.channel }
 
-// outgoing specific
-func (m *Msg) QuickReplies() []models.QuickReply { return m.QuickReplies_ }
-func (m *Msg) Locale() i18n.Locale               { return i18n.Locale(string(m.Locale_)) }
-func (m *Msg) Templating() *models.Templating    { return m.Templating_ }
-func (m *Msg) URNAuth() string                   { return m.URNAuth_ }
-func (m *Msg) Origin() models.MsgOrigin          { return m.Origin_ }
-func (m *Msg) ContactLastSeenOn() *time.Time     { return m.ContactLastSeenOn_ }
-func (m *Msg) ResponseToExternalID() string      { return m.ResponseToExternalID_ }
-func (m *Msg) SentOn() *time.Time                { return m.SentOn_ }
-func (m *Msg) IsResend() bool                    { return m.IsResend_ }
-func (m *Msg) Flow() *models.FlowReference       { return m.Flow_ }
-func (m *Msg) OptIn() *models.OptInReference     { return m.OptIn_ }
-func (m *Msg) UserID() models.UserID             { return m.UserID_ }
-func (m *Msg) Session() *models.Session          { return m.Session_ }
-func (m *Msg) HighPriority() bool                { return m.HighPriority_ }
-
-// incoming specific
-func (m *Msg) ReceivedOn() *time.Time { return m.SentOn_ }
-func (m *Msg) WithAttachment(url string) courier.MsgIn {
+func (m *MsgIn) ReceivedOn() *time.Time { return m.SentOn_ }
+func (m *MsgIn) WithAttachment(url string) courier.MsgIn {
 	m.Attachments_ = append(m.Attachments_, url)
 	return m
 }
-func (m *Msg) WithContactName(name string) courier.MsgIn { m.ContactName_ = name; return m }
-func (m *Msg) WithURNAuthTokens(tokens map[string]string) courier.MsgIn {
+func (m *MsgIn) WithContactName(name string) courier.MsgIn { m.ContactName_ = name; return m }
+func (m *MsgIn) WithURNAuthTokens(tokens map[string]string) courier.MsgIn {
 	m.URNAuthTokens_ = tokens
 	return m
 }
-func (m *Msg) WithReceivedOn(date time.Time) courier.MsgIn { m.SentOn_ = &date; return m }
+func (m *MsgIn) WithReceivedOn(date time.Time) courier.MsgIn { m.SentOn_ = &date; return m }
 
-func (m *Msg) hash() string {
+func (m *MsgIn) hash() string {
 	hash := sha1.Sum([]byte(m.Text_ + "|" + strings.Join(m.Attachments_, "|")))
 	return hex.EncodeToString(hash[:])
 }
 
 // WriteMsg creates a message given the passed in arguments
-func writeMsg(ctx context.Context, b *backend, m *Msg, clog *courier.ChannelLog) error {
+func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLog) error {
 	// this msg has already been written (we received it twice), we are a no op
 	if m.alreadyWritten {
 		return nil
@@ -210,12 +160,12 @@ func writeMsg(ctx context.Context, b *backend, m *Msg, clog *courier.ChannelLog)
 const sqlInsertMsg = `
 INSERT INTO
 	msgs_msg(org_id, uuid, direction, text, attachments, msg_type, msg_count, error_count, high_priority, status, is_android,
-             visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, sent_on, log_uuids)
-    VALUES(:org_id, :uuid, :direction, :text, :attachments, 'T', :msg_count, :error_count, :high_priority, :status, FALSE,
-           :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :sent_on, :log_uuids)
+             visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, sent_on, log_uuids)
+    VALUES(:org_id, :uuid, 'I', :text, :attachments, 'T', 1, 0, FALSE, 'P', FALSE,
+             'V', :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :sent_on, :log_uuids)
 RETURNING id`
 
-func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.ChannelLog) (*models.Contact, error) {
+func writeMsgToDB(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLog) (*models.Contact, error) {
 	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 
 	if err != nil {
@@ -250,7 +200,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	m := &Msg{}
+	m := &MsgIn{}
 	err := json.Unmarshal(contents, m)
 	if err != nil {
 		log.Printf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err)
@@ -290,7 +240,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 //-----------------------------------------------------------------------------
 
 // checks to see if this message has already been received and if so returns its UUID
-func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *Msg) models.MsgUUID {
+func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *MsgIn) models.MsgUUID {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
@@ -320,7 +270,7 @@ func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *Msg) models.Ms
 }
 
 // records that the given message has been received and written to the database
-func (b *backend) recordMsgReceived(ctx context.Context, m *Msg) {
+func (b *backend) recordMsgReceived(ctx context.Context, m *MsgIn) {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
@@ -340,7 +290,7 @@ func (b *backend) recordMsgReceived(ctx context.Context, m *Msg) {
 }
 
 // clearMsgSeen clears our seen incoming messages for the passed in channel and URN
-func (b *backend) clearMsgSeen(ctx context.Context, m *Msg) {
+func (b *backend) clearMsgSeen(ctx context.Context, m *MsgOut) {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
@@ -350,3 +300,53 @@ func (b *backend) clearMsgSeen(ctx context.Context, m *Msg) {
 		slog.Error("error clearing received msgs", "urn", m.URN().Identity(), "error", err)
 	}
 }
+
+type MsgOut struct {
+	OrgID_                models.OrgID           `json:"org_id"`
+	ID_                   models.MsgID           `json:"id"`
+	UUID_                 models.MsgUUID         `json:"uuid"`
+	HighPriority_         bool                   `json:"high_priority"`
+	Text_                 string                 `json:"text"`
+	Attachments_          pq.StringArray         `json:"attachments"`
+	QuickReplies_         []models.QuickReply    `json:"quick_replies"`
+	Locale_               null.String            `json:"locale"`
+	Templating_           *models.Templating     `json:"templating"`
+	ContactID_            models.ContactID       `json:"contact_id"`
+	ContactURNID_         models.ContactURNID    `json:"contact_urn_id"`
+	CreatedOn_            time.Time              `json:"created_on"`
+	ChannelUUID_          models.ChannelUUID     `json:"channel_uuid"`
+	URN_                  urns.URN               `json:"urn"`
+	URNAuth_              string                 `json:"urn_auth"`
+	ResponseToExternalID_ string                 `json:"response_to_external_id"`
+	IsResend_             bool                   `json:"is_resend"`
+	Flow_                 *models.FlowReference  `json:"flow"`
+	OptIn_                *models.OptInReference `json:"optin"`
+	UserID_               models.UserID          `json:"user_id"`
+	Origin_               models.MsgOrigin       `json:"origin"`
+	ContactLastSeenOn_    *time.Time             `json:"contact_last_seen_on"`
+	Session_              *models.Session        `json:"session"`
+
+	channel     *models.Channel
+	workerToken queue.WorkerToken
+}
+
+func (m *MsgOut) EventUUID() uuids.UUID             { return uuids.UUID(m.UUID_) }
+func (m *MsgOut) ID() models.MsgID                  { return m.ID_ }
+func (m *MsgOut) UUID() models.MsgUUID              { return m.UUID_ }
+func (m *MsgOut) Text() string                      { return m.Text_ }
+func (m *MsgOut) Attachments() []string             { return []string(m.Attachments_) }
+func (m *MsgOut) URN() urns.URN                     { return m.URN_ }
+func (m *MsgOut) Channel() courier.Channel          { return m.channel }
+func (m *MsgOut) QuickReplies() []models.QuickReply { return m.QuickReplies_ }
+func (m *MsgOut) Locale() i18n.Locale               { return i18n.Locale(string(m.Locale_)) }
+func (m *MsgOut) Templating() *models.Templating    { return m.Templating_ }
+func (m *MsgOut) URNAuth() string                   { return m.URNAuth_ }
+func (m *MsgOut) Origin() models.MsgOrigin          { return m.Origin_ }
+func (m *MsgOut) ContactLastSeenOn() *time.Time     { return m.ContactLastSeenOn_ }
+func (m *MsgOut) ResponseToExternalID() string      { return m.ResponseToExternalID_ }
+func (m *MsgOut) IsResend() bool                    { return m.IsResend_ }
+func (m *MsgOut) Flow() *models.FlowReference       { return m.Flow_ }
+func (m *MsgOut) OptIn() *models.OptInReference     { return m.OptIn_ }
+func (m *MsgOut) UserID() models.UserID             { return m.UserID_ }
+func (m *MsgOut) Session() *models.Session          { return m.Session_ }
+func (m *MsgOut) HighPriority() bool                { return m.HighPriority_ }

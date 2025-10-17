@@ -13,7 +13,7 @@ import (
 
 var mrQueue = queues.NewFair("tasks:realtime", 100)
 
-func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *Msg) error {
+func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *MsgIn) error {
 	channel := m.Channel().(*models.Channel)
 
 	body := map[string]any{
