@@ -53,7 +53,7 @@ func (h *handler) receiveStatus(ctx context.Context, c courier.Channel, w http.R
 	}
 
 	// should have either delivered or err
-	reqStatus := models.NilMsgStatus
+	var reqStatus models.MsgStatus
 	if form.Delivered == 1 {
 		reqStatus = models.MsgStatusDelivered
 	} else if form.Err == 1 {

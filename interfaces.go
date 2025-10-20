@@ -59,12 +59,12 @@ type MsgOut interface {
 	Msg
 
 	// outgoing specific
+	Contact() *models.ContactReference
 	QuickReplies() []models.QuickReply
 	Locale() i18n.Locale
 	Templating() *models.Templating
 	URNAuth() string
 	Origin() models.MsgOrigin
-	ContactLastSeenOn() *time.Time
 	ResponseToExternalID() string
 	IsResend() bool
 	Flow() *models.FlowReference

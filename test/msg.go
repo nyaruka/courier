@@ -13,6 +13,7 @@ import (
 type MockMsg struct {
 	id                   models.MsgID
 	uuid                 models.MsgUUID
+	contact              *models.ContactReference
 	channel              courier.Channel
 	urn                  urns.URN
 	urnAuth              string
@@ -26,7 +27,6 @@ type MockMsg struct {
 	highPriority         bool
 	quickReplies         []models.QuickReply
 	origin               models.MsgOrigin
-	contactLastSeenOn    *time.Time
 	responseToExternalID string
 	alreadyWritten       bool
 	isResend             bool
@@ -51,14 +51,15 @@ func NewMockMsg(id models.MsgID, uuid models.MsgUUID, channel courier.Channel, u
 	}
 }
 
-func (m *MockMsg) EventUUID() uuids.UUID    { return uuids.UUID(m.uuid) }
-func (m *MockMsg) ID() models.MsgID         { return m.id }
-func (m *MockMsg) UUID() models.MsgUUID     { return m.uuid }
-func (m *MockMsg) ExternalID() string       { return m.externalID }
-func (m *MockMsg) Text() string             { return m.text }
-func (m *MockMsg) Attachments() []string    { return m.attachments }
-func (m *MockMsg) URN() urns.URN            { return m.urn }
-func (m *MockMsg) Channel() courier.Channel { return m.channel }
+func (m *MockMsg) EventUUID() uuids.UUID             { return uuids.UUID(m.uuid) }
+func (m *MockMsg) ID() models.MsgID                  { return m.id }
+func (m *MockMsg) UUID() models.MsgUUID              { return m.uuid }
+func (m *MockMsg) Contact() *models.ContactReference { return m.contact }
+func (m *MockMsg) ExternalID() string                { return m.externalID }
+func (m *MockMsg) Text() string                      { return m.text }
+func (m *MockMsg) Attachments() []string             { return m.attachments }
+func (m *MockMsg) URN() urns.URN                     { return m.urn }
+func (m *MockMsg) Channel() courier.Channel          { return m.channel }
 
 // outgoing specific
 func (m *MockMsg) QuickReplies() []models.QuickReply { return m.quickReplies }
@@ -66,7 +67,6 @@ func (m *MockMsg) Locale() i18n.Locale               { return m.locale }
 func (m *MockMsg) Templating() *models.Templating    { return m.templating }
 func (m *MockMsg) URNAuth() string                   { return m.urnAuth }
 func (m *MockMsg) Origin() models.MsgOrigin          { return m.origin }
-func (m *MockMsg) ContactLastSeenOn() *time.Time     { return m.contactLastSeenOn }
 func (m *MockMsg) ResponseToExternalID() string      { return m.responseToExternalID }
 func (m *MockMsg) SentOn() *time.Time                { return m.sentOn }
 func (m *MockMsg) IsResend() bool                    { return m.isResend }
