@@ -101,9 +101,9 @@ type TemplatingVariable struct {
 
 type Templating struct {
 	Template struct {
-		Name string `json:"name" validate:"required"`
 		UUID string `json:"uuid" validate:"uuid,required"`
-	} `json:"template" validate:"required,dive"`
+		Name string `json:"name" validate:"required"`
+	} `json:"template" validate:"required"`
 	Namespace  string `json:"namespace"`
 	Components []struct {
 		Type      string         `json:"type"`
