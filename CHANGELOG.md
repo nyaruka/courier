@@ -1,3 +1,8 @@
+v10.3.17 (2025-10-20)
+-------------------------
+ * Add validation of msg out payloads
+ * Read contact from contact field on message send payloads
+
 v10.3.16 (2025-10-14)
 -------------------------
  * Rework message status updates to be by message UUID
