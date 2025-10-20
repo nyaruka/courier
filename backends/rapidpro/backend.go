@@ -438,28 +438,23 @@ func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, u
 
 // PopNextOutgoingMsg pops the next message that needs to be sent
 func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error) {
-	tryToPop := func() (queue.WorkerToken, string, error) {
-		rc := b.rt.VK.Get()
-		defer rc.Close()
-		return queue.PopFromQueue(rc, msgQueueName)
-	}
+	vc := b.rt.VK.Get()
+	defer vc.Close()
 
 	markComplete := func(token queue.WorkerToken) {
-		rc := b.rt.VK.Get()
-		defer rc.Close()
-		if err := queue.MarkComplete(rc, msgQueueName, token); err != nil {
+		if err := queue.MarkComplete(vc, msgQueueName, token); err != nil {
 			slog.Error("error marking queue task complete", "error", err)
 		}
 	}
 
 	// pop the next message off our queue
-	token, msgJSON, err := tryToPop()
+	token, msgJSON, err := queue.PopFromQueue(vc, msgQueueName)
 	if err != nil {
 		return nil, err
 	}
 
 	for token == queue.Retry {
-		token, msgJSON, err = tryToPop()
+		token, msgJSON, err = queue.PopFromQueue(vc, msgQueueName)
 		if err != nil {
 			return nil, err
 		}
@@ -470,12 +465,12 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 	}
 
 	msg := &MsgOut{}
-	if err = json.Unmarshal([]byte(msgJSON), msg); err != nil {
+	if err := json.Unmarshal([]byte(msgJSON), msg); err != nil {
 		markComplete(token)
 		return nil, fmt.Errorf("unable to unmarshal message: %s: %w", string(msgJSON), err)
 	}
 
-	if err = utils.Validate(msg); err != nil {
+	if err := utils.Validate(msg); err != nil {
 		markComplete(token)
 		return nil, fmt.Errorf("queued message failed validation: %s: %w", string(msgJSON), err)
 	}
@@ -487,11 +482,12 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 		return nil, err
 	}
 
+	// add some extra info to the popped message
 	msg.channel = channel.(*models.Channel)
 	msg.workerToken = token
 
 	// clear out our seen incoming messages
-	b.clearMsgSeen(ctx, msg)
+	b.clearMsgSeen(ctx, vc, msg)
 
 	return msg, nil
 }
