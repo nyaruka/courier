@@ -56,7 +56,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}`,
 		}},
 	},
 	{
@@ -72,11 +72,11 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,","type":"text","tracking_data":"10"}`,
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,","type":"text","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}`,
 			},
 			{
 				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"I need to keep adding more things to make it work","type":"text","tracking_data":"10"}`,
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"I need to keep adding more things to make it work","type":"text","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}`,
 			},
 		},
 	},
@@ -91,7 +91,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"☺","type":"text","tracking_data":"10"}`,
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"☺","type":"text","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}`,
 		}},
 	},
 	{
@@ -106,7 +106,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular","Columns":"3"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular","Columns":"3"}]}}`,
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular","Columns":"3"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular","Columns":"3"}]}}`,
 		}},
 	},
 	{
@@ -121,7 +121,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My pic!","type":"picture","tracking_data":"10","media":"{{ SERVER_URL }}/image.jpg"}`,
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My pic!","type":"picture","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","media":"{{ SERVER_URL }}/image.jpg"}`,
 		}},
 	},
 	{
@@ -138,11 +138,11 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","type":"picture","tracking_data":"10","media":"{{ SERVER_URL }}/image.jpg"}`,
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","type":"picture","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","media":"{{ SERVER_URL }}/image.jpg"}`,
 			},
 			{
 				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Text description is longer that 10 characters","type":"text","tracking_data":"10"}`,
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Text description is longer that 10 characters","type":"text","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}`,
 			},
 		},
 	},
@@ -168,11 +168,11 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{
 
 				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","type":"video","tracking_data":"10","media":"{{ SERVER_URL }}/video.mp4","size":12}`,
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","type":"video","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","media":"{{ SERVER_URL }}/video.mp4","size":12}`,
 			},
 			{
 				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My video!","type":"text","tracking_data":"10"}`,
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My video!","type":"text","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}`,
 			},
 		},
 	},
@@ -197,11 +197,11 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			{
 				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","type":"file","tracking_data":"10","media":"{{ SERVER_URL }}/audio.mp3","size":12,"file_name":"Audio"}`,
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","type":"file","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","media":"{{ SERVER_URL }}/audio.mp3","size":12,"file_name":"Audio"}`,
 			},
 			{
 				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My audio!","type":"text","tracking_data":"10"}`,
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My audio!","type":"text","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}`,
 			},
 		},
 	},
@@ -216,7 +216,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}`,
 		}},
 		ExpectedError: courier.ErrFailedWithReason("3", "There is an error in the request itself (missing comma, brackets, etc.)"),
 	},
@@ -231,7 +231,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}`,
 		}},
 
 		ExpectedError: courier.ErrFailedWithReason("99", "General error"),
@@ -247,7 +247,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}`,
 		}},
 		ExpectedError: courier.ErrResponseUnparseable,
 	},
@@ -262,7 +262,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Error Message","type":"text","tracking_data":"10"}`,
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Error Message","type":"text","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}`,
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
@@ -287,7 +287,7 @@ var buttonLayoutSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Body: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Select a, b, c or d.","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"a","Text":"\u003cfont color=\"#ffffff\"\u003ea\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"b","Text":"\u003cfont color=\"#ffffff\"\u003eb\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"c","Text":"\u003cfont color=\"#ffffff\"\u003ec\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"d","Text":"\u003cfont color=\"#ffffff\"\u003ed\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"6","BgColor":"#f7bb3f"}]}}`,
+			Body: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Select a, b, c or d.","type":"text","tracking_data":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"a","Text":"\u003cfont color=\"#ffffff\"\u003ea\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"b","Text":"\u003cfont color=\"#ffffff\"\u003eb\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"c","Text":"\u003cfont color=\"#ffffff\"\u003ec\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"d","Text":"\u003cfont color=\"#ffffff\"\u003ed\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"6","BgColor":"#f7bb3f"}]}}`,
 		}},
 	},
 }

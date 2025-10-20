@@ -160,9 +160,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		payload := mtPayload{}
 		message := mtMessage{}
 
-		messageid := msg.ID().String()
+		messageid := string(msg.UUID())
 		if i > 0 {
-			messageid = fmt.Sprintf("%s.%d", msg.ID().String(), i+1)
+			messageid = fmt.Sprintf("%s.%d", string(msg.UUID()), i+1)
 		}
 		message.MessageID = messageid
 		message.Recipient = strings.TrimLeft(msg.URN().Path(), "+")

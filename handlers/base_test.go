@@ -25,7 +25,7 @@ func TestRequestHTTP(t *testing.T) {
 
 	mb := test.NewMockBackend()
 	mc := test.NewMockChannel("7a8ff1d4-f211-4492-9d05-e1905f6da8c8", "NX", "1234", "EC", []string{urns.Phone.Prefix}, nil)
-	mm := mb.NewOutgoingMsg(mc, 123, urns.URN("tel:+1234"), "Hello World", false, nil, "", models.MsgOriginChat, nil)
+	mm := mb.NewOutgoingMsg(mc, 123, "6efd469b-ab99-420a-bb93-28f94e276269", urns.URN("tel:+1234"), "Hello World", false, nil, "", models.MsgOriginChat, nil)
 	clog := courier.NewChannelLogForSend(mm, nil)
 
 	cfg := runtime.NewDefaultConfig()

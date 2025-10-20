@@ -214,7 +214,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	payload := &Message{
 		Recipients: []string{user},
 		Originator: msg.Channel().Address(),
-		Reference:  msg.ID().String(),
+		Reference:  string(msg.UUID()),
 	}
 	// build message payload
 

@@ -167,7 +167,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 
 	ourMessage := OutputMessage{
-		ID:           msg.ID().String(),
+		ID:           string(msg.UUID()),
 		Text:         msg.Text(),
 		To:           msg.URN().Path(),
 		Channel:      string(msg.Channel().UUID()),

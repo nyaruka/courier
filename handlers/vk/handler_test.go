@@ -398,7 +398,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
 		ExpectedExtIDs: []string{"1"},
@@ -435,7 +435,7 @@ var outgoingCases = []OutgoingTestCase{
 				Params: url.Values{"access_token": {"token123xyz"}, "hash": {"zxc987qwe"}, "photo": {"..."}, "server": {"109876"}, "v": {"5.103"}},
 			},
 			{
-				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {"photo1901234_1"}, "message": {""}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {"photo1901234_1"}, "message": {""}, "random_id": {"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
 		ExpectedExtIDs: []string{"1"},
@@ -467,7 +467,7 @@ var outgoingCases = []OutgoingTestCase{
 				Params: url.Values{"access_token": {"token123xyz"}, "hash": {"zxc987qwe"}, "photo": {"..."}, "server": {"109876"}, "v": {"5.103"}},
 			},
 			{
-				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {"photo1901234_1"}, "message": {"Attachments\n\nhttps://foo.bar/audio.mp3"}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {"photo1901234_1"}, "message": {"Attachments\n\nhttps://foo.bar/audio.mp3"}, "random_id": {"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
 	},
@@ -483,7 +483,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "keyboard": {keyboardJson}, "message": {"Send keyboard"}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "keyboard": {keyboardJson}, "message": {"Send keyboard"}, "random_id": {"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
 		ExpectedExtIDs: []string{"1"},
@@ -499,7 +499,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
 		ExpectedError: courier.ErrConnectionFailed,
@@ -515,7 +515,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
 		ExpectedError: courier.ErrResponseContent,

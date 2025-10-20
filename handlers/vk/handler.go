@@ -379,7 +379,7 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	params := buildApiBaseParams(msg.Channel())
 	params.Set(paramUserId, msg.URN().Path())
-	params.Set(paramRandomId, msg.ID().String())
+	params.Set(paramRandomId, string(msg.UUID()))
 
 	text, attachments := h.buildTextAndAttachmentParams(msg, clog)
 	params.Set(paramMessage, text)

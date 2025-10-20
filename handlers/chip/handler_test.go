@@ -87,7 +87,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","origin":"flow"}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"uuid":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","text":"Simple message ☺","origin":"flow"}}`,
 			},
 		},
 	},
@@ -106,7 +106,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","quick_replies":["Yes","No"],"origin":"flow"}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"uuid":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","text":"Simple message ☺","quick_replies":["Yes","No"],"origin":"flow"}}`,
 			},
 		},
 	},
@@ -122,7 +122,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"","attachments":["image/jpeg:https://example.com/image.jpg"],"origin":"flow","user_id":123}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"uuid":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","text":"","attachments":["image/jpeg:https://example.com/image.jpg"],"origin":"flow","user_id":123}}`,
 			},
 		},
 	},
@@ -137,7 +137,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Error message","origin":"flow"}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"uuid":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","text":"Error message","origin":"flow"}}`,
 			},
 		},
 		ExpectedError: courier.ErrResponseUnexpected,
@@ -153,7 +153,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Error message","origin":"flow"}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"uuid":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","text":"Error message","origin":"flow"}}`,
 			},
 		},
 		ExpectedError: courier.ErrConnectionFailed,

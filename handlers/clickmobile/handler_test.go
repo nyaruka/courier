@@ -152,7 +152,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-Type": "application/json"},
-				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Simple Message"}`,
+				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Simple Message"}`,
 			},
 		},
 	},
@@ -168,7 +168,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-Type": "application/json"},
-				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"☺"}`,
+				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"☺"}`,
 			},
 		},
 	},
@@ -184,7 +184,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-Type": "application/json"},
-				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Error Message"}`,
+				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Error Message"}`,
 			},
 		},
 		ExpectedError: courier.ErrResponseStatus,
@@ -202,7 +202,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-Type": "application/json"},
-				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"My pic!\nhttps://foo.bar/image.jpg"}`,
+				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"My pic!\nhttps://foo.bar/image.jpg"}`,
 			},
 		},
 	},
@@ -218,7 +218,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-Type": "application/json"},
-				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Simple Message"}`,
+				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Simple Message"}`,
 			},
 		},
 		ExpectedError: courier.ErrResponseContent,

@@ -293,7 +293,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	for i, part := range parts {
 		// build our request
 		form := map[string]string{
-			"id":             msg.ID().String(),
+			"id":             string(msg.UUID()),
 			"text":           part,
 			"to":             msg.URN().Path(),
 			"to_no_plus":     strings.TrimPrefix(msg.URN().Path(), "+"),

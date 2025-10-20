@@ -209,7 +209,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","originator":"18005551212","body":"Simple Message ☺"}`,
 		}},
 		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
@@ -225,7 +225,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺","mediaUrls":["https://foo.bar/image.jpg"]}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","originator":"18005551212","body":"Simple Message ☺","mediaUrls":["https://foo.bar/image.jpg"]}`,
 		}},
 		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
@@ -240,7 +240,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg"]}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg"]}`,
 		}},
 		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
@@ -255,7 +255,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg","https://foo.bar/image2.jpg"]}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg","https://foo.bar/image2.jpg"]}`,
 		}},
 		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
@@ -270,7 +270,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/movie.mp4"]}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","originator":"18005551212","mediaUrls":["https://foo.bar/movie.mp4"]}`,
 		}},
 		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
@@ -285,7 +285,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/document.pdf"]}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","originator":"18005551212","mediaUrls":["https://foo.bar/document.pdf"]}`,
 		}},
 		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
@@ -300,7 +300,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","originator":"18005551212","body":"Simple Message ☺"}`,
 		}},
 		ExpectedError: courier.ErrConnectionFailed,
 	},
@@ -315,7 +315,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c","originator":"18005551212","body":"Simple Message ☺"}`,
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},

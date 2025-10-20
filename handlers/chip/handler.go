@@ -113,6 +113,7 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 
 type sendMsg struct {
 	ID           models.MsgID     `json:"id"`
+	UUID         models.MsgUUID   `json:"uuid"`
 	Text         string           `json:"text"`
 	Attachments  []string         `json:"attachments,omitempty"`
 	QuickReplies []string         `json:"quick_replies,omitempty"`
@@ -138,6 +139,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		Secret: secret,
 		Msg: sendMsg{
 			ID:           msg.ID(),
+			UUID:         msg.UUID(),
 			Text:         msg.Text(),
 			Attachments:  msg.Attachments(),
 			QuickReplies: handlers.TextOnlyQuickReplies(msg.QuickReplies()),

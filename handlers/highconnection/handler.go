@@ -147,7 +147,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			"password":   []string{password},
 			"text":       []string{part},
 			"to":         []string{msg.URN().Path()},
-			"ret_id":     []string{msg.ID().String()},
+			"ret_id":     []string{string(msg.UUID())},
 			"datacoding": []string{"8"},
 			"user_data":  []string{flowName},
 			"ret_url":    []string{statusURL},
