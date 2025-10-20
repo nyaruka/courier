@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gomodule/redigo/redis"
 	filetype "github.com/h2non/filetype"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
@@ -289,13 +290,10 @@ func (b *backend) recordMsgReceived(ctx context.Context, m *MsgIn) {
 }
 
 // clearMsgSeen clears our seen incoming messages for the passed in channel and URN
-func (b *backend) clearMsgSeen(ctx context.Context, m *MsgOut) {
-	rc := b.rt.VK.Get()
-	defer rc.Close()
-
+func (b *backend) clearMsgSeen(ctx context.Context, vc redis.Conn, m *MsgOut) {
 	fingerprint := fmt.Sprintf("%s|%s", m.Channel().UUID(), m.URN().Identity())
 
-	if err := b.receivedMsgs.Del(ctx, rc, fingerprint); err != nil {
+	if err := b.receivedMsgs.Del(ctx, vc, fingerprint); err != nil {
 		slog.Error("error clearing received msgs", "urn", m.URN().Identity(), "error", err)
 	}
 }
