@@ -1,3 +1,8 @@
+v10.3.18 (2025-10-20)
+-------------------------
+ * Tweak valkey usage during message popping
+ * Fix validation of msg payloads with templates
+
 v10.3.17 (2025-10-20)
 -------------------------
  * Add validation of msg out payloads
