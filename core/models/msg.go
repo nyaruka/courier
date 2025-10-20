@@ -124,7 +124,6 @@ type Session struct {
 
 type MsgOut struct {
 	OrgID_                OrgID             `json:"org_id"         validate:"required"`
-	ID_                   MsgID             `json:"id"             validate:"required"`
 	UUID_                 MsgUUID           `json:"uuid"           validate:"required"`
 	Contact_              *ContactReference `json:"contact"        validate:"required"`
 	HighPriority_         bool              `json:"high_priority"`
@@ -144,6 +143,9 @@ type MsgOut struct {
 	UserID_               UserID            `json:"user_id"`
 	Origin_               MsgOrigin         `json:"origin"         validate:"required"`
 	Session_              *Session          `json:"session"`
+
+	// deprecated: need to rework some handlers to not use this for status callbacks
+	ID_ MsgID `json:"id"             validate:"required"`
 }
 
 func (m *MsgOut) EventUUID() uuids.UUID        { return uuids.UUID(m.UUID_) }
