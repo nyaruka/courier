@@ -31,7 +31,7 @@ var helloMsg = `{
 			"text": "QUIZ Correct answer is Paris",
 			"cleanText": "Correct answer is Paris",
 			"keyword": "QUIZ",
-			"receivedAt": "2016-10-06T09:28:39.220+0000",
+			"receivedAt": "2016-10-06T09:28:39.220Z",
 			"smsCount": 1,
 			"price": {
 				"pricePerMessage": 0,
@@ -53,7 +53,7 @@ var invalidURN = `{
 			"text": "QUIZ Correct answer is Paris",
 			"cleanText": "Correct answer is Paris",
 			"keyword": "QUIZ",
-			"receivedAt": "2016-10-06T09:28:39.220+0000",
+			"receivedAt": "2016-10-06T09:28:39.220Z",
 			"smsCount": 1,
 			"price": {
 				"pricePerMessage": 0,
@@ -75,11 +75,11 @@ var missingResults = `{
 		  "text": "QUIZ Correct answer is Paris",
 		  "cleanText": "Correct answer is Paris",
 		  "keyword": "QUIZ",
-		  "receivedAt": "2016-10-06T09:28:39.220+0000",
+		  "receivedAt": "2016-10-06T09:28:39.220Z",
 		  "smsCount": 1,
 		  "price": {
-			  "pricePerMessage": 0,
-			  "currency": "EUR"
+		   "pricePerMessage": 0,
+		   "currency": "EUR"
 		  },
 		  "callbackData": "callbackData"
 	  }
@@ -97,7 +97,7 @@ var missingText = `{
 			"text": "",
 			"cleanText": "Correct answer is Paris",
 			"keyword": "QUIZ",
-			"receivedAt": "2016-10-06T09:28:39.220+0000",
+			"receivedAt": "2016-10-06T09:28:39.220Z",
 			"smsCount": 1,
 			"price": {
 				"pricePerMessage": 0,
@@ -205,7 +205,7 @@ var testCases = []IncomingTestCase{
 		ExpectedMsgText:      Sp("QUIZ Correct answer is Paris"),
 		ExpectedURN:          "tel:+385916242493",
 		ExpectedExternalID:   "817790313235066447",
-		ExpectedDate:         time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.FixedZone("", 0)),
+		ExpectedDate:         time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.UTC),
 	},
 	{
 		Label:                "Receive missing results key",
@@ -301,7 +301,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText: "Simple Message",
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.infobip.com/sms/1/text/advanced": {
+			"https://api.infobip.com/sms/3/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`)),
 			},
 		},
@@ -311,7 +311,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"Simple Message"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
 		ExpectedExtIDs: []string{"12345"},
 	},
@@ -320,7 +320,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText: "☺",
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.infobip.com/sms/1/text/advanced": {
+			"https://api.infobip.com/sms/3/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}}}`)),
 			},
 		},
@@ -330,7 +330,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"☺","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"☺"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
 		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("messageId")},
 	},
@@ -340,7 +340,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:         "tel:+250788383383",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.infobip.com/sms/1/text/advanced": {
+			"https://api.infobip.com/sms/3/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}}}`)),
 			},
 		},
@@ -350,7 +350,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"My pic!\nhttps://foo.bar/image.jpg","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"My pic!\nhttps://foo.bar/image.jpg"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
 		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("messageId")},
 	},
@@ -359,7 +359,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText: "Error Message",
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.infobip.com/sms/1/text/advanced": {
+			"https://api.infobip.com/sms/3/messages": {
 				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
 			},
 		},
@@ -369,7 +369,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Error Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"Error Message"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
@@ -378,7 +378,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText: "Simple Message",
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.infobip.com/sms/1/text/advanced": {
+			"https://api.infobip.com/sms/3/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 2}}}`)),
 			},
 		},
@@ -388,7 +388,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"Simple Message"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
 		ExpectedError: courier.ErrResponseContent,
 	},
@@ -400,7 +400,7 @@ var transSendTestCases = []OutgoingTestCase{
 		MsgText: "Simple Message",
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.infobip.com/sms/1/text/advanced": {
+			"https://api.infobip.com/sms/3/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`)),
 			},
 		},
@@ -410,9 +410,31 @@ var transSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","transliteration":"COLOMBIAN"}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"Simple Message","transliteration":"COLOMBIAN"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
 		ExpectedExtIDs: []string{"12345"},
+	},
+}
+
+var apiKeySendTestCases = []OutgoingTestCase{
+	{
+		Label:   "API Key Send",
+		MsgText: "API Key Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.infobip.com/sms/3/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "67890"}}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "App test-api-key",
+			},
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"API Key Message"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
+		}},
+		ExpectedExtIDs: []string{"67890"},
 	},
 }
 
@@ -435,4 +457,12 @@ func TestOutgoing(t *testing.T) {
 		})
 
 	RunOutgoingTestCases(t, transChannel, newHandler(), transSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
+
+	var apiKeyChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
+		[]string{urns.Phone.Prefix},
+		map[string]any{
+			configAPIKey: "test-api-key",
+		})
+
+	RunOutgoingTestCases(t, apiKeyChannel, newHandler(), apiKeySendTestCases, []string{"App test-api-key"}, nil)
 }

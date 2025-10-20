@@ -17,9 +17,12 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var sendURL = "https://api.infobip.com/sms/1/text/advanced"
+var sendURL = "https://api.infobip.com/sms/3/messages"
 
-const configTransliteration = "transliteration"
+const (
+	configTransliteration = "transliteration"
+	configAPIKey          = "api_key"
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -103,21 +106,35 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 //		"messageCount": 1,
 //		"pendingMessageCount": 0
 //	}
-type moPayload struct {
-	PendingMessageCount int         `json:"pendingMessageCount"`
-	MessageCount        int         `json:"messageCount"`
-	Results             []moMessage `validate:"required" json:"results"`
+type v3InboundPayload struct {
+	Results             []v3InboundMessage `validate:"required" json:"results"`
+	MessageCount        int                `json:"messageCount"`
+	PendingMessageCount int                `json:"pendingMessageCount"`
 }
 
-type moMessage struct {
-	MessageID  string `json:"messageId"`
-	From       string `json:"from" validate:"required"`
-	Text       string `json:"text"`
-	ReceivedAt string `json:"receivedAt"`
+type v3InboundMessage struct {
+	ApplicationID       string         `json:"applicationId,omitempty"`
+	MessageID           string         `json:"messageId"`
+	From                string         `json:"from" validate:"required"`
+	To                  string         `json:"to"`
+	Text                string         `json:"text"`
+	CleanText           string         `json:"cleanText,omitempty"`
+	Keyword             string         `json:"keyword,omitempty"`
+	ReceivedAt          string         `json:"receivedAt"`
+	SmsCount            int            `json:"smsCount"`
+	Price               v3InboundPrice `json:"price"`
+	CallbackData        string         `json:"callbackData,omitempty"`
+	EntityID            string         `json:"entityId,omitempty"`
+	CampaignReferenceID string         `json:"campaignReferenceId,omitempty"`
+}
+
+type v3InboundPrice struct {
+	PricePerMessage float64 `json:"pricePerMessage"`
+	Currency        string  `json:"currency"`
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *v3InboundPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.MessageCount == 0 {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
@@ -135,7 +152,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		date := time.Now()
 		var err error
 		if dateString != "" {
-			date, err = time.Parse("2006-01-02T15:04:05.999999999-0700", dateString)
+			// The format for ReceivedAt is "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+			date, err = time.Parse("2006-01-02T15:04:05.000Z0700", dateString)
 			if err != nil {
 				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 			}
@@ -160,10 +178,49 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
 }
 
+// v3OutboundPayload represents the request body for Infobip SMS API v3 outbound messages.
+type v3OutboundPayload struct {
+	Messages []v3OutboundMessage `json:"messages"`
+}
+
+// v3OutboundMessage represents a single message in the v3OutboundPayload.
+type v3OutboundMessage struct {
+	From         string                `json:"from"`
+	Destinations []v3OutboundDestination `json:"destinations"`
+	Content      v3OutboundContent     `json:"content"`
+	Webhooks     *v3OutboundWebhooks   `json:"webhooks,omitempty"`
+}
+
+// v3OutboundDestination represents a single destination in a v3OutboundMessage.
+type v3OutboundDestination struct {
+	To        string `json:"to"`
+	MessageID string `json:"messageId,omitempty"`
+}
+
+// v3OutboundContent represents the content of a v3OutboundMessage.
+type v3OutboundContent struct {
+	Text            string `json:"text,omitempty"`
+	Transliteration string `json:"transliteration,omitempty"`
+}
+
+// v3OutboundWebhooks represents webhook settings for a v3OutboundMessage.
+type v3OutboundWebhooks struct {
+	Delivery v3OutboundDelivery `json:"delivery"`
+}
+
+// v3OutboundDelivery represents delivery report settings for a v3OutboundMessage.
+type v3OutboundDelivery struct {
+	URL                string `json:"url"`
+	IntermediateReport bool   `json:"intermediateReport"`
+	ContentType        string `json:"contentType"`
+}
+
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+	apiKey := msg.Channel().StringConfigForKey(configAPIKey, "")
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
-	if username == "" || password == "" {
+
+	if apiKey == "" && (username == "" || password == "") {
 		return courier.ErrChannelConfig
 	}
 
@@ -172,21 +229,27 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	statusURL := fmt.Sprintf("https://%s%s%s/delivered", callbackDomain, "/c/ib/", msg.Channel().UUID())
 
-	ibMsg := mtPayload{
-		Messages: []mtMessage{
+	ibMsg := v3OutboundPayload{
+		Messages: []v3OutboundMessage{
 			{
 				From: msg.Channel().Address(),
-				Destinations: []mtDestination{
+				Destinations: []v3OutboundDestination{
 					{
 						To:        strings.TrimLeft(msg.URN().Path(), "+"),
 						MessageID: msg.ID().String(),
 					},
 				},
-				Text:               handlers.GetTextAndAttachments(msg),
-				NotifyContentType:  "application/json",
-				IntermediateReport: true,
-				NotifyURL:          statusURL,
-				Transliteration:    transliteration,
+				Content: v3OutboundContent{
+					Text:            handlers.GetTextAndAttachments(msg),
+					Transliteration: transliteration,
+				},
+				Webhooks: &v3OutboundWebhooks{
+					Delivery: v3OutboundDelivery{
+						URL:                statusURL,
+						IntermediateReport: true,
+						ContentType:        "application/json",
+					},
+				},
 			},
 		},
 	}
@@ -204,7 +267,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.SetBasicAuth(username, password)
+
+	if apiKey != "" {
+		req.Header.Set("Authorization", "App "+apiKey)
+	} else {
+		req.SetBasicAuth(username, password)
+	}
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
@@ -213,6 +281,26 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return courier.ErrResponseStatus
 	}
 
+	// Infobip v3 API response for sending messages
+	// {
+	//   "bulkId": "2034072219640523072",
+	//   "messages": [
+	//     {
+	//       "messageId": "2250be2d4219-3af1-78856-aabe-1362af1edfd2",
+	//       "status": {
+	//         "groupId": 1,
+	//         "groupName": "PENDING",
+	//         "id": 26,
+	//         "name": "PENDING_ACCEPTED",
+	//         "description": "Message sent to next instance"
+	//       },
+	//       "destination": "41793026727",
+	//       "details": {
+	//         "messageCount": 1
+	//       }
+	//     }
+	//   ]
+	// }
 	groupID, err := jsonparser.GetInt(respBody, "messages", "[0]", "status", "groupId")
 	if err != nil || (groupID != 1 && groupID != 3) {
 		return courier.ErrResponseContent
@@ -222,7 +310,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	if err != nil {
 		clog.Error(courier.ErrorResponseValueMissing("messageId"))
 	} else {
-
 		res.AddExternalID(externalID)
 	}
 
@@ -230,57 +317,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 }
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
-	return []string{
-		httpx.BasicAuth(ch.StringConfigForKey(models.ConfigUsername, ""), ch.StringConfigForKey(models.ConfigPassword, "")),
+	redacted := []string{}
+	if apiKey := ch.StringConfigForKey(configAPIKey, ""); apiKey != "" {
+		redacted = append(redacted, "App "+apiKey)
 	}
-}
-
-// {
-// 	"bulkId":"BULK-ID-123-xyz",
-// 	"messages":[
-// 	  {
-// 		"from":"InfoSMS",
-// 		"destinations":[
-// 		  {
-// 			"to":"41793026727",
-// 			"messageId":"MESSAGE-ID-123-xyz"
-// 		  },
-// 		  {
-// 			"to":"41793026731"
-// 		  }
-// 		],
-// 		"text":"Artık Ulusal Dil Tanımlayıcısı ile Türkçe karakterli smslerinizi rahatlıkla iletebilirsiniz.",
-// 		"flash":false,
-// 		"language":{
-// 		  "languageCode":"TR"
-// 		},
-// 		"transliteration":"TURKISH",
-// 		"intermediateReport":true,
-// 		"notifyUrl":"http://www.example.com/sms/advanced",
-// 		"notifyContentType":"application/json",
-// 		"callbackData":"DLR callback data",
-// 		"validityPeriod": 720
-// 	  }
-// 	]
-// }
-//
-// API docs from https://dev.infobip.com/docs/fully-featured-textual-message
-
-type mtPayload struct {
-	Messages []mtMessage `json:"messages"`
-}
-
-type mtMessage struct {
-	From               string          `json:"from"`
-	Destinations       []mtDestination `json:"destinations"`
-	Text               string          `json:"text"`
-	NotifyContentType  string          `json:"notifyContentType"`
-	IntermediateReport bool            `json:"intermediateReport"`
-	NotifyURL          string          `json:"notifyUrl"`
-	Transliteration    string          `json:"transliteration,omitempty"`
-}
-
-type mtDestination struct {
-	To        string `json:"to"`
-	MessageID string `json:"messageId"`
+	if username := ch.StringConfigForKey(models.ConfigUsername, ""); username != "" {
+		redacted = append(redacted, httpx.BasicAuth(username, ch.StringConfigForKey(models.ConfigPassword, "")))
+	}
+	return redacted
 }
