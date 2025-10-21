@@ -41,7 +41,7 @@ func newHandler() courier.ChannelHandler {
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgStatus, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
@@ -125,7 +125,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			Timestamp:   timestamp,
 			AuthKey:     hash,
 			Operation:   "send",
-			Reference:   msg.ID().String(),
+			Reference:   string(msg.UUID()),
 			MessageType: "1",
 			From:        msg.Channel().Address(),
 			To:          msg.URN().Path(),

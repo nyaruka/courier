@@ -1,6 +1,7 @@
 package dmark
 
 import (
+	"fmt"
 	"net/url"
 	"testing"
 	"time"
@@ -11,11 +12,14 @@ import (
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DM", "2020", "RW", []string{urns.Phone.Prefix}, nil),
 }
+
+var msgUUID = models.MsgUUID(uuids.NewV7())
 
 const (
 	receiveURL = "/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
@@ -64,24 +68,24 @@ var testCases = []IncomingTestCase{
 	{
 		Label:                "Status Invalid",
 		URL:                  statusURL,
-		Data:                 "id=12345&status=Borked",
+		Data:                 fmt.Sprintf("uuid=%s&status=Borked", msgUUID),
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "unknown status",
 	},
 	{
 		Label:                "Status Missing",
 		URL:                  statusURL,
-		Data:                 "id=12345",
+		Data:                 fmt.Sprintf("uuid=%s", msgUUID),
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "field 'status' required",
 	},
 	{
 		Label:                "Status Valid",
 		URL:                  statusURL,
-		Data:                 "id=12345&status=1",
+		Data:                 fmt.Sprintf("uuid=%s&status=1", msgUUID),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: msgUUID, Status: models.MsgStatusDelivered}},
 	},
 }
 
@@ -105,7 +109,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"text":     {"Simple Message ☺"},
 				"receiver": {"250788383383"},
 				"sender":   {"2020"},
-				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%s"},
+				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%s"},
 			},
 		}},
 		ExpectedExtIDs: []string{"6b1c15d3-cba2-46f7-9a25-78265e58057d"},
@@ -125,7 +129,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"text":     {"Error Message"},
 				"receiver": {"250788383383"},
 				"sender":   {"2020"},
-				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%s"},
+				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%s"},
 			},
 		}},
 		ExpectedError: courier.ErrResponseContent,
@@ -145,7 +149,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"text":     {"Error Message"},
 				"receiver": {"250788383383"},
 				"sender":   {"2020"},
-				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%s"},
+				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%s"},
 			},
 		}},
 		ExpectedError: courier.ErrResponseStatus,
