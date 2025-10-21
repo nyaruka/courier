@@ -424,10 +424,11 @@ func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, u
 	text = dbutil.ToValidUTF8(text)
 	extID = dbutil.ToValidUTF8(extID)
 
-	msg := newIncomingMsg(channel, urn, text, extID, clog)
-	msg.WithReceivedOn(time.Now().UTC())
+	ch := channel.(*models.Channel)
 
-	return msg
+	msg := models.NewIncomingMsg(ch, urn, text, extID, clog.UUID)
+
+	return &MsgIn{MsgIn: msg, ChannelUUID_: channel.UUID(), URN_: urn, channel: ch}
 }
 
 // PopNextOutgoingMsg pops the next message that needs to be sent
