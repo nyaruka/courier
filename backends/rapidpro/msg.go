@@ -3,6 +3,7 @@ package rapidpro
 import (
 	"context"
 	"crypto/sha1"
+	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -17,6 +18,7 @@ import (
 	filetype "github.com/h2non/filetype"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
+	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/utils/queue"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -143,6 +145,20 @@ func writeMsgToDB(ctx context.Context, b *backend, m *MsgIn, clog *courier.Chann
 	return contact, nil
 }
 
+func checkDuplicate(ctx context.Context, rt *runtime.Runtime, uuid models.MsgUUID) (bool, error) {
+	row := rt.DB.QueryRowContext(ctx, `SELECT id FROM msgs_msg WHERE uuid = $1 LIMIT 1`, uuid)
+
+	var id models.MsgID
+	err := row.Scan(&id)
+	if err != nil && err != sql.ErrNoRows {
+		return false, fmt.Errorf("error checking for duplicate message: %w", err)
+	}
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	return true, nil
+}
+
 //-----------------------------------------------------------------------------
 // Msg flusher for flushing failed writes
 //-----------------------------------------------------------------------------
@@ -172,7 +188,14 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	// try to write it our db
 	contact, err := writeMsgToDB(ctx, b, m, clog)
 	if err != nil {
-		return err // fail? oh well, we'll try again later
+		duplicate, dupErr := checkDuplicate(ctx, b.rt, m.UUID_)
+		if dupErr != nil {
+			slog.Error("error checking for duplicate message", "error", dupErr, "msg", m.UUID())
+			return dupErr // fail? oh well, we'll try again later
+		}
+		if !duplicate {
+			return err // fail? oh well, we'll try again later
+		}
 	}
 
 	rc := b.rt.VK.Get()
