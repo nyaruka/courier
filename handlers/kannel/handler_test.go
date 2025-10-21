@@ -1,6 +1,7 @@
 package kannel
 
 import (
+	"fmt"
 	"net/url"
 	"testing"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 var testChannels = []courier.Channel{
@@ -20,6 +22,8 @@ var testChannels = []courier.Channel{
 var ignoreChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{"ignore_sent": true}),
 }
+
+var msgUUID = models.MsgUUID(uuids.NewV7())
 
 var handleTestCases = []IncomingTestCase{
 	{
@@ -89,10 +93,10 @@ var handleTestCases = []IncomingTestCase{
 	},
 	{
 		Label:                "Status Valid by UUID",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=384833a8-a817-401e-b37b-b2452298e21c&status=4",
+		URL:                  fmt.Sprintf("/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=%s&status=4", msgUUID),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "384833a8-a817-401e-b37b-b2452298e21c", Status: models.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: msgUUID, Status: models.MsgStatusSent}},
 	},
 }
 
@@ -117,20 +121,20 @@ var ignoreTestCases = []IncomingTestCase{
 	},
 	{
 		Label:                "Write Status Delivered by UUID",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=384833a8-a817-401e-b37b-b2452298e21c&status=1",
+		URL:                  fmt.Sprintf("/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=%s&status=1", msgUUID),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "384833a8-a817-401e-b37b-b2452298e21c", Status: models.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: msgUUID, Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Ignore Status Wired",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=384833a8-a817-401e-b37b-b2452298e21c&status=4",
+		URL:                  fmt.Sprintf("/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=%s&status=4", msgUUID),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `ignoring sent report`,
 	},
 	{
 		Label:                "Ignore Status Sent",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=384833a8-a817-401e-b37b-b2452298e21c&status=8",
+		URL:                  fmt.Sprintf("/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=%s&status=8", msgUUID),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `ignoring sent report`,
 	},
