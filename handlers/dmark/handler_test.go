@@ -1,7 +1,6 @@
 package dmark
 
 import (
-	"fmt"
 	"net/url"
 	"testing"
 	"time"
@@ -12,14 +11,11 @@ import (
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/gocommon/uuids"
 )
 
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DM", "2020", "RW", []string{urns.Phone.Prefix}, nil),
 }
-
-var msgUUID = models.MsgUUID(uuids.NewV7())
 
 const (
 	receiveURL = "/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
@@ -68,24 +64,24 @@ var testCases = []IncomingTestCase{
 	{
 		Label:                "Status Invalid",
 		URL:                  statusURL,
-		Data:                 fmt.Sprintf("uuid=%s&status=Borked", msgUUID),
+		Data:                 "uuid=019a0719-ac96-7eb9-a837-cac215164834&status=Borked",
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "unknown status",
 	},
 	{
 		Label:                "Status Missing",
 		URL:                  statusURL,
-		Data:                 fmt.Sprintf("uuid=%s", msgUUID),
+		Data:                 "uuid=019a0719-ac96-7eb9-a837-cac215164834",
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "field 'status' required",
 	},
 	{
 		Label:                "Status Valid",
 		URL:                  statusURL,
-		Data:                 fmt.Sprintf("uuid=%s&status=1", msgUUID),
+		Data:                 "uuid=019a0719-ac96-7eb9-a837-cac215164834&status=1",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: msgUUID, Status: models.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a0719-ac96-7eb9-a837-cac215164834", Status: models.MsgStatusDelivered}},
 	},
 }
 
