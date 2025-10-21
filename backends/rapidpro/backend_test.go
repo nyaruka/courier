@@ -663,7 +663,7 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	}
 
 	msg1 := createAndWriteMsg(knChannel, urn, "ping", "")
-	ts.False(msg1.alreadyWritten)
+	ts.NotZero(msg1.ID())
 
 	keys, err := redis.Strings(rc.Do("KEYS", "{seen-msgs}:*"))
 	ts.NoError(err)
@@ -675,12 +675,12 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	// trying again should lead to same UUID
 	msg2 := createAndWriteMsg(knChannel, urn, "ping", "")
 	ts.Equal(msg1.UUID(), msg2.UUID())
-	ts.True(msg2.alreadyWritten)
+	ts.Zero(msg2.ID())
 
 	// different text should change that
 	msg3 := createAndWriteMsg(knChannel, urn, "test", "")
 	ts.NotEqual(msg2.UUID(), msg3.UUID())
-	ts.False(msg3.alreadyWritten)
+	ts.NotZero(msg3.ID())
 
 	// an outgoing message should clear things
 	msgJSON := `[{
@@ -720,10 +720,6 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 
 	ts.Equal(msg7.UUID(), msg8.UUID())
 	ts.NotEqual(msg7.UUID(), msg9.UUID())
-
-	ts.False(msg7.alreadyWritten)
-	ts.True(msg8.alreadyWritten)
-	ts.False(msg9.alreadyWritten)
 }
 
 func (ts *BackendTestSuite) TestStatus() {
@@ -1037,14 +1033,15 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	err := ts.b.WriteMsg(ctx, msg1, clog)
 	ts.NoError(err)
 
-	// creating the incoming msg again should give us the same UUID and have the msg set as not to write
 	time.Sleep(1 * time.Second)
-	msg2 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test123", "ext123", clog).(*MsgIn)
-	ts.Equal(msg2.UUID(), msg1.UUID())
-	ts.True(msg2.alreadyWritten)
-
-	// check we had an id set
 	ts.NotZero(msg1.ID)
+
+	// trying to writing the same msg again should result in it getting the same UUID and not being actually written
+	msg2 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test123", "ext123", clog).(*MsgIn)
+	err = ts.b.WriteMsg(ctx, msg2, clog)
+	ts.NoError(err)
+	ts.Equal(msg2.UUID(), msg1.UUID())
+	ts.Zero(msg2.ID())
 
 	// load it back from the id
 	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, msg1.ID())
