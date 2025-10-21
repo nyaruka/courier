@@ -17,11 +17,10 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var sendURL = "https://api.infobip.com/sms/3/messages"
-
 const (
 	configTransliteration = "transliteration"
 	configAPIKey          = "api_key"
+	configBaseURL         = "base_url"
 )
 
 func init() {
@@ -113,19 +112,26 @@ type v3InboundPayload struct {
 }
 
 type v3InboundMessage struct {
-	ApplicationID       string         `json:"applicationId,omitempty"`
-	MessageID           string         `json:"messageId"`
-	From                string         `json:"from" validate:"required"`
-	To                  string         `json:"to"`
-	Text                string         `json:"text"`
-	CleanText           string         `json:"cleanText,omitempty"`
-	Keyword             string         `json:"keyword,omitempty"`
-	ReceivedAt          string         `json:"receivedAt"`
-	SmsCount            int            `json:"smsCount"`
-	Price               v3InboundPrice `json:"price"`
-	CallbackData        string         `json:"callbackData,omitempty"`
-	EntityID            string         `json:"entityId,omitempty"`
-	CampaignReferenceID string         `json:"campaignReferenceId,omitempty"`
+	ApplicationID       string                `json:"applicationId,omitempty"`
+	MessageID           string                `json:"messageId"`
+	From                string                `json:"from" validate:"required"`
+	To                  string                `json:"to"`
+	Text                string                `json:"text"` // This will be present for SMS
+	CleanText           string                `json:"cleanText,omitempty"`
+	Keyword             string                `json:"keyword,omitempty"`
+	ReceivedAt          string                `json:"receivedAt"`
+	SmsCount            int                   `json:"smsCount"`
+	Price               v3InboundPrice        `json:"price"`
+	CallbackData        string                `json:"callbackData,omitempty"`
+	EntityID            string                `json:"entityId,omitempty"`
+	CampaignReferenceID string                `json:"campaignReferenceId,omitempty"`
+	Message             []v2MMSInboundSegment `json:"message"` // This will be present for MMS
+}
+
+type v2MMSInboundSegment struct {
+	ContentType string `json:"contentType"`
+	URL         string `json:"url,omitempty"`
+	Value       string `json:"value,omitempty"`
 }
 
 type v3InboundPrice struct {
@@ -142,10 +148,28 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msgs := []courier.MsgIn{}
 	for _, infobipMessage := range payload.Results {
 		messageID := infobipMessage.MessageID
-		text := infobipMessage.Text
 		dateString := infobipMessage.ReceivedAt
 
-		if text == "" {
+		var textParts []string
+		var attachments []courier.Attachment
+
+		// check if this is an SMS or MMS
+		if len(infobipMessage.Message) > 0 {
+			// This is an MMS message
+			for _, segment := range infobipMessage.Message {
+				if segment.ContentType == "text/plain" {
+					textParts = append(textParts, segment.Value)
+				} else {
+					attachments = append(attachments, courier.Attachment{URL: segment.URL, MimeType: segment.ContentType})
+				}
+			}
+		} else {
+			// This is an SMS message
+			textParts = append(textParts, infobipMessage.Text)
+		}
+
+		text := strings.Join(textParts, "\n")
+		if text == "" && len(attachments) == 0 {
 			continue
 		}
 
@@ -166,7 +190,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// build our infobipMessage
-		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, messageID, clog).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, messageID, clog).WithReceivedOn(date).WithAttachments(attachments)
 		msgs = append(msgs, msg)
 
 	}
@@ -224,47 +248,105 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return courier.ErrChannelConfig
 	}
 
-	transliteration := msg.Channel().StringConfigForKey(configTransliteration, "")
-
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	statusURL := fmt.Sprintf("https://%s%s%s/delivered", callbackDomain, "/c/ib/", msg.Channel().UUID())
 
-	ibMsg := v3OutboundPayload{
-		Messages: []v3OutboundMessage{
-			{
-				From: msg.Channel().Address(),
-				Destinations: []v3OutboundDestination{
-					{
-						To:        strings.TrimLeft(msg.URN().Path(), "+"),
-						MessageID: msg.ID().String(),
+	var requestBody *bytes.Buffer
+	var req *http.Request
+	var err error
+
+	if len(msg.Attachments()) > 0 {
+		// Handle MMS message
+		mmsPayload := v2MMSOutboundPayload{
+			Messages: []v2MMSOutboundMessage{
+				{
+					Sender: msg.Channel().Address(),
+					Destinations: []v2MMSOutboundDestination{
+						{
+							To:        strings.TrimLeft(msg.URN().Path(), "+"),
+							MessageID: msg.ID().String(),
+						},
 					},
-				},
-				Content: v3OutboundContent{
-					Text:            handlers.GetTextAndAttachments(msg),
-					Transliteration: transliteration,
-				},
-				Webhooks: &v3OutboundWebhooks{
-					Delivery: v3OutboundDelivery{
-						URL:                statusURL,
-						IntermediateReport: true,
-						ContentType:        "application/json",
+					Content: v2MMSOutboundContent{
+						Title: msg.Subject(), // Assuming subject can be used as MMS title
+						MessageSegments: []v2MMSMessageSegment{
+							{
+								Type: "TEXT",
+								Text: msg.Text(),
+							},
+						},
+					},
+					Webhooks: &v3OutboundWebhooks{
+						Delivery: v3OutboundDelivery{
+							URL:                statusURL,
+							IntermediateReport: true,
+							ContentType:        "application/json",
+						},
 					},
 				},
 			},
-		},
+		}
+
+		for _, attachment := range msg.Attachments() {
+			mmsPayload.Messages[0].Content.MessageSegments = append(mmsPayload.Messages[0].Content.MessageSegments, v2MMSMessageSegment{
+				Type:      strings.ToUpper(strings.Split(attachment.MimeType, "/")[0]), // e.g., IMAGE, VIDEO, AUDIO
+				ContentID: attachment.FileName,
+				URL:       attachment.URL,
+			})
+		}
+
+		requestBody = &bytes.Buffer{}
+		err = json.NewEncoder(requestBody).Encode(mmsPayload)
+		if err != nil {
+			return err
+		}
+
+		req, err = http.NewRequest(http.MethodPost, mmsSendURL, requestBody)
+		if err != nil {
+			return err
+		}
+
+	} else {
+		// Handle SMS message
+		transliteration := msg.Channel().StringConfigForKey(configTransliteration, "")
+
+		smsPayload := v3OutboundPayload{
+			Messages: []v3OutboundMessage{
+				{
+					From: msg.Channel().Address(),
+					Destinations: []v3OutboundDestination{
+						{
+							To:        strings.TrimLeft(msg.URN().Path(), "+"),
+							MessageID: msg.ID().String(),
+						},
+					},
+					Content: v3OutboundContent{
+						Text:            handlers.GetTextAndAttachments(msg),
+						Transliteration: transliteration,
+					},
+					Webhooks: &v3OutboundWebhooks{
+						Delivery: v3OutboundDelivery{
+							URL:                statusURL,
+							IntermediateReport: true,
+							ContentType:        "application/json",
+						},
+					},
+				},
+			},
+		}
+
+		requestBody = &bytes.Buffer{}
+		err = json.NewEncoder(requestBody).Encode(smsPayload)
+		if err != nil {
+			return err
+		}
+
+		req, err = http.NewRequest(http.MethodPost, smsSendURL, requestBody)
+		if err != nil {
+			return err
+		}
 	}
 
-	requestBody := &bytes.Buffer{}
-	err := json.NewEncoder(requestBody).Encode(ibMsg)
-	if err != nil {
-		return err
-	}
-
-	// build our request
-	req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
-	if err != nil {
-		return err
-	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
@@ -281,12 +363,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return courier.ErrResponseStatus
 	}
 
-	// Infobip v3 API response for sending messages
+	// Infobip API response for sending messages (SMS and MMS have similar structure)
 	// {
-	//   "bulkId": "2034072219640523072",
+	//   "bulkId": "...",
 	//   "messages": [
 	//     {
-	//       "messageId": "2250be2d4219-3af1-78856-aabe-1362af1edfd2",
+	//       "messageId": "...",
 	//       "status": {
 	//         "groupId": 1,
 	//         "groupName": "PENDING",
@@ -294,7 +376,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	//         "name": "PENDING_ACCEPTED",
 	//         "description": "Message sent to next instance"
 	//       },
-	//       "destination": "41793026727",
+	//       "destination": "...",
 	//       "details": {
 	//         "messageCount": 1
 	//       }
@@ -313,7 +395,37 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		res.AddExternalID(externalID)
 	}
 
-	return nil
+// v2MMSOutboundPayload represents the request body for Infobip MMS API v2 outbound messages.
+type v2MMSOutboundPayload struct {
+	Messages []v2MMSOutboundMessage `json:"messages"`
+}
+
+// v2MMSOutboundMessage represents a single message in the v2MMSOutboundPayload.
+type v2MMSOutboundMessage struct {
+	Sender       string                  `json:"sender"`
+	Destinations []v2MMSOutboundDestination `json:"destinations"`
+	Content      v2MMSOutboundContent    `json:"content"`
+	Webhooks     *v3OutboundWebhooks     `json:"webhooks,omitempty"` // Reusing SMS webhooks struct
+}
+
+// v2MMSOutboundDestination represents a single destination in a v2MMSOutboundMessage.
+type v2MMSOutboundDestination struct {
+	To        string `json:"to"`
+	MessageID string `json:"messageId,omitempty"`
+}
+
+// v2MMSOutboundContent represents the content of a v2MMSOutboundMessage.
+type v2MMSOutboundContent struct {
+	Title          string                   `json:"title,omitempty"`
+	MessageSegments []v2MMSMessageSegment    `json:"messageSegments"`
+}
+
+// v2MMSMessageSegment represents a single segment within an MMS message.
+type v2MMSMessageSegment struct {
+	Type      string `json:"type"` // "TEXT" or "IMAGE", "AUDIO", "VIDEO"
+	ContentID string `json:"contentId,omitempty"`
+	Text      string `json:"text,omitempty"`
+	URL       string `json:"url,omitempty"` // For media content
 }
 
 func (h *handler) RedactValues(ch courier.Channel) []string {

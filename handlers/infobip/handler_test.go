@@ -23,21 +23,26 @@ const (
 )
 
 var helloMsg = `{
-  	"results": [
+	"results": [
 		{
 			"messageId": "817790313235066447",
 			"from": "385916242493",
 			"to": "385921004026",
-			"text": "QUIZ Correct answer is Paris",
-			"cleanText": "Correct answer is Paris",
-			"keyword": "QUIZ",
 			"receivedAt": "2016-10-06T09:28:39.220Z",
-			"smsCount": 1,
+			"message": [
+				{
+					"contentType": "text/plain",
+					"value": "This is message text"
+				},
+				{
+					"contentType": "image/jpeg",
+					"url": "https://examplelink.com/123456"
+				}
+			],
 			"price": {
 				"pricePerMessage": 0,
 				"currency": "EUR"
-			},
-			"callbackData": "callbackData"
+			}
 		}
 	],
 	"messageCount": 1,
@@ -197,15 +202,16 @@ var invalidStatus = `{
 
 var testCases = []IncomingTestCase{
 	{
-		Label:                "Receive Valid Message",
+		Label:                "Receive Valid MMS Message",
 		URL:                  receiveURL,
 		Data:                 helloMsg,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("QUIZ Correct answer is Paris"),
+		ExpectedMsgText:      Sp("This is message text"),
 		ExpectedURN:          "tel:+385916242493",
 		ExpectedExternalID:   "817790313235066447",
 		ExpectedDate:         time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.UTC),
+		ExpectedAttachments:  []string{"image/jpeg:https://examplelink.com/123456"},
 	},
 	{
 		Label:                "Receive missing results key",
