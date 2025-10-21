@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/lib/pq"
+	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -61,6 +63,48 @@ const (
 	MsgDeleted  MsgVisibility = "D"
 	MsgArchived MsgVisibility = "A"
 )
+
+// MsgIn is an incoming message which can be written to the database or marshaled to a spool file
+type MsgIn struct {
+	OrgID_        OrgID          `db:"org_id"         json:"org_id"`
+	ID_           MsgID          `db:"id"             json:"id"`
+	UUID_         MsgUUID        `db:"uuid"           json:"uuid"`
+	Text_         string         `db:"text"           json:"text"`
+	Attachments_  pq.StringArray `db:"attachments"    json:"attachments"`
+	ExternalID_   null.String    `db:"external_id"    json:"external_id"`
+	ChannelID_    ChannelID      `db:"channel_id"     json:"channel_id"`
+	ContactID_    ContactID      `db:"contact_id"     json:"contact_id"`
+	ContactURNID_ ContactURNID   `db:"contact_urn_id" json:"contact_urn_id"`
+	CreatedOn_    time.Time      `db:"created_on"     json:"created_on"`
+	ModifiedOn_   time.Time      `db:"modified_on"    json:"modified_on"`
+	SentOn_       *time.Time     `db:"sent_on"        json:"sent_on"`
+	LogUUIDs      pq.StringArray `db:"log_uuids"      json:"log_uuids"`
+}
+
+// NewIncomingMsg creates a new incoming message
+func NewIncomingMsg(channel *Channel, urn urns.URN, text string, extID string, clogUUID clogs.UUID) *MsgIn {
+	now := time.Now()
+
+	return &MsgIn{
+		OrgID_:      channel.OrgID(),
+		UUID_:       MsgUUID(uuids.NewV7()),
+		Text_:       text,
+		ExternalID_: null.String(extID),
+		ChannelID_:  channel.ID(),
+		CreatedOn_:  now,
+		ModifiedOn_: now,
+		SentOn_:     &now,
+		LogUUIDs:    pq.StringArray{string(clogUUID)},
+	}
+}
+
+func (m *MsgIn) EventUUID() uuids.UUID  { return uuids.UUID(m.UUID_) }
+func (m *MsgIn) ID() MsgID              { return m.ID_ }
+func (m *MsgIn) UUID() MsgUUID          { return m.UUID_ }
+func (m *MsgIn) ExternalID() string     { return string(m.ExternalID_) }
+func (m *MsgIn) Text() string           { return m.Text_ }
+func (m *MsgIn) Attachments() []string  { return []string(m.Attachments_) }
+func (m *MsgIn) ReceivedOn() *time.Time { return m.SentOn_ }
 
 type MsgOrigin string
 
