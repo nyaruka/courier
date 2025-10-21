@@ -135,7 +135,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	mtMsg.From = strings.TrimPrefix(msg.Channel().Address(), "+")
 	mtMsg.To = []string{strings.TrimPrefix(msg.URN().Path(), "+")}
 	mtMsg.Message = handlers.GetTextAndAttachments(msg)
-	mtMsg.ClientCorrelator = msg.ID().String()
+	mtMsg.ClientCorrelator = string(msg.UUID())
 	if cpAddress != "" {
 		mtMsg.CPAddress = cpAddress
 	}
