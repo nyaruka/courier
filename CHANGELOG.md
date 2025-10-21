@@ -1,3 +1,8 @@
+v10.3.20 (2025-10-21)
+-------------------------
+ * Allow message status updates with no message id
+ * Fix error messages from channel handlers
+
 v10.3.19 (2025-10-21)
 -------------------------
  * Re-organize creation of incoming messages
