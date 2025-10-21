@@ -17,11 +17,6 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-const (
-	configTransliteration = "transliteration"
-	configAPIKey          = "api_key"
-	configBaseURL         = "base_url"
-)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -287,7 +282,7 @@ type v2MMSMessageSegment struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	apiKey := msg.Channel().StringConfigForKey(configAPIKey, "")
+	apiKey := msg.Channel().StringConfigForKey(models.ConfigAPIKey, "")
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 
@@ -295,7 +290,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return courier.ErrChannelConfig
 	}
 
-	baseURL := msg.Channel().StringConfigForKey(configBaseURL, "https://api.infobip.com")
+	baseURL := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "https://api.infobip.com")
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	statusURL := fmt.Sprintf("https://%s%s%s/delivered", callbackDomain, "/c/ib/", msg.Channel().UUID())
 
@@ -365,7 +360,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	} else {
 		// Handle SMS message
-		transliteration := msg.Channel().StringConfigForKey(configTransliteration, "")
 
 		smsPayload := v3OutboundPayload{
 			Messages: []v3OutboundMessage{
@@ -379,7 +373,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 					},
 					Content: v3OutboundContent{
 						Text:            handlers.GetTextAndAttachments(msg),
-						Transliteration: transliteration,
 					},
 					Webhooks: &v3OutboundWebhooks{
 						Delivery: v3OutboundDelivery{
@@ -438,7 +431,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	redacted := []string{}
-	if apiKey := ch.StringConfigForKey(configAPIKey, ""); apiKey != "" {
+	if apiKey := ch.StringConfigForKey(models.ConfigAPIKey, ""); apiKey != "" {
 		redacted = append(redacted, "App "+apiKey)
 	}
 	if username := ch.StringConfigForKey(models.ConfigUsername, ""); username != "" {

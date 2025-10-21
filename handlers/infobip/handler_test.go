@@ -446,7 +446,7 @@ var transSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"Simple Message","transliteration":"COLOMBIAN"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"Simple Message"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
 		ExpectedExtIDs: []string{"12345"},
 	},
@@ -489,7 +489,6 @@ func TestOutgoing(t *testing.T) {
 		map[string]any{
 			models.ConfigPassword: "Password",
 			models.ConfigUsername: "Username",
-			configTransliteration: "COLOMBIAN",
 		})
 
 	RunOutgoingTestCases(t, transChannel, newHandler(), transSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
@@ -497,7 +496,7 @@ func TestOutgoing(t *testing.T) {
 	var apiKeyChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
-			configAPIKey: "test-api-key",
+			models.ConfigAPIKey: "test-api-key",
 		})
 
 	RunOutgoingTestCases(t, apiKeyChannel, newHandler(), apiKeySendTestCases, []string{"App test-api-key"}, nil)
