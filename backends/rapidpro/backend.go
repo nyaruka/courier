@@ -427,12 +427,6 @@ func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, u
 	msg := newIncomingMsg(channel, urn, text, extID, clog)
 	msg.WithReceivedOn(time.Now().UTC())
 
-	// check if this message could be a duplicate and if so use the original's UUID
-	if prevUUID := b.checkMsgAlreadyReceived(ctx, msg); prevUUID != "" {
-		msg.UUID_ = prevUUID
-		msg.alreadyWritten = true
-	}
-
 	return msg
 }
 
@@ -546,6 +540,12 @@ func (b *backend) OnReceiveComplete(ctx context.Context, ch courier.Channel, eve
 // WriteMsg writes the passed in message to our store
 func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier.ChannelLog) error {
 	m := msg.(*MsgIn)
+
+	// check if this message could be a duplicate and if so steal the original's UUID
+	if prevUUID := b.checkMsgAlreadyReceived(ctx, m); prevUUID != "" {
+		m.UUID_ = prevUUID
+		return nil
+	}
 
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()

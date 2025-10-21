@@ -100,7 +100,6 @@ func (mb *MockBackend) NewIncomingMsg(ctx context.Context, channel courier.Chann
 	uuid := mb.seenExternalIDs[fmt.Sprintf("%s|%s", m.Channel().UUID(), m.ExternalID())]
 	if uuid != "" {
 		m.uuid = uuid
-		m.alreadyWritten = true
 	}
 
 	return m
@@ -189,11 +188,6 @@ func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 // WriteMsg queues the passed in message internally
 func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *courier.ChannelLog) error {
 	mm := m.(*MockMsg)
-
-	// this msg has already been written (we received it twice), we are a no op
-	if mm.alreadyWritten {
-		return nil
-	}
 
 	mb.lastMsgID++
 	mm.id = mb.lastMsgID

@@ -46,8 +46,7 @@ type MsgIn struct {
 	ContactName_   string             `json:"contact_name"`
 	URNAuthTokens_ map[string]string  `json:"auth_tokens"`
 
-	channel        *models.Channel
-	alreadyWritten bool
+	channel *models.Channel
 }
 
 // creates a new incoming message
@@ -65,9 +64,8 @@ func newIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID st
 		ModifiedOn_: now,
 		LogUUIDs:    pq.StringArray{string(clog.UUID)},
 
-		URN_:           urn,
-		channel:        dbChannel,
-		alreadyWritten: false,
+		URN_:    urn,
+		channel: dbChannel,
 	}
 }
 
@@ -99,11 +97,6 @@ func (m *MsgIn) hash() string {
 
 // WriteMsg creates a message given the passed in arguments
 func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLog) error {
-	// this msg has already been written (we received it twice), we are a no op
-	if m.alreadyWritten {
-		return nil
-	}
-
 	channel := m.Channel()
 
 	// check for data: attachment URLs which need to be fetched now - fetching of other URLs can be deferred until
