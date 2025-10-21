@@ -275,13 +275,13 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 
 		// if we received an error, write it out and report it
 		if hErr != nil {
-			slog.Error("error handling request", "error", err, "channel_uuid", channelUUID, "request", recorder.Trace.RequestTrace)
+			slog.Error("error handling request", "error", hErr, "channel", channelUUID, "url", recorder.Trace.Request.URL.String())
 			writeAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, hErr)
 		}
 
 		// end recording of the request so that we have a response trace
 		if err := recorder.End(); err != nil {
-			slog.Error("error recording request", "error", err, "channel_uuid", channelUUID, "request", recorder.Trace.RequestTrace)
+			slog.Error("error recording request", "error", err, "channel", channelUUID)
 			writeAndLogRequestError(ctx, handler, w, r, channel, err)
 		}
 
