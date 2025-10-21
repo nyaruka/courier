@@ -35,9 +35,11 @@ type RequestPrepFunc func(*http.Request)
 
 // ExpectedStatus is an expected status update
 type ExpectedStatus struct {
-	MsgID      models.MsgID
+	MsgUUID    models.MsgUUID
 	ExternalID string
 	Status     models.MsgStatus
+
+	MsgID models.MsgID // Deprecated: should be using MsgUUID
 }
 
 // ExpectedEvent is an expected channel event
@@ -207,6 +209,7 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 				actualStatus := actualStatuses[i]
 
 				assert.Equal(t, expectedStatus.MsgID, actualStatus.MsgID(), "msg id mismatch for update %d", i)
+				assert.Equal(t, expectedStatus.MsgUUID, actualStatus.MsgUUID(), "msg uuid mismatch for update %d", i)
 				assert.Equal(t, expectedStatus.ExternalID, actualStatus.ExternalID(), "external id mismatch for update %d", i)
 				assert.Equal(t, expectedStatus.Status, actualStatus.Status(), "status value mismatch for update %d", i)
 			}
@@ -339,7 +342,7 @@ func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch courier.Channel) courie
 	}
 
 	c := &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc", LastSeenOn: tc.MsgContactLastSeenOn}
-	m := mb.NewOutgoingMsg(ch, 10, c, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgResponseToExternalID, msgOrigin).(*test.MockMsg)
+	m := mb.NewOutgoingMsg(ch, "0f39d3b2-a84f-4274-ab54-32fbdf0a2d3c", 10, c, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgResponseToExternalID, msgOrigin).(*test.MockMsg)
 	m.WithLocale(tc.MsgLocale)
 	m.WithUserID(tc.MsgUserID)
 
