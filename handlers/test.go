@@ -336,17 +336,13 @@ type OutgoingTestCase struct {
 
 // Msg creates the test message for this test case
 func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch courier.Channel) courier.MsgOut {
-
-	uuids.SetGenerator(uuids.NewSeededGenerator(1234, dates.NewSequentialNow(time.Date(2024, 9, 11, 14, 33, 0, 0, time.UTC), time.Second)))
-	defer uuids.SetGenerator(uuids.DefaultGenerator)
-
 	msgOrigin := models.MsgOriginFlow
 	if tc.MsgOrigin != "" {
 		msgOrigin = tc.MsgOrigin
 	}
 
 	c := &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc", LastSeenOn: tc.MsgContactLastSeenOn}
-	m := mb.NewOutgoingMsg(ch, models.MsgUUID(uuids.NewV7()), 10, c, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgResponseToExternalID, msgOrigin).(*test.MockMsg)
+	m := mb.NewOutgoingMsg(ch, "0191e180-7d60-7000-aded-7d8b151cbd5b", 10, c, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgResponseToExternalID, msgOrigin).(*test.MockMsg)
 	m.WithLocale(tc.MsgLocale)
 	m.WithUserID(tc.MsgUserID)
 

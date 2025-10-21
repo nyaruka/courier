@@ -3,17 +3,14 @@ package handlers_test
 import (
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/test"
-	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,13 +23,10 @@ func TestRequestHTTP(t *testing.T) {
 	}))
 	defer httpx.SetRequestor(httpx.DefaultRequestor)
 
-	uuids.SetGenerator(uuids.NewSeededGenerator(1234, dates.NewSequentialNow(time.Date(2024, 9, 11, 14, 33, 0, 0, time.UTC), time.Second)))
-	defer uuids.SetGenerator(uuids.DefaultGenerator)
-
 	mb := test.NewMockBackend()
 	mc := test.NewMockChannel("7a8ff1d4-f211-4492-9d05-e1905f6da8c8", "NX", "1234", "EC", []string{urns.Phone.Prefix}, nil)
 	cf := &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc"}
-	mm := mb.NewOutgoingMsg(mc, models.MsgUUID(uuids.NewV7()), 123, cf, urns.URN("tel:+1234"), "Hello World", false, nil, "", models.MsgOriginChat)
+	mm := mb.NewOutgoingMsg(mc, "019a06fa-467d-7fc8-a11e-3ad2d019fd20", 123, cf, urns.URN("tel:+1234"), "Hello World", false, nil, "", models.MsgOriginChat)
 	clog := courier.NewChannelLogForSend(mm, nil)
 
 	cfg := runtime.NewDefaultConfig()
