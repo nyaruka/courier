@@ -138,7 +138,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Body: `{"messages":[{"recipient":"99999999999","message-id":"10","sms":{"originator":"1122","content":{"text":"Simple Message"}}}]}`,
+			Body: `{"messages":[{"recipient":"99999999999","message-id":"0191e180-7d60-7000-aded-7d8b151cbd5b","sms":{"originator":"1122","content":{"text":"Simple Message"}}}]}`,
 		}},
 	},
 	{
@@ -153,10 +153,10 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Body: `{"messages":[{"recipient":"99999999999","message-id":"10","sms":{"originator":"1122","content":{"text":"This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, now,"}}}]}`,
+				Body: `{"messages":[{"recipient":"99999999999","message-id":"0191e180-7d60-7000-aded-7d8b151cbd5b","sms":{"originator":"1122","content":{"text":"This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, now,"}}}]}`,
 			},
 			{
-				Body: `{"messages":[{"recipient":"99999999999","message-id":"10.2","sms":{"originator":"1122","content":{"text":"I need to keep adding more things to make it work"}}}]}`,
+				Body: `{"messages":[{"recipient":"99999999999","message-id":"0191e180-7d60-7000-aded-7d8b151cbd5b.2","sms":{"originator":"1122","content":{"text":"I need to keep adding more things to make it work"}}}]}`,
 			},
 		},
 	},

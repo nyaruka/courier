@@ -1,6 +1,7 @@
 package messagebird
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 var testChannels = []courier.Channel{
@@ -22,17 +24,20 @@ var testChannels = []courier.Channel{
 	}),
 }
 
+var msgUUID = models.MsgUUID(uuids.NewV7())
+
 const (
 	receiveURL            = "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 	validReceive          = "receiver=18005551515&body=Test+again&date=1690386569&date_utc=1690418969&reference=1&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&id=3b53c137369242138120d6b0b2122607&recipient=18005551515&originator=18885551515&body=Test+3&CreatedDatetime=2023-07-27T00%3A49%3A29%2B00%3A00"
 	invalidReceive        = "originator=18885551515&recipient=18005551515&&CreatedDatetime=2023-07-27T00%3A49%3A29%2B00%3A00"
 	validReceiveShortCode = "shortcode=51515&message=Test+again&date=1690386569&date_utc=1690418969&reference=1&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&mid=3b53c137369242138120d6b0b2122607&recipient=18005551515&originator=18885551515&body=Test+3&receive_datetime=20230727004929"
 	validReceiveMMS       = "receiver=18005551515&message=Test+again&date=1690386569&date_utc=1690418969&reference=1&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&message_id=3b53c137369242138120d6b0b2122607&recipient=18005551515&originator=18885551515&mediaURLs=https%3A%2F%2Ffoo.bar%2Fimage.jpg&CreatedDatetime=2023-07-27T00%3A49%3A29%2B00%3A00"
-	statusBaseURL         = "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?datacoding=plain&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&mccmnc=310010&messageLength=4&messagePartCount=1&ported=0&price%5Bamount%5D=0.000&price%5Bcurrency%5D=USD&recipient=18885551515&reference=26&statusDatetime=2023-07-28T17%3A57%3A12%2B00%3A00"
 	validSecret           = "my_super_secret"
 	validResponse         = `{"id":"efa6405d518d4c0c88cce11f7db775fb","href":"https://rest.messagebird.com/mms/efa6405d518d4c0c88cce11f7db775fb","direction":"mt","originator":"+188885551515","subject":"Great logo","body":"Hi! Please have a look at this very nice logo of this cool company.","reference":"the-customers-reference","mediaUrls":["https://www.messagebird.com/assets/images/og/messagebird.gif"],"scheduledDatetime":null,"createdDatetime":"2017-09-01T10:00:00+00:00","recipients":{"totalCount":1,"totalSentCount":1,"totalDeliveredCount":0,"totalDeliveryFailedCount":0,"items":[{"recipient":18005551515,"status":"sent","statusDatetime":"2017-09-01T10:00:00+00:00"}]}}`
 	invalidSecret         = "bad_secret"
 )
+
+var statusBaseURL = fmt.Sprintf("/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?datacoding=plain&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&mccmnc=310010&messageLength=4&messagePartCount=1&ported=0&price[amount]=0.000&price[currency]=USD&recipient=18885551515&reference=%s&statusDatetime=2023-07-28T17%%3A57%%3A12%%2B00%%3A00", string(msgUUID))
 
 func addValidSignature(r *http.Request) {
 	var bodysig string
@@ -173,13 +178,13 @@ var defaultReceiveTestCases = []IncomingTestCase{
 		Label:              "Status Valid",
 		URL:                statusBaseURL + "&status=sent",
 		ExpectedRespStatus: 200,
-		ExpectedStatuses:   []ExpectedStatus{{MsgID: 26, Status: models.MsgStatusSent}},
+		ExpectedStatuses:   []ExpectedStatus{{MsgUUID: msgUUID, Status: models.MsgStatusSent}},
 	},
 	{
 		Label:              "Status- Stop Received",
 		URL:                statusBaseURL + "&status=delivery_failed&statusErrorCode=103",
 		ExpectedRespStatus: 200,
-		ExpectedStatuses:   []ExpectedStatus{{MsgID: 26, Status: models.MsgStatusFailed}},
+		ExpectedStatuses:   []ExpectedStatus{{MsgUUID: msgUUID, Status: models.MsgStatusFailed}},
 		ExpectedEvents: []ExpectedEvent{
 			{Type: models.EventTypeStopContact, URN: "tel:+18885551515"},
 		},
@@ -209,7 +214,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","originator":"18005551212","body":"Simple Message ☺"}`,
 		}},
 		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
@@ -225,7 +230,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺","mediaUrls":["https://foo.bar/image.jpg"]}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","originator":"18005551212","body":"Simple Message ☺","mediaUrls":["https://foo.bar/image.jpg"]}`,
 		}},
 		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
@@ -240,7 +245,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg"]}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg"]}`,
 		}},
 		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
@@ -255,7 +260,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg","https://foo.bar/image2.jpg"]}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg","https://foo.bar/image2.jpg"]}`,
 		}},
 		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
@@ -270,7 +275,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/movie.mp4"]}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","originator":"18005551212","mediaUrls":["https://foo.bar/movie.mp4"]}`,
 		}},
 		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
@@ -285,7 +290,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/document.pdf"]}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","originator":"18005551212","mediaUrls":["https://foo.bar/document.pdf"]}`,
 		}},
 		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
@@ -300,7 +305,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","originator":"18005551212","body":"Simple Message ☺"}`,
 		}},
 		ExpectedError: courier.ErrConnectionFailed,
 	},
@@ -315,7 +320,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
+			Body:    `{"recipients":["188885551515"],"reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","originator":"18005551212","body":"Simple Message ☺"}`,
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
