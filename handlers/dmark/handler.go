@@ -76,7 +76,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 type statusForm struct {
-	ID     string `validate:"required" name:"id"`
+	UUID   string `validate:"uuid,required" name:"uuid"`
 	Status string `validate:"required" name:"status"`
 }
 
@@ -103,7 +103,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdateByExternalID(channel, form.ID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, models.MsgUUID(form.UUID), models.NilMsgID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -114,7 +114,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return courier.ErrChannelConfig
 	}
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
-	dlrURL := fmt.Sprintf("https://%s%s%s/status?id=%s&status=%%s", callbackDomain, "/c/dk/", msg.Channel().UUID(), msg.ID().String())
+	dlrURL := fmt.Sprintf("https://%s%s%s/status?uuid=%s&status=%%s", callbackDomain, "/c/dk/", msg.Channel().UUID(), msg.UUID())
 
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	for _, part := range parts {
