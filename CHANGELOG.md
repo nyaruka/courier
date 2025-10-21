@@ -1,3 +1,8 @@
+v10.3.19 (2025-10-21)
+-------------------------
+ * Re-organize creation of incoming messages
+ * Support status callback with msg UUID for KN and CHP channels
+
 v10.3.18 (2025-10-20)
 -------------------------
  * Tweak valkey usage during message popping
