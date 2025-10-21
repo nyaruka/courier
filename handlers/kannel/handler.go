@@ -91,8 +91,11 @@ var statusMapping = map[int]models.MsgStatus{
 }
 
 type statusForm struct {
-	ID     models.MsgID `validate:"required" name:"id"`
-	Status int          `validate:"required" name:"status"`
+	UUID   models.MsgUUID `name:"uuid"`
+	Status int            `validate:"required" name:"status"`
+
+	// Deprecated: use UUID instead
+	ID models.MsgID `name:"id"`
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -102,6 +105,11 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+
+	// To remove once all clients are updated to use UUID
+	if form.UUID == "" && form.ID == 0 {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("either 'uuid' or 'id' parameter is required"))
 	}
 
 	msgStatus, found := statusMapping[form.Status]
@@ -115,7 +123,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdate(channel, "", form.ID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, form.UUID, form.ID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -130,7 +138,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	dlrMask := msg.Channel().StringConfigForKey(configDLRMask, defaultDLRMask)
 
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
-	dlrURL := fmt.Sprintf("https://%s/c/kn/%s/status?id=%s&status=%%d", callbackDomain, msg.Channel().UUID(), msg.ID().String())
+	dlrURL := fmt.Sprintf("https://%s/c/kn/%s/status?uuid=%s&status=%%d", callbackDomain, msg.Channel().UUID(), msg.UUID())
 
 	// build our request
 	form := url.Values{
