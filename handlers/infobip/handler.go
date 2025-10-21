@@ -17,6 +17,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
+const configTransliteration = "transliteration"
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -361,6 +362,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	} else {
 		// Handle SMS message
 
+		transliteration := msg.Channel().StringConfigForKey(configTransliteration, "")
+
 		smsPayload := v3OutboundPayload{
 			Messages: []v3OutboundMessage{
 				{
@@ -373,6 +376,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 					},
 					Content: v3OutboundContent{
 						Text:            handlers.GetTextAndAttachments(msg),
+						Transliteration: transliteration,
 					},
 					Webhooks: &v3OutboundWebhooks{
 						Delivery: v3OutboundDelivery{
