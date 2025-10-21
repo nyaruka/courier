@@ -572,11 +572,11 @@ func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalI
 
 // WriteStatusUpdate writes the passed in MsgStatus to our store
 func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUpdate) error {
-	log := slog.With("msg_id", status.MsgID(), "msg_external_id", status.ExternalID(), "status", status.Status())
+	log := slog.With("msg_uuid", status.MsgUUID(), "msg_external_id", status.ExternalID(), "status", status.Status())
 	su := status.(*models.StatusUpdate)
 
-	if status.MsgID() == models.NilMsgID && status.ExternalID() == "" {
-		return errors.New("message status with no id or external id")
+	if status.MsgUUID() == "" && status.MsgID() == models.NilMsgID && status.ExternalID() == "" {
+		return errors.New("message status with no UUID, id or external id")
 	}
 
 	// if we have a URN update, do that
