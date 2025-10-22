@@ -175,8 +175,8 @@ func (h *handler) receiveMMSMessage(ctx context.Context, channel courier.Channel
 		date := time.Now()
 		var err error
 		if dateString != "" {
-			// The format for ReceivedAt is "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-			date, err = time.Parse("2006-01-02T15:04:05.000Z0700", dateString)
+			// The format for ReceivedAt is "yyyy-MM-dd'T'HH:mm:ss.SSS+0000"
+			date, err = time.Parse("2006-01-02T15:04:05.000-0700", dateString)
 			if err != nil {
 				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 			}
