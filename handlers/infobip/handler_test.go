@@ -18,9 +18,8 @@ var testChannels = []courier.Channel{
 }
 
 const (
-	receiveSMSURL = "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive-sms"
-	receiveMMSURL = "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive-mms"
-	statusURL     = "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/"
+	receiveURL = "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
+	statusURL  = "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/"
 )
 
 var helloMsg = `{
@@ -204,7 +203,7 @@ var invalidStatus = `{
 var testCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid MMS Message",
-		URL:                  receiveMMSURL,
+		URL:                  receiveURL,
 		Data:                 helloMsg,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
@@ -215,8 +214,8 @@ var testCases = []IncomingTestCase{
 		ExpectedAttachments:  []string{"image/jpeg:https://examplelink.com/123456"},
 	},
 	{
-		Label:                "Receive Valid SMS Message",
-		URL:                  receiveSMSURL,
+		Label: "Receive Valid SMS Message",
+		URL:   receiveURL,
 		Data: `{
 			"results": [
 				{
@@ -224,7 +223,7 @@ var testCases = []IncomingTestCase{
 					"from": "385916242494",
 					"to": "385921004027",
 					"text": "This is an SMS message",
-					"receivedAt": "2016-10-06T09:28:40.000Z",
+					"receivedAt": "2016-10-06T09:28:40.000+0000",
 					"smsCount": 1,
 					"price": {
 						"pricePerMessage": 0,
@@ -245,21 +244,21 @@ var testCases = []IncomingTestCase{
 	},
 	{
 		Label:                "Receive missing results key",
-		URL:                  receiveSMSURL,
+		URL:                  receiveURL,
 		Data:                 missingResults,
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "validation for 'Results' failed",
 	},
 	{
 		Label:                "Receive missing text key",
-		URL:                  receiveSMSURL,
+		URL:                  receiveURL,
 		Data:                 missingText,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "ignoring request, no message",
 	},
 	{
 		Label:                "Invalid URN",
-		URL:                  receiveSMSURL,
+		URL:                  receiveURL,
 		Data:                 invalidURN,
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "not a possible number",
@@ -371,9 +370,9 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("messageId")},
 	},
 	{
-		Label:   "Send MMS with Attachment",
-		MsgText: "Check out this image!",
-		MsgURN:  "tel:+250788383383",
+		Label:          "Send MMS with Attachment",
+		MsgText:        "Check out this image!",
+		MsgURN:         "tel:+250788383383",
 		MsgAttachments: []string{"image/jpeg:https://example.com/my_image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.infobip.com/mms/2/messages": {

@@ -34,8 +34,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive-sms", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
-	s.AddHandlerRoute(h, http.MethodPost, "receive-mms", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMMSMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	s.AddHandlerRoute(h, http.MethodPost, "delivered", courier.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.statusMessage))
 	return nil
 }
@@ -81,7 +80,6 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 	return statuses, courier.WriteDataResponse(w, http.StatusOK, "statuses handled", data)
 }
 
-
 type v3InboundPayload struct {
 	Results             []v3InboundMessage `validate:"required" json:"results"`
 	MessageCount        int                `json:"messageCount"`
@@ -116,7 +114,7 @@ type v3InboundPrice struct {
 	Currency        string  `json:"currency"`
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
+// receiveMessage is our HTTP handler function for incoming messages (both SMS and MMS)
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *v3InboundPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.MessageCount == 0 {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
@@ -127,93 +125,59 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		messageID := infobipMessage.MessageID
 		dateString := infobipMessage.ReceivedAt
 
-		text := infobipMessage.Text
-		if text == "" {
-			continue
-		}
-
-		date := time.Now()
-		var err error
-		if dateString != "" {
-			// The format for ReceivedAt is "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-			date, err = time.Parse("2006-01-02T15:04:05.000Z0700", dateString)
-			if err != nil {
-				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-			}
-		}
-
 		// create our URN
 		urn, err := urns.ParsePhone(infobipMessage.From, channel.Country(), true, false)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
-		// build our infobipMessage
-		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, messageID, clog).WithReceivedOn(date)
-		msgs = append(msgs, msg)
+		// Check if this is an MMS message by looking at the Message field
+		isMMS := len(infobipMessage.Message) > 0
 
-	}
+		var text string
+		var attachments []string
 
-	if len(msgs) == 0 {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
-	}
+		if isMMS {
+			// Handle MMS message
+			var textParts []string
+			for _, segment := range infobipMessage.Message {
+				if segment.ContentType == "text/plain" {
+					textParts = append(textParts, segment.Value)
+				} else if segment.URL != "" {
+					attachment := fmt.Sprintf("%s:%s", segment.ContentType, segment.URL)
+					attachments = append(attachments, attachment)
+				}
+			}
+			text = strings.Join(textParts, "\n")
+		} else {
+			// Handle SMS message
+			text = infobipMessage.Text
+		}
 
-	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
-}
+		// Skip if no text and no attachments
+		if text == "" && len(attachments) == 0 {
+			continue
+		}
 
-// receiveMMSMessage is our HTTP handler function for incoming MMS messages
-func (h *handler) receiveMMSMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *v3InboundPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
-	if payload.MessageCount == 0 {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
-	}
-
-	msgs := []courier.MsgIn{}
-	for _, infobipMessage := range payload.Results {
-		messageID := infobipMessage.MessageID
-		dateString := infobipMessage.ReceivedAt
-
+		// Parse date if provided
 		date := time.Now()
-		var err error
 		if dateString != "" {
 			// The format for ReceivedAt is "yyyy-MM-dd'T'HH:mm:ss.SSS+0000"
+			// It is not RFC3339 Compliant
+			// In Go 1.26 revisit changing this with json/v2 with custom datetime support
+
 			date, err = time.Parse("2006-01-02T15:04:05.000-0700", dateString)
 			if err != nil {
 				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 			}
 		}
 
-		// create our URN
-		urn, err := urns.ParsePhone(infobipMessage.From, channel.Country(), true, false)
-		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-		}
-
-		var textParts []string
-		var attachments []string // Store attachment strings
-
-		// This is an MMS message
-		for _, segment := range infobipMessage.Message {
-			if segment.ContentType == "text/plain" {
-				textParts = append(textParts, segment.Value)
-			} else if segment.URL != "" {
-				attachment := fmt.Sprintf("%s:%s", segment.ContentType, segment.URL)
-				attachments = append(attachments, attachment)
-			}
-		}
-
-		text := strings.Join(textParts, "\n")
-		
-		if text == "" && len(attachments) == 0 {
-			continue
-		}
-		
-		// build our infobipMessage
+		// build our message
 		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, messageID, clog).WithReceivedOn(date)
 		for _, attachment := range attachments {
 			msg = msg.WithAttachment(attachment)
 		}
 		msgs = append(msgs, msg)
-
 	}
 
 	if len(msgs) == 0 {
@@ -271,8 +235,8 @@ type v2MMSOutboundDestination struct {
 }
 
 type v2MMSOutboundContent struct {
-	Title           string                 `json:"title"`
-	MessageSegments []v2MMSMessageSegment  `json:"messageSegments"`
+	Title           string                `json:"title"`
+	MessageSegments []v2MMSMessageSegment `json:"messageSegments"`
 }
 
 type v2MMSMessageSegment struct {
