@@ -114,7 +114,7 @@ func (h *handler) buildStatusHandler(status string) courier.ChannelHandleFunc {
 }
 
 type statusForm struct {
-	ID int64 `name:"id" validate:"required"`
+	ID string `name:"id" validate:"uuid,required"`
 }
 
 var statusMappings = map[string]models.MsgStatus{
@@ -138,7 +138,7 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdate(channel, "", models.MsgID(form.ID), msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, models.MsgUUID(form.ID), models.NilMsgID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -167,7 +167,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 
 	ourMessage := OutputMessage{
-		ID:           msg.ID().String(),
+		ID:           string(msg.UUID()),
 		Text:         msg.Text(),
 		To:           msg.URN().Path(),
 		Channel:      string(msg.Channel().UUID()),
