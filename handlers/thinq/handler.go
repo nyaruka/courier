@@ -51,9 +51,9 @@ func (h *handler) Initialize(s courier.Server) error {
 // type: sms|mms
 // message: Content of the message
 type moForm struct {
-	From    string `validate:"required" name:"from"`
-	To      string `validate:"required" name:"to"`
-	Type    string `validate:"required" name:"type"`
+	From    string `name:"from"    validate:"required"`
+	To      string `name:"to"      validate:"required"`
+	Type    string `name:"type"    validate:"required"`
 	Message string `name:"message"`
 }
 
@@ -97,8 +97,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 // status: System version of the status (i.e.: DELIVRD)
 // error: Error code if any (i.e.: 000)
 type statusForm struct {
-	GUID   string `validate:"required" name:"guid"`
-	Status string `validate:"required" name:"status"`
+	GUID   string `name:"guid"   validate:"required"`
+	Status string `name:"status" validate:"required"`
 }
 
 var statusMapping = map[string]models.MsgStatus{

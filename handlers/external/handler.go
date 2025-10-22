@@ -89,7 +89,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type stopContactForm struct {
-	From string `validate:"required" name:"from"`
+	From string `name:"from" validate:"required"`
 }
 
 func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {

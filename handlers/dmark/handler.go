@@ -41,10 +41,10 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type moForm struct {
-	MSISDN    string `validate:"required" name:"msisdn"`
-	Text      string `validate:"required" name:"text"`
-	ShortCode string `validate:"required" name:"short_code"`
-	TStamp    string `validate:"required" name:"tstamp"`
+	MSISDN    string `name:"msisdn"     validate:"required"`
+	Text      string `name:"text"       validate:"required"`
+	ShortCode string `name:"short_code" validate:"required"`
+	TStamp    string `name:"tstamp"     validate:"required"`
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
