@@ -49,34 +49,34 @@ var daTestCases = []IncomingTestCase{
 
 	{
 		Label:                "Valid Status",
-		URL:                  statusURL + "?status=10&messageid=12345",
+		URL:                  statusURL + "?status=10&messageid=019a0719-ac96-7eb9-a837-cac215164834",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "000",
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a0719-ac96-7eb9-a837-cac215164834", Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Valid Status",
-		URL:                  statusURL + "?status=10&messageid=12345.2",
+		URL:                  statusURL + "?status=10&messageid=019a0719-ac96-7eb9-a837-cac215164834.2",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "000",
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a0719-ac96-7eb9-a837-cac215164834", Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Failed Status",
-		URL:                  statusURL + "?status=30&messageid=12345",
+		URL:                  statusURL + "?status=30&messageid=019a0719-ac96-7eb9-a837-cac215164834",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "000",
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a0719-ac96-7eb9-a837-cac215164834", Status: models.MsgStatusFailed}},
 	},
 	{
 		Label:                "Missing Status",
-		URL:                  statusURL + "?messageid=12345",
+		URL:                  statusURL + "?messageid=019a0719-ac96-7eb9-a837-cac215164834",
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "parameters messageid and status should not be empty",
 	},
 	{
 		Label:                "Missing Status",
-		URL:                  statusURL + "?status=foo&messageid=12345",
+		URL:                  statusURL + "?status=foo&messageid=019a0719-ac96-7eb9-a837-cac215164834",
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "parsing failed: status 'foo' is not an integer",
 	},
@@ -84,7 +84,7 @@ var daTestCases = []IncomingTestCase{
 		Label:                "Missing Status",
 		URL:                  statusURL + "?status=10&messageid=abc",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "parsing failed: messageid 'abc' is not an integer",
+		ExpectedBodyContains: "parsing failed: messageid 'abc' is not a UUID",
 	},
 }
 
@@ -103,7 +103,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
+			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}}},
 		},
 	},
 	{
@@ -117,8 +117,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Params: url.Values{"message": {"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
-			{Params: url.Values{"message": {"I need to keep adding more things to make it work"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10.2"}}},
+			{Params: url.Values{"message": {"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}}},
+			{Params: url.Values{"message": {"I need to keep adding more things to make it work"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"0191e180-7d60-7000-aded-7d8b151cbd5b.2"}}},
 		},
 	},
 	{
@@ -132,7 +132,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Params: url.Values{"message": {"My pic!\nhttps://foo.bar/image.jpg"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
+			{Params: url.Values{"message": {"My pic!\nhttps://foo.bar/image.jpg"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}}},
 		},
 	},
 	{
@@ -145,7 +145,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Params: url.Values{"message": {"Error Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
+			{Params: url.Values{"message": {"Error Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}}},
 		},
 		ExpectedError: courier.ErrResponseStatus,
 	},
@@ -159,7 +159,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
+			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}}},
 		},
 		ExpectedError: courier.ErrFailedWithReason("001", "Authentication error."),
 	},
@@ -173,7 +173,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
+			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}}},
 		},
 		ExpectedError: courier.ErrFailedWithReason("101", "Account expired or invalid parameters."),
 	},

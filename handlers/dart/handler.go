@@ -17,6 +17,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 var (
@@ -122,13 +123,13 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		msgStatus = models.MsgStatusFailed
 	}
 
-	msgID, err := strconv.ParseInt(strings.Split(form.MessageID, ".")[0], 10, 64)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parsing failed: messageid '%s' is not an integer", form.MessageID))
+	msgUUID := strings.Split(form.MessageID, ".")[0]
+	if !uuids.Is(msgUUID) {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parsing failed: messageid '%s' is not a UUID", form.MessageID))
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdate(channel, "", models.MsgID(msgID), msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, models.MsgUUID(msgUUID), models.NilMsgID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -165,9 +166,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			"message":  []string{part},
 		}
 
-		messageid := msg.ID().String()
+		messageid := string(msg.UUID())
 		if i > 0 {
-			messageid = fmt.Sprintf("%s.%d", msg.ID().String(), i+1)
+			messageid = fmt.Sprintf("%s.%d", msg.UUID(), i+1)
 		}
 		form["messageid"] = []string{messageid}
 

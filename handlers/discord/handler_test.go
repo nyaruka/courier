@@ -61,10 +61,10 @@ var testCases = []IncomingTestCase{
 	{
 		Label:                "Message Sent Handler",
 		URL:                  "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/sent/",
-		Data:                 `id=12345`,
+		Data:                 `id=019a0719-ac96-7eb9-a837-cac215164834`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a0719-ac96-7eb9-a837-cac215164834", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:              "Message Sent Handler Garbage",
@@ -87,7 +87,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/discord/rp/send",
-				Body: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":[]}`,
+				Body: `{"id":"0191e180-7d60-7000-aded-7d8b151cbd5b","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":[]}`,
 			},
 		},
 	},
@@ -104,7 +104,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/discord/rp/send",
-				Body: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":[]}`,
+				Body: `{"id":"0191e180-7d60-7000-aded-7d8b151cbd5b","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":[]}`,
 			},
 		},
 	},
@@ -122,7 +122,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/discord/rp/send",
-				Body: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":["hello","world"]}`,
+				Body: `{"id":"0191e180-7d60-7000-aded-7d8b151cbd5b","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":["hello","world"]}`,
 			},
 		},
 	},
@@ -138,7 +138,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/discord/rp/send",
-				Body: `{"id":"10","text":"Error Sending","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":[]}`,
+				Body: `{"id":"0191e180-7d60-7000-aded-7d8b151cbd5b","text":"Error Sending","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":[]}`,
 			},
 		},
 		ExpectedError: courier.ErrResponseStatus,
@@ -155,7 +155,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/discord/rp/send",
-				Body: `{"id":"10","text":"Error","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":[]}`,
+				Body: `{"id":"0191e180-7d60-7000-aded-7d8b151cbd5b","text":"Error","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":[]}`,
 			},
 		},
 		ExpectedError: courier.ErrConnectionFailed,

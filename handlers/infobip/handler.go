@@ -179,7 +179,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 				Destinations: []mtDestination{
 					{
 						To:        strings.TrimLeft(msg.URN().Path(), "+"),
-						MessageID: msg.ID().String(),
+						MessageID: string(msg.UUID()),
 					},
 				},
 				Text:               handlers.GetTextAndAttachments(msg),

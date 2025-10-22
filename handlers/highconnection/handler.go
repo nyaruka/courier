@@ -89,8 +89,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 type statusForm struct {
-	RetID  int64 `name:"ret_id" validate:"required"`
-	Status int   `name:"status" validate:"required"`
+	RetID  string `name:"ret_id" validate:"uuid,required"`
+	Status int    `name:"status" validate:"required"`
 }
 
 var statusMapping = map[int]models.MsgStatus{
@@ -119,7 +119,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdate(channel, "", models.MsgID(form.RetID), msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, models.MsgUUID(form.RetID), models.NilMsgID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -147,7 +147,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			"password":   []string{password},
 			"text":       []string{part},
 			"to":         []string{msg.URN().Path()},
-			"ret_id":     []string{msg.ID().String()},
+			"ret_id":     []string{string(msg.UUID())},
 			"datacoding": []string{"8"},
 			"user_data":  []string{flowName},
 			"ret_url":    []string{statusURL},
