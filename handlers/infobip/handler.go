@@ -334,9 +334,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		for _, attachmentStr := range msg.Attachments() {
 			mimeType, url := handlers.SplitAttachment(attachmentStr)
 			if mimeType == "" || url == "" {
-				// Using handlers.WriteAndLogRequestError as a fallback for logging
-				// since clog.Error's exact signature is proving problematic.
-				// This will log the error and continue processing other attachments.
 				handlers.WriteAndLogRequestError(ctx, h, msg.Channel(), nil, nil, fmt.Errorf("ignoring invalid attachment: %s", attachmentStr))
 				continue
 			}
