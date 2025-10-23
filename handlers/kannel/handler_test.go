@@ -76,16 +76,9 @@ var handleTestCases = []IncomingTestCase{
 		ExpectedBodyContains: "field 'status' required"},
 	{
 		Label:                "Status Invalid Status",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=66",
+		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=66",
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "unknown status '66', must be one of 1,2,4,8,16",
-	},
-	{
-		Label:                "Status Valid by ID",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=4",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Status Valid by UUID",
@@ -110,13 +103,6 @@ var ignoreTestCases = []IncomingTestCase{
 	},
 	{
 		Label:                "Write Status Delivered",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=1",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: models.MsgStatusDelivered}},
-	},
-	{
-		Label:                "Write Status Delivered by UUID",
 		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=1",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
@@ -131,18 +117,6 @@ var ignoreTestCases = []IncomingTestCase{
 	{
 		Label:                "Ignore Status Sent",
 		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=8",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `ignoring sent report`,
-	},
-	{
-		Label:                "Ignore Status Wired",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=4",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `ignoring sent report`,
-	},
-	{
-		Label:                "Ignore Status Sent",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=8",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `ignoring sent report`,
 	},
