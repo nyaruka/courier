@@ -1,3 +1,8 @@
+v10.3.22 (2025-10-27)
+-------------------------
+ * Remove support for status updates using message ID
+ * Fix twiml channel status updates via explicit UUID
+
 v10.3.21 (2025-10-27)
 -------------------------
  * Update deps
