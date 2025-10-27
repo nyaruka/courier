@@ -1,3 +1,8 @@
+v10.3.21 (2025-10-27)
+-------------------------
+ * Update deps
+ * Use msg UUID for status callback for more channel types
+
 v10.3.20 (2025-10-21)
 -------------------------
  * Allow message status updates with no message id
