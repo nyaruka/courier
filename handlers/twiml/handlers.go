@@ -12,7 +12,6 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"sort"
@@ -29,6 +28,7 @@ import (
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 const (
@@ -180,20 +180,11 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring non error delivery report")
 	}
 
-	// if the message id was passed explicitely, use that
 	var status courier.StatusUpdate
-	idString := r.URL.Query().Get("id")
-	if idString != "" {
-		msgID, err := strconv.ParseInt(idString, 10, 64)
-		if err != nil {
-			slog.Error("error converting twilio callback id to integer", "error", err, "id", idString)
-		} else {
-			status = h.Backend().NewStatusUpdate(channel, "", models.MsgID(msgID), msgStatus, clog)
-		}
-	}
-
-	// if we have no status, then build it from the external (twilio) id
-	if status == nil {
+	if uuidString := r.URL.Query().Get("uuid"); uuids.Is(uuidString) {
+		// if the message UUID was passed explicitely, use that
+		status = h.Backend().NewStatusUpdate(channel, models.MsgUUID(uuidString), models.NilMsgID, msgStatus, clog)
+	} else {
 		status = h.Backend().NewStatusUpdateByExternalID(channel, form.MessageSID, msgStatus, clog)
 	}
 
