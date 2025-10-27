@@ -323,12 +323,12 @@ func (w *Sender) sendMessage(msg MsgOut) {
 
 	if handler == nil {
 		// if there's no handler, create a FAILED status for it
-		status = backend.NewStatusUpdate(msg.Channel(), msg.UUID(), msg.ID(), models.MsgStatusFailed, clog)
+		status = backend.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusFailed, clog)
 		log.Error(fmt.Sprintf("unable to find handler for channel type: %s", msg.Channel().ChannelType()))
 
 	} else if sent {
 		// if this message was already sent, create a WIRED status for it
-		status = backend.NewStatusUpdate(msg.Channel(), msg.UUID(), msg.ID(), models.MsgStatusWired, clog)
+		status = backend.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusWired, clog)
 		log.Warn("duplicate send, marking as wired")
 
 	} else {
@@ -359,7 +359,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 	res := &SendResult{newURN: urns.NilURN}
 	err := h.Send(ctx, m, res, clog)
 
-	status := backend.NewStatusUpdate(m.Channel(), m.UUID(), m.ID(), models.MsgStatusWired, clog)
+	status := backend.NewStatusUpdate(m.Channel(), m.UUID(), models.MsgStatusWired, clog)
 
 	// fow now we can only store one external id per message
 	if len(res.ExternalIDs()) > 0 {

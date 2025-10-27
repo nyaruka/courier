@@ -96,7 +96,7 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 		} else if event.Type == "msg_status" {
 			status := statuses[event.Status.Status]
 			if status != "" {
-				evt := h.Backend().NewStatusUpdate(c, event.Status.MsgUUID, models.NilMsgID, status, clog)
+				evt := h.Backend().NewStatusUpdate(c, event.Status.MsgUUID, status, clog)
 
 				if err := h.Backend().WriteStatusUpdate(ctx, evt); err != nil {
 					return nil, err

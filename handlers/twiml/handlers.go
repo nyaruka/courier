@@ -183,7 +183,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	var status courier.StatusUpdate
 	if uuidString := r.URL.Query().Get("uuid"); uuids.Is(uuidString) {
 		// if the message UUID was passed explicitely, use that
-		status = h.Backend().NewStatusUpdate(channel, models.MsgUUID(uuidString), models.NilMsgID, msgStatus, clog)
+		status = h.Backend().NewStatusUpdate(channel, models.MsgUUID(uuidString), msgStatus, clog)
 	} else {
 		status = h.Backend().NewStatusUpdateByExternalID(channel, form.MessageSID, msgStatus, clog)
 	}

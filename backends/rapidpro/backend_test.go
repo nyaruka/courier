@@ -370,9 +370,9 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	now := time.Now().In(time.UTC)
 
-	updateStatusByID := func(id models.MsgID, status models.MsgStatus, newExtID string) *courier.ChannelLog {
+	updateStatusByUUID := func(uuid models.MsgUUID, status models.MsgStatus, newExtID string) *courier.ChannelLog {
 		clog := courier.NewChannelLog(courier.ChannelLogTypeMsgStatus, channel, nil)
-		statusObj := ts.b.NewStatusUpdate(channel, "", id, status, clog)
+		statusObj := ts.b.NewStatusUpdate(channel, uuid, status, clog)
 		if newExtID != "" {
 			statusObj.SetExternalID(newExtID)
 		}
@@ -394,8 +394,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// put test message back into queued state
 	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL WHERE id = $1`, 10001)
 
-	// update to WIRED using id and provide new external ID
-	clog1 := updateStatusByID(10001, models.MsgStatusWired, "ext0")
+	// update to WIRED using UUID and provide new external ID
+	clog1 := updateStatusByUUID("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusWired, "ext0")
 
 	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
 	ts.Equal(models.MsgStatusWired, m.Status)
@@ -408,7 +408,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	sentOn := *m.SentOn
 
 	// update to SENT using id
-	clog2 := updateStatusByID(10001, models.MsgStatusSent, "")
+	clog2 := updateStatusByUUID("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusSent, "")
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
 	ts.Equal(models.MsgStatusSent, m.Status)
@@ -418,7 +418,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal([]string{string(clog1.UUID), string(clog2.UUID)}, []string(m.LogUUIDs))
 
 	// update to DELIVERED using id
-	clog3 := updateStatusByID(10001, models.MsgStatusDelivered, "")
+	clog3 := updateStatusByUUID("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusDelivered, "")
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
 	ts.Equal(m.Status, models.MsgStatusDelivered)
@@ -427,7 +427,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID)}, []string(m.LogUUIDs))
 
 	// update to READ using id
-	clog4 := updateStatusByID(10001, models.MsgStatusRead, "")
+	clog4 := updateStatusByUUID("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusRead, "")
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
 	ts.Equal(m.Status, models.MsgStatusRead)
@@ -436,7 +436,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID), string(clog4.UUID)}, []string(m.LogUUIDs))
 
 	// no change for incoming messages
-	updateStatusByID(10002, models.MsgStatusSent, "")
+	updateStatusByUUID("0199df10-9519-7fe2-a29c-c890d1713673", models.MsgStatusSent, "")
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10002)
 	ts.Equal(models.MsgStatusPending, m.Status)
@@ -478,7 +478,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	// can skip WIRED and go straight to SENT or DELIVERED
 	updateStatusByExtID("ext1", models.MsgStatusSent)
-	updateStatusByID(10001, models.MsgStatusDelivered, "")
+	updateStatusByUUID("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusDelivered, "")
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
 	ts.Equal(models.MsgStatusSent, m.Status)
@@ -542,7 +542,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.NoError(tx.Commit())
 
 	newURN := urns.URN("whatsapp:5588776655")
-	status = ts.b.NewStatusUpdate(channel, "", 10000, models.MsgStatusSent, clog6)
+	status = ts.b.NewStatusUpdate(channel, "0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusSent, clog6)
 	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
@@ -563,7 +563,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	ts.NoError(tx.Commit())
 
-	status = ts.b.NewStatusUpdate(channel, "", 10007, models.MsgStatusSent, clog6)
+	status = ts.b.NewStatusUpdate(channel, "019a25d9-4d3a-710c-8af6-897e0cb66a8e", models.MsgStatusSent, clog6)
 	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
@@ -585,7 +585,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	ts.NoError(tx.Commit())
 
-	status = ts.b.NewStatusUpdate(channel, "", 10007, models.MsgStatusSent, clog6)
+	status = ts.b.NewStatusUpdate(channel, "019a25d9-4d3a-710c-8af6-897e0cb66a8e", models.MsgStatusSent, clog6)
 	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
@@ -610,7 +610,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	// create a status update from a send which will have a UUID and an external ID
-	status1 := ts.b.NewStatusUpdate(channel, "0199df0f-9f82-7689-b02d-f34105991321", 10000, models.MsgStatusSent, clog)
+	status1 := ts.b.NewStatusUpdate(channel, "0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusSent, clog)
 	status1.SetExternalID("ex457")
 	err := ts.b.WriteStatusUpdate(ctx, status1)
 	ts.NoError(err)
@@ -786,7 +786,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.Equal(msg.Text(), "test message")
 
 	// mark this message as dealt with
-	ts.b.OnSendComplete(ctx, msg, ts.b.NewStatusUpdate(msg.Channel(), msg.UUID(), msg.ID(), models.MsgStatusWired, clog), clog)
+	ts.b.OnSendComplete(ctx, msg, ts.b.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusWired, clog), clog)
 
 	// this message should now be marked as sent
 	sent, err := ts.b.WasMsgSent(ctx, msg.UUID())
@@ -805,7 +805,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.False(sent)
 
 	// write an error for our original message
-	err = ts.b.WriteStatusUpdate(ctx, ts.b.NewStatusUpdate(msg.Channel(), msg.UUID(), msg.ID(), models.MsgStatusErrored, clog))
+	err = ts.b.WriteStatusUpdate(ctx, ts.b.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusErrored, clog))
 	ts.NoError(err)
 
 	// message should no longer be considered sent

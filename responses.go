@@ -126,7 +126,6 @@ type StatusData struct {
 	Type        string             `json:"type"`
 	ChannelUUID models.ChannelUUID `json:"channel_uuid"`
 	Status      models.MsgStatus   `json:"status"`
-	MsgID       models.MsgID       `json:"msg_id,omitempty"`
 	ExternalID  string             `json:"external_id,omitempty"`
 }
 
@@ -136,7 +135,6 @@ func NewStatusData(status StatusUpdate) StatusData {
 		"status",
 		status.ChannelUUID(),
 		status.Status(),
-		status.MsgID(),
 		status.ExternalID(),
 	}
 }
