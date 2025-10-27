@@ -8,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/dbutil"
@@ -18,14 +17,13 @@ import (
 )
 
 // creates a new message status update
-func newStatusUpdate(channel courier.Channel, uuid models.MsgUUID, id models.MsgID, externalID string, status models.MsgStatus, clog *courier.ChannelLog) *models.StatusUpdate {
+func newStatusUpdate(channel courier.Channel, uuid models.MsgUUID, externalID string, status models.MsgStatus, clog *courier.ChannelLog) *models.StatusUpdate {
 	dbChannel := channel.(*models.Channel)
 
 	return &models.StatusUpdate{
 		ChannelUUID_: channel.UUID(),
 		ChannelID_:   dbChannel.ID(),
 		MsgUUID_:     uuid,
-		MsgID_:       id,
 		OldURN_:      urns.NilURN,
 		NewURN_:      urns.NilURN,
 		ExternalID_:  externalID,
@@ -79,7 +77,7 @@ func (b *backend) writeStatuseUpdates(ctx context.Context, spoolDir string, batc
 		for _, s := range batch {
 			_, err = b.writeStatusUpdatesToDB(ctx, []*models.StatusUpdate{s})
 			if err != nil {
-				log := log.With("msg_id", s.MsgID())
+				log := log.With("msg_uuid", s.MsgUUID())
 
 				if qerr := dbutil.AsQueryError(err); qerr != nil {
 					query, params := qerr.Query()
@@ -113,8 +111,8 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 	}
 
 	if len(missingUUID) > 0 {
-		if err := b.resolveStatusUpdateMsgUUIDs(ctx, missingUUID); err != nil {
-			return nil, err
+		if err := b.resolveStatusUpdateByExternalID(ctx, missingUUID); err != nil {
+			return nil, fmt.Errorf("error resolving status updates by external ID: %w", err)
 		}
 	}
 
@@ -134,68 +132,6 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 	}
 
 	return unresolved, nil
-}
-
-// tries to resolve msg UUIDs for the given statuses using either the msg database ID or external ID
-func (b *backend) resolveStatusUpdateMsgUUIDs(ctx context.Context, statuses []*models.StatusUpdate) error {
-	byID := make([]*models.StatusUpdate, 0, len(statuses))
-	byExternalID := make([]*models.StatusUpdate, 0, len(statuses))
-
-	for _, s := range statuses {
-		if s.MsgUUID_ == "" {
-			if s.MsgID_ != 0 {
-				byID = append(byID, s)
-			} else if s.ExternalID_ != "" {
-				byExternalID = append(byExternalID, s)
-			}
-		}
-	}
-
-	if len(byID) > 0 {
-		if err := b.resolveStatusUpdateByID(ctx, byID); err != nil {
-			return fmt.Errorf("error resolving status updates by msg ID: %w", err)
-		}
-	}
-	if len(byExternalID) > 0 {
-		if err := b.resolveStatusUpdateByExternalID(ctx, byExternalID); err != nil {
-			return fmt.Errorf("error resolving status updates by external ID: %w", err)
-		}
-	}
-
-	return nil
-}
-
-// tries to resolve msg UUIDs for the given statuses using the database IDs
-func (b *backend) resolveStatusUpdateByID(ctx context.Context, statuses []*models.StatusUpdate) error {
-	// create a mapping of id -> status and set of IDs to look up
-	ids := make([]models.MsgID, len(statuses))
-	statusesByID := make(map[models.MsgID]*models.StatusUpdate, len(statuses))
-	for i, s := range statuses {
-		ids[i] = s.MsgID_
-		statusesByID[s.MsgID_] = s
-	}
-
-	rows, err := b.rt.DB.QueryContext(ctx, `SELECT uuid, id FROM msgs_msg WHERE id = ANY($1)`, pq.Array(ids))
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	var msgUUID models.MsgUUID
-	var msgID models.MsgID
-
-	for rows.Next() {
-		if err := rows.Scan(&msgUUID, &msgID); err != nil {
-			return fmt.Errorf("error scanning rows: %w", err)
-		}
-
-		// find the status with this ID and update its msg UUID
-		if s := statusesByID[msgID]; s != nil {
-			s.MsgUUID_ = msgUUID
-		}
-	}
-
-	return rows.Err()
 }
 
 const sqlResolveStatusByExternalID = `

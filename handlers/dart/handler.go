@@ -129,7 +129,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdate(channel, models.MsgUUID(msgUUID), models.NilMsgID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, models.MsgUUID(msgUUID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 

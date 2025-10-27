@@ -38,8 +38,6 @@ type ExpectedStatus struct {
 	MsgUUID    models.MsgUUID
 	ExternalID string
 	Status     models.MsgStatus
-
-	MsgID models.MsgID // Deprecated: should be using MsgUUID
 }
 
 // ExpectedEvent is an expected channel event
@@ -208,7 +206,6 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 				}
 				actualStatus := actualStatuses[i]
 
-				assert.Equal(t, expectedStatus.MsgID, actualStatus.MsgID(), "msg id mismatch for update %d", i)
 				assert.Equal(t, expectedStatus.MsgUUID, actualStatus.MsgUUID(), "msg uuid mismatch for update %d", i)
 				assert.Equal(t, expectedStatus.ExternalID, actualStatus.ExternalID(), "external id mismatch for update %d", i)
 				assert.Equal(t, expectedStatus.Status, actualStatus.Status(), "status value mismatch for update %d", i)

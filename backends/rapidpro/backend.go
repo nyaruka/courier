@@ -561,13 +561,13 @@ func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdate(channel courier.Channel, uuid models.MsgUUID, id models.MsgID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
-	return newStatusUpdate(channel, uuid, id, "", status, clog)
+func (b *backend) NewStatusUpdate(channel courier.Channel, uuid models.MsgUUID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+	return newStatusUpdate(channel, uuid, "", status, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
 func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
-	return newStatusUpdate(channel, "", models.NilMsgID, externalID, status, clog)
+	return newStatusUpdate(channel, "", externalID, status, clog)
 }
 
 // WriteStatusUpdate writes the passed in MsgStatus to our store
@@ -575,8 +575,8 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 	log := slog.With("msg_uuid", status.MsgUUID(), "msg_external_id", status.ExternalID(), "status", status.Status())
 	su := status.(*models.StatusUpdate)
 
-	if status.MsgUUID() == "" && status.MsgID() == models.NilMsgID && status.ExternalID() == "" {
-		return errors.New("message status with no UUID, id or external id")
+	if status.MsgUUID() == "" && status.ExternalID() == "" {
+		return errors.New("message status with no UUID or external id")
 	}
 
 	// if we have a URN update, do that
