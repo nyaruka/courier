@@ -209,7 +209,7 @@ var testCases = []IncomingTestCase{
 		ExpectedBodyContains: "Accepted",
 		ExpectedMsgText:      Sp("This is message text"),
 		ExpectedURN:          "tel:+385916242493",
-		ExpectedExternalID:   "817790313235066447",
+		ExpectedExternalID:   "0191e180-7d60-7000-aded-7d8b151cbd5b",
 		ExpectedDate:         time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.UTC),
 		ExpectedAttachments:  []string{"image/jpeg:https://examplelink.com/123456"},
 	},
@@ -238,7 +238,7 @@ var testCases = []IncomingTestCase{
 		ExpectedBodyContains: "Accepted",
 		ExpectedMsgText:      Sp("This is an SMS message"),
 		ExpectedURN:          "tel:+385916242494",
-		ExpectedExternalID:   "817790313235066448",
+		ExpectedExternalID:   "0191e180-7d60-7000-aded-7d8b151cbd5b",
 		ExpectedDate:         time.Date(2016, 10, 06, 9, 28, 40, 0, time.UTC),
 		ExpectedAttachments:  []string{},
 	},
@@ -283,7 +283,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusDelivered,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusDelivered}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "0191e180-7d60-7000-aded-7d8b151cbd5b", Status: models.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Status rejected",
@@ -291,7 +291,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusRejected,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "0191e180-7d60-7000-aded-7d8b151cbd5b", Status: models.MsgStatusFailed}},
 	},
 	{
 		Label:                "Status undeliverable",
@@ -299,7 +299,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusUndeliverable,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusFailed}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "0191e180-7d60-7000-aded-7d8b151cbd5b", Status: models.MsgStatusFailed}},
 	},
 	{
 		Label:                "Status pending",
@@ -307,7 +307,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusPending,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusSent}, {ExternalID: "12347", Status: models.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "0191e180-7d60-7000-aded-7d8b151cbd5b", Status: models.MsgStatusSent}, {ExternalID: "0191e180-7d60-7000-aded-7d8b151cbd5b", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Status expired",
@@ -315,7 +315,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusExpired,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: models.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "0191e180-7d60-7000-aded-7d8b151cbd5b", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Status group name unexpected",
@@ -346,9 +346,9 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"content":{"text":"Simple Message"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
-		ExpectedExtIDs: []string{"12345"},
+		ExpectedExtIDs: []string{"0191e180-7d60-7000-aded-7d8b151cbd5b"},
 	},
 	{
 		Label:   "Unicode Send",
@@ -365,7 +365,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"text":"☺","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"content":{"text":"☺"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
 		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("messageId")},
 	},
@@ -376,7 +376,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgAttachments: []string{"image/jpeg:https://example.com/my_image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.infobip.com/mms/2/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "mms-12345"}}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b"}}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
@@ -385,9 +385,9 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"text":"My pic!\nhttps://foo.bar/image.jpg","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+			Body: `{"messages":[{"sender":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"content":{"title":"","messageSegments":[{"type":"TEXT","text":"Check out this image!"},{"type":"IMAGE","url":"https://example.com/my_image.jpg"}]},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
-		ExpectedExtIDs: []string{"mms-12345"},
+		ExpectedExtIDs: []string{"0191e180-7d60-7000-aded-7d8b151cbd5b"},
 	},
 	{
 		Label:   "Error Sending",
@@ -404,7 +404,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"text":"Error Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"content":{"text":"Error Message"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
@@ -423,7 +423,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"content":{"text":"Simple Message"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
 		ExpectedError: courier.ErrResponseContent,
 	},
@@ -445,9 +445,9 @@ var transSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","transliteration":"COLOMBIAN"}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"content":{"text":"Simple Message","transliteration":"COLOMBIAN"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
-		ExpectedExtIDs: []string{"12345"},
+		ExpectedExtIDs: []string{"0191e180-7d60-7000-aded-7d8b151cbd5b"},
 	},
 }
 
@@ -458,7 +458,7 @@ var apiKeySendTestCases = []OutgoingTestCase{
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.infobip.com/sms/3/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "67890"}}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b"}}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
@@ -467,9 +467,9 @@ var apiKeySendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "App test-api-key",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"API Key Message"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"content":{"text":"API Key Message"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
-		ExpectedExtIDs: []string{"67890"},
+		ExpectedExtIDs: []string{"0191e180-7d60-7000-aded-7d8b151cbd5b"},
 	},
 }
 
