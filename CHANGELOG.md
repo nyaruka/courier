@@ -1,3 +1,28 @@
+v10.3.22 (2025-10-27)
+-------------------------
+ * Remove support for status updates using message ID
+ * Fix twiml channel status updates via explicit UUID
+
+v10.3.21 (2025-10-27)
+-------------------------
+ * Update deps
+ * Use msg UUID for status callback for more channel types
+
+v10.3.20 (2025-10-21)
+-------------------------
+ * Allow message status updates with no message id
+ * Fix error messages from channel handlers
+
+v10.3.19 (2025-10-21)
+-------------------------
+ * Re-organize creation of incoming messages
+ * Support status callback with msg UUID for KN and CHP channels
+
+v10.3.18 (2025-10-20)
+-------------------------
+ * Tweak valkey usage during message popping
+ * Fix validation of msg payloads with templates
+
 v10.3.17 (2025-10-20)
 -------------------------
  * Add validation of msg out payloads

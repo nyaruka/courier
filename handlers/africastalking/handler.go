@@ -33,11 +33,11 @@ func newHandler() courier.ChannelHandler {
 }
 
 type moForm struct {
-	ID   string `validate:"required" name:"id"`
-	Text string `validate:"required" name:"text"`
-	From string `validate:"required" name:"from"`
-	To   string `validate:"required" name:"to"`
-	Date string `validate:"required" name:"date"`
+	ID   string `name:"id"   validate:"required"`
+	Text string `name:"text" validate:"required"`
+	From string `name:"from" validate:"required"`
+	To   string `name:"to"   validate:"required"`
+	Date string `name:"date" validate:"required"`
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -83,8 +83,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 type statusForm struct {
-	ID     string `validate:"required" name:"id"`
-	Status string `validate:"required" name:"status"`
+	ID     string `name:"id"     validate:"required"`
+	Status string `name:"status" validate:"required"`
 }
 
 var statusMapping = map[string]models.MsgStatus{

@@ -19,6 +19,7 @@ import (
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 const (
@@ -89,7 +90,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type stopContactForm struct {
-	From string `validate:"required" name:"from"`
+	From string `name:"from" validate:"required"`
 }
 
 func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
@@ -241,7 +242,8 @@ func (h *handler) buildStatusHandler(status string) courier.ChannelHandleFunc {
 }
 
 type statusForm struct {
-	ID int64 `name:"id" validate:"required"`
+	ID   string `name:"id"`
+	UUID string `name:"uuid"`
 }
 
 var statusMappings = map[string]models.MsgStatus{
@@ -258,6 +260,19 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
+	if form.ID == "" && form.UUID == "" {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parameters id or uuid should not be empty"))
+	}
+
+	if !uuids.Is(form.ID) && !uuids.Is(form.UUID) {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parsing failed: id '%s' and uuid '%s' are not valid UUIDs", form.ID, form.UUID))
+	}
+
+	msgUUID := form.UUID
+	if msgUUID == "" {
+		msgUUID = form.ID
+	}
+
 	// get our status
 	msgStatus, found := statusMappings[strings.ToLower(statusString)]
 	if !found {
@@ -265,7 +280,7 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdate(channel, "", models.MsgID(form.ID), msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, models.MsgUUID(msgUUID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -293,7 +308,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	for i, part := range parts {
 		// build our request
 		form := map[string]string{
-			"id":             msg.ID().String(),
+			"id":             string(msg.UUID()), // Deprecated but still used by some external systems
+			"uuid":           string(msg.UUID()),
 			"text":           part,
 			"to":             msg.URN().Path(),
 			"to_no_plus":     strings.TrimPrefix(msg.URN().Path(), "+"),

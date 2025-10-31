@@ -93,7 +93,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			"SMS":         []string{part},
 			"SMSType":     []string{encoding},
 			"MobileNo":    []string{strings.TrimPrefix(msg.URN().Path(), "+")},
-			"MsgId":       []string{msg.ID().String()},
+			"MsgId":       []string{string(msg.UUID())},
 			"MsgHeader":   []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
 			"HandsetPort": []string{"0"},
 			"SMSChannel":  []string{"0"},

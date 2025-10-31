@@ -412,7 +412,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			Receiver:     msg.URN().Path(),
 			Text:         msgText,
 			Type:         msgType,
-			TrackingData: msg.ID().String(),
+			TrackingData: string(msg.UUID()),
 			Media:        attURL,
 			FileName:     filename,
 			Keyboard:     keyboard,

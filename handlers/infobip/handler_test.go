@@ -25,7 +25,7 @@ const (
 var helloMsg = `{
 	"results": [
 		{
-			"messageId": "817790313235066447",
+			"messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
 			"from": "385916242493",
 			"to": "385921004026",
 			"receivedAt": "2016-10-06T09:28:39.220+0000",
@@ -52,7 +52,7 @@ var helloMsg = `{
 var invalidURN = `{
 	"results": [
 		{
-			"messageId": "817790313235066447",
+		 "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
 			"from": "MTN",
 			"to": "385921004026",
 			"text": "QUIZ Correct answer is Paris",
@@ -74,7 +74,7 @@ var invalidURN = `{
 var missingResults = `{
 	"unexpected": [
 	  {
-		  "messageId": "817790313235066447",
+	  	"messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
 		  "from": "385916242493",
 		  "to": "385921004026",
 		  "text": "QUIZ Correct answer is Paris",
@@ -96,7 +96,7 @@ var missingResults = `{
 var missingText = `{
   	"results": [
 		{
-			"messageId": "817790313235066447",
+			"messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
 			"from": "385916242493",
 			"to": "385921004026",
 			"text": "",
@@ -120,7 +120,7 @@ var invalidJSONStatus = "Invalid"
 var statusMissingResultsKey = `{
 	"deliveryReport": [
 		{
-			"messageId": "12345",
+			"messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
 			"status": {
 				"groupName": "DELIVERED"
 			}
@@ -131,7 +131,7 @@ var statusMissingResultsKey = `{
 var validStatusDelivered = `{
 	"results": [
 		{
-			"messageId": "12345",
+			"messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
 			"status": {
 				"groupName": "DELIVERED"
 			}
@@ -142,7 +142,7 @@ var validStatusDelivered = `{
 var validStatusRejected = `{
 	"results": [
 		{
-			"messageId": "12345",
+			"messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
 			"status": {
 				"groupName": "REJECTED"
 			}
@@ -153,7 +153,7 @@ var validStatusRejected = `{
 var validStatusUndeliverable = `{
 	"results": [
 		{
-			"messageId": "12345",
+			"messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
 			"status": {
 				"groupName": "UNDELIVERABLE"
 			}
@@ -164,13 +164,13 @@ var validStatusUndeliverable = `{
 var validStatusPending = `{
 	"results": [
 		{
-			"messageId": "12345",
+			"messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
 			"status": {
 				"groupName": "PENDING"
 			}
 		},
 		{
-			"messageId": "12347",
+			"messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
 			"status": {
 				"groupName": "PENDING"
 			}
@@ -181,7 +181,7 @@ var validStatusPending = `{
 var validStatusExpired = `{
 	"results": [
 		{
-			"messageId": "12345",
+			"messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
 			"status": {
 				"groupName": "EXPIRED"
 			}
@@ -192,7 +192,7 @@ var validStatusExpired = `{
 var invalidStatus = `{
 	"results": [
 		{
-			"messageId": "12345",
+			"messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
 			"status": {
 				"groupName": "UNEXPECTED"
 			}
@@ -219,7 +219,7 @@ var testCases = []IncomingTestCase{
 		Data: `{
 			"results": [
 				{
-					"messageId": "817790313235066448",
+					"messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
 					"from": "385916242494",
 					"to": "385921004027",
 					"text": "This is an SMS message",
@@ -337,7 +337,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.infobip.com/sms/3/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b"}}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
@@ -346,7 +346,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"Simple Message"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
 		ExpectedExtIDs: []string{"12345"},
 	},
@@ -365,7 +365,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"☺"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"text":"☺","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
 		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("messageId")},
 	},
@@ -385,7 +385,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"sender":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"title":"","messageSegments":[{"type":"TEXT","text":"Check out this image!"},{"type":"IMAGE","url":"https://example.com/my_image.jpg"}]},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"text":"My pic!\nhttps://foo.bar/image.jpg","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
 		ExpectedExtIDs: []string{"mms-12345"},
 	},
@@ -404,7 +404,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"Error Message"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"text":"Error Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
@@ -423,7 +423,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"Simple Message"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
 		ExpectedError: courier.ErrResponseContent,
 	},
@@ -436,7 +436,7 @@ var transSendTestCases = []OutgoingTestCase{
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.infobip.com/sms/3/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b"}}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
@@ -445,7 +445,7 @@ var transSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"content":{"text":"Simple Message","transliteration":"COLOMBIAN"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","transliteration":"COLOMBIAN"}]}`,
 		}},
 		ExpectedExtIDs: []string{"12345"},
 	},

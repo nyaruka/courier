@@ -13,73 +13,30 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gomodule/redigo/redis"
 	filetype "github.com/h2non/filetype"
-	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils/queue"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/gocommon/uuids"
-	"github.com/nyaruka/null/v3"
 )
 
 // MsgIn is an incoming message which can be written to the database or marshaled to a spool file
 type MsgIn struct {
-	OrgID_        models.OrgID        `db:"org_id"         json:"org_id"`
-	ID_           models.MsgID        `db:"id"             json:"id"`
-	UUID_         models.MsgUUID      `db:"uuid"           json:"uuid"`
-	Text_         string              `db:"text"           json:"text"`
-	Attachments_  pq.StringArray      `db:"attachments"    json:"attachments"`
-	ExternalID_   null.String         `db:"external_id"    json:"external_id"`
-	ChannelID_    models.ChannelID    `db:"channel_id"     json:"channel_id"`
-	ContactID_    models.ContactID    `db:"contact_id"     json:"contact_id"`
-	ContactURNID_ models.ContactURNID `db:"contact_urn_id" json:"contact_urn_id"`
-	CreatedOn_    time.Time           `db:"created_on"     json:"created_on"`
-	ModifiedOn_   time.Time           `db:"modified_on"    json:"modified_on"`
-	SentOn_       *time.Time          `db:"sent_on"        json:"sent_on"`
-	LogUUIDs      pq.StringArray      `db:"log_uuids"      json:"log_uuids"`
+	*models.MsgIn
 
-	// extra non-model fields needed for queueing to mailroom
+	// needed for queueing to mailroom
 	ChannelUUID_   models.ChannelUUID `json:"channel_uuid"`
 	URN_           urns.URN           `json:"urn"`
 	ContactName_   string             `json:"contact_name"`
 	URNAuthTokens_ map[string]string  `json:"auth_tokens"`
 
-	channel        *models.Channel
-	alreadyWritten bool
+	channel *models.Channel
 }
 
-// creates a new incoming message
-func newIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) *MsgIn {
-	now := time.Now()
-	dbChannel := channel.(*models.Channel)
-
-	return &MsgIn{
-		OrgID_:      dbChannel.OrgID(),
-		UUID_:       models.MsgUUID(uuids.NewV7()),
-		Text_:       text,
-		ExternalID_: null.String(extID),
-		ChannelID_:  dbChannel.ID(),
-		CreatedOn_:  now,
-		ModifiedOn_: now,
-		LogUUIDs:    pq.StringArray{string(clog.UUID)},
-
-		URN_:           urn,
-		channel:        dbChannel,
-		alreadyWritten: false,
-	}
-}
-
-func (m *MsgIn) EventUUID() uuids.UUID    { return uuids.UUID(m.UUID_) }
-func (m *MsgIn) ID() models.MsgID         { return m.ID_ }
-func (m *MsgIn) UUID() models.MsgUUID     { return m.UUID_ }
-func (m *MsgIn) ExternalID() string       { return string(m.ExternalID_) }
-func (m *MsgIn) Text() string             { return m.Text_ }
-func (m *MsgIn) Attachments() []string    { return []string(m.Attachments_) }
-func (m *MsgIn) URN() urns.URN            { return m.URN_ }
 func (m *MsgIn) Channel() courier.Channel { return m.channel }
+func (m *MsgIn) URN() urns.URN            { return m.URN_ }
 
-func (m *MsgIn) ReceivedOn() *time.Time { return m.SentOn_ }
 func (m *MsgIn) WithAttachment(url string) courier.MsgIn {
 	m.Attachments_ = append(m.Attachments_, url)
 	return m
@@ -98,11 +55,6 @@ func (m *MsgIn) hash() string {
 
 // WriteMsg creates a message given the passed in arguments
 func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLog) error {
-	// this msg has already been written (we received it twice), we are a no op
-	if m.alreadyWritten {
-		return nil
-	}
-
 	channel := m.Channel()
 
 	// check for data: attachment URLs which need to be fetched now - fetching of other URLs can be deferred until
@@ -289,13 +241,10 @@ func (b *backend) recordMsgReceived(ctx context.Context, m *MsgIn) {
 }
 
 // clearMsgSeen clears our seen incoming messages for the passed in channel and URN
-func (b *backend) clearMsgSeen(ctx context.Context, m *MsgOut) {
-	rc := b.rt.VK.Get()
-	defer rc.Close()
-
+func (b *backend) clearMsgSeen(ctx context.Context, vc redis.Conn, m *MsgOut) {
 	fingerprint := fmt.Sprintf("%s|%s", m.Channel().UUID(), m.URN().Identity())
 
-	if err := b.receivedMsgs.Del(ctx, rc, fingerprint); err != nil {
+	if err := b.receivedMsgs.Del(ctx, vc, fingerprint); err != nil {
 		slog.Error("error clearing received msgs", "urn", m.URN().Identity(), "error", err)
 	}
 }

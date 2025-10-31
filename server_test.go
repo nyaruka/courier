@@ -146,7 +146,7 @@ func TestOutgoing(t *testing.T) {
 
 	// message should have failed...
 	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
-	assert.Equal(t, msg.ID(), mb.WrittenMsgStatuses()[0].MsgID())
+	assert.Equal(t, msg.UUID(), mb.WrittenMsgStatuses()[0].MsgUUID())
 	assert.Equal(t, models.MsgStatusFailed, mb.WrittenMsgStatuses()[0].Status())
 	assert.Equal(t, 1, len(mb.WrittenChannelLogs()))
 	mb.Reset()
@@ -158,7 +158,7 @@ func TestOutgoing(t *testing.T) {
 	// message should be marked as wired
 	assert.Len(t, mb.WrittenMsgStatuses(), 1)
 	status := mb.WrittenMsgStatuses()[0]
-	assert.Equal(t, msg.ID(), status.MsgID())
+	assert.Equal(t, msg.UUID(), status.MsgUUID())
 	assert.Equal(t, models.MsgStatusWired, status.Status())
 
 	// and we should have a channel log with redacted errors and traces
@@ -181,7 +181,7 @@ func TestOutgoing(t *testing.T) {
 
 	// message should be marked as wired
 	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
-	assert.Equal(t, msg.ID(), mb.WrittenMsgStatuses()[0].MsgID())
+	assert.Equal(t, msg.UUID(), mb.WrittenMsgStatuses()[0].MsgUUID())
 	assert.Equal(t, models.MsgStatusWired, mb.WrittenMsgStatuses()[0].Status())
 	mb.Reset()
 

@@ -91,8 +91,8 @@ var statusMapping = map[int]models.MsgStatus{
 }
 
 type statusForm struct {
-	ID     models.MsgID `validate:"required" name:"id"`
-	Status int          `validate:"required" name:"status"`
+	UUID   models.MsgUUID `name:"uuid"   validate:"uuid,required"`
+	Status int            `name:"status" validate:"required"`
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -115,7 +115,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdate(channel, "", form.ID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, form.UUID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -130,7 +130,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	dlrMask := msg.Channel().StringConfigForKey(configDLRMask, defaultDLRMask)
 
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
-	dlrURL := fmt.Sprintf("https://%s/c/kn/%s/status?id=%s&status=%%d", callbackDomain, msg.Channel().UUID(), msg.ID().String())
+	dlrURL := fmt.Sprintf("https://%s/c/kn/%s/status?uuid=%s&status=%%d", callbackDomain, msg.Channel().UUID(), msg.UUID())
 
 	// build our request
 	form := url.Values{

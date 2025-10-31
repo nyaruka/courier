@@ -28,7 +28,6 @@ type MockMsg struct {
 	quickReplies         []models.QuickReply
 	origin               models.MsgOrigin
 	responseToExternalID string
-	alreadyWritten       bool
 	isResend             bool
 	session              *models.Session
 

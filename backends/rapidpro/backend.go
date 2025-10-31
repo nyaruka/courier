@@ -424,42 +424,32 @@ func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, u
 	text = dbutil.ToValidUTF8(text)
 	extID = dbutil.ToValidUTF8(extID)
 
-	msg := newIncomingMsg(channel, urn, text, extID, clog)
-	msg.WithReceivedOn(time.Now().UTC())
+	ch := channel.(*models.Channel)
 
-	// check if this message could be a duplicate and if so use the original's UUID
-	if prevUUID := b.checkMsgAlreadyReceived(ctx, msg); prevUUID != "" {
-		msg.UUID_ = prevUUID
-		msg.alreadyWritten = true
-	}
+	msg := models.NewIncomingMsg(ch, urn, text, extID, clog.UUID)
 
-	return msg
+	return &MsgIn{MsgIn: msg, ChannelUUID_: channel.UUID(), URN_: urn, channel: ch}
 }
 
 // PopNextOutgoingMsg pops the next message that needs to be sent
 func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error) {
-	tryToPop := func() (queue.WorkerToken, string, error) {
-		rc := b.rt.VK.Get()
-		defer rc.Close()
-		return queue.PopFromQueue(rc, msgQueueName)
-	}
+	vc := b.rt.VK.Get()
+	defer vc.Close()
 
 	markComplete := func(token queue.WorkerToken) {
-		rc := b.rt.VK.Get()
-		defer rc.Close()
-		if err := queue.MarkComplete(rc, msgQueueName, token); err != nil {
+		if err := queue.MarkComplete(vc, msgQueueName, token); err != nil {
 			slog.Error("error marking queue task complete", "error", err)
 		}
 	}
 
 	// pop the next message off our queue
-	token, msgJSON, err := tryToPop()
+	token, msgJSON, err := queue.PopFromQueue(vc, msgQueueName)
 	if err != nil {
 		return nil, err
 	}
 
 	for token == queue.Retry {
-		token, msgJSON, err = tryToPop()
+		token, msgJSON, err = queue.PopFromQueue(vc, msgQueueName)
 		if err != nil {
 			return nil, err
 		}
@@ -470,12 +460,12 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 	}
 
 	msg := &MsgOut{}
-	if err = json.Unmarshal([]byte(msgJSON), msg); err != nil {
+	if err := json.Unmarshal([]byte(msgJSON), msg); err != nil {
 		markComplete(token)
 		return nil, fmt.Errorf("unable to unmarshal message: %s: %w", string(msgJSON), err)
 	}
 
-	if err = utils.Validate(msg); err != nil {
+	if err := utils.Validate(msg); err != nil {
 		markComplete(token)
 		return nil, fmt.Errorf("queued message failed validation: %s: %w", string(msgJSON), err)
 	}
@@ -487,11 +477,12 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 		return nil, err
 	}
 
+	// add some extra info to the popped message
 	msg.channel = channel.(*models.Channel)
 	msg.workerToken = token
 
 	// clear out our seen incoming messages
-	b.clearMsgSeen(ctx, msg)
+	b.clearMsgSeen(ctx, vc, msg)
 
 	return msg, nil
 }
@@ -551,6 +542,12 @@ func (b *backend) OnReceiveComplete(ctx context.Context, ch courier.Channel, eve
 func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier.ChannelLog) error {
 	m := msg.(*MsgIn)
 
+	// check if this message could be a duplicate and if so steal the original's UUID
+	if prevUUID := b.checkMsgAlreadyReceived(ctx, m); prevUUID != "" {
+		m.UUID_ = prevUUID
+		return nil
+	}
+
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
@@ -564,22 +561,22 @@ func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdate(channel courier.Channel, uuid models.MsgUUID, id models.MsgID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
-	return newStatusUpdate(channel, uuid, id, "", status, clog)
+func (b *backend) NewStatusUpdate(channel courier.Channel, uuid models.MsgUUID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+	return newStatusUpdate(channel, uuid, "", status, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
 func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
-	return newStatusUpdate(channel, "", models.NilMsgID, externalID, status, clog)
+	return newStatusUpdate(channel, "", externalID, status, clog)
 }
 
 // WriteStatusUpdate writes the passed in MsgStatus to our store
 func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUpdate) error {
-	log := slog.With("msg_id", status.MsgID(), "msg_external_id", status.ExternalID(), "status", status.Status())
+	log := slog.With("msg_uuid", status.MsgUUID(), "msg_external_id", status.ExternalID(), "status", status.Status())
 	su := status.(*models.StatusUpdate)
 
-	if status.MsgID() == models.NilMsgID && status.ExternalID() == "" {
-		return errors.New("message status with no id or external id")
+	if status.MsgUUID() == "" && status.ExternalID() == "" {
+		return errors.New("message status with no UUID or external id")
 	}
 
 	// if we have a URN update, do that

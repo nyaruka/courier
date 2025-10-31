@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strconv"
 
 	"net/http"
 	"time"
@@ -24,6 +23,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 var (
@@ -115,11 +115,10 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	// if the message id was passed explicitely, use that
 	var status courier.StatusUpdate
 	if receivedStatus.Reference != "" {
-		msgID, err := strconv.ParseInt(receivedStatus.Reference, 10, 64)
-		if err != nil {
-			slog.Error("error converting Messagebird status id to integer", "error", err, "id", receivedStatus.Reference)
+		if !uuids.Is(receivedStatus.Reference) {
+			slog.Error("error converting Messagebird status reference to UUID", "error", err, "uuid", receivedStatus.Reference)
 		} else {
-			status = h.Backend().NewStatusUpdate(channel, "", models.MsgID(msgID), msgStatus, clog)
+			status = h.Backend().NewStatusUpdate(channel, models.MsgUUID(receivedStatus.Reference), msgStatus, clog)
 		}
 	}
 
@@ -214,7 +213,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	payload := &Message{
 		Recipients: []string{user},
 		Originator: msg.Channel().Address(),
-		Reference:  msg.ID().String(),
+		Reference:  string(msg.UUID()),
 	}
 	// build message payload
 

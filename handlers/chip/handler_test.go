@@ -46,10 +46,10 @@ var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Msg status update",
 		URL:                  "/c/chp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
-		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "secret": "sesame", "events": [{"type": "msg_status", "status": {"msg_id": 10, "status": "sent"}}]}`,
+		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "secret": "sesame", "events": [{"type": "msg_status", "status": {"msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834", "status": "sent"}}]}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Events Handled",
-		ExpectedStatuses:     []ExpectedStatus{{MsgID: 10, Status: models.MsgStatusSent}},
+		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a0719-ac96-7eb9-a837-cac215164834", Status: models.MsgStatusSent}},
 	},
 	{
 		Label:                "Missing fields",
@@ -87,7 +87,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","origin":"flow"}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"uuid":"0191e180-7d60-7000-aded-7d8b151cbd5b","text":"Simple message ☺","origin":"flow"}}`,
 			},
 		},
 	},
@@ -106,7 +106,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","quick_replies":["Yes","No"],"origin":"flow"}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"uuid":"0191e180-7d60-7000-aded-7d8b151cbd5b","text":"Simple message ☺","quick_replies":["Yes","No"],"origin":"flow"}}`,
 			},
 		},
 	},
@@ -122,7 +122,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"","attachments":["image/jpeg:https://example.com/image.jpg"],"origin":"flow","user_id":123}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"uuid":"0191e180-7d60-7000-aded-7d8b151cbd5b","text":"","attachments":["image/jpeg:https://example.com/image.jpg"],"origin":"flow","user_id":123}}`,
 			},
 		},
 	},
@@ -137,7 +137,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Error message","origin":"flow"}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"uuid":"0191e180-7d60-7000-aded-7d8b151cbd5b","text":"Error message","origin":"flow"}}`,
 			},
 		},
 		ExpectedError: courier.ErrResponseUnexpected,
@@ -153,7 +153,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Error message","origin":"flow"}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"uuid":"0191e180-7d60-7000-aded-7d8b151cbd5b","text":"Error message","origin":"flow"}}`,
 			},
 		},
 		ExpectedError: courier.ErrConnectionFailed,

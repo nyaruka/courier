@@ -18,7 +18,6 @@ type StatusUpdate struct {
 	ChannelUUID_ ChannelUUID `json:"channel_uuid"             db:"channel_uuid"`
 	ChannelID_   ChannelID   `json:"channel_id"               db:"channel_id"`
 	MsgUUID_     MsgUUID     `json:"msg_uuid,omitempty"       db:"msg_uuid"`
-	MsgID_       MsgID       `json:"msg_id,omitempty"         db:"msg_id"`
 	OldURN_      urns.URN    `json:"old_urn"                  db:"old_urn"`
 	NewURN_      urns.URN    `json:"new_urn"                  db:"new_urn"`
 	ExternalID_  string      `json:"external_id,omitempty"    db:"external_id"`
@@ -30,7 +29,6 @@ type StatusUpdate struct {
 func (s *StatusUpdate) EventUUID() uuids.UUID    { return uuids.UUID(s.MsgUUID_) }
 func (s *StatusUpdate) ChannelUUID() ChannelUUID { return s.ChannelUUID_ }
 func (s *StatusUpdate) MsgUUID() MsgUUID         { return s.MsgUUID_ }
-func (s *StatusUpdate) MsgID() MsgID             { return s.MsgID_ }
 
 func (s *StatusUpdate) SetURNUpdate(old, new urns.URN) error {
 	// check by nil URN

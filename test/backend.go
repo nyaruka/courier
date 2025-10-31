@@ -100,18 +100,18 @@ func (mb *MockBackend) NewIncomingMsg(ctx context.Context, channel courier.Chann
 	uuid := mb.seenExternalIDs[fmt.Sprintf("%s|%s", m.Channel().UUID(), m.ExternalID())]
 	if uuid != "" {
 		m.uuid = uuid
-		m.alreadyWritten = true
 	}
 
 	return m
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, id models.MsgID, contact *models.ContactReference, urn urns.URN, text string, highPriority bool, quickReplies []models.QuickReply,
+func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, uuid models.MsgUUID, id models.MsgID, contact *models.ContactReference, urn urns.URN, text string, highPriority bool, quickReplies []models.QuickReply,
 	responseToExternalID string, origin models.MsgOrigin) courier.MsgOut {
 
 	return &MockMsg{
 		channel:              channel,
+		uuid:                 uuid,
 		id:                   id,
 		contact:              contact,
 		urn:                  urn,
@@ -190,11 +190,6 @@ func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *courier.ChannelLog) error {
 	mm := m.(*MockMsg)
 
-	// this msg has already been written (we received it twice), we are a no op
-	if mm.alreadyWritten {
-		return nil
-	}
-
 	mb.lastMsgID++
 	mm.id = mb.lastMsgID
 
@@ -217,11 +212,10 @@ func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *cour
 }
 
 // NewStatusUpdate creates a new Status object for the given message id
-func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, uuid models.MsgUUID, id models.MsgID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, uuid models.MsgUUID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return &MockStatusUpdate{
 		channel:   channel,
 		msgUUID:   uuid,
-		msgID:     id,
 		status:    status,
 		createdOn: time.Now().In(time.UTC),
 	}

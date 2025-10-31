@@ -272,7 +272,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 					Destinations: []v2MMSOutboundDestination{
 						{
 							To:        strings.TrimLeft(msg.URN().Path(), "+"),
-							MessageID: msg.ID().String(),
+							MessageID: string(msg.UUID()),
 						},
 					},
 					Content: v2MMSOutboundContent{
@@ -332,7 +332,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 					Destinations: []v3OutboundDestination{
 						{
 							To:        strings.TrimLeft(msg.URN().Path(), "+"),
-							MessageID: msg.ID().String(),
+							MessageID: string(msg.UUID()),
 						},
 					},
 					Content: v3OutboundContent{
