@@ -14,6 +14,8 @@ var IgnoreStatuses = map[string]bool{
 	"deleted": true,
 }
 
+var WACThrottlingErrorCodes = []int{4, 80007, 130429, 131048, 131056, 133016}
+
 // see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media#example-2
 type MOMedia struct {
 	Caption  string `json:"caption"`

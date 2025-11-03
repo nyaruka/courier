@@ -63,6 +63,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/telesom"
 	_ "github.com/nyaruka/courier/handlers/test"
 	_ "github.com/nyaruka/courier/handlers/thinq"
+	_ "github.com/nyaruka/courier/handlers/turn"
 	_ "github.com/nyaruka/courier/handlers/twiml"
 	_ "github.com/nyaruka/courier/handlers/viber"
 	_ "github.com/nyaruka/courier/handlers/vk"
