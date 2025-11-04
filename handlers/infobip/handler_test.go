@@ -385,7 +385,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"Accept":        "application/json",
 				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 			},
-			Body: `{"messages":[{"sender":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"content":{"title":"","messageSegments":[{"type":"TEXT","text":"Check out this image!"},{"type":"IMAGE","url":"https://example.com/my_image.jpg"}]},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
+			Body: `{"messages":[{"sender":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"content":{"title":"","messageSegments":[{"type":"TEXT","text":"Check out this image!"},{"type":"LINK","contentUrl":"https://example.com/my_image.jpg","contentType":"image/jpeg"}]},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
 		ExpectedExtIDs: []string{"0191e180-7d60-7000-aded-7d8b151cbd5b"},
 	},
