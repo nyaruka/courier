@@ -240,10 +240,12 @@ type v2MMSOutboundContent struct {
 }
 
 type v2MMSMessageSegment struct {
-	Type      string `json:"type"` // "TEXT" or "IMAGE", "AUDIO", "VIDEO"
-	ContentID string `json:"contentId,omitempty"`
-	Text      string `json:"text,omitempty"`
-	URL       string `json:"url,omitempty"` // For media content
+	Type        string `json:"type"` // "TEXT" or "LINK" for media
+	ContentID   string `json:"contentId,omitempty"`
+	Text        string `json:"text,omitempty"`
+	URL         string `json:"url,omitempty"`         // Deprecated: use ContentURL for media
+	ContentURL  string `json:"contentUrl,omitempty"`  // Required for LINK type
+	ContentType string `json:"contentType,omitempty"` // Required for LINK type (e.g., image/jpeg)
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
@@ -303,8 +305,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			}
 
 			mmsPayload.Messages[0].Content.MessageSegments = append(mmsPayload.Messages[0].Content.MessageSegments, v2MMSMessageSegment{
-				Type: strings.ToUpper(strings.Split(mimeType, "/")[0]), // e.g., IMAGE, VIDEO, AUDIO
-				URL:  url,
+				Type:        "LINK", // Media content must use LINK type per Infobip API
+				ContentURL:  url,
+				ContentType: mimeType,
 			})
 		}
 
