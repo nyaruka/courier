@@ -321,7 +321,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 
 	for _, payload := range requestPayloads {
-		err := h.requestTurn(payload, accessToken, res, sendURL, clog)
+		err := h.makeAPIRequest(payload, accessToken, res, sendURL, clog)
 		if err != nil {
 			return err
 		}
@@ -330,7 +330,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	return nil
 }
 
-func (h *handler) requestTurn(payload whatsapp.SendRequest, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *courier.ChannelLog) error {
+func (h *handler) makeAPIRequest(payload whatsapp.SendRequest, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *courier.ChannelLog) error {
 	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))
