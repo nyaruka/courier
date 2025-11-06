@@ -46,7 +46,6 @@ type Event interface {
 
 // Msg is our interface for common methods for an incoming or outgoing message
 type Msg interface {
-	ID() models.MsgID
 	UUID() models.MsgUUID
 	Text() string
 	Attachments() []string
@@ -58,7 +57,6 @@ type Msg interface {
 type MsgOut interface {
 	Msg
 
-	// outgoing specific
 	Contact() *models.ContactReference
 	QuickReplies() []models.QuickReply
 	Locale() i18n.Locale
@@ -79,7 +77,7 @@ type MsgIn interface {
 	Event
 	Msg
 
-	// incoming specific
+	ID() models.MsgID
 	ExternalID() string
 	ReceivedOn() *time.Time
 	WithAttachment(url string) MsgIn

@@ -187,13 +187,8 @@ type MsgOut struct {
 	UserID_               UserID            `json:"user_id"`
 	Origin_               MsgOrigin         `json:"origin"         validate:"required"`
 	Session_              *Session          `json:"session"`
-
-	// deprecated: need to rework some handlers to not use this for status callbacks
-	ID_ MsgID `json:"id"             validate:"required"`
 }
 
-func (m *MsgOut) EventUUID() uuids.UUID        { return uuids.UUID(m.UUID_) }
-func (m *MsgOut) ID() MsgID                    { return m.ID_ }
 func (m *MsgOut) UUID() MsgUUID                { return m.UUID_ }
 func (m *MsgOut) Contact() *ContactReference   { return m.Contact_ }
 func (m *MsgOut) Text() string                 { return m.Text_ }
