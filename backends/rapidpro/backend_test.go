@@ -397,7 +397,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to WIRED using UUID and provide new external ID
 	clog1 := updateStatusByUUID("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusWired, "ext0")
 
-	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
+	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	ts.Equal(models.MsgStatusWired, m.Status)
 	ts.Equal(null.String("ext0"), m.ExternalID)
 	ts.True(m.ModifiedOn.After(now))
@@ -410,7 +410,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to SENT using id
 	clog2 := updateStatusByUUID("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusSent, "")
 
-	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	ts.Equal(models.MsgStatusSent, m.Status)
 	ts.Equal(null.String("ext0"), m.ExternalID) // no change
 	ts.True(m.ModifiedOn.After(now))
@@ -420,7 +420,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to DELIVERED using id
 	clog3 := updateStatusByUUID("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusDelivered, "")
 
-	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	ts.Equal(m.Status, models.MsgStatusDelivered)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.Equal(sentOn)) // no change
@@ -429,7 +429,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to READ using id
 	clog4 := updateStatusByUUID("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusRead, "")
 
-	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	ts.Equal(m.Status, models.MsgStatusRead)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.Equal(sentOn)) // no change
@@ -438,7 +438,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// no change for incoming messages
 	updateStatusByUUID("0199df10-9519-7fe2-a29c-c890d1713673", models.MsgStatusSent, "")
 
-	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10002)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-9519-7fe2-a29c-c890d1713673")
 	ts.Equal(models.MsgStatusPending, m.Status)
 	ts.Equal(m.ExternalID, null.String("ext2"))
 	ts.Equal([]string(nil), []string(m.LogUUIDs))
@@ -446,7 +446,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to FAILED using external id
 	clog5 := updateStatusByExtID("ext1", models.MsgStatusFailed)
 
-	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(models.MsgStatusFailed, m.Status)
 	ts.True(m.ModifiedOn.After(now))
 	ts.Nil(m.SentOn)
@@ -458,7 +458,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to WIRED using external id
 	clog6 := updateStatusByExtID("ext1", models.MsgStatusWired)
 
-	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(models.MsgStatusWired, m.Status)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.After(now))
@@ -468,7 +468,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update to SENT using external id
 	updateStatusByExtID("ext1", models.MsgStatusSent)
 
-	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(models.MsgStatusSent, m.Status)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.Equal(sentOn)) // no change
@@ -480,10 +480,10 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	updateStatusByExtID("ext1", models.MsgStatusSent)
 	updateStatusByUUID("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusDelivered, "")
 
-	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(models.MsgStatusSent, m.Status)
 	ts.NotNil(m.SentOn)
-	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	ts.Equal(models.MsgStatusDelivered, m.Status)
 	ts.NotNil(m.SentOn)
 
@@ -502,7 +502,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	time.Sleep(time.Second) // give committer time to write this
 
-	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(m.Status, models.MsgStatusErrored)
 	ts.Equal(m.ErrorCount, 1)
 	ts.True(m.ModifiedOn.After(now))
@@ -516,7 +516,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	time.Sleep(time.Second) // give committer time to write this
 
-	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(m.Status, models.MsgStatusErrored)
 	ts.Equal(m.ErrorCount, 2)
 	ts.Equal(null.NullString, m.FailedReason)
@@ -528,7 +528,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	time.Sleep(time.Second) // give committer time to write this
 
 	ts.NoError(err)
-	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10000)
+	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(m.Status, models.MsgStatusFailed)
 	ts.Equal(m.ErrorCount, 3)
 	ts.Equal(null.String("E"), m.FailedReason)
@@ -780,7 +780,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, msg.Channel(), nil)
 
 	// make sure it is the message we just added
-	ts.Equal(models.MsgID(10000), msg.ID())
+	ts.Equal(models.MsgUUID("0199df0f-9f82-7689-b02d-f34105991321"), msg.UUID())
 
 	// and that it has the appropriate text
 	ts.Equal(msg.Text(), "test message")
@@ -799,7 +799,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.Nil(err)
 
 	// checking another message should show unsent
-	msg3 := testsuite.ReadDBMsg(ts.T(), ts.b.rt, 10001)
+	msg3 := testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	sent, err = ts.b.WasMsgSent(ctx, msg3.UUID)
 	ts.NoError(err)
 	ts.False(sent)
@@ -1044,7 +1044,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.Zero(msg2.ID())
 
 	// load it back from the id
-	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, msg1.ID())
+	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, msg1.UUID())
 
 	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
@@ -1175,7 +1175,7 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 	time.Sleep(1 * time.Second)
 
 	// load it back from the id
-	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, msg.ID())
+	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, msg.UUID())
 
 	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
