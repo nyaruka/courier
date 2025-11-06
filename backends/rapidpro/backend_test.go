@@ -780,7 +780,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, msg.Channel(), nil)
 
 	// make sure it is the message we just added
-	ts.Equal(models.MsgID(10000), msg.ID())
+	ts.Equal(models.MsgUUID("0199df0f-9f82-7689-b02d-f34105991321"), msg.UUID())
 
 	// and that it has the appropriate text
 	ts.Equal(msg.Text(), "test message")

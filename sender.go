@@ -288,7 +288,7 @@ func (w *Sender) sendMessage(msg MsgOut) {
 	sendCTX, cancel := context.WithTimeout(context.Background(), time.Second*35)
 	defer cancel()
 
-	log = log.With("msg_id", msg.ID(), "msg_uuid", msg.UUID(), "msg_text", msg.Text(), "msg_urn", msg.URN().Identity())
+	log = log.With("msg_uuid", msg.UUID(), "msg_text", msg.Text(), "msg_urn", msg.URN().Identity())
 	if len(msg.Attachments()) > 0 {
 		log = log.With("attachments", msg.Attachments())
 	}

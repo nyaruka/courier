@@ -197,7 +197,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		payload.Message.Data.Type = "rapidpro"
 		payload.Message.Data.Title = title
 		payload.Message.Data.Message = part
-		payload.Message.Data.MessageID = msg.ID().String()
+		payload.Message.Data.MessageID = string(msg.UUID())
 		if msg.Session() != nil {
 			payload.Message.Data.SessionStatus = msg.Session().Status
 		}
