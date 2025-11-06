@@ -1,3 +1,8 @@
+v10.3.23 (2025-11-06)
+-------------------------
+ * Remove DS handler
+ * Infobip updated for SMS v3
+
 v10.3.22 (2025-10-27)
 -------------------------
  * Remove support for status updates using message ID
