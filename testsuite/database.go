@@ -42,9 +42,9 @@ type DBMsg struct {
 	LogUUIDs     pq.StringArray       `db:"log_uuids"`
 }
 
-func ReadDBMsg(t *testing.T, rt *runtime.Runtime, id models.MsgID) *DBMsg {
+func ReadDBMsg(t *testing.T, rt *runtime.Runtime, uuid models.MsgUUID) *DBMsg {
 	m := &DBMsg{}
-	err := rt.DB.Get(m, `SELECT * FROM msgs_msg WHERE id = $1`, id)
+	err := rt.DB.Get(m, `SELECT * FROM msgs_msg WHERE uuid = $1`, uuid)
 	require.NoError(t, err)
 	return m
 }
