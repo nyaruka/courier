@@ -60,7 +60,9 @@ func (ts *BackendTestSuite) TearDownSuite() {
 	// testsuite.ResetDB(ts.T(), ts.b.rt)
 	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
-	dyntest.Truncate(ts.T(), ts.b.rt.Dynamo, ts.b.rt.Writer.Table())
+	dyntest.Truncate(ts.T(), ts.b.rt.Dynamo, ts.b.rt.Writers.Main.Table())
+	dyntest.Truncate(ts.T(), ts.b.rt.Dynamo, ts.b.rt.Writers.History.Table())
+
 	ts.b.rt.S3.EmptyBucket(ctx, "test-attachments")
 }
 
@@ -912,7 +914,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
 	getClogFromDynamo := func(clog *courier.ChannelLog) (*models.DynamoItem, error) {
-		return dynamo.GetItem[models.DynamoKey, models.DynamoItem](ctx, ts.b.rt.Dynamo, ts.b.rt.Writer.Table(), (&ChannelLog{clog}).DynamoKey())
+		return dynamo.GetItem[models.DynamoKey, models.DynamoItem](ctx, ts.b.rt.Dynamo, ts.b.rt.Writers.Main.Table(), (&ChannelLog{clog}).DynamoKey())
 	}
 
 	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
@@ -1000,7 +1002,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.NoError(err)
 	ts.Nil(item5)
 
-	dyntest.AssertCount(ts.T(), ts.b.rt.Dynamo, ts.b.rt.Writer.Table(), 3)
+	dyntest.AssertCount(ts.T(), ts.b.rt.Dynamo, ts.b.rt.Writers.Main.Table(), 3)
 }
 
 func (ts *BackendTestSuite) TestSaveAttachment() {

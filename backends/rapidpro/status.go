@@ -128,10 +128,11 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 	}
 
 	_, err := models.WriteStatusUpdates(ctx, b.rt, resolved)
-
 	if err != nil {
 		return nil, fmt.Errorf("error writing resolved status updates: %w", err)
 	}
+
+	// TODO convert changes into status tags and queue to Dynamo writer
 
 	return unresolved, nil
 }
