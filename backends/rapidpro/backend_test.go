@@ -393,6 +393,13 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 		return clog
 	}
 
+	getHistoryItems := func() []*models.DynamoItem {
+		ts.b.rt.Writers.History.Flush()
+		items := dyntest.ScanAll[models.DynamoItem](ts.T(), ts.b.rt.Dynamo, "TestHistory")
+		dyntest.Truncate(ts.T(), ts.b.rt.Dynamo, "TestHistory")
+		return items
+	}
+
 	// put test message back into queued state
 	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL WHERE id = $1`, 10001)
 
@@ -407,9 +414,15 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(null.NullString, m.FailedReason)
 	ts.Equal([]string{string(clog1.UUID)}, []string(m.LogUUIDs))
 
+	history := getHistoryItems()
+	ts.Len(history, 1)
+	ts.Equal("con#a984069d-0008-4d8c-a772-b14a8a6acccc", history[0].PK)
+	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#W", history[0].SK)
+	ts.Equal("wired", history[0].Data["status"])
+
 	sentOn := *m.SentOn
 
-	// update to SENT using id
+	// update to SENT using UUID
 	clog2 := updateStatusByUUID("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusSent, "")
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
@@ -419,7 +432,13 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.True(m.SentOn.Equal(sentOn)) // no change
 	ts.Equal([]string{string(clog1.UUID), string(clog2.UUID)}, []string(m.LogUUIDs))
 
-	// update to DELIVERED using id
+	history = getHistoryItems()
+	ts.Len(history, 1)
+	ts.Equal("con#a984069d-0008-4d8c-a772-b14a8a6acccc", history[0].PK)
+	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#S", history[0].SK)
+	ts.Equal("sent", history[0].Data["status"])
+
+	// update to DELIVERED using UUID
 	clog3 := updateStatusByUUID("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusDelivered, "")
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
@@ -428,7 +447,13 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.True(m.SentOn.Equal(sentOn)) // no change
 	ts.Equal([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID)}, []string(m.LogUUIDs))
 
-	// update to READ using id
+	history = getHistoryItems()
+	ts.Len(history, 1)
+	ts.Equal("con#a984069d-0008-4d8c-a772-b14a8a6acccc", history[0].PK)
+	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#D", history[0].SK)
+	ts.Equal("delivered", history[0].Data["status"])
+
+	// update to READ using UUID
 	clog4 := updateStatusByUUID("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusRead, "")
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
@@ -436,6 +461,12 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.Equal(sentOn)) // no change
 	ts.Equal([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID), string(clog4.UUID)}, []string(m.LogUUIDs))
+
+	history = getHistoryItems()
+	ts.Len(history, 1)
+	ts.Equal("con#a984069d-0008-4d8c-a772-b14a8a6acccc", history[0].PK)
+	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#R", history[0].SK)
+	ts.Equal("read", history[0].Data["status"])
 
 	// no change for incoming messages
 	updateStatusByUUID("0199df10-9519-7fe2-a29c-c890d1713673", models.MsgStatusSent, "")
@@ -453,6 +484,12 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.True(m.ModifiedOn.After(now))
 	ts.Nil(m.SentOn)
 	ts.Equal([]string{string(clog5.UUID)}, []string(m.LogUUIDs))
+
+	history = getHistoryItems()
+	ts.Len(history, 1)
+	ts.Equal("con#a984069d-0008-4d8c-a772-b14a8a6acccc", history[0].PK)
+	ts.Equal("evt#0199df0f-9f82-7689-b02d-f34105991321#sts#F", history[0].SK)
+	ts.Equal("failed", history[0].Data["status"])
 
 	now = time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)

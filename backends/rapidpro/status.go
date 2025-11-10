@@ -28,7 +28,6 @@ func newStatusUpdate(channel courier.Channel, uuid models.MsgUUID, externalID st
 		NewURN_:      urns.NilURN,
 		ExternalID_:  externalID,
 		Status_:      status,
-		ModifiedOn_:  time.Now().In(time.UTC),
 		LogUUID:      clog.UUID,
 	}
 }
@@ -127,12 +126,18 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 		}
 	}
 
-	_, err := models.WriteStatusUpdates(ctx, b.rt, resolved)
-	if err != nil {
-		return nil, fmt.Errorf("error writing resolved status updates: %w", err)
-	}
+	if len(resolved) > 0 {
+		changes, err := models.WriteStatusUpdates(ctx, b.rt, resolved)
+		if err != nil {
+			return nil, fmt.Errorf("error writing resolved status updates: %w", err)
+		}
 
-	// TODO convert changes into status tags and queue to Dynamo writer
+		for _, c := range changes {
+			if _, err := b.rt.Writers.History.Queue(c); err != nil {
+				slog.Error("error queueing status change to history writer", "error", err, "msg_uuid", c.MsgUUID, "msg_status", c.MsgStatus)
+			}
+		}
+	}
 
 	return unresolved, nil
 }

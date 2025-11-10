@@ -4,7 +4,9 @@ import (
 	"cmp"
 	"sort"
 	"testing"
+	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/testsuite"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
@@ -43,7 +45,7 @@ func TestWriteStatusUpdates(t *testing.T) {
 	changes, err := models.WriteStatusUpdates(ctx, rt, updates)
 	assert.NoError(t, err)
 	if assert.Len(t, changes, 2) {
-		sort.Slice(changes, func(i, j int) bool { return cmp.Compare(changes[0].MsgUUID, changes[1].MsgUUID) > 0 })
+		sort.Slice(changes, func(i, j int) bool { return cmp.Compare(changes[i].MsgUUID, changes[j].MsgUUID) < 0 })
 
 		assert.Equal(t, models.MsgUUID("0199df0f-9f82-7689-b02d-f34105991321"), changes[0].MsgUUID)
 		assert.Equal(t, models.MsgStatus("S"), changes[0].MsgStatus)
@@ -94,4 +96,52 @@ func TestWriteStatusUpdates(t *testing.T) {
 		assert.Equal(t, models.MsgStatus("F"), changes[0].MsgStatus)
 		assert.Equal(t, "E", string(changes[0].FailedReason))
 	}
+}
+
+func TestStatusChanges(t *testing.T) {
+	change1 := &models.StatusChange{
+		ContactUUID: "a984069d-0008-4d8c-a772-b14a8a6acccc",
+		MsgUUID:     "0199df10-10dc-7e6e-834b-3d959ece93b2",
+		MsgStatus:   models.MsgStatusSent,
+		OrgID:       1,
+		ChangedOn:   time.Date(2025, 11, 10, 16, 14, 30, 123456789, time.UTC),
+	}
+
+	item1, err := change1.MarshalDynamo()
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]types.AttributeValue{
+		"PK":    &types.AttributeValueMemberS{Value: "con#a984069d-0008-4d8c-a772-b14a8a6acccc"},
+		"SK":    &types.AttributeValueMemberS{Value: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#S"},
+		"OrgID": &types.AttributeValueMemberN{Value: "1"},
+		"Data": &types.AttributeValueMemberM{
+			Value: map[string]types.AttributeValue{
+				"status":     &types.AttributeValueMemberS{Value: "sent"},
+				"changed_on": &types.AttributeValueMemberS{Value: "2025-11-10T16:14:30.123456789Z"},
+			},
+		},
+	}, item1)
+
+	change2 := &models.StatusChange{
+		ContactUUID:  "a984069d-0008-4d8c-a772-b14a8a6acccc",
+		MsgUUID:      "0199df10-10dc-7e6e-834b-3d959ece93b2",
+		MsgStatus:    models.MsgStatusFailed,
+		FailedReason: "E",
+		OrgID:        1,
+		ChangedOn:    time.Date(2025, 11, 10, 16, 14, 30, 123456789, time.UTC),
+	}
+
+	item2, err := change2.MarshalDynamo()
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]types.AttributeValue{
+		"PK":    &types.AttributeValueMemberS{Value: "con#a984069d-0008-4d8c-a772-b14a8a6acccc"},
+		"SK":    &types.AttributeValueMemberS{Value: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#F"},
+		"OrgID": &types.AttributeValueMemberN{Value: "1"},
+		"Data": &types.AttributeValueMemberM{
+			Value: map[string]types.AttributeValue{
+				"status":     &types.AttributeValueMemberS{Value: "failed"},
+				"changed_on": &types.AttributeValueMemberS{Value: "2025-11-10T16:14:30.123456789Z"},
+				"reason":     &types.AttributeValueMemberS{Value: "error_limit"},
+			},
+		},
+	}, item2)
 }
