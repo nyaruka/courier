@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/utils/clogs"
+	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
+	"github.com/nyaruka/null/v3"
 )
 
 // StatusUpdate represents a status update on a message
@@ -22,7 +25,6 @@ type StatusUpdate struct {
 	NewURN_      urns.URN    `json:"new_urn"                  db:"new_urn"`
 	ExternalID_  string      `json:"external_id,omitempty"    db:"external_id"`
 	Status_      MsgStatus   `json:"status"                   db:"status"`
-	ModifiedOn_  time.Time   `json:"modified_on"              db:"modified_on"`
 	LogUUID      clogs.UUID  `json:"log_uuid"                 db:"log_uuid"`
 }
 
@@ -72,13 +74,77 @@ UPDATE msgs_msg SET
 	external_id = CASE WHEN s.external_id != '' THEN s.external_id ELSE msgs_msg.external_id END,
 	modified_on = NOW(),
 	log_uuids = array_append(log_uuids, s.log_uuid)
- FROM (VALUES(:msg_uuid::uuid, :channel_id::int, :status, :external_id, :log_uuid::uuid)) AS s(msg_uuid, channel_id, status, external_id, log_uuid) 
-WHERE msgs_msg.uuid = s.msg_uuid AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O'
-`
+    FROM 
+        (VALUES(:msg_uuid::uuid, :channel_id::int, :status, :external_id, :log_uuid::uuid)) AS s(msg_uuid, channel_id, status, external_id, log_uuid),
+        contacts_contact c
+    WHERE msgs_msg.uuid = s.msg_uuid AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O' AND c.id = msgs_msg.contact_id
+RETURNING msgs_msg.uuid AS msg_uuid, msgs_msg.status AS msg_status, msgs_msg.failed_reason, c.uuid AS contact_uuid, msgs_msg.org_id`
 
-func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*StatusUpdate) error {
-	if err := dbutil.BulkQuery(ctx, rt.DB, sqlUpdateMsgByUUID, statuses); err != nil {
-		return fmt.Errorf("error writing statuses: %w", err)
+func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*StatusUpdate) ([]*StatusChange, error) {
+	// rewrite query as a bulk operation
+	query, args, err := dbutil.BulkSQL(rt.DB, sqlUpdateMsgByUUID, statuses)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+
+	rows, err := rt.DB.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("error writing statuses in bulk: %w", err)
+	}
+	defer rows.Close()
+
+	changes := make([]*StatusChange, 0, len(statuses))
+
+	for rows.Next() {
+		sc := &StatusChange{ChangedOn: time.Now()}
+		if err := rows.StructScan(&sc); err != nil {
+			return nil, fmt.Errorf("error scanning status change: %w", err)
+		}
+
+		changes = append(changes, sc)
+	}
+
+	return changes, nil
+}
+
+// StatusChange represents an actual change in status for a message
+type StatusChange struct {
+	ContactUUID  ContactUUID `db:"contact_uuid"`
+	MsgUUID      MsgUUID     `db:"msg_uuid"`
+	MsgStatus    MsgStatus   `db:"msg_status"`
+	FailedReason null.String `db:"failed_reason"`
+	OrgID        OrgID       `db:"org_id"`
+	ChangedOn    time.Time
+}
+
+func (s *StatusChange) DynamoKey() DynamoKey {
+	return DynamoKey{
+		PK: fmt.Sprintf("con#%s", s.ContactUUID),
+		SK: fmt.Sprintf("evt#%s#sts#%s", s.MsgUUID, s.MsgStatus),
+	}
+}
+
+func (s *StatusChange) MarshalDynamo() (map[string]types.AttributeValue, error) {
+	data := map[string]any{
+		"status":     dynamoStatuses[s.MsgStatus],
+		"changed_on": s.ChangedOn,
+	}
+	if s.MsgStatus == MsgStatusFailed && s.FailedReason == "E" {
+		data["reason"] = "error_limit"
+	}
+
+	return dynamo.Marshal(&DynamoItem{
+		DynamoKey: s.DynamoKey(),
+		OrgID:     s.OrgID,
+		Data:      data,
+	})
+}
+
+var dynamoStatuses = map[MsgStatus]string{
+	MsgStatusWired:     "wired",
+	MsgStatusSent:      "sent",
+	MsgStatusDelivered: "delivered",
+	MsgStatusRead:      "read",
+	MsgStatusErrored:   "errored",
+	MsgStatusFailed:    "failed",
 }

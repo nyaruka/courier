@@ -22,8 +22,8 @@ type Runtime struct {
 	S3     *s3x.Service
 	CW     *cwatch.Service
 
-	Writer *dynamo.Writer
-	Spool  *dynamo.Spool
+	Writers *Writers
+	Spool   *dynamo.Spool
 }
 
 func NewRuntime(cfg *Config) (*Runtime, error) {
@@ -59,7 +59,7 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 	}
 
 	rt.Spool = dynamo.NewSpool(rt.Dynamo, rt.Config.SpoolDir+"/dynamo", 30*time.Second)
-	rt.Writer = dynamo.NewWriter(rt.Dynamo, rt.Config.DynamoTablePrefix+"Main", 500*time.Millisecond, 1000, rt.Spool)
+	rt.Writers = newWriters(cfg, rt.Dynamo, rt.Spool)
 
 	return rt, nil
 }
@@ -69,11 +69,11 @@ func (r *Runtime) Start() error {
 		return fmt.Errorf("error starting dynamo spool: %w", err)
 	}
 
-	r.Writer.Start()
+	r.Writers.start()
 	return nil
 }
 
 func (r *Runtime) Stop() {
-	r.Writer.Stop()
+	r.Writers.stop()
 	r.Spool.Stop()
 }
