@@ -1,3 +1,10 @@
+v10.3.24 (2025-11-10)
+-------------------------
+ * Start writing msg event status tags to DynamoDB
+ * Remove msg id on outgoing messages completely
+ * Remove support for server API keys for FCM channels
+ * Add TRN channel type
+
 v10.3.23 (2025-11-06)
 -------------------------
  * Remove DS handler
