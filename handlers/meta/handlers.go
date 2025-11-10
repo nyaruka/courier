@@ -45,8 +45,6 @@ var (
 		369239343222814: "👍", // medium
 		369239383222810: "👍", // big
 	}
-
-	wacThrottlingErrorCodes = []int{4, 80007, 130429, 131048, 131056, 133016}
 )
 
 // keys for extra in channel events
@@ -817,7 +815,7 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 		return courier.ErrResponseUnparseable
 	}
 
-	if slices.Contains(wacThrottlingErrorCodes, respPayload.Error.Code) {
+	if slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Error.Code) {
 		return courier.ErrConnectionThrottled
 	}
 
