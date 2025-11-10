@@ -11,6 +11,7 @@ import (
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
+	"github.com/nyaruka/null/v3"
 )
 
 // StatusUpdate represents a status update on a message
@@ -72,13 +73,43 @@ UPDATE msgs_msg SET
 	external_id = CASE WHEN s.external_id != '' THEN s.external_id ELSE msgs_msg.external_id END,
 	modified_on = NOW(),
 	log_uuids = array_append(log_uuids, s.log_uuid)
- FROM (VALUES(:msg_uuid::uuid, :channel_id::int, :status, :external_id, :log_uuid::uuid)) AS s(msg_uuid, channel_id, status, external_id, log_uuid) 
-WHERE msgs_msg.uuid = s.msg_uuid AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O'
-`
+    FROM 
+        (VALUES(:msg_uuid::uuid, :channel_id::int, :status, :external_id, :log_uuid::uuid)) AS s(msg_uuid, channel_id, status, external_id, log_uuid),
+        contacts_contact c
+    WHERE msgs_msg.uuid = s.msg_uuid AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O' AND c.id = msgs_msg.contact_id
+RETURNING msgs_msg.uuid AS msg_uuid, msgs_msg.status AS msg_status, msgs_msg.failed_reason, c.uuid AS contact_uuid`
 
-func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*StatusUpdate) error {
-	if err := dbutil.BulkQuery(ctx, rt.DB, sqlUpdateMsgByUUID, statuses); err != nil {
-		return fmt.Errorf("error writing statuses: %w", err)
+func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*StatusUpdate) ([]*StatusChange, error) {
+	// rewrite query as a bulk operation
+	query, args, err := dbutil.BulkSQL(rt.DB, sqlUpdateMsgByUUID, statuses)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+
+	rows, err := rt.DB.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("error writing statuses in bulk: %w", err)
+	}
+	defer rows.Close()
+
+	changes := make([]*StatusChange, 0, len(statuses))
+
+	for rows.Next() {
+		sc := &StatusChange{}
+		if err := rows.StructScan(&sc); err != nil {
+			return nil, fmt.Errorf("error scanning status change: %w", err)
+		}
+
+		changes = append(changes, sc)
+	}
+
+	return changes, nil
+}
+
+// StatusChange represents an actual change in status for a message
+type StatusChange struct {
+	MsgUUID      MsgUUID     `db:"msg_uuid"`
+	MsgStatus    MsgStatus   `db:"msg_status"`
+	FailedReason null.String `db:"failed_reason"`
+	ContactUUID  ContactUUID `db:"contact_uuid"`
 }

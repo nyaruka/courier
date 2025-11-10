@@ -127,7 +127,9 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 		}
 	}
 
-	if err := models.WriteStatusUpdates(ctx, b.rt, resolved); err != nil {
+	_, err := models.WriteStatusUpdates(ctx, b.rt, resolved)
+
+	if err != nil {
 		return nil, fmt.Errorf("error writing resolved status updates: %w", err)
 	}
 
