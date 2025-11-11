@@ -1,3 +1,7 @@
+v10.3.25 (2025-11-11)
+-------------------------
+ * Stop writing message status tags.. now we're leaning toward writing these as real events
+
 v10.3.24 (2025-11-10)
 -------------------------
  * Start writing msg event status tags to DynamoDB
