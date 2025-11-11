@@ -127,15 +127,9 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 	}
 
 	if len(resolved) > 0 {
-		changes, err := models.WriteStatusUpdates(ctx, b.rt, resolved)
+		_, err := models.WriteStatusUpdates(ctx, b.rt, resolved)
 		if err != nil {
 			return nil, fmt.Errorf("error writing resolved status updates: %w", err)
-		}
-
-		for _, c := range changes {
-			if _, err := b.rt.Writers.History.Queue(c); err != nil {
-				slog.Error("error queueing status change to history writer", "error", err, "msg_uuid", c.MsgUUID, "msg_status", c.MsgStatus)
-			}
 		}
 	}
 
