@@ -118,10 +118,7 @@ type StatusChange struct {
 }
 
 func (s *StatusChange) DynamoKey() DynamoKey {
-	return DynamoKey{
-		PK: fmt.Sprintf("con#%s", s.ContactUUID),
-		SK: fmt.Sprintf("evt#%s#sts#%s", s.MsgUUID, s.MsgStatus),
-	}
+	return DynamoKey{PK: fmt.Sprintf("con#%s", s.ContactUUID), SK: fmt.Sprintf("evt#%s#sts", s.MsgUUID)}
 }
 
 func (s *StatusChange) MarshalDynamo() (map[string]types.AttributeValue, error) {

@@ -111,7 +111,7 @@ func TestStatusChanges(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]types.AttributeValue{
 		"PK":    &types.AttributeValueMemberS{Value: "con#a984069d-0008-4d8c-a772-b14a8a6acccc"},
-		"SK":    &types.AttributeValueMemberS{Value: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#S"},
+		"SK":    &types.AttributeValueMemberS{Value: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts"},
 		"OrgID": &types.AttributeValueMemberN{Value: "1"},
 		"Data": &types.AttributeValueMemberM{
 			Value: map[string]types.AttributeValue{
@@ -134,7 +134,7 @@ func TestStatusChanges(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]types.AttributeValue{
 		"PK":    &types.AttributeValueMemberS{Value: "con#a984069d-0008-4d8c-a772-b14a8a6acccc"},
-		"SK":    &types.AttributeValueMemberS{Value: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#F"},
+		"SK":    &types.AttributeValueMemberS{Value: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts"},
 		"OrgID": &types.AttributeValueMemberN{Value: "1"},
 		"Data": &types.AttributeValueMemberM{
 			Value: map[string]types.AttributeValue{

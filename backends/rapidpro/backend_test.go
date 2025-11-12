@@ -417,7 +417,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	history := getHistoryItems()
 	ts.Len(history, 1)
 	ts.Equal("con#a984069d-0008-4d8c-a772-b14a8a6acccc", history[0].PK)
-	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#W", history[0].SK)
+	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts", history[0].SK)
 	ts.Equal("wired", history[0].Data["status"])
 
 	sentOn := *m.SentOn
@@ -435,7 +435,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	history = getHistoryItems()
 	ts.Len(history, 1)
 	ts.Equal("con#a984069d-0008-4d8c-a772-b14a8a6acccc", history[0].PK)
-	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#S", history[0].SK)
+	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts", history[0].SK)
 	ts.Equal("sent", history[0].Data["status"])
 
 	// update to DELIVERED using UUID
@@ -450,7 +450,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	history = getHistoryItems()
 	ts.Len(history, 1)
 	ts.Equal("con#a984069d-0008-4d8c-a772-b14a8a6acccc", history[0].PK)
-	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#D", history[0].SK)
+	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts", history[0].SK)
 	ts.Equal("delivered", history[0].Data["status"])
 
 	// update to READ using UUID
@@ -465,7 +465,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	history = getHistoryItems()
 	ts.Len(history, 1)
 	ts.Equal("con#a984069d-0008-4d8c-a772-b14a8a6acccc", history[0].PK)
-	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#R", history[0].SK)
+	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts", history[0].SK)
 	ts.Equal("read", history[0].Data["status"])
 
 	// no change for incoming messages
@@ -488,7 +488,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	history = getHistoryItems()
 	ts.Len(history, 1)
 	ts.Equal("con#a984069d-0008-4d8c-a772-b14a8a6acccc", history[0].PK)
-	ts.Equal("evt#0199df0f-9f82-7689-b02d-f34105991321#sts#F", history[0].SK)
+	ts.Equal("evt#0199df0f-9f82-7689-b02d-f34105991321#sts", history[0].SK)
 	ts.Equal("failed", history[0].Data["status"])
 
 	now = time.Now().In(time.UTC)
