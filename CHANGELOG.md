@@ -1,3 +1,8 @@
+v10.3.26 (2025-11-13)
+-------------------------
+ * Write single status tag for status changes
+ * Remove RR channel type
+
 v10.3.25 (2025-11-11)
 -------------------------
  * Stop writing message status tags.. now we're leaning toward writing these as real events
