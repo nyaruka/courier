@@ -1,3 +1,7 @@
+v10.3.27 (2025-11-13)
+-------------------------
+ * Add support for de-duping history items
+
 v10.3.26 (2025-11-13)
 -------------------------
  * Write single status tag for status changes
