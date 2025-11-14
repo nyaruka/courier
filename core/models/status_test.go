@@ -104,7 +104,7 @@ func TestStatusChanges(t *testing.T) {
 		MsgUUID:     "0199df10-10dc-7e6e-834b-3d959ece93b2",
 		MsgStatus:   models.MsgStatusSent,
 		OrgID:       1,
-		ChangedOn:   time.Date(2025, 11, 10, 16, 14, 30, 123456789, time.UTC),
+		CreatedOn:   time.Date(2025, 11, 10, 16, 14, 30, 123456789, time.UTC),
 	}
 
 	item1, err := change1.MarshalDynamo()
@@ -115,8 +115,8 @@ func TestStatusChanges(t *testing.T) {
 		"OrgID": &types.AttributeValueMemberN{Value: "1"},
 		"Data": &types.AttributeValueMemberM{
 			Value: map[string]types.AttributeValue{
+				"created_on": &types.AttributeValueMemberS{Value: "2025-11-10T16:14:30.123456789Z"},
 				"status":     &types.AttributeValueMemberS{Value: "sent"},
-				"changed_on": &types.AttributeValueMemberS{Value: "2025-11-10T16:14:30.123456789Z"},
 			},
 		},
 	}, item1)
@@ -127,7 +127,7 @@ func TestStatusChanges(t *testing.T) {
 		MsgStatus:    models.MsgStatusFailed,
 		FailedReason: "E",
 		OrgID:        1,
-		ChangedOn:    time.Date(2025, 11, 10, 16, 14, 30, 123456789, time.UTC),
+		CreatedOn:    time.Date(2025, 11, 10, 16, 14, 30, 123456789, time.UTC),
 	}
 
 	item2, err := change2.MarshalDynamo()
@@ -138,8 +138,8 @@ func TestStatusChanges(t *testing.T) {
 		"OrgID": &types.AttributeValueMemberN{Value: "1"},
 		"Data": &types.AttributeValueMemberM{
 			Value: map[string]types.AttributeValue{
+				"created_on": &types.AttributeValueMemberS{Value: "2025-11-10T16:14:30.123456789Z"},
 				"status":     &types.AttributeValueMemberS{Value: "failed"},
-				"changed_on": &types.AttributeValueMemberS{Value: "2025-11-10T16:14:30.123456789Z"},
 				"reason":     &types.AttributeValueMemberS{Value: "error_limit"},
 			},
 		},
