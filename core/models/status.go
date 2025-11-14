@@ -96,7 +96,7 @@ func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*St
 	changes := make([]*StatusChange, 0, len(statuses))
 
 	for rows.Next() {
-		sc := &StatusChange{ChangedOn: time.Now()}
+		sc := &StatusChange{CreatedOn: time.Now()}
 		if err := rows.StructScan(&sc); err != nil {
 			return nil, fmt.Errorf("error scanning status change: %w", err)
 		}
@@ -114,7 +114,7 @@ type StatusChange struct {
 	MsgStatus    MsgStatus   `db:"msg_status"`
 	FailedReason null.String `db:"failed_reason"`
 	OrgID        OrgID       `db:"org_id"`
-	ChangedOn    time.Time
+	CreatedOn    time.Time
 }
 
 func (s *StatusChange) DynamoKey() DynamoKey {
@@ -123,8 +123,8 @@ func (s *StatusChange) DynamoKey() DynamoKey {
 
 func (s *StatusChange) MarshalDynamo() (map[string]types.AttributeValue, error) {
 	data := map[string]any{
+		"created_on": s.CreatedOn,
 		"status":     dynamoStatuses[s.MsgStatus],
-		"changed_on": s.ChangedOn,
 	}
 	if s.MsgStatus == MsgStatusFailed && s.FailedReason == "E" {
 		data["reason"] = "error_limit"
