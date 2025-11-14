@@ -1,3 +1,7 @@
+v10.3.28 (2025-11-14)
+-------------------------
+ * Tweak format of status tags
+
 v10.3.27 (2025-11-13)
 -------------------------
  * Add support for de-duping history items
