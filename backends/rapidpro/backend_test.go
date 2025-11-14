@@ -393,9 +393,9 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 		return clog
 	}
 
-	getHistoryItems := func() []*models.DynamoItem {
+	getHistoryItems := func() []*dynamo.Item {
 		ts.b.rt.Writers.History.Flush()
-		items := dyntest.ScanAll[models.DynamoItem](ts.T(), ts.b.rt.Dynamo, "TestHistory")
+		items := dyntest.ScanAll(ts.T(), ts.b.rt.Dynamo, "TestHistory")
 		dyntest.Truncate(ts.T(), ts.b.rt.Dynamo, "TestHistory")
 		return items
 	}
@@ -950,8 +950,8 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
-	getClogFromDynamo := func(clog *courier.ChannelLog) (*models.DynamoItem, error) {
-		return dynamo.GetItem[models.DynamoKey, models.DynamoItem](ctx, ts.b.rt.Dynamo, ts.b.rt.Writers.Main.Table(), (&ChannelLog{clog}).DynamoKey())
+	getClogFromDynamo := func(clog *courier.ChannelLog) (*dynamo.Item, error) {
+		return dynamo.GetItem(ctx, ts.b.rt.Dynamo, ts.b.rt.Writers.Main.Table(), (&ChannelLog{clog}).DynamoKey())
 	}
 
 	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
@@ -978,7 +978,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	// check that we can read the log back from DynamoDB
 	item1, err := getClogFromDynamo(clog1)
 	ts.NoError(err)
-	ts.Equal(models.OrgID(1), item1.OrgID)
+	ts.Equal(1, item1.OrgID)
 	ts.Equal("token_refresh", item1.Data["type"])
 	ts.NotNil(item1.DataGZ)
 

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/testsuite"
@@ -109,6 +110,9 @@ func TestStatusChanges(t *testing.T) {
 
 	item1, err := change1.MarshalDynamo()
 	assert.NoError(t, err)
+
+	marshaled1, err := attributevalue.MarshalMap(item1)
+	assert.NoError(t, err)
 	assert.Equal(t, map[string]types.AttributeValue{
 		"PK":    &types.AttributeValueMemberS{Value: "con#a984069d-0008-4d8c-a772-b14a8a6acccc"},
 		"SK":    &types.AttributeValueMemberS{Value: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts"},
@@ -119,7 +123,7 @@ func TestStatusChanges(t *testing.T) {
 				"status":     &types.AttributeValueMemberS{Value: "sent"},
 			},
 		},
-	}, item1)
+	}, marshaled1)
 
 	change2 := &models.StatusChange{
 		ContactUUID:  "a984069d-0008-4d8c-a772-b14a8a6acccc",
@@ -132,6 +136,10 @@ func TestStatusChanges(t *testing.T) {
 
 	item2, err := change2.MarshalDynamo()
 	assert.NoError(t, err)
+
+	marshaled2, err := attributevalue.MarshalMap(item2)
+	assert.NoError(t, err)
+
 	assert.Equal(t, map[string]types.AttributeValue{
 		"PK":    &types.AttributeValueMemberS{Value: "con#a984069d-0008-4d8c-a772-b14a8a6acccc"},
 		"SK":    &types.AttributeValueMemberS{Value: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts"},
@@ -143,5 +151,5 @@ func TestStatusChanges(t *testing.T) {
 				"reason":     &types.AttributeValueMemberS{Value: "error_limit"},
 			},
 		},
-	}, item2)
+	}, marshaled2)
 }

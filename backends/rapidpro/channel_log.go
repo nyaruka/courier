@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -22,13 +21,13 @@ type ChannelLog struct {
 	*courier.ChannelLog
 }
 
-func (l *ChannelLog) DynamoKey() models.DynamoKey {
+func (l *ChannelLog) DynamoKey() dynamo.Key {
 	pk := fmt.Sprintf("cha#%s#%s", l.Channel().UUID(), l.UUID[len(l.UUID)-1:]) // 16 buckets for each channel
 	sk := fmt.Sprintf("log#%s", l.UUID)
-	return models.DynamoKey{PK: pk, SK: sk}
+	return dynamo.Key{PK: pk, SK: sk}
 }
 
-func (l *ChannelLog) MarshalDynamo() (map[string]types.AttributeValue, error) {
+func (l *ChannelLog) MarshalDynamo() (*dynamo.Item, error) {
 	type DataGZ struct {
 		HttpLogs []*httpx.Log   `json:"http_logs"`
 		Errors   []*clogs.Error `json:"errors"`
@@ -41,10 +40,10 @@ func (l *ChannelLog) MarshalDynamo() (map[string]types.AttributeValue, error) {
 
 	ttl := l.CreatedOn.Add(dynamoChannelLogTTL)
 
-	return dynamo.Marshal(&models.DynamoItem{
-		DynamoKey: l.DynamoKey(),
-		OrgID:     l.Channel().(*models.Channel).OrgID(),
-		TTL:       &ttl,
+	return &dynamo.Item{
+		Key:   l.DynamoKey(),
+		OrgID: int(l.Channel().(*models.Channel).OrgID()),
+		TTL:   &ttl,
 		Data: map[string]any{
 			"type":       l.Type,
 			"elapsed_ms": int(l.Elapsed / time.Millisecond),
@@ -52,7 +51,7 @@ func (l *ChannelLog) MarshalDynamo() (map[string]types.AttributeValue, error) {
 			"is_error":   l.IsError(),
 		},
 		DataGZ: dataGZ,
-	})
+	}, nil
 }
 
 // queues the passed in channel log to a writer
@@ -68,7 +67,7 @@ func queueChannelLog(b *backend, clog *courier.ChannelLog) {
 
 	capacity, err := b.rt.Writers.Main.Queue(&ChannelLog{clog})
 	if err != nil {
-		log.Error("error writing channel log to dynamo writer", "error", err)
+		log.Error("error queuing channel log to writer", "error", err)
 		return
 	}
 	if capacity <= 0 {
