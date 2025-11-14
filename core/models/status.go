@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/nyaruka/courier/runtime"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/aws/dynamo"
@@ -117,11 +116,11 @@ type StatusChange struct {
 	CreatedOn    time.Time
 }
 
-func (s *StatusChange) DynamoKey() DynamoKey {
-	return DynamoKey{PK: fmt.Sprintf("con#%s", s.ContactUUID), SK: fmt.Sprintf("evt#%s#sts", s.MsgUUID)}
+func (s *StatusChange) DynamoKey() dynamo.Key {
+	return dynamo.Key{PK: fmt.Sprintf("con#%s", s.ContactUUID), SK: fmt.Sprintf("evt#%s#sts", s.MsgUUID)}
 }
 
-func (s *StatusChange) MarshalDynamo() (map[string]types.AttributeValue, error) {
+func (s *StatusChange) MarshalDynamo() (*dynamo.Item, error) {
 	data := map[string]any{
 		"created_on": s.CreatedOn,
 		"status":     dynamoStatuses[s.MsgStatus],
@@ -130,11 +129,7 @@ func (s *StatusChange) MarshalDynamo() (map[string]types.AttributeValue, error) 
 		data["reason"] = "error_limit"
 	}
 
-	return dynamo.Marshal(&DynamoItem{
-		DynamoKey: s.DynamoKey(),
-		OrgID:     s.OrgID,
-		Data:      data,
-	})
+	return &dynamo.Item{Key: s.DynamoKey(), OrgID: int(s.OrgID), Data: data}, nil
 }
 
 var dynamoStatuses = map[MsgStatus]string{
