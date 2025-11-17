@@ -1,3 +1,7 @@
+v10.3.29 (2025-11-17)
+-------------------------
+ * Update to latest gocommon that simplifies DynamoDB usage
+
 v10.3.28 (2025-11-14)
 -------------------------
  * Tweak format of status tags
