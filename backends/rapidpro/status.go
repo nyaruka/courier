@@ -134,7 +134,7 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 
 		for _, c := range changes {
 			if _, err := b.rt.Writers.History.Queue(c); err != nil {
-				slog.Error("error queueing status change to history writer", "error", err, "msg_uuid", c.MsgUUID, "msg_status", c.MsgStatus)
+				slog.Error("error queuing status change to writer", "error", err, "msg_uuid", c.MsgUUID, "msg_status", c.MsgStatus)
 			}
 		}
 	}
