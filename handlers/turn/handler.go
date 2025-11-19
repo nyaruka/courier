@@ -330,7 +330,13 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	return nil
 }
 
-type mtErrorPayload struct {
+// Error response payload from Turn.io WhatsApp API obreserved:
+// {"meta":{"version":"4.923.9","backend":{"name":"WhatsApp","version":"latest"},"api_status":"stable"},"errors":[{"code":-1,"title":"Bad Request","details":"Could not be parsed, invalid key"}]}
+// and docs mentions using the Meta Cloud API Error Codes
+// https://whatsapp.turn.io/docs/api/errors
+// https://developers.facebook.com/documentation/business-messaging/whatsapp/support/error-codes
+// the struct below captures both errors array and error object
+type mtResponsePayload struct {
 	Errors []struct {
 		Code    int    `json:"code"`
 		Title   string `json:"title"`
@@ -362,7 +368,7 @@ func (h *handler) makeAPIRequest(payload whatsapp.SendRequest, accessToken strin
 		return courier.ErrConnectionFailed
 	}
 
-	respPayload := &mtErrorPayload{}
+	respPayload := &mtResponsePayload{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
 		return courier.ErrResponseUnparseable
