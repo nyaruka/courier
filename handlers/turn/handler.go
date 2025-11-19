@@ -376,8 +376,9 @@ func (h *handler) makeAPIRequest(payload whatsapp.SendRequest, accessToken strin
 
 		if respPayload.Error.Code != 0 {
 			return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
+		} else if respPayload.Error.Message != "" {
+			return courier.ErrFailedWithReason("0", respPayload.Error.Message)
 		}
-
 	}
 
 	if len(respPayload.Errors) > 0 {
