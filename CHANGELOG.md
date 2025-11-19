@@ -1,3 +1,8 @@
+v10.3.30 (2025-11-19)
+-------------------------
+ * Do not write external ID for TRN
+ * Adjust FCM channel with old integration to not log issue with config
+
 v10.3.29 (2025-11-17)
 -------------------------
  * Update to latest gocommon that simplifies DynamoDB usage
