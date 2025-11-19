@@ -508,6 +508,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Simple Message","preview_url":false}}`,
 			},
 		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:   "Unicode Send",
@@ -524,6 +525,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"☺","preview_url":false}}`,
 			},
 		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:          "Audio Send",
@@ -540,6 +542,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`},
 			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"audio caption","preview_url":false}}`},
 		},
+		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
 	},
 	{
 		Label:          "Document Send",
@@ -557,6 +560,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`,
 			},
 		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:          "Document Send, document link",
@@ -574,6 +578,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`,
 			},
 		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:          "Image Send",
@@ -591,6 +596,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg","caption":"image caption"}}`,
 			},
 		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:          "Video Send",
@@ -608,6 +614,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"video","video":{"link":"https://foo.bar/video.mp4","caption":"video caption"}}`,
 			},
 		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:     "Template Send",
@@ -633,6 +640,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:          "Template Send with attachment",
@@ -661,6 +669,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:     "Template Send, no variables",
@@ -679,6 +688,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"}}}`,
 		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:     "Template Send, buttons params",
@@ -710,6 +720,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]},{"type":"body","parameters":[{"type":"text","text":"Ryan Lewis"},{"type":"text","text":"niño"}]},{"type":"button","sub_type":"quick_reply","index":"0","parameters":[{"type":"payload","payload":"Sip"}]},{"type":"button","sub_type":"url","index":"1","parameters":[{"type":"text","text":"id00231"}]}]}}`,
 		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive Button Message Send",
@@ -724,6 +735,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
 		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive List QRs Extra Send",
@@ -738,6 +750,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List QRs Extra Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"OPTION1","description":"This option is the most popular"}]}]}}}`,
 		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive List QRs Extra Empty Send",
@@ -752,6 +765,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive List QRs Extra Empty"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"OPTION1"}}]}}}`,
 		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive List Message Send",
@@ -766,6 +780,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3","description":"Third description"},{"id":"3","title":"ROW4"}]}]}}}`,
 		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:   "Interactive List Message Send, more than 10 QRs",
@@ -784,6 +799,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"},{"id":"4","title":"ROW5"},{"id":"5","title":"ROW6"},{"id":"6","title":"ROW7"},{"id":"7","title":"ROW8"},{"id":"8","title":"ROW9"},{"id":"9","title":"ROW10"}]}]}}}`,
 		}},
+		ExpectedExtIDs:    []string{"157b5e14568e8"},
 		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "too many quick replies WhatsApp supports only up to 10 quick replies"}},
 	},
 	{
@@ -800,6 +816,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Hola"},"action":{"button":"Menú","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
 		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive Button Message Send with image attachment",
@@ -818,6 +835,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","header":{"type":"image","image":{"link":"https://foo.bar/image.jpg"}},"body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
 			},
 		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive Button Message Send with video attachment",
@@ -836,6 +854,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","header":{"type":"video","video":{"link":"https://foo.bar/video.mp4"}},"body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
 			},
 		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive Button Message Send with document attachment",
@@ -854,6 +873,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","header":{"type":"document","document":{"link":"https://foo.bar/document.pdf","filename":"document.pdf"}},"body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
 			},
 		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive Button Message Send with audio attachment",
@@ -871,6 +891,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`},
 			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"ROW1"}},{"type":"reply","reply":{"id":"1","title":"ROW2"}},{"type":"reply","reply":{"id":"2","title":"ROW3"}}]}}}`},
 		},
+		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive List Message Send with attachment",
@@ -888,6 +909,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`},
 			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`},
 		},
+		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
 	},
 	{
 		Label:   "Link Sending",
@@ -904,6 +926,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Link Sending https://link.com","preview_url":true}}`,
 			},
 		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:   "Error Bad JSON",
