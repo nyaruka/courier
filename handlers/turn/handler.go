@@ -360,9 +360,5 @@ func (h *handler) makeAPIRequest(payload whatsapp.SendRequest, accessToken strin
 		return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}
 
-	externalID := respPayload.Messages[0].ID
-	if externalID != "" {
-		res.AddExternalID(externalID)
-	}
 	return nil
 }
