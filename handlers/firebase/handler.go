@@ -174,6 +174,10 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	credentialsJSONRaw := msg.Channel().ConfigForKey(configCredentialsFile, nil)
 	credentialsJSON, _ := credentialsJSONRaw.(map[string]any)
 	if credentialsJSON == nil {
+		oldConfigKey := msg.Channel().StringConfigForKey(configKey, "")
+		if oldConfigKey != "" {
+			return courier.ErrFailedWithReason("", "Error with config missing currently supported FCM authentication JSON")
+		}
 		return courier.ErrChannelConfig
 	}
 	projectID := credentialsJSON["project_id"].(string)
