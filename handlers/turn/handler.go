@@ -330,6 +330,27 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	return nil
 }
 
+// Error response payload from Turn.io WhatsApp API obreserved:
+// {"meta":{"version":"4.923.9","backend":{"name":"WhatsApp","version":"latest"},"api_status":"stable"},"errors":[{"code":-1,"title":"Bad Request","details":"Could not be parsed, invalid key"}]}
+// and docs mentions using the Meta Cloud API Error Codes
+// https://whatsapp.turn.io/docs/api/errors
+// https://developers.facebook.com/documentation/business-messaging/whatsapp/support/error-codes
+// the struct below captures both errors array and error object
+type mtResponsePayload struct {
+	Errors []struct {
+		Code    int    `json:"code"`
+		Title   string `json:"title"`
+		Details string `json:"details"`
+	} `json:"errors"`
+	Messages []*struct {
+		ID string `json:"id"`
+	} `json:"messages"`
+	Error struct {
+		Message string `json:"message"`
+		Code    int    `json:"code"`
+	} `json:"error"`
+}
+
 func (h *handler) makeAPIRequest(payload whatsapp.SendRequest, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *courier.ChannelLog) error {
 	jsonBody := jsonx.MustMarshal(payload)
 
@@ -346,18 +367,38 @@ func (h *handler) makeAPIRequest(payload whatsapp.SendRequest, accessToken strin
 	if err != nil || resp.StatusCode/100 == 5 {
 		return courier.ErrConnectionFailed
 	}
-	respPayload := &whatsapp.SendResponse{}
+
+	respPayload := &mtResponsePayload{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
 		return courier.ErrResponseUnparseable
 	}
 
-	if slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Error.Code) {
-		return courier.ErrConnectionThrottled
+	if respPayload.Error.Code != 0 || respPayload.Error.Message != "" {
+
+		if slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Error.Code) {
+			return courier.ErrConnectionThrottled
+		}
+
+		if respPayload.Error.Code != 0 {
+			return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
+		} else if respPayload.Error.Message != "" {
+			return courier.ErrFailedWithReason("0", respPayload.Error.Message)
+		}
 	}
 
-	if respPayload.Error.Code != 0 {
-		return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
+	if len(respPayload.Errors) > 0 {
+		if slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Errors[0].Code) {
+			return courier.ErrConnectionThrottled
+		}
+		return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Errors[0].Code), respPayload.Errors[0].Details)
+	}
+
+	if len(respPayload.Messages) > 0 {
+		externalID := respPayload.Messages[0].ID
+		if externalID != "" {
+			res.AddExternalID(externalID)
+		}
 	}
 
 	return nil
