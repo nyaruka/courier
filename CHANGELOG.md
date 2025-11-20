@@ -1,3 +1,7 @@
+v10.3.31 (2025-11-20)
+-------------------------
+ * Add back support to save TRN msg external ID
+
 v10.3.30 (2025-11-19)
 -------------------------
  * Do not write external ID for TRN
