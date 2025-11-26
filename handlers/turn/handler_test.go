@@ -647,7 +647,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	},
 	{
 		Label:          "Image Send",
-		MsgText:        "document caption",
+		MsgText:        "image caption",
 		MsgURN:         "whatsapp:250788123123",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
@@ -664,7 +664,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{},
 			{},
-			{Body: `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg","caption":"document caption"}}`},
+			{Body: `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg","caption":"image caption"}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},

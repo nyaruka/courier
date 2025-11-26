@@ -713,7 +713,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 			} else {
 				for _, part := range parts {
 
-					//check if you have a link
+					// check if you have a link
 					var payload mtTextPayload
 					if strings.Contains(part, "https://") || strings.Contains(part, "http://") {
 						payload = mtTextPayload{
