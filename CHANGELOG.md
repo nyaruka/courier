@@ -1,3 +1,8 @@
+v10.3.32 (2025-11-26)
+-------------------------
+ * Fix variable shadowing
+ * Adjust TRN sending handler
+
 v10.3.31 (2025-11-20)
 -------------------------
  * Add back support to save TRN msg external ID
