@@ -9,8 +9,8 @@ import (
 	"github.com/nyaruka/courier/core/models"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
-	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
@@ -492,7 +492,24 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	assert.Equal(t, "Bearer a123", req.Header.Get("Authorization"))
 }
 
-var whatsappOutgoingTests = []OutgoingTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
+	{
+		Label:   "Link Sending",
+		MsgText: "Link Sending https://link.com",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/v1/messages",
+				Body: `{"to":"250788123123","type":"text","preview_url":true,"text":{"body":"Link Sending https://link.com"}}`,
+			},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
 	{
 		Label:   "Plain Send",
 		MsgText: "Simple Message",
@@ -505,7 +522,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/v1/messages",
-				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Simple Message","preview_url":false}}`,
+				Body: `{"to":"250788123123","type":"text","text":{"body":"Simple Message"}}`,
 			},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
@@ -519,28 +536,74 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		ExpectedRequests: []ExpectedRequest{
-			{
-				Path: "/v1/messages",
-				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"☺","preview_url":false}}`,
-			},
-		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"text","text":{"body":"☺"}}`,
+		}},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:          "Audio Send",
-		MsgText:        "audio caption",
+		Label:   "Error Field",
+		MsgText: "Error",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "errors": [{"title":"Error Sending", "code": 232}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
+		}},
+		ExpectedError: courier.ErrFailedWithReason("232", "Error Sending"),
+	},
+	{
+		Label:          "Audio attachment but upload fails",
+		MsgText:        "audio has no caption, sent as text",
 		MsgURN:         "whatsapp:250788123123",
 		MsgAttachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
 		MockResponses: map[string][]*httpx.MockResponse{
+			"https://foo.bar/audio.mp3": {
+				httpx.NewMockResponse(200, nil, []byte(`data`)),
+			},
+			"*/v1/media": {
+				httpx.NewMockResponse(200, nil, []byte(``)),
+			},
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`},
-			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"audio caption","preview_url":false}}`},
+			{},
+			{},
+			{Body: `{"to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`},
+			{Body: `{"to":"250788123123","type":"text","text":{"body":"audio has no caption, sent as text"}}`},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
+	},
+	{
+		Label:          "Audio Send with link in text",
+		MsgText:        "audio has no caption, sent as text with a https://example.com",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://foo.bar/audio.mp3": {
+				httpx.NewMockResponse(200, nil, []byte(`data`)),
+			},
+			"*/v1/media": {
+				httpx.NewMockResponse(200, nil, []byte(``)),
+			},
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{},
+			{},
+			{Body: `{"to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`},
+			{Body: `{"to":"250788123123","type":"text","preview_url":true,"text":{"body":"audio has no caption, sent as text with a https://example.com"}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
 	},
@@ -550,15 +613,20 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MsgURN:         "whatsapp:250788123123",
 		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
+			"https://foo.bar/document.pdf": {
+				httpx.NewMockResponse(200, nil, []byte(`data`)),
+			},
+			"*/v1/media": {
+				httpx.NewMockResponse(400, nil, []byte(`{}`)),
+			},
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{
-				Path: "/v1/messages",
-				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`,
-			},
+			{},
+			{},
+			{Body: `{"to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -573,28 +641,30 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{
-				Path: "/v1/messages",
-				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`,
-			},
+			{Body: `{"to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:          "Image Send",
-		MsgText:        "image caption",
+		MsgText:        "document caption",
 		MsgURN:         "whatsapp:250788123123",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
+			"https://foo.bar/image.jpg": {
+				httpx.NewMockResponse(200, nil, []byte(`data`)),
+			},
+			"*/v1/media": {
+				httpx.NewMockResponse(400, nil, []byte(`{}`)),
+			},
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{
-				Path: "/v1/messages",
-				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg","caption":"image caption"}}`,
-			},
+			{},
+			{},
+			{Body: `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg","caption":"document caption"}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -604,15 +674,20 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MsgURN:         "whatsapp:250788123123",
 		MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
 		MockResponses: map[string][]*httpx.MockResponse{
+			"https://foo.bar/video.mp4": {
+				httpx.NewMockResponse(200, nil, []byte(`data`)),
+			},
+			"*/v1/media": {
+				httpx.NewMockResponse(400, nil, []byte(`{}`)),
+			},
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{
-				Path: "/v1/messages",
-				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"video","video":{"link":"https://foo.bar/video.mp4","caption":"video caption"}}`,
-			},
+			{},
+			{},
+			{Body: `{"to":"250788123123","type":"video","video":{"link":"https://foo.bar/video.mp4","caption":"video caption"}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -624,7 +699,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MsgTemplating: `{
 			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"}, 
 			"components": [
-				{"type": "body", "name": "body", "variables": {"1": 0, "2": 1}}
+				{"type": "body/text", "name": "body", "variables": {"1": 0, "2": 1}}
 			],
 			"variables": [
 				{"type": "text", "value": "Chef"},
@@ -634,45 +709,18 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
+
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:          "Template Send with attachment",
-		MsgText:        "templated message",
-		MsgURN:         "whatsapp:250788123123",
-		MsgLocale:      "eng",
-		MsgAttachments: []string{"image/jpeg:https://foo.bar/example.jpg"},
-		MsgTemplating: `{
-			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"}, 
-			"components": [
-				{"name": "header","type": "header/media", "variables": {"1": 0}},
-				{"type": "body", "name": "body", "variables": {"1": 1, "2": 2}}
-			],
-			"variables": [
-				{"type":"image", "value":"image/jpeg:https://foo.bar/image.jpg"},
-				{"type": "text", "value": "Chef"},
-				{"type": "text" , "value": "tomorrow"}
-			],
-			"language": "en_US"
-		}`,
-		MockResponses: map[string][]*httpx.MockResponse{
-			"*/v1/messages": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
-		}},
-		ExpectedExtIDs: []string{"157b5e14568e8"},
-	},
-	{
-		Label:     "Template Send, no variables",
+		Label:     "Template Send no variables",
 		MsgText:   "templated message",
 		MsgURN:    "whatsapp:250788123123",
 		MsgLocale: "eng",
@@ -686,39 +734,90 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"}}}`,
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"}}}`,
 		}},
+
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:     "Template Send, buttons params",
+		Label:     "Template no language",
 		MsgText:   "templated message",
 		MsgURN:    "whatsapp:250788123123",
-		MsgLocale: "eng",
+		MsgLocale: "eng-US",
 		MsgTemplating: `{
-			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"}, 
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
 			"components": [
-				{"name": "header", "type": "header/media", "variables": {"1": 0}},
-				{"name": "body", "type": "body/text", "variables": {"1": 1, "2": 2}},
-				{"name": "button.0", "type": "button/quick_reply", "variables": {"1": 3}},
-				{"name": "button.1", "type": "button/url", "variables": {"1": 4}}
+				{"type": "body/text", "name": "body", "variables": {"1": 0, "2": 1}}
 			],
 			"variables": [
-				{"type": "image", "value": "image/jpeg:https://foo.bar/image.jpg"},
-				{"type": "text", "value": "Ryan Lewis"},
-				{"type": "text", "value": "niño"},
-				{"type": "text", "value": "Sip"},
-				{"type": "text", "value": "id00231"}
-			],
-			"language": "en_US"
+				{"type": "text", "value": "Chef"},
+				{"type": "text", "value": "tomorrow"}
+			]
 		}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]},{"type":"body","parameters":[{"type":"text","text":"Ryan Lewis"},{"type":"text","text":"niño"}]},{"type":"button","sub_type":"quick_reply","index":"0","parameters":[{"type":"payload","payload":"Sip"}]},{"type":"button","sub_type":"url","index":"1","parameters":[{"type":"text","text":"id00231"}]}]}}`,
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		}},
+
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:     "Template Namespace",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788123123",
+		MsgLocale: "eng-US",
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
+			"namespace": "wa_template_namespace", 
+			"components": [
+				{"type": "body/text", "name": "body", "variables": {"1": 0, "2": 1}}
+			],
+			"variables": [
+				{"type": "text", "value": "Chef"},
+				{"type": "text", "value": "tomorrow"}
+			]
+		}`,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"wa_template_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		}},
+
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:     "Template Invalid Language",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788123123",
+		MsgLocale: "bnt",
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
+			"components": [
+				{"type": "body/text", "name": "body", "variables": {"1": 0, "2": 1}}
+			],
+			"variables": [
+				{"type": "text", "value": "Chef"},
+				{"type": "text", "value": "tomorrow"}
+			]
+		}`,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -733,7 +832,8 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
 		}},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -748,7 +848,8 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List QRs Extra Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"OPTION1","description":"This option is the most popular"}]}]}}}`,
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List QRs Extra Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"OPTION1","description":"This option is the most popular"}]}]}}}`,
 		}},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -763,7 +864,8 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive List QRs Extra Empty"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"OPTION1"}}]}}}`,
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive List QRs Extra Empty"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"OPTION1"}}]}}}`,
 		}},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -778,48 +880,14 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3","description":"Third description"},{"id":"3","title":"ROW4"}]}]}}}`,
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3","description":"Third description"},{"id":"3","title":"ROW4"}]}]}}}`,
 		}},
+
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:   "Interactive List Message Send, more than 10 QRs",
-		MsgText: "Interactive List Msg",
-		MsgURN:  "whatsapp:250788123123",
-		MsgQuickReplies: []models.QuickReply{
-			{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}, {Text: "ROW4"},
-			{Text: "ROW5"}, {Text: "ROW6"}, {Text: "ROW7"}, {Text: "ROW8"},
-			{Text: "ROW9"}, {Text: "ROW10"}, {Text: "ROW11"}, {Text: "ROW12"},
-		},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"*/v1/messages": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"},{"id":"4","title":"ROW5"},{"id":"5","title":"ROW6"},{"id":"6","title":"ROW7"},{"id":"7","title":"ROW8"},{"id":"8","title":"ROW9"},{"id":"9","title":"ROW10"}]}]}}}`,
-		}},
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
-		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "too many quick replies WhatsApp supports only up to 10 quick replies"}},
-	},
-	{
-		Label:           "Interactive List Message Send In Spanish",
-		MsgText:         "Hola",
-		MsgURN:          "whatsapp:250788123123",
-		MsgLocale:       "spa",
-		MsgQuickReplies: []models.QuickReply{{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}, {Text: "ROW4"}},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"*/v1/messages": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Hola"},"action":{"button":"Menú","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
-		}},
-		ExpectedExtIDs: []string{"157b5e14568e8"},
-	},
-	{
-		Label:           "Interactive Button Message Send with image attachment",
+		Label:           "Interactive Button Message Send with attachment",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
 		MsgQuickReplies: []models.QuickReply{{Text: "BUTTON1"}},
@@ -827,69 +895,12 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{
-			{
-				Path: "/v1/messages",
-				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","header":{"type":"image","image":{"link":"https://foo.bar/image.jpg"}},"body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
-			},
-		},
-		ExpectedExtIDs: []string{"157b5e14568e8"},
-	},
-	{
-		Label:           "Interactive Button Message Send with video attachment",
-		MsgText:         "Interactive Button Msg",
-		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []models.QuickReply{{Text: "BUTTON1"}},
-		MsgAttachments:  []string{"video/mp4:https://foo.bar/video.mp4"},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{
-				Path: "/v1/messages",
-				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","header":{"type":"video","video":{"link":"https://foo.bar/video.mp4"}},"body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
-			},
-		},
-		ExpectedExtIDs: []string{"157b5e14568e8"},
-	},
-	{
-		Label:           "Interactive Button Message Send with document attachment",
-		MsgText:         "Interactive Button Msg",
-		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []models.QuickReply{{Text: "BUTTON1"}},
-		MsgAttachments:  []string{"document/pdf:https://foo.bar/document.pdf"},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"*/v1/messages": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{
-			{
-				Path: "/v1/messages",
-				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","header":{"type":"document","document":{"link":"https://foo.bar/document.pdf","filename":"document.pdf"}},"body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
-			},
-		},
-		ExpectedExtIDs: []string{"157b5e14568e8"},
-	},
-	{
-		Label:           "Interactive Button Message Send with audio attachment",
-		MsgText:         "Interactive Button Msg",
-		MsgURN:          "whatsapp:250788123123",
-		MsgQuickReplies: []models.QuickReply{{Text: "ROW1"}, {Text: "ROW2"}, {Text: "ROW3"}},
-		MsgAttachments:  []string{"audio/mp3:https://foo.bar/audio.mp3"},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"*/v1/messages": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`},
-			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"ROW1"}},{"type":"reply","reply":{"id":"1","title":"ROW2"}},{"type":"reply","reply":{"id":"2","title":"ROW3"}}]}}}`},
+			{Body: `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`},
+			{Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
 	},
@@ -906,38 +917,10 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`},
-			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`},
+			{Body: `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`},
+			{Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
-	},
-	{
-		Label:   "Link Sending",
-		MsgText: "Link Sending https://link.com",
-		MsgURN:  "whatsapp:250788123123",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"*/v1/messages": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{
-			{
-				Path: "/v1/messages",
-				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Link Sending https://link.com","preview_url":true}}`,
-			},
-		},
-		ExpectedExtIDs: []string{"157b5e14568e8"},
-	},
-	{
-		Label:   "Error Bad JSON",
-		MsgText: "Error",
-		MsgURN:  "whatsapp:250788123123",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"*/v1/messages": {
-				httpx.NewMockResponse(403, nil, []byte(`bad json`)),
-			},
-		},
-		ExpectedError: courier.ErrResponseUnparseable,
 	},
 	{
 		Label:   "Error Channel Contact Pair limit hit",
@@ -985,12 +968,144 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 	},
 }
 
+var mediaCacheSendTestCases = []OutgoingTestCase{
+	{
+		Label:          "Media Upload Error",
+		MsgText:        "document caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://foo.bar/document.pdf": {
+				httpx.NewMockResponse(200, nil, []byte(`media bytes`)),
+			},
+			"*/v1/media": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "errors": [{"code":1005,"title":"Access denied","details":"Invalid credentials."}] }`)),
+			},
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{},
+			{Body: "media bytes"},
+			{BodyContains: `/document.pdf`},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:          "Previous Media Upload Error",
+		MsgText:        "document caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{BodyContains: `/document.pdf`},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:          "Media Upload OK",
+		MsgText:        "video caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://foo.bar/video.mp4": {
+				httpx.NewMockResponse(200, nil, []byte(`media bytes`)),
+			},
+			"*/v1/media": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "media" : [{"id": "36c484d1-1283-4b94-988d-7276bdec4de2"}] }`)),
+			},
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{},
+			{Body: "media bytes"},
+			{Body: `{"to":"250788123123","type":"video","video":{"id":"36c484d1-1283-4b94-988d-7276bdec4de2","caption":"video caption"}}`},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:          "Cached Media",
+		MsgText:        "video caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Body: `{"to":"250788123123","type":"video","video":{"id":"36c484d1-1283-4b94-988d-7276bdec4de2","caption":"video caption"}}`},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:          "Document Upload OK",
+		MsgText:        "document caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"application/pdf:https://foo.bar/document2.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://foo.bar/document2.pdf": {
+				httpx.NewMockResponse(200, nil, []byte(`media bytes`)),
+			},
+			"*/v1/media": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "media" : [{"id": "25c484d1-1283-4b94-988d-7276bdec4ef3"}] }`)),
+			},
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{},
+			{Body: "media bytes"},
+			{Body: `{"to":"250788123123","type":"document","document":{"id":"25c484d1-1283-4b94-988d-7276bdec4ef3","caption":"document caption","filename":"document2.pdf"}}`},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:          "Cached Document",
+		MsgText:        "document caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"application/pdf:https://foo.bar/document2.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Body: `{"to":"250788123123","type":"document","document":{"id":"25c484d1-1283-4b94-988d-7276bdec4ef3","caption":"document caption","filename":"document2.pdf"}}`},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+}
+
 func TestWhatsAppOutgoing(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
 
 	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TRN", "12345_ID", "", []string{urns.WhatsApp.Prefix},
-		map[string]any{models.ConfigAuthToken: "a123", "base_url": "https://example.org"})
+		map[string]any{models.ConfigAuthToken: "a123", "base_url": "https://example.org", "fb_namespace": "waba_namespace"})
 
-	RunOutgoingTestCases(t, channel, newHandler(), whatsappOutgoingTests, []string{"a123"}, nil)
+	RunOutgoingTestCases(t, channel, newHandler(), defaultSendTestCases, []string{"a123"}, nil)
+	failedMediaCache.Flush()
+	RunOutgoingTestCases(t, channel, newHandler(), mediaCacheSendTestCases, []string{"a123"}, nil)
+	failedMediaCache.Flush()
+}
+
+func TestGetSupportedLanguage(t *testing.T) {
+	assert.Equal(t, "en", getSupportedLanguage(i18n.NilLocale))
+	assert.Equal(t, "en", getSupportedLanguage(i18n.Locale("eng")))
+	assert.Equal(t, "en_US", getSupportedLanguage(i18n.Locale("eng-US")))
+	assert.Equal(t, "pt_PT", getSupportedLanguage(i18n.Locale("por")))
+	assert.Equal(t, "pt_PT", getSupportedLanguage(i18n.Locale("por-PT")))
+	assert.Equal(t, "pt_BR", getSupportedLanguage(i18n.Locale("por-BR")))
+	assert.Equal(t, "fil", getSupportedLanguage(i18n.Locale("fil")))
+	assert.Equal(t, "fr", getSupportedLanguage(i18n.Locale("fra-CA")))
+	assert.Equal(t, "en", getSupportedLanguage(i18n.Locale("run")))
 }
