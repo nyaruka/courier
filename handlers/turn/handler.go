@@ -587,7 +587,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 							btns[btnIdx] = mtButton{
 								Type: "reply",
 							}
-							btns[btnIdx].Reply.ID = fmt.Sprint(i)
+							btns[btnIdx].Reply.ID = fmt.Sprint(btnIdx)
 							btns[btnIdx].Reply.Title = qr.Text
 						}
 						payload.Interactive.Action.Buttons = btns
