@@ -35,16 +35,20 @@ type Change struct {
 		} `json:"metadata"`
 		Contacts []struct {
 			Profile struct {
-				Name string `json:"name"`
+				Name        string `json:"name"`
+				Username    string `json:"username,omitempty"`
+				CountryCode string `json:"country_code,omitempty"`
 			} `json:"profile"`
-			WaID string `json:"wa_id"`
+			WaID   string `json:"wa_id"`
+			UserID string `json:"user_id,omitempty"`
 		} `json:"contacts"`
 		Messages []struct {
-			ID        string `json:"id"`
-			From      string `json:"from"`
-			Timestamp string `json:"timestamp"`
-			Type      string `json:"type"`
-			Context   *struct {
+			ID         string `json:"id"`
+			From       string `json:"from"`
+			FromUserID string `json:"from_user_id,omitempty"`
+			Timestamp  string `json:"timestamp"`
+			Type       string `json:"type"`
+			Context    *struct {
 				Forwarded           bool   `json:"forwarded"`
 				FrequentlyForwarded bool   `json:"frequently_forwarded"`
 				From                string `json:"from"`
@@ -231,6 +235,11 @@ type SendResponse struct {
 	Messages []*struct {
 		ID string `json:"id"`
 	} `json:"messages"`
+	Contacts []*struct {
+		Input  string `json:"input"`
+		WaID   string `json:"wa_id"`
+		UserID string `json:"user_id"`
+	} `json:"contacts"`
 	Error struct {
 		Message string `json:"message"`
 		Code    int    `json:"code"`
