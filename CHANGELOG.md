@@ -1,3 +1,7 @@
+v10.3.33 (2025-12-02)
+-------------------------
+ * Switch to using msg UUID for fetch attachment requests
+
 v10.3.32 (2025-11-26)
 -------------------------
  * Fix variable shadowing
