@@ -1,3 +1,7 @@
+v10.3.34 (2025-12-02)
+-------------------------
+ * Queue event handling tasks with the event UUID
+
 v10.3.33 (2025-12-02)
 -------------------------
  * Switch to using msg UUID for fetch attachment requests
