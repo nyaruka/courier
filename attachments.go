@@ -34,7 +34,7 @@ type fetchAttachmentRequest struct {
 	ChannelType models.ChannelType `json:"channel_type" validate:"required"`
 	ChannelUUID models.ChannelUUID `json:"channel_uuid" validate:"required,uuid"`
 	URL         string             `json:"url"          validate:"required"`
-	MsgID       models.MsgID       `json:"msg_id"`
+	MsgUUID     models.MsgUUID     `json:"msg_uuid"`
 }
 
 type fetchAttachmentResponse struct {
@@ -72,7 +72,7 @@ func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAtt
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("error fetching attachment for msg #%d: %w", fa.MsgID, err)
+		return nil, fmt.Errorf("error fetching attachment for msg %s: %w", fa.MsgUUID, err)
 	}
 
 	return &fetchAttachmentResponse{Attachment: attachment, LogUUID: clog.UUID}, nil
