@@ -1340,6 +1340,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 
 	ts.assertQueuedContactTask(contact.ID_, "event_received", map[string]any{
 		"event_id":    float64(dbE.ID_),
+		"event_uuid":  string(dbE.UUID()),
 		"event_type":  "referral",
 		"channel_id":  float64(10),
 		"urn_id":      float64(contact.URNID_),
