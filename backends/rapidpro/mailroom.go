@@ -34,6 +34,7 @@ func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *
 func queueEventHandling(ctx context.Context, rc redis.Conn, c *models.Contact, e *ChannelEvent) error {
 	body := map[string]any{
 		"event_id":    e.ID_,
+		"event_uuid":  e.UUID(),
 		"event_type":  e.EventType_,
 		"urn_id":      e.ContactURNID_,
 		"channel_id":  e.ChannelID_,
