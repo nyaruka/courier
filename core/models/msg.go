@@ -1,8 +1,6 @@
 package models
 
 import (
-	"database/sql/driver"
-	"strconv"
 	"time"
 
 	"github.com/lib/pq"
@@ -12,20 +10,6 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
 )
-
-// MsgID is our typing of the db int type
-type MsgID null.Int64
-
-// NilMsgID is our nil value for MsgID
-var NilMsgID = MsgID(0)
-
-// String satisfies the Stringer interface
-func (i MsgID) String() string { return strconv.FormatInt(int64(i), 10) }
-
-func (i *MsgID) Scan(value any) error         { return null.ScanInt(value, i) }
-func (i MsgID) Value() (driver.Value, error)  { return null.IntValue(i) }
-func (i *MsgID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
-func (i MsgID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
 
 // MsgUUID is the UUID of a message which has been received
 type MsgUUID uuids.UUID
@@ -67,7 +51,6 @@ const (
 // MsgIn is an incoming message which can be written to the database or marshaled to a spool file
 type MsgIn struct {
 	OrgID_        OrgID          `db:"org_id"         json:"org_id"`
-	ID_           MsgID          `db:"id"             json:"id"`
 	UUID_         MsgUUID        `db:"uuid"           json:"uuid"`
 	Text_         string         `db:"text"           json:"text"`
 	Attachments_  pq.StringArray `db:"attachments"    json:"attachments"`
@@ -99,7 +82,6 @@ func NewIncomingMsg(channel *Channel, urn urns.URN, text string, extID string, c
 }
 
 func (m *MsgIn) EventUUID() uuids.UUID  { return uuids.UUID(m.UUID_) }
-func (m *MsgIn) ID() MsgID              { return m.ID_ }
 func (m *MsgIn) UUID() MsgUUID          { return m.UUID_ }
 func (m *MsgIn) ExternalID() string     { return string(m.ExternalID_) }
 func (m *MsgIn) Text() string           { return m.Text_ }

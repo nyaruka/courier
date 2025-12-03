@@ -77,7 +77,6 @@ type MsgIn interface {
 	Event
 	Msg
 
-	ID() models.MsgID
 	ExternalID() string
 	ReceivedOn() *time.Time
 	WithAttachment(url string) MsgIn

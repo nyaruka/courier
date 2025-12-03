@@ -102,7 +102,7 @@ func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLo
 
 	// queue to mailroom for handling
 	if err := queueMsgHandling(ctx, rc, contact, m); err != nil {
-		slog.Error("error queueing msg handling", "error", err, "msg", m.ID_, "contact", contact.ID_)
+		slog.Error("error queueing msg handling", "error", err, "msg", m.UUID_, "contact", contact.ID_)
 	}
 
 	return err
@@ -133,12 +133,6 @@ func writeMsgToDB(ctx context.Context, b *backend, m *MsgIn, clog *courier.Chann
 		return nil, fmt.Errorf("error inserting message: %w", err)
 	}
 	defer rows.Close()
-
-	rows.Next()
-
-	if err := rows.Scan(&m.ID_); err != nil {
-		return nil, fmt.Errorf("error scanning for inserted message id: %w", err)
-	}
 
 	return contact, nil
 }
@@ -180,7 +174,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 
 	// queue to mailroom for handling
 	if err := queueMsgHandling(ctx, rc, contact, m); err != nil {
-		slog.Error("error queueing handling for de-spooled message", "error", err, "msg", m.ID_, "contact", contact.ID_)
+		slog.Error("error queueing handling for de-spooled message", "error", err, "msg", m.UUID_, "contact", contact.ID_)
 	}
 
 	return nil

@@ -20,7 +20,6 @@ import (
 
 // ChannelEvent represents an event on a channel.. that isn't a new message or status update
 type ChannelEvent struct {
-	ID_          models.ChannelEventID   `                               db:"id"`
 	UUID_        models.ChannelEventUUID `json:"uuid"                    db:"uuid"`
 	OrgID_       models.OrgID            `json:"org_id"                  db:"org_id"`
 	ChannelUUID_ models.ChannelUUID      `json:"channel_uuid"            db:"channel_uuid"`
@@ -142,20 +141,13 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clo
 	}
 	defer rows.Close()
 
-	rows.Next()
-
-	if err = rows.Scan(&e.ID_, &e.CreatedOn_); err != nil {
-		return err
-	}
-
 	// queue it up for handling by RapidPro
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
 	// if we had a problem queueing the event, log it
-	err = queueEventHandling(ctx, rc, contact, e)
-	if err != nil {
-		slog.Error("error queueing channel event", "error", err, "evt_id", e.ID_)
+	if err := queueEventHandling(ctx, rc, contact, e); err != nil {
+		slog.Error("error queueing channel event", "error", err, "event", e.UUID_)
 	}
 
 	return nil

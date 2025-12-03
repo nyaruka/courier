@@ -20,7 +20,7 @@ func TestSplitMsg(t *testing.T) {
 		expectedParts []handlers.MsgPart
 	}{
 		{
-			msg:  test.NewMockMsg(1001, "b6454f25-e5b9-4795-a180-b9e35ca3a523", channel, "tel+1234567890", "This is a message longer than 10", nil),
+			msg:  test.NewMockMsg("b6454f25-e5b9-4795-a180-b9e35ca3a523", channel, "tel+1234567890", "This is a message longer than 10", nil),
 			opts: handlers.SplitOptions{MaxTextLen: 20},
 			expectedParts: []handlers.MsgPart{
 				{Type: handlers.MsgPartTypeText, Text: "This is a message", IsFirst: true},
@@ -28,7 +28,7 @@ func TestSplitMsg(t *testing.T) {
 			},
 		},
 		{
-			msg:  test.NewMockMsg(1001, "b6454f25-e5b9-4795-a180-b9e35ca3a523", channel, "tel+1234567890", "Lovely image", []string{"image/jpeg:http://test.jpg"}),
+			msg:  test.NewMockMsg("b6454f25-e5b9-4795-a180-b9e35ca3a523", channel, "tel+1234567890", "Lovely image", []string{"image/jpeg:http://test.jpg"}),
 			opts: handlers.SplitOptions{MaxTextLen: 20},
 			expectedParts: []handlers.MsgPart{
 				{Type: handlers.MsgPartTypeAttachment, Attachment: "image/jpeg:http://test.jpg", IsFirst: true},
@@ -36,7 +36,7 @@ func TestSplitMsg(t *testing.T) {
 			},
 		},
 		{
-			msg:  test.NewMockMsg(1001, "b6454f25-e5b9-4795-a180-b9e35ca3a523", channel, "tel+1234567890", "Lovely image", []string{"image/jpeg:http://test.jpg"}),
+			msg:  test.NewMockMsg("b6454f25-e5b9-4795-a180-b9e35ca3a523", channel, "tel+1234567890", "Lovely image", []string{"image/jpeg:http://test.jpg"}),
 			opts: handlers.SplitOptions{MaxTextLen: 20, Captionable: []handlers.MediaType{handlers.MediaTypeImage}},
 			expectedParts: []handlers.MsgPart{
 				{Type: handlers.MsgPartTypeCaptionedAttachment, Text: "Lovely image", Attachment: "image/jpeg:http://test.jpg", IsFirst: true, IsLast: true},
