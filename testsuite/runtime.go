@@ -24,13 +24,13 @@ func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
 	cfg.Valkey = "valkey://localhost:6379/0"
 	cfg.MediaDomain = "nyaruka.s3.com"
 
-	// configure S3 to use a local minio instance
+	// configure S3 to use a localstack instance
 	cfg.AWSAccessKeyID = "root"
 	cfg.AWSSecretAccessKey = "tembatemba"
-	cfg.S3Endpoint = "http://localhost:9000"
+	cfg.S3Endpoint = "http://localhost:4566"
 	cfg.S3AttachmentsBucket = "test-attachments"
-	cfg.S3Minio = true
-	cfg.DynamoEndpoint = "http://localhost:6000"
+	cfg.S3PathStyle = true
+	cfg.DynamoEndpoint = "http://localhost:4566"
 	cfg.DynamoTablePrefix = "Test"
 	cfg.SpoolDir = absPath("./_test_spool")
 
