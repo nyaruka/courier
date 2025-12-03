@@ -14,7 +14,7 @@ import (
 
 type DBMsg struct {
 	OrgID        models.OrgID         `db:"org_id"`
-	ID           models.MsgID         `db:"id"`
+	ID           int64                `db:"id"`
 	UUID         models.MsgUUID       `db:"uuid"`
 	Direction    models.MsgDirection  `db:"direction"`
 	Status       models.MsgStatus     `db:"status"`
@@ -51,7 +51,7 @@ func ReadDBMsg(t *testing.T, rt *runtime.Runtime, uuid models.MsgUUID) *DBMsg {
 }
 
 type ChannelEvent struct {
-	ID           models.MsgID            `db:"id"`
+	ID           int64                   `db:"id"`
 	UUID         models.ChannelEventUUID `db:"uuid"`
 	OrgID        models.OrgID            `db:"org_id"`
 	ChannelID    models.ChannelID        `db:"channel_id"`

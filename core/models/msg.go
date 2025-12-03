@@ -1,8 +1,6 @@
 package models
 
 import (
-	"database/sql/driver"
-	"strconv"
 	"time"
 
 	"github.com/lib/pq"
@@ -12,20 +10,6 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
 )
-
-// MsgID is our typing of the db int type
-type MsgID null.Int64
-
-// NilMsgID is our nil value for MsgID
-var NilMsgID = MsgID(0)
-
-// String satisfies the Stringer interface
-func (i MsgID) String() string { return strconv.FormatInt(int64(i), 10) }
-
-func (i *MsgID) Scan(value any) error         { return null.ScanInt(value, i) }
-func (i MsgID) Value() (driver.Value, error)  { return null.IntValue(i) }
-func (i *MsgID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
-func (i MsgID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
 
 // MsgUUID is the UUID of a message which has been received
 type MsgUUID uuids.UUID

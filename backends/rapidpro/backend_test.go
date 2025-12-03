@@ -1066,21 +1066,21 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 
 	// create a new courier msg
 	urn := urns.URN("tel:+12065551212")
-	msg1 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test123", "ext123", clog).WithReceivedOn(now).WithContactName("test contact").(*MsgIn)
+	msg1 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test-write", "ext123", clog).WithReceivedOn(now).WithContactName("test contact").(*MsgIn)
 
 	// try to write it to our db
 	err := ts.b.WriteMsg(ctx, msg1, clog)
 	ts.NoError(err)
 
 	time.Sleep(1 * time.Second)
-	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'test123'`).Returns(1)
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'test-write'`).Returns(1)
 
 	// trying to writing the same msg again should result in it getting the same UUID and not being actually written
-	msg2 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test123", "ext123", clog).(*MsgIn)
+	msg2 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test-write", "ext123", clog).(*MsgIn)
 	err = ts.b.WriteMsg(ctx, msg2, clog)
 	ts.NoError(err)
 	ts.Equal(msg2.UUID(), msg1.UUID())
-	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'test123'`).Returns(1)
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'test-write'`).Returns(1)
 
 	// load it back from the id
 	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, msg1.UUID())
@@ -1100,7 +1100,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.Equal(contactURN.ContactID, m.ContactID)
 	ts.Equal(contactURN.ID, m.ContactURNID)
 	ts.Equal("ext123", string(m.ExternalID))
-	ts.Equal("test123", m.Text)
+	ts.Equal("test-write", m.Text)
 	ts.Equal(0, len(m.Attachments))
 	ts.Equal(now, m.SentOn.In(time.UTC))
 	ts.NotNil(m.CreatedOn)
@@ -1116,7 +1116,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 
 	// waiting 5 seconds should let us write it successfully
 	time.Sleep(5 * time.Second)
-	msg3 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test123", "", clog).(*MsgIn)
+	msg3 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test-write", "", clog).(*MsgIn)
 	ts.Greater(msg3.UUID(), msg1.UUID())
 
 	// msg with null bytes in it, that's fine for a request body

@@ -11,7 +11,6 @@ import (
 )
 
 type MockMsg struct {
-	id                   models.MsgID
 	uuid                 models.MsgUUID
 	contact              *models.ContactReference
 	channel              courier.Channel
@@ -39,9 +38,8 @@ type MockMsg struct {
 	sentOn     *time.Time
 }
 
-func NewMockMsg(id models.MsgID, uuid models.MsgUUID, channel courier.Channel, urn urns.URN, text string, attachments []string) *MockMsg {
+func NewMockMsg(uuid models.MsgUUID, channel courier.Channel, urn urns.URN, text string, attachments []string) *MockMsg {
 	return &MockMsg{
-		id:          id,
 		uuid:        uuid,
 		channel:     channel,
 		urn:         urn,
@@ -51,7 +49,6 @@ func NewMockMsg(id models.MsgID, uuid models.MsgUUID, channel courier.Channel, u
 }
 
 func (m *MockMsg) EventUUID() uuids.UUID             { return uuids.UUID(m.uuid) }
-func (m *MockMsg) ID() models.MsgID                  { return m.id }
 func (m *MockMsg) UUID() models.MsgUUID              { return m.uuid }
 func (m *MockMsg) Contact() *models.ContactReference { return m.contact }
 func (m *MockMsg) ExternalID() string                { return m.externalID }
@@ -89,7 +86,6 @@ func (m *MockMsg) WithURNAuthTokens(tokens map[string]string) courier.MsgIn {
 func (m *MockMsg) WithReceivedOn(date time.Time) courier.MsgIn { m.receivedOn = &date; return m }
 
 // used to create outgoing messages for testing
-func (m *MockMsg) WithID(id models.MsgID) courier.MsgOut              { m.id = id; return m }
 func (m *MockMsg) WithUUID(uuid models.MsgUUID) courier.MsgOut        { m.uuid = uuid; return m }
 func (m *MockMsg) WithTemplating(t *models.Templating) courier.MsgOut { m.templating = t; return m }
 func (m *MockMsg) WithFlow(f *models.FlowReference) courier.MsgOut    { m.flow = f; return m }

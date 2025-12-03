@@ -198,7 +198,7 @@ func TestGetTemplatePayload(t *testing.T) {
 		templating := &models.Templating{}
 		jsonx.MustUnmarshal([]byte(tc.templating), templating)
 
-		msg := test.NewMockMsg(1, "87995844-2017-4ba0-bc73-f3da75b32f9b", nil, "tel:+1234567890", "hi", nil).WithTemplating(templating)
+		msg := test.NewMockMsg("87995844-2017-4ba0-bc73-f3da75b32f9b", nil, "tel:+1234567890", "hi", nil).WithTemplating(templating)
 		actual := whatsapp.GetTemplatePayload(msg.Templating())
 
 		assert.Equal(t, tc.expected, actual, "%d: template payload mismatch", i)
