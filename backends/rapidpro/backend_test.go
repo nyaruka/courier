@@ -1073,14 +1073,14 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NoError(err)
 
 	time.Sleep(1 * time.Second)
-	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg`).Returns(1)
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'test123'`).Returns(1)
 
 	// trying to writing the same msg again should result in it getting the same UUID and not being actually written
 	msg2 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test123", "ext123", clog).(*MsgIn)
 	err = ts.b.WriteMsg(ctx, msg2, clog)
 	ts.NoError(err)
 	ts.Equal(msg2.UUID(), msg1.UUID())
-	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg`).Returns(1)
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'test123'`).Returns(1)
 
 	// load it back from the id
 	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, msg1.UUID())
@@ -1329,7 +1329,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 
 	dbE := testsuite.ReadDBEvent(ts.T(), ts.b.rt, event.UUID())
 	ts.Equal(dbE.EventType, models.EventTypeReferral)
-	ts.Equal(map[string]string{"ref_id": "12345"}, dbE.Extra)
+	ts.Equal(null.Map[string](map[string]string{"ref_id": "12345"}), dbE.Extra)
 	ts.Equal(contact.ID_, dbE.ContactID)
 	ts.Equal(contact.URNID_, dbE.ContactURNID)
 
