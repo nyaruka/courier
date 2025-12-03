@@ -18,7 +18,6 @@ func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *
 
 	body := map[string]any{
 		"channel_id":      channel.ID_,
-		"msg_id":          m.ID_,
 		"msg_uuid":        m.UUID(),
 		"msg_external_id": m.ExternalID(),
 		"urn":             m.URN().String(),
@@ -33,7 +32,6 @@ func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *
 
 func queueEventHandling(ctx context.Context, rc redis.Conn, c *models.Contact, e *ChannelEvent) error {
 	body := map[string]any{
-		"event_id":    e.ID_,
 		"event_uuid":  e.UUID(),
 		"event_type":  e.EventType_,
 		"urn_id":      e.ContactURNID_,

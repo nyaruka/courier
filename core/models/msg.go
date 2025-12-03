@@ -67,7 +67,6 @@ const (
 // MsgIn is an incoming message which can be written to the database or marshaled to a spool file
 type MsgIn struct {
 	OrgID_        OrgID          `db:"org_id"         json:"org_id"`
-	ID_           MsgID          `db:"id"             json:"id"`
 	UUID_         MsgUUID        `db:"uuid"           json:"uuid"`
 	Text_         string         `db:"text"           json:"text"`
 	Attachments_  pq.StringArray `db:"attachments"    json:"attachments"`
@@ -99,7 +98,6 @@ func NewIncomingMsg(channel *Channel, urn urns.URN, text string, extID string, c
 }
 
 func (m *MsgIn) EventUUID() uuids.UUID  { return uuids.UUID(m.UUID_) }
-func (m *MsgIn) ID() MsgID              { return m.ID_ }
 func (m *MsgIn) UUID() MsgUUID          { return m.UUID_ }
 func (m *MsgIn) ExternalID() string     { return string(m.ExternalID_) }
 func (m *MsgIn) Text() string           { return m.Text_ }

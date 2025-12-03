@@ -702,7 +702,7 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	}
 
 	msg1 := createAndWriteMsg(knChannel, urn, "ping", "")
-	ts.NotZero(msg1.ID())
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE uuid = $1`, msg1.UUID()).Returns(1)
 
 	keys, err := redis.Strings(rc.Do("KEYS", "{seen-msgs}:*"))
 	ts.NoError(err)
@@ -714,12 +714,12 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	// trying again should lead to same UUID
 	msg2 := createAndWriteMsg(knChannel, urn, "ping", "")
 	ts.Equal(msg1.UUID(), msg2.UUID())
-	ts.Zero(msg2.ID())
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'ping'`).Returns(1)
 
 	// different text should change that
 	msg3 := createAndWriteMsg(knChannel, urn, "test", "")
 	ts.NotEqual(msg2.UUID(), msg3.UUID())
-	ts.NotZero(msg3.ID())
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'test'`).Returns(1)
 
 	// an outgoing message should clear things
 	msgJSON := `[{
@@ -1073,14 +1073,14 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NoError(err)
 
 	time.Sleep(1 * time.Second)
-	ts.NotZero(msg1.ID)
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg`).Returns(1)
 
 	// trying to writing the same msg again should result in it getting the same UUID and not being actually written
 	msg2 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test123", "ext123", clog).(*MsgIn)
 	err = ts.b.WriteMsg(ctx, msg2, clog)
 	ts.NoError(err)
 	ts.Equal(msg2.UUID(), msg1.UUID())
-	ts.Zero(msg2.ID())
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg`).Returns(1)
 
 	// load it back from the id
 	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, msg1.UUID())
@@ -1095,7 +1095,6 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	}
 
 	// make sure our values are set appropriately
-	ts.Equal(msg1.ID(), m.ID)
 	ts.Equal(knChannel.ID_, m.ChannelID)
 	ts.Equal(knChannel.OrgID_, m.OrgID)
 	ts.Equal(contactURN.ContactID, m.ContactID)
@@ -1140,7 +1139,6 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 
 	ts.assertQueuedContactTask(msg6.ContactID_, "msg_received", map[string]any{
 		"channel_id":      float64(10),
-		"msg_id":          float64(msg6.ID_),
 		"msg_uuid":        string(msg6.UUID()),
 		"msg_external_id": msg6.ExternalID(),
 		"urn":             msg6.URN().String(),
@@ -1242,22 +1240,20 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	ts.NoError(err)
 	ts.Equal(null.String("kermit frog"), contact.Name_)
 
-	dbE := event.(*ChannelEvent)
-	dbE = readChannelEventFromDB(ts.b, dbE.ID_)
-	ts.Equal(dbE.EventType_, models.EventTypeReferral)
-	ts.Equal(map[string]string{"ref_id": "12345"}, dbE.Extra())
-	ts.Equal(contact.ID_, dbE.ContactID_)
-	ts.Equal(contact.URNID_, dbE.ContactURNID_)
+	dbE := testsuite.ReadDBEvent(ts.T(), ts.b.rt, event.UUID())
+	ts.Equal(dbE.EventType, models.EventTypeReferral)
+	ts.Equal(null.Map[string](map[string]string{"ref_id": "12345"}), dbE.Extra)
+	ts.Equal(contact.ID_, dbE.ContactID)
+	ts.Equal(contact.URNID_, dbE.ContactURNID)
 
 	event = ts.b.NewChannelEvent(channel, models.EventTypeOptIn, urn, clog).WithExtra(map[string]string{"title": "Polls", "payload": "1"})
 	err = ts.b.WriteChannelEvent(ctx, event, clog)
 	ts.NoError(err)
 
-	dbE = event.(*ChannelEvent)
-	dbE = readChannelEventFromDB(ts.b, dbE.ID_)
-	ts.Equal(dbE.EventType_, models.EventTypeOptIn)
-	ts.Equal(map[string]string{"title": "Polls", "payload": "1"}, dbE.Extra())
-	ts.Equal(null.Int(1), dbE.OptInID_)
+	dbE = testsuite.ReadDBEvent(ts.T(), ts.b.rt, event.UUID())
+	ts.Equal(dbE.EventType, models.EventTypeOptIn)
+	ts.Equal(null.Map[string](map[string]string{"title": "Polls", "payload": "1"}), dbE.Extra)
+	ts.Equal(null.Int(1), dbE.OptInID)
 }
 
 func (ts *BackendTestSuite) TestSessionTimeout() {
@@ -1331,16 +1327,14 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	ts.Equal(null.String("kermit frog"), contact.Name_)
 	ts.False(contact.IsNew_)
 
-	dbE := event.(*ChannelEvent)
-	dbE = readChannelEventFromDB(ts.b, dbE.ID_)
-	ts.Equal(dbE.EventType_, models.EventTypeReferral)
-	ts.Equal(map[string]string{"ref_id": "12345"}, dbE.Extra())
-	ts.Equal(contact.ID_, dbE.ContactID_)
-	ts.Equal(contact.URNID_, dbE.ContactURNID_)
+	dbE := testsuite.ReadDBEvent(ts.T(), ts.b.rt, event.UUID())
+	ts.Equal(dbE.EventType, models.EventTypeReferral)
+	ts.Equal(map[string]string{"ref_id": "12345"}, dbE.Extra)
+	ts.Equal(contact.ID_, dbE.ContactID)
+	ts.Equal(contact.URNID_, dbE.ContactURNID)
 
 	ts.assertQueuedContactTask(contact.ID_, "event_received", map[string]any{
-		"event_id":    float64(dbE.ID_),
-		"event_uuid":  string(dbE.UUID()),
+		"event_uuid":  string(event.UUID()),
 		"event_type":  "referral",
 		"channel_id":  float64(10),
 		"urn_id":      float64(contact.URNID_),
@@ -1497,18 +1491,4 @@ func TestBackendSuite(t *testing.T) {
 
 type ServerTestSuite struct {
 	suite.Suite
-}
-
-const sqlSelectEvent = `
-SELECT id, uuid, org_id, channel_id, contact_id, contact_urn_id, event_type, optin_id, extra, occurred_on, created_on, log_uuids
-  FROM channels_channelevent
- WHERE id = $1`
-
-func readChannelEventFromDB(b *backend, id models.ChannelEventID) *ChannelEvent {
-	e := &ChannelEvent{}
-	err := b.rt.DB.Get(e, sqlSelectEvent, id)
-	if err != nil {
-		panic(err)
-	}
-	return e
 }

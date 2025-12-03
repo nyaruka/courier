@@ -7,6 +7,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/runtime"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null/v3"
 	"github.com/stretchr/testify/require"
 )
@@ -47,4 +48,28 @@ func ReadDBMsg(t *testing.T, rt *runtime.Runtime, uuid models.MsgUUID) *DBMsg {
 	err := rt.DB.Get(m, `SELECT * FROM msgs_msg WHERE uuid = $1`, uuid)
 	require.NoError(t, err)
 	return m
+}
+
+type ChannelEvent struct {
+	ID           models.MsgID            `db:"id"`
+	UUID         models.ChannelEventUUID `db:"uuid"`
+	OrgID        models.OrgID            `db:"org_id"`
+	ChannelID    models.ChannelID        `db:"channel_id"`
+	ContactID    models.ContactID        `db:"contact_id"`
+	ContactURNID models.ContactURNID     `db:"contact_urn_id"`
+	URN          urns.URN                `db:"urn"`
+	EventType    models.ChannelEventType `db:"event_type"`
+	OptInID      null.Int                `db:"optin_id"`
+	Extra        null.Map[string]        `db:"extra"`
+	Status       string                  `db:"status"`
+	OccurredOn   time.Time               `db:"occurred_on"`
+	CreatedOn    time.Time               `db:"created_on"`
+	LogUUIDs     pq.StringArray          `db:"log_uuids"`
+}
+
+func ReadDBEvent(t *testing.T, rt *runtime.Runtime, uuid models.ChannelEventUUID) *ChannelEvent {
+	e := &ChannelEvent{}
+	err := rt.DB.Get(e, `SELECT * FROM channels_channelevent WHERE uuid = $1`, uuid)
+	require.NoError(t, err)
+	return e
 }
