@@ -1,3 +1,8 @@
+v10.3.35 (2025-12-08)
+-------------------------
+ * Switch to localstack for tests and CI
+ * Remove ID from incoming messages and events
+
 v10.3.34 (2025-12-02)
 -------------------------
  * Queue event handling tasks with the event UUID
