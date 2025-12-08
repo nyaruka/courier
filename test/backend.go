@@ -44,7 +44,6 @@ type MockBackend struct {
 	savedAttachments     []*SavedAttachment
 	storageError         error
 
-	lastMsgID       models.MsgID
 	lastContactName string
 	urnAuthTokens   map[urns.URN]map[string]string
 	sentMsgs        map[models.MsgUUID]bool
@@ -106,13 +105,12 @@ func (mb *MockBackend) NewIncomingMsg(ctx context.Context, channel courier.Chann
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, uuid models.MsgUUID, id models.MsgID, contact *models.ContactReference, urn urns.URN, text string, highPriority bool, quickReplies []models.QuickReply,
+func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, uuid models.MsgUUID, contact *models.ContactReference, urn urns.URN, text string, highPriority bool, quickReplies []models.QuickReply,
 	responseToExternalID string, origin models.MsgOrigin) courier.MsgOut {
 
 	return &MockMsg{
 		channel:              channel,
 		uuid:                 uuid,
-		id:                   id,
 		contact:              contact,
 		urn:                  urn,
 		text:                 text,
@@ -189,9 +187,6 @@ func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 // WriteMsg queues the passed in message internally
 func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *courier.ChannelLog) error {
 	mm := m.(*MockMsg)
-
-	mb.lastMsgID++
-	mm.id = mb.lastMsgID
 
 	if mb.errorOnQueue {
 		return errors.New("unable to queue message")
@@ -403,7 +398,6 @@ func (mb *MockBackend) ClearChannels() {
 
 // Reset clears our queued messages, seen external IDs, and channel logs
 func (mb *MockBackend) Reset() {
-	mb.lastMsgID = models.NilMsgID
 	mb.seenExternalIDs = make(map[string]models.MsgUUID)
 
 	mb.writtenMsgs = nil
