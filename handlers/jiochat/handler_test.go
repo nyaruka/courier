@@ -262,8 +262,8 @@ func newServer(backend courier.Backend) courier.Server {
 	logger := slog.Default()
 	log.SetOutput(io.Discard)
 	cfg := runtime.NewDefaultConfig()
-	cfg.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
-	cfg.Valkey = "valkey://localhost:6379/0"
+	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
+	cfg.Valkey = "valkey://valkey:6379/0"
 	return courier.NewServerWithLogger(cfg, backend, logger)
 }
 

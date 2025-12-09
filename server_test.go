@@ -24,8 +24,8 @@ import (
 
 func testConfig() *runtime.Config {
 	cfg := runtime.NewDefaultConfig()
-	cfg.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
-	cfg.Valkey = "valkey://localhost:6379/0"
+	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
+	cfg.Valkey = "valkey://valkey:6379/0"
 	cfg.Port = 8081
 	return cfg
 }
