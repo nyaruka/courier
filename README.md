@@ -23,21 +23,21 @@ We recommend running courier with no changes to the configuration and no paramet
 environment variables to configure it. You can use `% courier --help` to see a list of the
 environment variables and parameters and for more details on each option.
 
- * `COURIER_DOMAIN`: The root domain which courier is exposed as (ex `textit.in`)
- * `COURIER_SPOOL_DIR`: A local path where courier can spool files if the database is down, should be writable. (ex: `/home/courier/spool`)
- * `COURIER_DB`: Details parameters used to connect to the Postgres RapidPro database (ex: `postgres://textit:fooman@rds.courier.io/5432/textit`)
- * `COURIER_VALKEY`: Details parameters to use to connect to Valkey RapidPro database (ex: `valkey://valkey.courier.io:6379/13`)
+ * `COURIER_DOMAIN`: The root domain which courier is exposed as (e.g. `textit.in`)
+ * `COURIER_SPOOL_DIR`: A local path where courier can spool files if the database is down, should be writable. (e.g. `/home/courier/spool`)
+ * `COURIER_DB`: Details parameters used to connect to the Postgres RapidPro database (e.g. `postgres://textit:fooman@rds.courier.io/5432/textit`)
+ * `COURIER_VALKEY`: Details parameters to use to connect to Valkey RapidPro database (e.g. `valkey://valkey.courier.io:6379/13`)
  * `COURIER_AUTH_TOKEN`: authentication token to require for requests from Mailroom
 
 ### AWS services:
 
  * `COURIER_AWS_ACCESS_KEY_ID`: AWS access key id used to authenticate to AWS
  * `COURIER_AWS_SECRET_ACCESS_KEY`: AWS secret access key used to authenticate to AWS
- * `COURIER_AWS_REGION`: AWS region (ex: `eu-west-1`)
- * `COURIER_S3_ATTACHMENTS_BUCKET`: name of your S3 bucket (ex: `rp-attachments`)
+ * `COURIER_AWS_REGION`: AWS region (e.g. `eu-west-1`)
+ * `COURIER_S3_ATTACHMENTS_BUCKET`: name of your S3 bucket (e.g. `rp-attachments`)
 
 ### Logging and error reporting:
 
  * `COURIER_DEPLOYMENT_ID`: used for metrics reporting
  * `COURIER_SENTRY_DSN`: DSN to use when logging errors to Sentry
- * `COURIER_LOG_LEVEL`: logging level to use (default is `warn`)
+ * `COURIER_LOG_LEVEL`: logging level to use
