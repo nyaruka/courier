@@ -20,17 +20,17 @@ const (
 
 func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
 	cfg := runtime.NewDefaultConfig()
-	cfg.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
-	cfg.Valkey = "valkey://localhost:6379/0"
+	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
+	cfg.Valkey = "valkey://valkey:6379/0"
 	cfg.MediaDomain = "nyaruka.s3.com"
 
 	// configure S3 to use a localstack instance
 	cfg.AWSAccessKeyID = "root"
 	cfg.AWSSecretAccessKey = "tembatemba"
-	cfg.S3Endpoint = "http://localhost:4566"
+	cfg.S3Endpoint = "http://localstack:4566"
 	cfg.S3AttachmentsBucket = "test-attachments"
 	cfg.S3PathStyle = true
-	cfg.DynamoEndpoint = "http://localhost:4566"
+	cfg.DynamoEndpoint = "http://localstack:4566"
 	cfg.DynamoTablePrefix = "Test"
 	cfg.SpoolDir = absPath("./_test_spool")
 

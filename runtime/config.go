@@ -66,8 +66,8 @@ type Config struct {
 func NewDefaultConfig() *Config {
 	hostname, _ := os.Hostname()
 	return &Config{
-		DB:       "postgres://temba:temba@localhost/temba?sslmode=disable",
-		Valkey:   "valkey://localhost:6379/15",
+		DB:       "postgres://temba:temba@postgres/temba?sslmode=disable",
+		Valkey:   "valkey://valkey:6379/15",
 		SpoolDir: "/var/spool/courier",
 
 		Domain:  "localhost",
