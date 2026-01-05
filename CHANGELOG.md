@@ -1,3 +1,8 @@
+v26.0.1 (2026-01-05)
+-------------------------
+ * Update dependencies
+ * Update to a recent FB graph API version
+
 v26.0.0 (2026-01-05)
 -------------------------
  * Add devcontainer configuration
