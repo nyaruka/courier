@@ -1,3 +1,7 @@
+v26.0.0 (2026-01-05)
+-------------------------
+ * Add devcontainer configuration
+
 v10.3.35 (2025-12-08)
 -------------------------
  * Switch to localstack for tests and CI
