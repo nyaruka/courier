@@ -121,7 +121,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		// try to get the message id out
 		id, _ := jsonparser.GetString(respBody, "Data", "MessageID")
-		if id != "" {
+		if id != "" && id != "null" { // sometimes we get back "null" as a string
 			res.AddExternalID(id)
 		}
 	}

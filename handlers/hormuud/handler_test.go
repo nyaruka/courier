@@ -178,6 +178,26 @@ var sendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrConnectionFailed,
 	},
+	{
+		Label:   "Null MessageID",
+		MsgText: "Hello",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://smsapi.hormuud.com/api/SendSMS": {
+				httpx.NewMockResponse(200, nil, []byte(`{"ResCode": "res", "ResMsg": "msg", "Data": { "MessageID": "null", "Description": "accepted" } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{
+					"Content-Type":  "application/json",
+					"Accept":        "application/json",
+					"Authorization": "Bearer ghK_Wt4lshZhN",
+				},
+				Body: `{"mobile":"250788383383","message":"Hello","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
+			},
+		},
+	},
 }
 
 var tokenTestCases = []OutgoingTestCase{
