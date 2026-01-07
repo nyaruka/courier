@@ -72,6 +72,9 @@ type backend struct {
 	mediaCache   *vkutil.IntervalHash
 	mediaMutexes syncx.HashMutex
 
+	// tracking of external ids currently being processed to avoid double processing
+	processingExternalIDs *vkutil.IntervalHash // using external id
+
 	// tracking of recent messages received to avoid creating duplicates
 	receivedExternalIDs *vkutil.IntervalHash // using external id
 	receivedMsgs        *vkutil.IntervalHash // using content hash
@@ -119,6 +122,8 @@ func NewBackend(rt *runtime.Runtime) courier.Backend {
 
 		mediaCache:   vkutil.NewIntervalHash("media-lookups", time.Hour*24, 2),
 		mediaMutexes: *syncx.NewHashMutex(8),
+
+		processingExternalIDs: vkutil.NewIntervalHash("processing-external-ids", time.Second*2, 2), // 2 - 4 seconds
 
 		receivedMsgs:        vkutil.NewIntervalHash("seen-msgs", time.Second*2, 2),        // 2 - 4 seconds
 		receivedExternalIDs: vkutil.NewIntervalHash("seen-external-ids", time.Hour*24, 2), // 24 - 48 hours
@@ -541,6 +546,12 @@ func (b *backend) OnReceiveComplete(ctx context.Context, ch courier.Channel, eve
 // WriteMsg writes the passed in message to our store
 func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier.ChannelLog) error {
 	m := msg.(*MsgIn)
+
+	// check if this message could be a duplicate request concurrently being processed
+	if b.checkMsgBeingProcessed(ctx, m) {
+		slog.Info("duplicate message being processed, skipping", "msg", m.UUID_, "external_id", m.ExternalID_)
+		return fmt.Errorf("duplicate message being processed")
+	}
 
 	// check if this message could be a duplicate and if so steal the original's UUID
 	if prevUUID := b.checkMsgAlreadyReceived(ctx, m); prevUUID != "" {

@@ -184,6 +184,29 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 // Deduping utility methods
 //-----------------------------------------------------------------------------
 
+// checks to see if this message is already being processed
+func (b *backend) checkMsgBeingProcessed(ctx context.Context, m *MsgIn) bool {
+	if m.ExternalID_ == "" {
+		return false
+	}
+
+	rc := b.rt.VK.Get()
+	defer rc.Close()
+
+	fingerprint := fmt.Sprintf("%s|%s|%s", m.Channel().UUID(), m.URN().Identity(), m.ExternalID())
+
+	if uuid, _ := b.processingExternalIDs.Get(ctx, rc, fingerprint); uuid != "" {
+		return true
+	}
+
+	// mark as being processed
+	if err := b.processingExternalIDs.Set(ctx, rc, fingerprint, string(m.UUID())); err != nil {
+		slog.Error("error marking msg as being processed", "msg", m.UUID(), "error", err)
+	}
+
+	return false
+}
+
 // checks to see if this message has already been received and if so returns its UUID
 func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *MsgIn) models.MsgUUID {
 	rc := b.rt.VK.Get()
