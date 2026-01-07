@@ -1,3 +1,8 @@
+v26.1.0 (2026-01-07)
+-------------------------
+ * Ignore 'null' external IDs on hormuud channels
+ * Test against valkey 8 and postgresql 17
+
 v26.0.1 (2026-01-05)
 -------------------------
  * Update dependencies
