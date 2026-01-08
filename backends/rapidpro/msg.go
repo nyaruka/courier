@@ -18,6 +18,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils/queue"
+	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -88,6 +89,11 @@ func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLo
 	// try to write it our db
 	contact, err := writeMsgToDB(ctx, b, m, clog)
 	if err != nil {
+		if dbutil.IsUniqueViolation(err) {
+			slog.Warn("duplicate incoming message detected, ignoring", "msg", m.UUID())
+			return nil
+		}
+
 		// if we failed, log and write to spool
 		slog.Error("error writing to db", "error", err, "msg", m.UUID())
 
@@ -166,6 +172,10 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	// try to write it our db
 	contact, err := writeMsgToDB(ctx, b, m, clog)
 	if err != nil {
+		if dbutil.IsUniqueViolation(err) {
+			slog.Warn("duplicate incoming message detected, ignoring", "msg", m.UUID())
+			return nil
+		}
 		return err // fail? oh well, we'll try again later
 	}
 
