@@ -70,12 +70,17 @@ type MsgIn struct {
 func NewIncomingMsg(channel *Channel, urn urns.URN, text string, extID string, clogUUID clogs.UUID) *MsgIn {
 	now := time.Now()
 
+	var externalIdentifier sql.NullString
+	if extID != "" {
+		externalIdentifier = sql.NullString{String: extID, Valid: true}
+	}
+
 	return &MsgIn{
 		OrgID_:             channel.OrgID(),
 		UUID_:              MsgUUID(uuids.NewV7()),
 		Text_:              text,
 		ExternalID_:        null.String(extID),
-		ExternalIdentifier: sql.NullString{String: extID, Valid: extID != ""},
+		ExternalIdentifier: externalIdentifier,
 		ChannelID_:         channel.ID(),
 		CreatedOn_:         now,
 		ModifiedOn_:        now,
