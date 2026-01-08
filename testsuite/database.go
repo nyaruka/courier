@@ -1,6 +1,7 @@
 package testsuite
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
@@ -28,7 +29,7 @@ type DBMsg struct {
 	Locale             null.String          `db:"locale"`
 	Templating         *models.Templating   `db:"templating"`
 	ExternalID         null.String          `db:"external_id"`
-	ExternalIdentifier null.String          `db:"external_identifier"`
+	ExternalIdentifier sql.NullString       `db:"external_identifier"`
 	ChannelID          models.ChannelID     `db:"channel_id"`
 	ContactID          models.ContactID     `db:"contact_id"`
 	ContactURNID       models.ContactURNID  `db:"contact_urn_id"`

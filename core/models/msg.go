@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/lib/pq"
@@ -55,7 +56,7 @@ type MsgIn struct {
 	Text_              string         `db:"text"				json:"text"`
 	Attachments_       pq.StringArray `db:"attachments"			json:"attachments"`
 	ExternalID_        null.String    `db:"external_id"			json:"external_id"`
-	ExternalIdentifier null.String    `db:"external_identifier"	json:"external_identifier"`
+	ExternalIdentifier sql.NullString `db:"external_identifier"	json:"external_identifier"`
 	ChannelID_         ChannelID      `db:"channel_id"			json:"channel_id"`
 	ContactID_         ContactID      `db:"contact_id"			json:"contact_id"`
 	ContactURNID_      ContactURNID   `db:"contact_urn_id"		json:"contact_urn_id"`
@@ -74,7 +75,7 @@ func NewIncomingMsg(channel *Channel, urn urns.URN, text string, extID string, c
 		UUID_:              MsgUUID(uuids.NewV7()),
 		Text_:              text,
 		ExternalID_:        null.String(extID),
-		ExternalIdentifier: null.String(extID),
+		ExternalIdentifier: sql.NullString{String: extID, Valid: extID != ""},
 		ChannelID_:         channel.ID(),
 		CreatedOn_:         now,
 		ModifiedOn_:        now,
@@ -86,8 +87,8 @@ func NewIncomingMsg(channel *Channel, urn urns.URN, text string, extID string, c
 func (m *MsgIn) EventUUID() uuids.UUID { return uuids.UUID(m.UUID_) }
 func (m *MsgIn) UUID() MsgUUID         { return m.UUID_ }
 func (m *MsgIn) ExternalID() string {
-	if string(m.ExternalIdentifier) != "" {
-		return string(m.ExternalIdentifier)
+	if m.ExternalIdentifier.Valid {
+		return m.ExternalIdentifier.String
 	}
 	return string(m.ExternalID_)
 }
