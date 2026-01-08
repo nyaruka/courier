@@ -1,3 +1,8 @@
+v26.1.1 (2026-01-08)
+-------------------------
+ * Update phonenumbers dependency
+ * Add warning for incoming messages unique constraint violation
+
 v26.1.0 (2026-01-07)
 -------------------------
  * Ignore 'null' external IDs on hormuud channels
