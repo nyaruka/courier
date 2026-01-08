@@ -122,8 +122,8 @@ github.com/nyaruka/gocommon v1.74.0 h1:rYeoNtN1gxmtQxGGnyo46os5zcANqtSg0dlOoKUDG
 github.com/nyaruka/gocommon v1.74.0/go.mod h1:9JFQxic8uW6DPBnMiX0f9XN0twas5Fr/GL+XPxbR7Js=
 github.com/nyaruka/null/v3 v3.0.0 h1:JvOiNuKmRBFHxzZFt4sWii+ewmMkCQ1vO7X0clTNn6E=
 github.com/nyaruka/null/v3 v3.0.0/go.mod h1:Sus286RmC8P0VihFuQDDQPib/xJQ7++TsaPLdRuwgVc=
-github.com/nyaruka/phonenumbers v1.6.7 h1:WmebT8TNEzNaui5QlrGqbccRC6dZkEkYc+MGQoILSSo=
-github.com/nyaruka/phonenumbers v1.6.7/go.mod h1:7gjs+Lchqm49adhAKB5cdcng5ZXgt6x7Jgvi0ZorUtU=
+github.com/nyaruka/phonenumbers v1.6.8 h1:k7HAJ/LeBkXE0vfbajITzTCZD0z0j+epdBNx43yTygk=
+github.com/nyaruka/phonenumbers v1.6.8/go.mod h1:IUu45lj2bSeYXQuxDyyuzOrdV10tyRa1YSsfH8EKN5c=
 github.com/nyaruka/vkutil v0.20.0 h1:ZKFh7wI+1YYVGX6YbwWMsh5HlE6IKDwAs3yWg73CQdU=
 github.com/nyaruka/vkutil v0.20.0/go.mod h1:G53rhVxkmG2C7GVioiih2i3HTH29OPmgV3d+n+1Vhws=
 github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=
