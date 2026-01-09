@@ -261,7 +261,13 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 		for _, change := range entry.Changes {
 
 			for _, contact := range change.Value.Contacts {
-				contactNames[contact.WaID] = contact.Profile.Name
+				if contact.WaID != "" {
+					contactNames[contact.WaID] = contact.Profile.Name
+				}
+
+				if contact.UserID != "" {
+					contactNames[contact.UserID] = contact.Profile.Name
+				}
 			}
 
 			for _, msg := range change.Value.Messages {
@@ -276,8 +282,16 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 				}
 				date := parseTimestamp(ts)
 
-				urn, err := urns.New(urns.WhatsApp, msg.From)
-				if err != nil {
+				var urn urns.URN
+				var contactName string
+				if msg.FromUserID != "" {
+					urn, err = urns.New(urns.WhatsApp, msg.FromUserID)
+					contactName = contactNames[msg.FromUserID]
+				} else {
+					urn, err = urns.New(urns.WhatsApp, msg.From)
+					contactName = contactNames[msg.From]
+				}
+				if err != nil || urn == urns.NilURN {
 					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid whatsapp id"))
 				}
 
@@ -320,7 +334,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 				}
 
 				// create our message
-				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, msg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[msg.From])
+				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, msg.ID, clog).WithReceivedOn(date).WithContactName(contactName)
 
 				// we had an error downloading media
 				if err != nil {
@@ -826,6 +840,11 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 	externalID := respPayload.Messages[0].ID
 	if externalID != "" {
 		res.AddExternalID(externalID)
+	}
+
+	if len(respPayload.Contacts) > 0 && respPayload.Contacts[0].WaID == "" {
+		bsuidURN, _ := urns.New(urns.WhatsApp, respPayload.Contacts[0].Input)
+		res.SetNewURN(bsuidURN)
 	}
 	return nil
 }
