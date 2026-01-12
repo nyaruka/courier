@@ -33,6 +33,7 @@ func TestWriteStatusUpdates(t *testing.T) {
 			MsgUUID_:     "0199df10-10dc-7e6e-834b-3d959ece93b2", // message 2
 			Status_:      models.MsgStatusErrored,
 			LogUUID:      "019a6e54-671f-789a-bbb1-31cddd66c681",
+			ExternalID_:  "new-external-id",
 		},
 		{
 			ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
@@ -62,7 +63,32 @@ func TestWriteStatusUpdates(t *testing.T) {
 		"0199df0f-9f82-7689-b02d-f34105991321": "S",
 		"0199df10-10dc-7e6e-834b-3d959ece93b2": "E",
 		"0199df10-9519-7fe2-a29c-c890d1713673": "P",
+		"019bb1ca-a92d-78f5-ba61-06aa62f2b41a": "P",
 	})
+
+	assertdb.Query(t, rt.DB, `SELECT uuid::text, status, external_identifier, external_id FROM msgs_msg WHERE uuid= '0199df0f-9f82-7689-b02d-f34105991321'`).
+		Columns(map[string]any{
+			"uuid":                "0199df0f-9f82-7689-b02d-f34105991321",
+			"status":              "S",
+			"external_identifier": "ext1",
+			"external_id":         "ext1",
+		})
+
+	assertdb.Query(t, rt.DB, `SELECT uuid::text, status, external_identifier, external_id FROM msgs_msg WHERE uuid= '0199df10-10dc-7e6e-834b-3d959ece93b2'`).
+		Columns(map[string]any{
+			"uuid":                "0199df10-10dc-7e6e-834b-3d959ece93b2",
+			"status":              "E",
+			"external_identifier": "new-external-id",
+			"external_id":         "new-external-id",
+		})
+
+	assertdb.Query(t, rt.DB, `SELECT uuid::text, status, external_identifier, external_id FROM msgs_msg WHERE uuid= '0199df10-9519-7fe2-a29c-c890d1713673'`).
+		Columns(map[string]any{
+			"uuid":                "0199df10-9519-7fe2-a29c-c890d1713673",
+			"status":              "P",
+			"external_identifier": "ext2",
+			"external_id":         "ext2",
+		})
 
 	// write another errored status for message 2
 	changes, err = models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{

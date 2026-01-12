@@ -397,7 +397,7 @@ func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, c
 // DeleteMsgByExternalID resolves a message external id and quees a task to mailroom to delete it
 func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
 	ch := channel.(*models.Channel)
-	row := b.rt.DB.QueryRowContext(ctx, `SELECT uuid, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_id = $2 AND direction = 'I'`, ch.ID(), externalID)
+	row := b.rt.DB.QueryRowContext(ctx, `SELECT uuid, contact_id FROM msgs_msg WHERE channel_id = $1 AND (external_id = $2 OR external_identifier = $2) AND direction = 'I'`, ch.ID(), externalID)
 
 	var msgUUID models.MsgUUID
 	var contactID models.ContactID

@@ -97,6 +97,14 @@ func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
 	ts.Nil(err)
 
 	ts.assertQueuedContactTask(100, "msg_deleted", map[string]any{"msg_uuid": "0199df10-9519-7fe2-a29c-c890d1713673"})
+
+	// reset valkey for next test
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
+	// a valid external identifier becomes a queued task as well
+	err = ts.b.DeleteMsgByExternalID(ctx, knChannel, "ext3")
+	ts.Nil(err)
+
+	ts.assertQueuedContactTask(100, "msg_deleted", map[string]any{"msg_uuid": "019bb1ca-a92d-78f5-ba61-06aa62f2b41a"})
 }
 
 func (ts *BackendTestSuite) TestContact() {
