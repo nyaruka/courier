@@ -1,3 +1,7 @@
+v26.1.2 (2026-01-12)
+-------------------------
+ * Start writing external identifier field for incoming messages
+
 v26.1.1 (2026-01-08)
 -------------------------
  * Update phonenumbers dependency
