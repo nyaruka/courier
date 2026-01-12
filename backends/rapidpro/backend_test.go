@@ -416,6 +416,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	m := testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	ts.Equal(models.MsgStatusWired, m.Status)
 	ts.Equal(null.String("ext0"), m.ExternalID)
+	ts.Equal(null.String("ext0"), m.ExternalIdentifier)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.After(now))
 	ts.Equal(null.NullString, m.FailedReason)
@@ -434,7 +435,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	ts.Equal(models.MsgStatusSent, m.Status)
-	ts.Equal(null.String("ext0"), m.ExternalID) // no change
+	ts.Equal(null.String("ext0"), m.ExternalID)         // no change
+	ts.Equal(null.String("ext0"), m.ExternalIdentifier) // no change
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.Equal(sentOn)) // no change
 	ts.Equal([]string{string(clog1.UUID), string(clog2.UUID)}, []string(m.LogUUIDs))
@@ -451,7 +453,9 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	ts.Equal(m.Status, models.MsgStatusDelivered)
 	ts.True(m.ModifiedOn.After(now))
-	ts.True(m.SentOn.Equal(sentOn)) // no change
+	ts.True(m.SentOn.Equal(sentOn))                     // no change
+	ts.Equal(null.String("ext0"), m.ExternalID)         // no change
+	ts.Equal(null.String("ext0"), m.ExternalIdentifier) // no change
 	ts.Equal([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID)}, []string(m.LogUUIDs))
 
 	history = getHistoryItems()
@@ -481,6 +485,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-9519-7fe2-a29c-c890d1713673")
 	ts.Equal(models.MsgStatusPending, m.Status)
 	ts.Equal(m.ExternalID, null.String("ext2"))
+	ts.Equal(m.ExternalIdentifier, null.String("ext2"))
 	ts.Equal([]string(nil), []string(m.LogUUIDs))
 
 	// update to FAILED using external id
@@ -518,6 +523,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(models.MsgStatusSent, m.Status)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.Equal(sentOn)) // no change
+	ts.Equal(m.ExternalID, null.String("ext1"))
+	ts.Equal(m.ExternalIdentifier, null.String("ext1"))
 
 	// put test outgoing messages back into queued state
 	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL WHERE id IN ($1, $2)`, 10002, 10001)
@@ -529,8 +536,13 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(models.MsgStatusSent, m.Status)
 	ts.NotNil(m.SentOn)
+	ts.Equal(m.ExternalID, null.String("ext1"))
+	ts.Equal(m.ExternalIdentifier, null.String("ext1"))
+
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	ts.Equal(models.MsgStatusDelivered, m.Status)
+	ts.Equal(m.ExternalID, null.String("ext0"))
+	ts.Equal(m.ExternalIdentifier, null.String("ext0"))
 	ts.NotNil(m.SentOn)
 
 	// reset our status to sent
@@ -554,6 +566,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.NextAttempt.After(now))
 	ts.Equal(null.NullString, m.FailedReason)
+	ts.Equal(m.ExternalID, null.String("ext1"))
+	ts.Equal(m.ExternalIdentifier, null.String("ext1"))
 
 	// second go
 	status = ts.b.NewStatusUpdateByExternalID(channel, "ext1", models.MsgStatusErrored, clog6)
