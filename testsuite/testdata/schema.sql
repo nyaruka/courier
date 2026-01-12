@@ -94,7 +94,7 @@ CREATE TABLE msgs_msg (
     contact_urn_id integer REFERENCES contacts_contacturn(id) ON DELETE CASCADE,
     --broadcast_id integer REFERENCES msgs_broadcast(id) ON DELETE CASCADE,
     --flow_id integer REFERENCES flows_flow(id) ON DELETE CASCADE,
-    ticket_uuid uuid,
+    --ticket_uuid uuid,
     created_by_id integer REFERENCES users_user(id),
     text text NOT NULL,
     attachments character varying(255)[] NULL,
