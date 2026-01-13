@@ -13,7 +13,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
@@ -1254,6 +1253,16 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	ts.Equal(contact.ID_, dbE.ContactID)
 	ts.Equal(contact.URNID_, dbE.ContactURNID)
 
+	ts.assertQueuedContactTask(contact.ID_, "event_received", map[string]any{
+		"event_uuid":  string(event.UUID()),
+		"event_type":  "referral",
+		"channel_id":  float64(10),
+		"urn_id":      float64(contact.URNID_),
+		"extra":       map[string]any{"ref_id": "12345"},
+		"new_contact": true,
+		"occurred_on": event.OccurredOn().Format(time.RFC3339Nano),
+	})
+
 	event = ts.b.NewChannelEvent(channel, models.EventTypeOptIn, urn, clog).WithExtra(map[string]string{"title": "Polls", "payload": "1"})
 	err = ts.b.WriteChannelEvent(ctx, event, clog)
 	ts.NoError(err)
@@ -1348,7 +1357,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 		"urn_id":      float64(contact.URNID_),
 		"extra":       map[string]any{"ref_id": "12345"},
 		"new_contact": false,
-		"occurred_on": "2020-08-05T13:30:00.123456789Z",
+		"occurred_on": event.OccurredOn().Format(time.RFC3339Nano),
 	})
 }
 
@@ -1480,11 +1489,9 @@ func (ts *BackendTestSuite) assertQueuedContactTask(contactID models.ContactID, 
 	data, err := redis.Bytes(rc.Do("LPOP", fmt.Sprintf("c:1:%d", contactID)))
 	ts.NoError(err)
 
-	// created_on is usually DB time so exclude it from task body comparison
-	data = jsonparser.Delete(data, "task", "created_on")
-
 	var body map[string]any
 	jsonx.MustUnmarshal(data, &body)
+
 	ts.Equal(expectedType, body["type"])
 	ts.Equal(expectedBody, body["task"])
 }

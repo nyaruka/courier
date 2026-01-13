@@ -39,7 +39,6 @@ func queueEventHandling(ctx context.Context, rc redis.Conn, c *models.Contact, e
 		"extra":       e.Extra(),
 		"new_contact": c.IsNew_,
 		"occurred_on": e.OccurredOn_,
-		"created_on":  e.CreatedOn_,
 	}
 	if e.OptInID_ != 0 {
 		body["optin_id"] = e.OptInID_

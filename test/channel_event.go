@@ -14,7 +14,6 @@ type mockChannelEvent struct {
 	channel    courier.Channel
 	eventType  models.ChannelEventType
 	urn        urns.URN
-	createdOn  time.Time
 	occurredOn time.Time
 
 	contactName   string
@@ -26,7 +25,6 @@ func (e *mockChannelEvent) EventUUID() uuids.UUID              { return uuids.UU
 func (e *mockChannelEvent) UUID() models.ChannelEventUUID      { return e.uuid }
 func (e *mockChannelEvent) ChannelUUID() models.ChannelUUID    { return e.channel.UUID() }
 func (e *mockChannelEvent) EventType() models.ChannelEventType { return e.eventType }
-func (e *mockChannelEvent) CreatedOn() time.Time               { return e.createdOn }
 func (e *mockChannelEvent) OccurredOn() time.Time              { return e.occurredOn }
 func (e *mockChannelEvent) Extra() map[string]string           { return e.extra }
 func (e *mockChannelEvent) ContactName() string                { return e.contactName }

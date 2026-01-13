@@ -29,7 +29,6 @@ type ChannelEvent struct {
 	OptInID_     null.Int                `json:"optin_id"                db:"optin_id"`
 	Extra_       null.Map[string]        `json:"extra"                   db:"extra"`
 	OccurredOn_  time.Time               `json:"occurred_on"             db:"occurred_on"`
-	CreatedOn_   time.Time               `json:"created_on"              db:"created_on"`
 	LogUUIDs     pq.StringArray          `json:"log_uuids"               db:"log_uuids"`
 
 	ContactID_    models.ContactID    `json:"-"               db:"contact_id"`
@@ -68,7 +67,6 @@ func (e *ChannelEvent) EventType() models.ChannelEventType { return e.EventType_
 func (e *ChannelEvent) URN() urns.URN                      { return e.URN_ }
 func (e *ChannelEvent) Extra() map[string]string           { return e.Extra_ }
 func (e *ChannelEvent) OccurredOn() time.Time              { return e.OccurredOn_ }
-func (e *ChannelEvent) CreatedOn() time.Time               { return e.CreatedOn_ }
 func (e *ChannelEvent) Channel() *models.Channel           { return e.channel }
 
 func (e *ChannelEvent) WithContactName(name string) courier.ChannelEvent {
@@ -119,9 +117,8 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 
 const sqlInsertChannelEvent = `
 INSERT INTO 
-	channels_channelevent( org_id,  uuid, channel_id,  contact_id,  contact_urn_id,  event_type,  optin_id,  extra,  occurred_on, created_on, status,  log_uuids)
-				   VALUES(:org_id, :uuid, :channel_id, :contact_id, :contact_urn_id, :event_type, :optin_id, :extra, :occurred_on,      NOW(), 'P',    :log_uuids)
-RETURNING id, created_on`
+	channels_channelevent( org_id,  uuid,  channel_id,  contact_id,  contact_urn_id,  event_type,  optin_id,  extra,  occurred_on,  created_on, status,  log_uuids)
+				   VALUES(:org_id, :uuid, :channel_id, :contact_id, :contact_urn_id, :event_type, :optin_id, :extra, :occurred_on,       NOW(),    'P', :log_uuids)`
 
 // writeChannelEventToDB writes the passed in channel event to our db
 func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clog *courier.ChannelLog) error {

@@ -111,7 +111,6 @@ type ChannelEvent interface {
 	URN() urns.URN
 	EventType() models.ChannelEventType
 	Extra() map[string]string
-	CreatedOn() time.Time
 	OccurredOn() time.Time
 
 	WithContactName(name string) ChannelEvent
