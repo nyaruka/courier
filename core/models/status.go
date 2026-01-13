@@ -71,6 +71,7 @@ UPDATE msgs_msg SET
 	failed_reason = CASE WHEN error_count >= 2 THEN 'E' ELSE failed_reason END,
 	sent_on = CASE WHEN s.status IN ('W', 'S', 'D', 'R') THEN COALESCE(sent_on, NOW()) ELSE NULL END,
 	external_id = CASE WHEN s.external_id != '' THEN s.external_id ELSE msgs_msg.external_id END,
+	external_identifier = CASE WHEN s.external_id != '' THEN s.external_id ELSE msgs_msg.external_identifier END,
 	modified_on = NOW(),
 	log_uuids = array_append(log_uuids, s.log_uuid)
     FROM 
