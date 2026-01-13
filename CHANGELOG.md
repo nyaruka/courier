@@ -1,3 +1,7 @@
+v26.1.3 (2026-01-13)
+-------------------------
+ * Support updating the external_identifier field for outgoing messages and support for deleting by that field
+
 v26.1.2 (2026-01-12)
 -------------------------
  * Start writing external identifier field for incoming messages
