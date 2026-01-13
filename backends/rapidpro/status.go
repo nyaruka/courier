@@ -111,7 +111,7 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 
 	if len(missingUUID) > 0 {
 		if err := b.resolveStatusUpdateByExternalIdentifier(ctx, missingUUID); err != nil {
-			return nil, fmt.Errorf("error resolving status updates by external ID: %w", err)
+			return nil, fmt.Errorf("error resolving status updates by external identifier: %w", err)
 		}
 	}
 
@@ -147,7 +147,7 @@ SELECT uuid, channel_id, external_identifier
   FROM msgs_msg 
  WHERE (channel_id, external_identifier) IN (VALUES(:channel_id::int, :external_id))`
 
-// tries to resolve msg UUIDs for the given statuses using their external IDs
+// tries to resolve msg UUIDs for the given statuses using their external identifiers
 func (b *backend) resolveStatusUpdateByExternalIdentifier(ctx context.Context, statuses []*models.StatusUpdate) error {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
