@@ -384,7 +384,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 		clog := courier.NewChannelLog(courier.ChannelLogTypeMsgStatus, channel, nil)
 		statusObj := ts.b.NewStatusUpdate(channel, uuid, status, clog)
 		if newExtID != "" {
-			statusObj.SetExternalID(newExtID)
+			statusObj.SetExternalIdentifier(newExtID)
 		}
 		err := ts.b.WriteStatusUpdate(ctx, statusObj)
 		ts.NoError(err)
@@ -672,7 +672,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 
 	// create a status update from a send which will have a UUID and an external ID
 	status1 := ts.b.NewStatusUpdate(channel, "0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusSent, clog)
-	status1.SetExternalID("ex457")
+	status1.SetExternalIdentifier("ex457")
 	err := ts.b.WriteStatusUpdate(ctx, status1)
 	ts.NoError(err)
 
