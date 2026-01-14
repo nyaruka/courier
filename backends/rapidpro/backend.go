@@ -572,10 +572,10 @@ func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalI
 
 // WriteStatusUpdate writes the passed in MsgStatus to our store
 func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUpdate) error {
-	log := slog.With("msg_uuid", status.MsgUUID(), "msg_external_id", status.ExternalID(), "status", status.Status())
+	log := slog.With("msg_uuid", status.MsgUUID(), "msg_external_id", status.ExternalIdentifier(), "status", status.Status())
 	su := status.(*models.StatusUpdate)
 
-	if status.MsgUUID() == "" && status.ExternalID() == "" {
+	if status.MsgUUID() == "" && status.ExternalIdentifier() == "" {
 		return errors.New("message status with no UUID or external id")
 	}
 
@@ -590,11 +590,11 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 
 	if status.MsgUUID() != "" {
 		// this is a message we've just sent and were given an external id for
-		if status.ExternalID() != "" {
+		if status.ExternalIdentifier() != "" {
 			rc := b.rt.VK.Get()
 			defer rc.Close()
 
-			err := b.sentExternalIDs.Set(ctx, rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalID_), string(status.MsgUUID()))
+			err := b.sentExternalIDs.Set(ctx, rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalIdentifier_), string(status.MsgUUID()))
 			if err != nil {
 				log.Error("error recording external id", "error", err)
 			}

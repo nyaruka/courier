@@ -10,13 +10,14 @@ import (
 )
 
 type MockStatusUpdate struct {
-	channel    courier.Channel
-	msgUUID    models.MsgUUID
-	oldURN     urns.URN
-	newURN     urns.URN
-	externalID string
-	status     models.MsgStatus
-	createdOn  time.Time
+	channel            courier.Channel
+	msgUUID            models.MsgUUID
+	oldURN             urns.URN
+	newURN             urns.URN
+	externalID         string
+	externalIdentifier string
+	status             models.MsgStatus
+	createdOn          time.Time
 }
 
 func (m *MockStatusUpdate) EventUUID() uuids.UUID           { return uuids.UUID(m.msgUUID) }
@@ -32,8 +33,16 @@ func (m *MockStatusUpdate) URNUpdate() (urns.URN, urns.URN) {
 	return m.oldURN, m.newURN
 }
 
-func (m *MockStatusUpdate) ExternalID() string      { return m.externalID }
-func (m *MockStatusUpdate) SetExternalID(id string) { m.externalID = id }
+func (m *MockStatusUpdate) ExternalIdentifier() string {
+	if m.externalIdentifier != "" {
+		return m.externalIdentifier
+	}
+	return m.externalID
+}
+func (m *MockStatusUpdate) SetExternalIdentifier(id string) {
+	m.externalID = id
+	m.externalIdentifier = id
+}
 
 func (m *MockStatusUpdate) Status() models.MsgStatus          { return m.status }
 func (m *MockStatusUpdate) SetStatus(status models.MsgStatus) { m.status = status }

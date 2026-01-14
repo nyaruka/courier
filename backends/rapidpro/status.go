@@ -21,14 +21,15 @@ func newStatusUpdate(channel courier.Channel, uuid models.MsgUUID, externalID st
 	dbChannel := channel.(*models.Channel)
 
 	return &models.StatusUpdate{
-		ChannelUUID_: channel.UUID(),
-		ChannelID_:   dbChannel.ID(),
-		MsgUUID_:     uuid,
-		OldURN_:      urns.NilURN,
-		NewURN_:      urns.NilURN,
-		ExternalID_:  externalID,
-		Status_:      status,
-		LogUUID:      clog.UUID,
+		ChannelUUID_:        channel.UUID(),
+		ChannelID_:          dbChannel.ID(),
+		MsgUUID_:            uuid,
+		OldURN_:             urns.NilURN,
+		NewURN_:             urns.NilURN,
+		ExternalID_:         externalID,
+		ExternalIdentifier_: externalID,
+		Status_:             status,
+		LogUUID:             clog.UUID,
 	}
 }
 
@@ -110,8 +111,8 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 	}
 
 	if len(missingUUID) > 0 {
-		if err := b.resolveStatusUpdateByExternalID(ctx, missingUUID); err != nil {
-			return nil, fmt.Errorf("error resolving status updates by external ID: %w", err)
+		if err := b.resolveStatusUpdateByExternalIdentifier(ctx, missingUUID); err != nil {
+			return nil, fmt.Errorf("error resolving status updates by external identifier: %w", err)
 		}
 	}
 
@@ -142,13 +143,13 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 	return unresolved, nil
 }
 
-const sqlResolveStatusByExternalID = `
-SELECT uuid, channel_id, external_id 
+const sqlResolveStatusByExternalIdentifier = `
+SELECT uuid, channel_id, external_identifier
   FROM msgs_msg 
- WHERE (channel_id, external_id) IN (VALUES(:channel_id::int, :external_id))`
+ WHERE (channel_id, external_identifier) IN (VALUES(:channel_id::int, :external_id))`
 
-// tries to resolve msg UUIDs for the given statuses using their external IDs
-func (b *backend) resolveStatusUpdateByExternalID(ctx context.Context, statuses []*models.StatusUpdate) error {
+// tries to resolve msg UUIDs for the given statuses using their external identifiers
+func (b *backend) resolveStatusUpdateByExternalIdentifier(ctx context.Context, statuses []*models.StatusUpdate) error {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
@@ -186,7 +187,7 @@ func (b *backend) resolveStatusUpdateByExternalID(ctx context.Context, statuses 
 		statusesByExt[ext{s.ChannelID_, s.ExternalID_}] = s
 	}
 
-	sql, params, err := dbutil.BulkSQL(b.rt.DB, sqlResolveStatusByExternalID, notInCache)
+	sql, params, err := dbutil.BulkSQL(b.rt.DB, sqlResolveStatusByExternalIdentifier, notInCache)
 	if err != nil {
 		return err
 	}

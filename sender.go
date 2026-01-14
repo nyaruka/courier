@@ -363,7 +363,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 
 	// fow now we can only store one external id per message
 	if len(res.ExternalIDs()) > 0 {
-		status.SetExternalID(res.ExternalIDs()[0])
+		status.SetExternalIdentifier(res.ExternalIDs()[0])
 	}
 
 	if res.newURN != urns.NilURN {

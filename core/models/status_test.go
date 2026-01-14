@@ -34,6 +34,7 @@ func TestWriteStatusUpdates(t *testing.T) {
 			Status_:      models.MsgStatusErrored,
 			LogUUID:      "019a6e54-671f-789a-bbb1-31cddd66c681",
 			ExternalID_:  "new-external-id",
+			ExternalIdentifier_:  "new-external-id",
 		},
 		{
 			ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
@@ -49,6 +50,7 @@ func TestWriteStatusUpdates(t *testing.T) {
 			Status_:      models.MsgStatusSent,
 			LogUUID:      "019bb2a0-e472-7689-9f80-cb44bd0c7062",
 			ExternalID_:  "new-long-external-id",
+			ExternalIdentifier_:  "new-long-external-id",
 		},
 	}
 
