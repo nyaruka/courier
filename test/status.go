@@ -14,7 +14,6 @@ type MockStatusUpdate struct {
 	msgUUID            models.MsgUUID
 	oldURN             urns.URN
 	newURN             urns.URN
-	externalID         string
 	externalIdentifier string
 	status             models.MsgStatus
 	createdOn          time.Time
@@ -33,16 +32,8 @@ func (m *MockStatusUpdate) URNUpdate() (urns.URN, urns.URN) {
 	return m.oldURN, m.newURN
 }
 
-func (m *MockStatusUpdate) ExternalIdentifier() string {
-	if m.externalIdentifier != "" {
-		return m.externalIdentifier
-	}
-	return m.externalID
-}
-func (m *MockStatusUpdate) SetExternalIdentifier(id string) {
-	m.externalID = id
-	m.externalIdentifier = id
-}
+func (m *MockStatusUpdate) ExternalIdentifier() string      { return m.externalIdentifier }
+func (m *MockStatusUpdate) SetExternalIdentifier(id string) { m.externalIdentifier = id }
 
 func (m *MockStatusUpdate) Status() models.MsgStatus          { return m.status }
 func (m *MockStatusUpdate) SetStatus(status models.MsgStatus) { m.status = status }

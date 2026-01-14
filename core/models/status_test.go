@@ -28,13 +28,12 @@ func TestWriteStatusUpdates(t *testing.T) {
 			LogUUID:      "019a6e53-e1e8-7df7-a264-ce2372824e1d",
 		},
 		{
-			ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
-			ChannelID_:   10,
-			MsgUUID_:     "0199df10-10dc-7e6e-834b-3d959ece93b2", // message 2
-			Status_:      models.MsgStatusErrored,
-			LogUUID:      "019a6e54-671f-789a-bbb1-31cddd66c681",
-			ExternalID_:  "new-external-id",
-			ExternalIdentifier_:  "new-external-id",
+			ChannelUUID_:        "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
+			ChannelID_:          10,
+			MsgUUID_:            "0199df10-10dc-7e6e-834b-3d959ece93b2", // message 2
+			Status_:             models.MsgStatusErrored,
+			LogUUID:             "019a6e54-671f-789a-bbb1-31cddd66c681",
+			ExternalIdentifier_: "new-external-id",
 		},
 		{
 			ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
@@ -44,13 +43,12 @@ func TestWriteStatusUpdates(t *testing.T) {
 			LogUUID:      "019a6e62-81b9-79e5-b654-56e6094692a6",
 		},
 		{
-			ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
-			ChannelID_:   10,
-			MsgUUID_:     "019bb29e-b2c6-7e5f-b980-ccb3e9e21fbc", // message 3 - outgoing message
-			Status_:      models.MsgStatusSent,
-			LogUUID:      "019bb2a0-e472-7689-9f80-cb44bd0c7062",
-			ExternalID_:  "new-long-external-id",
-			ExternalIdentifier_:  "new-long-external-id",
+			ChannelUUID_:        "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
+			ChannelID_:          10,
+			MsgUUID_:            "019bb29e-b2c6-7e5f-b980-ccb3e9e21fbc", // message 3 - outgoing message
+			Status_:             models.MsgStatusSent,
+			LogUUID:             "019bb2a0-e472-7689-9f80-cb44bd0c7062",
+			ExternalIdentifier_: "new-long-external-id",
 		},
 	}
 
@@ -81,36 +79,32 @@ func TestWriteStatusUpdates(t *testing.T) {
 		"019bb29e-b2c6-7e5f-b980-ccb3e9e21fbc": "S",
 	})
 
-	assertdb.Query(t, rt.DB, `SELECT uuid::text, status, external_identifier, external_id FROM msgs_msg WHERE uuid= '0199df0f-9f82-7689-b02d-f34105991321'`).
+	assertdb.Query(t, rt.DB, `SELECT uuid::text, status, external_identifier FROM msgs_msg WHERE uuid= '0199df0f-9f82-7689-b02d-f34105991321'`).
 		Columns(map[string]any{
 			"uuid":                "0199df0f-9f82-7689-b02d-f34105991321",
 			"status":              "S",
 			"external_identifier": "ext1",
-			"external_id":         "ext1",
 		})
 
-	assertdb.Query(t, rt.DB, `SELECT uuid::text, status, external_identifier, external_id FROM msgs_msg WHERE uuid= '0199df10-10dc-7e6e-834b-3d959ece93b2'`).
+	assertdb.Query(t, rt.DB, `SELECT uuid::text, status, external_identifier FROM msgs_msg WHERE uuid= '0199df10-10dc-7e6e-834b-3d959ece93b2'`).
 		Columns(map[string]any{
 			"uuid":                "0199df10-10dc-7e6e-834b-3d959ece93b2",
 			"status":              "E",
 			"external_identifier": "new-external-id",
-			"external_id":         "new-external-id",
 		})
 
-	assertdb.Query(t, rt.DB, `SELECT uuid::text, status, external_identifier, external_id FROM msgs_msg WHERE uuid= '0199df10-9519-7fe2-a29c-c890d1713673'`).
+	assertdb.Query(t, rt.DB, `SELECT uuid::text, status, external_identifier FROM msgs_msg WHERE uuid= '0199df10-9519-7fe2-a29c-c890d1713673'`).
 		Columns(map[string]any{
 			"uuid":                "0199df10-9519-7fe2-a29c-c890d1713673",
 			"status":              "P",
 			"external_identifier": "ext2",
-			"external_id":         "ext2",
 		})
 
-	assertdb.Query(t, rt.DB, `SELECT uuid::text, status, external_identifier, external_id FROM msgs_msg WHERE uuid= '019bb29e-b2c6-7e5f-b980-ccb3e9e21fbc'`).
+	assertdb.Query(t, rt.DB, `SELECT uuid::text, status, external_identifier FROM msgs_msg WHERE uuid= '019bb29e-b2c6-7e5f-b980-ccb3e9e21fbc'`).
 		Columns(map[string]any{
 			"uuid":                "019bb29e-b2c6-7e5f-b980-ccb3e9e21fbc",
 			"status":              "S",
 			"external_identifier": "new-long-external-id",
-			"external_id":         "new-long-external-id",
 		})
 
 	// write another errored status for message 2
