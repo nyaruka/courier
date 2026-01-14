@@ -95,8 +95,8 @@ type StatusUpdate interface {
 	SetURNUpdate(old, new urns.URN) error
 	URNUpdate() (old, new urns.URN)
 
-	ExternalID() string
-	SetExternalID(string)
+	ExternalIdentifier() string
+	SetExternalIdentifier(string)
 
 	Status() models.MsgStatus
 	SetStatus(models.MsgStatus)

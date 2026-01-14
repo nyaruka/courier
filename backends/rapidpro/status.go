@@ -21,14 +21,15 @@ func newStatusUpdate(channel courier.Channel, uuid models.MsgUUID, externalID st
 	dbChannel := channel.(*models.Channel)
 
 	return &models.StatusUpdate{
-		ChannelUUID_: channel.UUID(),
-		ChannelID_:   dbChannel.ID(),
-		MsgUUID_:     uuid,
-		OldURN_:      urns.NilURN,
-		NewURN_:      urns.NilURN,
-		ExternalID_:  externalID,
-		Status_:      status,
-		LogUUID:      clog.UUID,
+		ChannelUUID_:        channel.UUID(),
+		ChannelID_:          dbChannel.ID(),
+		MsgUUID_:            uuid,
+		OldURN_:             urns.NilURN,
+		NewURN_:             urns.NilURN,
+		ExternalID_:         externalID,
+		ExternalIdentifier_: externalID,
+		Status_:             status,
+		LogUUID:             clog.UUID,
 	}
 }
 
