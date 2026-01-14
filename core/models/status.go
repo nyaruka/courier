@@ -17,15 +17,15 @@ import (
 
 // StatusUpdate represents a status update on a message
 type StatusUpdate struct {
-	ChannelUUID_        ChannelUUID `json:"channel_uuid"             		db:"channel_uuid"`
-	ChannelID_          ChannelID   `json:"channel_id"               		db:"channel_id"`
-	MsgUUID_            MsgUUID     `json:"msg_uuid,omitempty"       		db:"msg_uuid"`
-	OldURN_             urns.URN    `json:"old_urn"                  		db:"old_urn"`
-	NewURN_             urns.URN    `json:"new_urn"                  		db:"new_urn"`
-	ExternalID_         string      `json:"external_id,omitempty"    		db:"external_id"`
-	ExternalIdentifier_ string      `json:"external_identifier,omitempty"   db:"external_identifier"`
-	Status_             MsgStatus   `json:"status"                   		db:"status"`
-	LogUUID             clogs.UUID  `json:"log_uuid"                 		db:"log_uuid"`
+	ChannelUUID_        ChannelUUID `json:"channel_uuid" db:"channel_uuid"`
+	ChannelID_          ChannelID   `json:"channel_id" db:"channel_id"`
+	MsgUUID_            MsgUUID     `json:"msg_uuid,omitempty" db:"msg_uuid"`
+	OldURN_             urns.URN    `json:"old_urn" db:"old_urn"`
+	NewURN_             urns.URN    `json:"new_urn" db:"new_urn"`
+	ExternalID_         string      `json:"external_id,omitempty" db:"external_id"`
+	ExternalIdentifier_ string      `json:"external_identifier,omitempty" db:"external_identifier"`
+	Status_             MsgStatus   `json:"status" db:"status"`
+	LogUUID             clogs.UUID  `json:"log_uuid" db:"log_uuid"`
 }
 
 func (s *StatusUpdate) EventUUID() uuids.UUID    { return uuids.UUID(s.MsgUUID_) }
