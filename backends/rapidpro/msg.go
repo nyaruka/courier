@@ -117,9 +117,9 @@ func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLo
 const sqlInsertMsg = `
 INSERT INTO
 	msgs_msg(org_id, uuid, direction, text, attachments, msg_type, msg_count, error_count, high_priority, status, is_android,
-             visibility, external_id, external_identifier, channel_id, contact_id, contact_urn_id, created_on, modified_on, sent_on, log_uuids)
+             visibility, external_identifier, channel_id, contact_id, contact_urn_id, created_on, modified_on, sent_on, log_uuids)
     VALUES(:org_id, :uuid, 'I', :text, :attachments, 'T', 1, 0, FALSE, 'P', FALSE,
-             'V', :external_id, :external_identifier, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :sent_on, :log_uuids)
+             'V', :external_identifier, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :sent_on, :log_uuids)
 RETURNING id`
 
 func writeMsgToDB(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLog) (*models.Contact, error) {
@@ -200,7 +200,7 @@ func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *MsgIn) models.
 	defer rc.Close()
 
 	// if we have an external id use that
-	if m.ExternalID_ != "" {
+	if m.ExternalIdentifier_ != "" {
 		fingerprint := fmt.Sprintf("%s|%s|%s", m.Channel().UUID(), m.URN().Identity(), m.ExternalID())
 
 		if uuid, _ := b.receivedExternalIDs.Get(ctx, rc, fingerprint); uuid != "" {
@@ -229,7 +229,7 @@ func (b *backend) recordMsgReceived(ctx context.Context, m *MsgIn) {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
-	if m.ExternalID_ != "" {
+	if m.ExternalIdentifier_ != "" {
 		fingerprint := fmt.Sprintf("%s|%s|%s", m.Channel().UUID(), m.URN().Identity(), m.ExternalID())
 
 		if err := b.receivedExternalIDs.Set(ctx, rc, fingerprint, string(m.UUID())); err != nil {
