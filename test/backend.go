@@ -219,10 +219,10 @@ func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, uuid models.MsgU
 // NewStatusUpdateByExternalID creates a new Status object for the given external id
 func (mb *MockBackend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return &MockStatusUpdate{
-		channel:    channel,
-		externalID: externalID,
-		status:     status,
-		createdOn:  time.Now().In(time.UTC),
+		channel:            channel,
+		externalIdentifier: externalID,
+		status:             status,
+		createdOn:          time.Now().In(time.UTC),
 	}
 }
 
