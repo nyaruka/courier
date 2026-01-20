@@ -27,7 +27,6 @@ type DBMsg struct {
 	QuickReplies       pq.StringArray       `db:"quick_replies"`
 	Locale             null.String          `db:"locale"`
 	Templating         *models.Templating   `db:"templating"`
-	ExternalID         null.String          `db:"external_id"`
 	ExternalIdentifier null.String          `db:"external_identifier"`
 	ChannelID          models.ChannelID     `db:"channel_id"`
 	ContactID          models.ContactID     `db:"contact_id"`

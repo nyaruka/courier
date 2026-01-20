@@ -207,7 +207,7 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 				actualStatus := actualStatuses[i]
 
 				assert.Equal(t, expectedStatus.MsgUUID, actualStatus.MsgUUID(), "msg uuid mismatch for update %d", i)
-				assert.Equal(t, expectedStatus.ExternalID, actualStatus.ExternalID(), "external id mismatch for update %d", i)
+				assert.Equal(t, expectedStatus.ExternalID, actualStatus.ExternalIdentifier(), "external identifier mismatch for update %d", i)
 				assert.Equal(t, expectedStatus.Status, actualStatus.Status(), "status value mismatch for update %d", i)
 			}
 
