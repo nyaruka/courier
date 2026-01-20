@@ -676,7 +676,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	assertvk.HGetAll(ts.T(), rc, keys[0], map[string]string{"10|ex457": "0199df0f-9f82-7689-b02d-f34105991321"})
 
 	// mimic a delay in that status being written by reverting the db changes
-	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'W', external_id = NULL, external_identifier = NULL WHERE id = 10000`)
+	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'W', external_identifier = NULL WHERE id = 10000`)
 
 	// create a callback status update which only has external id
 	status2 := ts.b.NewStatusUpdateByExternalID(channel, "ex457", models.MsgStatusDelivered, clog)
