@@ -1,3 +1,7 @@
+v26.1.5 (2026-01-20)
+-------------------------
+ * Resolve by external_identifier for status updates
+
 v26.1.4 (2026-01-13)
 -------------------------
  * Remove ChannelEvent.created_on field
