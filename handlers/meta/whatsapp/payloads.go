@@ -64,24 +64,40 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 
 						// We can use buttons
 						if !qrsAsList {
-							interactive := Interactive{Type: "button", Body: struct {
-								Text string "json:\"text\""
-							}{Text: msgParts[i-len(msg.Attachments())]}}
+							if len(qrs) == 1 && qrs[0].Text == "location_request" {
+								interactive := Interactive{Type: "location_request_message", Body: struct {
+									Text string "json:\"text\""
+								}{Text: msgParts[i-len(msg.Attachments())]}}
+								interactive.Action = &struct {
+									Name     string    "json:\"name,omitempty\""
+									Button   string    "json:\"button,omitempty\""
+									Sections []Section "json:\"sections,omitempty\""
+									Buttons  []Button  "json:\"buttons,omitempty\""
+								}{Name: "send_location"}
+								payload.Interactive = &interactive
 
-							btns := make([]Button, len(qrs))
-							for i, qr := range qrs {
-								btns[i] = Button{
-									Type: "reply",
+							} else {
+
+								interactive := Interactive{Type: "button", Body: struct {
+									Text string "json:\"text\""
+								}{Text: msgParts[i-len(msg.Attachments())]}}
+
+								btns := make([]Button, len(qrs))
+								for i, qr := range qrs {
+									btns[i] = Button{
+										Type: "reply",
+									}
+									btns[i].Reply.ID = fmt.Sprint(i)
+									btns[i].Reply.Title = qr.Text
 								}
-								btns[i].Reply.ID = fmt.Sprint(i)
-								btns[i].Reply.Title = qr.Text
+								interactive.Action = &struct {
+									Name     string    "json:\"name,omitempty\""
+									Button   string    "json:\"button,omitempty\""
+									Sections []Section "json:\"sections,omitempty\""
+									Buttons  []Button  "json:\"buttons,omitempty\""
+								}{Buttons: btns}
+								payload.Interactive = &interactive
 							}
-							interactive.Action = &struct {
-								Button   string    "json:\"button,omitempty\""
-								Sections []Section "json:\"sections,omitempty\""
-								Buttons  []Button  "json:\"buttons,omitempty\""
-							}{Buttons: btns}
-							payload.Interactive = &interactive
 						} else {
 							interactive := Interactive{Type: "list", Body: struct {
 								Text string "json:\"text\""
@@ -99,6 +115,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 							}
 
 							interactive.Action = &struct {
+								Name     string    "json:\"name,omitempty\""
 								Button   string    "json:\"button,omitempty\""
 								Sections []Section "json:\"sections,omitempty\""
 								Buttons  []Button  "json:\"buttons,omitempty\""
@@ -230,6 +247,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 							btns[i].Reply.Title = qr.Text
 						}
 						interactive.Action = &struct {
+							Name     string    "json:\"name,omitempty\""
 							Button   string    "json:\"button,omitempty\""
 							Sections []Section "json:\"sections,omitempty\""
 							Buttons  []Button  "json:\"buttons,omitempty\""
@@ -252,6 +270,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 						}
 
 						interactive.Action = &struct {
+							Name     string    "json:\"name,omitempty\""
 							Button   string    "json:\"button,omitempty\""
 							Sections []Section "json:\"sections,omitempty\""
 							Buttons  []Button  "json:\"buttons,omitempty\""
