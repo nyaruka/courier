@@ -705,7 +705,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
 	},
 	{
-		Label:           "Interactive Interactive with location request",
+		Label:           "Interactive with location request",
 		MsgText:         "Interactive send location",
 		MsgURN:          "whatsapp:250788123123",
 		MsgQuickReplies: []models.QuickReply{{Text: "location_request"}},
