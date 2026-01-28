@@ -32,6 +32,7 @@ type MockMsg struct {
 
 	flow   *models.FlowReference
 	optIn  *models.OptInReference
+	prompt string
 	userID models.UserID
 
 	receivedOn *time.Time
@@ -68,6 +69,7 @@ func (m *MockMsg) SentOn() *time.Time                { return m.sentOn }
 func (m *MockMsg) IsResend() bool                    { return m.isResend }
 func (m *MockMsg) Flow() *models.FlowReference       { return m.flow }
 func (m *MockMsg) OptIn() *models.OptInReference     { return m.optIn }
+func (m *MockMsg) Prompt() string                    { return m.prompt }
 func (m *MockMsg) UserID() models.UserID             { return m.userID }
 func (m *MockMsg) Session() *models.Session          { return m.session }
 func (m *MockMsg) HighPriority() bool                { return m.highPriority }
