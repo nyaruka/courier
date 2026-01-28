@@ -667,6 +667,21 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
 	},
 	{
+		Label:     "Interactive with location request",
+		MsgText:   "Interactive send location",
+		MsgURN:    "whatsapp:250788123123",
+		MsgPrompt: "location",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://waba-v2.360dialog.io/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"location_request_message","body":{"text":"Interactive send location"},"action":{"name":"send_location"}}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
 		Label:   "Link Sending",
 		MsgText: "Link Sending https://link.com",
 		MsgURN:  "whatsapp:250788123123",

@@ -70,6 +70,7 @@ type MsgOut interface {
 	UserID() models.UserID
 	HighPriority() bool
 	Session() *models.Session
+	Prompt() string
 }
 
 // MsgIn is our interface to represent an incoming

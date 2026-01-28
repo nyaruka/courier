@@ -166,6 +166,7 @@ type MsgOut struct {
 	IsResend_             bool              `json:"is_resend"`
 	Flow_                 *FlowReference    `json:"flow"`
 	OptIn_                *OptInReference   `json:"optin"`
+	Prompt_               string            `json:"prompt"`
 	UserID_               UserID            `json:"user_id"`
 	Origin_               MsgOrigin         `json:"origin"         validate:"required"`
 	Session_              *Session          `json:"session"`
@@ -185,6 +186,7 @@ func (m *MsgOut) ResponseToExternalID() string { return m.ResponseToExternalID_ 
 func (m *MsgOut) IsResend() bool               { return m.IsResend_ }
 func (m *MsgOut) Flow() *FlowReference         { return m.Flow_ }
 func (m *MsgOut) OptIn() *OptInReference       { return m.OptIn_ }
+func (m *MsgOut) Prompt() string               { return m.Prompt_ }
 func (m *MsgOut) UserID() UserID               { return m.UserID_ }
 func (m *MsgOut) Session() *Session            { return m.Session_ }
 func (m *MsgOut) HighPriority() bool           { return m.HighPriority_ }
