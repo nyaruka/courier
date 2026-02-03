@@ -159,6 +159,13 @@ var testCasesD3C = []IncomingTestCase{
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
 	{
+		Label:                "Receive group Message WAC, ignored",
+		URL:                  d3CReceiveURL,
+		Data:                 string(test.ReadFile("../meta/testdata/wac/group_message.json")),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ignoring group message",
+	},
+	{
 		Label:                "Receive Invalid JSON",
 		URL:                  d3CReceiveURL,
 		Data:                 "not json",

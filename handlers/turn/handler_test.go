@@ -224,6 +224,25 @@ var voiceMsg = `{
 	}]
 }`
 
+var groupMsg = `{
+	"contacts":[{
+		"profile": {
+			"name": "Jerry Cooney"
+		},
+		"wa_id": "250788123123"
+	}],
+  "messages": [{
+    "from": "250788123123",
+    "group_id": "999999999",
+    "id": "41",
+    "timestamp": "1454119029",
+    "text": {
+      "body": "hello world, group message"
+    },
+    "type": "text"
+   }]
+}`
+
 var invalidFrom = `{
   "messages": [{
     "from": "notnumber",
@@ -422,6 +441,13 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedURN:          "whatsapp:250788123123",
 		ExpectedExternalID:   "41",
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive group message JSON, ignored",
+		URL:                  turnWhatsappReceiveURL,
+		Data:                 groupMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ignoring group message",
 	},
 	{
 		Label:                "Receive invalid JSON",

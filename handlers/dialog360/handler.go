@@ -125,6 +125,11 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					continue
 				}
 
+				if msg.GroupID != "" {
+					data = append(data, courier.NewInfoData("ignoring group message"))
+					continue
+				}
+
 				// create our date from the timestamp
 				ts, err := strconv.ParseInt(msg.Timestamp, 10, 64)
 				if err != nil {

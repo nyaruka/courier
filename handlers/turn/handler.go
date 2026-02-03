@@ -88,6 +88,7 @@ type eventsPayload struct {
 	Messages []struct {
 		From      string `json:"from"      validate:"required"`
 		ID        string `json:"id"        validate:"required"`
+		GroupID   string `json:"group_id,omitempty"`
 		Timestamp string `json:"timestamp" validate:"required"`
 		Type      string `json:"type"      validate:"required"`
 		Text      struct {
@@ -179,6 +180,11 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 	// first deal with any received messages
 	for _, msg := range payload.Messages {
 		if seenMsgIDs[msg.ID] {
+			continue
+		}
+
+		if msg.GroupID != "" {
+			data = append(data, courier.NewInfoData("ignoring group message"))
 			continue
 		}
 
