@@ -154,6 +154,14 @@ var whatsappIncomingTests = []IncomingTestCase{
 		PrepRequest:          addValidSignature,
 	},
 	{
+		Label:                "Receive group Message WAC, ignored",
+		URL:                  whatappReceiveURL,
+		Data:                 string(test.ReadFile("./testdata/wac/group_message.json")),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ignoring group message",
+		PrepRequest:          addValidSignature,
+	},
+	{
 		Label:                "Receive Invalid JSON",
 		URL:                  whatappReceiveURL,
 		Data:                 "not json",

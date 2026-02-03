@@ -41,6 +41,7 @@ type Change struct {
 		} `json:"contacts"`
 		Messages []struct {
 			ID        string `json:"id"`
+			GroupID   string `json:"group_id,omitempty"`
 			From      string `json:"from"`
 			Timestamp string `json:"timestamp"`
 			Type      string `json:"type"`
