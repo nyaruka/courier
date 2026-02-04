@@ -109,7 +109,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		text = utils.JoinNonEmpty(", ", payload.Message.Venue.Title, payload.Message.Venue.Address)
 		mediaURL = fmt.Sprintf("geo:%f,%f", payload.Message.Location.Latitude, payload.Message.Location.Longitude)
 	} else if payload.Message.Location != nil {
-		text = fmt.Sprintf("%f,%f", payload.Message.Location.Latitude, payload.Message.Location.Longitude)
+		text = ""
 		mediaURL = fmt.Sprintf("geo:%f,%f", payload.Message.Location.Latitude, payload.Message.Location.Longitude)
 	} else if payload.Message.Contact != nil {
 		phone := ""
