@@ -11,7 +11,7 @@ import (
 func TestMsgOut(t *testing.T) {
 	msgJSON := `{
 		"attachments": ["https://foo.bar/image.jpg"],
-		"quick_replies": [{"type": "text", "text": "Yes"}, {"type": "text", "text": "No"}],
+		"quick_replies": [{"type": "text", "text": "Yes"}, {"type": "text", "text": "No"}, {"text": "Maybe"}],
 		"text": "Test message 21",
 		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
 		"flow": {"uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", "name": "Favorites"},
@@ -36,7 +36,7 @@ func TestMsgOut(t *testing.T) {
 	assert.Equal(t, models.ChannelUUID("f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba"), msg.ChannelUUID_)
 	assert.Equal(t, []string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	assert.Equal(t, "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2", msg.URNAuth_)
-	assert.Equal(t, []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}}, msg.QuickReplies())
+	assert.Equal(t, []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}, {Type: "text", Text: "Maybe"}}, msg.QuickReplies())
 	assert.Equal(t, "external-id", msg.ResponseToExternalID())
 	assert.True(t, msg.HighPriority())
 	assert.True(t, msg.IsResend())

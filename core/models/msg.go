@@ -6,6 +6,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
@@ -101,6 +102,25 @@ type QuickReply struct {
 	Type  string `json:"type"            validate:"required"`
 	Text  string `json:"text,omitempty"`
 	Extra string `json:"extra,omitempty"`
+}
+
+func (qr *QuickReply) UnmarshalJSON(data []byte) error {
+	type Alias QuickReply
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(qr),
+	}
+
+	if err := jsonx.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	if qr.Type == "" {
+		qr.Type = "text"
+	}
+
+	return nil
 }
 
 // ContactReference is information about a contact provided on queued outgoing messages
