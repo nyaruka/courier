@@ -695,7 +695,8 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 
 		// include any quick replies on the last piece we send
 		if part.IsLast {
-			for _, qr := range msg.QuickReplies() {
+			qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "text")
+			for _, qr := range qrs {
 				payload.Message.QuickReplies = append(payload.Message.QuickReplies, messenger.QuickReply{Title: qr.Text, Payload: qr.Text, ContentType: "text"})
 			}
 		} else {

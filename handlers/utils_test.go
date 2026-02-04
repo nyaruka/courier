@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"testing"
 
+	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/stretchr/testify/assert"
 )
@@ -123,4 +124,46 @@ func TestDecodePossibleBase64(t *testing.T) {
 	assert.Equal("the sweat, the tears and the sacrifice of working America", handlers.DecodePossibleBase64("dGhlIHN3ZWF0LCB0aGUgdGVhcnMgYW5kIHRoZSBzYWNyaWZpY2Ugb2Ygd29ya2luZyBBbWVyaWNh\r"))
 	assert.Contains(handlers.DecodePossibleBase64("Tm93IGlzDQp0aGUgdGltZQ0KZm9yIGFsbCBnb29kDQpwZW9wbGUgdG8NCnJlc2lzdC4NCg0KSG93IGFib3V0IGhhaWt1cz8NCkkgZmluZCB0aGVtIHRvIGJlIGZyaWVuZGx5Lg0KcmVmcmlnZXJhdG9yDQoNCjAxMjM0NTY3ODkNCiFAIyQlXiYqKCkgW117fS09Xys7JzoiLC4vPD4/fFx+YA0KQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg=="), "I find them to be friendly")
 	assert.Contains(handlers.DecodePossibleBase64(test6), "I received your letter today")
+}
+
+func TestTextOnlyQuickReplies(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		qrs  []models.QuickReply
+		want []string
+	}{
+		{"text quick replies", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}}, []string{"Yes", "No"}},
+		{"has location quick replies", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}, {Type: "location"}}, []string{"Yes", "No"}},
+		{"not text quick replies", []models.QuickReply{{Type: "location"}}, []string{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := handlers.TextOnlyQuickReplies(tt.qrs)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestFilterQuickRepliesByType(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		qrs   []models.QuickReply
+		type_ string
+		want  []models.QuickReply
+	}{
+		{"filter by text, text types quick replies only", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}}, "text", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}}},
+		{"filter by location, text types quick replies only", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}}, "location", []models.QuickReply{}},
+		{"filter by text, mixed types quick replies", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}, {Type: "location"}}, "text", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}}},
+		{"filter by location, mixed types quick replies", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}, {Type: "location"}}, "location", []models.QuickReply{{Type: "location"}}},
+		{"filter by text quick replies, location type quick replies", []models.QuickReply{{Type: "location"}}, "text", []models.QuickReply{}},
+		{"filter by location, location type quick replies", []models.QuickReply{{Type: "location"}}, "location", []models.QuickReply{{Type: "location"}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := handlers.FilterQuickRepliesByType(tt.qrs, tt.type_)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

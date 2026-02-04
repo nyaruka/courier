@@ -548,7 +548,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 
-	qrs := msg.QuickReplies()
+	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "text")
 	qrsAsList := false
 	for i, qr := range qrs {
 		if i > 2 || qr.Extra != "" {

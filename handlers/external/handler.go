@@ -403,6 +403,9 @@ func buildQuickRepliesResponse(quickReplies []models.QuickReply, sendMethod stri
 	if quickReplies == nil {
 		quickReplies = []models.QuickReply{}
 	}
+
+	quickReplies = handlers.FilterQuickRepliesByType(quickReplies, "text")
+
 	if (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentJSON {
 		return string(jsonx.MustMarshal(handlers.TextOnlyQuickReplies(quickReplies)))
 	} else if (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentXML {

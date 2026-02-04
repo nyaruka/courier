@@ -201,7 +201,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 
 	// figure out whether we have a keyboard to send as well
-	qrs := msg.QuickReplies()
+	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "text")
 	var keyboard *ReplyKeyboardMarkup
 	if len(qrs) > 0 {
 		keyboard = NewKeyboardFromReplies(qrs)
