@@ -137,7 +137,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 					}
 				}
 
-			} else if i < len(msg.Attachments()) && (len(qrs) == 0 || len(qrs) > 3) {
+			} else if i < len(msg.Attachments()) && (len(qrs) == 0 || len(qrs) > 3 || len(locationQRs) > 0) {
 				attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
 				attType = strings.Split(attType, "/")[0]
 				if attType == "application" {
@@ -146,7 +146,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 				payload.Type = attType
 				media := Media{Link: attURL}
 
-				if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(qrs) == 0 {
+				if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(qrs) == 0 && len(locationQRs) == 0 {
 					media.Caption = msgParts[i]
 					hasCaption = true
 				}
