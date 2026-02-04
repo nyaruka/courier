@@ -1,3 +1,7 @@
+v26.1.9 (2026-02-04)
+-------------------------
+ * Make telegram location handling same as whatsapp
+
 v26.1.8 (2026-02-04)
 -------------------------
  * Fix to always set text for request location keyboard button
