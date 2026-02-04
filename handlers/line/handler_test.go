@@ -502,6 +502,20 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 	},
 	{
+		Label:           "Location action quick Reply",
+		MsgText:         "Where Are you?",
+		MsgURN:          "line:uabcdefghij",
+		MsgQuickReplies: []models.QuickReply{{Type: "location", Text: "Share Pin"}, {Type: "text", Text: "No"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Where Are you?","quickReply":{"items":[{"type":"action","action":{"type":"location","label":"Share Pin"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
+			},
+		},
+	},
+	{
 		Label:           "Quick Reply combined and attachment",
 		MsgText:         "Are you happy?",
 		MsgURN:          "line:uabcdefghij",
