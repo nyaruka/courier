@@ -27,7 +27,12 @@ func NewKeyboardFromReplies(replies []models.QuickReply) *ReplyKeyboardMarkup {
 		keyboard[i] = make([]KeyboardButton, len(rows[i]))
 		for j := range rows[i] {
 			keyboard[i][j].Text = rows[i][j].Text
-			keyboard[i][j].RequestLocation = rows[i][j].Type == models.QuickReplyTypeLocation
+			if rows[i][j].Type == models.QuickReplyTypeLocation {
+				keyboard[i][j].RequestLocation = true
+				if keyboard[i][j].Text == "" {
+					keyboard[i][j].Text = "Send Location"
+				}
+			}
 
 		}
 	}

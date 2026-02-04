@@ -56,10 +56,20 @@ func TestKeyboardFromReplies(t *testing.T) {
 		},
 		{
 
-			[]models.QuickReply{{Type: "location", Text: "Send Location"}},
+			[]models.QuickReply{{Type: "location"}},
 			&telegram.ReplyKeyboardMarkup{
 				[][]telegram.KeyboardButton{
 					{{Text: "Send Location", RequestLocation: true}},
+				},
+				true, true,
+			},
+		},
+		{
+
+			[]models.QuickReply{{Type: "location", Text: "Share Location"}},
+			&telegram.ReplyKeyboardMarkup{
+				[][]telegram.KeyboardButton{
+					{{Text: "Share Location", RequestLocation: true}},
 				},
 				true, true,
 			},
