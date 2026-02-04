@@ -182,7 +182,7 @@ var sendTestCases = []OutgoingTestCase{
 		MsgText:         "Simple Message",
 		MsgURN:          "fcm:250788123123",
 		MsgURNAuth:      "auth1",
-		MsgQuickReplies: []models.QuickReply{{Text: "yes"}, {Text: "no"}},
+		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "yes"}, {Type: "text", Text: "no"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {

@@ -98,7 +98,8 @@ const (
 )
 
 type QuickReply struct {
-	Text  string `json:"text"            validate:"required"`
+	Type  string `json:"type"            validate:"required"`
+	Text  string `json:"text,omitempty"`
 	Extra string `json:"extra,omitempty"`
 }
 

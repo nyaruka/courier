@@ -15,7 +15,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 	}{
 		{
 
-			[]models.QuickReply{{Text: "OK"}},
+			[]models.QuickReply{{Type: "text", Text: "OK"}},
 			&telegram.ReplyKeyboardMarkup{
 				[][]telegram.KeyboardButton{
 					{{Text: "OK"}},
@@ -24,7 +24,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			},
 		},
 		{
-			[]models.QuickReply{{Text: "Yes"}, {Text: "No"}, {Text: "Maybe"}},
+			[]models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}, {Type: "text", Text: "Maybe"}},
 			&telegram.ReplyKeyboardMarkup{
 				[][]telegram.KeyboardButton{
 					{{Text: "Yes"}, {Text: "No"}, {Text: "Maybe"}},
@@ -33,7 +33,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			},
 		},
 		{
-			[]models.QuickReply{{Text: "Vanilla"}, {Text: "Chocolate"}, {Text: "Mint"}, {Text: "Lemon Sorbet"}, {Text: "Papaya"}, {Text: "Strawberry"}},
+			[]models.QuickReply{{Type: "text", Text: "Vanilla"}, {Type: "text", Text: "Chocolate"}, {Type: "text", Text: "Mint"}, {Type: "text", Text: "Lemon Sorbet"}, {Type: "text", Text: "Papaya"}, {Type: "text", Text: "Strawberry"}},
 			&telegram.ReplyKeyboardMarkup{
 				[][]telegram.KeyboardButton{
 					{{Text: "Vanilla"}, {Text: "Chocolate"}},
@@ -44,7 +44,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 			},
 		},
 		{
-			[]models.QuickReply{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}, {Text: "Chicken"}, {Text: "Fish"}, {Text: "Peanut Butter Pickle"}},
+			[]models.QuickReply{{Type: "text", Text: "A"}, {Type: "text", Text: "B"}, {Type: "text", Text: "C"}, {Type: "text", Text: "D"}, {Type: "text", Text: "Chicken"}, {Type: "text", Text: "Fish"}, {Type: "text", Text: "Peanut Butter Pickle"}},
 			&telegram.ReplyKeyboardMarkup{
 				[][]telegram.KeyboardButton{
 					{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}},
