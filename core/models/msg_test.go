@@ -66,3 +66,62 @@ func TestMsgOut(t *testing.T) {
 	assert.False(t, msg.IsResend())
 	assert.Nil(t, msg.Flow())
 }
+
+func TestQuickReplyValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		json        string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "valid text quick reply",
+			json:        `{"type": "text", "text": "Yes"}`,
+			expectError: false,
+		},
+		{
+			name:        "text quick reply with empty text field",
+			json:        `{"type": "text", "text": ""}`,
+			expectError: true,
+			errorMsg:    "text field is required when type is 'text'",
+		},
+		{
+			name:        "text quick reply without text field",
+			json:        `{"type": "text"}`,
+			expectError: true,
+			errorMsg:    "text field is required when type is 'text'",
+		},
+		{
+			name:        "non-text quick reply without text field is valid",
+			json:        `{"type": "location"}`,
+			expectError: false,
+		},
+		{
+			name:        "quick reply defaults to text type",
+			json:        `{"text": "Maybe"}`,
+			expectError: false,
+		},
+		{
+			name:        "quick reply defaults to text type without text field fails",
+			json:        `{}`,
+			expectError: true,
+			errorMsg:    "text field is required when type is 'text'",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			qr := &models.QuickReply{}
+			err := json.Unmarshal([]byte(tc.json), qr)
+
+			if tc.expectError {
+				assert.Error(t, err)
+				if tc.errorMsg != "" {
+					assert.Contains(t, err.Error(), tc.errorMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

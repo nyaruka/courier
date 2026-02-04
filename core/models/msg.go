@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/lib/pq"
@@ -120,6 +121,14 @@ func (qr *QuickReply) UnmarshalJSON(data []byte) error {
 		qr.Type = "text"
 	}
 
+	return qr.Validate()
+}
+
+// Validate ensures that the quick reply is valid based on its type
+func (qr *QuickReply) Validate() error {
+	if qr.Type == "text" && qr.Text == "" {
+		return fmt.Errorf("text field is required when type is 'text'")
+	}
 	return nil
 }
 
