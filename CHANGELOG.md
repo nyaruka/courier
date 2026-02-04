@@ -1,3 +1,8 @@
+v26.1.6 (2026-02-04)
+-------------------------
+ * Add type to quick replies
+ * Ignore group message for whatsapp channels
+
 v26.1.5 (2026-01-20)
 -------------------------
  * Resolve by external_identifier for status updates
