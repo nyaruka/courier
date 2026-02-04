@@ -1,3 +1,7 @@
+v26.1.8 (2026-02-04)
+-------------------------
+ * Fix to always set text for request location keyboard button
+
 v26.1.7 (2026-02-04)
 -------------------------
  * Support sending location requests for WhatsApp and Telegram channels
