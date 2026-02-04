@@ -200,6 +200,7 @@ type Interactive struct {
 		Text string `json:"text"`
 	} `json:"footer,omitempty"`
 	Action *struct {
+		Name     string    `json:"name,omitempty"`
 		Button   string    `json:"button,omitempty"`
 		Sections []Section `json:"sections,omitempty"`
 		Buttons  []Button  `json:"buttons,omitempty"`

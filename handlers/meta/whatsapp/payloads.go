@@ -36,6 +36,8 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 			}
 		}
 
+		locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "location")
+
 		menuButton := handlers.GetText("Menu", msg.Locale())
 
 		for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
@@ -53,7 +55,20 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 					text.Body = msgParts[i-len(msg.Attachments())]
 					payload.Text = text
 				} else {
-					if len(qrs) > 0 {
+					if len(locationQRs) > 0 {
+						payload.Type = "interactive"
+						interactive := Interactive{Type: "location_request_message", Body: struct {
+							Text string `json:"text"`
+						}{Text: msgParts[i-len(msg.Attachments())]}}
+						interactive.Action = &struct {
+							Name     string    `json:"name,omitempty"`
+							Button   string    `json:"button,omitempty"`
+							Sections []Section `json:"sections,omitempty"`
+							Buttons  []Button  `json:"buttons,omitempty"`
+						}{Name: "send_location"}
+						payload.Interactive = &interactive
+
+					} else if len(qrs) > 0 {
 						payload.Type = "interactive"
 
 						// if we have more than 10 quick replies, truncate and add channel error
@@ -65,7 +80,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 						// We can use buttons
 						if !qrsAsList {
 							interactive := Interactive{Type: "button", Body: struct {
-								Text string "json:\"text\""
+								Text string `json:"text"`
 							}{Text: msgParts[i-len(msg.Attachments())]}}
 
 							btns := make([]Button, len(qrs))
@@ -77,14 +92,15 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 								btns[i].Reply.Title = qr.Text
 							}
 							interactive.Action = &struct {
-								Button   string    "json:\"button,omitempty\""
-								Sections []Section "json:\"sections,omitempty\""
-								Buttons  []Button  "json:\"buttons,omitempty\""
+								Name     string    `json:"name,omitempty"`
+								Button   string    `json:"button,omitempty"`
+								Sections []Section `json:"sections,omitempty"`
+								Buttons  []Button  `json:"buttons,omitempty"`
 							}{Buttons: btns}
 							payload.Interactive = &interactive
 						} else {
 							interactive := Interactive{Type: "list", Body: struct {
-								Text string "json:\"text\""
+								Text string `json:"text"`
 							}{Text: msgParts[i-len(msg.Attachments())]}}
 
 							section := Section{
@@ -99,9 +115,10 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 							}
 
 							interactive.Action = &struct {
-								Button   string    "json:\"button,omitempty\""
-								Sections []Section "json:\"sections,omitempty\""
-								Buttons  []Button  "json:\"buttons,omitempty\""
+								Name     string    `json:"name,omitempty"`
+								Button   string    `json:"button,omitempty"`
+								Sections []Section `json:"sections,omitempty"`
+								Buttons  []Button  `json:"buttons,omitempty"`
 							}{Button: menuButton, Sections: []Section{
 								section,
 							}}
@@ -120,7 +137,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 					}
 				}
 
-			} else if i < len(msg.Attachments()) && (len(qrs) == 0 || len(qrs) > 3) {
+			} else if i < len(msg.Attachments()) && (len(qrs) == 0 || len(qrs) > 3 || len(locationQRs) > 0) {
 				attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
 				attType = strings.Split(attType, "/")[0]
 				if attType == "application" {
@@ -129,7 +146,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 				payload.Type = attType
 				media := Media{Link: attURL}
 
-				if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(qrs) == 0 {
+				if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(qrs) == 0 && len(locationQRs) == 0 {
 					media.Caption = msgParts[i]
 					hasCaption = true
 				}
@@ -151,7 +168,20 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 					payload.Document = &media
 				}
 			} else {
-				if len(qrs) > 0 {
+				if len(locationQRs) > 0 {
+					payload.Type = "interactive"
+					interactive := Interactive{Type: "location_request_message", Body: struct {
+						Text string `json:"text"`
+					}{Text: msgParts[i-len(msg.Attachments())]}}
+					interactive.Action = &struct {
+						Name     string    `json:"name,omitempty"`
+						Button   string    `json:"button,omitempty"`
+						Sections []Section `json:"sections,omitempty"`
+						Buttons  []Button  `json:"buttons,omitempty"`
+					}{Name: "send_location"}
+					payload.Interactive = &interactive
+
+				} else if len(qrs) > 0 {
 					payload.Type = "interactive"
 					// if we have more than 10 quick replies, truncate and add channel error
 					if len(qrs) > 10 {
@@ -162,7 +192,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 					// We can use buttons
 					if len(qrs) <= 3 {
 						interactive := Interactive{Type: "button", Body: struct {
-							Text string "json:\"text\""
+							Text string `json:"text"`
 						}{Text: msgParts[i]}}
 
 						if len(msg.Attachments()) > 0 {
@@ -177,22 +207,22 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 									Link: attURL,
 								}
 								interactive.Header = &struct {
-									Type     string "json:\"type\""
-									Text     string "json:\"text,omitempty\""
-									Video    *Media "json:\"video,omitempty\""
-									Image    *Media "json:\"image,omitempty\""
-									Document *Media "json:\"document,omitempty\""
+									Type     string `json:"type"`
+									Text     string `json:"text,omitempty"`
+									Video    *Media `json:"video,omitempty"`
+									Image    *Media `json:"image,omitempty"`
+									Document *Media `json:"document,omitempty"`
 								}{Type: "image", Image: &image}
 							} else if attType == "video" {
 								video := Media{
 									Link: attURL,
 								}
 								interactive.Header = &struct {
-									Type     string "json:\"type\""
-									Text     string "json:\"text,omitempty\""
-									Video    *Media "json:\"video,omitempty\""
-									Image    *Media "json:\"image,omitempty\""
-									Document *Media "json:\"document,omitempty\""
+									Type     string `json:"type"`
+									Text     string `json:"text,omitempty"`
+									Video    *Media `json:"video,omitempty"`
+									Image    *Media `json:"image,omitempty"`
+									Document *Media `json:"document,omitempty"`
 								}{Type: "video", Video: &video}
 							} else if attType == "document" {
 								filename, err := utils.BasePathForURL(attURL)
@@ -204,11 +234,11 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 									Filename: filename,
 								}
 								interactive.Header = &struct {
-									Type     string "json:\"type\""
-									Text     string "json:\"text,omitempty\""
-									Video    *Media "json:\"video,omitempty\""
-									Image    *Media "json:\"image,omitempty\""
-									Document *Media "json:\"document,omitempty\""
+									Type     string `json:"type"`
+									Text     string `json:"text,omitempty"`
+									Video    *Media `json:"video,omitempty"`
+									Image    *Media `json:"image,omitempty"`
+									Document *Media `json:"document,omitempty"`
 								}{Type: "document", Document: &document}
 							} else if attType == "audio" {
 								payloadAudio := SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &Media{Link: attURL}}
@@ -230,15 +260,16 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 							btns[i].Reply.Title = qr.Text
 						}
 						interactive.Action = &struct {
-							Button   string    "json:\"button,omitempty\""
-							Sections []Section "json:\"sections,omitempty\""
-							Buttons  []Button  "json:\"buttons,omitempty\""
+							Name     string    `json:"name,omitempty"`
+							Button   string    `json:"button,omitempty"`
+							Sections []Section `json:"sections,omitempty"`
+							Buttons  []Button  `json:"buttons,omitempty"`
 						}{Buttons: btns}
 						payload.Interactive = &interactive
 
 					} else {
 						interactive := Interactive{Type: "list", Body: struct {
-							Text string "json:\"text\""
+							Text string `json:"text"`
 						}{Text: msgParts[i-len(msg.Attachments())]}}
 
 						section := Section{
@@ -252,9 +283,10 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 						}
 
 						interactive.Action = &struct {
-							Button   string    "json:\"button,omitempty\""
-							Sections []Section "json:\"sections,omitempty\""
-							Buttons  []Button  "json:\"buttons,omitempty\""
+							Name     string    `json:"name,omitempty"`
+							Button   string    `json:"button,omitempty"`
+							Sections []Section `json:"sections,omitempty"`
+							Buttons  []Button  `json:"buttons,omitempty"`
 						}{Button: menuButton, Sections: []Section{
 							section,
 						}}
