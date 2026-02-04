@@ -58,13 +58,13 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 					if len(locationQRs) > 0 {
 						payload.Type = "interactive"
 						interactive := Interactive{Type: "location_request_message", Body: struct {
-							Text string "json:\"text\""
+							Text string `json:"text"`
 						}{Text: msgParts[i-len(msg.Attachments())]}}
 						interactive.Action = &struct {
-							Name     string    "json:\"name,omitempty\""
-							Button   string    "json:\"button,omitempty\""
-							Sections []Section "json:\"sections,omitempty\""
-							Buttons  []Button  "json:\"buttons,omitempty\""
+							Name     string    `json:"name,omitempty"`
+							Button   string    `json:"button,omitempty"`
+							Sections []Section `json:"sections,omitempty"`
+							Buttons  []Button  `json:"buttons,omitempty"`
 						}{Name: "send_location"}
 						payload.Interactive = &interactive
 
@@ -80,7 +80,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 						// We can use buttons
 						if !qrsAsList {
 							interactive := Interactive{Type: "button", Body: struct {
-								Text string "json:\"text\""
+								Text string `json:"text"`
 							}{Text: msgParts[i-len(msg.Attachments())]}}
 
 							btns := make([]Button, len(qrs))
@@ -92,15 +92,15 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 								btns[i].Reply.Title = qr.Text
 							}
 							interactive.Action = &struct {
-								Name     string    "json:\"name,omitempty\""
-								Button   string    "json:\"button,omitempty\""
-								Sections []Section "json:\"sections,omitempty\""
-								Buttons  []Button  "json:\"buttons,omitempty\""
+								Name     string    `json:"name,omitempty"`
+								Button   string    `json:"button,omitempty"`
+								Sections []Section `json:"sections,omitempty"`
+								Buttons  []Button  `json:"buttons,omitempty"`
 							}{Buttons: btns}
 							payload.Interactive = &interactive
 						} else {
 							interactive := Interactive{Type: "list", Body: struct {
-								Text string "json:\"text\""
+								Text string `json:"text"`
 							}{Text: msgParts[i-len(msg.Attachments())]}}
 
 							section := Section{
@@ -115,10 +115,10 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 							}
 
 							interactive.Action = &struct {
-								Name     string    "json:\"name,omitempty\""
-								Button   string    "json:\"button,omitempty\""
-								Sections []Section "json:\"sections,omitempty\""
-								Buttons  []Button  "json:\"buttons,omitempty\""
+								Name     string    `json:"name,omitempty"`
+								Button   string    `json:"button,omitempty"`
+								Sections []Section `json:"sections,omitempty"`
+								Buttons  []Button  `json:"buttons,omitempty"`
 							}{Button: menuButton, Sections: []Section{
 								section,
 							}}
@@ -171,13 +171,13 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 				if len(locationQRs) > 0 {
 					payload.Type = "interactive"
 					interactive := Interactive{Type: "location_request_message", Body: struct {
-						Text string "json:\"text\""
+						Text string `json:"text"`
 					}{Text: msgParts[i-len(msg.Attachments())]}}
 					interactive.Action = &struct {
-						Name     string    "json:\"name,omitempty\""
-						Button   string    "json:\"button,omitempty\""
-						Sections []Section "json:\"sections,omitempty\""
-						Buttons  []Button  "json:\"buttons,omitempty\""
+						Name     string    `json:"name,omitempty"`
+						Button   string    `json:"button,omitempty"`
+						Sections []Section `json:"sections,omitempty"`
+						Buttons  []Button  `json:"buttons,omitempty"`
 					}{Name: "send_location"}
 					payload.Interactive = &interactive
 
@@ -192,7 +192,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 					// We can use buttons
 					if len(qrs) <= 3 {
 						interactive := Interactive{Type: "button", Body: struct {
-							Text string "json:\"text\""
+							Text string `json:"text"`
 						}{Text: msgParts[i]}}
 
 						if len(msg.Attachments()) > 0 {
@@ -207,22 +207,22 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 									Link: attURL,
 								}
 								interactive.Header = &struct {
-									Type     string "json:\"type\""
-									Text     string "json:\"text,omitempty\""
-									Video    *Media "json:\"video,omitempty\""
-									Image    *Media "json:\"image,omitempty\""
-									Document *Media "json:\"document,omitempty\""
+									Type     string `json:"type"`
+									Text     string `json:"text,omitempty"`
+									Video    *Media `json:"video,omitempty"`
+									Image    *Media `json:"image,omitempty"`
+									Document *Media `json:"document,omitempty"`
 								}{Type: "image", Image: &image}
 							} else if attType == "video" {
 								video := Media{
 									Link: attURL,
 								}
 								interactive.Header = &struct {
-									Type     string "json:\"type\""
-									Text     string "json:\"text,omitempty\""
-									Video    *Media "json:\"video,omitempty\""
-									Image    *Media "json:\"image,omitempty\""
-									Document *Media "json:\"document,omitempty\""
+									Type     string `json:"type"`
+									Text     string `json:"text,omitempty"`
+									Video    *Media `json:"video,omitempty"`
+									Image    *Media `json:"image,omitempty"`
+									Document *Media `json:"document,omitempty"`
 								}{Type: "video", Video: &video}
 							} else if attType == "document" {
 								filename, err := utils.BasePathForURL(attURL)
@@ -234,11 +234,11 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 									Filename: filename,
 								}
 								interactive.Header = &struct {
-									Type     string "json:\"type\""
-									Text     string "json:\"text,omitempty\""
-									Video    *Media "json:\"video,omitempty\""
-									Image    *Media "json:\"image,omitempty\""
-									Document *Media "json:\"document,omitempty\""
+									Type     string `json:"type"`
+									Text     string `json:"text,omitempty"`
+									Video    *Media `json:"video,omitempty"`
+									Image    *Media `json:"image,omitempty"`
+									Document *Media `json:"document,omitempty"`
 								}{Type: "document", Document: &document}
 							} else if attType == "audio" {
 								payloadAudio := SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &Media{Link: attURL}}
@@ -260,16 +260,16 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 							btns[i].Reply.Title = qr.Text
 						}
 						interactive.Action = &struct {
-							Name     string    "json:\"name,omitempty\""
-							Button   string    "json:\"button,omitempty\""
-							Sections []Section "json:\"sections,omitempty\""
-							Buttons  []Button  "json:\"buttons,omitempty\""
+							Name     string    `json:"name,omitempty"`
+							Button   string    `json:"button,omitempty"`
+							Sections []Section `json:"sections,omitempty"`
+							Buttons  []Button  `json:"buttons,omitempty"`
 						}{Buttons: btns}
 						payload.Interactive = &interactive
 
 					} else {
 						interactive := Interactive{Type: "list", Body: struct {
-							Text string "json:\"text\""
+							Text string `json:"text"`
 						}{Text: msgParts[i-len(msg.Attachments())]}}
 
 						section := Section{
@@ -283,10 +283,10 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 						}
 
 						interactive.Action = &struct {
-							Name     string    "json:\"name,omitempty\""
-							Button   string    "json:\"button,omitempty\""
-							Sections []Section "json:\"sections,omitempty\""
-							Buttons  []Button  "json:\"buttons,omitempty\""
+							Name     string    `json:"name,omitempty"`
+							Button   string    `json:"button,omitempty"`
+							Sections []Section `json:"sections,omitempty"`
+							Buttons  []Button  `json:"buttons,omitempty"`
 						}{Button: menuButton, Sections: []Section{
 							section,
 						}}
