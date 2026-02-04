@@ -36,14 +36,13 @@ func SplitAttachment(attachment string) (string, string) {
 	return parts[0], parts[1]
 }
 
-// TextOnlyQuickReplies returns the text of a list of quick replies
+// TextOnlyQuickReplies returns the text from quick replies of type "text"
 func TextOnlyQuickReplies(qrs []models.QuickReply) []string {
 	t := make([]string, 0, len(qrs))
 	for _, qr := range qrs {
 		if qr.Type == "text" {
 			t = append(t, qr.Text)
 		}
-
 	}
 	return t
 }

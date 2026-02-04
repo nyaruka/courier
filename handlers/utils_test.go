@@ -159,7 +159,6 @@ func TestFilterQuickRepliesByType(t *testing.T) {
 		{"filter by location, mixed types quick replies", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}, {Type: "location"}}, "location", []models.QuickReply{{Type: "location"}}},
 		{"filter by text quick replies, location type quick replies", []models.QuickReply{{Type: "location"}}, "text", []models.QuickReply{}},
 		{"filter by location, location type quick replies", []models.QuickReply{{Type: "location"}}, "location", []models.QuickReply{{Type: "location"}}},
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
