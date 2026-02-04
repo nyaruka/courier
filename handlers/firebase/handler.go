@@ -207,7 +207,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		}
 
 		if i == len(msgParts)-1 {
-
 			if msg.QuickReplies() != nil {
 				qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "text")
 				payload.Message.Data.QuickReplies = string(jsonx.MustMarshal(handlers.TextOnlyQuickReplies(qrs)))

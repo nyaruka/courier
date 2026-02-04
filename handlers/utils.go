@@ -43,7 +43,6 @@ func TextOnlyQuickReplies(qrs []models.QuickReply) []string {
 		if qr.Type == "text" {
 			t = append(t, qr.Text)
 		}
-
 	}
 	return t
 }
