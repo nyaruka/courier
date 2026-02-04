@@ -628,7 +628,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedContactName:  Sp("Nic Pottier"),
-		ExpectedMsgText:      Sp("-2.890287,-79.004333"),
+		ExpectedMsgText:      Sp(""),
 		ExpectedAttachments:  []string{"geo:-2.890287,-79.004333"},
 		ExpectedURN:          "telegram:3527065#nicpottier",
 		ExpectedExternalID:   "94",
