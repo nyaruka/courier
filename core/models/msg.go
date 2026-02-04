@@ -2,6 +2,7 @@ package models
 
 import (
 	"time"
+	"unicode/utf8"
 
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier/utils/clogs"
@@ -97,6 +98,8 @@ const (
 	MsgOriginChat      MsgOrigin = "chat"
 )
 
+const QuickReplyTypeLocation = "location"
+
 type QuickReply struct {
 	Type  string `json:"type"            validate:"required"`
 	Text  string `json:"text,omitempty"`
@@ -189,3 +192,43 @@ func (m *MsgOut) OptIn() *OptInReference       { return m.OptIn_ }
 func (m *MsgOut) UserID() UserID               { return m.UserID_ }
 func (m *MsgOut) Session() *Session            { return m.Session_ }
 func (m *MsgOut) HighPriority() bool           { return m.HighPriority_ }
+
+// QuickRepliesToRows takes a slice of quick replies and re-organizes it into rows and columns
+func QuickRepliesToRows(replies []QuickReply, maxRows, maxRowRunes, paddingRunes int) [][]QuickReply {
+	// calculate rune length if it's all one row
+	totalRunes := 0
+	for i := range replies {
+		totalRunes += utf8.RuneCountInString(replies[i].Text) + paddingRunes*2
+	}
+
+	if totalRunes <= maxRowRunes {
+		// if all strings fit on a single row, do that
+		return [][]QuickReply{replies}
+	} else if len(replies) <= maxRows {
+		// if each string can be a row, do that
+		rows := make([][]QuickReply, len(replies))
+		for i := range replies {
+			rows[i] = []QuickReply{replies[i]}
+		}
+		return rows
+	}
+
+	rows := [][]QuickReply{{}}
+	curRow := 0
+	rowRunes := 0
+
+	for _, reply := range replies {
+		strRunes := utf8.RuneCountInString(reply.Text) + paddingRunes*2
+
+		// take a new row if we can't fit this string and the current row isn't empty and we haven't hit the row limit
+		if rowRunes+strRunes > maxRowRunes && len(rows[curRow]) > 0 && len(rows) < maxRows {
+			rows = append(rows, []QuickReply{})
+			curRow += 1
+			rowRunes = 0
+		}
+
+		rows[curRow] = append(rows[curRow], reply)
+		rowRunes += strRunes
+	}
+	return rows
+}
