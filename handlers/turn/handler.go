@@ -379,6 +379,7 @@ type mtInteractivePayload struct {
 			Text string `json:"text"`
 		} `json:"footer,omitempty"`
 		Action struct {
+			Name     string      `json:"name,omitempty"`
 			Button   string      `json:"button,omitempty"`
 			Sections []mtSection `json:"sections,omitempty"`
 			Buttons  []mtButton  `json:"buttons,omitempty"`
@@ -477,7 +478,10 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 			qrsAsList = true
 		}
 	}
-	isInteractiveMsg := len(qrs) > 0
+
+	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "location")
+
+	isInteractiveMsg := len(msg.QuickReplies()) > 0
 
 	textAsCaption := false
 
@@ -584,8 +588,13 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 						Type: "interactive",
 					}
 
-					// we show buttons
-					if !qrsAsList {
+					if len(locationQRs) > 0 {
+						payload.Interactive.Type = "location_request_message"
+						payload.Interactive.Body.Text = part
+						payload.Interactive.Action.Name = "send_location"
+						payloads = append(payloads, payload)
+
+					} else if !qrsAsList { // we show buttons
 						payload.Interactive.Type = "button"
 						payload.Interactive.Body.Text = part
 						btns := make([]mtButton, len(qrs))
@@ -681,8 +690,13 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 							Type: "interactive",
 						}
 
-						// we show buttons
-						if !qrsAsList {
+						if len(locationQRs) > 0 {
+							payload.Interactive.Type = "location_request_message"
+							payload.Interactive.Body.Text = part
+							payload.Interactive.Action.Name = "send_location"
+							payloads = append(payloads, payload)
+
+						} else if !qrsAsList { // we show buttons
 							payload.Interactive.Type = "button"
 							payload.Interactive.Body.Text = part
 							btns := make([]mtButton, len(qrs))

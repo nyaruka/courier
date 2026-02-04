@@ -36,6 +36,8 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 			}
 		}
 
+		locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "location")
+
 		menuButton := handlers.GetText("Menu", msg.Locale())
 
 		for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
@@ -53,7 +55,20 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 					text.Body = msgParts[i-len(msg.Attachments())]
 					payload.Text = text
 				} else {
-					if len(qrs) > 0 {
+					if len(locationQRs) > 0 {
+						payload.Type = "interactive"
+						interactive := Interactive{Type: "location_request_message", Body: struct {
+							Text string "json:\"text\""
+						}{Text: msgParts[i-len(msg.Attachments())]}}
+						interactive.Action = &struct {
+							Name     string    "json:\"name,omitempty\""
+							Button   string    "json:\"button,omitempty\""
+							Sections []Section "json:\"sections,omitempty\""
+							Buttons  []Button  "json:\"buttons,omitempty\""
+						}{Name: "send_location"}
+						payload.Interactive = &interactive
+
+					} else if len(qrs) > 0 {
 						payload.Type = "interactive"
 
 						// if we have more than 10 quick replies, truncate and add channel error
@@ -77,6 +92,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 								btns[i].Reply.Title = qr.Text
 							}
 							interactive.Action = &struct {
+								Name     string    "json:\"name,omitempty\""
 								Button   string    "json:\"button,omitempty\""
 								Sections []Section "json:\"sections,omitempty\""
 								Buttons  []Button  "json:\"buttons,omitempty\""
@@ -99,6 +115,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 							}
 
 							interactive.Action = &struct {
+								Name     string    "json:\"name,omitempty\""
 								Button   string    "json:\"button,omitempty\""
 								Sections []Section "json:\"sections,omitempty\""
 								Buttons  []Button  "json:\"buttons,omitempty\""
@@ -151,7 +168,20 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 					payload.Document = &media
 				}
 			} else {
-				if len(qrs) > 0 {
+				if len(locationQRs) > 0 {
+					payload.Type = "interactive"
+					interactive := Interactive{Type: "location_request_message", Body: struct {
+						Text string "json:\"text\""
+					}{Text: msgParts[i-len(msg.Attachments())]}}
+					interactive.Action = &struct {
+						Name     string    "json:\"name,omitempty\""
+						Button   string    "json:\"button,omitempty\""
+						Sections []Section "json:\"sections,omitempty\""
+						Buttons  []Button  "json:\"buttons,omitempty\""
+					}{Name: "send_location"}
+					payload.Interactive = &interactive
+
+				} else if len(qrs) > 0 {
 					payload.Type = "interactive"
 					// if we have more than 10 quick replies, truncate and add channel error
 					if len(qrs) > 10 {
@@ -230,6 +260,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 							btns[i].Reply.Title = qr.Text
 						}
 						interactive.Action = &struct {
+							Name     string    "json:\"name,omitempty\""
 							Button   string    "json:\"button,omitempty\""
 							Sections []Section "json:\"sections,omitempty\""
 							Buttons  []Button  "json:\"buttons,omitempty\""
@@ -252,6 +283,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 						}
 
 						interactive.Action = &struct {
+							Name     string    "json:\"name,omitempty\""
 							Button   string    "json:\"button,omitempty\""
 							Sections []Section "json:\"sections,omitempty\""
 							Buttons  []Button  "json:\"buttons,omitempty\""
