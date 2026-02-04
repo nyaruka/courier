@@ -1,3 +1,7 @@
+v26.1.7 (2026-02-04)
+-------------------------
+ * Support sending location requests for WhatsApp and Telegram channels
+
 v26.1.6 (2026-02-04)
 -------------------------
  * Add type to quick replies
