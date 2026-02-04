@@ -48,6 +48,17 @@ func TextOnlyQuickReplies(qrs []models.QuickReply) []string {
 	return t
 }
 
+// FilterQuickRepliesByType returns quick replies of some type only
+func FilterQuickRepliesByType(qrs []models.QuickReply, type_ string) []models.QuickReply {
+	t := make([]models.QuickReply, 0, len(qrs))
+	for _, qr := range qrs {
+		if qr.Type == type_ {
+			t = append(t, qr)
+		}
+	}
+	return t
+}
+
 // NameFromFirstLastUsername is a utility function to build a contact's name from the passed
 // in values, all of which can be empty
 func NameFromFirstLastUsername(first string, last string, username string) string {

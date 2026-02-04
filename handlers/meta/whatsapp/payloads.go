@@ -27,7 +27,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 		if msg.Text() != "" {
 			msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 		}
-		qrs := msg.QuickReplies()
+		qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "text")
 
 		qrsAsList := false
 		for i, qr := range qrs {
@@ -129,7 +129,7 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 				payload.Type = attType
 				media := Media{Link: attURL}
 
-				if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(msg.QuickReplies()) == 0 {
+				if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(qrs) == 0 {
 					media.Caption = msgParts[i]
 					hasCaption = true
 				}

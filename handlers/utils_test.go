@@ -144,3 +144,27 @@ func TestTextOnlyQuickReplies(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterQuickRepliesByType(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		qrs   []models.QuickReply
+		type_ string
+		want  []models.QuickReply
+	}{
+		{"filter by text, text types quick replies only", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}}, "text", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}}},
+		{"filter by location, text types quick replies only", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}}, "location", []models.QuickReply{}},
+		{"filter by text, mixed types quick replies", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}, {Type: "location"}}, "text", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}}},
+		{"filter by location, mixed types quick replies", []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}, {Type: "location"}}, "location", []models.QuickReply{{Type: "location"}}},
+		{"filter by text quick replies, location type quick replies", []models.QuickReply{{Type: "location"}}, "text", []models.QuickReply{}},
+		{"filter by location, location type quick replies", []models.QuickReply{{Type: "location"}}, "location", []models.QuickReply{{Type: "location"}}},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := handlers.FilterQuickRepliesByType(tt.qrs, tt.type_)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

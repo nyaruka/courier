@@ -386,7 +386,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	params.Set(paramAttachments, attachments)
 
 	if len(msg.QuickReplies()) != 0 {
-		qrs := msg.QuickReplies()
+		qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "text")
 		keyboard := NewKeyboardFromReplies(qrs)
 
 		params.Set(paramKeyboard, string(jsonx.MustMarshal(keyboard)))

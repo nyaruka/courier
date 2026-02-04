@@ -293,7 +293,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	// all msg parts in JSON
 	var jsonMsgs []string
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
-	qrs := msg.QuickReplies()
+	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "text")
 
 	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, false, clog)
 	if err != nil {
