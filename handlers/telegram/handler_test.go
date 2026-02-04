@@ -811,6 +811,21 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
+		Label:           "Quick Reply, request location",
+		MsgText:         "Where Are you?",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "location", Text: "Send Location"}, {Type: "text", Text: "Ignore"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Where Are you?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Send Location","request_location":true},{"text":"Ignore"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
 		Label:           "Quick Reply with multiple attachments",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",

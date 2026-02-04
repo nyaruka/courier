@@ -2,8 +2,6 @@ package vk
 
 import (
 	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 )
 
@@ -26,15 +24,15 @@ type ButtonAction struct {
 
 // NewKeyboardFromReplies creates a keyboard from the given quick replies
 func NewKeyboardFromReplies(replies []models.QuickReply) *Keyboard {
-	rows := utils.StringsToRows(handlers.TextOnlyQuickReplies(replies), 10, 30, 2)
+	rows := models.QuickRepliesToRows(replies, 10, 30, 2)
 	buttons := make([][]ButtonPayload, len(rows))
 
 	for i := range rows {
 		buttons[i] = make([]ButtonPayload, len(rows[i]))
 		for j := range rows[i] {
-			buttons[i][j].Action.Label = rows[i][j]
+			buttons[i][j].Action.Label = rows[i][j].Text
 			buttons[i][j].Action.Type = "text"
-			buttons[i][j].Action.Payload = string(jsonx.MustMarshal(rows[i][j]))
+			buttons[i][j].Action.Payload = string(jsonx.MustMarshal(rows[i][j].Text))
 			buttons[i][j].Color = "primary"
 		}
 	}

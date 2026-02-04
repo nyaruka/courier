@@ -66,3 +66,73 @@ func TestMsgOut(t *testing.T) {
 	assert.False(t, msg.IsResend())
 	assert.Nil(t, msg.Flow())
 }
+
+func TestQuickRepliesToRows(t *testing.T) {
+	tcs := []struct {
+		replies      []models.QuickReply
+		maxRows      int
+		maxRowRunes  int
+		paddingRunes int
+		expected     [][]models.QuickReply
+	}{
+		{
+
+			replies:      []models.QuickReply{{Text: "OK"}},
+			maxRows:      3,
+			maxRowRunes:  30,
+			paddingRunes: 2,
+			expected: [][]models.QuickReply{
+				{{Text: "OK"}},
+			},
+		},
+		{
+			// all values fit in single row
+			replies:      []models.QuickReply{{Text: "Yes"}, {Text: "No"}, {Text: "Maybe"}},
+			maxRows:      3,
+			maxRowRunes:  30,
+			paddingRunes: 2,
+			expected: [][]models.QuickReply{
+				{{Text: "Yes"}, {Text: "No"}, {Text: "Maybe"}},
+			},
+		},
+		{
+			// all values can be their own row
+			replies:      []models.QuickReply{{Text: "12345678901234567890"}, {Text: "23456789012345678901"}, {Text: "34567890123456789012"}},
+			maxRows:      3,
+			maxRowRunes:  25,
+			paddingRunes: 2,
+			expected: [][]models.QuickReply{
+				{{Text: "12345678901234567890"}},
+				{{Text: "23456789012345678901"}},
+				{{Text: "34567890123456789012"}},
+			},
+		},
+		{
+			replies:      []models.QuickReply{{Text: "1234567890"}, {Text: "2345678901"}, {Text: "3456789012"}, {Text: "4567890123"}},
+			maxRows:      3,
+			maxRowRunes:  25,
+			paddingRunes: 1,
+			expected: [][]models.QuickReply{
+				{{Text: "1234567890"}, {Text: "2345678901"}},
+				{{Text: "3456789012"}, {Text: "4567890123"}},
+			},
+		},
+		{
+			// we break chars per row limit rather than row limit
+			replies:      []models.QuickReply{{Text: "Vanilla"}, {Text: "Chocolate"}, {Text: "Strawberry"}, {Text: "Lemon Sorbet"}, {Text: "Ecuadorian Amazonian Papayas"}, {Text: "Mint"}},
+			maxRows:      3,
+			maxRowRunes:  30,
+			paddingRunes: 2,
+			expected: [][]models.QuickReply{
+				{{Text: "Vanilla"}, {Text: "Chocolate"}},
+				{{Text: "Strawberry"}, {Text: "Lemon Sorbet"}},
+				{{Text: "Ecuadorian Amazonian Papayas"}, {Text: "Mint"}},
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		rows := models.QuickRepliesToRows(tc.replies, tc.maxRows, tc.maxRowRunes, tc.paddingRunes)
+		assert.Equal(t, tc.expected, rows, "rows mismatch for replies %v", tc.replies)
+	}
+}
