@@ -678,7 +678,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 	},
 	{
 		Label:           "Interactive Button Message Send with audio attachment",
-		MsgText:         "Interactive Button Msg",
+		MsgText:         "Interactive Button Msg with Audio attachment",
 		MsgURN:          "whatsapp:250788123123",
 		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "ROW1"}, {Type: "text", Text: "ROW2"}, {Type: "text", Text: "ROW3"}},
 		MsgAttachments:  []string{"audio/mp3:https://foo.bar/audio.mp3"},
@@ -690,7 +690,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`},
-			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"ROW1"}},{"type":"reply","reply":{"id":"1","title":"ROW2"}},{"type":"reply","reply":{"id":"2","title":"ROW3"}}]}}}`},
+			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg with Audio attachment"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"ROW1"}},{"type":"reply","reply":{"id":"1","title":"ROW2"}},{"type":"reply","reply":{"id":"2","title":"ROW3"}}]}}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
 	},
