@@ -264,73 +264,36 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 				contactNames[contact.WaID] = contact.Profile.Name
 			}
 
-			for _, msg := range change.Value.Messages {
-				if seenMsgIDs[msg.ID] {
+			for _, waMsg := range change.Value.Messages {
+				if seenMsgIDs[waMsg.ID] {
 					continue
 				}
 
-				if msg.GroupID != "" {
+				if waMsg.GroupID != "" {
 					data = append(data, courier.NewInfoData("ignoring group message"))
 					continue
 				}
 
-				// create our date from the timestamp
-				ts, err := strconv.ParseInt(msg.Timestamp, 10, 64)
+				date, urn, text, mediaURL, mediaID, err, finalErr := waMsg.ExtractData(clog)
+				if finalErr != nil {
+					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, finalErr)
+				}
+
 				if err != nil {
-					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid timestamp: %s", msg.Timestamp))
-				}
-				date := parseTimestamp(ts)
-
-				urn, err := urns.New(urns.WhatsApp, msg.From)
-				if err != nil {
-					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid whatsapp id"))
-				}
-
-				for _, msgError := range msg.Errors {
-					clog.Error(courier.ErrorExternal(strconv.Itoa(msgError.Code), msgError.Title))
-				}
-
-				text := ""
-				mediaURL := ""
-
-				if msg.Type == "text" {
-					text = msg.Text.Body
-				} else if msg.Type == "audio" && msg.Audio != nil {
-					text = msg.Audio.Caption
-					mediaURL, err = h.resolveMediaURL(msg.Audio.ID, token, clog)
-				} else if msg.Type == "voice" && msg.Voice != nil {
-					text = msg.Voice.Caption
-					mediaURL, err = h.resolveMediaURL(msg.Voice.ID, token, clog)
-				} else if msg.Type == "button" && msg.Button != nil {
-					text = msg.Button.Text
-				} else if msg.Type == "document" && msg.Document != nil {
-					text = msg.Document.Caption
-					mediaURL, err = h.resolveMediaURL(msg.Document.ID, token, clog)
-				} else if msg.Type == "image" && msg.Image != nil {
-					text = msg.Image.Caption
-					mediaURL, err = h.resolveMediaURL(msg.Image.ID, token, clog)
-				} else if msg.Type == "video" && msg.Video != nil {
-					text = msg.Video.Caption
-					mediaURL, err = h.resolveMediaURL(msg.Video.ID, token, clog)
-				} else if msg.Type == "location" && msg.Location != nil {
-					mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
-				} else if msg.Type == "interactive" && msg.Interactive.Type == "button_reply" {
-					text = msg.Interactive.ButtonReply.Title
-				} else if msg.Type == "interactive" && msg.Interactive.Type == "list_reply" {
-					text = msg.Interactive.ListReply.Title
-				} else {
-					// we received a message type we do not support.
-					courier.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", msg.Type))
+					courier.LogRequestError(r, channel, err)
 					continue
 				}
 
-				// create our message
-				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, msg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[msg.From])
-
-				// we had an error downloading media
-				if err != nil {
-					courier.LogRequestError(r, channel, err)
+				if mediaID != "" && mediaURL == "" {
+					mediaURL, err = h.resolveMediaURL(mediaID, token, clog)
+					// we had an error downloading media
+					if err != nil {
+						courier.LogRequestError(r, channel, err)
+					}
 				}
+
+				// create our message
+				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, waMsg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[waMsg.From])
 
 				if mediaURL != "" {
 					event.WithAttachment(mediaURL)
@@ -343,7 +306,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 
 				events = append(events, event)
 				data = append(data, courier.NewMsgReceiveData(event))
-				seenMsgIDs[msg.ID] = true
+				seenMsgIDs[waMsg.ID] = true
 			}
 
 			for _, status := range change.Value.Statuses {
@@ -359,7 +322,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 				}
 
 				for _, statusError := range status.Errors {
-					clog.Error(courier.ErrorExternal(strconv.Itoa(statusError.Code), statusError.Title))
+					statusError.ErrorChannelLog(clog)
 				}
 
 				event := h.Backend().NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
@@ -374,7 +337,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 			}
 
 			for _, chError := range change.Value.Errors {
-				clog.Error(courier.ErrorExternal(strconv.Itoa(chError.Code), chError.Title))
+				chError.ErrorChannelLog(clog)
 			}
 
 		}
