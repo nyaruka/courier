@@ -49,11 +49,11 @@ func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.Ch
 
 	// determine if the attachment can be used as a header in an interactive message
 	hasHeaderAttachment := false
-	if len(msg.Attachments()) > 0 && len(qrs) > 0 && len(qrs) <= 3 && len(locationQRs) == 0 {
+	if len(msg.Attachments()) > 0 && len(qrs) > 0 && len(qrs) <= 3 && len(locationQRs) == 0 && !qrsAsList {
 		attType, _ := handlers.SplitAttachment(msg.Attachments()[0])
 		attType = strings.Split(attType, "/")[0]
-		// audio can't be used as an interactive header
-		if attType != "audio" {
+		// only certain media types can be used as an interactive header
+		if attType == "image" || attType == "video" || attType == "document" {
 			hasHeaderAttachment = true
 		}
 	}
