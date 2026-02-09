@@ -93,3 +93,6 @@ func (m *MockMsg) WithOptIn(o *models.OptInReference) courier.MsgOut  { m.optIn 
 func (m *MockMsg) WithUserID(uid models.UserID) courier.MsgOut        { m.userID = uid; return m }
 func (m *MockMsg) WithLocale(lc i18n.Locale) courier.MsgOut           { m.locale = lc; return m }
 func (m *MockMsg) WithURNAuth(token string) courier.MsgOut            { m.urnAuth = token; return m }
+
+// SetQuickReplies sets the quick replies for the message
+func (m *MockMsg) SetQuickReplies(qrs []models.QuickReply) { m.quickReplies = qrs }
