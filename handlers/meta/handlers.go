@@ -910,11 +910,12 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
 func parseTimestamp(ts int64) time.Time {
-	// sometimes Facebook sends timestamps in seconds rather than milliseconds
+
 	if ts >= 1_000_000_000_000 {
 		return time.Unix(0, ts*1000000).UTC()
 	}
-	slog.Error("meta webhook timestamp is in seconds instead of milliseconds", "timestamp", ts)
 
+	// sometimes Facebook sends timestamps in seconds rather than milliseconds
+	slog.Error("meta webhook timestamp is in seconds instead of milliseconds", "timestamp", ts)
 	return time.Unix(ts, 0).UTC()
 }
