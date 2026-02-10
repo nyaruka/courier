@@ -3,6 +3,7 @@ package whatsapp
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -129,6 +130,7 @@ func (m WAMessage) ExtractData(clog *courier.ChannelLog) (time.Time, urns.URN, s
 func parseTimestamp(ts int64) time.Time {
 	// sometimes Facebook sends timestamps in seconds rather than milliseconds
 	if ts >= 1_000_000_000_000 {
+		slog.Error("meta webhook timestamp is in milliseconds instead of seconds", "timestamp", ts)
 		return time.Unix(0, ts*1000000).UTC()
 	}
 	return time.Unix(ts, 0).UTC()
