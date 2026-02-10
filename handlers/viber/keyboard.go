@@ -7,7 +7,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/courier/handlers"
 )
 
 // KeyboardButton is button on a keyboard, see https://developers.viber.com/docs/tools/keyboards/#buttons-parameters
@@ -40,18 +39,28 @@ var textSizes = map[string]bool{"small": true, "regular": true, "large": true}
 
 // NewKeyboardFromReplies create a keyboard from the given quick replies
 func NewKeyboardFromReplies(replies []models.QuickReply, buttonConfig map[string]any) *Keyboard {
-	rows := StringsToRows(handlers.TextOnlyQuickReplies(replies), maxColumns, maxRowRunes, paddingRunes)
+	rows := QuickRepliesToRows(replies, maxColumns, maxRowRunes, paddingRunes)
 	buttons := []KeyboardButton{}
 
 	for i := range rows {
 		for j := range rows[i] {
 			cols := 6 / len(rows[i])
 
+			actionType := "reply"
+			if rows[i][j].Type == models.QuickReplyTypeLocation {
+				actionType = "location-picker"
+			}
+
+			actionText := rows[i][j].Text
+			if actionType == "location-picker" && actionText == "" {
+				actionText = "Send Location"
+			}
+
 			button := KeyboardButton{
-				ActionType: "reply",
+				ActionType: actionType,
 				TextSize:   "regular",
-				ActionBody: rows[i][j],
-				Text:       html.EscapeString(rows[i][j]),
+				ActionBody: actionText,
+				Text:       html.EscapeString(actionText),
 				Columns:    fmt.Sprint(cols),
 			}
 
@@ -81,30 +90,28 @@ func (b *KeyboardButton) ApplyConfig(buttonConfig map[string]any) {
 	}
 }
 
-// StringsToRows takes a slice of strings and re-organize it into rows and columns
-func StringsToRows(strs []string, maxColumns, maxRowRunes, paddingRunes int) [][]string {
-	rows := [][]string{{}}
+// QuickRepliesToRows takes a slice of quick replies and re-organize it into rows and columns
+func QuickRepliesToRows(replies []models.QuickReply, maxColumns, maxRowRunes, paddingRunes int) [][]models.QuickReply {
+	rows := [][]models.QuickReply{{}}
 	curRow := 0
 	rowRunes := 0
 
 	colsByRow := []int{6, 3, 2, 1}
 	i := 0
 
-	for len(strs) > 0 {
-		if len(strs) >= colsByRow[i] {
+	for len(replies) > 0 {
+		if len(replies) >= colsByRow[i] {
 			rowRunes = 0
-			for _, str := range strs[:colsByRow[i]] {
-				rowRunes += utf8.RuneCountInString(str) + paddingRunes*2
+			for _, reply := range replies[:colsByRow[i]] {
+				rowRunes += utf8.RuneCountInString(reply.Text) + paddingRunes*2
 			}
 			if rowRunes <= maxRowRunes || colsByRow[i] == 1 {
-				strsCopy := make([]string, colsByRow[i])
-				copy(strsCopy, strs[:colsByRow[i]])
-				for _, str := range strsCopy {
-					rows[curRow] = append(rows[curRow], str)
-					strs = append(strs[:0], strs[0+1:]...)
-				}
-				if len(strs) > 0 {
-					rows = append(rows, []string{})
+				chunk := make([]models.QuickReply, colsByRow[i])
+				copy(chunk, replies[:colsByRow[i]])
+				rows[curRow] = append(rows[curRow], chunk...)
+				replies = replies[colsByRow[i]:]
+				if len(replies) > 0 {
+					rows = append(rows, []models.QuickReply{})
 					curRow += 1
 					i = 0
 				}
