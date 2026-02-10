@@ -106,6 +106,13 @@ type QuickReply struct {
 	Extra string `json:"extra,omitempty"`
 }
 
+func (qr QuickReply) GetText() string {
+	if qr.Type == QuickReplyTypeLocation && qr.Text == "" {
+		return "Send Location"
+	}
+	return qr.Text
+}
+
 // ContactReference is information about a contact provided on queued outgoing messages
 type ContactReference struct {
 	ID         ContactID   `json:"id"   validate:"required"`      // for creating session timeout fires in Postgres

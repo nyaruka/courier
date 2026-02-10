@@ -51,10 +51,7 @@ func NewKeyboardFromReplies(replies []models.QuickReply, buttonConfig map[string
 				actionType = "location-picker"
 			}
 
-			actionText := rows[i][j].Text
-			if actionType == "location-picker" && actionText == "" {
-				actionText = "Send Location"
-			}
+			actionText := rows[i][j].GetText()
 
 			button := KeyboardButton{
 				ActionType: actionType,
@@ -103,7 +100,7 @@ func QuickRepliesToRows(replies []models.QuickReply, maxColumns, maxRowRunes, pa
 		if len(replies) >= colsByRow[i] {
 			rowRunes = 0
 			for _, reply := range replies[:colsByRow[i]] {
-				rowRunes += utf8.RuneCountInString(reply.Text) + paddingRunes*2
+				rowRunes += utf8.RuneCountInString(reply.GetText()) + paddingRunes*2
 			}
 			if rowRunes <= maxRowRunes || colsByRow[i] == 1 {
 				chunk := make([]models.QuickReply, colsByRow[i])
