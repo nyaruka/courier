@@ -130,6 +130,29 @@ func TestKeyboardFromReplies(t *testing.T) {
 				"text_size": "small",
 			},
 		},
+		{
+			[]models.QuickReply{{Type: "location"}},
+			&viber.Keyboard{
+				"keyboard",
+				false,
+				[]viber.KeyboardButton{
+					{ActionType: "location-picker", TextSize: "regular", ActionBody: "Send Location", Text: "Send Location", Columns: "6"},
+				},
+			},
+			map[string]any{},
+		},
+		{
+
+			[]models.QuickReply{{Type: "location", Text: "Share Location"}},
+			&viber.Keyboard{
+				"keyboard",
+				false,
+				[]viber.KeyboardButton{
+					{ActionType: "location-picker", TextSize: "regular", ActionBody: "Share Location", Text: "Share Location", Columns: "6"},
+				},
+			},
+			map[string]any{},
+		},
 	}
 
 	for _, tc := range tsc {
