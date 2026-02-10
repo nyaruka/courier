@@ -338,11 +338,11 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 				switch qr.Type {
 				case "location":
 					items[j].Action.Type = "location"
-					items[j].Action.Label = qr.Text
+					items[j].Action.Label = qr.GetText()
 				case "text":
 					items[j].Action.Type = "message"
-					items[j].Action.Label = qr.Text
-					items[j].Action.Text = qr.Text
+					items[j].Action.Label = qr.GetText()
+					items[j].Action.Text = qr.GetText()
 				}
 			}
 			if len(items) > 0 {

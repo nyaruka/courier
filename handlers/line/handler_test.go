@@ -502,8 +502,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 	},
 	{
-		Label:           "Location action quick Reply",
-		MsgText:         "Where Are you?",
+		Label:           "Location Action Quick Reply",
+		MsgText:         "Where are you?",
 		MsgURN:          "line:uabcdefghij",
 		MsgQuickReplies: []models.QuickReply{{Type: "location", Text: "Share Pin"}, {Type: "text", Text: "No"}},
 		MockResponses: map[string][]*httpx.MockResponse{
@@ -511,12 +511,12 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Where Are you?","quickReply":{"items":[{"type":"action","action":{"type":"location","label":"Share Pin"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
+				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Where are you?","quickReply":{"items":[{"type":"action","action":{"type":"location","label":"Share Pin"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
 			},
 		},
 	},
 	{
-		Label:           "Quick Reply combined and attachment",
+		Label:           "Quick Reply Combined and Attachment",
 		MsgText:         "Are you happy?",
 		MsgURN:          "line:uabcdefghij",
 		MsgAttachments:  []string{"image/jpeg:http://mock.com/1234/test.jpg"},
@@ -531,7 +531,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 	},
 	{
-		Label:                   "Long messsage, Quick Reply combined and attachment",
+		Label:                   "Long Message, Quick Reply Combined and Attachment",
 		MsgText:                 "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
 		MsgURN:                  "line:uabcdefghij",
 		MsgResponseToExternalID: "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
