@@ -332,18 +332,21 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			}
 		} else {
 			mtTextMsg := mtTextMsg{Type: "text", Text: part}
-			items := make([]QuickReplyItem, len(qrs))
-			for j, qr := range qrs {
-				items[j] = QuickReplyItem{Type: "action"}
+			items := make([]QuickReplyItem, 0, len(qrs))
+			for _, qr := range qrs {
+				item := QuickReplyItem{Type: "action"}
 				switch qr.Type {
 				case "location":
-					items[j].Action.Type = "location"
-					items[j].Action.Label = qr.GetText()
+					item.Action.Type = "location"
+					item.Action.Label = qr.GetText()
+					items = append(items, item)
 				case "text":
-					items[j].Action.Type = "message"
-					items[j].Action.Label = qr.GetText()
-					items[j].Action.Text = qr.GetText()
+					item.Action.Type = "message"
+					item.Action.Label = qr.GetText()
+					item.Action.Text = qr.GetText()
+					items = append(items, item)
 				}
+
 			}
 			if len(items) > 0 {
 				mtTextMsg.QuickReply = &mtQuickReply{Items: items}
