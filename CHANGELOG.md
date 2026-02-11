@@ -1,3 +1,9 @@
+v26.1.10 (2026-02-11)
+-------------------------
+ * Support location request quick replies for Viber and LINE
+ * Update phonenumbers
+ * Make processing incoming Whatsapp messages more dry
+
 v26.1.9 (2026-02-04)
 -------------------------
  * Make telegram location handling same as whatsapp
