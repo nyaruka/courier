@@ -205,7 +205,7 @@ func QuickRepliesToRows(replies []QuickReply, maxRows, maxRowRunes, paddingRunes
 	// calculate rune length if it's all one row
 	totalRunes := 0
 	for i := range replies {
-		totalRunes += utf8.RuneCountInString(replies[i].Text) + paddingRunes*2
+		totalRunes += utf8.RuneCountInString(replies[i].GetText()) + paddingRunes*2
 	}
 
 	if totalRunes <= maxRowRunes {
@@ -225,7 +225,7 @@ func QuickRepliesToRows(replies []QuickReply, maxRows, maxRowRunes, paddingRunes
 	rowRunes := 0
 
 	for _, reply := range replies {
-		strRunes := utf8.RuneCountInString(reply.Text) + paddingRunes*2
+		strRunes := utf8.RuneCountInString(reply.GetText()) + paddingRunes*2
 
 		// take a new row if we can't fit this string and the current row isn't empty and we haven't hit the row limit
 		if rowRunes+strRunes > maxRowRunes && len(rows[curRow]) > 0 && len(rows) < maxRows {

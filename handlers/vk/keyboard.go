@@ -30,9 +30,9 @@ func NewKeyboardFromReplies(replies []models.QuickReply) *Keyboard {
 	for i := range rows {
 		buttons[i] = make([]ButtonPayload, len(rows[i]))
 		for j := range rows[i] {
-			buttons[i][j].Action.Label = rows[i][j].Text
+			buttons[i][j].Action.Label = rows[i][j].GetText()
 			buttons[i][j].Action.Type = "text"
-			buttons[i][j].Action.Payload = string(jsonx.MustMarshal(rows[i][j].Text))
+			buttons[i][j].Action.Payload = string(jsonx.MustMarshal(rows[i][j].GetText()))
 			buttons[i][j].Color = "primary"
 		}
 	}

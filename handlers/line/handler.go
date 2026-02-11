@@ -252,7 +252,7 @@ type QuickReplyItem struct {
 	Action struct {
 		Type  string `json:"type"`
 		Label string `json:"label"`
-		Text  string `json:"text"`
+		Text  string `json:"text,omitempty"`
 	} `json:"action"`
 }
 
@@ -293,7 +293,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	// all msg parts in JSON
 	var jsonMsgs []string
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
-	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "text")
+	qrs := msg.QuickReplies()
 
 	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, false, clog)
 	if err != nil {
@@ -332,12 +332,21 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			}
 		} else {
 			mtTextMsg := mtTextMsg{Type: "text", Text: part}
-			items := make([]QuickReplyItem, len(qrs))
-			for j, qr := range qrs {
-				items[j] = QuickReplyItem{Type: "action"}
-				items[j].Action.Type = "message"
-				items[j].Action.Label = qr.Text
-				items[j].Action.Text = qr.Text
+			items := make([]QuickReplyItem, 0, len(qrs))
+			for _, qr := range qrs {
+				item := QuickReplyItem{Type: "action"}
+				switch qr.Type {
+				case "location":
+					item.Action.Type = "location"
+					item.Action.Label = qr.GetText()
+					items = append(items, item)
+				case "text":
+					item.Action.Type = "message"
+					item.Action.Label = qr.GetText()
+					item.Action.Text = qr.GetText()
+					items = append(items, item)
+				}
+
 			}
 			if len(items) > 0 {
 				mtTextMsg.QuickReply = &mtQuickReply{Items: items}

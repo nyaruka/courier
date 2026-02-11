@@ -39,7 +39,7 @@ var textSizes = map[string]bool{"small": true, "regular": true, "large": true}
 
 // NewKeyboardFromReplies create a keyboard from the given quick replies
 func NewKeyboardFromReplies(replies []models.QuickReply, buttonConfig map[string]any) *Keyboard {
-	rows := QuickRepliesToRows(replies, maxColumns, maxRowRunes, paddingRunes)
+	rows := QuickRepliesToKeyboardRows(replies, maxColumns, maxRowRunes, paddingRunes)
 	buttons := []KeyboardButton{}
 
 	for i := range rows {
@@ -87,8 +87,8 @@ func (b *KeyboardButton) ApplyConfig(buttonConfig map[string]any) {
 	}
 }
 
-// QuickRepliesToRows takes a slice of quick replies and re-organize it into rows and columns
-func QuickRepliesToRows(replies []models.QuickReply, maxColumns, maxRowRunes, paddingRunes int) [][]models.QuickReply {
+// QuickRepliesToKeyboardRows takes a slice of quick replies and re-organizes them into rows and columns for Viber keyboards
+func QuickRepliesToKeyboardRows(replies []models.QuickReply, maxColumns, maxRowRunes, paddingRunes int) [][]models.QuickReply {
 	rows := [][]models.QuickReply{{}}
 	curRow := 0
 	rowRunes := 0
