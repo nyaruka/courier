@@ -98,7 +98,7 @@ CREATE TABLE msgs_msg (
     created_by_id integer REFERENCES users_user(id),
     text text NOT NULL,
     attachments character varying(255)[] NULL,
-    quick_replies character varying(64)[] NULL,
+    quickreplies JSONB NULL,
     optin_id integer REFERENCES msgs_optin(id) ON DELETE CASCADE,
     locale character varying(6) NULL,
     created_on timestamp with time zone NOT NULL,
