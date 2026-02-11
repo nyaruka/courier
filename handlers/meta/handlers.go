@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"slices"
@@ -916,6 +915,5 @@ func parseTimestamp(ts int64) time.Time {
 	}
 
 	// sometimes Facebook sends timestamps in seconds rather than milliseconds
-	slog.Error("meta webhook timestamp is in seconds instead of milliseconds", "timestamp", ts)
 	return time.Unix(ts, 0).UTC()
 }
