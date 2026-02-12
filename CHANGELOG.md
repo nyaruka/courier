@@ -1,3 +1,7 @@
+v26.1.11 (2026-02-12)
+-------------------------
+ * Remove log for timestamp from meta FBA and IG
+
 v26.1.10 (2026-02-11)
 -------------------------
  * Support location request quick replies for Viber and LINE
