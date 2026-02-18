@@ -2,6 +2,9 @@
     "name": "Courier",
     "image": "mcr.microsoft.com/devcontainers/go:dev-1.25-trixie",
     "features": {},
+    "mounts": [
+        "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind"
+    ],
     "runArgs": [
         "--name=dev-courier",
         "--network=textit_default"
@@ -9,6 +12,7 @@
     "customizations": {
         "vscode": {
             "extensions": [
+                "anthropic.claude-code",
                 "netcorext.uuid-generator"
             ],
             "settings": {
