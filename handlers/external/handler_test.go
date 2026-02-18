@@ -579,6 +579,47 @@ var postSendTestCases = []OutgoingTestCase{
 	},
 }
 
+var postSendHexTestCases = []OutgoingTestCase{
+	{
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send": {
+				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+			Form: url.Values{
+				"text":     {"Simple Message"},
+				"to":       {"+250788383383"},
+				"from":     {"2020"},
+				"hex-text": {"53696d706c65204d657373616765"},
+			},
+		}},
+	},
+	{
+		Label:   "Unicode Send",
+		MsgText: "☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send": {
+				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+			Form: url.Values{
+				"text":     {"☺"},
+				"to":       {"+250788383383"},
+				"from":     {"2020"},
+				"hex-text": {"e298ba"},
+			},
+		}},
+	},
+}
+
 var postSendCustomContentTypeTestCases = []OutgoingTestCase{
 	{
 		Label:   "Plain Send",
@@ -991,12 +1032,20 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigSendMethod:  http.MethodPut,
 		})
 
-	var MTHexChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var getHexChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
 			models.ConfigSendURL:      "http://example.com/send?to={{to}}&text={{text}}&hex-text={{hex_text}}&from={{from}}{{quick_replies}}",
 			configMTContentHexEncoded: true,
 			models.ConfigSendMethod:   http.MethodGet})
+
+	var postHexChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+		[]string{urns.Phone.Prefix},
+		map[string]any{
+			models.ConfigSendURL:      "http://example.com/send",
+			models.ConfigSendBody:     "to={{to}}&text={{text}}&hex-text={{hex_text}}&from={{from}}{{quick_replies}}",
+			configMTContentHexEncoded: true,
+			models.ConfigSendMethod:   http.MethodPost})
 
 	RunOutgoingTestCases(t, getChannel, newHandler(), getSendTestCases, nil, nil)
 	RunOutgoingTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil, nil)
@@ -1008,7 +1057,8 @@ func TestOutgoing(t *testing.T) {
 	RunOutgoingTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil, nil)
 	RunOutgoingTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil, nil)
 	RunOutgoingTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil, nil)
-	RunOutgoingTestCases(t, MTHexChannel, newHandler(), getSendHexTestCases, nil, nil)
+	RunOutgoingTestCases(t, getHexChannel, newHandler(), getSendHexTestCases, nil, nil)
+	RunOutgoingTestCases(t, postHexChannel, newHandler(), postSendHexTestCases, nil, nil)
 
 	var getChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
