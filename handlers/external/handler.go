@@ -3,6 +3,7 @@ package external
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -37,10 +38,11 @@ const (
 	configMOResponseContentType = "mo_response_content_type"
 	configMOResponse            = "mo_response"
 
-	configMTResponseCheck = "mt_response_check"
-	configEncoding        = "encoding"
-	encodingDefault       = "D"
-	encodingSmart         = "S"
+	configMTContentHexEncoded = "mt_content_hex_encoded"
+	configMTResponseCheck     = "mt_response_check"
+	configEncoding            = "encoding"
+	encodingDefault           = "D"
+	encodingSmart             = "S"
 )
 
 var defaultFromFields = []string{"from", "sender"}
@@ -299,6 +301,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	sendBody := channel.StringConfigForKey(models.ConfigSendBody, "")
 	sendMaxLength := channel.IntConfigForKey(models.ConfigMaxLength, 160)
 	contentType := channel.StringConfigForKey(models.ConfigContentType, contentURLEncoded)
+	sendHexContent := channel.BoolConfigForKey(configMTContentHexEncoded, false)
 	contentTypeHeader := contentTypeMappings[contentType]
 	if contentTypeHeader == "" {
 		contentTypeHeader = contentType
@@ -338,6 +341,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			if gsm7.IsValid(replaced) {
 				form["text"] = replaced
 			}
+		}
+
+		if sendHexContent {
+			hexText := make([]byte, hex.EncodedLen(len(form["text"])))
+			hex.Encode(hexText, []byte(form["text"]))
+			form["hex_text"] = string(hexText)
 		}
 
 		formEncoded := encodeVariables(form, contentURLEncoded)
