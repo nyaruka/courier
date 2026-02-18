@@ -2,6 +2,7 @@ package jasmin
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -142,7 +143,18 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		"dlr-level":  []string{"2"},
 		"dlr-method": []string{http.MethodPost},
 		"coding":     []string{"0"},
-		"content":    []string{string(gsm7.Encode(gsm7.ReplaceSubstitutions(handlers.GetTextAndAttachments(msg))))},
+	}
+
+	// if we are smart, first try to convert to GSM7 chars
+	replaced := gsm7.ReplaceSubstitutions(handlers.GetTextAndAttachments(msg))
+	if gsm7.IsValid(replaced) {
+		form["content"] = []string{replaced}
+	} else {
+		form["coding"] = []string{"8"}
+
+		hexText := make([]byte, hex.EncodedLen(len(handlers.GetTextAndAttachments(msg))))
+		hex.Encode(hexText, []byte(handlers.GetTextAndAttachments(msg)))
+		form["hex-content"] = []string{string(hexText)}
 	}
 
 	fullURL, _ := url.Parse(sendURL)
