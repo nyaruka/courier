@@ -1,3 +1,7 @@
+v26.1.12 (2026-02-18)
+-------------------------
+ * Add support for sending unicode text for JS channel as hex-content parameter
+
 v26.1.11 (2026-02-12)
 -------------------------
  * Remove log for timestamp from meta FBA and IG
