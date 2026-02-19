@@ -1,3 +1,13 @@
+v26.1.13 (2026-02-19)
+-------------------------
+ * Merge pull request #974 from nyaruka/adjust-JS-status-handler
+ * Fix JS encoding to use UTF16 encoder
+ * Apply suggestions from code review
+ * Adjust JS status handler to use message status values
+ * Update dependencies
+ * Add CLAUDE.md
+ * Tweak devcontainer configuration
+
 v26.1.12 (2026-02-18)
 -------------------------
  * Add support for sending unicode text for JS channel as hex-content parameter
