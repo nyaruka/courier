@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
+	"golang.org/x/text/encoding/unicode"
 )
 
 var idRegex = regexp.MustCompile(`Success \"(.*)\"`)
@@ -166,9 +167,13 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	} else {
 		form["coding"] = []string{"8"}
 
-		hexText := make([]byte, hex.EncodedLen(len(handlers.GetTextAndAttachments(msg))))
-		hex.Encode(hexText, []byte(handlers.GetTextAndAttachments(msg)))
-		form["hex-content"] = []string{string(hexText)}
+		encoder := unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM).NewEncoder()
+		utf16beBytes, err := encoder.Bytes([]byte(handlers.GetTextAndAttachments(msg)))
+		if err != nil {
+			return err
+		}
+
+		form["hex-content"] = []string{string(hex.EncodeToString(utf16beBytes))}
 	}
 
 	fullURL, _ := url.Parse(sendURL)

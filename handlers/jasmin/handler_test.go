@@ -136,7 +136,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
-				"hex-content": []string{"e298ba"},
+				"hex-content": []string{"263a"},
 				"to":          {"250788383383"},
 				"from":        {"2020"},
 				"coding":      {"8"},
