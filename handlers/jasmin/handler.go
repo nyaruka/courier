@@ -64,7 +64,7 @@ func (h *handler) receiveStatus(ctx context.Context, c courier.Channel, w http.R
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
-	// should have either delivered or err
+	// prefer message_status when present; otherwise require either dlvrd or err to be set
 	var reqStatus models.MsgStatus
 	msgStatus, found := statusMapping[form.MessageStatus]
 	if found {

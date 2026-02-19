@@ -56,7 +56,7 @@ var handleTestCases = []IncomingTestCase{
 		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external1", Status: models.MsgStatusDelivered}},
 	},
 	{
-		Label:                "Status Delivered",
+		Label:                "Status Delivered via message_status",
 		URL:                  statusURL,
 		Data:                 "id=external1&dlvrd=001&message_status=DELIVRD",
 		ExpectedRespStatus:   200,
