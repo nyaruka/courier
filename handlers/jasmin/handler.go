@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
+	"golang.org/x/text/encoding/unicode"
 )
 
 var idRegex = regexp.MustCompile(`Success \"(.*)\"`)
@@ -40,9 +41,20 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type statusForm struct {
-	ID        string `name:"id"     validate:"required"`
-	Delivered int    `name:"dlvrd"`
-	Err       int    `name:"err"`
+	ID            string `name:"id"     validate:"required"`
+	MessageStatus string `name:"message_status"`
+	Delivered     int    `name:"dlvrd"`
+	Err           int    `name:"err"`
+}
+
+var statusMapping = map[string]models.MsgStatus{
+	"ACCEPTD": models.MsgStatusSent,
+	"UNKNOWN": models.MsgStatusWired,
+	"UNDELIV": models.MsgStatusFailed,
+	"REJECTD": models.MsgStatusFailed,
+	"EXPIRED": models.MsgStatusFailed,
+	"DELETED": models.MsgStatusFailed,
+	"DELIVRD": models.MsgStatusDelivered,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -53,14 +65,17 @@ func (h *handler) receiveStatus(ctx context.Context, c courier.Channel, w http.R
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
-	// should have either delivered or err
+	// prefer message_status when present; otherwise require either dlvrd or err to be set
 	var reqStatus models.MsgStatus
-	if form.Delivered == 1 {
+	msgStatus, found := statusMapping[form.MessageStatus]
+	if found {
+		reqStatus = msgStatus
+	} else if form.Delivered == 1 {
 		reqStatus = models.MsgStatusDelivered
 	} else if form.Err == 1 {
 		reqStatus = models.MsgStatusFailed
 	} else {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("must have either dlvrd or err set to 1"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("must have a known message_status or either dlvrd or err set to 1"))
 	}
 
 	status := h.Backend().NewStatusUpdateByExternalID(c, form.ID, reqStatus, clog)
@@ -152,9 +167,13 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	} else {
 		form["coding"] = []string{"8"}
 
-		hexText := make([]byte, hex.EncodedLen(len(handlers.GetTextAndAttachments(msg))))
-		hex.Encode(hexText, []byte(handlers.GetTextAndAttachments(msg)))
-		form["hex-content"] = []string{string(hexText)}
+		encoder := unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM).NewEncoder()
+		utf16beBytes, err := encoder.Bytes([]byte(handlers.GetTextAndAttachments(msg)))
+		if err != nil {
+			return err
+		}
+
+		form["hex-content"] = []string{string(hex.EncodeToString(utf16beBytes))}
 	}
 
 	fullURL, _ := url.Parse(sendURL)
