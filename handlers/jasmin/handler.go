@@ -40,9 +40,20 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type statusForm struct {
-	ID        string `name:"id"     validate:"required"`
-	Delivered int    `name:"dlvrd"`
-	Err       int    `name:"err"`
+	ID            string `name:"id"     validate:"required"`
+	MessageStatus string `name:"message_status"`
+	Delivered     int    `name:"dlvrd"`
+	Err           int    `name:"err"`
+}
+
+var statusMapping = map[string]models.MsgStatus{
+	"ACCEPTD": models.MsgStatusSent,
+	"UNKNOWN": models.MsgStatusWired,
+	"UNDELIV": models.MsgStatusFailed,
+	"REJECTD": models.MsgStatusFailed,
+	"EXPIRED": models.MsgStatusFailed,
+	"DELETED": models.MsgStatusFailed,
+	"DELIVRD": models.MsgStatusDelivered,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -55,12 +66,15 @@ func (h *handler) receiveStatus(ctx context.Context, c courier.Channel, w http.R
 
 	// should have either delivered or err
 	var reqStatus models.MsgStatus
-	if form.Delivered == 1 {
+	msgStatus, found := statusMapping[form.MessageStatus]
+	if found {
+		reqStatus = msgStatus
+	} else if form.Delivered == 1 {
 		reqStatus = models.MsgStatusDelivered
 	} else if form.Err == 1 {
 		reqStatus = models.MsgStatusFailed
 	} else {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("must have either dlvrd or err set to 1"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("must have a known message_status or either dlvrd or err set to 1"))
 	}
 
 	status := h.Backend().NewStatusUpdateByExternalID(c, form.ID, reqStatus, clog)

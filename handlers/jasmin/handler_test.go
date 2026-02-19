@@ -56,6 +56,22 @@ var handleTestCases = []IncomingTestCase{
 		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external1", Status: models.MsgStatusDelivered}},
 	},
 	{
+		Label:                "Status Delivered",
+		URL:                  statusURL,
+		Data:                 "id=external1&dlvrd=001&message_status=DELIVRD",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ACK/Jasmin",
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external1", Status: models.MsgStatusDelivered}},
+	},
+	{
+		Label:                "Status Accepted",
+		URL:                  statusURL,
+		Data:                 "id=external1&dlvrd=001&message_status=ACCEPTD",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ACK/Jasmin",
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external1", Status: models.MsgStatusSent}},
+	},
+	{
 		Label:                "Status Failed",
 		URL:                  statusURL,
 		Data:                 "id=external1&err=1",
@@ -75,7 +91,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  statusURL,
 		ExpectedRespStatus:   400,
 		Data:                 "id=external1&err=0&dlvrd=0",
-		ExpectedBodyContains: "must have either dlvrd or err set to 1",
+		ExpectedBodyContains: "must have a known message_status or either dlvrd or err set to 1",
 	},
 }
 
