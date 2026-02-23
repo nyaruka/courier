@@ -1,38 +1,11 @@
-# Compiled Object files, Static and Dynamic libs (Shared Objects)
-*.o
-*.a
-*.so
-*~
-deploy
-fabric
-fabfile.py
-fabfile.pyc
-fabconfig.py
-fabconfig.pyc
-
-# Folders
-_obj
-_test
-.vscode
-
-# Architecture specific extensions/prefixes
-*.[568vq]
-[568vq].out
-
-*.cgo1.go
-*.cgo2.c
-_cgo_defun.c
-_cgo_gotypes.go
-_cgo_export.*
-
-_testmain.go
-
-*.exe
-*.test
-*.prof
-
 .DS_Store
-dist/
-.envrc
-courier
+.devcontainer
+.claude/
+CLAUDE.md
+coverage.text
+deploy
+fabfile.*
+
+/_test_spool
+/_spool
 _storage
