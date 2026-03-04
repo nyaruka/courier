@@ -18,7 +18,7 @@ import (
 
 const configIsShared = "is_shared"
 
-var sendURL = "https://api.africastalking.com/version1/messaging"
+var defaultSendURL = "https://api.africastalking.com/version1/messaging"
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -124,7 +124,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	apiKey := msg.Channel().StringConfigForKey(models.ConfigAPIKey, "")
 
-	if username == "" || apiKey == "" {
+	sendURL := msg.Channel().StringConfigForKey(models.ConfigSendURL, defaultSendURL)
+	if username == "" || apiKey == "" || sendURL == "" {
 		return courier.ErrChannelConfig
 	}
 

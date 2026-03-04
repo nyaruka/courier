@@ -191,6 +191,26 @@ var sharedOutgoingCases = []OutgoingTestCase{
 	},
 }
 
+var customSendURLCases = []OutgoingTestCase{
+	{
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://other.example.com/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "SMSMessageData": {"Recipients": [{"status": "Success", "messageId": "1002"}] } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"apikey": "KEY"},
+				Form:    url.Values{"message": {"Simple Message ☺"}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}},
+			},
+		},
+		ExpectedExtIDs: []string{"1002"},
+	},
+}
+
 func TestOutgoing(t *testing.T) {
 	defaultChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US",
 		[]string{urns.Phone.Prefix},
@@ -206,6 +226,15 @@ func TestOutgoing(t *testing.T) {
 			configIsShared:        true,
 		})
 
+	customSendURLChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US",
+		[]string{urns.Phone.Prefix},
+		map[string]any{
+			models.ConfigUsername: "Username",
+			models.ConfigAPIKey:   "KEY",
+			models.ConfigSendURL:  "https://other.example.com/send",
+		})
+
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingCases, []string{"KEY"}, nil)
 	RunOutgoingTestCases(t, sharedChannel, newHandler(), sharedOutgoingCases, []string{"KEY"}, nil)
+	RunOutgoingTestCases(t, customSendURLChannel, newHandler(), customSendURLCases, []string{"KEY"}, nil)
 }
