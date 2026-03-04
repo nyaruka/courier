@@ -1,3 +1,9 @@
+v26.1.14 (2026-03-04)
+-------------------------
+ * Merge pull request #975 from nyaruka/allow-AT-config-send-url
+ * Allow using configured URL for AT channels
+ * Dev reorg
+
 v26.1.13 (2026-02-19)
 -------------------------
  * Merge pull request #974 from nyaruka/adjust-JS-status-handler
