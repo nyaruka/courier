@@ -345,7 +345,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MsgURN:  "whatsapp:250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "contacts": [{"user_id": "US.1234"}], "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "contacts": [{"input": "250788123123", "user_id": "US.1234"}], "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
@@ -353,6 +353,17 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			"whatsapp:250788123123": true,
 			"whatsapp:US.1234":     true,
 		},
+	},
+	{
+		Label:   "Plain Send with user_id same as input",
+		MsgText: "Simple Message",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/12345_ID/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "contacts": [{"input": "250788123123", "user_id": "250788123123"}], "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:   "Unicode Send",

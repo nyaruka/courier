@@ -357,9 +357,10 @@ type SendResponse struct {
 	} `json:"error"`
 }
 
-// UserID returns the user_id from the first contact in the response, if present
+// UserID returns the user_id from the first contact in the response if it's different from
+// the input, i.e. we sent by phone number and got back a BSUID that should be saved.
 func (r *SendResponse) UserID() string {
-	if len(r.Contacts) > 0 {
+	if len(r.Contacts) > 0 && r.Contacts[0].UserID != "" && r.Contacts[0].UserID != r.Contacts[0].Input {
 		return r.Contacts[0].UserID
 	}
 	return ""
