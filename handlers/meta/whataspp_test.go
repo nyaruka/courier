@@ -49,7 +49,11 @@ var whatsappIncomingTests = []IncomingTestCase{
 		ExpectedURN:           "whatsapp:5678",
 		ExpectedExternalID:    "external_id",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
-		PrepRequest:           addValidSignature,
+		ExpectedContactURNs: map[string]bool{
+			"whatsapp:5678":             true,
+			"whatsapp:US.1234#@kfisher": true,
+		},
+		PrepRequest: addValidSignature,
 	},
 	{
 		Label:                 "Receive Message WAC with user_id only",

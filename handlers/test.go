@@ -73,6 +73,7 @@ type IncomingTestCase struct {
 	ExpectedStatuses      []ExpectedStatus
 	ExpectedEvents        []ExpectedEvent
 	ExpectedErrors        []*clogs.Error
+	ExpectedContactURNs   map[string]bool
 	NoLogsExpected        bool
 }
 
@@ -233,6 +234,24 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 			}
 
 			assert.Equal(t, tc.ExpectedURNAuthTokens, mb.URNAuthTokens())
+
+			if tc.ExpectedContactURNs != nil {
+				clog := mb.WrittenChannelLogs()[0]
+				ctx := context.Background()
+				var contactUUID models.ContactUUID
+				for urn, shouldBePresent := range tc.ExpectedContactURNs {
+					contact, _ := mb.GetContact(ctx, channels[0], urns.URN(urn), nil, "", false, clog)
+					if shouldBePresent {
+						require.NotNil(contact, "expected contact for URN %s", urn)
+						if contactUUID == models.NilContactUUID {
+							contactUUID = contact.UUID()
+						}
+						require.Equal(contactUUID, contact.UUID(), "expected same contact for URN %s", urn)
+					} else {
+						require.Nil(contact, "expected no contact for URN %s", urn)
+					}
+				}
+			}
 
 			// unless we know there won't be a log, check one was written
 			if !tc.NoLogsExpected {

@@ -319,8 +319,8 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 
 				// if we have both a phone number URN and a user_id, add user_id as secondary URN
 				if waMsg.From != "" && waMsg.FromUserID != "" {
-					contact, err := h.Backend().GetContact(ctx, channel, urn, nil, "", false, clog)
-					if err != nil {
+					contact, err := h.Backend().GetContact(ctx, channel, urn, nil, "", true, clog)
+					if err != nil || contact == nil {
 						clog.RawError(fmt.Errorf("unable to get contact for %s", urn.String()))
 					} else {
 						username := contactUsernames[waMsg.FromUserID]
@@ -846,9 +846,8 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 		return "", courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}
 
-	externalID := respPayload.Messages[0].ID
-	if externalID != "" {
-		res.AddExternalID(externalID)
+	if len(respPayload.Messages) > 0 && respPayload.Messages[0].ID != "" {
+		res.AddExternalID(respPayload.Messages[0].ID)
 	}
 	return respPayload.UserID(), nil
 }

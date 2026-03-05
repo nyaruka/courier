@@ -122,8 +122,8 @@ func (m WAMessage) ExtractData(clog *courier.ChannelLog) (time.Time, urns.URN, s
 		from = m.FromUserID
 	}
 	if from == "" {
-		finalErr = errors.New("invalid whatsapp id")
-		return date, urn, text, mediaURL, mediaID, fmt.Errorf("missing from or from_user_id"), finalErr
+		finalErr = errors.New("missing from or from_user_id")
+		return date, urn, text, mediaURL, mediaID, finalErr, finalErr
 	}
 
 	urn, err = urns.New(urns.WhatsApp, from)
