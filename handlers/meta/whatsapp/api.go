@@ -46,17 +46,22 @@ func (e WAError) ErrorChannelLog(clog *courier.ChannelLog) {
 
 type WAContact struct {
 	Profile struct {
-		Name string `json:"name"`
+		Name     string `json:"name"`
+		Username string `json:"username"`
 	} `json:"profile"`
-	WaID string `json:"wa_id"`
+	WaID         string `json:"wa_id"`
+	UserID       string `json:"user_id"`
+	ParentUserID string `json:"parent_user_id"`
 }
 
 type WAMessage struct {
-	ID        string `json:"id"`
-	GroupID   string `json:"group_id,omitempty"`
-	From      string `json:"from"`
-	Timestamp string `json:"timestamp"`
-	Type      string `json:"type"`
+	ID               string `json:"id"`
+	GroupID          string `json:"group_id,omitempty"`
+	From             string `json:"from"`
+	FromUserID       string `json:"from_user_id"`
+	FromParentUserID string `json:"from_parent_user_id"`
+	Timestamp        string `json:"timestamp"`
+	Type             string `json:"type"`
 	Context   *struct {
 		Forwarded           bool   `json:"forwarded"`
 		FrequentlyForwarded bool   `json:"frequently_forwarded"`
@@ -112,7 +117,16 @@ func (m WAMessage) ExtractData(clog *courier.ChannelLog) (time.Time, urns.URN, s
 	}
 	date = parseTimestamp(ts)
 
-	urn, err = urns.New(urns.WhatsApp, m.From)
+	from := m.From
+	if from == "" {
+		from = m.FromUserID
+	}
+	if from == "" {
+		finalErr = errors.New("invalid whatsapp id")
+		return date, urn, text, mediaURL, mediaID, fmt.Errorf("missing from or from_user_id"), finalErr
+	}
+
+	urn, err = urns.New(urns.WhatsApp, from)
 	if err != nil {
 		finalErr = errors.New("invalid whatsapp id")
 		return date, urn, text, mediaURL, mediaID, err, finalErr

@@ -251,6 +251,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 
 	seenMsgIDs := make(map[string]bool, 2)
 	contactNames := make(map[string]string)
+	contactUsernames := make(map[string]string)
 
 	// for each entry
 	for _, entry := range payload.Entry {
@@ -261,7 +262,13 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 		for _, change := range entry.Changes {
 
 			for _, contact := range change.Value.Contacts {
-				contactNames[contact.WaID] = contact.Profile.Name
+				if contact.WaID != "" {
+					contactNames[contact.WaID] = contact.Profile.Name
+				}
+				if contact.UserID != "" {
+					contactNames[contact.UserID] = contact.Profile.Name
+					contactUsernames[contact.UserID] = contact.Profile.Username
+				}
 			}
 
 			for _, waMsg := range change.Value.Messages {
@@ -292,8 +299,14 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					}
 				}
 
+				// resolve contact name from either from or from_user_id
+				name := contactNames[waMsg.From]
+				if name == "" && waMsg.FromUserID != "" {
+					name = contactNames[waMsg.FromUserID]
+				}
+
 				// create our message
-				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, waMsg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[waMsg.From])
+				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, waMsg.ID, clog).WithReceivedOn(date).WithContactName(name)
 
 				if mediaURL != "" {
 					event.WithAttachment(mediaURL)
@@ -302,6 +315,25 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 				err = h.Backend().WriteMsg(ctx, event, clog)
 				if err != nil {
 					return nil, nil, err
+				}
+
+				// if we have both a phone number URN and a user_id, add user_id as secondary URN
+				if waMsg.From != "" && waMsg.FromUserID != "" {
+					contact, err := h.Backend().GetContact(ctx, channel, urn, nil, "", false, clog)
+					if err != nil {
+						clog.RawError(fmt.Errorf("unable to get contact for %s", urn.String()))
+					} else {
+						username := contactUsernames[waMsg.FromUserID]
+						userIDURN, err := urns.NewFromParts(urns.WhatsApp.Prefix, waMsg.FromUserID, nil, username)
+						if err != nil {
+							clog.RawError(fmt.Errorf("unable to make whatsapp urn from user_id %s", waMsg.FromUserID))
+						} else {
+							_, err = h.Backend().AddURNtoContact(ctx, channel, contact, userIDURN, nil)
+							if err != nil {
+								clog.RawError(fmt.Errorf("unable to add URN %s to contact with uuid %s", userIDURN.String(), contact.UUID()))
+							}
+						}
+					}
 				}
 
 				events = append(events, event)
