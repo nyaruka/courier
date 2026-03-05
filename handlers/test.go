@@ -236,11 +236,9 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 			assert.Equal(t, tc.ExpectedURNAuthTokens, mb.URNAuthTokens())
 
 			if tc.ExpectedContactURNs != nil {
-				clog := mb.WrittenChannelLogs()[0]
-				ctx := context.Background()
 				var contactUUID models.ContactUUID
 				for urn, shouldBePresent := range tc.ExpectedContactURNs {
-					contact, _ := mb.GetContact(ctx, channels[0], urns.URN(urn), nil, "", false, clog)
+					contact, _ := mb.GetContact(context.Background(), channels[0], urns.URN(urn), nil, "", false, nil)
 					if shouldBePresent {
 						require.NotNil(contact, "expected contact for URN %s", urn)
 						if contactUUID == models.NilContactUUID {
