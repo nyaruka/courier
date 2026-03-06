@@ -46,17 +46,22 @@ func (e WAError) ErrorChannelLog(clog *courier.ChannelLog) {
 
 type WAContact struct {
 	Profile struct {
-		Name string `json:"name"`
+		Name     string `json:"name"`
+		Username string `json:"username"`
 	} `json:"profile"`
-	WaID string `json:"wa_id"`
+	WaID         string `json:"wa_id"`
+	UserID       string `json:"user_id"`
+	ParentUserID string `json:"parent_user_id"`
 }
 
 type WAMessage struct {
-	ID        string `json:"id"`
-	GroupID   string `json:"group_id,omitempty"`
-	From      string `json:"from"`
-	Timestamp string `json:"timestamp"`
-	Type      string `json:"type"`
+	ID               string `json:"id"`
+	GroupID          string `json:"group_id,omitempty"`
+	From             string `json:"from"`
+	FromUserID       string `json:"from_user_id"`
+	FromParentUserID string `json:"from_parent_user_id"`
+	Timestamp        string `json:"timestamp"`
+	Type             string `json:"type"`
 	Context   *struct {
 		Forwarded           bool   `json:"forwarded"`
 		FrequentlyForwarded bool   `json:"frequently_forwarded"`
@@ -112,7 +117,16 @@ func (m WAMessage) ExtractData(clog *courier.ChannelLog) (time.Time, urns.URN, s
 	}
 	date = parseTimestamp(ts)
 
-	urn, err = urns.New(urns.WhatsApp, m.From)
+	from := m.From
+	if from == "" {
+		from = m.FromUserID
+	}
+	if from == "" {
+		finalErr = errors.New("missing from or from_user_id")
+		return date, urn, text, mediaURL, mediaID, finalErr, finalErr
+	}
+
+	urn, err = urns.New(urns.WhatsApp, from)
 	if err != nil {
 		finalErr = errors.New("invalid whatsapp id")
 		return date, urn, text, mediaURL, mediaID, err, finalErr
@@ -329,6 +343,11 @@ type SendRequest struct {
 // see https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#response-syntax
 // e.g. https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#successful-response
 type SendResponse struct {
+	Contacts []*struct {
+		Input  string `json:"input"`
+		WaID   string `json:"wa_id"`
+		UserID string `json:"user_id"`
+	} `json:"contacts"`
 	Messages []*struct {
 		ID string `json:"id"`
 	} `json:"messages"`
@@ -336,4 +355,13 @@ type SendResponse struct {
 		Message string `json:"message"`
 		Code    int    `json:"code"`
 	} `json:"error"`
+}
+
+// UserID returns the user_id from the first contact in the response if it's different from
+// the input, i.e. we sent by phone number and got back a BSUID that should be saved.
+func (r *SendResponse) UserID() string {
+	if len(r.Contacts) > 0 && r.Contacts[0].UserID != "" && r.Contacts[0].UserID != r.Contacts[0].Input {
+		return r.Contacts[0].UserID
+	}
+	return ""
 }
