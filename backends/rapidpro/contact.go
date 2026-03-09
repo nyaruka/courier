@@ -58,12 +58,12 @@ func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *m
 			return nil, fmt.Errorf("error beginning transaction: %w", err)
 		}
 
-		// update contact's URNs so this URN has priority
-		err = models.SetDefaultURN(ctx, tx, channel, contact, urn, authTokens)
+		// update channel, display and auth tokens on the URN (priority reordering is delegated to mailroom)
+		err = models.UpdateContactURNMetadata(ctx, tx, channel, contact, urn, authTokens)
 		if err != nil {
-			log.Error("error updating default URN for contact", "error", err)
+			log.Error("error updating URN metadata for contact", "error", err)
 			tx.Rollback()
-			return nil, fmt.Errorf("error setting default URN for contact: %w", err)
+			return nil, fmt.Errorf("error updating URN metadata for contact: %w", err)
 		}
 		return contact, tx.Commit()
 	}
