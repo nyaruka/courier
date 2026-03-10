@@ -1,3 +1,7 @@
+v26.1.15 (2026-03-10)
+-------------------------
+ * Defer to mailroom to set URN affinity
+
 v26.1.14 (2026-03-04)
 -------------------------
  * Merge pull request #975 from nyaruka/allow-AT-config-send-url
