@@ -333,7 +333,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.Equal(contact2.URNID_, contact3.URNID_)
 }
 
-func (ts *BackendTestSuite) TestContactURNPriority() {
+func (ts *BackendTestSuite) TestContactURNMetadata() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	fbChannel := ts.getChannel("FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
 	knURN := urns.URN("tel:+12065551111")
@@ -352,8 +352,8 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
-	// ok, now looking up our contact should reset our URNs and their affinity..
-	// FacebookURN should be first all all URNs should now use Facebook channel
+	// looking up contact by fbURN should update channel_id on the URN but NOT reorder priorities
+	// (priority reordering is delegated to mailroom)
 	fbContact, err := contactForURN(ctx, ts.b, fbChannel.OrgID_, fbChannel, fbURN, nil, "", true, clog)
 	ts.NoError(err)
 
@@ -367,10 +367,11 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
-	ts.Equal("tel:+12065552222", urns[0].Identity)
-	ts.Equal(fbChannel.ID(), urns[0].ChannelID)
+	// priorities are unchanged (knURN was created first so it's still top priority)
+	ts.Equal("tel:+12065551111", urns[0].Identity)
 
-	ts.Equal("tel:+12065551111", urns[1].Identity)
+	ts.Equal("tel:+12065552222", urns[1].Identity)
+	// but channel_id on the looked-up URN should be updated to the fb channel
 	ts.Equal(fbChannel.ID(), urns[1].ChannelID)
 }
 

@@ -89,72 +89,33 @@ func GetURNsForContact(ctx context.Context, db *sqlx.Tx, contactID ContactID) ([
 	return urns, nil
 }
 
-// SetDefaultURN makes sure that the passed in URN is the default URN for this contact and
-// that the passed in channel is the default one for that URN
-//
-// Note that the URN must be one of the contact's URN before calling this method
-func SetDefaultURN(ctx context.Context, db *sqlx.Tx, channel *Channel, contact *Contact, urn urns.URN, authTokens map[string]string) error {
-	scheme := urn.Scheme()
-	contactURNs, err := GetURNsForContact(ctx, db, contact.ID_)
+// UpdateContactURNMetadata updates channel, display and auth tokens on the URN for the given
+// contact without modifying priorities (priority reordering is delegated to mailroom)
+func UpdateContactURNMetadata(ctx context.Context, db *sqlx.Tx, channel *Channel, contact *Contact, urn urns.URN, authTokens map[string]string) error {
+	contactURN, err := GetContactURNByIdentity(ctx, db, channel.OrgID(), urn)
 	if err != nil {
-		slog.Error("error looking up contact urns", "error", err, "urn", urn.Identity(), "channel_id", channel.ID())
-		return err
+		return fmt.Errorf("error getting URN: %w", err)
 	}
 
-	// no URNs? that's an error
-	if len(contactURNs) == 0 {
-		return fmt.Errorf("URN '%s' not present for contact %d", urn.Identity(), contact.ID_)
+	display := null.String(urn.Display())
+	needsUpdate := false
+
+	if channel.HasRole(ChannelRoleSend) && contactURN.ChannelID != channel.ID() {
+		contactURN.ChannelID = channel.ID()
+		needsUpdate = true
+	}
+	if contactURN.Display != display {
+		contactURN.Display = display
+		needsUpdate = true
+	}
+	if authTokens != nil && !utils.MapContains(contactURN.AuthTokens, authTokens) {
+		utils.MapUpdate(contactURN.AuthTokens, authTokens)
+		needsUpdate = true
 	}
 
-	// only a single URN and it is ours
-	if contactURNs[0].Identity == string(urn.Identity()) {
-		display := urn.Display()
-
-		// if display, channel id or auth tokens changed, update them
-		if string(contactURNs[0].Display) != display || contactURNs[0].ChannelID != channel.ID() || (authTokens != nil && !utils.MapContains(contactURNs[0].AuthTokens, authTokens)) {
-			contactURNs[0].Display = null.String(display)
-
-			if channel.HasRole(ChannelRoleSend) {
-				contactURNs[0].ChannelID = channel.ID()
-			}
-
-			utils.MapUpdate(contactURNs[0].AuthTokens, authTokens)
-
-			return UpdateContactURN(ctx, db, contactURNs[0])
-		}
-		return nil
+	if needsUpdate {
+		return UpdateContactURN(ctx, db, contactURN)
 	}
-
-	// multiple URNs and we aren't the top, iterate across them and update channel for matching schemes
-	// this is kinda expensive (n SQL queries) but only happens for cases where there are multiple URNs for a contact (rare) and
-	// the preferred channel changes (rare as well)
-	topPriority := 99
-	currPriority := 50
-	for _, existing := range contactURNs {
-		// if this is current URN, make sure it has an updated auth as well
-		if existing.Identity == string(urn.Identity()) {
-			existing.Priority = topPriority
-
-			if channel.HasRole(ChannelRoleSend) {
-				existing.ChannelID = channel.ID()
-			}
-
-			utils.MapUpdate(existing.AuthTokens, authTokens)
-		} else {
-			existing.Priority = currPriority
-
-			// if this is a phone number and we just received a message on a tel scheme, set that as our new preferred channel
-			if existing.Scheme == urns.Phone.Prefix && scheme == urns.Phone.Prefix && channel.HasRole(ChannelRoleSend) {
-				existing.ChannelID = channel.ID()
-			}
-			currPriority--
-		}
-		err := UpdateContactURN(ctx, db, existing)
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
