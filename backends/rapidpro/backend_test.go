@@ -353,7 +353,7 @@ func (ts *BackendTestSuite) TestContactURNMetadata() {
 	ts.NoError(tx.Commit())
 
 	// looking up contact by fbURN should update channel_id on the URN but NOT reorder priorities
-	// (priority reordering is delegated to mailroom via new_urn on msg_received task)
+	// (priority reordering is delegated to mailroom)
 	fbContact, err := contactForURN(ctx, ts.b, fbChannel.OrgID_, fbChannel, fbURN, nil, "", true, clog)
 	ts.NoError(err)
 
@@ -1160,7 +1160,6 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 		"text":            msg6.Text(),
 		"attachments":     nil,
 		"new_contact":     contact.IsNew_,
-		"new_urn":         map[string]any{"value": msg6.URN().String(), "action": "prepend"},
 	})
 }
 

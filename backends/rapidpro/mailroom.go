@@ -13,11 +13,6 @@ import (
 
 var mrQueue = queues.NewFair("tasks:realtime", 100)
 
-type newURNSpec struct {
-	Value  string `json:"value"`
-	Action string `json:"action"`
-}
-
 func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *MsgIn) error {
 	channel := m.Channel().(*models.Channel)
 
@@ -30,11 +25,6 @@ func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *
 		"text":            m.Text(),
 		"attachments":     m.Attachments(),
 		"new_contact":     c.IsNew_,
-	}
-
-	// for existing contacts, tell mailroom to prepend this URN so it becomes the default
-	if !c.IsNew_ {
-		body["new_urn"] = newURNSpec{Value: m.URN().String(), Action: "prepend"}
 	}
 
 	return queueMailroomTask(ctx, rc, "msg_received", m.OrgID_, m.ContactID_, body)
