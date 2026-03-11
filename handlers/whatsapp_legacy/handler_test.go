@@ -48,9 +48,10 @@ func TestIncoming(t *testing.T) {
 func TestOutgoing(t *testing.T) {
 	RunOutgoingTestCases(t, testChannels[0], newWAHandler(models.ChannelType("WA"), "WhatsApp"), []OutgoingTestCase{
 		{
-			Label:   "Noop Send",
-			MsgText: "hello",
-			MsgURN:  "whatsapp:250788123123",
+			Label:         "Disabled Send",
+			MsgText:       "hello",
+			MsgURN:        "whatsapp:250788123123",
+			ExpectedError: courier.ErrFailedWithReason("disabled", "WhatsApp legacy handler is disabled"),
 		},
 	}, nil, nil)
 }

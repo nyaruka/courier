@@ -41,9 +41,9 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 	return nil, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", []any{})
 }
 
-// Send is a noop
+// Send is a noop - this legacy handler is disabled
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	return nil
+	return courier.ErrFailedWithReason("disabled", "WhatsApp legacy handler is disabled")
 }
 
 // WriteRequestError writes the passed in error to our response writer
