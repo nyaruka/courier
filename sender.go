@@ -9,12 +9,10 @@ import (
 
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils/clogs"
-	"github.com/nyaruka/gocommon/urns"
 )
 
 type SendResult struct {
 	externalIDs []string
-	newURN      urns.URN
 }
 
 func (r *SendResult) AddExternalID(id string) {
@@ -23,15 +21,6 @@ func (r *SendResult) AddExternalID(id string) {
 
 func (r *SendResult) ExternalIDs() []string {
 	return r.externalIDs
-}
-
-func (r *SendResult) SetNewURN(u urns.URN) {
-	r.newURN = u
-}
-
-func (r *SendResult) GetNewURN() urns.URN {
-	return r.newURN
-
 }
 
 type SendError struct {
@@ -356,7 +345,7 @@ func (w *Sender) sendMessage(msg MsgOut) {
 
 func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, clog *ChannelLog, log *slog.Logger) StatusUpdate {
 	backend := w.foreman.server.Backend()
-	res := &SendResult{newURN: urns.NilURN}
+	res := &SendResult{}
 	err := h.Send(ctx, m, res, clog)
 
 	status := backend.NewStatusUpdate(m.Channel(), m.UUID(), models.MsgStatusWired, clog)
@@ -364,13 +353,6 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 	// fow now we can only store one external id per message
 	if len(res.ExternalIDs()) > 0 {
 		status.SetExternalIdentifier(res.ExternalIDs()[0])
-	}
-
-	if res.newURN != urns.NilURN {
-		urnErr := status.SetURNUpdate(m.URN(), res.newURN)
-		if urnErr != nil {
-			clog.RawError(urnErr)
-		}
 	}
 
 	var serr *SendError

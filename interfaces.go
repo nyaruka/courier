@@ -92,9 +92,6 @@ type StatusUpdate interface {
 	ChannelUUID() models.ChannelUUID
 	MsgUUID() models.MsgUUID
 
-	SetURNUpdate(old, new urns.URN) error
-	URNUpdate() (old, new urns.URN)
-
 	ExternalIdentifier() string
 	SetExternalIdentifier(string)
 

@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -10,7 +9,6 @@ import (
 	"github.com/nyaruka/courier/utils/clogs"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/dbutil"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
 )
@@ -20,8 +18,6 @@ type StatusUpdate struct {
 	ChannelUUID_        ChannelUUID `json:"channel_uuid"                    db:"channel_uuid"`
 	ChannelID_          ChannelID   `json:"channel_id"                      db:"channel_id"`
 	MsgUUID_            MsgUUID     `json:"msg_uuid,omitempty"              db:"msg_uuid"`
-	OldURN_             urns.URN    `json:"old_urn"                         db:"old_urn"`
-	NewURN_             urns.URN    `json:"new_urn"                         db:"new_urn"`
 	ExternalIdentifier_ string      `json:"external_identifier,omitempty"   db:"external_identifier"`
 	Status_             MsgStatus   `json:"status"                          db:"status"`
 	LogUUID             clogs.UUID  `json:"log_uuid"                        db:"log_uuid"`
@@ -30,27 +26,6 @@ type StatusUpdate struct {
 func (s *StatusUpdate) EventUUID() uuids.UUID    { return uuids.UUID(s.MsgUUID_) }
 func (s *StatusUpdate) ChannelUUID() ChannelUUID { return s.ChannelUUID_ }
 func (s *StatusUpdate) MsgUUID() MsgUUID         { return s.MsgUUID_ }
-
-func (s *StatusUpdate) SetURNUpdate(old, new urns.URN) error {
-	// check by nil URN
-	if old == urns.NilURN || new == urns.NilURN {
-		return errors.New("cannot update contact URN from/to nil URN")
-	}
-	// only update to the same scheme
-	if old.Scheme() != new.Scheme() {
-		return errors.New("cannot update contact URN to a different scheme")
-	}
-	// don't update to the same URN path
-	if old.Path() == new.Path() {
-		return errors.New("cannot update contact URN to the same path")
-	}
-	s.OldURN_ = old
-	s.NewURN_ = new
-	return nil
-}
-func (s *StatusUpdate) URNUpdate() (urns.URN, urns.URN) {
-	return s.OldURN_, s.NewURN_
-}
 
 func (s *StatusUpdate) ExternalIdentifier() string      { return s.ExternalIdentifier_ }
 func (s *StatusUpdate) SetExternalIdentifier(id string) { s.ExternalIdentifier_ = id }

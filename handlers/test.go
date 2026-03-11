@@ -328,7 +328,6 @@ type OutgoingTestCase struct {
 	ExpectedError       error
 	ExpectedLogErrors   []*clogs.Error
 	ExpectedContactURNs map[string]bool
-	ExpectedNewURN      string
 }
 
 // Msg creates the test message for this test case
@@ -395,7 +394,6 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			res := &courier.SendResult{}
 			serr := handler.Send(ctx, msg, res, clog)
 			externalIDs := res.ExternalIDs()
-			resNewURN := res.GetNewURN()
 
 			if mockHTTP != nil {
 				httpx.SetRequestor(httpx.DefaultRequestor)
@@ -436,10 +434,6 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 					}
 
 				}
-			}
-
-			if tc.ExpectedNewURN != "" {
-				require.Equal(urns.URN(tc.ExpectedNewURN), resNewURN)
 			}
 
 			AssertChannelLogRedaction(t, clog, checkRedacted)
