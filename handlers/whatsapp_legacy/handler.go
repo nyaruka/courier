@@ -38,7 +38,7 @@ func (h *handler) Initialize(s courier.Server) error {
 
 // receiveEvents accepts webhooks but does nothing with them
 func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-	return nil, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", nil)
+	return nil, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", []any{})
 }
 
 // Send is a noop
