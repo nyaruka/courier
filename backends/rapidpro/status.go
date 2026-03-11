@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/syncx"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 )
 
@@ -24,8 +23,6 @@ func newStatusUpdate(channel courier.Channel, uuid models.MsgUUID, externalID st
 		ChannelUUID_:        channel.UUID(),
 		ChannelID_:          dbChannel.ID(),
 		MsgUUID_:            uuid,
-		OldURN_:             urns.NilURN,
-		NewURN_:             urns.NilURN,
 		ExternalIdentifier_: externalID,
 		Status_:             status,
 		LogUUID:             clog.UUID,

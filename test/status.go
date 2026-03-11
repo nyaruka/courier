@@ -5,15 +5,12 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 )
 
 type MockStatusUpdate struct {
 	channel            courier.Channel
 	msgUUID            models.MsgUUID
-	oldURN             urns.URN
-	newURN             urns.URN
 	externalIdentifier string
 	status             models.MsgStatus
 	createdOn          time.Time
@@ -22,15 +19,6 @@ type MockStatusUpdate struct {
 func (m *MockStatusUpdate) EventUUID() uuids.UUID           { return uuids.UUID(m.msgUUID) }
 func (m *MockStatusUpdate) ChannelUUID() models.ChannelUUID { return m.channel.UUID() }
 func (m *MockStatusUpdate) MsgUUID() models.MsgUUID         { return m.msgUUID }
-
-func (m *MockStatusUpdate) SetURNUpdate(old, new urns.URN) error {
-	m.oldURN = old
-	m.newURN = new
-	return nil
-}
-func (m *MockStatusUpdate) URNUpdate() (urns.URN, urns.URN) {
-	return m.oldURN, m.newURN
-}
 
 func (m *MockStatusUpdate) ExternalIdentifier() string      { return m.externalIdentifier }
 func (m *MockStatusUpdate) SetExternalIdentifier(id string) { m.externalIdentifier = id }

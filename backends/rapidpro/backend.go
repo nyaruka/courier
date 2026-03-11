@@ -579,15 +579,6 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 		return errors.New("message status with no UUID or external id")
 	}
 
-	// if we have a URN update, do that
-	oldURN, newURN := status.URNUpdate()
-	if oldURN != urns.NilURN && newURN != urns.NilURN {
-		err := b.updateContactURN(ctx, status)
-		if err != nil {
-			return fmt.Errorf("error updating contact URN: %w", err)
-		}
-	}
-
 	if status.MsgUUID() != "" {
 		// this is a message we've just sent and were given an external id for
 		if status.ExternalIdentifier() != "" {
@@ -614,64 +605,6 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 	log.Debug("status update queued")
 
 	return nil
-}
-
-// updateContactURN updates contact URN according to the old/new URNs from status
-func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpdate) error {
-	old, new := status.URNUpdate()
-
-	// retrieve channel
-	channel, err := b.GetChannel(ctx, models.AnyChannelType, status.ChannelUUID())
-	if err != nil {
-		return fmt.Errorf("error retrieving channel: %w", err)
-	}
-	dbChannel := channel.(*models.Channel)
-	tx, err := b.rt.DB.BeginTxx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	// retrieve the old URN
-	oldContactURN, err := models.GetContactURNByIdentity(ctx, tx, dbChannel.OrgID(), old)
-	if err != nil {
-		return fmt.Errorf("error retrieving old contact URN: %w", err)
-	}
-	// retrieve the new URN
-	newContactURN, err := models.GetContactURNByIdentity(ctx, tx, dbChannel.OrgID(), new)
-	if err != nil {
-		// only update the old URN path if the new URN doesn't exist
-		if err == sql.ErrNoRows {
-			oldContactURN.Path = new.Path()
-			oldContactURN.Identity = string(new.Identity())
-
-			err = models.UpdateContactURNFully(ctx, tx, oldContactURN)
-			if err != nil {
-				tx.Rollback()
-				return fmt.Errorf("error updating old contact URN: %w", err)
-			}
-			return tx.Commit()
-		}
-		return fmt.Errorf("error retrieving new contact URN: %w", err)
-	}
-
-	// only update the new URN if it doesn't have an associated contact
-	if newContactURN.ContactID == models.NilContactID {
-		newContactURN.ContactID = oldContactURN.ContactID
-	}
-	// remove contact association from old URN
-	oldContactURN.ContactID = models.NilContactID
-
-	// update URNs
-	err = models.UpdateContactURNFully(ctx, tx, newContactURN)
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("error updating new contact URN: %w", err)
-	}
-	err = models.UpdateContactURNFully(ctx, tx, oldContactURN)
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("error updating old contact URN: %w", err)
-	}
-	return tx.Commit()
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
