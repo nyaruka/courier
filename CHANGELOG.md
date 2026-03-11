@@ -1,3 +1,7 @@
+v26.1.16 (2026-03-11)
+-------------------------
+ * Make whatsapp legacy handler a noop
+
 v26.1.15 (2026-03-10)
 -------------------------
  * Defer to mailroom to set URN affinity
