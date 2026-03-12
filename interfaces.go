@@ -83,6 +83,7 @@ type MsgIn interface {
 	WithContactName(name string) MsgIn
 	WithURNAuthTokens(tokens map[string]string) MsgIn
 	WithReceivedOn(date time.Time) MsgIn
+	WithNewURN(urn urns.URN, action models.NewURNAction) MsgIn
 }
 
 // StatusUpdate represents a status update on a message

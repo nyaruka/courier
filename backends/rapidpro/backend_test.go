@@ -1097,6 +1097,26 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 		"attachments":     nil,
 		"new_contact":     contact.IsNew_,
 	})
+
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
+
+	// check that msg with new_urn is queued with that field included
+	msg7 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "hello with new urn", "", clog).(*MsgIn)
+	msg7.WithNewURN(urns.URN("tel:+12065559999"), models.NewURNAppend)
+	err = ts.b.WriteMsg(ctx, msg7, clog)
+	ts.NoError(err)
+
+	ts.assertQueuedContactTask(msg7.ContactID_, "msg_received", map[string]any{
+		"channel_id":      float64(10),
+		"msg_uuid":        string(msg7.UUID()),
+		"msg_external_id": msg7.ExternalID(),
+		"urn":             msg7.URN().String(),
+		"urn_id":          float64(msg7.ContactURNID_),
+		"text":            msg7.Text(),
+		"attachments":     nil,
+		"new_contact":     contact.IsNew_,
+		"new_urn":         map[string]any{"value": "tel:+12065559999", "action": "append"},
+	})
 }
 
 func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
