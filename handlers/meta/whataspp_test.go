@@ -38,6 +38,35 @@ var whatsappIncomingTests = []IncomingTestCase{
 		PrepRequest:           addValidSignature,
 	},
 	{
+		Label:                 "Receive Message WAC with user_id",
+		URL:                   whatappReceiveURL,
+		Data:                  string(test.ReadFile("./testdata/wac/hello_user_id.json")),
+		ExpectedRespStatus:    200,
+		ExpectedBodyContains:  "Handled",
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+		ExpectedMsgText:       Sp("Hello World"),
+		ExpectedURN:           "whatsapp:5678",
+		ExpectedExternalID:    "external_id",
+		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+		ExpectedNewURN:        &models.NewURNSpec{Value: "whatsapp:US.1234#@kfisher", Action: models.NewURNAppend},
+		PrepRequest:           addValidSignature,
+	},
+	{
+		Label:                 "Receive Message WAC with user_id only",
+		URL:                   whatappReceiveURL,
+		Data:                  string(test.ReadFile("./testdata/wac/hello_user_id_only.json")),
+		ExpectedRespStatus:    200,
+		ExpectedBodyContains:  "Handled",
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+		ExpectedMsgText:       Sp("Hello World"),
+		ExpectedURN:           "whatsapp:US.13491208655302741918",
+		ExpectedExternalID:    "external_id",
+		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+		PrepRequest:           addValidSignature,
+	},
+	{
 		Label:                 "Receive Duplicate Valid Message",
 		URL:                   whatappReceiveURL,
 		Data:                  string(test.ReadFile("./testdata/wac/duplicate.json")),
@@ -307,6 +336,32 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			{
 				Path: "/12345_ID/messages",
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Simple Message","preview_url":false}}`,
+			},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:   "Plain Send with user_id in response",
+		MsgText: "Simple Message",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/12345_ID/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "contacts": [{"input": "250788123123", "user_id": "US.1234"}], "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+		ExpectedContactURNs: map[string]bool{
+			"whatsapp:250788123123": true,
+			"whatsapp:US.1234":     true,
+		},
+	},
+	{
+		Label:   "Plain Send with user_id same as input",
+		MsgText: "Simple Message",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/12345_ID/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "contacts": [{"input": "250788123123", "user_id": "250788123123"}], "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
