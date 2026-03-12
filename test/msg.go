@@ -85,7 +85,7 @@ func (m *MockMsg) WithURNAuthTokens(tokens map[string]string) courier.MsgIn {
 	return m
 }
 func (m *MockMsg) WithReceivedOn(date time.Time) courier.MsgIn { m.receivedOn = &date; return m }
-func (m *MockMsg) WithNewURN(urn urns.URN, action string) courier.MsgIn {
+func (m *MockMsg) WithNewURN(urn urns.URN, action models.NewURNAction) courier.MsgIn {
 	m.newURN = &models.NewURNSpec{Value: urn, Action: action}
 	return m
 }

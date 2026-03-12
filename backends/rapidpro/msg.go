@@ -49,7 +49,7 @@ func (m *MsgIn) WithURNAuthTokens(tokens map[string]string) courier.MsgIn {
 	return m
 }
 func (m *MsgIn) WithReceivedOn(date time.Time) courier.MsgIn { m.SentOn_ = &date; return m }
-func (m *MsgIn) WithNewURN(urn urns.URN, action string) courier.MsgIn {
+func (m *MsgIn) WithNewURN(urn urns.URN, action models.NewURNAction) courier.MsgIn {
 	m.NewURN_ = &models.NewURNSpec{Value: urn, Action: action}
 	return m
 }
