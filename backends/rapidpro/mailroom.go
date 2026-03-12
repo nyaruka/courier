@@ -26,6 +26,9 @@ func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *
 		"attachments":     m.Attachments(),
 		"new_contact":     c.IsNew_,
 	}
+	if m.NewURN_ != nil {
+		body["new_urn"] = m.NewURN_
+	}
 
 	return queueMailroomTask(ctx, rc, "msg_received", m.OrgID_, m.ContactID_, body)
 }
