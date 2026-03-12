@@ -1,0 +1,42 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "8856996819413533",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "+250 788 123 200",
+              "phone_number_id": "12345"
+            },
+            "contacts": [
+              {
+                "profile": {
+                  "name": "Sheena Nelson",
+                  "username": "@realsheenanelson"
+                },
+                "user_id": "US.13491208655302741918",
+                "parent_user_id": "US.11815799212886844830"
+              }
+            ],
+            "messages": [
+              {
+                "from_user_id": "US.13491208655302741918",
+                "from_parent_user_id": "US.11815799212886844830",
+                "id": "external_id",
+                "timestamp": "1454119029",
+                "text": {
+                  "body": "Hello World"
+                },
+                "type": "text"
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}
