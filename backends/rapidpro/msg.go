@@ -31,6 +31,7 @@ type MsgIn struct {
 	URN_           urns.URN           `json:"urn"`
 	ContactName_   string             `json:"contact_name"`
 	URNAuthTokens_ map[string]string  `json:"auth_tokens"`
+	NewURN_        *models.NewURNSpec `json:"new_urn,omitempty"`
 
 	channel *models.Channel
 }
@@ -48,6 +49,10 @@ func (m *MsgIn) WithURNAuthTokens(tokens map[string]string) courier.MsgIn {
 	return m
 }
 func (m *MsgIn) WithReceivedOn(date time.Time) courier.MsgIn { m.SentOn_ = &date; return m }
+func (m *MsgIn) WithNewURN(urn urns.URN, action string) courier.MsgIn {
+	m.NewURN_ = &models.NewURNSpec{Value: urn, Action: action}
+	return m
+}
 
 func (m *MsgIn) hash() string {
 	hash := sha1.Sum([]byte(m.Text_ + "|" + strings.Join(m.Attachments_, "|")))

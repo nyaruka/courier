@@ -30,6 +30,12 @@ const (
 	MsgStatusFailed    MsgStatus = "F"
 )
 
+// NewURNSpec specifies a new URN to add or replace on the contact
+type NewURNSpec struct {
+	Value  urns.URN `json:"value"`
+	Action string   `json:"action"` // "prepend", "append", or "replace"
+}
+
 // MsgDirection is the direction of a message
 type MsgDirection string
 
