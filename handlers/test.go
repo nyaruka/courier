@@ -73,6 +73,8 @@ type IncomingTestCase struct {
 	ExpectedStatuses      []ExpectedStatus
 	ExpectedEvents        []ExpectedEvent
 	ExpectedErrors        []*clogs.Error
+	ExpectedNewURN        *models.NewURNSpec
+	ExpectedContactURNs   map[string]bool
 	NoLogsExpected        bool
 }
 
@@ -230,6 +232,32 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 
 			if tc.ExpectedContactName != nil {
 				require.Equal(*tc.ExpectedContactName, mb.LastContactName())
+			}
+
+			if tc.ExpectedMsgText != nil || tc.ExpectedAttachments != nil {
+				msg := mb.WrittenMsgs()[0].(*test.MockMsg)
+				if tc.ExpectedNewURN != nil {
+					assert.Equal(t, tc.ExpectedNewURN, msg.NewURN(), "new URN mismatch")
+				} else {
+					assert.Nil(t, msg.NewURN(), "unexpected new URN on message")
+				}
+			}
+
+			if tc.ExpectedContactURNs != nil {
+				var contactUUID models.ContactUUID
+				for urn, shouldBePresent := range tc.ExpectedContactURNs {
+					contact, err := mb.GetContact(context.Background(), channels[0], urns.URN(urn), nil, "", false, nil)
+					require.NoError(err, "unexpected error getting contact for URN %s", urn)
+					if shouldBePresent {
+						require.NotNil(contact, "expected contact for URN %s", urn)
+						if contactUUID == models.NilContactUUID {
+							contactUUID = contact.UUID()
+						}
+						require.Equal(contactUUID, contact.UUID(), "expected same contact for URN %s", urn)
+					} else {
+						require.Nil(contact, "expected no contact for URN %s", urn)
+					}
+				}
 			}
 
 			assert.Equal(t, tc.ExpectedURNAuthTokens, mb.URNAuthTokens())
@@ -423,7 +451,8 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			if tc.ExpectedContactURNs != nil {
 				var contactUUID models.ContactUUID
 				for urn, shouldBePresent := range tc.ExpectedContactURNs {
-					contact, _ := mb.GetContact(ctx, channel, urns.URN(urn), nil, "", true, clog)
+					contact, err := mb.GetContact(ctx, channel, urns.URN(urn), nil, "", true, clog)
+					require.NoError(err, "unexpected error getting contact for URN %s", urn)
 					if contactUUID == models.NilContactUUID && shouldBePresent {
 						contactUUID = contact.UUID()
 					}

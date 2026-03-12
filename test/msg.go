@@ -89,6 +89,7 @@ func (m *MockMsg) WithNewURN(urn urns.URN, action models.NewURNAction) courier.M
 	m.newURN = &models.NewURNSpec{Value: urn, Action: action}
 	return m
 }
+func (m *MockMsg) NewURN() *models.NewURNSpec { return m.newURN }
 
 // used to create outgoing messages for testing
 func (m *MockMsg) WithUUID(uuid models.MsgUUID) courier.MsgOut        { m.uuid = uuid; return m }

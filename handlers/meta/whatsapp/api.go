@@ -48,16 +48,18 @@ type WAContact struct {
 	Profile struct {
 		Name string `json:"name"`
 	} `json:"profile"`
-	WaID string `json:"wa_id"`
+	WaID   string `json:"wa_id"`
+	UserID string `json:"user_id"`
 }
 
 type WAMessage struct {
-	ID        string `json:"id"`
-	GroupID   string `json:"group_id,omitempty"`
-	From      string `json:"from"`
-	Timestamp string `json:"timestamp"`
-	Type      string `json:"type"`
-	Context   *struct {
+	ID         string `json:"id"`
+	GroupID    string `json:"group_id,omitempty"`
+	From       string `json:"from"`
+	FromUserID string `json:"from_user_id"`
+	Timestamp  string `json:"timestamp"`
+	Type       string `json:"type"`
+	Context    *struct {
 		Forwarded           bool   `json:"forwarded"`
 		FrequentlyForwarded bool   `json:"frequently_forwarded"`
 		From                string `json:"from"`
@@ -111,6 +113,11 @@ func (m WAMessage) ExtractData(clog *courier.ChannelLog) (time.Time, urns.URN, s
 		return date, urn, text, mediaURL, mediaID, err, finalErr
 	}
 	date = parseTimestamp(ts)
+
+	if m.From == "" {
+		finalErr = errors.New("missing from")
+		return date, urn, text, mediaURL, mediaID, finalErr, finalErr
+	}
 
 	urn, err = urns.New(urns.WhatsApp, m.From)
 	if err != nil {
@@ -329,6 +336,11 @@ type SendRequest struct {
 // see https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#response-syntax
 // e.g. https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#successful-response
 type SendResponse struct {
+	Contacts []*struct {
+		Input  string `json:"input"`
+		WaID   string `json:"wa_id"`
+		UserID string `json:"user_id"`
+	} `json:"contacts"`
 	Messages []*struct {
 		ID string `json:"id"`
 	} `json:"messages"`
@@ -336,4 +348,13 @@ type SendResponse struct {
 		Message string `json:"message"`
 		Code    int    `json:"code"`
 	} `json:"error"`
+}
+
+// UserID returns the user_id from the first contact in the response if it's different from
+// the input, i.e. we sent by phone number and got back a BSUID that should be saved.
+func (r *SendResponse) UserID() string {
+	if len(r.Contacts) > 0 && r.Contacts[0].UserID != "" && r.Contacts[0].UserID != r.Contacts[0].Input {
+		return r.Contacts[0].UserID
+	}
+	return ""
 }
