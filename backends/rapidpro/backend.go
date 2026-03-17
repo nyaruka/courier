@@ -364,7 +364,7 @@ func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.UR
 	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, authTokens, name, allowCreate, clog)
 }
 
-// AddURNtoContact queues a urn_added task to mailroom for the passed in contact and URN
+// AddURNtoContact queues an urn_added task to mailroom for the passed in contact and URN
 func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error) {
 	dbContact := contact.(*models.Contact)
 
@@ -377,7 +377,7 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 	return urn, nil
 }
 
-// RemoveURNfromContact queues a urn_removed task to mailroom for the passed in contact and URN
+// RemoveURNfromContact queues an urn_removed task to mailroom for the passed in contact and URN
 func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
 	dbContact := contact.(*models.Contact)
 
