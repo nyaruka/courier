@@ -215,6 +215,8 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 
 	// check that an urn_removed task was queued
 	ts.assertQueuedContactTask(contact.ID_, "urn_removed", map[string]any{"urn": "tel:+12065551518"})
+
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
 }
 
 func (ts *BackendTestSuite) TestContactURN() {
