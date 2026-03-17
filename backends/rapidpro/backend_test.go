@@ -197,34 +197,34 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	ts.NoError(err)
 	ts.NotNil(contact)
 
-	tx, err := ts.b.rt.DB.Beginx()
-	ts.NoError(err)
+	rc := ts.b.rt.VK.Get()
+	defer rc.Close()
 
-	contactURNs, err := models.GetURNsForContact(ctx, tx, contact.ID_)
-	ts.NoError(err)
-	ts.Equal(len(contactURNs), 1)
+	contactQueue := fmt.Sprintf("c:%d:%d", contact.OrgID_, contact.ID_)
 
 	urn := urns.URN("tel:+12065551518")
 	addedURN, err := ts.b.AddURNtoContact(ctx, knChannel, contact, urn, nil)
 	ts.NoError(err)
 	ts.NotNil(addedURN)
 
-	tx, err = ts.b.rt.DB.Beginx()
+	// check that a urn_added task was queued
+	data, err := redis.Bytes(rc.Do("LPOP", contactQueue))
 	ts.NoError(err)
-
-	contactURNs, err = models.GetURNsForContact(ctx, tx, contact.ID_)
-	ts.NoError(err)
-	ts.Equal(len(contactURNs), 2)
+	var body map[string]any
+	jsonx.MustUnmarshal(data, &body)
+	ts.Equal("urn_added", body["type"])
+	ts.Equal(map[string]any{"urn": "tel:+12065551518"}, body["task"])
 
 	removedURN, err := ts.b.RemoveURNfromContact(ctx, knChannel, contact, urn)
 	ts.NoError(err)
 	ts.NotNil(removedURN)
 
-	tx, err = ts.b.rt.DB.Beginx()
+	// check that a urn_removed task was queued
+	data, err = redis.Bytes(rc.Do("LPOP", contactQueue))
 	ts.NoError(err)
-	contactURNs, err = models.GetURNsForContact(ctx, tx, contact.ID_)
-	ts.NoError(err)
-	ts.Equal(len(contactURNs), 1)
+	jsonx.MustUnmarshal(data, &body)
+	ts.Equal("urn_removed", body["type"])
+	ts.Equal(map[string]any{"urn": "tel:+12065551518"}, body["task"])
 }
 
 func (ts *BackendTestSuite) TestContactURN() {

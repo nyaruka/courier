@@ -8,6 +8,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/vkutil/queues"
 )
 
@@ -49,6 +50,14 @@ func queueEventHandling(ctx context.Context, rc redis.Conn, c *models.Contact, e
 
 func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *models.Channel, msgUUID models.MsgUUID, contactID models.ContactID) error {
 	return queueMailroomTask(ctx, rc, "msg_deleted", ch.OrgID_, contactID, map[string]any{"msg_uuid": msgUUID})
+}
+
+func queueURNAdded(ctx context.Context, rc redis.Conn, orgID models.OrgID, contactID models.ContactID, urn urns.URN) error {
+	return queueMailroomTask(ctx, rc, "urn_added", orgID, contactID, map[string]any{"urn": urn.String()})
+}
+
+func queueURNRemoved(ctx context.Context, rc redis.Conn, orgID models.OrgID, contactID models.ContactID, urn urns.URN) error {
+	return queueMailroomTask(ctx, rc, "urn_removed", orgID, contactID, map[string]any{"urn": urn.String()})
 }
 
 // queueMailroomTask queues the passed in task to mailroom. Mailroom processes both messages and

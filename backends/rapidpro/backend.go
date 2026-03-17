@@ -364,32 +364,28 @@ func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.UR
 	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, authTokens, name, allowCreate, clog)
 }
 
-// AddURNtoContact adds a URN to the passed in contact
+// AddURNtoContact queues a urn_added task to mailroom for the passed in contact and URN
 func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error) {
-	tx, err := b.rt.DB.BeginTxx(ctx, nil)
-	if err != nil {
-		return urns.NilURN, err
-	}
-	dbChannel := c.(*models.Channel)
 	dbContact := contact.(*models.Contact)
-	_, err = models.GetOrCreateContactURN(ctx, tx, dbChannel, dbContact.ID_, urn, authTokens)
-	if err != nil {
-		return urns.NilURN, err
-	}
-	err = tx.Commit()
-	if err != nil {
-		return urns.NilURN, err
-	}
 
+	rc := b.rt.VK.Get()
+	defer rc.Close()
+
+	if err := queueURNAdded(ctx, rc, dbContact.OrgID_, dbContact.ID_, urn); err != nil {
+		return urns.NilURN, fmt.Errorf("error queuing urn_added task: %w", err)
+	}
 	return urn, nil
 }
 
-// RemoveURNFromcontact removes a URN from the passed in contact
+// RemoveURNfromContact queues a urn_removed task to mailroom for the passed in contact and URN
 func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
 	dbContact := contact.(*models.Contact)
-	_, err := b.rt.DB.ExecContext(ctx, `UPDATE contacts_contacturn SET contact_id = NULL WHERE contact_id = $1 AND identity = $2`, dbContact.ID_, urn.Identity().String())
-	if err != nil {
-		return urns.NilURN, err
+
+	rc := b.rt.VK.Get()
+	defer rc.Close()
+
+	if err := queueURNRemoved(ctx, rc, dbContact.OrgID_, dbContact.ID_, urn); err != nil {
+		return urns.NilURN, fmt.Errorf("error queuing urn_removed task: %w", err)
 	}
 	return urn, nil
 }
