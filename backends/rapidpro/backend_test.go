@@ -197,34 +197,26 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	ts.NoError(err)
 	ts.NotNil(contact)
 
-	tx, err := ts.b.rt.DB.Beginx()
-	ts.NoError(err)
-
-	contactURNs, err := models.GetURNsForContact(ctx, tx, contact.ID_)
-	ts.NoError(err)
-	ts.Equal(len(contactURNs), 1)
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	urn := urns.URN("tel:+12065551518")
 	addedURN, err := ts.b.AddURNtoContact(ctx, knChannel, contact, urn, nil)
 	ts.NoError(err)
 	ts.NotNil(addedURN)
 
-	tx, err = ts.b.rt.DB.Beginx()
-	ts.NoError(err)
+	// check that an urn_added task was queued
+	ts.assertQueuedContactTask(contact.ID_, "urn_added", map[string]any{"urn": "tel:+12065551518"})
 
-	contactURNs, err = models.GetURNsForContact(ctx, tx, contact.ID_)
-	ts.NoError(err)
-	ts.Equal(len(contactURNs), 2)
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	removedURN, err := ts.b.RemoveURNfromContact(ctx, knChannel, contact, urn)
 	ts.NoError(err)
 	ts.NotNil(removedURN)
 
-	tx, err = ts.b.rt.DB.Beginx()
-	ts.NoError(err)
-	contactURNs, err = models.GetURNsForContact(ctx, tx, contact.ID_)
-	ts.NoError(err)
-	ts.Equal(len(contactURNs), 1)
+	// check that an urn_removed task was queued
+	ts.assertQueuedContactTask(contact.ID_, "urn_removed", map[string]any{"urn": "tel:+12065551518"})
+
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
 }
 
 func (ts *BackendTestSuite) TestContactURN() {
