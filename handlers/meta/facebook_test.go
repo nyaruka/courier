@@ -98,17 +98,6 @@ var facebookIncomingTests = []IncomingTestCase{
 		PrepRequest:          addValidSignature,
 	},
 	{
-		Label:                "Receive OptIn UserRef",
-		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/referral_optin_user_ref.json")),
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Handled",
-		ExpectedEvents: []ExpectedEvent{
-			{Type: models.EventTypeReferral, URN: "facebook:ref:optin_user_ref", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"referrer_id": "optin_ref"}},
-		},
-		PrepRequest: addValidSignature,
-	},
-	{
 		Label:                "Receive OptIn",
 		URL:                  "/c/fba/receive",
 		Data:                 string(test.ReadFile("./testdata/fba/referral_optin.json")),
@@ -313,7 +302,6 @@ func TestFacebookDescribeURN(t *testing.T) {
 	}{
 		{"facebook:1337", map[string]string{"name": "John Doe"}},
 		{"facebook:4567", map[string]string{"name": ""}},
-		{"facebook:ref:1337", map[string]string{}},
 	}
 
 	for _, tc := range tcs {
@@ -432,24 +420,6 @@ var facebookOutgoingTests = []OutgoingTestCase{
 			Body:   `{"messaging_type":"RESPONSE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		}},
 		ExpectedExtIDs: []string{"mid.133"},
-	},
-	{
-		Label:                   "Text only flow response using referal URN",
-		MsgText:                 "Simple Message",
-		MsgURN:                  "facebook:ref:67890",
-		MsgOrigin:               models.MsgOriginFlow,
-		MsgResponseToExternalID: "23526",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v22.0/me/messages*": {
-				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133", "recipient_id": "12345"}`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{"access_token": {"a123"}},
-			Body:   `{"messaging_type":"RESPONSE","recipient":{"user_ref":"67890"},"message":{"text":"Simple Message"}}`,
-		}},
-		ExpectedContactURNs: map[string]bool{"facebook:12345": true, "ext:67890": true, "facebook:ref:67890": false},
-		ExpectedExtIDs:      []string{"mid.133"},
 	},
 	{
 		Label:           "Quick replies on a broadcast message",

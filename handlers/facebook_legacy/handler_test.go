@@ -550,16 +550,6 @@ var testCases = []IncomingTestCase{
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 	},
 	{
-		Label:                "Receive OptIn UserRef",
-		URL:                  receiveURL,
-		Data:                 optInUserRef,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Handled",
-		ExpectedEvents: []ExpectedEvent{
-			{Type: models.EventTypeReferral, URN: "facebook:ref:optin_user_ref", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"referrer_id": "optin_ref"}},
-		},
-	},
-	{
 		Label:                "Receive OptIn",
 		URL:                  receiveURL,
 		Data:                 optIn,
@@ -715,7 +705,6 @@ func TestDescribeURN(t *testing.T) {
 	}{
 		{"facebook:1337", map[string]string{"name": "John Doe"}},
 		{"facebook:4567", map[string]string{"name": ""}},
-		{"facebook:ref:1337", map[string]string{}},
 	}
 
 	for _, tc := range tcs {
@@ -830,24 +819,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"messaging_type":"RESPONSE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		}},
 		ExpectedExtIDs: []string{"mid.133"},
-	},
-	{
-		Label:   "Plain Send using ref URN",
-		MsgText: "Simple Message",
-		MsgURN:  "facebook:ref:67890",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v3.3/me/messages*": {
-				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133", "recipient_id": "12345"}`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				"access_token": {"access_token"},
-			},
-			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"user_ref":"67890"},"message":{"text":"Simple Message"}}`,
-		}},
-		ExpectedContactURNs: map[string]bool{"facebook:12345": true, "ext:67890": true, "facebook:ref:67890": false},
-		ExpectedExtIDs:      []string{"mid.133"},
 	},
 	{
 		Label:           "Quick Reply",

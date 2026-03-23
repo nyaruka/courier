@@ -412,19 +412,6 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 					WithURNAuthTokens(map[string]string{fmt.Sprintf("optin:%s", msg.OptIn.Payload): authToken})
 			} else {
 
-				// this is an opt in, if we have a user_ref, use that as our URN (this is a checkbox plugin)
-				// TODO:
-				//    We need to deal with the case of them responding and remapping the user_ref in that case:
-				//    https://developers.facebook.com/docs/messenger-platform/discovery/checkbox-plugin
-				//    Right now that we even support this isn't documented and I don't think anybody uses it, so leaving that out.
-				//    (things will still work, we just will have dupe contacts, one with user_ref for the first contact, then with the real id when they reply)
-				if msg.OptIn.UserRef != "" {
-					urn, err = urns.New(urns.Facebook, urns.FacebookRefPrefix+msg.OptIn.UserRef)
-					if err != nil {
-						return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-					}
-				}
-
 				event = h.Backend().NewChannelEvent(channel, models.EventTypeReferral, urn, clog).
 					WithOccurredOn(date).
 					WithExtra(map[string]string{referrerIDKey: msg.OptIn.Ref})
@@ -604,9 +591,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 	payload := &messenger.SendRequest{}
 
 	// build our recipient
-	if IsFacebookRef(msg.URN()) {
-		payload.Recipient.UserRef = FacebookRef(msg.URN())
-	} else if msg.URNAuth() != "" {
+	if msg.URNAuth() != "" {
 		payload.Recipient.NotificationMessagesToken = msg.URNAuth()
 	} else {
 		payload.Recipient.ID = msg.URN().Path()
@@ -697,42 +682,6 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 		}
 
 		res.AddExternalID(respPayload.ExternalID)
-		if IsFacebookRef(msg.URN()) {
-			recipientID := respPayload.RecipientID
-			if recipientID == "" {
-				return courier.ErrResponseUnexpected
-			}
-
-			referralID := FacebookRef(msg.URN())
-
-			realIDURN, err := urns.New(urns.Facebook, recipientID)
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to make facebook urn from %s", recipientID))
-			}
-
-			contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", true, clog)
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to get contact for %s", msg.URN().String()))
-			}
-			realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN, nil)
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
-			}
-			referralIDExtURN, err := urns.New(urns.External, referralID)
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to make ext urn from %s", referralID))
-			}
-			extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN, nil)
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
-			}
-
-			referralFacebookURN, err := h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, msg.URN())
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
-			}
-
-		}
 	}
 
 	return nil
@@ -802,11 +751,6 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 // DescribeURN looks up URN metadata for new contacts
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLog) (map[string]string, error) {
 	if channel.ChannelType() == "WAC" {
-		return map[string]string{}, nil
-	}
-
-	// can't do anything with facebook refs, ignore them
-	if IsFacebookRef(urn) {
 		return map[string]string{}, nil
 	}
 
