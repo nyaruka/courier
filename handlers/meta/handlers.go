@@ -604,9 +604,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 	payload := &messenger.SendRequest{}
 
 	// build our recipient
-	if IsFacebookRef(msg.URN()) {
-		payload.Recipient.UserRef = FacebookRef(msg.URN())
-	} else if msg.URNAuth() != "" {
+	if msg.URNAuth() != "" {
 		payload.Recipient.NotificationMessagesToken = msg.URNAuth()
 	} else {
 		payload.Recipient.ID = msg.URN().Path()
@@ -697,42 +695,6 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 		}
 
 		res.AddExternalID(respPayload.ExternalID)
-		if IsFacebookRef(msg.URN()) {
-			recipientID := respPayload.RecipientID
-			if recipientID == "" {
-				return courier.ErrResponseUnexpected
-			}
-
-			referralID := FacebookRef(msg.URN())
-
-			realIDURN, err := urns.New(urns.Facebook, recipientID)
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to make facebook urn from %s", recipientID))
-			}
-
-			contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", true, clog)
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to get contact for %s", msg.URN().String()))
-			}
-			realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN, nil)
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
-			}
-			referralIDExtURN, err := urns.New(urns.External, referralID)
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to make ext urn from %s", referralID))
-			}
-			extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN, nil)
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
-			}
-
-			referralFacebookURN, err := h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, msg.URN())
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
-			}
-
-		}
 	}
 
 	return nil
@@ -802,11 +764,6 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 // DescribeURN looks up URN metadata for new contacts
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLog) (map[string]string, error) {
 	if channel.ChannelType() == "WAC" {
-		return map[string]string{}, nil
-	}
-
-	// can't do anything with facebook refs, ignore them
-	if IsFacebookRef(urn) {
 		return map[string]string{}, nil
 	}
 

@@ -313,7 +313,6 @@ func TestFacebookDescribeURN(t *testing.T) {
 	}{
 		{"facebook:1337", map[string]string{"name": "John Doe"}},
 		{"facebook:4567", map[string]string{"name": ""}},
-		{"facebook:ref:1337", map[string]string{}},
 	}
 
 	for _, tc := range tcs {
@@ -432,24 +431,6 @@ var facebookOutgoingTests = []OutgoingTestCase{
 			Body:   `{"messaging_type":"RESPONSE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		}},
 		ExpectedExtIDs: []string{"mid.133"},
-	},
-	{
-		Label:                   "Text only flow response using referal URN",
-		MsgText:                 "Simple Message",
-		MsgURN:                  "facebook:ref:67890",
-		MsgOrigin:               models.MsgOriginFlow,
-		MsgResponseToExternalID: "23526",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v22.0/me/messages*": {
-				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133", "recipient_id": "12345"}`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{"access_token": {"a123"}},
-			Body:   `{"messaging_type":"RESPONSE","recipient":{"user_ref":"67890"},"message":{"text":"Simple Message"}}`,
-		}},
-		ExpectedContactURNs: map[string]bool{"facebook:12345": true, "ext:67890": true, "facebook:ref:67890": false},
-		ExpectedExtIDs:      []string{"mid.133"},
 	},
 	{
 		Label:           "Quick replies on a broadcast message",
