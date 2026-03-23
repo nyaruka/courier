@@ -550,16 +550,6 @@ var testCases = []IncomingTestCase{
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 	},
 	{
-		Label:                "Receive OptIn UserRef",
-		URL:                  receiveURL,
-		Data:                 optInUserRef,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Handled",
-		ExpectedEvents: []ExpectedEvent{
-			{Type: models.EventTypeReferral, URN: "facebook:ref:optin_user_ref", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"referrer_id": "optin_ref"}},
-		},
-	},
-	{
 		Label:                "Receive OptIn",
 		URL:                  receiveURL,
 		Data:                 optIn,

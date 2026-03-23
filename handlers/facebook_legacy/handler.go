@@ -251,19 +251,6 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid facebook id"))
 		}
 		if msg.OptIn != nil {
-			// this is an opt in, if we have a user_ref, use that as our URN (this is a checkbox plugin)
-			// TODO:
-			//    We need to deal with the case of them responding and remapping the user_ref in that case:
-			//    https://developers.facebook.com/docs/messenger-platform/discovery/checkbox-plugin
-			//    Right now that we even support this isn't documented and I don't think anybody uses it, so leaving that out.
-			//    (things will still work, we just will have dupe contacts, one with user_ref for the first contact, then with the real id when they reply)
-			if msg.OptIn.UserRef != "" {
-				urn, err = urns.New(urns.Facebook, urns.FacebookRefPrefix+msg.OptIn.UserRef)
-				if err != nil {
-					return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-				}
-			}
-
 			event := h.Backend().NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithOccurredOn(date)
 
 			// build our extra

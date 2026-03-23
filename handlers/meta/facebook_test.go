@@ -98,17 +98,6 @@ var facebookIncomingTests = []IncomingTestCase{
 		PrepRequest:          addValidSignature,
 	},
 	{
-		Label:                "Receive OptIn UserRef",
-		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/referral_optin_user_ref.json")),
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Handled",
-		ExpectedEvents: []ExpectedEvent{
-			{Type: models.EventTypeReferral, URN: "facebook:ref:optin_user_ref", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"referrer_id": "optin_ref"}},
-		},
-		PrepRequest: addValidSignature,
-	},
-	{
 		Label:                "Receive OptIn",
 		URL:                  "/c/fba/receive",
 		Data:                 string(test.ReadFile("./testdata/fba/referral_optin.json")),
