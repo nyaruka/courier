@@ -1,3 +1,7 @@
+v26.1.17 (2026-03-23)
+-------------------------
+ * Remove support for Facebook referral URNs, no longer used
+
 v26.1.16 (2026-03-11)
 -------------------------
  * Make whatsapp legacy handler a noop
