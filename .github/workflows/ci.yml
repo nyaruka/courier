@@ -5,7 +5,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     container:
-      image: golang:1.25-trixie
+      image: golang:1.26-trixie
 
     services:
       valkey:
