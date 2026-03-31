@@ -1,3 +1,12 @@
+v26.1.18 (2026-03-31)
+-------------------------
+ * Remove channel log policy feature so all channel logs are always persisted
+ * Add new_urn support to incoming messages for mailroom msg_received task
+ * Bump valkey from 8.0 to 8.1 in CI
+ * Bump github.com/antchfx/xpath from 1.3.5 to 1.3.6
+ * Bump github.com/buger/jsonparser from 1.1.1 to 1.1.2
+ * Update from Go 1.25 to 1.26
+
 v26.1.17 (2026-03-23)
 -------------------------
  * Remove support for Facebook referral URNs, no longer used
