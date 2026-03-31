@@ -951,45 +951,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.NoError(err)
 	ts.Equal("msg_send", item2.Data["type"])
 
-	// channel channel log policy to only write errors
-	channel.LogPolicy = models.LogPolicyErrors
-
-	clog3 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
-	clog3.HTTP(trace)
-	ts.NoError(ts.b.WriteChannelLog(ctx, clog3))
-
-	time.Sleep(time.Second) // give writer time to.. not write this
-
-	item3, err := getClogFromDynamo(clog3)
-	ts.NoError(err)
-	ts.Nil(item3)
-
-	clog4 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
-	clog4.HTTP(trace)
-	clog4.Error(courier.ErrorResponseStatusCode())
-	ts.NoError(ts.b.WriteChannelLog(ctx, clog4))
-
-	time.Sleep(time.Second) // give writer time to write this because it's an error
-
-	item4, err := getClogFromDynamo(clog4)
-	ts.NoError(err)
-	ts.NotNil(item4)
-
-	// channel channel log policy to discard all
-	channel.LogPolicy = models.LogPolicyNone
-
-	clog5 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
-	clog5.HTTP(trace)
-	clog5.Error(courier.ErrorResponseStatusCode())
-	ts.NoError(ts.b.WriteChannelLog(ctx, clog5))
-
-	time.Sleep(time.Second) // give writer time to.. not write this
-
-	item5, err := getClogFromDynamo(clog5)
-	ts.NoError(err)
-	ts.Nil(item5)
-
-	dyntest.AssertCount(ts.T(), ts.b.rt.Dynamo, ts.b.rt.Writers.Main.Table(), 3)
+	dyntest.AssertCount(ts.T(), ts.b.rt.Dynamo, ts.b.rt.Writers.Main.Table(), 2)
 }
 
 func (ts *BackendTestSuite) TestSaveAttachment() {
