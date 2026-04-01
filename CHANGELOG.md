@@ -1,3 +1,8 @@
+v26.1.20 (2026-04-01)
+-------------------------
+ * Update to latest phonenumbers
+ * Support WhatsApp user_id as secondary URN using BSUID scheme
+
 v26.1.19 (2026-03-31)
 -------------------------
  * Fix goreleaser
