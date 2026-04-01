@@ -48,16 +48,18 @@ type WAContact struct {
 	Profile struct {
 		Name string `json:"name"`
 	} `json:"profile"`
-	WaID string `json:"wa_id"`
+	WaID   string `json:"wa_id"`
+	UserID string `json:"user_id"`
 }
 
 type WAMessage struct {
-	ID        string `json:"id"`
-	GroupID   string `json:"group_id,omitempty"`
-	From      string `json:"from"`
-	Timestamp string `json:"timestamp"`
-	Type      string `json:"type"`
-	Context   *struct {
+	ID         string `json:"id"`
+	GroupID    string `json:"group_id,omitempty"`
+	From       string `json:"from"`
+	FromUserID string `json:"from_user_id"`
+	Timestamp  string `json:"timestamp"`
+	Type       string `json:"type"`
+	Context    *struct {
 		Forwarded           bool   `json:"forwarded"`
 		FrequentlyForwarded bool   `json:"frequently_forwarded"`
 		From                string `json:"from"`

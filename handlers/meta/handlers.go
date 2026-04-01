@@ -299,6 +299,16 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					event.WithAttachment(mediaURL)
 				}
 
+				// if we have a user_id, add it as secondary BSUID URN
+				if waMsg.FromUserID != "" {
+					userIDURN, urnErr := urns.New(urns.BSUID, waMsg.FromUserID)
+					if urnErr == nil {
+						event.WithNewURN(userIDURN, models.NewURNAppend)
+					} else {
+						courier.LogRequestError(r, channel, fmt.Errorf("invalid user_id for BSUID URN: %w", urnErr))
+					}
+				}
+
 				err = h.Backend().WriteMsg(ctx, event, clog)
 				if err != nil {
 					return nil, nil, err

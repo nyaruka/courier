@@ -73,6 +73,7 @@ type IncomingTestCase struct {
 	ExpectedStatuses      []ExpectedStatus
 	ExpectedEvents        []ExpectedEvent
 	ExpectedErrors        []*clogs.Error
+	ExpectedNewURN        *models.NewURNSpec
 	NoLogsExpected        bool
 }
 
@@ -230,6 +231,15 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 
 			if tc.ExpectedContactName != nil {
 				require.Equal(*tc.ExpectedContactName, mb.LastContactName())
+			}
+
+			if tc.ExpectedMsgText != nil || tc.ExpectedAttachments != nil {
+				msg := mb.WrittenMsgs()[0].(*test.MockMsg)
+				if tc.ExpectedNewURN != nil {
+					assert.Equal(t, tc.ExpectedNewURN, msg.NewURN(), "new URN mismatch")
+				} else {
+					assert.Nil(t, msg.NewURN(), "unexpected new URN on message")
+				}
 			}
 
 			assert.Equal(t, tc.ExpectedURNAuthTokens, mb.URNAuthTokens())
@@ -423,7 +433,8 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			if tc.ExpectedContactURNs != nil {
 				var contactUUID models.ContactUUID
 				for urn, shouldBePresent := range tc.ExpectedContactURNs {
-					contact, _ := mb.GetContact(ctx, channel, urns.URN(urn), nil, "", true, clog)
+					contact, err := mb.GetContact(ctx, channel, urns.URN(urn), nil, "", true, clog)
+					require.NoError(err, "unexpected error getting contact for URN %s", urn)
 					if contactUUID == models.NilContactUUID && shouldBePresent {
 						contactUUID = contact.UUID()
 					}
