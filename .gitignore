@@ -9,3 +9,4 @@ fabfile.*
 /_test_spool
 /_spool
 _storage
+courier
