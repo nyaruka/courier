@@ -332,7 +332,6 @@ type SendRequest struct {
 // e.g. https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#successful-response
 type SendResponse struct {
 	Contacts []*struct {
-		Input  string `json:"input"`
 		WaID   string `json:"wa_id"`
 		UserID string `json:"user_id"`
 	} `json:"contacts"`
@@ -345,10 +344,9 @@ type SendResponse struct {
 	} `json:"error"`
 }
 
-// UserID returns the user_id from the first contact in the response if it's different from
-// the input, i.e. we sent by phone number and got back a BSUID that should be saved.
+// UserID returns the user_id from the first contact in the response if present.
 func (r *SendResponse) UserID() string {
-	if len(r.Contacts) > 0 && r.Contacts[0].UserID != "" && r.Contacts[0].UserID != r.Contacts[0].Input {
+	if len(r.Contacts) > 0 && r.Contacts[0].UserID != "" {
 		return r.Contacts[0].UserID
 	}
 	return ""
