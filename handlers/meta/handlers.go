@@ -262,9 +262,6 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 
 			for _, contact := range change.Value.Contacts {
 				contactNames[contact.WaID] = contact.Profile.Name
-				if contact.UserID != "" {
-					contactNames[contact.UserID] = contact.Profile.Name
-				}
 			}
 
 			for _, waMsg := range change.Value.Messages {
@@ -295,14 +292,8 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					}
 				}
 
-				// resolve contact name from either from or from_user_id
-				name := contactNames[waMsg.From]
-				if name == "" && waMsg.FromUserID != "" {
-					name = contactNames[waMsg.FromUserID]
-				}
-
 				// create our message
-				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, waMsg.ID, clog).WithReceivedOn(date).WithContactName(name)
+				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, waMsg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[waMsg.From])
 
 				if mediaURL != "" {
 					event.WithAttachment(mediaURL)
@@ -717,46 +708,22 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 		return err
 	}
 
-	var userID string
 	for _, payload := range requestPayloads {
-		respUserID, err := h.requestWAC(payload, accessToken, res, wacPhoneURL, clog)
+		err := h.requestWAC(payload, accessToken, res, wacPhoneURL, clog)
 		if err != nil {
 			return err
-		}
-		if respUserID != "" {
-			userID = respUserID
-		}
-	}
-
-	// if we got a user_id in the response, add it as a secondary URN on the contact
-	if userID != "" {
-		contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", true, clog)
-		if err != nil {
-			clog.RawError(fmt.Errorf("unable to get contact for %s: %w", msg.URN(), err))
-		} else if contact == nil {
-			clog.RawError(fmt.Errorf("unable to get contact for %s: contact not found", msg.URN()))
-		} else {
-			userIDURN, err := urns.New(urns.BSUID, userID)
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to make BSUID urn from user_id %s: %w", userID, err))
-			} else {
-				_, err = h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, userIDURN, nil)
-				if err != nil {
-					clog.RawError(fmt.Errorf("unable to add URN %s to contact with uuid %s: %w", userIDURN, contact.UUID(), err))
-				}
-			}
 		}
 	}
 
 	return nil
 }
 
-func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *courier.ChannelLog) (string, error) {
+func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *courier.ChannelLog) error {
 	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
@@ -765,27 +732,28 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
-		return "", courier.ErrConnectionFailed
+		return courier.ErrConnectionFailed
 	}
 
 	respPayload := &whatsapp.SendResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
-		return "", courier.ErrResponseUnparseable
+		return courier.ErrResponseUnparseable
 	}
 
 	if slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Error.Code) {
-		return "", courier.ErrConnectionThrottled
+		return courier.ErrConnectionThrottled
 	}
 
 	if respPayload.Error.Code != 0 {
-		return "", courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
+		return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}
 
-	if len(respPayload.Messages) > 0 && respPayload.Messages[0].ID != "" {
-		res.AddExternalID(respPayload.Messages[0].ID)
+	externalID := respPayload.Messages[0].ID
+	if externalID != "" {
+		res.AddExternalID(externalID)
 	}
-	return respPayload.UserID(), nil
+	return nil
 }
 
 // DescribeURN looks up URN metadata for new contacts

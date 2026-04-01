@@ -114,11 +114,6 @@ func (m WAMessage) ExtractData(clog *courier.ChannelLog) (time.Time, urns.URN, s
 	}
 	date = parseTimestamp(ts)
 
-	if m.From == "" {
-		finalErr = errors.New("missing from")
-		return date, urn, text, mediaURL, mediaID, finalErr, finalErr
-	}
-
 	urn, err = urns.New(urns.WhatsApp, m.From)
 	if err != nil {
 		finalErr = errors.New("invalid whatsapp id")
@@ -336,11 +331,6 @@ type SendRequest struct {
 // see https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#response-syntax
 // e.g. https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#successful-response
 type SendResponse struct {
-	Contacts []*struct {
-		Input  string `json:"input"`
-		WaID   string `json:"wa_id"`
-		UserID string `json:"user_id"`
-	} `json:"contacts"`
 	Messages []*struct {
 		ID string `json:"id"`
 	} `json:"messages"`
@@ -348,13 +338,4 @@ type SendResponse struct {
 		Message string `json:"message"`
 		Code    int    `json:"code"`
 	} `json:"error"`
-}
-
-// UserID returns the user_id from the first contact in the response if it's different from
-// the input, i.e. we sent by phone number and got back a BSUID that should be saved.
-func (r *SendResponse) UserID() string {
-	if len(r.Contacts) > 0 && r.Contacts[0].UserID != "" && r.Contacts[0].UserID != r.Contacts[0].Input {
-		return r.Contacts[0].UserID
-	}
-	return ""
 }
