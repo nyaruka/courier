@@ -521,7 +521,7 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 	}
 
 	// if send result includes a new URN to add to the contact, queue a contact_changed task
-	if wasSuccess && res != nil && res.NewURN() != urns.NilURN {
+	if wasSuccess && res != nil && res.NewURN() != urns.NilURN && !msg.Contact().HasURN(res.NewURN()) {
 		dbChannel := msg.Channel().(*models.Channel)
 		err := queueMailroomTask(ctx, rc, "contact_changed", dbChannel.OrgID_, msg.Contact().ID, map[string]any{
 			"new_urn": map[string]string{

@@ -172,7 +172,7 @@ func (mb *MockBackend) OnSendComplete(ctx context.Context, msg courier.MsgOut, s
 	mb.sentMsgs[msg.UUID()] = true
 
 	// simulate queueing a contact_changed task by adding the new URN to the contacts map
-	if res != nil && res.NewURN() != urns.NilURN {
+	if res != nil && res.NewURN() != urns.NilURN && !msg.Contact().HasURN(res.NewURN()) {
 		for _, c := range mb.contacts {
 			mc := c.(*mockContact)
 			if mc.id == msg.Contact().ID {
