@@ -721,16 +721,14 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 		}
 	}
 
-	// if we got a user_id in the response, queue a task to append it as a BSUID URN on the contact
+	// if we got a user_id in the response, set it as a new URN on the send result so the backend
+	// can queue a contact_changed task to append it to the contact
 	if userID != "" {
 		userIDURN, err := urns.New(urns.BSUID, userID)
 		if err != nil {
 			clog.RawError(fmt.Errorf("unable to make BSUID URN from user_id %s: %w", userID, err))
 		} else {
-			err = h.Backend().QueueContactChanged(ctx, msg.Channel(), msg.Contact().ID, userIDURN)
-			if err != nil {
-				clog.RawError(fmt.Errorf("unable to queue contact changed task: %w", err))
-			}
+			res.SetNewURN(userIDURN)
 		}
 	}
 

@@ -384,21 +384,6 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 	return urn, nil
 }
 
-// QueueContactChanged queues a contact_changed task to mailroom to append a new URN to the given contact
-func (b *backend) QueueContactChanged(ctx context.Context, c courier.Channel, contactID models.ContactID, newURN urns.URN) error {
-	dbChannel := c.(*models.Channel)
-
-	rc := b.rt.VK.Get()
-	defer rc.Close()
-
-	return queueMailroomTask(ctx, rc, "contact_changed", dbChannel.OrgID_, contactID, map[string]any{
-		"new_urn": map[string]string{
-			"value":  newURN.String(),
-			"action": "append",
-		},
-	})
-}
-
 // RemoveURNFromcontact removes a URN from the passed in contact
 func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
 	dbContact := contact.(*models.Contact)
@@ -518,7 +503,7 @@ func (b *backend) ClearMsgSent(ctx context.Context, uuid models.MsgUUID) error {
 }
 
 // OnSendComplete is called when the sender has finished trying to send a message
-func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate, clog *courier.ChannelLog) {
+func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate, res *courier.SendResult, clog *courier.ChannelLog) {
 	log := slog.With("channel", msg.Channel().UUID(), "msg", msg.UUID(), "clog", clog.UUID, "status", status)
 
 	rc := b.rt.VK.Get()
@@ -542,6 +527,20 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 	if wasSuccess && m.Session_ != nil && m.Session_.Timeout > 0 {
 		if err := b.insertTimeoutFire(ctx, m); err != nil {
 			log.Error("unable to update session timeout", "error", err, "session_uuid", m.Session_.UUID)
+		}
+	}
+
+	// if send result includes a new URN to add to the contact, queue a contact_changed task
+	if wasSuccess && res != nil && res.NewURN() != urns.NilURN {
+		dbChannel := msg.Channel().(*models.Channel)
+		err := queueMailroomTask(ctx, rc, "contact_changed", dbChannel.OrgID_, msg.Contact().ID, map[string]any{
+			"new_urn": map[string]string{
+				"value":  res.NewURN().String(),
+				"action": "append",
+			},
+		})
+		if err != nil {
+			log.Error("unable to queue contact_changed task", "error", err)
 		}
 	}
 

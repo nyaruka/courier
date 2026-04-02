@@ -30,9 +30,6 @@ type Backend interface {
 	// AddURNtoContact adds a URN to the passed in contact
 	AddURNtoContact(context context.Context, channel Channel, contact Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error)
 
-	// QueueContactChanged queues a contact_changed task to mailroom to append a new URN to the given contact
-	QueueContactChanged(ctx context.Context, channel Channel, contactID models.ContactID, newURN urns.URN) error
-
 	// RemoveURNFromcontact removes a URN from the passed in contact
 	RemoveURNfromContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error)
 
@@ -76,7 +73,7 @@ type Backend interface {
 	ClearMsgSent(context.Context, models.MsgUUID) error
 
 	// OnSendComplete is called when the sender has finished trying to send a message
-	OnSendComplete(context.Context, MsgOut, StatusUpdate, *ChannelLog)
+	OnSendComplete(context.Context, MsgOut, StatusUpdate, *SendResult, *ChannelLog)
 
 	// OnReceiveComplete is called when the server has finished handling an incoming request
 	OnReceiveComplete(context.Context, Channel, []Event, *ChannelLog)

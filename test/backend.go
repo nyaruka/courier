@@ -165,11 +165,22 @@ func (mb *MockBackend) ClearMsgSent(ctx context.Context, uuid models.MsgUUID) er
 }
 
 // OnSendComplete marks the passed msg as having been dealt with
-func (mb *MockBackend) OnSendComplete(ctx context.Context, msg courier.MsgOut, s courier.StatusUpdate, clog *courier.ChannelLog) {
+func (mb *MockBackend) OnSendComplete(ctx context.Context, msg courier.MsgOut, s courier.StatusUpdate, res *courier.SendResult, clog *courier.ChannelLog) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
 	mb.sentMsgs[msg.UUID()] = true
+
+	// simulate queueing a contact_changed task by adding the new URN to the contacts map
+	if res != nil && res.NewURN() != urns.NilURN {
+		for _, c := range mb.contacts {
+			mc := c.(*mockContact)
+			if mc.id == msg.Contact().ID {
+				mb.contacts[res.NewURN()] = c
+				break
+			}
+		}
+	}
 }
 
 func (mb *MockBackend) OnReceiveComplete(ctx context.Context, ch courier.Channel, events []courier.Event, clog *courier.ChannelLog) {
@@ -303,19 +314,6 @@ func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, 
 func (mb *MockBackend) AddURNtoContact(context context.Context, channel courier.Channel, contact courier.Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error) {
 	mb.contacts[urn] = contact
 	return urn, nil
-}
-
-// QueueContactChanged queues a contact_changed task - in mock we simulate by adding the URN to the contacts map
-func (mb *MockBackend) QueueContactChanged(ctx context.Context, channel courier.Channel, contactID models.ContactID, newURN urns.URN) error {
-	// find the existing contact by ID so we can associate the new URN with them
-	for _, c := range mb.contacts {
-		mc := c.(*mockContact)
-		if mc.id == contactID {
-			mb.contacts[newURN] = c
-			return nil
-		}
-	}
-	return nil
 }
 
 // RemoveURNFromcontact removes a URN from the passed in contact

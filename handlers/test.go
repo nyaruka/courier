@@ -430,6 +430,10 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			assert.Equal(t, tc.ExpectedError, serr, "send method error mismatch")
 			assert.Equal(t, append([]*clogs.Error{}, tc.ExpectedLogErrors...), clog.Errors, "channel log errors mismatch")
 
+			// simulate OnSendComplete so the backend can process send results (e.g. new URNs)
+			status := mb.NewStatusUpdate(channel, msg.UUID(), models.MsgStatusWired, clog)
+			mb.OnSendComplete(ctx, msg, status, res, clog)
+
 			if tc.ExpectedContactURNs != nil {
 				var contactUUID models.ContactUUID
 				for urn, shouldBePresent := range tc.ExpectedContactURNs {
