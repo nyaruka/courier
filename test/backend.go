@@ -316,15 +316,6 @@ func (mb *MockBackend) AddURNtoContact(context context.Context, channel courier.
 	return urn, nil
 }
 
-// RemoveURNFromcontact removes a URN from the passed in contact
-func (mb *MockBackend) RemoveURNfromContact(context context.Context, channel courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
-	_, found := mb.contacts[urn]
-	if found {
-		delete(mb.contacts, urn)
-	}
-	return urn, nil
-}
-
 // Start starts our mock backend
 func (mb *MockBackend) Start() error { return nil }
 
