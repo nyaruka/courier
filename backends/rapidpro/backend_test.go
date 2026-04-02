@@ -107,6 +107,9 @@ func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
 }
 
 func (ts *BackendTestSuite) TestContact() {
+
+	testsuite.ResetDB(ts.T(), ts.b.rt)
+
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 	urn := urns.URN("tel:+12065551518")
@@ -186,7 +189,7 @@ func (ts *BackendTestSuite) TestContactRace() {
 	ts.Equal(contact1.ID_, contact2.ID_)
 }
 
-func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
+func (ts *BackendTestSuite) TestAddContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 	ctx := context.Background()
@@ -218,19 +221,6 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	contactURNs, err = models.GetURNsForContact(ctx, tx, contact.ID_)
 	ts.NoError(err)
 	ts.Equal(len(contactURNs), 2)
-	ts.NoError(tx.Commit())
-
-	removedURN, err := ts.b.RemoveURNfromContact(ctx, knChannel, contact, urn)
-	ts.NoError(err)
-	ts.NotNil(removedURN)
-
-	tx, err = ts.b.rt.DB.Beginx()
-	ts.NoError(err)
-	defer tx.Rollback()
-
-	contactURNs, err = models.GetURNsForContact(ctx, tx, contact.ID_)
-	ts.NoError(err)
-	ts.Equal(len(contactURNs), 1)
 	ts.NoError(tx.Commit())
 }
 
@@ -1266,17 +1256,22 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 func (ts *BackendTestSuite) TestMailroomEvents() {
 	ctx := context.Background()
 
+	testsuite.ResetDB(ts.T(), ts.b.rt)
 	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
 	urn := urns.URN("tel:+12065551616")
 
+	// ensure contact exists before event write so new_contact is false
+	_, err := contactForURN(ctx, ts.b, channel.OrgID_, channel, urn, nil, "kermit frog", true, clog)
+	ts.NoError(err)
+
 	event := ts.b.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).
 		WithExtra(map[string]string{"ref_id": "12345"}).
 		WithContactName("kermit frog").
 		WithOccurredOn(time.Date(2020, 8, 5, 13, 30, 0, 123456789, time.UTC))
-	err := ts.b.WriteChannelEvent(ctx, event, clog)
+	err = ts.b.WriteChannelEvent(ctx, event, clog)
 	ts.NoError(err)
 
 	contact, err := contactForURN(ctx, ts.b, channel.OrgID_, channel, urn, nil, "", true, clog)

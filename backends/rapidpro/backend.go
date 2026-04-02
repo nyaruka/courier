@@ -384,16 +384,6 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 	return urn, nil
 }
 
-// RemoveURNFromcontact removes a URN from the passed in contact
-func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
-	dbContact := contact.(*models.Contact)
-	_, err := b.rt.DB.ExecContext(ctx, `UPDATE contacts_contacturn SET contact_id = NULL WHERE contact_id = $1 AND identity = $2`, dbContact.ID_, urn.Identity().String())
-	if err != nil {
-		return urns.NilURN, err
-	}
-	return urn, nil
-}
-
 // DeleteMsgByExternalID resolves a message external id and queues a task to mailroom to delete it
 func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
 	ch := channel.(*models.Channel)
