@@ -134,9 +134,8 @@ type ContactReference struct {
 	OtherURNs  []urns.URN  `json:"other_urns,omitempty"` // contact's URNs other than the one used for this message
 }
 
-// HasURN returns true if the contact has the given URN (checking OtherURNs only, since the
-// primary URN is already on the message itself)
-func (c *ContactReference) HasURN(urn urns.URN) bool {
+// HasOtherURN returns true if the contact has the given URN in their OtherURNs list
+func (c *ContactReference) HasOtherURN(urn urns.URN) bool {
 	for _, u := range c.OtherURNs {
 		if u.Identity() == urn.Identity() {
 			return true
