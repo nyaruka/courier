@@ -310,12 +310,6 @@ func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, 
 	return contact, nil
 }
 
-// AddURNtoContact adds a URN to the passed in contact
-func (mb *MockBackend) AddURNtoContact(context context.Context, channel courier.Channel, contact courier.Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error) {
-	mb.contacts[urn] = contact
-	return urn, nil
-}
-
 // Start starts our mock backend
 func (mb *MockBackend) Start() error { return nil }
 

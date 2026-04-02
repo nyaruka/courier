@@ -364,26 +364,6 @@ func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.UR
 	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, authTokens, name, allowCreate, clog)
 }
 
-// AddURNtoContact adds a URN to the passed in contact
-func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error) {
-	tx, err := b.rt.DB.BeginTxx(ctx, nil)
-	if err != nil {
-		return urns.NilURN, err
-	}
-	dbChannel := c.(*models.Channel)
-	dbContact := contact.(*models.Contact)
-	_, err = models.GetOrCreateContactURN(ctx, tx, dbChannel, dbContact.ID_, urn, authTokens)
-	if err != nil {
-		return urns.NilURN, err
-	}
-	err = tx.Commit()
-	if err != nil {
-		return urns.NilURN, err
-	}
-
-	return urn, nil
-}
-
 // DeleteMsgByExternalID resolves a message external id and queues a task to mailroom to delete it
 func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
 	ch := channel.(*models.Channel)
