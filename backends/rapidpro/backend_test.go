@@ -53,10 +53,10 @@ func (ts *BackendTestSuite) SetupSuite() {
 
 func (ts *BackendTestSuite) TearDownSuite() {
 	ctx := context.Background()
-	ts.b.Stop()
+	err := ts.b.Stop()
+	ts.Require().NoError(err)
 
-	// TODO figure out why this hangs
-	// testsuite.ResetDB(ts.T(), ts.b.rt)
+	testsuite.ResetDB(ts.T(), ts.b.rt)
 	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	dyntest.Truncate(ts.T(), ts.b.rt.Dynamo, ts.b.rt.Writers.Main.Table())
@@ -199,10 +199,12 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 
 	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
+	defer tx.Rollback()
 
 	contactURNs, err := models.GetURNsForContact(ctx, tx, contact.ID_)
 	ts.NoError(err)
 	ts.Equal(len(contactURNs), 1)
+	ts.NoError(tx.Commit())
 
 	urn := urns.URN("tel:+12065551518")
 	addedURN, err := ts.b.AddURNtoContact(ctx, knChannel, contact, urn, nil)
@@ -211,10 +213,12 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 
 	tx, err = ts.b.rt.DB.Beginx()
 	ts.NoError(err)
+	defer tx.Rollback()
 
 	contactURNs, err = models.GetURNsForContact(ctx, tx, contact.ID_)
 	ts.NoError(err)
 	ts.Equal(len(contactURNs), 2)
+	ts.NoError(tx.Commit())
 
 	removedURN, err := ts.b.RemoveURNfromContact(ctx, knChannel, contact, urn)
 	ts.NoError(err)
@@ -222,9 +226,12 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 
 	tx, err = ts.b.rt.DB.Beginx()
 	ts.NoError(err)
+	defer tx.Rollback()
+
 	contactURNs, err = models.GetURNsForContact(ctx, tx, contact.ID_)
 	ts.NoError(err)
 	ts.Equal(len(contactURNs), 1)
+	ts.NoError(tx.Commit())
 }
 
 func (ts *BackendTestSuite) TestContactURN() {
@@ -241,6 +248,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 
 	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
+	defer tx.Rollback()
 
 	contact, err = contactForURN(ctx, ts.b, fbChannel.OrgID_, fbChannel, urn, map[string]string{"token1": "chestnut"}, "", true, clog)
 	ts.NoError(err)
@@ -259,6 +267,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 
 	tx, err = ts.b.rt.DB.Beginx()
 	ts.NoError(err)
+	defer tx.Rollback()
 
 	// then with our twilio channel
 	fbURN, err := models.GetOrCreateContactURN(ctx, tx, fbChannel, contact.ID_, urn, nil)
@@ -279,6 +288,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 
 	tx, err = ts.b.rt.DB.Beginx()
 	ts.NoError(err)
+	defer tx.Rollback()
 
 	// again with different auth
 	fbURN, err = models.GetOrCreateContactURN(ctx, tx, fbChannel, contact.ID_, urn, map[string]string{"token3": "peanut"})
@@ -302,6 +312,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 
 	tx, err = ts.b.rt.DB.Beginx()
 	ts.NoError(err)
+	defer tx.Rollback()
 
 	tgContactURN, err := models.GetOrCreateContactURN(ctx, tx, tgChannel, tgContact.ID_, tgURNDisplay, nil)
 	ts.NoError(err)
@@ -347,6 +358,7 @@ func (ts *BackendTestSuite) TestContactURNMetadata() {
 
 	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
+	defer tx.Rollback()
 
 	_, err = models.GetOrCreateContactURN(ctx, tx, fbChannel, knContact.ID_, fbURN, nil)
 	ts.NoError(err)
@@ -362,6 +374,7 @@ func (ts *BackendTestSuite) TestContactURNMetadata() {
 	// get all the URNs for this contact
 	tx, err = ts.b.rt.DB.Beginx()
 	ts.NoError(err)
+	defer tx.Rollback()
 
 	urns, err := models.GetURNsForContact(ctx, tx, fbContact.ID_)
 	ts.NoError(err)
@@ -999,6 +1012,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 
 	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
+	defer tx.Rollback()
 
 	// load our URN
 	contactURN, err := models.GetOrCreateContactURN(ctx, tx, knChannel, m.ContactID, urn, nil)
@@ -1148,6 +1162,7 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 
 	tx, err := ts.b.rt.DB.Beginx()
 	ts.NoError(err)
+	defer tx.Rollback()
 
 	// load our URN
 	exContactURN, err := models.GetOrCreateContactURN(ctx, tx, exChannel, m.ContactID, urn, nil)
