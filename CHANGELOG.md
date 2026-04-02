@@ -1,3 +1,8 @@
+v26.1.21 (2026-04-02)
+-------------------------
+ * Skip queuing contact_changed task when contact already has the URN
+ * Add BSUID URN support for outgoing WhatsApp messages
+
 v26.1.20 (2026-04-01)
 -------------------------
  * Update to latest phonenumbers
