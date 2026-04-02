@@ -366,19 +366,14 @@ func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.UR
 
 // AddURNtoContact adds a URN to the passed in contact
 func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error) {
-	tx, err := b.rt.DB.BeginTxx(ctx, nil)
-	if err != nil {
-		return urns.NilURN, err
-	}
-	dbChannel := c.(*models.Channel)
+
 	dbContact := contact.(*models.Contact)
-	_, err = models.GetOrCreateContactURN(ctx, tx, dbChannel, dbContact.ID_, urn, authTokens)
-	if err != nil {
-		return urns.NilURN, err
-	}
-	err = tx.Commit()
-	if err != nil {
-		return urns.NilURN, err
+
+	rc := b.rt.VK.Get()
+	defer rc.Close()
+
+	if err := queueContactChanged(ctx, rc, dbContact.OrgID_, dbContact.ID_, urn); err != nil {
+		return urns.NilURN, fmt.Errorf("error queuing contact_changed task: %w", err)
 	}
 
 	return urn, nil

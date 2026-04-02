@@ -200,28 +200,15 @@ func (ts *BackendTestSuite) TestAddContactURN() {
 	ts.NoError(err)
 	ts.NotNil(contact)
 
-	tx, err := ts.b.rt.DB.Beginx()
-	ts.NoError(err)
-	defer tx.Rollback()
-
-	contactURNs, err := models.GetURNsForContact(ctx, tx, contact.ID_)
-	ts.NoError(err)
-	ts.Equal(len(contactURNs), 1)
-	ts.NoError(tx.Commit())
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	urn := urns.URN("tel:+12065551518")
 	addedURN, err := ts.b.AddURNtoContact(ctx, knChannel, contact, urn, nil)
 	ts.NoError(err)
 	ts.NotNil(addedURN)
 
-	tx, err = ts.b.rt.DB.Beginx()
-	ts.NoError(err)
-	defer tx.Rollback()
-
-	contactURNs, err = models.GetURNsForContact(ctx, tx, contact.ID_)
-	ts.NoError(err)
-	ts.Equal(len(contactURNs), 2)
-	ts.NoError(tx.Commit())
+	// check that an contact_changed task was queued
+	ts.assertQueuedContactTask(contact.ID_, "contact_changed", map[string]any{"urn": "tel:+12065551518", "action": "append"})
 }
 
 func (ts *BackendTestSuite) TestContactURN() {
@@ -380,6 +367,11 @@ func (ts *BackendTestSuite) TestContactURNMetadata() {
 
 func (ts *BackendTestSuite) TestMsgStatus() {
 	ctx := context.Background()
+
+	testsuite.ResetDB(ts.T(), ts.b.rt)
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
+	dyntest.Truncate(ts.T(), ts.b.rt.Dynamo, ts.b.rt.Writers.History.Table())
+
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	now := time.Now().In(time.UTC)
 
@@ -1165,6 +1157,10 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 
 func (ts *BackendTestSuite) TestChannelEvent() {
 	ctx := context.Background()
+
+	testsuite.ResetDB(ts.T(), ts.b.rt)
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
+
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
 	urn := urns.URN("tel:+12065551616")
