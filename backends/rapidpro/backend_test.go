@@ -53,16 +53,15 @@ func (ts *BackendTestSuite) SetupSuite() {
 
 func (ts *BackendTestSuite) TearDownSuite() {
 	ctx := context.Background()
-	ts.b.Stop()
 
-	// TODO figure out why this hangs
-	// testsuite.ResetDB(ts.T(), ts.b.rt)
+	testsuite.ResetDB(ts.T(), ts.b.rt)
 	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	dyntest.Truncate(ts.T(), ts.b.rt.Dynamo, ts.b.rt.Writers.Main.Table())
 	dyntest.Truncate(ts.T(), ts.b.rt.Dynamo, ts.b.rt.Writers.History.Table())
 
 	ts.b.rt.S3.EmptyBucket(ctx, "test-attachments")
+	ts.b.Stop()
 }
 
 func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *models.Channel {
