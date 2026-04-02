@@ -107,6 +107,9 @@ func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
 }
 
 func (ts *BackendTestSuite) TestContact() {
+
+	testsuite.ResetDB(ts.T(), ts.b.rt)
+
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 	urn := urns.URN("tel:+12065551518")
