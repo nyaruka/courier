@@ -364,26 +364,6 @@ func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.UR
 	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, authTokens, name, allowCreate, clog)
 }
 
-// AddURNtoContact adds a URN to the passed in contact
-func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error) {
-	tx, err := b.rt.DB.BeginTxx(ctx, nil)
-	if err != nil {
-		return urns.NilURN, err
-	}
-	dbChannel := c.(*models.Channel)
-	dbContact := contact.(*models.Contact)
-	_, err = models.GetOrCreateContactURN(ctx, tx, dbChannel, dbContact.ID_, urn, authTokens)
-	if err != nil {
-		return urns.NilURN, err
-	}
-	err = tx.Commit()
-	if err != nil {
-		return urns.NilURN, err
-	}
-
-	return urn, nil
-}
-
 // DeleteMsgByExternalID resolves a message external id and queues a task to mailroom to delete it
 func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
 	ch := channel.(*models.Channel)
@@ -493,7 +473,7 @@ func (b *backend) ClearMsgSent(ctx context.Context, uuid models.MsgUUID) error {
 }
 
 // OnSendComplete is called when the sender has finished trying to send a message
-func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate, clog *courier.ChannelLog) {
+func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate, res *courier.SendResult, clog *courier.ChannelLog) {
 	log := slog.With("channel", msg.Channel().UUID(), "msg", msg.UUID(), "clog", clog.UUID, "status", status)
 
 	rc := b.rt.VK.Get()
@@ -517,6 +497,20 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 	if wasSuccess && m.Session_ != nil && m.Session_.Timeout > 0 {
 		if err := b.insertTimeoutFire(ctx, m); err != nil {
 			log.Error("unable to update session timeout", "error", err, "session_uuid", m.Session_.UUID)
+		}
+	}
+
+	// if send result includes a new URN to add to the contact, queue a contact_changed task
+	if wasSuccess && res != nil && res.NewURN() != urns.NilURN && !msg.Contact().HasOtherURN(res.NewURN()) {
+		dbChannel := msg.Channel().(*models.Channel)
+		err := queueMailroomTask(ctx, rc, "contact_changed", dbChannel.OrgID_, msg.Contact().ID, map[string]any{
+			"new_urn": map[string]string{
+				"value":  res.NewURN().String(),
+				"action": "append",
+			},
+		})
+		if err != nil {
+			log.Error("unable to queue contact_changed task", "error", err)
 		}
 	}
 

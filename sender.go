@@ -9,10 +9,12 @@ import (
 
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/courier/utils/clogs"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 type SendResult struct {
 	externalIDs []string
+	newURN      urns.URN
 }
 
 func (r *SendResult) AddExternalID(id string) {
@@ -21,6 +23,14 @@ func (r *SendResult) AddExternalID(id string) {
 
 func (r *SendResult) ExternalIDs() []string {
 	return r.externalIDs
+}
+
+func (r *SendResult) SetNewURN(urn urns.URN) {
+	r.newURN = urn
+}
+
+func (r *SendResult) NewURN() urns.URN {
+	return r.newURN
 }
 
 type SendError struct {
@@ -302,6 +312,7 @@ func (w *Sender) sendMessage(msg MsgOut) {
 	}
 
 	var status StatusUpdate
+	var res *SendResult
 	var redactValues []string
 	handler := server.GetHandler(msg.Channel())
 	if handler != nil {
@@ -321,7 +332,7 @@ func (w *Sender) sendMessage(msg MsgOut) {
 		log.Warn("duplicate send, marking as wired")
 
 	} else {
-		status = w.sendByHandler(sendCTX, handler, msg, clog, log)
+		status, res = w.sendByHandler(sendCTX, handler, msg, clog, log)
 	}
 
 	// we allot 15 seconds to write our status to the db
@@ -340,10 +351,10 @@ func (w *Sender) sendMessage(msg MsgOut) {
 	}
 
 	// mark our send task as complete
-	backend.OnSendComplete(writeCTX, msg, status, clog)
+	backend.OnSendComplete(writeCTX, msg, status, res, clog)
 }
 
-func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, clog *ChannelLog, log *slog.Logger) StatusUpdate {
+func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, clog *ChannelLog, log *slog.Logger) (StatusUpdate, *SendResult) {
 	backend := w.foreman.server.Backend()
 	res := &SendResult{}
 	err := h.Send(ctx, m, res, clog)
@@ -384,5 +395,5 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 		clog.Error(&clogs.Error{Code: "internal_error", Message: "An internal error occured."})
 	}
 
-	return status
+	return status, res
 }

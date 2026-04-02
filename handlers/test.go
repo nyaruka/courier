@@ -330,6 +330,7 @@ type OutgoingTestCase struct {
 	MsgUserID               models.UserID
 	MsgOrigin               models.MsgOrigin
 	MsgContactLastSeenOn    *time.Time
+	MsgContactOtherURNs     []urns.URN
 
 	MockResponses map[string][]*httpx.MockResponse
 
@@ -347,7 +348,7 @@ func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch courier.Channel) courie
 		msgOrigin = tc.MsgOrigin
 	}
 
-	c := &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc", LastSeenOn: tc.MsgContactLastSeenOn}
+	c := &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc", LastSeenOn: tc.MsgContactLastSeenOn, OtherURNs: tc.MsgContactOtherURNs}
 	m := mb.NewOutgoingMsg(ch, "0191e180-7d60-7000-aded-7d8b151cbd5b", c, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgResponseToExternalID, msgOrigin).(*test.MockMsg)
 	m.WithLocale(tc.MsgLocale)
 	m.WithUserID(tc.MsgUserID)
@@ -429,6 +430,10 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			assert.Equal(t, tc.ExpectedExtIDs, externalIDs, "external IDs mismatch")
 			assert.Equal(t, tc.ExpectedError, serr, "send method error mismatch")
 			assert.Equal(t, append([]*clogs.Error{}, tc.ExpectedLogErrors...), clog.Errors, "channel log errors mismatch")
+
+			// simulate OnSendComplete so the backend can process send results (e.g. new URNs)
+			status := mb.NewStatusUpdate(channel, msg.UUID(), models.MsgStatusWired, clog)
+			mb.OnSendComplete(ctx, msg, status, res, clog)
 
 			if tc.ExpectedContactURNs != nil {
 				var contactUUID models.ContactUUID

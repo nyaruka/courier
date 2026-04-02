@@ -10,6 +10,7 @@ type mockContact struct {
 	channel    courier.Channel
 	urn        urns.URN
 	authTokens map[string]string
+	id         models.ContactID
 	uuid       models.ContactUUID
 }
 

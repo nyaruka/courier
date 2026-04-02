@@ -27,9 +27,6 @@ type Backend interface {
 	// GetContact returns (or creates) the contact for the passed in channel and URN
 	GetContact(context.Context, Channel, urns.URN, map[string]string, string, bool, *ChannelLog) (Contact, error)
 
-	// AddURNtoContact adds a URN to the passed in contact
-	AddURNtoContact(context context.Context, channel Channel, contact Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error)
-
 	// DeleteMsgByExternalID deletes a message that has been deleted on the channel side
 	DeleteMsgByExternalID(ctx context.Context, channel Channel, externalID string) error
 
@@ -70,7 +67,7 @@ type Backend interface {
 	ClearMsgSent(context.Context, models.MsgUUID) error
 
 	// OnSendComplete is called when the sender has finished trying to send a message
-	OnSendComplete(context.Context, MsgOut, StatusUpdate, *ChannelLog)
+	OnSendComplete(context.Context, MsgOut, StatusUpdate, *SendResult, *ChannelLog)
 
 	// OnReceiveComplete is called when the server has finished handling an incoming request
 	OnReceiveComplete(context.Context, Channel, []Event, *ChannelLog)

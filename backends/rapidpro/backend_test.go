@@ -189,41 +189,6 @@ func (ts *BackendTestSuite) TestContactRace() {
 	ts.Equal(contact1.ID_, contact2.ID_)
 }
 
-func (ts *BackendTestSuite) TestAddContactURN() {
-	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
-	ctx := context.Background()
-
-	cURN := urns.URN("tel:+12067799192")
-
-	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, cURN, nil, "", true, clog)
-	ts.NoError(err)
-	ts.NotNil(contact)
-
-	tx, err := ts.b.rt.DB.Beginx()
-	ts.NoError(err)
-	defer tx.Rollback()
-
-	contactURNs, err := models.GetURNsForContact(ctx, tx, contact.ID_)
-	ts.NoError(err)
-	ts.Equal(len(contactURNs), 1)
-	ts.NoError(tx.Commit())
-
-	urn := urns.URN("tel:+12065551518")
-	addedURN, err := ts.b.AddURNtoContact(ctx, knChannel, contact, urn, nil)
-	ts.NoError(err)
-	ts.NotNil(addedURN)
-
-	tx, err = ts.b.rt.DB.Beginx()
-	ts.NoError(err)
-	defer tx.Rollback()
-
-	contactURNs, err = models.GetURNsForContact(ctx, tx, contact.ID_)
-	ts.NoError(err)
-	ts.Equal(len(contactURNs), 2)
-	ts.NoError(tx.Commit())
-}
-
 func (ts *BackendTestSuite) TestContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	fbChannel := ts.getChannel("FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
@@ -778,7 +743,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.Equal(msg.Text(), "test message")
 
 	// mark this message as dealt with
-	ts.b.OnSendComplete(ctx, msg, ts.b.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusWired, clog), clog)
+	ts.b.OnSendComplete(ctx, msg, ts.b.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusWired, clog), nil, clog)
 
 	// this message should now be marked as sent
 	sent, err := ts.b.WasMsgSent(ctx, msg.UUID())
