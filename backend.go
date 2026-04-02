@@ -30,9 +30,6 @@ type Backend interface {
 	// AddURNtoContact adds a URN to the passed in contact
 	AddURNtoContact(context context.Context, channel Channel, contact Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error)
 
-	// RemoveURNFromcontact removes a URN from the passed in contact
-	RemoveURNfromContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error)
-
 	// DeleteMsgByExternalID deletes a message that has been deleted on the channel side
 	DeleteMsgByExternalID(ctx context.Context, channel Channel, externalID string) error
 
