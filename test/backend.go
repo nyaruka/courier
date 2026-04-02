@@ -108,6 +108,11 @@ func (mb *MockBackend) NewIncomingMsg(ctx context.Context, channel courier.Chann
 func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, uuid models.MsgUUID, contact *models.ContactReference, urn urns.URN, text string, highPriority bool, quickReplies []models.QuickReply,
 	responseToExternalID string, origin models.MsgOrigin) courier.MsgOut {
 
+	// pre-register contact so it can be found by ID later (e.g. by QueueContactChanged)
+	if _, found := mb.contacts[urn]; !found {
+		mb.contacts[urn] = &mockContact{channel: channel, urn: urn, id: contact.ID, uuid: contact.UUID}
+	}
+
 	return &MockMsg{
 		channel:              channel,
 		uuid:                 uuid,
@@ -288,7 +293,7 @@ func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, 
 			return nil, nil
 		}
 
-		contact = &mockContact{channel, urn, authTokens, models.ContactUUID(uuids.NewV4())}
+		contact = &mockContact{channel: channel, urn: urn, authTokens: authTokens, uuid: models.ContactUUID(uuids.NewV4())}
 		mb.contacts[urn] = contact
 	}
 	return contact, nil
@@ -298,6 +303,19 @@ func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, 
 func (mb *MockBackend) AddURNtoContact(context context.Context, channel courier.Channel, contact courier.Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error) {
 	mb.contacts[urn] = contact
 	return urn, nil
+}
+
+// QueueContactChanged queues a contact_changed task - in mock we simulate by adding the URN to the contacts map
+func (mb *MockBackend) QueueContactChanged(ctx context.Context, channel courier.Channel, contactID models.ContactID, newURN urns.URN) error {
+	// find the existing contact by ID so we can associate the new URN with them
+	for _, c := range mb.contacts {
+		mc := c.(*mockContact)
+		if mc.id == contactID {
+			mb.contacts[newURN] = c
+			return nil
+		}
+	}
+	return nil
 }
 
 // RemoveURNFromcontact removes a URN from the passed in contact

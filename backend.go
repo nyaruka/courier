@@ -30,6 +30,9 @@ type Backend interface {
 	// AddURNtoContact adds a URN to the passed in contact
 	AddURNtoContact(context context.Context, channel Channel, contact Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error)
 
+	// QueueContactChanged queues a contact_changed task to mailroom to append a new URN to the given contact
+	QueueContactChanged(ctx context.Context, channel Channel, contactID models.ContactID, newURN urns.URN) error
+
 	// RemoveURNFromcontact removes a URN from the passed in contact
 	RemoveURNfromContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error)
 

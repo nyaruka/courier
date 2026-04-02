@@ -721,22 +721,15 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 		}
 	}
 
-	// if we got a user_id in the response, add it as a secondary URN on the contact
+	// if we got a user_id in the response, queue a task to append it as a BSUID URN on the contact
 	if userID != "" {
-		contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", true, clog)
+		userIDURN, err := urns.New(urns.BSUID, userID)
 		if err != nil {
-			clog.RawError(fmt.Errorf("unable to get contact for %s: %w", msg.URN().String(), err))
-		} else if contact == nil {
-			clog.RawError(fmt.Errorf("unable to get contact for %s: contact not found", msg.URN().String()))
+			clog.RawError(fmt.Errorf("unable to make BSUID URN from user_id %s: %w", userID, err))
 		} else {
-			userIDURN, err := urns.New(urns.BSUID, userID)
+			err = h.Backend().QueueContactChanged(ctx, msg.Channel(), msg.Contact().ID, userIDURN)
 			if err != nil {
-				clog.RawError(fmt.Errorf("unable to make BSUID URN from user_id %s: %w", userID, err))
-			} else {
-				_, err = h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, userIDURN, nil)
-				if err != nil {
-					clog.RawError(fmt.Errorf("unable to add URN %s to contact with uuid %s: %w", userIDURN.String(), contact.UUID(), err))
-				}
+				clog.RawError(fmt.Errorf("unable to queue contact changed task: %w", err))
 			}
 		}
 	}

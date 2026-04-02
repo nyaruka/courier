@@ -384,6 +384,21 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 	return urn, nil
 }
 
+// QueueContactChanged queues a contact_changed task to mailroom to append a new URN to the given contact
+func (b *backend) QueueContactChanged(ctx context.Context, c courier.Channel, contactID models.ContactID, newURN urns.URN) error {
+	dbChannel := c.(*models.Channel)
+
+	rc := b.rt.VK.Get()
+	defer rc.Close()
+
+	return queueMailroomTask(ctx, rc, "contact_changed", dbChannel.OrgID_, contactID, map[string]any{
+		"new_urn": map[string]string{
+			"value":  newURN.String(),
+			"action": "append",
+		},
+	})
+}
+
 // RemoveURNFromcontact removes a URN from the passed in contact
 func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
 	dbContact := contact.(*models.Contact)
