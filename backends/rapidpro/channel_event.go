@@ -10,29 +10,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/core/models"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
 )
 
-// ChannelEvent represents an event on a channel.. that isn't a new message or status update
+// ChannelEvent wraps a models.ChannelEvent with the transient fields needed for spooling and queueing to mailroom
 type ChannelEvent struct {
-	UUID_        models.ChannelEventUUID `json:"uuid"                    db:"uuid"`
-	OrgID_       models.OrgID            `json:"org_id"                  db:"org_id"`
-	ChannelUUID_ models.ChannelUUID      `json:"channel_uuid"            db:"channel_uuid"`
-	ChannelID_   models.ChannelID        `json:"channel_id"              db:"channel_id"`
-	URN_         urns.URN                `json:"urn"                     db:"urn"`
-	EventType_   models.ChannelEventType `json:"event_type"              db:"event_type"`
-	OptInID_     null.Int                `json:"optin_id"                db:"optin_id"`
-	Extra_       null.Map[string]        `json:"extra"                   db:"extra"`
-	OccurredOn_  time.Time               `json:"occurred_on"             db:"occurred_on"`
-	LogUUIDs     pq.StringArray          `json:"log_uuids"               db:"log_uuids"`
+	*models.ChannelEvent
 
-	ContactID_    models.ContactID    `json:"-"               db:"contact_id"`
-	ContactURNID_ models.ContactURNID `json:"-"               db:"contact_urn_id"`
+	// needed for spool re-lookup of channel and for queueing to mailroom
+	ChannelUUID_ models.ChannelUUID `json:"channel_uuid"`
 
 	// used to update contact
 	ContactName_   string            `json:"contact_name"`
@@ -46,28 +35,14 @@ func newChannelEvent(channel courier.Channel, eventType models.ChannelEventType,
 	dbChannel := channel.(*models.Channel)
 
 	return &ChannelEvent{
-		UUID_:        models.ChannelEventUUID(uuids.NewV7()),
+		ChannelEvent: models.NewChannelEvent(dbChannel, eventType, urn, clog.UUID),
 		ChannelUUID_: dbChannel.UUID_,
-		OrgID_:       dbChannel.OrgID_,
-		ChannelID_:   dbChannel.ID_,
-		URN_:         urn,
-		EventType_:   eventType,
-		OccurredOn_:  time.Now().In(time.UTC),
-		LogUUIDs:     pq.StringArray{string(clog.UUID)},
-
-		channel: dbChannel,
+		channel:      dbChannel,
 	}
 }
 
-func (e *ChannelEvent) EventUUID() uuids.UUID              { return uuids.UUID(e.UUID_) }
-func (e *ChannelEvent) UUID() models.ChannelEventUUID      { return e.UUID_ }
-func (e *ChannelEvent) ChannelID() models.ChannelID        { return e.ChannelID_ }
-func (e *ChannelEvent) ChannelUUID() models.ChannelUUID    { return e.ChannelUUID_ }
-func (e *ChannelEvent) EventType() models.ChannelEventType { return e.EventType_ }
-func (e *ChannelEvent) URN() urns.URN                      { return e.URN_ }
-func (e *ChannelEvent) Extra() map[string]string           { return e.Extra_ }
-func (e *ChannelEvent) OccurredOn() time.Time              { return e.OccurredOn_ }
-func (e *ChannelEvent) Channel() *models.Channel           { return e.channel }
+func (e *ChannelEvent) ChannelUUID() models.ChannelUUID { return e.ChannelUUID_ }
+func (e *ChannelEvent) Channel() *models.Channel        { return e.channel }
 
 func (e *ChannelEvent) WithContactName(name string) courier.ChannelEvent {
 	e.ContactName_ = name
@@ -105,7 +80,7 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 
 	// failed writing, write to our spool instead
 	if err != nil {
-		slog.Error("error writing channel event to db", "error", err, "channel_id", dbEvent.ChannelID, "event_type", dbEvent.EventType_)
+		slog.Error("error writing channel event to db", "error", err, "channel_id", dbEvent.ChannelID_, "event_type", dbEvent.EventType_)
 	}
 
 	if err != nil {
@@ -114,11 +89,6 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 
 	return err
 }
-
-const sqlInsertChannelEvent = `
-INSERT INTO 
-	channels_channelevent( org_id,  uuid,  channel_id,  contact_id,  contact_urn_id,  event_type,  optin_id,  extra,  occurred_on,  created_on, status,  log_uuids)
-				   VALUES(:org_id, :uuid, :channel_id, :contact_id, :contact_urn_id, :event_type, :optin_id, :extra, :occurred_on,       NOW(),    'P', :log_uuids)`
 
 // writeChannelEventToDB writes the passed in channel event to our db
 func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clog *courier.ChannelLog) error {
@@ -132,11 +102,9 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clo
 	e.ContactID_ = contact.ID_
 	e.ContactURNID_ = contact.URNID_
 
-	rows, err := b.rt.DB.NamedQueryContext(ctx, sqlInsertChannelEvent, e)
-	if err != nil {
+	if err := models.InsertChannelEvent(ctx, b.rt.DB, e.ChannelEvent); err != nil {
 		return err
 	}
-	defer rows.Close()
 
 	// queue it up for handling by RapidPro
 	rc := b.rt.VK.Get()
