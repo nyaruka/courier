@@ -504,6 +504,7 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 	if wasSuccess && res != nil && res.NewURN() != urns.NilURN && !msg.Contact().HasOtherURN(res.NewURN()) {
 		dbChannel := msg.Channel().(*models.Channel)
 		err := queueMailroomTask(ctx, rc, "contact_changed", dbChannel.OrgID_, msg.Contact().ID, map[string]any{
+			"channel_id": dbChannel.ID_,
 			"new_urn": map[string]string{
 				"value":  res.NewURN().String(),
 				"action": "append",
