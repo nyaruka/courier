@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"time"
 	"unicode/utf8"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
+	"github.com/vinovest/sqlx"
 )
 
 // MsgUUID is the UUID of a message which has been received
@@ -101,6 +103,19 @@ func (m *MsgIn) ExternalID() string     { return string(m.ExternalIdentifier_) }
 func (m *MsgIn) Text() string           { return m.Text_ }
 func (m *MsgIn) Attachments() []string  { return []string(m.Attachments_) }
 func (m *MsgIn) ReceivedOn() *time.Time { return m.SentOn_ }
+
+const sqlInsertIncomingMsg = `
+INSERT INTO
+	msgs_msg(org_id, uuid, direction, text, attachments, msg_type, msg_count, error_count, high_priority, status, is_android,
+             visibility, external_identifier, channel_id, contact_id, contact_urn_id, created_on, modified_on, sent_on, log_uuids)
+    VALUES(:org_id, :uuid, 'I', :text, :attachments, 'T', 1, 0, FALSE, 'P', FALSE,
+             'V', :external_identifier, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :sent_on, :log_uuids)`
+
+// InsertIncomingMsg inserts the passed in incoming message into the database
+func InsertIncomingMsg(ctx context.Context, db *sqlx.DB, m *MsgIn) error {
+	_, err := db.NamedExecContext(ctx, sqlInsertIncomingMsg, m)
+	return err
+}
 
 type MsgOrigin string
 

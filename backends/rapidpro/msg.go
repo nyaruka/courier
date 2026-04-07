@@ -119,14 +119,6 @@ func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLo
 	return err
 }
 
-const sqlInsertMsg = `
-INSERT INTO
-	msgs_msg(org_id, uuid, direction, text, attachments, msg_type, msg_count, error_count, high_priority, status, is_android,
-             visibility, external_identifier, channel_id, contact_id, contact_urn_id, created_on, modified_on, sent_on, log_uuids)
-    VALUES(:org_id, :uuid, 'I', :text, :attachments, 'T', 1, 0, FALSE, 'P', FALSE,
-             'V', :external_identifier, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :sent_on, :log_uuids)
-RETURNING id`
-
 func writeMsgToDB(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLog) (*models.Contact, error) {
 	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 
@@ -139,11 +131,9 @@ func writeMsgToDB(ctx context.Context, b *backend, m *MsgIn, clog *courier.Chann
 	m.ContactID_ = contact.ID_
 	m.ContactURNID_ = contact.URNID_
 
-	rows, err := b.rt.DB.NamedQueryContext(ctx, sqlInsertMsg, m)
-	if err != nil {
+	if err := models.InsertIncomingMsg(ctx, b.rt.DB, m.MsgIn); err != nil {
 		return nil, fmt.Errorf("error inserting message: %w", err)
 	}
-	defer rows.Close()
 
 	return contact, nil
 }
