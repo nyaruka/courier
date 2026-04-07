@@ -1,3 +1,9 @@
+v26.1.22 (2026-04-07)
+-------------------------
+ * Use NamedExecContext for incoming msg and channel event inserts
+ * Move incoming message insert into core/models
+ * Move ChannelEvent struct and insert into core/models
+
 v26.1.21 (2026-04-02)
 -------------------------
  * Skip queuing contact_changed task when contact already has the URN
