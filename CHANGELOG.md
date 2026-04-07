@@ -1,3 +1,7 @@
+v26.1.23 (2026-04-07)
+-------------------------
+ * Include channel_id in contact_changed tasks
+
 v26.1.22 (2026-04-07)
 -------------------------
  * Use NamedExecContext for incoming msg and channel event inserts
