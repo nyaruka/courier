@@ -109,17 +109,12 @@ INSERT INTO
 	msgs_msg(org_id, uuid, direction, text, attachments, msg_type, msg_count, error_count, high_priority, status, is_android,
              visibility, external_identifier, channel_id, contact_id, contact_urn_id, created_on, modified_on, sent_on, log_uuids)
     VALUES(:org_id, :uuid, 'I', :text, :attachments, 'T', 1, 0, FALSE, 'P', FALSE,
-             'V', :external_identifier, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :sent_on, :log_uuids)
-RETURNING id`
+             'V', :external_identifier, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :sent_on, :log_uuids)`
 
 // InsertIncomingMsg inserts the passed in incoming message into the database
 func InsertIncomingMsg(ctx context.Context, db *sqlx.DB, m *MsgIn) error {
-	rows, err := db.NamedQueryContext(ctx, sqlInsertIncomingMsg, m)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	return nil
+	_, err := db.NamedExecContext(ctx, sqlInsertIncomingMsg, m)
+	return err
 }
 
 type MsgOrigin string

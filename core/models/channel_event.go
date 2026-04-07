@@ -72,10 +72,6 @@ INSERT INTO
 
 // InsertChannelEvent inserts the passed in channel event into the database
 func InsertChannelEvent(ctx context.Context, db *sqlx.DB, e *ChannelEvent) error {
-	rows, err := db.NamedQueryContext(ctx, sqlInsertChannelEvent, e)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	return nil
+	_, err := db.NamedExecContext(ctx, sqlInsertChannelEvent, e)
+	return err
 }
