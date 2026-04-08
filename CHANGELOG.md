@@ -1,3 +1,7 @@
+v26.1.24 (2026-04-08)
+-------------------------
+ * Update dependencies
+
 v26.1.23 (2026-04-07)
 -------------------------
  * Include channel_id in contact_changed tasks
