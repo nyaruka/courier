@@ -51,6 +51,20 @@ var testCasesD3C = []IncomingTestCase{
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
 	{
+		Label:                 "Receive Message WAC with user_id",
+		URL:                   d3CReceiveURL,
+		Data:                  string(test.ReadFile("../meta/testdata/wac/hello_user_id.json")),
+		ExpectedRespStatus:    200,
+		ExpectedBodyContains:  "Handled",
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+		ExpectedMsgText:       Sp("Hello World"),
+		ExpectedURN:           "whatsapp:5678",
+		ExpectedExternalID:    "external_id",
+		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+		ExpectedNewURN:        &models.NewURNSpec{Value: "bsuid:US.1234", Action: models.NewURNAppend},
+	},
+	{
 		Label:                 "Receive Duplicate Valid Message",
 		URL:                   d3CReceiveURL,
 		Data:                  string(test.ReadFile("../meta/testdata/wac/duplicate.json")),
@@ -332,6 +346,33 @@ var SendTestCasesD3C = []OutgoingTestCase{
 			{
 				Path: "/messages",
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Simple Message","preview_url":false}}`,
+			},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:   "Plain Send with user_id in response",
+		MsgText: "Simple Message",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://waba-v2.360dialog.io/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "contacts": [{"input": "250788123123", "user_id": "US.1234"}], "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+		ExpectedContactURNs: map[string]bool{
+			"whatsapp:250788123123": true,
+			"bsuid:US.1234":         true,
+		},
+	},
+	{
+		Label:               "Plain Send with user_id already on contact",
+		MsgText:             "Simple Message",
+		MsgURN:              "whatsapp:250788123123",
+		MsgContactOtherURNs: []urns.URN{"bsuid:US.1234"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://waba-v2.360dialog.io/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "contacts": [{"input": "250788123123", "user_id": "US.1234"}], "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},

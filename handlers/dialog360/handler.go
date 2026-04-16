@@ -16,6 +16,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/handlers/meta/whatsapp"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 const (
@@ -153,6 +154,16 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					event.WithAttachment(mediaURL)
 				}
 
+				// if we have a user_id, add it as secondary BSUID URN
+				if waMsg.FromUserID != "" {
+					userIDURN, urnErr := urns.New(urns.BSUID, waMsg.FromUserID)
+					if urnErr == nil {
+						event.WithNewURN(userIDURN, models.NewURNAppend)
+					} else {
+						courier.LogRequestError(r, channel, fmt.Errorf("invalid user_id for BSUID URN: %w", urnErr))
+					}
+				}
+
 				err = h.Backend().WriteMsg(ctx, event, clog)
 				if err != nil {
 					return nil, nil, err
@@ -267,22 +278,37 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return err
 	}
 
+	var userID string
 	for _, payload := range requestPayloads {
-		err := h.requestD3C(payload, accessToken, res, sendURL, clog)
+		respUserID, err := h.requestD3C(payload, accessToken, res, sendURL, clog)
 		if err != nil {
 			return err
+		}
+		if respUserID != "" {
+			userID = respUserID
+		}
+	}
+
+	// if we got a user_id in the response, set it as a new URN on the send result so the backend
+	// can queue a contact_changed task to append it to the contact
+	if userID != "" {
+		userIDURN, err := urns.New(urns.BSUID, userID)
+		if err != nil {
+			clog.RawError(fmt.Errorf("unable to make BSUID URN from user_id %s: %w", userID, err))
+		} else {
+			res.SetNewURN(userIDURN)
 		}
 	}
 
 	return nil
 }
 
-func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *courier.ChannelLog) error {
+func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *courier.ChannelLog) (string, error) {
 	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	req.Header.Set(d3AuthorizationKey, accessToken)
@@ -291,21 +317,21 @@ func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, r
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
-		return courier.ErrConnectionFailed
+		return "", courier.ErrConnectionFailed
 	}
 	respPayload := &whatsapp.SendResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
-		return courier.ErrResponseUnparseable
+		return "", courier.ErrResponseUnparseable
 	}
 
 	if respPayload.Error.Code != 0 {
-		return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
+		return "", courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}
 
-	externalID := respPayload.Messages[0].ID
-	if externalID != "" {
-		res.AddExternalID(externalID)
+	if len(respPayload.Messages) > 0 && respPayload.Messages[0].ID != "" {
+		res.AddExternalID(respPayload.Messages[0].ID)
 	}
-	return nil
+
+	return respPayload.UserID(), nil
 }
