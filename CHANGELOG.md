@@ -1,3 +1,8 @@
+v26.1.25 (2026-04-16)
+-------------------------
+ * Merge pull request #999 from nyaruka/d3c-bsuid
+ * Save BSUID URN for D3C channels
+
 v26.1.24 (2026-04-08)
 -------------------------
  * Update dependencies
