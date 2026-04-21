@@ -89,15 +89,16 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type moForm struct {
-	MessageSID  string `validate:"required"`
-	AccountSID  string `validate:"required"`
-	From        string `validate:"required"`
-	FromCountry string
-	To          string `validate:"required"`
-	ToCountry   string
-	Body        string
-	ButtonText  string
-	NumMedia    int
+	MessageSID     string `validate:"required"`
+	AccountSID     string `validate:"required"`
+	From           string `validate:"required"`
+	FromCountry    string
+	To             string `validate:"required"`
+	ExternalUserId string
+	ToCountry      string
+	Body           string
+	ButtonText     string
+	NumMedia       int
 }
 
 type statusForm struct {
@@ -147,6 +148,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, form.MessageSID, clog)
+
+	if form.ExternalUserId != "" {
+		userIDURN, urnErr := h.parseURN(channel, form.ExternalUserId, i18n.Country(form.FromCountry))
+		if urnErr == nil {
+			msg.WithNewURN(userIDURN, models.NewURNAppend)
+		} else {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, urnErr)
+		}
+	}
 
 	// process any attached media
 	for i := 0; i < form.NumMedia; i++ {
@@ -451,6 +461,17 @@ func (h *handler) parseURN(channel courier.Channel, text string, country i18n.Co
 			fromTel = parts[1]
 		} else {
 			fromTel = parts[0]
+		}
+
+		var bsuid string
+		bsuidParts := strings.Split(fromTel, ".")
+		if len(bsuidParts) > 1 {
+			bsuid = bsuidParts[1]
+		}
+
+		if bsuid != "" {
+			// if we have a BSUID, use that as the URN
+			return urns.New(urns.BSUID, fromTel)
 		}
 
 		// trim off left +, official whatsapp IDs dont have that
