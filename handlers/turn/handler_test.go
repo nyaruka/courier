@@ -46,6 +46,25 @@ var helloMsg = `{
    }]
 }`
 
+var helloMsgWithUserID = `{
+	"contacts":[{
+		"profile": {
+			"name": "Jerry Cooney"
+		},
+		"wa_id": "250788123123"
+	}],
+  "messages": [{
+    "from": "250788123123",
+    "id": "41",
+    "timestamp": "1454119029",
+    "recipient_user_id": "US.1234",
+    "text": {
+      "body": "hello world"
+    },
+    "type": "text"
+   }]
+}`
+
 var duplicateMsg = `{
 	"messages": [{
 	  "from": "250788123123",
@@ -311,6 +330,21 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedURN:           "whatsapp:250788123123",
 		ExpectedExternalID:    "41",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+	},
+	{
+		Label:                 "Receive Message with recipient_user_id",
+		URL:                   turnWhatsappReceiveURL,
+		Data:                  helloMsgWithUserID,
+		ExpectedRespStatus:    200,
+		ExpectedBodyContains:  `"type":"msg"`,
+		ExpectedContactName:   Sp("Jerry Cooney"),
+		ExpectedMsgText:       Sp("hello world"),
+		ExpectedURN:           "whatsapp:250788123123",
+		ExpectedExternalID:    "41",
+		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+		ExpectedNewURN:        &models.NewURNSpec{Value: "bsuid:US.1234", Action: models.NewURNAppend},
 		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 	},
