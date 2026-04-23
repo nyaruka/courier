@@ -12,6 +12,7 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"sort"
@@ -149,12 +150,14 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, form.MessageSID, clog)
 
-	if form.ExternalUserId != "" {
+	if form.ExternalUserId != "" && channel.IsScheme(urns.WhatsApp) {
 		userIDURN, urnErr := h.parseURN(channel, form.ExternalUserId, i18n.Country(form.FromCountry))
+
 		if urnErr == nil {
 			msg.WithNewURN(userIDURN, models.NewURNAppend)
 		} else {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, urnErr)
+			slog.Warn("ignoring invalid ExternalUserId for message", "ExternalUserId", form.ExternalUserId, "MessageSID", form.MessageSID, "Error", urnErr.Error())
+
 		}
 	}
 
@@ -463,13 +466,7 @@ func (h *handler) parseURN(channel courier.Channel, text string, country i18n.Co
 			fromTel = parts[0]
 		}
 
-		var bsuid string
-		bsuidParts := strings.Split(fromTel, ".")
-		if len(bsuidParts) > 1 {
-			bsuid = bsuidParts[1]
-		}
-
-		if bsuid != "" {
+		if dot := strings.Index(fromTel, "."); dot >= 0 && dot < len(fromTel)-1 {
 			// if we have a BSUID, use that as the URN
 			return urns.New(urns.BSUID, fromTel)
 		}
