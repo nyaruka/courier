@@ -86,11 +86,12 @@ type eventsPayload struct {
 		WaID string `json:"wa_id"`
 	} `json:"contacts"`
 	Messages []struct {
-		From      string `json:"from"      validate:"required"`
-		ID        string `json:"id"        validate:"required"`
-		GroupID   string `json:"group_id,omitempty"`
-		Timestamp string `json:"timestamp" validate:"required"`
-		Type      string `json:"type"      validate:"required"`
+		From            string `json:"from"      validate:"required"`
+		ID              string `json:"id"        validate:"required"`
+		GroupID         string `json:"group_id,omitempty"`
+		Timestamp       string `json:"timestamp" validate:"required"`
+		Type            string `json:"type"      validate:"required"`
+		RecipientUserID string `json:"recipient_user_id"`
 		Text      struct {
 			Body string `json:"body"`
 		} `json:"text"`
@@ -243,6 +244,15 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 
 		if mediaURL != "" {
 			event.WithAttachment(mediaURL)
+		}
+
+		if msg.RecipientUserID != "" {
+			userIDURN, urnErr := urns.New(urns.BSUID, msg.RecipientUserID)
+			if urnErr == nil {
+				event.WithNewURN(userIDURN, models.NewURNAppend)
+			} else {
+				courier.LogRequestError(r, channel, fmt.Errorf("invalid recipient_user_id for BSUID URN: %w", urnErr))
+			}
 		}
 
 		err = h.Backend().WriteMsg(ctx, event, clog)
