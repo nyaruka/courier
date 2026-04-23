@@ -1,3 +1,8 @@
+v26.1.26 (2026-04-23)
+-------------------------
+ * Save BSUID URN for TRN channels on incoming messages
+ * Support receiving for BSUID on Twilio Whatsapp
+
 v26.1.25 (2026-04-16)
 -------------------------
  * Merge pull request #999 from nyaruka/d3c-bsuid
