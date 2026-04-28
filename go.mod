@@ -1,4 +1,4 @@
-module github.com/nyaruka/courier
+module github.com/nyaruka/courier/v26
 
 go 1.26.0
 

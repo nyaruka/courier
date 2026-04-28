@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/lib/pq"
-	"github.com/nyaruka/courier/runtime"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"

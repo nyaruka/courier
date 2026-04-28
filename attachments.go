@@ -14,9 +14,9 @@ import (
 	"strings"
 
 	"github.com/h2non/filetype"
-	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/courier/utils/clogs"
+	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 )
 

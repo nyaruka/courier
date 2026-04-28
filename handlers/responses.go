@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/v26"
 )
 
 // WriteMsgsAndResponse writes the passed in message to our backend

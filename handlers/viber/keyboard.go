@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/nyaruka/courier/core/models"
+	"github.com/nyaruka/courier/v26/core/models"
 )
 
 // KeyboardButton is button on a keyboard, see https://developers.viber.com/docs/tools/keyboards/#buttons-parameters

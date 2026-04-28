@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
-	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/backends/rapidpro"
+	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/backends/rapidpro"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/stretchr/testify/assert"
 )

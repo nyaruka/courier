@@ -1,8 +1,8 @@
 package hub9
 
 import (
-	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/handlers/dart"
+	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/handlers/dart"
 )
 
 var (

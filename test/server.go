@@ -4,9 +4,9 @@ import (
 	"sync"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/runtime"
-	"github.com/nyaruka/courier/utils/clogs"
+	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/courier/v26/utils/clogs"
 )
 
 type MockServer struct {

@@ -10,7 +10,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/schema"
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/courier/v26/utils"
 )
 
 const maxBodyReadBytes = 1024 * 1024 // 1MB
