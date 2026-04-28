@@ -58,8 +58,7 @@ func Service(version, date string) error {
 
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	log.Info("stopping", "comp", "main", "signal", <-ch)
+	log.Info("stopping", "signal", <-ch)
 
-	server.Stop()
-	return nil
+	return server.Stop()
 }
