@@ -1,16 +1,10 @@
 package main
 
 import (
-	"log/slog"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+	"github.com/nyaruka/courier/cmd"
 
-	"github.com/getsentry/sentry-go"
-	"github.com/nyaruka/courier"
-	slogmulti "github.com/samber/slog-multi"
-	slogsentry "github.com/samber/slog-sentry/v2"
+	// load available backends
+	_ "github.com/nyaruka/courier/backends/rapidpro"
 
 	// load channel handler packages
 	_ "github.com/nyaruka/courier/handlers/africastalking"
@@ -71,11 +65,6 @@ import (
 	_ "github.com/nyaruka/courier/handlers/whatsapp_legacy"
 	_ "github.com/nyaruka/courier/handlers/yo"
 	_ "github.com/nyaruka/courier/handlers/zenvia"
-	"github.com/nyaruka/courier/runtime"
-
-	// load available backends
-	"github.com/nyaruka/courier/backends/rapidpro"
-	_ "github.com/nyaruka/courier/backends/rapidpro"
 )
 
 var (
@@ -85,51 +74,5 @@ var (
 )
 
 func main() {
-	cfg := runtime.LoadConfig()
-	cfg.Version = version
-
-	// configure our logger
-	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel})
-	slog.SetDefault(slog.New(logHandler))
-
-	// if we have a DSN entry, try to initialize it
-	if cfg.SentryDSN != "" {
-		err := sentry.Init(sentry.ClientOptions{Dsn: cfg.SentryDSN, ServerName: cfg.InstanceID, Release: version, AttachStacktrace: true})
-		if err != nil {
-			slog.Error("error initiating sentry client", "error", err, "dsn", cfg.SentryDSN)
-			os.Exit(1)
-		}
-
-		defer sentry.Flush(2 * time.Second)
-
-		slog.SetDefault(slog.New(
-			slogmulti.Fanout(
-				logHandler,
-				slogsentry.Option{Level: slog.LevelError}.NewSentryHandler(),
-			),
-		))
-	}
-
-	log := slog.With("comp", "main")
-	log.Info("starting courier", "version", version, "released", date)
-
-	rt, err := runtime.NewRuntime(cfg)
-	if err != nil {
-		slog.Error("error creating runtime", "error", err)
-		os.Exit(1)
-	}
-
-	backend := rapidpro.NewBackend(rt)
-
-	server := courier.NewServer(cfg, backend)
-	if err := server.Start(); err != nil {
-		log.Error("unable to start server", "error", err)
-		os.Exit(1)
-	}
-
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	log.Info("stopping", "comp", "main", "signal", <-ch)
-
-	server.Stop()
+	cmd.Run(cmd.Service(version, date))
 }
