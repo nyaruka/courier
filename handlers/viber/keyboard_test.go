@@ -3,8 +3,8 @@ package viber_test
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/courier/handlers/viber"
+	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/handlers/viber"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -7,7 +7,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/nyaruka/courier/runtime"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
 	"github.com/stretchr/testify/require"
 )

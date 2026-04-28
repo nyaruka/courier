@@ -3,9 +3,9 @@ package whatsapp_test
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/courier/handlers/meta/whatsapp"
-	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/handlers/meta/whatsapp"
+	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/stretchr/testify/assert"
 )

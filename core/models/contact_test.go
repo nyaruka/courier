@@ -3,8 +3,8 @@ package models_test
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/courier/testsuite"
+	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/null/v3"
 	"github.com/stretchr/testify/assert"

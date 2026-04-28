@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/utils"
 )
 
 func GetTemplatePayload(templating *models.Templating) *Template {

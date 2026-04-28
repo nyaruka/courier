@@ -1,7 +1,7 @@
 package telegram
 
 import (
-	"github.com/nyaruka/courier/core/models"
+	"github.com/nyaruka/courier/v26/core/models"
 )
 
 // KeyboardButton is button on a keyboard, see https://core.telegram.org/bots/api/#keyboardbutton

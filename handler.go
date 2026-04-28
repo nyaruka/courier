@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/nyaruka/courier/core/models"
+	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/gocommon/urns"
 )
 

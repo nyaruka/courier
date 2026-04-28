@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/utils/clogs"
+	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

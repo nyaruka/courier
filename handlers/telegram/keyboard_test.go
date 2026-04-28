@@ -3,8 +3,8 @@ package telegram_test
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/courier/handlers/telegram"
+	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/handlers/telegram"
 	"github.com/stretchr/testify/assert"
 )
 

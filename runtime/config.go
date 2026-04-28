@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/ezconf"
 	"github.com/nyaruka/gocommon/httpx"
 )

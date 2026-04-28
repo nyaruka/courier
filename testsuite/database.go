@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/lib/pq"
-	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/courier/runtime"
+	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null/v3"
 	"github.com/stretchr/testify/require"

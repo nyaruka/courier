@@ -3,7 +3,7 @@ package runtime_test
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/runtime"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/stretchr/testify/assert"
 )
 

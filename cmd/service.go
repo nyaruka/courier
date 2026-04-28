@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/backends/rapidpro"
-	"github.com/nyaruka/courier/runtime"
+	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/backends/rapidpro"
+	"github.com/nyaruka/courier/v26/runtime"
 	slogmulti "github.com/samber/slog-multi"
 	slogsentry "github.com/samber/slog-sentry/v2"
 )

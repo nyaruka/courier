@@ -3,7 +3,7 @@ package handlers_test
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/stretchr/testify/assert"
 )
 

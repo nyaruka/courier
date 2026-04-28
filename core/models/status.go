@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/nyaruka/courier/runtime"
-	"github.com/nyaruka/courier/utils/clogs"
+	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/uuids"

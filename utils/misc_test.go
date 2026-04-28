@@ -3,7 +3,7 @@ package utils_test
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/courier/v26/utils"
 	"github.com/stretchr/testify/assert"
 )
 

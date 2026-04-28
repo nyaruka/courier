@@ -3,8 +3,8 @@ package vk_test
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/courier/handlers/vk"
+	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/handlers/vk"
 	"github.com/stretchr/testify/assert"
 )
 

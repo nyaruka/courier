@@ -3,7 +3,7 @@ package courier
 import (
 	"fmt"
 
-	"github.com/nyaruka/courier/utils/clogs"
+	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 )
 

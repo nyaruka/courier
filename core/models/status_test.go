@@ -8,8 +8,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/nyaruka/courier/core/models"
-	"github.com/nyaruka/courier/testsuite"
+	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/stretchr/testify/assert"
 )
