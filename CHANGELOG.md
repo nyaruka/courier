@@ -1,3 +1,8 @@
+v26.1.27 (2026-04-28)
+-------------------------
+ * Update dependencies
+ * Sort WhatsApp template component variables numerically
+
 v26.1.26 (2026-04-23)
 -------------------------
  * Save BSUID URN for TRN channels on incoming messages
