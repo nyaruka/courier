@@ -35,29 +35,9 @@ const (
 	contextRequestStart
 )
 
-// Server is the main interface ChannelHandlers use to interact with backends. It provides an
-// abstraction that makes mocking easier for isolated unit tests
-type Server interface {
-	Config() *runtime.Config
-
-	AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.Type, handlerFunc ChannelHandleFunc)
-	GetHandler(Channel) ChannelHandler
-
-	Backend() Backend
-
-	WaitGroup() *sync.WaitGroup
-	StopChan() chan bool
-	Stopped() bool
-
-	Router() chi.Router
-
-	Start() error
-	Stop() error
-}
-
 // NewServer creates a new Server for the passed in configuration. The server will have to be started
 // afterwards, which is when configuration options are checked.
-func NewServer(config *runtime.Config, backend Backend) Server {
+func NewServer(config *runtime.Config, backend Backend) *Server {
 	// create our top level router
 	logger := slog.Default()
 	return NewServerWithLogger(config, backend, logger)
@@ -65,7 +45,7 @@ func NewServer(config *runtime.Config, backend Backend) Server {
 
 // NewServerWithLogger creates a new Server for the passed in configuration. The server will have to be started
 // afterwards, which is when configuration options are checked.
-func NewServerWithLogger(config *runtime.Config, backend Backend, logger *slog.Logger) Server {
+func NewServerWithLogger(config *runtime.Config, backend Backend, logger *slog.Logger) *Server {
 	router := chi.NewRouter()
 	router.Use(middleware.Compress(flate.DefaultCompression))
 	router.Use(middleware.StripSlashes)
@@ -77,7 +57,7 @@ func NewServerWithLogger(config *runtime.Config, backend Backend, logger *slog.L
 	publicRouter := chi.NewRouter()
 	router.Mount("/c/", publicRouter)
 
-	return &server{
+	return &Server{
 		config:  config,
 		backend: backend,
 
@@ -93,7 +73,7 @@ func NewServerWithLogger(config *runtime.Config, backend Backend, logger *slog.L
 // Start starts the Server listening for incoming requests and sending messages. It will return an error
 // if it encounters any unrecoverable (or ignorable) error, though its bias is to move forward despite
 // connection errors
-func (s *server) Start() error {
+func (s *Server) Start() error {
 	// start our backend
 	err := s.backend.Start()
 	if err != nil {
@@ -151,7 +131,7 @@ func (s *server) Start() error {
 }
 
 // Stop stops the server, returning only after all threads have stopped
-func (s *server) Stop() error {
+func (s *Server) Stop() error {
 	log := slog.With("comp", "server")
 	log.Info("stopping server", "state", "stopping")
 
@@ -179,17 +159,17 @@ func (s *server) Stop() error {
 	return nil
 }
 
-func (s *server) GetHandler(ch Channel) ChannelHandler { return activeHandlers[ch.ChannelType()] }
+func (s *Server) GetHandler(ch Channel) ChannelHandler { return activeHandlers[ch.ChannelType()] }
 
-func (s *server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
-func (s *server) StopChan() chan bool        { return s.stopChan }
-func (s *server) Config() *runtime.Config    { return s.config }
-func (s *server) Stopped() bool              { return s.stopped }
+func (s *Server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
+func (s *Server) StopChan() chan bool        { return s.stopChan }
+func (s *Server) Config() *runtime.Config    { return s.config }
+func (s *Server) Stopped() bool              { return s.stopped }
 
-func (s *server) Backend() Backend   { return s.backend }
-func (s *server) Router() chi.Router { return s.router }
+func (s *Server) Backend() Backend   { return s.backend }
+func (s *Server) Router() chi.Router { return s.router }
 
-type server struct {
+type Server struct {
 	backend Backend
 
 	httpServer   *http.Server
@@ -207,7 +187,7 @@ type server struct {
 	chanRoutes []string // used for index page
 }
 
-func (s *server) initializeChannelHandlers() {
+func (s *Server) initializeChannelHandlers() {
 	includes := s.config.IncludeChannels
 	excludes := s.config.ExcludeChannels
 
@@ -229,7 +209,7 @@ func (s *server) initializeChannelHandlers() {
 	sort.Strings(s.chanRoutes)
 }
 
-func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc, logType clogs.Type) http.HandlerFunc {
+func (s *Server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc, logType clogs.Type) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// stuff a few things in our context that help with logging
 		baseCtx := context.WithValue(r.Context(), contextRequestURL, r.URL.String())
@@ -310,7 +290,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 	}
 }
 
-func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.Type, handlerFunc ChannelHandleFunc) {
+func (s *Server) AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.Type, handlerFunc ChannelHandleFunc) {
 	method = strings.ToLower(method)
 	channelType := strings.ToLower(string(handler.ChannelType()))
 
@@ -326,7 +306,7 @@ func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action s
 	s.chanRoutes = append(s.chanRoutes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
 }
 
-func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 
@@ -341,7 +321,7 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf.Bytes())
 }
 
-func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 
@@ -356,7 +336,7 @@ func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf.Bytes())
 }
 
-func (s *server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
 	defer cancel()
 
@@ -372,7 +352,7 @@ func (s *server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonx.MustMarshal(resp))
 }
 
-func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handle404(w http.ResponseWriter, r *http.Request) {
 	slog.Info("not found", "url", r.URL.String(), "method", r.Method, "resp_status", "404")
 	errors := []any{NewErrorData(fmt.Sprintf("not found: %s", r.URL.String()))}
 	err := WriteDataResponse(w, http.StatusNotFound, "Not Found", errors)
@@ -381,7 +361,7 @@ func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handle405(w http.ResponseWriter, r *http.Request) {
 	slog.Info("invalid method", "url", r.URL.String(), "method", r.Method, "resp_status", "405")
 	errors := []any{NewErrorData(fmt.Sprintf("method not allowed: %s", r.Method))}
 	err := WriteDataResponse(w, http.StatusMethodNotAllowed, "Method Not Allowed", errors)
@@ -392,7 +372,7 @@ func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
 }
 
 // wraps a handler to make it use basic auth
-func (s *server) basicAuthRequired(h http.HandlerFunc) http.HandlerFunc {
+func (s *Server) basicAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if s.config.StatusUsername != "" {
 			user, pass, ok := r.BasicAuth()
@@ -410,7 +390,7 @@ func (s *server) basicAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 }
 
 // wraps a handler to make it use token auth
-func (s *server) tokenAuthRequired(h http.HandlerFunc) http.HandlerFunc {
+func (s *Server) tokenAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if !strings.HasPrefix(authHeader, "Bearer ") || !utils.SecretEqual(authHeader[7:], s.config.AuthToken) {

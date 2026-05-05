@@ -16,8 +16,8 @@ type ChannelHandleFunc func(context.Context, Channel, http.ResponseWriter, *http
 
 // ChannelHandler is the interface all handlers must satisfy
 type ChannelHandler interface {
-	Initialize(Server) error
-	Server() Server
+	Initialize(*Server) error
+	Server() *Server
 	ChannelType() models.ChannelType
 	ChannelName() string
 	UseChannelRouteUUID() bool

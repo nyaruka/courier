@@ -338,7 +338,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 		ExpectedContactURNs: map[string]bool{
 			"whatsapp:250788123123": true,
-			"bsuid:US.1234":        true,
+			"bsuid:US.1234":         true,
 		},
 	},
 	{
@@ -919,7 +919,7 @@ func TestWhatsAppBuildAttachmentRequest(t *testing.T) {
 	assert.Equal(t, "Bearer wac_admin_system_user_token", req.Header.Get("Authorization"))
 }
 
-func newServerWithWAC(backend courier.Backend) courier.Server {
+func newServerWithWAC(backend courier.Backend) *courier.Server {
 	cfg := runtime.NewDefaultConfig()
 	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
 	return courier.NewServer(cfg, backend)

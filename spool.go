@@ -33,7 +33,7 @@ func WriteToSpool(spoolDir string, subdir string, contents any) error {
 }
 
 // starts our spool flusher, which every 30 seconds tries to write our pending msgs and statuses
-func startSpoolFlushers(s Server) {
+func startSpoolFlushers(s *Server) {
 	// create our actual flushers
 	flushers = make([]*flusher, len(registeredFlushers))
 	for i, reg := range registeredFlushers {
@@ -77,7 +77,7 @@ func EnsureSpoolDirPresent(spoolDir string, subdir string) (err error) {
 }
 
 // creates a new spool flusher
-func newSpoolFlusher(s Server, dir string, flusherFunc FlusherFunc) *flusher {
+func newSpoolFlusher(s *Server, dir string, flusherFunc FlusherFunc) *flusher {
 	return &flusher{func(filename string, info os.FileInfo, err error) error {
 		if filename == dir {
 			return nil

@@ -141,14 +141,14 @@ func ErrFailedWithReason(code, desc string) *SendError {
 
 // Foreman takes care of managing our set of sending workers and assigns msgs for each to send
 type Foreman struct {
-	server           Server
+	server           *Server
 	senders          []*Sender
 	availableSenders chan *Sender
 	quit             chan bool
 }
 
 // NewForeman creates a new Foreman for the passed in server with the number of max senders
-func NewForeman(server Server, maxSenders int) *Foreman {
+func NewForeman(server *Server, maxSenders int) *Foreman {
 	foreman := &Foreman{
 		server:           server,
 		senders:          make([]*Sender, maxSenders),

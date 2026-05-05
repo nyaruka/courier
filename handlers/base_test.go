@@ -30,7 +30,7 @@ func TestRequestHTTP(t *testing.T) {
 	clog := courier.NewChannelLogForSend(mm, nil)
 
 	cfg := runtime.NewDefaultConfig()
-	server := test.NewMockServer(cfg, mb)
+	server := courier.NewServer(cfg, mb)
 
 	h := handlers.NewBaseHandler("NX", "Test")
 	h.SetServer(server)

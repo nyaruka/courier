@@ -293,7 +293,7 @@ func TestFacebookDescribeURN(t *testing.T) {
 
 	channel := facebookTestChannels[0]
 	handler := newHandler("FBA", "Facebook")
-	handler.Initialize(test.NewMockServer(runtime.NewDefaultConfig(), test.NewMockBackend()))
+	handler.Initialize(courier.NewServer(runtime.NewDefaultConfig(), test.NewMockBackend()))
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, handler.RedactValues(channel))
 
 	tcs := []struct {

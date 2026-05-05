@@ -210,7 +210,7 @@ func buildMockWCAPI(testCases []IncomingTestCase) *httptest.Server {
 	return server
 }
 
-func newServer(backend courier.Backend) courier.Server {
+func newServer(backend courier.Backend) *courier.Server {
 	// for benchmarks, log to null
 	logger := slog.Default()
 	log.SetOutput(io.Discard)
