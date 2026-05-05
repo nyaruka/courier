@@ -37,7 +37,7 @@ func newHandler() courier.ChannelHandler {
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(s courier.Server) error {
+func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receive))
 	return nil

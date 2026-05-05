@@ -371,7 +371,7 @@ func TestDescribeURN(t *testing.T) {
 	defer server.Close()
 
 	handler := newHandler()
-	handler.Initialize(test.NewMockServer(runtime.NewDefaultConfig(), test.NewMockBackend()))
+	handler.Initialize(courier.NewServer(runtime.NewDefaultConfig(), test.NewMockBackend()))
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 	urn, _ := urns.New(urns.Slack, "U012345")
 

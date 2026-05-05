@@ -17,7 +17,7 @@ func init() {
 }
 
 type mockHandler struct {
-	server  courier.Server
+	server  *courier.Server
 	backend courier.Backend
 }
 
@@ -26,7 +26,7 @@ func NewMockHandler() courier.ChannelHandler {
 	return &mockHandler{}
 }
 
-func (h *mockHandler) Server() courier.Server                { return h.server }
+func (h *mockHandler) Server() *courier.Server               { return h.server }
 func (h *mockHandler) ChannelName() string                   { return "Mock Handler" }
 func (h *mockHandler) ChannelType() models.ChannelType       { return models.ChannelType("MCK") }
 func (h *mockHandler) UseChannelRouteUUID() bool             { return true }
@@ -38,7 +38,7 @@ func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (courier.
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *mockHandler) Initialize(s courier.Server) error {
+func (h *mockHandler) Initialize(s *courier.Server) error {
 	h.server = s
 	h.backend = s.Backend()
 	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMsg)

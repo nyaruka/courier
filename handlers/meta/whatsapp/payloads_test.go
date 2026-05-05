@@ -23,23 +23,23 @@ func TestGetMsgPayloads(t *testing.T) {
 	channel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WAC", "12345", "", []string{urns.WhatsApp.Prefix}, nil)
 
 	tcs := []struct {
-		label                string
-		text                 string
-		attachments          []string
-		quickReplies         []models.QuickReply
-		locale               i18n.Locale
+		label                 string
+		text                  string
+		attachments           []string
+		quickReplies          []models.QuickReply
+		locale                i18n.Locale
 		expectedPayloadsCount int
-		expectedType         string // type of first payload
-		checkFunc            func(*testing.T, []whatsapp.SendRequest, *courier.ChannelLog)
+		expectedType          string // type of first payload
+		checkFunc             func(*testing.T, []whatsapp.SendRequest, *courier.ChannelLog)
 	}{
 		// Test case (a): ≤3 QRs with Extra + attachment
 		{
-			label:                "3 QRs with Extra and attachment - should use list with attachment as separate message",
-			text:                 "Pick an option",
-			attachments:          []string{"image/jpeg:https://example.com/image.jpg"},
-			quickReplies:         []models.QuickReply{{Type: "text", Text: "Option 1", Extra: "Description 1"}, {Type: "text", Text: "Option 2", Extra: "Description 2"}},
+			label:                 "3 QRs with Extra and attachment - should use list with attachment as separate message",
+			text:                  "Pick an option",
+			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "Option 1", Extra: "Description 1"}, {Type: "text", Text: "Option 2", Extra: "Description 2"}},
 			expectedPayloadsCount: 2,
-			expectedType:         "image",
+			expectedType:          "image",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 2, len(payloads))
 				// First should be image attachment
@@ -57,12 +57,12 @@ func TestGetMsgPayloads(t *testing.T) {
 			},
 		},
 		{
-			label:                "2 QRs with Extra and attachment - should use list with attachment as separate message",
-			text:                 "Choose wisely",
-			attachments:          []string{"video/mp4:https://example.com/video.mp4"},
-			quickReplies:         []models.QuickReply{{Type: "text", Text: "Yes", Extra: "Agree"}, {Type: "text", Text: "No", Extra: "Disagree"}},
+			label:                 "2 QRs with Extra and attachment - should use list with attachment as separate message",
+			text:                  "Choose wisely",
+			attachments:           []string{"video/mp4:https://example.com/video.mp4"},
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "Yes", Extra: "Agree"}, {Type: "text", Text: "No", Extra: "Disagree"}},
 			expectedPayloadsCount: 2,
-			expectedType:         "video",
+			expectedType:          "video",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 2, len(payloads))
 				// First should be video attachment
@@ -75,12 +75,12 @@ func TestGetMsgPayloads(t *testing.T) {
 		},
 		// Test case (b): ≤3 QRs + image/video/document attachment header
 		{
-			label:                "2 QRs with image attachment - should use image as header",
-			text:                 "Select an option",
-			attachments:          []string{"image/jpeg:https://example.com/image.jpg"},
-			quickReplies:         []models.QuickReply{{Type: "text", Text: "Option 1"}, {Type: "text", Text: "Option 2"}},
+			label:                 "2 QRs with image attachment - should use image as header",
+			text:                  "Select an option",
+			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "Option 1"}, {Type: "text", Text: "Option 2"}},
 			expectedPayloadsCount: 1,
-			expectedType:         "interactive",
+			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				// Should be interactive button with image header
@@ -97,12 +97,12 @@ func TestGetMsgPayloads(t *testing.T) {
 			},
 		},
 		{
-			label:                "3 QRs with video attachment - should use video as header",
-			text:                 "Watch and choose",
-			attachments:          []string{"video/mp4:https://example.com/video.mp4"},
-			quickReplies:         []models.QuickReply{{Type: "text", Text: "Like"}, {Type: "text", Text: "Dislike"}, {Type: "text", Text: "Share"}},
+			label:                 "3 QRs with video attachment - should use video as header",
+			text:                  "Watch and choose",
+			attachments:           []string{"video/mp4:https://example.com/video.mp4"},
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "Like"}, {Type: "text", Text: "Dislike"}, {Type: "text", Text: "Share"}},
 			expectedPayloadsCount: 1,
-			expectedType:         "interactive",
+			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				// Should be interactive button with video header
@@ -118,12 +118,12 @@ func TestGetMsgPayloads(t *testing.T) {
 			},
 		},
 		{
-			label:                "1 QR with document attachment - should use document as header",
-			text:                 "Review this",
-			attachments:          []string{"document/pdf:https://example.com/document.pdf"},
-			quickReplies:         []models.QuickReply{{Type: "text", Text: "Approve"}},
+			label:                 "1 QR with document attachment - should use document as header",
+			text:                  "Review this",
+			attachments:           []string{"document/pdf:https://example.com/document.pdf"},
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "Approve"}},
 			expectedPayloadsCount: 1,
-			expectedType:         "interactive",
+			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				// Should be interactive button with document header
@@ -138,12 +138,12 @@ func TestGetMsgPayloads(t *testing.T) {
 			},
 		},
 		{
-			label:                "3 QRs with audio attachment - should NOT use as header, audio not supported",
-			text:                 "Listen and respond",
-			attachments:          []string{"audio/mp3:https://example.com/audio.mp3"},
-			quickReplies:         []models.QuickReply{{Type: "text", Text: "Good"}, {Type: "text", Text: "Bad"}},
+			label:                 "3 QRs with audio attachment - should NOT use as header, audio not supported",
+			text:                  "Listen and respond",
+			attachments:           []string{"audio/mp3:https://example.com/audio.mp3"},
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "Good"}, {Type: "text", Text: "Bad"}},
 			expectedPayloadsCount: 2,
-			expectedType:         "audio",
+			expectedType:          "audio",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 2, len(payloads))
 				// First should be audio (not used as header)
@@ -157,8 +157,8 @@ func TestGetMsgPayloads(t *testing.T) {
 		},
 		// Test case (c): >10 QRs truncation
 		{
-			label:        "12 QRs - should truncate to 10",
-			text:         "Select from many options",
+			label: "12 QRs - should truncate to 10",
+			text:  "Select from many options",
 			quickReplies: []models.QuickReply{
 				{Type: "text", Text: "Option 1"}, {Type: "text", Text: "Option 2"}, {Type: "text", Text: "Option 3"},
 				{Type: "text", Text: "Option 4"}, {Type: "text", Text: "Option 5"}, {Type: "text", Text: "Option 6"},
@@ -166,7 +166,7 @@ func TestGetMsgPayloads(t *testing.T) {
 				{Type: "text", Text: "Option 10"}, {Type: "text", Text: "Option 11"}, {Type: "text", Text: "Option 12"},
 			},
 			expectedPayloadsCount: 1,
-			expectedType:         "interactive",
+			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				// Should be interactive list with exactly 10 rows
@@ -182,8 +182,8 @@ func TestGetMsgPayloads(t *testing.T) {
 			},
 		},
 		{
-			label:        "15 QRs with Extra - should truncate to 10",
-			text:         "Many choices",
+			label: "15 QRs with Extra - should truncate to 10",
+			text:  "Many choices",
 			quickReplies: []models.QuickReply{
 				{Type: "text", Text: "Option 1", Extra: "Desc 1"}, {Type: "text", Text: "Option 2", Extra: "Desc 2"},
 				{Type: "text", Text: "Option 3", Extra: "Desc 3"}, {Type: "text", Text: "Option 4", Extra: "Desc 4"},
@@ -195,7 +195,7 @@ func TestGetMsgPayloads(t *testing.T) {
 				{Type: "text", Text: "Option 15", Extra: "Desc 15"},
 			},
 			expectedPayloadsCount: 1,
-			expectedType:         "interactive",
+			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "interactive", payloads[0].Type)
@@ -210,11 +210,11 @@ func TestGetMsgPayloads(t *testing.T) {
 		},
 		// Additional edge cases
 		{
-			label:                "4 QRs without Extra - should use list (>3 buttons)",
-			text:                 "Pick one",
-			quickReplies:         []models.QuickReply{{Type: "text", Text: "A"}, {Type: "text", Text: "B"}, {Type: "text", Text: "C"}, {Type: "text", Text: "D"}},
+			label:                 "4 QRs without Extra - should use list (>3 buttons)",
+			text:                  "Pick one",
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "A"}, {Type: "text", Text: "B"}, {Type: "text", Text: "C"}, {Type: "text", Text: "D"}},
 			expectedPayloadsCount: 1,
-			expectedType:         "interactive",
+			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "interactive", payloads[0].Type)
@@ -223,11 +223,11 @@ func TestGetMsgPayloads(t *testing.T) {
 			},
 		},
 		{
-			label:                "3 QRs without Extra and no attachment - should use buttons",
-			text:                 "Quick choice",
-			quickReplies:         []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}, {Type: "text", Text: "Maybe"}},
+			label:                 "3 QRs without Extra and no attachment - should use buttons",
+			text:                  "Quick choice",
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}, {Type: "text", Text: "Maybe"}},
 			expectedPayloadsCount: 1,
-			expectedType:         "interactive",
+			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "interactive", payloads[0].Type)
@@ -237,11 +237,11 @@ func TestGetMsgPayloads(t *testing.T) {
 			},
 		},
 		{
-			label:                "No quick replies with attachment and text - should have caption",
-			text:                 "Check this out",
-			attachments:          []string{"image/jpeg:https://example.com/image.jpg"},
+			label:                 "No quick replies with attachment and text - should have caption",
+			text:                  "Check this out",
+			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
 			expectedPayloadsCount: 1,
-			expectedType:         "image",
+			expectedType:          "image",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "image", payloads[0].Type)
@@ -250,12 +250,12 @@ func TestGetMsgPayloads(t *testing.T) {
 			},
 		},
 		{
-			label:                "Multiple attachments with QRs - first attachment as header, second sent separately",
-			text:                 "Multiple files",
-			attachments:          []string{"image/jpeg:https://example.com/image1.jpg", "image/jpeg:https://example.com/image2.jpg"},
-			quickReplies:         []models.QuickReply{{Type: "text", Text: "Download"}},
+			label:                 "Multiple attachments with QRs - first attachment as header, second sent separately",
+			text:                  "Multiple files",
+			attachments:           []string{"image/jpeg:https://example.com/image1.jpg", "image/jpeg:https://example.com/image2.jpg"},
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "Download"}},
 			expectedPayloadsCount: 2,
-			expectedType:         "image",
+			expectedType:          "image",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 2, len(payloads))
 				// Second attachment sent first as standalone

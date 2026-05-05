@@ -30,7 +30,7 @@ func newWAHandler(channelType models.ChannelType, name string) courier.ChannelHa
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(s courier.Server) error {
+func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMultiReceive, h.receiveEvents)
 	return nil

@@ -46,7 +46,7 @@ func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("SL"), "Slack", handlers.WithRedactConfigKeys(configBotToken, configUserToken, configValidationToken))}
 }
 
-func (h *handler) Initialize(s courier.Server) error {
+func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
 	return nil

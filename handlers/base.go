@@ -17,7 +17,7 @@ var defaultRedactConfigKeys = []string{models.ConfigAuthToken, models.ConfigAPIK
 type BaseHandler struct {
 	channelType        models.ChannelType
 	name               string
-	server             courier.Server
+	server             *courier.Server
 	backend            courier.Backend
 	uuidChannelRouting bool
 	redactConfigKeys   []string
@@ -50,13 +50,13 @@ func WithRedactConfigKeys(keys ...string) func(*BaseHandler) {
 }
 
 // SetServer can be used to change the server on a BaseHandler
-func (h *BaseHandler) SetServer(server courier.Server) {
+func (h *BaseHandler) SetServer(server *courier.Server) {
 	h.server = server
 	h.backend = server.Backend()
 }
 
 // Server returns the server instance on the BaseHandler
-func (h *BaseHandler) Server() courier.Server {
+func (h *BaseHandler) Server() *courier.Server {
 	return h.server
 }
 
