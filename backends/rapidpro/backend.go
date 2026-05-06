@@ -545,6 +545,7 @@ func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier
 	// check if this message could be a duplicate and if so steal the original's UUID
 	if prevUUID := b.checkMsgAlreadyReceived(ctx, m); prevUUID != "" {
 		m.UUID_ = prevUUID
+		m.duplicate = true
 		return nil
 	}
 

@@ -31,7 +31,8 @@ type MsgIn struct {
 	ContactName_   string             `json:"contact_name"`
 	URNAuthTokens_ map[string]string  `json:"auth_tokens"`
 
-	channel *models.Channel
+	channel   *models.Channel
+	duplicate bool
 }
 
 func (m *MsgIn) Channel() courier.Channel { return m.channel }
