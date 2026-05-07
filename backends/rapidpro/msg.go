@@ -33,7 +33,8 @@ type MsgIn struct {
 	URNAuthTokens_ map[string]string  `json:"auth_tokens"`
 	NewURN_        *models.NewURNSpec `json:"new_urn,omitempty"`
 
-	channel *models.Channel
+	channel   *models.Channel
+	duplicate bool
 }
 
 func (m *MsgIn) Channel() courier.Channel { return m.channel }
