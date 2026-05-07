@@ -1,3 +1,7 @@
+v26.1.28 (2026-05-07)
+-------------------------
+ * Don't count duplicated messages for incoming message metrics
+
 v26.1.27 (2026-04-28)
 -------------------------
  * Update dependencies
