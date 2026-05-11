@@ -1,3 +1,7 @@
+v26.1.29 (2026-05-11)
+-------------------------
+ * Properly support BSUID for TRN channels
+
 v26.1.28 (2026-05-07)
 -------------------------
  * Don't count duplicated messages for incoming message metrics
