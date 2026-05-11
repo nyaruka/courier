@@ -87,13 +87,13 @@ type eventsPayload struct {
 		WaID string `json:"wa_id"`
 	} `json:"contacts"`
 	Messages []struct {
-		From            string `json:"from"      validate:"required"`
-		ID              string `json:"id"        validate:"required"`
-		GroupID         string `json:"group_id,omitempty"`
-		Timestamp       string `json:"timestamp" validate:"required"`
-		Type            string `json:"type"      validate:"required"`
-		RecipientUserID string `json:"recipient_user_id"`
-		Text            struct {
+		From      string `json:"from"      validate:"required"`
+		FromBSUID string `json:"from_bsuid"`
+		ID        string `json:"id"        validate:"required"`
+		GroupID   string `json:"group_id,omitempty"`
+		Timestamp string `json:"timestamp" validate:"required"`
+		Type      string `json:"type"      validate:"required"`
+		Text      struct {
 			Body string `json:"body"`
 		} `json:"text"`
 		Audio *struct {
@@ -247,12 +247,12 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			event.WithAttachment(mediaURL)
 		}
 
-		if msg.RecipientUserID != "" {
-			userIDURN, urnErr := urns.New(urns.BSUID, msg.RecipientUserID)
+		if msg.FromBSUID != "" {
+			userIDURN, urnErr := urns.New(urns.BSUID, msg.FromBSUID)
 			if urnErr == nil {
 				event.WithNewURN(userIDURN, models.NewURNAppend)
 			} else {
-				courier.LogRequestError(r, channel, fmt.Errorf("invalid recipient_user_id for BSUID URN: %w", urnErr))
+				courier.LogRequestError(r, channel, fmt.Errorf("invalid from_bsuid for BSUID URN: %w", urnErr))
 			}
 		}
 
