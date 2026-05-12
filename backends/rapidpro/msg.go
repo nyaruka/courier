@@ -65,7 +65,7 @@ func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLo
 	channel := m.Channel()
 
 	// check for data: attachment URLs which need to be fetched now - fetching of other URLs can be deferred until
-	// message handling and performed by calling the /c/_fetch-attachment endpoint
+	// message handling and performed by calling the /ci/attachment/fetch endpoint
 	for i, attURL := range m.Attachments_ {
 		if strings.HasPrefix(attURL, "data:") {
 			attData, err := base64.StdEncoding.DecodeString(attURL[5:])
