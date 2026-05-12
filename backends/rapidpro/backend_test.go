@@ -356,7 +356,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 		}
 		err := ts.b.WriteStatusUpdate(ctx, statusObj)
 		ts.NoError(err)
-		time.Sleep(600 * time.Millisecond) // give committer time to write this
+		ts.b.statusWriter.Flush()
 		return clog
 	}
 
@@ -365,7 +365,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 		statusObj := ts.b.NewStatusUpdateByExternalID(channel, extID, status, clog)
 		err := ts.b.WriteStatusUpdate(ctx, statusObj)
 		ts.NoError(err)
-		time.Sleep(600 * time.Millisecond) // give committer time to write this
+		ts.b.statusWriter.Flush()
 		return clog
 	}
 
