@@ -1,3 +1,7 @@
+v26.1.30 (2026-05-12)
+-------------------------
+ * Drop deprecated /c/_fetch-attachment endpoint
+
 v26.1.29 (2026-05-11)
 -------------------------
  * Properly support BSUID for TRN channels
