@@ -55,6 +55,7 @@ func NewServerWithLogger(config *runtime.Config, backend Backend, logger *slog.L
 	router.Use(middleware.Timeout(30 * time.Second))
 
 	publicRouter := chi.NewRouter()
+	publicRouter.Use(logPlaintextWebhook)
 	router.Mount("/c/", publicRouter)
 
 	return &Server{
@@ -366,6 +367,20 @@ func (s *Server) handle405(w http.ResponseWriter, r *http.Request) {
 		slog.Error("error writing response", "error", err)
 
 	}
+}
+
+func logPlaintextWebhook(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Forwarded-Proto") == "http" {
+			slog.Warn("plaintext webhook",
+				"path", r.URL.Path,
+				"method", r.Method,
+				"ua", r.UserAgent(),
+				"from", r.Header.Get("X-Forwarded-For"),
+			)
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // wraps a handler to make it use basic auth
