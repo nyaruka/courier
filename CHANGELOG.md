@@ -1,3 +1,7 @@
+v26.1.31 (2026-05-13)
+-------------------------
+ * Log warning when /c/* webhook arrives over plaintext HTTP
+
 v26.1.30 (2026-05-12)
 -------------------------
  * Drop deprecated /c/_fetch-attachment endpoint
