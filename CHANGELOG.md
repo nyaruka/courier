@@ -1,3 +1,7 @@
+v26.1.32 (2026-05-14)
+-------------------------
+ * Remove plaintext HTTP webhook logging
+
 v26.1.31 (2026-05-13)
 -------------------------
  * Log warning when /c/* webhook arrives over plaintext HTTP
