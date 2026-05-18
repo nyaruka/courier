@@ -1,3 +1,7 @@
+v26.1.34 (2026-05-18)
+-------------------------
+ * Remove old test channel handler
+
 v26.1.33 (2026-05-18)
 -------------------------
  * Expose internal endpoint on separate listener port, add /ping
