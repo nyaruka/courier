@@ -1,3 +1,7 @@
+v26.1.33 (2026-05-18)
+-------------------------
+ * Expose internal endpoint on separate listener port, add /ping
+
 v26.1.32 (2026-05-14)
 -------------------------
  * Remove plaintext HTTP webhook logging
