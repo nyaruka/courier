@@ -54,7 +54,6 @@ import (
 	_ "github.com/nyaruka/courier/v26/handlers/start"
 	_ "github.com/nyaruka/courier/v26/handlers/telegram"
 	_ "github.com/nyaruka/courier/v26/handlers/telesom"
-	_ "github.com/nyaruka/courier/v26/handlers/test"
 	_ "github.com/nyaruka/courier/v26/handlers/thinq"
 	_ "github.com/nyaruka/courier/v26/handlers/turn"
 	_ "github.com/nyaruka/courier/v26/handlers/twiml"
