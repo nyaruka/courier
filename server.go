@@ -50,9 +50,15 @@ func NewServerWithLogger(config *runtime.Config, backend Backend, logger *slog.L
 	channelRouter := chi.NewRouter()
 
 	// testRouter mounts channelRouter at /c/ so handler tests can dispatch requests via Router() without
-	// having to spin up the full public listener stack
+	// spinning up the listener. It mirrors the public listener's middleware stack so tests exercise the
+	// same chain that /c/* traffic hits in production.
 	testRouter := chi.NewRouter()
+	testRouter.Use(middleware.Compress(flate.DefaultCompression))
 	testRouter.Use(middleware.StripSlashes)
+	testRouter.Use(middleware.RequestID)
+	testRouter.Use(middleware.RealIP)
+	testRouter.Use(middleware.Recoverer)
+	testRouter.Use(middleware.Timeout(30 * time.Second))
 	testRouter.Mount("/c/", channelRouter)
 
 	return &Server{
