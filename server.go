@@ -90,7 +90,7 @@ func (s *Server) Start() error {
 	// initialize our handlers (wires routes into channelRouter)
 	s.initializeChannelHandlers()
 
-	// public listener — exposes /, /status, /c/*, /ping, and (during transition) /ci/* as well
+	// public listener — exposes /, /status, /c/*, /ping
 	publicRouter := chi.NewRouter()
 	publicRouter.Use(middleware.Compress(flate.DefaultCompression))
 	publicRouter.Use(middleware.StripSlashes)
@@ -103,7 +103,6 @@ func (s *Server) Start() error {
 	publicRouter.Get("/", s.handleIndex)
 	publicRouter.Get("/ping", handlePing)
 	publicRouter.Get("/status", s.basicAuthRequired(s.handleStatus))
-	publicRouter.Post("/ci/attachment/fetch", s.tokenAuthRequired(s.handleFetchAttachment))
 	publicRouter.Mount("/c/", s.channelRouter)
 
 	// internal listener — only /ci/* routes and /ping, no public-facing concerns

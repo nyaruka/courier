@@ -266,7 +266,7 @@ func TestFetchAttachment(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	submit := func(body, authToken string) (int, []byte) {
-		req, _ := http.NewRequest("POST", "http://localhost:8180/ci/attachment/fetch", strings.NewReader(body))
+		req, _ := http.NewRequest("POST", "http://localhost:8181/ci/attachment/fetch", strings.NewReader(body))
 		if authToken != "" {
 			req.Header.Set("Authorization", "Bearer "+authToken)
 		}
@@ -317,7 +317,7 @@ func TestFetchAttachment(t *testing.T) {
 }
 
 // TestListeners verifies that public and internal endpoints are correctly split between
-// the two listener ports during the dual-exposure phase.
+// the two listener ports.
 func TestListeners(t *testing.T) {
 	cfg := testConfig()
 	cfg.AuthToken = "sesame"
@@ -357,12 +357,12 @@ func TestListeners(t *testing.T) {
 		url    string
 		status int
 	}{
-		// public listener: index, ping, status, channel routes, and (during transition) /ci/*
+		// public listener: index, ping, status, channel routes
 		{"public: index", "GET", publicURL + "/", 200},
 		{"public: ping", "GET", publicURL + "/ping", 200},
 		{"public: status (no auth)", "GET", publicURL + "/status", 401},
 		{"public: channel route (bad params)", "GET", publicURL + "/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive", 400},
-		{"public: internal route (during transition, no auth)", "POST", publicURL + "/ci/attachment/fetch", 401},
+		{"public: internal route not exposed", "POST", publicURL + "/ci/attachment/fetch", 404},
 		{"public: unknown path", "GET", publicURL + "/nope", 404},
 
 		// internal listener: only /ci/* and /ping, no index, no /c/*, no /status
