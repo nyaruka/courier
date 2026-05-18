@@ -1,3 +1,7 @@
+v26.1.35 (2026-05-18)
+-------------------------
+ * Remove backward-compat /ci/ route from public listener
+
 v26.1.34 (2026-05-18)
 -------------------------
  * Remove old test channel handler
