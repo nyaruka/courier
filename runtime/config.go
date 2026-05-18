@@ -22,9 +22,11 @@ type Config struct {
 	SpoolDir  string `help:"the local directory where courier will write statuses or msgs that need to be retried (needs to be writable)"`
 	SentryDSN string `help:"the DSN used for logging errors to Sentry"`
 
-	Domain  string `help:"the domain courier is exposed on"`
-	Address string `help:"the network interface address courier will bind to"`
-	Port    int    `help:"the port courier will listen on"`
+	Domain          string `help:"the domain courier is exposed on"`
+	PublicAddress   string `help:"the network interface address our public web server will bind to"`
+	PublicPort      int    `help:"the port our public web server will listen on"`
+	InternalAddress string `help:"the network interface address our internal web server will bind to"`
+	InternalPort    int    `help:"the port our internal web server will listen on"`
 
 	AWSAccessKeyID     string `help:"access key ID to use for AWS services"`
 	AWSSecretAccessKey string `help:"secret access key to use for AWS services"`
@@ -70,9 +72,11 @@ func NewDefaultConfig() *Config {
 		Valkey:   "valkey://valkey:6379/15",
 		SpoolDir: "/var/spool/courier",
 
-		Domain:  "localhost",
-		Address: "",
-		Port:    8080,
+		Domain:          "localhost",
+		PublicAddress:   "",
+		PublicPort:      8080,
+		InternalAddress: "localhost",
+		InternalPort:    8081,
 
 		AWSAccessKeyID:     "",
 		AWSSecretAccessKey: "",
