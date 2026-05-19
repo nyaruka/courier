@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"log/slog"
-	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -37,7 +36,7 @@ func TestIncoming(t *testing.T) {
 	mb := test.NewMockBackend()
 	s := courier.NewServer(testConfig(), mb)
 
-	s.Start()
+	require.NoError(t, s.Start())
 	defer s.Stop()
 
 	resp, err := http.Get("http://localhost:8180/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive")
@@ -82,7 +81,7 @@ func TestOutgoing(t *testing.T) {
 	mb := test.NewMockBackend()
 	s := courier.NewServer(testConfig(), mb)
 
-	s.Start()
+	require.NoError(t, s.Start())
 	defer s.Stop()
 
 	// create two channels but only register one of them
@@ -207,11 +206,8 @@ func TestFetchAttachment(t *testing.T) {
 	mb.AddChannel(mockChannel)
 
 	server := courier.NewServerWithLogger(cfg, mb, logger)
-	server.Start()
+	require.NoError(t, server.Start())
 	defer server.Stop()
-
-	// wait for server to come up
-	time.Sleep(100 * time.Millisecond)
 
 	submit := func(body, authToken string) (int, []byte) {
 		req, _ := http.NewRequest("POST", "http://localhost:8181/ci/attachment/fetch", strings.NewReader(body))
@@ -274,20 +270,8 @@ func TestListeners(t *testing.T) {
 	mb.AddChannel(test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, nil))
 
 	server := courier.NewServerWithLogger(cfg, mb, slog.Default())
-	server.Start()
+	require.NoError(t, server.Start())
 	defer server.Stop()
-
-	// wait for both listeners to come up
-	for _, addr := range []string{"localhost:8180", "localhost:8181"} {
-		require.Eventually(t, func() bool {
-			c, err := net.DialTimeout("tcp", addr, 50*time.Millisecond)
-			if err != nil {
-				return false
-			}
-			c.Close()
-			return true
-		}, 5*time.Second, 10*time.Millisecond, "listener at %s never came up", addr)
-	}
 
 	const publicURL = "http://localhost:8180"
 	const internalURL = "http://localhost:8181"
