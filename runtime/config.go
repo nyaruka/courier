@@ -51,8 +51,6 @@ type Config struct {
 	DisallowedNetworks string     `help:"comma separated list of IP addresses and networks which we disallow fetching attachments from"`
 	MediaDomain        string     `help:"the domain on which we'll try to resolve outgoing media URLs"`
 	MaxWorkers         int        `help:"the maximum number of go routines that will be used for sending (set to 0 to disable sending)"`
-	StatusUsername     string     `help:"the username that is needed to authenticate against the /status endpoint"`
-	StatusPassword     string     `help:"the password that is needed to authenticate against the /status endpoint"`
 	AuthToken          string     `help:"the authentication token need to access non-channel endpoints"`
 	LogLevel           slog.Level `help:"the logging level courier should use"`
 	Version            string     `help:"the version that will be used in request and response headers"`

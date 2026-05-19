@@ -1,7 +1,6 @@
 package courier
 
 import (
-	"bytes"
 	"compress/flate"
 	"context"
 	"errors"
@@ -11,7 +10,6 @@ import (
 	"net/http"
 	"runtime/debug"
 	"slices"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -90,7 +88,7 @@ func (s *Server) Start() error {
 	// initialize our handlers (wires routes into channelRouter)
 	s.initializeChannelHandlers()
 
-	// public listener — exposes /, /status, /c/*, /ping
+	// public listener — exposes /c/*, /ping
 	publicRouter := chi.NewRouter()
 	publicRouter.Use(middleware.Compress(flate.DefaultCompression))
 	publicRouter.Use(middleware.StripSlashes)
@@ -100,9 +98,7 @@ func (s *Server) Start() error {
 	publicRouter.Use(middleware.Timeout(30 * time.Second))
 	publicRouter.NotFound(s.handle404("public"))
 	publicRouter.MethodNotAllowed(s.handle405("public"))
-	publicRouter.Get("/", s.handleIndex)
 	publicRouter.Get("/ping", handlePing)
-	publicRouter.Get("/status", s.basicAuthRequired(s.handleStatus))
 	publicRouter.Mount("/c/", s.channelRouter)
 
 	// internal listener — only /ci/* routes and /ping, no public-facing concerns
@@ -223,7 +219,6 @@ type Server struct {
 	stopChan  chan bool
 	stopped   bool
 
-	chanRoutes []string // used for index page
 }
 
 func (s *Server) initializeChannelHandlers() {
@@ -244,8 +239,6 @@ func (s *Server) initializeChannelHandlers() {
 		}
 	}
 
-	// sort our route help
-	sort.Strings(s.chanRoutes)
 }
 
 func (s *Server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc, logType clogs.Type) http.HandlerFunc {
@@ -342,37 +335,6 @@ func (s *Server) AddHandlerRoute(handler ChannelHandler, method string, action s
 		path = fmt.Sprintf("%s/%s", path, action)
 	}
 	s.channelRouter.Method(method, path, s.channelHandleWrapper(handler, handlerFunc, logType))
-	s.chanRoutes = append(s.chanRoutes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
-}
-
-func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
-
-	var buf bytes.Buffer
-	buf.WriteString("<html><head><title>courier</title></head><body><pre>\n")
-	buf.WriteString(splash)
-	buf.WriteString(s.config.Version)
-	buf.WriteString(s.backend.Health())
-	buf.WriteString("\n\n")
-	buf.WriteString(strings.Join(s.chanRoutes, "\n"))
-	buf.WriteString("</pre></body></html>")
-	w.Write(buf.Bytes())
-}
-
-func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
-
-	var buf bytes.Buffer
-	buf.WriteString("<html><head><title>courier</title></head><body><pre>\n")
-	buf.WriteString(splash)
-	buf.WriteString(s.config.Version)
-	buf.WriteString("\n\n")
-	buf.WriteString(s.backend.Status())
-	buf.WriteString("\n\n")
-	buf.WriteString("</pre></body></html>")
-	w.Write(buf.Bytes())
 }
 
 func (s *Server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
@@ -432,24 +394,6 @@ func handlePing(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status":"ok"}`))
 }
 
-// wraps a handler to make it use basic auth
-func (s *Server) basicAuthRequired(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if s.config.StatusUsername != "" {
-			user, pass, ok := r.BasicAuth()
-
-			if !ok || !utils.SecretEqual(user, s.config.StatusUsername) || !utils.SecretEqual(pass, s.config.StatusPassword) {
-				w.Header().Set("Content-Type", "text/plain")
-				w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte("Unauthorized"))
-				return
-			}
-		}
-		h(w, r)
-	}
-}
-
 // wraps a handler to make it use token auth
 func (s *Server) tokenAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -464,9 +408,3 @@ func (s *Server) tokenAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-var splash = `
- ____________                   _____             
-   ___  ____/_________  ___________(_)____________
-    _  /  __  __ \  / / /_  ___/_  /_  _ \_  ___/
-    / /__  / /_/ / /_/ /_  /   _  / /  __/  /    
-    \____/ \____/\__,_/ /_/    /_/  \___//_/ v`
