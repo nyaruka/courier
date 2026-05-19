@@ -1,3 +1,7 @@
+v26.1.37 (2026-05-19)
+-------------------------
+ * Serve health response at / on both listeners
+
 v26.1.36 (2026-05-19)
 -------------------------
  * Remove index and status endpoints from public listener
