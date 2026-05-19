@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -596,11 +595,6 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT status FROM msgs_msg WHERE id = 10000`).Returns("D")
 }
 
-func (ts *BackendTestSuite) TestHealth() {
-	// all should be well in test land
-	ts.Equal(ts.b.Health(), "")
-}
-
 func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	rc := ts.b.rt.VK.Get()
 	defer rc.Close()
@@ -677,34 +671,6 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 
 	ts.Equal(msg7.UUID(), msg8.UUID())
 	ts.NotEqual(msg7.UUID(), msg9.UUID())
-}
-
-func (ts *BackendTestSuite) TestStatus() {
-	// our health should just contain the header
-	ts.True(strings.Contains(ts.b.Status(), "Channel"), ts.b.Status())
-
-	// add a message to our queue
-	r := ts.b.rt.VK.Get()
-	defer r.Close()
-
-	msgJSON := `[{
-		"org_id": 1,
-		"id": 10000,
-		"uuid": "0199df0f-9f82-7689-b02d-f34105991321",
-		"high_priority": true,
-		"text": "test message",
-		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
-		"created_on": "2025-10-14T20:16:03.821434Z",
-		"channel_uuid": "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
-		"urn": "tel:+12067799192",
-		"origin": "chat"
-	}]`
-
-	err := queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
-	ts.NoError(err)
-
-	// status should now contain that channel
-	ts.True(strings.Contains(ts.b.Status(), "1           0         0    10     KN   dbc126ed-66bc-4e28-b67b-81dc3327c95d"), ts.b.Status())
 }
 
 func (ts *BackendTestSuite) TestOutgoingQueue() {
