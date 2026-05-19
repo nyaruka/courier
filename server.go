@@ -77,9 +77,25 @@ func NewServerWithLogger(config *runtime.Config, backend Backend, logger *slog.L
 // if it encounters any unrecoverable (or ignorable) error, though its bias is to move forward despite
 // connection errors
 func (s *Server) Start() error {
-	// start our backend
-	err := s.backend.Start()
+	// bind both listener sockets up front so callers know we're accepting connections by the
+	// time Start returns, and so a bind failure fails fast before we've started the backend,
+	// spool flushers, or anything else that would need to be unwound
+	publicAddr := fmt.Sprintf("%s:%d", s.config.PublicAddress, s.config.PublicPort)
+	publicLn, err := net.Listen("tcp", publicAddr)
 	if err != nil {
+		return fmt.Errorf("error binding public listener on %s: %w", publicAddr, err)
+	}
+	internalAddr := fmt.Sprintf("%s:%d", s.config.InternalAddress, s.config.InternalPort)
+	internalLn, err := net.Listen("tcp", internalAddr)
+	if err != nil {
+		publicLn.Close()
+		return fmt.Errorf("error binding internal listener on %s: %w", internalAddr, err)
+	}
+
+	// start our backend
+	if err := s.backend.Start(); err != nil {
+		publicLn.Close()
+		internalLn.Close()
 		return err
 	}
 
@@ -117,30 +133,18 @@ func (s *Server) Start() error {
 	internalRouter.Post("/ci/attachment/fetch", s.tokenAuthRequired(s.handleFetchAttachment))
 
 	s.publicServer = &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", s.config.PublicAddress, s.config.PublicPort),
+		Addr:         publicAddr,
 		Handler:      publicRouter,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 45 * time.Second,
 		IdleTimeout:  90 * time.Second,
 	}
 	s.internalServer = &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", s.config.InternalAddress, s.config.InternalPort),
+		Addr:         internalAddr,
 		Handler:      internalRouter,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 45 * time.Second,
 		IdleTimeout:  90 * time.Second,
-	}
-
-	// bind both listener sockets synchronously so callers know we're accepting connections
-	// by the time Start returns — avoids races where the first request hits a not-yet-bound port
-	publicLn, err := net.Listen("tcp", s.publicServer.Addr)
-	if err != nil {
-		return fmt.Errorf("error binding public listener on %s: %w", s.publicServer.Addr, err)
-	}
-	internalLn, err := net.Listen("tcp", s.internalServer.Addr)
-	if err != nil {
-		publicLn.Close()
-		return fmt.Errorf("error binding internal listener on %s: %w", s.internalServer.Addr, err)
 	}
 
 	s.waitGroup.Add(2)

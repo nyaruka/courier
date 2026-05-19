@@ -36,7 +36,7 @@ func TestIncoming(t *testing.T) {
 	mb := test.NewMockBackend()
 	s := courier.NewServer(testConfig(), mb)
 
-	s.Start()
+	require.NoError(t, s.Start())
 	defer s.Stop()
 
 	resp, err := http.Get("http://localhost:8180/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive")
@@ -81,7 +81,7 @@ func TestOutgoing(t *testing.T) {
 	mb := test.NewMockBackend()
 	s := courier.NewServer(testConfig(), mb)
 
-	s.Start()
+	require.NoError(t, s.Start())
 	defer s.Stop()
 
 	// create two channels but only register one of them
@@ -206,7 +206,7 @@ func TestFetchAttachment(t *testing.T) {
 	mb.AddChannel(mockChannel)
 
 	server := courier.NewServerWithLogger(cfg, mb, logger)
-	server.Start()
+	require.NoError(t, server.Start())
 	defer server.Stop()
 
 	submit := func(body, authToken string) (int, []byte) {
@@ -270,7 +270,7 @@ func TestListeners(t *testing.T) {
 	mb.AddChannel(test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, nil))
 
 	server := courier.NewServerWithLogger(cfg, mb, slog.Default())
-	server.Start()
+	require.NoError(t, server.Start())
 	defer server.Stop()
 
 	const publicURL = "http://localhost:8180"
