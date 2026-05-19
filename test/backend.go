@@ -341,22 +341,12 @@ func (mb *MockBackend) ResolveMedia(ctx context.Context, mediaUrl string) (*mode
 	return media, nil
 }
 
-func (mb *MockBackend) Health() string {
-	return ""
-}
-
-// Health gives a string representing our health, empty for our mock
 func (mb *MockBackend) HttpClient(bool) *http.Client {
 	return http.DefaultClient
 }
 
 func (mb *MockBackend) HttpAccess() *httpx.AccessConfig {
 	return nil
-}
-
-// Status returns a string describing the status of the service, queue size etc..
-func (mb *MockBackend) Status() string {
-	return "ALL GOOD"
 }
 
 // RedisPool returns the redisPool for this backend

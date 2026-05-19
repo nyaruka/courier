@@ -82,12 +82,6 @@ type Backend interface {
 	HttpClient(bool) *http.Client
 	HttpAccess() *httpx.AccessConfig
 
-	// Health returns a string describing any health problems the backend has, or empty string if all is well
-	Health() string
-
-	// Status returns a string describing the current status, this can detail queue sizes or other attributes
-	Status() string
-
 	// RedisPool returns the redisPool for this backend
 	RedisPool() *redis.Pool
 }

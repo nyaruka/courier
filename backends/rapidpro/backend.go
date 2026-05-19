@@ -1,7 +1,6 @@
 package rapidpro
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"database/sql"
@@ -689,34 +688,6 @@ func (b *backend) HttpAccess() *httpx.AccessConfig {
 	return b.httpAccess
 }
 
-// Health returns the health of this backend as a string, returning "" if all is well
-func (b *backend) Health() string {
-	// test redis
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	rc, redisErr := b.rt.VK.GetContext(ctx)
-	cancel()
-
-	if redisErr == nil {
-		defer rc.Close()
-		_, redisErr = rc.Do("PING")
-	}
-
-	// test our db
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
-	dbErr := b.rt.DB.PingContext(ctx)
-	cancel()
-
-	health := bytes.Buffer{}
-	if redisErr != nil {
-		health.WriteString(fmt.Sprintf("\n% 16s: %v", "redis err", redisErr))
-	}
-	if dbErr != nil {
-		health.WriteString(fmt.Sprintf("\n% 16s: %v", "db err", dbErr))
-	}
-
-	return health.String()
-}
-
 func (b *backend) reportMetrics(ctx context.Context) (int, error) {
 	if b.rt.Config.MetricsReporting == "off" {
 		return 0, nil
@@ -779,75 +750,6 @@ func (b *backend) reportMetrics(ctx context.Context) (int, error) {
 	}
 
 	return len(metrics), nil
-}
-
-// Status returns information on our queue sizes, number of workers etc..
-func (b *backend) Status() string {
-	rc := b.rt.VK.Get()
-	defer rc.Close()
-
-	status := bytes.Buffer{}
-	status.WriteString("------------------------------------------------------------------------------------\n")
-	status.WriteString("     Size | Bulk Size | Workers | TPS | Type | Channel              \n")
-	status.WriteString("------------------------------------------------------------------------------------\n")
-
-	var queue string
-	var workers float64
-
-	// get all our queues
-	rc.Send("zrevrangebyscore", fmt.Sprintf("%s:active", msgQueueName), "+inf", "-inf", "withscores")
-	rc.Send("zrevrangebyscore", fmt.Sprintf("%s:throttled", msgQueueName), "+inf", "-inf", "withscores")
-	rc.Flush()
-
-	active, err := redis.Values(rc.Receive())
-	if err != nil {
-		return fmt.Sprintf("unable to read active queues: %v", err)
-	}
-	throttled, err := redis.Values(rc.Receive())
-	if err != nil {
-		return fmt.Sprintf("unable to read throttled queues: %v", err)
-	}
-	values := append(active, throttled...)
-
-	for len(values) > 0 {
-		values, err = redis.Scan(values, &queue, &workers)
-		if err != nil {
-			return fmt.Sprintf("error reading active queues: %v", err)
-		}
-
-		// our queue name is in the format msgs:uuid|tps, break it apart
-		queue = strings.TrimPrefix(queue, "msgs:")
-		parts := strings.Split(queue, "|")
-		if len(parts) != 2 {
-			return fmt.Sprintf("error parsing queue name '%s'", queue)
-		}
-		uuid := parts[0]
-		tps := parts[1]
-
-		// try to look up our channel
-		channelUUID := models.ChannelUUID(uuid)
-		channel, err := b.GetChannel(context.Background(), models.AnyChannelType, channelUUID)
-		channelType := "!!"
-		if err == nil {
-			channelType = string(channel.ChannelType())
-		}
-
-		// get # of items in our normal queue
-		size, err := redis.Int64(rc.Do("ZCARD", fmt.Sprintf("%s:%s/1", msgQueueName, queue)))
-		if err != nil {
-			return fmt.Sprintf("error reading queue size: %v", err)
-		}
-
-		// get # of items in the bulk queue
-		bulkSize, err := redis.Int64(rc.Do("ZCARD", fmt.Sprintf("%s:%s/0", msgQueueName, queue)))
-		if err != nil {
-			return fmt.Sprintf("error reading bulk queue size: %v", err)
-		}
-
-		status.WriteString(fmt.Sprintf("% 9d   % 9d   % 7d   % 3s   % 4s   %s\n", size, bulkSize, int(workers), tps, channelType, uuid))
-	}
-
-	return status.String()
 }
 
 // RedisPool returns the redisPool for this backend
