@@ -303,13 +303,15 @@ func TestListeners(t *testing.T) {
 		url    string
 		status int
 	}{
-		// public listener: /ping, /c/*
+		// public listener: health at / and /ping, /c/*
+		{"public: health", "GET", publicURL + "/", 200},
 		{"public: ping", "GET", publicURL + "/ping", 200},
 		{"public: channel route (bad params)", "GET", publicURL + "/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive", 400},
 		{"public: internal route not exposed", "POST", publicURL + "/ci/attachment/fetch", 404},
 		{"public: unknown path", "GET", publicURL + "/nope", 404},
 
-		// internal listener: /ping, /ci/*
+		// internal listener: health at / and /ping, /ci/*
+		{"internal: health", "GET", internalURL + "/", 200},
 		{"internal: ping", "GET", internalURL + "/ping", 200},
 		{"internal: internal route (no auth)", "POST", internalURL + "/ci/attachment/fetch", 401},
 		{"internal: channel route not exposed", "GET", internalURL + "/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive", 404},

@@ -88,7 +88,7 @@ func (s *Server) Start() error {
 	// initialize our handlers (wires routes into channelRouter)
 	s.initializeChannelHandlers()
 
-	// public listener — exposes /c/*, /ping
+	// public listener — exposes /c/*, /, /ping
 	publicRouter := chi.NewRouter()
 	publicRouter.Use(middleware.Compress(flate.DefaultCompression))
 	publicRouter.Use(middleware.StripSlashes)
@@ -98,10 +98,11 @@ func (s *Server) Start() error {
 	publicRouter.Use(middleware.Timeout(30 * time.Second))
 	publicRouter.NotFound(s.handle404("public"))
 	publicRouter.MethodNotAllowed(s.handle405("public"))
-	publicRouter.Get("/ping", handlePing)
+	publicRouter.Get("/", s.handleHealth)
+	publicRouter.Get("/ping", s.handleHealth) // temporary back-compat alias for /
 	publicRouter.Mount("/c/", s.channelRouter)
 
-	// internal listener — only /ci/* routes and /ping, no public-facing concerns
+	// internal listener — only /ci/* routes and /, /ping, no public-facing concerns
 	internalRouter := chi.NewRouter()
 	internalRouter.Use(middleware.Compress(flate.DefaultCompression))
 	internalRouter.Use(middleware.StripSlashes)
@@ -110,7 +111,8 @@ func (s *Server) Start() error {
 	internalRouter.Use(middleware.Timeout(30 * time.Second))
 	internalRouter.NotFound(s.handle404("internal"))
 	internalRouter.MethodNotAllowed(s.handle405("internal"))
-	internalRouter.Get("/ping", handlePing)
+	internalRouter.Get("/", s.handleHealth)
+	internalRouter.Get("/ping", s.handleHealth) // temporary back-compat alias for /
 	internalRouter.Post("/ci/attachment/fetch", s.tokenAuthRequired(s.handleFetchAttachment))
 
 	s.publicServer = &http.Server{
@@ -385,13 +387,17 @@ func (s *Server) handle405(listener string) http.HandlerFunc {
 	}
 }
 
-// handlePing is a lightweight liveness probe used by ALB health checks. Registered at the root of
-// both listeners and not under any /c or /ci prefix, so no ALB listener rule routes client traffic
-// to it — only direct ALB→target health probes reach it.
-func handlePing(w http.ResponseWriter, r *http.Request) {
+// handleHealth is the liveness probe used by ALB health checks. Registered at the root of
+// both listeners and not under any /c or /ci prefix, so no listener rule routes client traffic
+// to it — only direct ALB→target health probes reach it. Also returns the running version so
+// it doubles as a debug endpoint.
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"ok"}`))
+	w.Write(jsonx.MustMarshal(map[string]string{
+		"component": "courier",
+		"version":   s.config.Version,
+	}))
 }
 
 // wraps a handler to make it use token auth
