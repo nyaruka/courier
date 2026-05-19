@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"net"
 	"net/http"
 	"runtime/debug"
 	"slices"
@@ -130,6 +131,18 @@ func (s *Server) Start() error {
 		IdleTimeout:  90 * time.Second,
 	}
 
+	// bind both listener sockets synchronously so callers know we're accepting connections
+	// by the time Start returns — avoids races where the first request hits a not-yet-bound port
+	publicLn, err := net.Listen("tcp", s.publicServer.Addr)
+	if err != nil {
+		return fmt.Errorf("error binding public listener on %s: %w", s.publicServer.Addr, err)
+	}
+	internalLn, err := net.Listen("tcp", s.internalServer.Addr)
+	if err != nil {
+		publicLn.Close()
+		return fmt.Errorf("error binding internal listener on %s: %w", s.internalServer.Addr, err)
+	}
+
 	s.waitGroup.Add(2)
 
 	go func() {
@@ -138,7 +151,7 @@ func (s *Server) Start() error {
 		log := slog.With("comp", "server", "listener", "public", "address", s.publicServer.Addr)
 		log.Info("server started", "version", s.config.Version)
 
-		err := s.publicServer.ListenAndServe()
+		err := s.publicServer.Serve(publicLn)
 		if err != nil && err != http.ErrServerClosed {
 			log.Error("error listening", "error", err)
 		}
@@ -150,7 +163,7 @@ func (s *Server) Start() error {
 		log := slog.With("comp", "server", "listener", "internal", "address", s.internalServer.Addr)
 		log.Info("server started", "version", s.config.Version)
 
-		err := s.internalServer.ListenAndServe()
+		err := s.internalServer.Serve(internalLn)
 		if err != nil && err != http.ErrServerClosed {
 			log.Error("error listening", "error", err)
 		}

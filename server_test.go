@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"log/slog"
-	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -210,9 +209,6 @@ func TestFetchAttachment(t *testing.T) {
 	server.Start()
 	defer server.Stop()
 
-	// wait for server to come up
-	time.Sleep(100 * time.Millisecond)
-
 	submit := func(body, authToken string) (int, []byte) {
 		req, _ := http.NewRequest("POST", "http://localhost:8181/ci/attachment/fetch", strings.NewReader(body))
 		if authToken != "" {
@@ -276,18 +272,6 @@ func TestListeners(t *testing.T) {
 	server := courier.NewServerWithLogger(cfg, mb, slog.Default())
 	server.Start()
 	defer server.Stop()
-
-	// wait for both listeners to come up
-	for _, addr := range []string{"localhost:8180", "localhost:8181"} {
-		require.Eventually(t, func() bool {
-			c, err := net.DialTimeout("tcp", addr, 50*time.Millisecond)
-			if err != nil {
-				return false
-			}
-			c.Close()
-			return true
-		}, 5*time.Second, 10*time.Millisecond, "listener at %s never came up", addr)
-	}
 
 	const publicURL = "http://localhost:8180"
 	const internalURL = "http://localhost:8181"
