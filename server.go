@@ -105,7 +105,7 @@ func (s *Server) Start() error {
 	// initialize our handlers (wires routes into channelRouter)
 	s.initializeChannelHandlers()
 
-	// public listener — exposes /c/*, /, /ping
+	// public listener — exposes /c/*, /
 	publicRouter := chi.NewRouter()
 	publicRouter.Use(middleware.Compress(flate.DefaultCompression))
 	publicRouter.Use(middleware.StripSlashes)
@@ -116,10 +116,9 @@ func (s *Server) Start() error {
 	publicRouter.NotFound(s.handle404("public"))
 	publicRouter.MethodNotAllowed(s.handle405("public"))
 	publicRouter.Get("/", s.handleHealth)
-	publicRouter.Get("/ping", s.handleHealth) // temporary back-compat alias for /
 	publicRouter.Mount("/c/", s.channelRouter)
 
-	// internal listener — only /ci/* routes and /, /ping, no public-facing concerns
+	// internal listener — only /ci/* routes and /, no public-facing concerns
 	internalRouter := chi.NewRouter()
 	internalRouter.Use(middleware.Compress(flate.DefaultCompression))
 	internalRouter.Use(middleware.StripSlashes)
@@ -129,7 +128,6 @@ func (s *Server) Start() error {
 	internalRouter.NotFound(s.handle404("internal"))
 	internalRouter.MethodNotAllowed(s.handle405("internal"))
 	internalRouter.Get("/", s.handleHealth)
-	internalRouter.Get("/ping", s.handleHealth) // temporary back-compat alias for /
 	internalRouter.Post("/ci/attachment/fetch", s.tokenAuthRequired(s.handleFetchAttachment))
 
 	s.publicServer = &http.Server{
