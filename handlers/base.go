@@ -111,6 +111,18 @@ func (h *BaseHandler) RequestHTTPInsecure(req *http.Request, clog *courier.Chann
 	return h.RequestHTTPWithClient(h.backend.HttpClient(false), req, clog)
 }
 
+// RequestHTTPProxied is like RequestHTTP but routes through the configured outbound proxy
+// (SendProxyURL) when one is set. Use this for handlers that send to user-configured URLs.
+func (h *BaseHandler) RequestHTTPProxied(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
+	return h.RequestHTTPWithClient(h.backend.HttpClientProxied(true), req, clog)
+}
+
+// RequestHTTPProxiedInsecure is like RequestHTTPInsecure but routes through the configured
+// outbound proxy (SendProxyURL) when one is set.
+func (h *BaseHandler) RequestHTTPProxiedInsecure(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
+	return h.RequestHTTPWithClient(h.backend.HttpClientProxied(false), req, clog)
+}
+
 // RequestHTTP does the given request using the given client, logging the trace, and returns the response
 func (h *BaseHandler) RequestHTTPWithClient(client *http.Client, req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
 	var resp *http.Response

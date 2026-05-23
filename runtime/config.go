@@ -7,6 +7,7 @@ import (
 	"log"
 	"log/slog"
 	"net"
+	"net/url"
 	"os"
 	"strings"
 
@@ -49,6 +50,7 @@ type Config struct {
 	WhatsappAdminSystemUserToken string `help:"the token of the admin system user for WhatsApp"`
 
 	DisallowedNetworks string     `help:"comma separated list of IP addresses and networks which we disallow fetching attachments from"`
+	SendProxyURL       string     `validate:"omitempty,http_url" help:"optional URL of a forward HTTP proxy for handlers that send to user-configured URLs"`
 	MediaDomain        string     `help:"the domain on which we'll try to resolve outgoing media URLs"`
 	MaxWorkers         int        `help:"the maximum number of go routines that will be used for sending (set to 0 to disable sending)"`
 	AuthToken          string     `help:"the authentication token need to access non-channel endpoints"`
@@ -60,6 +62,9 @@ type Config struct {
 
 	// ExcludeChannels is the list of channels to exclude, empty means exclude none
 	ExcludeChannels []string
+
+	// SendProxyURLParsed is the parsed form of SendProxyURL, populated by Validate.
+	SendProxyURLParsed *url.URL
 }
 
 // NewDefaultConfig returns a new default configuration object
@@ -124,6 +129,14 @@ func (c *Config) Validate() error {
 
 	if _, _, err := c.ParseDisallowedNetworks(); err != nil {
 		return fmt.Errorf("unable to parse 'DisallowedNetworks': %w", err)
+	}
+
+	if c.SendProxyURL != "" {
+		u, err := url.Parse(c.SendProxyURL)
+		if err != nil {
+			return fmt.Errorf("unable to parse 'SendProxyURL': %w", err)
+		}
+		c.SendProxyURLParsed = u
 	}
 	return nil
 }

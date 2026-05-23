@@ -193,9 +193,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	var resp *http.Response
 	if verifySSL {
-		resp, _, err = h.RequestHTTP(req, clog)
+		resp, _, err = h.RequestHTTPProxied(req, clog)
 	} else {
-		resp, _, err = h.RequestHTTPInsecure(req, clog)
+		resp, _, err = h.RequestHTTPProxiedInsecure(req, clog)
 	}
 
 	if err != nil || resp.StatusCode/100 == 5 {

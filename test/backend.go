@@ -345,6 +345,10 @@ func (mb *MockBackend) HttpClient(bool) *http.Client {
 	return http.DefaultClient
 }
 
+func (mb *MockBackend) HttpClientProxied(bool) *http.Client {
+	return http.DefaultClient
+}
+
 func (mb *MockBackend) HttpAccess() *httpx.AccessConfig {
 	return nil
 }

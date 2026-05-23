@@ -64,9 +64,11 @@ type backend struct {
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
 
-	httpClient         *http.Client
-	httpClientInsecure *http.Client
-	httpAccess         *httpx.AccessConfig
+	httpClient                *http.Client
+	httpClientInsecure        *http.Client
+	httpClientProxied         *http.Client
+	httpClientProxiedInsecure *http.Client
+	httpAccess                *httpx.AccessConfig
 
 	mediaCache   *vkutil.IntervalHash
 	mediaMutexes syncx.HashMutex
@@ -102,14 +104,33 @@ func NewBackend(rt *runtime.Runtime) courier.Backend {
 	insecureTransport.IdleConnTimeout = 15 * time.Second
 	insecureTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
+	httpClient := &http.Client{Transport: transport, Timeout: 30 * time.Second}
+	httpClientInsecure := &http.Client{Transport: insecureTransport, Timeout: 30 * time.Second}
+
+	// build proxied variants when SendProxyURL is configured; otherwise reuse the unproxied
+	// clients so handlers can always go through HttpClientProxied without behavior change
+	httpClientProxied := httpClient
+	httpClientProxiedInsecure := httpClientInsecure
+	if rt.Config.SendProxyURLParsed != nil {
+		proxiedTransport := transport.Clone()
+		proxiedTransport.Proxy = http.ProxyURL(rt.Config.SendProxyURLParsed)
+		httpClientProxied = &http.Client{Transport: proxiedTransport, Timeout: 30 * time.Second}
+
+		proxiedInsecureTransport := insecureTransport.Clone()
+		proxiedInsecureTransport.Proxy = http.ProxyURL(rt.Config.SendProxyURLParsed)
+		httpClientProxiedInsecure = &http.Client{Transport: proxiedInsecureTransport, Timeout: 30 * time.Second}
+	}
+
 	disallowedIPs, disallowedNets, _ := rt.Config.ParseDisallowedNetworks()
 
 	return &backend{
 		rt: rt,
 
-		httpClient:         &http.Client{Transport: transport, Timeout: 30 * time.Second},
-		httpClientInsecure: &http.Client{Transport: insecureTransport, Timeout: 30 * time.Second},
-		httpAccess:         httpx.NewAccessConfig(10*time.Second, disallowedIPs, disallowedNets),
+		httpClient:                httpClient,
+		httpClientInsecure:        httpClientInsecure,
+		httpClientProxied:         httpClientProxied,
+		httpClientProxiedInsecure: httpClientProxiedInsecure,
+		httpAccess:                httpx.NewAccessConfig(10*time.Second, disallowedIPs, disallowedNets),
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
@@ -682,6 +703,13 @@ func (b *backend) HttpClient(secure bool) *http.Client {
 		return b.httpClient
 	}
 	return b.httpClientInsecure
+}
+
+func (b *backend) HttpClientProxied(secure bool) *http.Client {
+	if secure {
+		return b.httpClientProxied
+	}
+	return b.httpClientProxiedInsecure
 }
 
 func (b *backend) HttpAccess() *httpx.AccessConfig {
