@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"io"
 	"log"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -259,12 +258,11 @@ func buildMockJCAPI(testCases []IncomingTestCase) *httptest.Server {
 
 func newServer(backend courier.Backend) *courier.Server {
 	// for benchmarks, log to null
-	logger := slog.Default()
 	log.SetOutput(io.Discard)
 	cfg := runtime.NewDefaultConfig()
 	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
 	cfg.Valkey = "valkey://valkey:6379/0"
-	return courier.NewServerWithLogger(runtime.NewTestRuntime(cfg), backend, logger)
+	return courier.NewServer(runtime.NewTestRuntime(cfg), backend)
 }
 
 func TestDescribeURN(t *testing.T) {

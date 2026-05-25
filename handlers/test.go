@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -140,7 +139,6 @@ func testHandlerRequest(tb testing.TB, s *courier.Server, path string, headers m
 
 func newServer(backend courier.Backend) *courier.Server {
 	// for benchmarks, log to null
-	logger := slog.Default()
 	log.SetOutput(io.Discard)
 
 	cfg := runtime.NewDefaultConfig()
@@ -148,8 +146,7 @@ func newServer(backend courier.Backend) *courier.Server {
 	cfg.FacebookApplicationSecret = "fb_app_secret"
 	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
 
-	return courier.NewServerWithLogger(runtime.NewTestRuntime(cfg), backend, logger)
-
+	return courier.NewServer(runtime.NewTestRuntime(cfg), backend)
 }
 
 // RunIncomingTestCases runs all the passed in tests cases for the passed in channel configurations
