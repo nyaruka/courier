@@ -103,32 +103,12 @@ func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.
 
 // RequestHTTP does the given request, logging the trace, and returns the response
 func (h *BaseHandler) RequestHTTP(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
-	return h.requestHTTPWithClient(h.backend.HttpClient(true), req, clog)
-}
-
-// RequestHTTP does the given request, logging the trace, and returns the response
-func (h *BaseHandler) RequestHTTPInsecure(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
-	return h.requestHTTPWithClient(h.backend.HttpClient(false), req, clog)
-}
-
-// userAgent returns the User-Agent header value for handler HTTP calls. Only the major.minor
-// portion of the version is included to avoid leaking specific build details.
-func userAgent(version string) string {
-	parts := strings.SplitN(version, ".", 3)
-	if len(parts) >= 2 {
-		return "Courier/" + parts[0] + "." + parts[1]
-	}
-	return "Courier/" + version
-}
-
-// RequestHTTP does the given request using the given client, logging the trace, and returns the response
-func (h *BaseHandler) requestHTTPWithClient(client *http.Client, req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
 	var resp *http.Response
 	var body []byte
 
 	req.Header.Set("User-Agent", userAgent(h.server.Config().Version))
 
-	trace, err := httpx.DoTrace(client, req, nil, h.backend.HttpAccess(), 0)
+	trace, err := httpx.DoTrace(h.backend.HttpClient(), req, nil, h.backend.HttpAccess(), 0)
 	if trace != nil {
 		clog.HTTP(trace)
 		resp = trace.Response
@@ -139,6 +119,16 @@ func (h *BaseHandler) requestHTTPWithClient(client *http.Client, req *http.Reque
 	}
 
 	return resp, body, nil
+}
+
+// userAgent returns the User-Agent header value for handler HTTP calls. Only the major.minor
+// portion of the version is included to avoid leaking specific build details.
+func userAgent(version string) string {
+	parts := strings.SplitN(version, ".", 3)
+	if len(parts) >= 2 {
+		return "Courier/" + parts[0] + "." + parts[1]
+	}
+	return "Courier/" + version
 }
 
 // WriteStatusSuccessResponse writes a success response for the statuses

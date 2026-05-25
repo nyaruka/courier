@@ -79,7 +79,7 @@ type Backend interface {
 	ResolveMedia(context.Context, string) (*models.Media, error)
 
 	// HttpClient returns an HTTP client for making external requests
-	HttpClient(bool) *http.Client
+	HttpClient() *http.Client
 	HttpAccess() *httpx.AccessConfig
 
 	// RedisPool returns the redisPool for this backend
