@@ -1,3 +1,7 @@
+v26.1.39 (2026-05-25)
+-------------------------
+ * Expand default DisallowedNetworks (full loopback, IPv4-mapped IPv6, ULA, CGNAT, and more)
+
 v26.1.38 (2026-05-25)
 -------------------------
  * Update dependencies
