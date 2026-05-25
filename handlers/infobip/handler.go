@@ -258,7 +258,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 
 	baseURL := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "https://api.infobip.com")
-	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	callbackDomain := msg.Channel().CallbackDomain(h.Runtime().Config.Domain)
 	statusURL := fmt.Sprintf("https://%s%s%s/delivered", callbackDomain, "/c/ib/", msg.Channel().UUID())
 
 	var requestBody *bytes.Buffer

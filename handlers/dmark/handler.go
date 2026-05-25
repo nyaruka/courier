@@ -113,7 +113,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	if auth == "" {
 		return courier.ErrChannelConfig
 	}
-	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	callbackDomain := msg.Channel().CallbackDomain(h.Runtime().Config.Domain)
 	dlrURL := fmt.Sprintf("https://%s%s%s/status?uuid=%s&status=%%s", callbackDomain, "/c/dk/", msg.Channel().UUID(), msg.UUID())
 
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)

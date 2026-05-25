@@ -8,16 +8,17 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/httpx"
 )
 
 var defaultRedactConfigKeys = []string{models.ConfigAuthToken, models.ConfigAPIKey, models.ConfigSecret, models.ConfigPassword, models.ConfigSendAuthorization}
 
-// BaseHandler is the base class for most handlers, it just stored the server, name and channel type for the handler
+// BaseHandler is the base class for most handlers, it just stored the runtime, name and channel type for the handler
 type BaseHandler struct {
 	channelType        models.ChannelType
 	name               string
-	server             *courier.Server
+	rt                 *runtime.Runtime
 	backend            courier.Backend
 	uuidChannelRouting bool
 	redactConfigKeys   []string
@@ -51,13 +52,13 @@ func WithRedactConfigKeys(keys ...string) func(*BaseHandler) {
 
 // SetServer can be used to change the server on a BaseHandler
 func (h *BaseHandler) SetServer(server *courier.Server) {
-	h.server = server
+	h.rt = server.Runtime()
 	h.backend = server.Backend()
 }
 
-// Server returns the server instance on the BaseHandler
-func (h *BaseHandler) Server() *courier.Server {
-	return h.server
+// Runtime returns the runtime instance on the BaseHandler
+func (h *BaseHandler) Runtime() *runtime.Runtime {
+	return h.rt
 }
 
 // Backend returns the backend instance on the BaseHandler
@@ -106,10 +107,9 @@ func (h *BaseHandler) RequestHTTP(req *http.Request, clog *courier.ChannelLog) (
 	var resp *http.Response
 	var body []byte
 
-	rt := h.server.Runtime()
-	req.Header.Set("User-Agent", userAgent(rt.Config.Version))
+	req.Header.Set("User-Agent", userAgent(h.rt.Config.Version))
 
-	trace, err := httpx.DoTrace(rt.HTTP, req, nil, rt.HTTPAccess, 0)
+	trace, err := httpx.DoTrace(h.rt.HTTP, req, nil, h.rt.HTTPAccess, 0)
 	if trace != nil {
 		clog.HTTP(trace)
 		resp = trace.Response

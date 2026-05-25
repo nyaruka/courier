@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -17,7 +18,7 @@ func init() {
 }
 
 type mockHandler struct {
-	server  *courier.Server
+	rt      *runtime.Runtime
 	backend courier.Backend
 }
 
@@ -26,7 +27,8 @@ func NewMockHandler() courier.ChannelHandler {
 	return &mockHandler{}
 }
 
-func (h *mockHandler) Server() *courier.Server               { return h.server }
+func (h *mockHandler) Runtime() *runtime.Runtime             { return h.rt }
+func (h *mockHandler) Backend() courier.Backend              { return h.backend }
 func (h *mockHandler) ChannelName() string                   { return "Mock Handler" }
 func (h *mockHandler) ChannelType() models.ChannelType       { return models.ChannelType("MCK") }
 func (h *mockHandler) UseChannelRouteUUID() bool             { return true }
@@ -39,7 +41,7 @@ func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (courier.
 
 // Initialize is called by the engine once everything is loaded
 func (h *mockHandler) Initialize(s *courier.Server) error {
-	h.server = s
+	h.rt = s.Runtime()
 	h.backend = s.Backend()
 	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMsg)
 	return nil

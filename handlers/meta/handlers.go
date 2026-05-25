@@ -111,7 +111,7 @@ type Notifications struct {
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	vals := h.BaseHandler.RedactValues(ch)
-	vals = append(vals, h.Server().Config().FacebookApplicationSecret, h.Server().Config().FacebookWebhookSecret, h.Server().Config().WhatsappAdminSystemUserToken)
+	vals = append(vals, h.Runtime().Config.FacebookApplicationSecret, h.Runtime().Config.FacebookWebhookSecret, h.Runtime().Config.WhatsappAdminSystemUserToken)
 	return vals
 }
 
@@ -175,7 +175,7 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 
 	// verify the token against our server facebook webhook secret, if the same return the challenge FB sent us
 	secret := r.URL.Query().Get("hub.verify_token")
-	if !utils.SecretEqual(secret, h.Server().Config().FacebookWebhookSecret) {
+	if !utils.SecretEqual(secret, h.Runtime().Config.FacebookWebhookSecret) {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("token does not match secret"))
 	}
 	// and respond with the challenge token
@@ -247,7 +247,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 	// the list of data we will return in our response
 	data := make([]any, 0, 2)
 
-	token := h.Server().Config().WhatsappAdminSystemUserToken
+	token := h.Runtime().Config.WhatsappAdminSystemUserToken
 
 	seenMsgIDs := make(map[string]bool, 2)
 	contactNames := make(map[string]string)
@@ -699,7 +699,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 
 func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	// can't do anything without an access token
-	accessToken := h.Server().Config().WhatsappAdminSystemUserToken
+	accessToken := h.Runtime().Config.WhatsappAdminSystemUserToken
 
 	base, _ := url.Parse(graphURL)
 	path, _ := url.Parse(fmt.Sprintf("/%s/messages", msg.Channel().Address()))
@@ -822,7 +822,7 @@ func (h *handler) validateSignature(r *http.Request) error {
 	if headerSignature == "" {
 		return fmt.Errorf("missing request signature")
 	}
-	appSecret := h.Server().Config().FacebookApplicationSecret
+	appSecret := h.Runtime().Config.FacebookApplicationSecret
 
 	body, err := handlers.ReadBody(r, maxRequestBodyBytes)
 	if err != nil {
@@ -860,7 +860,7 @@ func fbCalculateSignature(appSecret string, body []byte) (string, error) {
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set
 func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
-	token := h.Server().Config().WhatsappAdminSystemUserToken
+	token := h.Runtime().Config.WhatsappAdminSystemUserToken
 	if token == "" {
 		return nil, fmt.Errorf("missing token for WAC channel")
 	}
