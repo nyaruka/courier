@@ -81,7 +81,7 @@ type IncomingTestCase struct {
 func testHandlerRequest(tb testing.TB, s *courier.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBodyContains string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
 	var err error
-	url := fmt.Sprintf("https://%s%s", s.Config().Domain, path)
+	url := fmt.Sprintf("https://%s%s", s.Runtime().Config.Domain, path)
 
 	if data != "" {
 		req, err = http.NewRequest(http.MethodPost, url, strings.NewReader(data))

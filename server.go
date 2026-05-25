@@ -215,7 +215,6 @@ func (s *Server) GetHandler(ch Channel) ChannelHandler { return activeHandlers[c
 func (s *Server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
 func (s *Server) StopChan() chan bool        { return s.stopChan }
 func (s *Server) Runtime() *runtime.Runtime  { return s.rt }
-func (s *Server) Config() *runtime.Config    { return s.rt.Config }
 func (s *Server) Stopped() bool              { return s.stopped }
 
 func (s *Server) Backend() Backend   { return s.backend }
