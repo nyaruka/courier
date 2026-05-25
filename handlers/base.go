@@ -109,7 +109,7 @@ func (h *BaseHandler) RequestHTTP(req *http.Request, clog *courier.ChannelLog) (
 	rt := h.server.Runtime()
 	req.Header.Set("User-Agent", userAgent(rt.Config.Version))
 
-	trace, err := httpx.DoTrace(rt.HttpClient, req, nil, rt.HttpAccess, 0)
+	trace, err := httpx.DoTrace(rt.HTTP, req, nil, rt.HTTPAccess, 0)
 	if trace != nil {
 		clog.HTTP(trace)
 		resp = trace.Response
