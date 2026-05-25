@@ -29,8 +29,7 @@ func TestRequestHTTP(t *testing.T) {
 	mm := mb.NewOutgoingMsg(mc, "019a06fa-467d-7fc8-a11e-3ad2d019fd20", cf, urns.URN("tel:+1234"), "Hello World", false, nil, "", models.MsgOriginChat)
 	clog := courier.NewChannelLogForSend(mm, nil)
 
-	cfg := runtime.NewDefaultConfig()
-	server := courier.NewServer(cfg, mb)
+	server := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
 
 	h := handlers.NewBaseHandler("NX", "Test")
 	h.SetServer(server)

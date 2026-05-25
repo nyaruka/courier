@@ -34,7 +34,7 @@ func testConfig() *runtime.Config {
 func TestIncoming(t *testing.T) {
 	// create and start our backend and server
 	mb := test.NewMockBackend()
-	s := courier.NewServer(testConfig(), mb)
+	s := courier.NewServer(runtime.NewTestRuntime(testConfig()), mb)
 
 	require.NoError(t, s.Start())
 	defer s.Stop()
@@ -79,7 +79,7 @@ func TestOutgoing(t *testing.T) {
 
 	// create and start our backend and server
 	mb := test.NewMockBackend()
-	s := courier.NewServer(testConfig(), mb)
+	s := courier.NewServer(runtime.NewTestRuntime(testConfig()), mb)
 
 	require.NoError(t, s.Start())
 	defer s.Stop()
@@ -205,7 +205,7 @@ func TestFetchAttachment(t *testing.T) {
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 	mb.AddChannel(mockChannel)
 
-	server := courier.NewServerWithLogger(cfg, mb, logger)
+	server := courier.NewServerWithLogger(runtime.NewTestRuntime(cfg), mb, logger)
 	require.NoError(t, server.Start())
 	defer server.Stop()
 
@@ -269,7 +269,7 @@ func TestListeners(t *testing.T) {
 	mb := test.NewMockBackend()
 	mb.AddChannel(test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, nil))
 
-	server := courier.NewServerWithLogger(cfg, mb, slog.Default())
+	server := courier.NewServerWithLogger(runtime.NewTestRuntime(cfg), mb, slog.Default())
 	require.NoError(t, server.Start())
 	defer server.Stop()
 

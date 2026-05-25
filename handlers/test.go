@@ -148,7 +148,7 @@ func newServer(backend courier.Backend) *courier.Server {
 	cfg.FacebookApplicationSecret = "fb_app_secret"
 	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
 
-	return courier.NewServerWithLogger(cfg, backend, logger)
+	return courier.NewServerWithLogger(runtime.NewTestRuntime(cfg), backend, logger)
 
 }
 

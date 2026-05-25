@@ -522,7 +522,7 @@ func (h *handler) downloadMedia(mediaURL string) (io.Reader, error) {
 		return nil, err
 	}
 
-	if res, err := httpx.Do(h.Backend().HttpClient(), req, nil, nil); err == nil {
+	if res, err := httpx.Do(h.Server().Runtime().HttpClient, req, nil, nil); err == nil {
 		return res.Body, nil
 	} else {
 		return nil, err

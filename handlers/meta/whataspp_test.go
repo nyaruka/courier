@@ -922,5 +922,5 @@ func TestWhatsAppBuildAttachmentRequest(t *testing.T) {
 func newServerWithWAC(backend courier.Backend) *courier.Server {
 	cfg := runtime.NewDefaultConfig()
 	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
-	return courier.NewServer(cfg, backend)
+	return courier.NewServer(runtime.NewTestRuntime(cfg), backend)
 }

@@ -217,7 +217,7 @@ func newServer(backend courier.Backend) *courier.Server {
 	cfg := runtime.NewDefaultConfig()
 	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
 	cfg.Valkey = "valkey://valkey:6379/0"
-	return courier.NewServerWithLogger(cfg, backend, logger)
+	return courier.NewServerWithLogger(runtime.NewTestRuntime(cfg), backend, logger)
 }
 
 func TestDescribeURN(t *testing.T) {

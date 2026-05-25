@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -10,6 +11,7 @@ import (
 	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/vkutil"
 	"github.com/vinovest/sqlx"
 )
@@ -21,6 +23,9 @@ type Runtime struct {
 	VK     *redis.Pool
 	S3     *s3x.Service
 	CW     *cwatch.Service
+
+	HttpClient *http.Client
+	HttpAccess *httpx.AccessConfig
 
 	Writers *Writers
 	Spool   *dynamo.Spool
@@ -58,10 +63,26 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 		return nil, fmt.Errorf("error creating Cloudwatch service: %w", err)
 	}
 
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxIdleConns = 64
+	transport.MaxIdleConnsPerHost = 8
+	transport.IdleConnTimeout = 15 * time.Second
+	rt.HttpClient = &http.Client{Transport: transport, Timeout: 30 * time.Second}
+
+	disallowedIPs, disallowedNets, _ := cfg.ParseDisallowedNetworks()
+	rt.HttpAccess = httpx.NewAccessConfig(10*time.Second, disallowedIPs, disallowedNets)
+
 	rt.Spool = dynamo.NewSpool(rt.Dynamo, rt.Config.SpoolDir+"/dynamo", 30*time.Second)
 	rt.Writers = newWriters(cfg, rt.Dynamo, rt.Spool)
 
 	return rt, nil
+}
+
+// NewTestRuntime returns a minimal Runtime wrapping the given config, suitable for tests that need a
+// Runtime but don't bring up real backing services. It populates HttpClient with http.DefaultClient so
+// code paths that issue outbound HTTP requests work against test servers.
+func NewTestRuntime(cfg *Config) *Runtime {
+	return &Runtime{Config: cfg, HttpClient: http.DefaultClient}
 }
 
 func (r *Runtime) Start() error {

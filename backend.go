@@ -2,11 +2,9 @@ package courier
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/core/models"
-	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -77,10 +75,6 @@ type Backend interface {
 
 	// ResolveMedia resolves an outgoing attachment URL to a media object
 	ResolveMedia(context.Context, string) (*models.Media, error)
-
-	// HttpClient returns an HTTP client for making external requests
-	HttpClient() *http.Client
-	HttpAccess() *httpx.AccessConfig
 
 	// RedisPool returns the redisPool for this backend
 	RedisPool() *redis.Pool

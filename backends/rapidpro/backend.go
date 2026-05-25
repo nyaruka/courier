@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -29,7 +28,6 @@ import (
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/cache"
 	"github.com/nyaruka/gocommon/dbutil"
-	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
@@ -63,9 +61,6 @@ type backend struct {
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
 
-	httpClient *http.Client
-	httpAccess *httpx.AccessConfig
-
 	mediaCache   *vkutil.IntervalHash
 	mediaMutexes syncx.HashMutex
 
@@ -89,18 +84,8 @@ type backend struct {
 
 // NewBackend creates a new RapidPro backend
 func NewBackend(rt *runtime.Runtime) courier.Backend {
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.MaxIdleConns = 64
-	transport.MaxIdleConnsPerHost = 8
-	transport.IdleConnTimeout = 15 * time.Second
-
-	disallowedIPs, disallowedNets, _ := rt.Config.ParseDisallowedNetworks()
-
 	return &backend{
 		rt: rt,
-
-		httpClient: &http.Client{Transport: transport, Timeout: 30 * time.Second},
-		httpAccess: httpx.NewAccessConfig(10*time.Second, disallowedIPs, disallowedNets),
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
@@ -666,14 +651,6 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (*models.Me
 	}
 
 	return media, nil
-}
-
-func (b *backend) HttpClient() *http.Client {
-	return b.httpClient
-}
-
-func (b *backend) HttpAccess() *httpx.AccessConfig {
-	return b.httpAccess
 }
 
 func (b *backend) reportMetrics(ctx context.Context) (int, error) {

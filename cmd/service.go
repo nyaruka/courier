@@ -51,7 +51,7 @@ func Service(version, date string) error {
 
 	backend := rapidpro.NewBackend(rt)
 
-	server := courier.NewServer(cfg, backend)
+	server := courier.NewServer(rt, backend)
 	if err := server.Start(); err != nil {
 		return err
 	}
