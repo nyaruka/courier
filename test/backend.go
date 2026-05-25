@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"sync"
 	"time"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 )
@@ -339,18 +337,6 @@ func (mb *MockBackend) ResolveMedia(ctx context.Context, mediaUrl string) (*mode
 	}
 
 	return media, nil
-}
-
-func (mb *MockBackend) HttpClient(bool) *http.Client {
-	return http.DefaultClient
-}
-
-func (mb *MockBackend) HttpClientProxied(bool) *http.Client {
-	return http.DefaultClient
-}
-
-func (mb *MockBackend) HttpAccess() *httpx.AccessConfig {
-	return nil
 }
 
 // RedisPool returns the redisPool for this backend

@@ -256,7 +256,7 @@ func (h *handler) RedactValues(ch courier.Channel) []string {
 }
 
 // BuildAttachmentRequest download media for message attachment
-func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
+func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
 	accessToken, err := h.getAccessToken(channel, clog)
 	if err != nil {
 		return nil, err

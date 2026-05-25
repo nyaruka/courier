@@ -1,3 +1,11 @@
+v26.1.38 (2026-05-25)
+-------------------------
+ * Update dependencies
+ * Remove SQ (shaqodoon) channel type
+ * Trim handler User-Agent to avoid leaking build details
+ * Remove BL (bongolive) channel type
+ * Remove KN insecure HTTP requests
+
 v26.1.37 (2026-05-19)
 -------------------------
  * Serve health response at / on both listeners

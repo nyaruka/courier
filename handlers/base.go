@@ -8,16 +8,17 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/httpx"
 )
 
 var defaultRedactConfigKeys = []string{models.ConfigAuthToken, models.ConfigAPIKey, models.ConfigSecret, models.ConfigPassword, models.ConfigSendAuthorization}
 
-// BaseHandler is the base class for most handlers, it just stored the server, name and channel type for the handler
+// BaseHandler is the base class for most handlers, it just stored the runtime, name and channel type for the handler
 type BaseHandler struct {
 	channelType        models.ChannelType
 	name               string
-	server             *courier.Server
+	rt                 *runtime.Runtime
 	backend            courier.Backend
 	uuidChannelRouting bool
 	redactConfigKeys   []string
@@ -51,13 +52,13 @@ func WithRedactConfigKeys(keys ...string) func(*BaseHandler) {
 
 // SetServer can be used to change the server on a BaseHandler
 func (h *BaseHandler) SetServer(server *courier.Server) {
-	h.server = server
+	h.rt = server.Runtime()
 	h.backend = server.Backend()
 }
 
-// Server returns the server instance on the BaseHandler
-func (h *BaseHandler) Server() *courier.Server {
-	return h.server
+// Runtime returns the runtime instance on the BaseHandler
+func (h *BaseHandler) Runtime() *runtime.Runtime {
+	return h.rt
 }
 
 // Backend returns the backend instance on the BaseHandler
@@ -103,44 +104,23 @@ func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.
 
 // RequestHTTP does the given request, logging the trace, and returns the response
 func (h *BaseHandler) RequestHTTP(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
-	return h.requestHTTPWithClient(h.backend.HttpClient(true), req, clog)
-}
-
-// RequestHTTP does the given request, logging the trace, and returns the response
-func (h *BaseHandler) RequestHTTPInsecure(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
-	return h.requestHTTPWithClient(h.backend.HttpClient(false), req, clog)
-}
-
-// userAgent returns the User-Agent header value for handler HTTP calls. Only the major.minor
-// portion of the version is included to avoid leaking specific build details.
-func userAgent(version string) string {
-	parts := strings.SplitN(version, ".", 3)
-	if len(parts) >= 2 {
-		return "Courier/" + parts[0] + "." + parts[1]
-	}
-	return "Courier/" + version
+	return h.requestHTTP(h.rt.HTTP, req, clog)
 }
 
 // RequestHTTPProxied is like RequestHTTP but routes through the configured outbound proxy
 // (SendProxyURL) when one is set. Use this for handlers that send to user-configured URLs.
 func (h *BaseHandler) RequestHTTPProxied(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
-	return h.requestHTTPWithClient(h.backend.HttpClientProxied(true), req, clog)
+	return h.requestHTTP(h.rt.HTTPProxied, req, clog)
 }
 
-// RequestHTTPProxiedInsecure is like RequestHTTPInsecure but routes through the configured
-// outbound proxy (SendProxyURL) when one is set.
-func (h *BaseHandler) RequestHTTPProxiedInsecure(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
-	return h.requestHTTPWithClient(h.backend.HttpClientProxied(false), req, clog)
-}
-
-// RequestHTTP does the given request using the given client, logging the trace, and returns the response
-func (h *BaseHandler) requestHTTPWithClient(client *http.Client, req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
+// requestHTTP does the given request using the given client, logging the trace, and returns the response
+func (h *BaseHandler) requestHTTP(client *http.Client, req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
 	var resp *http.Response
 	var body []byte
 
-	req.Header.Set("User-Agent", userAgent(h.server.Config().Version))
+	req.Header.Set("User-Agent", userAgent(h.rt.Config.Version))
 
-	trace, err := httpx.DoTrace(client, req, nil, h.backend.HttpAccess(), 0)
+	trace, err := httpx.DoTrace(client, req, nil, h.rt.HTTPAccess, 0)
 	if trace != nil {
 		clog.HTTP(trace)
 		resp = trace.Response
@@ -151,6 +131,16 @@ func (h *BaseHandler) requestHTTPWithClient(client *http.Client, req *http.Reque
 	}
 
 	return resp, body, nil
+}
+
+// userAgent returns the User-Agent header value for handler HTTP calls. Only the major.minor
+// portion of the version is included to avoid leaking specific build details.
+func userAgent(version string) string {
+	parts := strings.SplitN(version, ".", 3)
+	if len(parts) >= 2 {
+		return "Courier/" + parts[0] + "." + parts[1]
+	}
+	return "Courier/" + version
 }
 
 // WriteStatusSuccessResponse writes a success response for the statuses

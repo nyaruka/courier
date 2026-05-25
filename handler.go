@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -17,7 +18,8 @@ type ChannelHandleFunc func(context.Context, Channel, http.ResponseWriter, *http
 // ChannelHandler is the interface all handlers must satisfy
 type ChannelHandler interface {
 	Initialize(*Server) error
-	Server() *Server
+	Runtime() *runtime.Runtime
+	Backend() Backend
 	ChannelType() models.ChannelType
 	ChannelName() string
 	UseChannelRouteUUID() bool
@@ -38,7 +40,7 @@ type URNDescriber interface {
 
 // AttachmentRequestBuilder is the interface handlers which can allow a custom way to download attachment media for messages should satisfy
 type AttachmentRequestBuilder interface {
-	BuildAttachmentRequest(context.Context, Backend, Channel, string, *ChannelLog) (*http.Request, error)
+	BuildAttachmentRequest(context.Context, Channel, string, *ChannelLog) (*http.Request, error)
 }
 
 // RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized

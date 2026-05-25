@@ -2,13 +2,11 @@ package rapidpro
 
 import (
 	"context"
-	"crypto/tls"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -30,7 +28,6 @@ import (
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/cache"
 	"github.com/nyaruka/gocommon/dbutil"
-	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
@@ -64,12 +61,6 @@ type backend struct {
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
 
-	httpClient                *http.Client
-	httpClientInsecure        *http.Client
-	httpClientProxied         *http.Client
-	httpClientProxiedInsecure *http.Client
-	httpAccess                *httpx.AccessConfig
-
 	mediaCache   *vkutil.IntervalHash
 	mediaMutexes syncx.HashMutex
 
@@ -93,44 +84,8 @@ type backend struct {
 
 // NewBackend creates a new RapidPro backend
 func NewBackend(rt *runtime.Runtime) courier.Backend {
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.MaxIdleConns = 64
-	transport.MaxIdleConnsPerHost = 8
-	transport.IdleConnTimeout = 15 * time.Second
-
-	insecureTransport := http.DefaultTransport.(*http.Transport).Clone()
-	insecureTransport.MaxIdleConns = 64
-	insecureTransport.MaxIdleConnsPerHost = 8
-	insecureTransport.IdleConnTimeout = 15 * time.Second
-	insecureTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-
-	httpClient := &http.Client{Transport: transport, Timeout: 30 * time.Second}
-	httpClientInsecure := &http.Client{Transport: insecureTransport, Timeout: 30 * time.Second}
-
-	// build proxied variants when SendProxyURL is configured; otherwise reuse the unproxied
-	// clients so handlers can always go through HttpClientProxied without behavior change
-	httpClientProxied := httpClient
-	httpClientProxiedInsecure := httpClientInsecure
-	if rt.Config.SendProxyURLParsed != nil {
-		proxiedTransport := transport.Clone()
-		proxiedTransport.Proxy = http.ProxyURL(rt.Config.SendProxyURLParsed)
-		httpClientProxied = &http.Client{Transport: proxiedTransport, Timeout: 30 * time.Second}
-
-		proxiedInsecureTransport := insecureTransport.Clone()
-		proxiedInsecureTransport.Proxy = http.ProxyURL(rt.Config.SendProxyURLParsed)
-		httpClientProxiedInsecure = &http.Client{Transport: proxiedInsecureTransport, Timeout: 30 * time.Second}
-	}
-
-	disallowedIPs, disallowedNets, _ := rt.Config.ParseDisallowedNetworks()
-
 	return &backend{
 		rt: rt,
-
-		httpClient:                httpClient,
-		httpClientInsecure:        httpClientInsecure,
-		httpClientProxied:         httpClientProxied,
-		httpClientProxiedInsecure: httpClientProxiedInsecure,
-		httpAccess:                httpx.NewAccessConfig(10*time.Second, disallowedIPs, disallowedNets),
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
@@ -696,24 +651,6 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (*models.Me
 	}
 
 	return media, nil
-}
-
-func (b *backend) HttpClient(secure bool) *http.Client {
-	if secure {
-		return b.httpClient
-	}
-	return b.httpClientInsecure
-}
-
-func (b *backend) HttpClientProxied(secure bool) *http.Client {
-	if secure {
-		return b.httpClientProxied
-	}
-	return b.httpClientProxiedInsecure
-}
-
-func (b *backend) HttpAccess() *httpx.AccessConfig {
-	return b.httpAccess
 }
 
 func (b *backend) reportMetrics(ctx context.Context) (int, error) {

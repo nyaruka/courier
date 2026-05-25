@@ -1422,8 +1422,6 @@ func TestOutgoing(t *testing.T) {
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {
-	mb := test.NewMockBackend()
-
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
@@ -1431,7 +1429,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 			models.ConfigAuthToken: "authToken"})
 
 	twHandler := &handler{NewBaseHandler(models.ChannelType("T"), "Twilio"), true}
-	req, _ := twHandler.BuildAttachmentRequest(context.Background(), mb, defaultChannel, "https://example.org/v1/media/41", nil)
+	req, _ := twHandler.BuildAttachmentRequest(context.Background(), defaultChannel, "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=", req.Header.Get("Authorization"))
 
@@ -1443,7 +1441,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 			configSendURL:          "BASE_URL",
 		})
 	swHandler := &handler{NewBaseHandler(models.ChannelType("SW"), "SignalWire"), false}
-	req, _ = swHandler.BuildAttachmentRequest(context.Background(), mb, swChannel, "https://example.org/v1/media/41", nil)
+	req, _ = swHandler.BuildAttachmentRequest(context.Background(), swChannel, "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "", req.Header.Get("Authorization"))
 }

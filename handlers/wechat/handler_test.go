@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"io"
 	"log"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -212,12 +211,11 @@ func buildMockWCAPI(testCases []IncomingTestCase) *httptest.Server {
 
 func newServer(backend courier.Backend) *courier.Server {
 	// for benchmarks, log to null
-	logger := slog.Default()
 	log.SetOutput(io.Discard)
 	cfg := runtime.NewDefaultConfig()
 	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
 	cfg.Valkey = "valkey://valkey:6379/0"
-	return courier.NewServerWithLogger(cfg, backend, logger)
+	return courier.NewServer(runtime.NewTestRuntime(cfg), backend)
 }
 
 func TestDescribeURN(t *testing.T) {
@@ -276,7 +274,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 
 	// check that request has the fetched access token
-	req, err := handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://api.weixin.qq.com/cgi-bin/media/download.action?media_id=12", clog)
+	req, err := handler.BuildAttachmentRequest(context.Background(), testChannels[0], "https://api.weixin.qq.com/cgi-bin/media/download.action?media_id=12", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "https://api.weixin.qq.com/cgi-bin/media/download.action?access_token=SESAME&media_id=12", req.URL.String())
 
@@ -285,7 +283,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	assert.Equal(t, "https://api.weixin.qq.com/cgi-bin/token?appid=app-id&grant_type=client_credential&secret=**********", clog.HttpLogs[0].URL)
 
 	// check that another request reads token from cache
-	req, err = handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://api.weixin.qq.com/cgi-bin/media/download.action?media_id=13", clog)
+	req, err = handler.BuildAttachmentRequest(context.Background(), testChannels[0], "https://api.weixin.qq.com/cgi-bin/media/download.action?media_id=13", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "https://api.weixin.qq.com/cgi-bin/media/download.action?access_token=SESAME&media_id=13", req.URL.String())
 	assert.Len(t, clog.HttpLogs, 1)

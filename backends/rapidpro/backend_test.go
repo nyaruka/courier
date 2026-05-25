@@ -15,7 +15,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
-	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/courier/v26/utils/queue"
@@ -30,8 +29,6 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
 	"github.com/nyaruka/vkutil/assertvk"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -1371,44 +1368,6 @@ func TestMsgSuite(t *testing.T) {
 
 func TestBackendSuite(t *testing.T) {
 	suite.Run(t, new(ServerTestSuite))
-}
-
-func TestHttpClientProxied(t *testing.T) {
-	// without SendProxyURL configured, the proxied client is the unproxied client
-	cfg := runtime.NewDefaultConfig()
-	require.NoError(t, cfg.Validate())
-
-	b := NewBackend(&runtime.Runtime{Config: cfg}).(*backend)
-	assert.Same(t, b.httpClient, b.HttpClientProxied(true))
-	assert.Same(t, b.httpClientInsecure, b.HttpClientProxied(false))
-
-	// with SendProxyURL configured, the proxied transports resolve the proxy URL
-	cfg = runtime.NewDefaultConfig()
-	cfg.SendProxyURL = "http://proxy.example.com:3128"
-	require.NoError(t, cfg.Validate())
-
-	b = NewBackend(&runtime.Runtime{Config: cfg}).(*backend)
-	require.NotSame(t, b.httpClient, b.HttpClientProxied(true))
-	require.NotSame(t, b.httpClientInsecure, b.HttpClientProxied(false))
-
-	for _, c := range []*http.Client{b.HttpClientProxied(true), b.HttpClientProxied(false)} {
-		req, _ := http.NewRequest("POST", "https://example.org/hook", nil)
-		proxy, err := c.Transport.(*http.Transport).Proxy(req)
-		require.NoError(t, err)
-		require.NotNil(t, proxy, "transport should resolve a proxy URL when SendProxyURL is set")
-		assert.Equal(t, "proxy.example.com:3128", proxy.Host)
-		assert.Equal(t, "http", proxy.Scheme)
-	}
-
-	// the regular (non-proxied) clients don't route to the configured proxy
-	for _, c := range []*http.Client{b.HttpClient(true), b.HttpClient(false)} {
-		req, _ := http.NewRequest("POST", "https://example.org/hook", nil)
-		proxy, err := c.Transport.(*http.Transport).Proxy(req)
-		require.NoError(t, err)
-		if proxy != nil {
-			assert.NotEqual(t, "proxy.example.com:3128", proxy.Host)
-		}
-	}
 }
 
 type ServerTestSuite struct {
