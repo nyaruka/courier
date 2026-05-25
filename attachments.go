@@ -90,7 +90,7 @@ func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, b Backend
 	handler := GetHandler(channel.ChannelType())
 	builder, isBuilder := handler.(AttachmentRequestBuilder)
 	if isBuilder {
-		attRequest, err = builder.BuildAttachmentRequest(ctx, b, channel, parsedURL.String(), clog)
+		attRequest, err = builder.BuildAttachmentRequest(ctx, channel, parsedURL.String(), clog)
 	} else {
 		attRequest, err = http.NewRequest(http.MethodGet, attURL, nil)
 	}

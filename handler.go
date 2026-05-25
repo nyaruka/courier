@@ -40,7 +40,7 @@ type URNDescriber interface {
 
 // AttachmentRequestBuilder is the interface handlers which can allow a custom way to download attachment media for messages should satisfy
 type AttachmentRequestBuilder interface {
-	BuildAttachmentRequest(context.Context, Backend, Channel, string, *ChannelLog) (*http.Request, error)
+	BuildAttachmentRequest(context.Context, Channel, string, *ChannelLog) (*http.Request, error)
 }
 
 // RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized
