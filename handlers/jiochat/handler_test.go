@@ -264,7 +264,7 @@ func newServer(backend courier.Backend) *courier.Server {
 	cfg := runtime.NewDefaultConfig()
 	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
 	cfg.Valkey = "valkey://valkey:6379/0"
-	return courier.NewServerWithLogger(cfg, backend, logger)
+	return courier.NewServerWithLogger(runtime.NewTestRuntime(cfg), backend, logger)
 }
 
 func TestDescribeURN(t *testing.T) {
@@ -323,7 +323,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 
 	// check that request has the fetched access token
-	req, err := handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://channels.jiochat.com/media/download.action?media_id=12", clog)
+	req, err := handler.BuildAttachmentRequest(context.Background(), testChannels[0], "https://channels.jiochat.com/media/download.action?media_id=12", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "https://channels.jiochat.com/media/download.action?media_id=12", req.URL.String())
 	assert.Equal(t, "Bearer SESAME", req.Header.Get("Authorization"))
@@ -333,7 +333,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	assert.Equal(t, "https://channels.jiochat.com/auth/token.action", clog.HttpLogs[0].URL)
 
 	// check that another request reads token from cache
-	req, err = handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://channels.jiochat.com/media/download.action?media_id=13", clog)
+	req, err = handler.BuildAttachmentRequest(context.Background(), testChannels[0], "https://channels.jiochat.com/media/download.action?media_id=13", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "https://channels.jiochat.com/media/download.action?media_id=13", req.URL.String())
 	assert.Equal(t, "Bearer SESAME", req.Header.Get("Authorization"))

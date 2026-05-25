@@ -34,17 +34,17 @@ const (
 	contextRequestStart
 )
 
-// NewServer creates a new Server for the passed in configuration. The server will have to be started
+// NewServer creates a new Server for the passed in runtime. The server will have to be started
 // afterwards, which is when configuration options are checked.
-func NewServer(config *runtime.Config, backend Backend) *Server {
+func NewServer(rt *runtime.Runtime, backend Backend) *Server {
 	// create our top level router
 	logger := slog.Default()
-	return NewServerWithLogger(config, backend, logger)
+	return NewServerWithLogger(rt, backend, logger)
 }
 
-// NewServerWithLogger creates a new Server for the passed in configuration. The server will have to be started
+// NewServerWithLogger creates a new Server for the passed in runtime. The server will have to be started
 // afterwards, which is when configuration options are checked.
-func NewServerWithLogger(config *runtime.Config, backend Backend, logger *slog.Logger) *Server {
+func NewServerWithLogger(rt *runtime.Runtime, backend Backend, logger *slog.Logger) *Server {
 	// channelRouter holds the dynamically-registered channel handler routes - mounted at /c/ on the public listener
 	channelRouter := chi.NewRouter()
 
@@ -61,7 +61,7 @@ func NewServerWithLogger(config *runtime.Config, backend Backend, logger *slog.L
 	testRouter.Mount("/c/", channelRouter)
 
 	return &Server{
-		config:  config,
+		rt:      rt,
 		backend: backend,
 
 		channelRouter: channelRouter,
@@ -80,12 +80,12 @@ func (s *Server) Start() error {
 	// bind both listener sockets up front so callers know we're accepting connections by the
 	// time Start returns, and so a bind failure fails fast before we've started the backend,
 	// spool flushers, or anything else that would need to be unwound
-	publicAddr := fmt.Sprintf("%s:%d", s.config.PublicAddress, s.config.PublicPort)
+	publicAddr := fmt.Sprintf("%s:%d", s.rt.Config.PublicAddress, s.rt.Config.PublicPort)
 	publicLn, err := net.Listen("tcp", publicAddr)
 	if err != nil {
 		return fmt.Errorf("error binding public listener on %s: %w", publicAddr, err)
 	}
-	internalAddr := fmt.Sprintf("%s:%d", s.config.InternalAddress, s.config.InternalPort)
+	internalAddr := fmt.Sprintf("%s:%d", s.rt.Config.InternalAddress, s.rt.Config.InternalPort)
 	internalLn, err := net.Listen("tcp", internalAddr)
 	if err != nil {
 		publicLn.Close()
@@ -151,7 +151,7 @@ func (s *Server) Start() error {
 		defer s.waitGroup.Done()
 
 		log := slog.With("comp", "server", "listener", "public", "address", s.publicServer.Addr)
-		log.Info("server started", "version", s.config.Version)
+		log.Info("server started", "version", s.rt.Config.Version)
 
 		err := s.publicServer.Serve(publicLn)
 		if err != nil && err != http.ErrServerClosed {
@@ -163,7 +163,7 @@ func (s *Server) Start() error {
 		defer s.waitGroup.Done()
 
 		log := slog.With("comp", "server", "listener", "internal", "address", s.internalServer.Addr)
-		log.Info("server started", "version", s.config.Version)
+		log.Info("server started", "version", s.rt.Config.Version)
 
 		err := s.internalServer.Serve(internalLn)
 		if err != nil && err != http.ErrServerClosed {
@@ -172,7 +172,7 @@ func (s *Server) Start() error {
 	}()
 
 	// start our foreman for outgoing messages
-	s.foreman = NewForeman(s, s.config.MaxWorkers)
+	s.foreman = NewForeman(s, s.rt.Config.MaxWorkers)
 	s.foreman.Start()
 
 	return nil
@@ -214,7 +214,7 @@ func (s *Server) GetHandler(ch Channel) ChannelHandler { return activeHandlers[c
 
 func (s *Server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
 func (s *Server) StopChan() chan bool        { return s.stopChan }
-func (s *Server) Config() *runtime.Config    { return s.config }
+func (s *Server) Runtime() *runtime.Runtime  { return s.rt }
 func (s *Server) Stopped() bool              { return s.stopped }
 
 func (s *Server) Backend() Backend   { return s.backend }
@@ -230,17 +230,16 @@ type Server struct {
 
 	foreman *Foreman
 
-	config *runtime.Config
+	rt *runtime.Runtime
 
 	waitGroup *sync.WaitGroup
 	stopChan  chan bool
 	stopped   bool
-
 }
 
 func (s *Server) initializeChannelHandlers() {
-	includes := s.config.IncludeChannels
-	excludes := s.config.ExcludeChannels
+	includes := s.rt.Config.IncludeChannels
+	excludes := s.rt.Config.ExcludeChannels
 
 	// initialize handlers which are included/not-excluded in the config
 	for _, handler := range registeredHandlers {
@@ -358,7 +357,7 @@ func (s *Server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
 	defer cancel()
 
-	resp, err := fetchAttachment(ctx, s.backend, r)
+	resp, err := fetchAttachment(ctx, s.rt, s.backend, r)
 	if err != nil {
 		slog.Error("error fetching attachment", "error", err)
 		WriteError(w, http.StatusBadRequest, err)
@@ -411,7 +410,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonx.MustMarshal(map[string]string{
 		"component": "courier",
-		"version":   s.config.Version,
+		"version":   s.rt.Config.Version,
 	}))
 }
 
@@ -419,7 +418,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 func (s *Server) tokenAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") || !utils.SecretEqual(authHeader[7:], s.config.AuthToken) {
+		if !strings.HasPrefix(authHeader, "Bearer ") || !utils.SecretEqual(authHeader[7:], s.rt.Config.AuthToken) {
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorized"))
@@ -428,4 +427,3 @@ func (s *Server) tokenAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 		h(w, r)
 	}
 }
-

@@ -293,7 +293,7 @@ func TestFacebookDescribeURN(t *testing.T) {
 
 	channel := facebookTestChannels[0]
 	handler := newHandler("FBA", "Facebook")
-	handler.Initialize(courier.NewServer(runtime.NewDefaultConfig(), test.NewMockBackend()))
+	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), test.NewMockBackend()))
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -643,11 +643,11 @@ func TestSigning(t *testing.T) {
 
 func TestFacebookBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
-	s := courier.NewServer(runtime.NewDefaultConfig(), mb)
+	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
 
 	handler := &handler{NewBaseHandler(models.ChannelType("FBA"), "Facebook", DisableUUIDRouting())}
 	handler.Initialize(s)
-	req, _ := handler.BuildAttachmentRequest(context.Background(), mb, facebookTestChannels[0], "https://example.org/v1/media/41", nil)
+	req, _ := handler.BuildAttachmentRequest(context.Background(), facebookTestChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, http.Header{}, req.Header)
 }

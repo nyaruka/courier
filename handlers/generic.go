@@ -30,7 +30,7 @@ func NewTelReceiveHandler(h courier.ChannelHandler, fromField string, bodyField 
 			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 		// build our msg
-		msg := h.Server().Backend().NewIncomingMsg(ctx, c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
+		msg := h.Backend().NewIncomingMsg(ctx, c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
 		return WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 	}
 }
@@ -55,7 +55,7 @@ func NewExternalIDStatusHandler(h courier.ChannelHandler, statuses map[string]mo
 		}
 
 		// create our status
-		status := h.Server().Backend().NewStatusUpdateByExternalID(c, externalID, sValue, clog)
+		status := h.Backend().NewStatusUpdateByExternalID(c, externalID, sValue, clog)
 		return WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 	}
 }

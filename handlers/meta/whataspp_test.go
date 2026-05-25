@@ -914,7 +914,7 @@ func TestWhatsAppBuildAttachmentRequest(t *testing.T) {
 	s := newServerWithWAC(mb)
 	handler := &handler{NewBaseHandler(models.ChannelType("WAC"), "WhatsApp Cloud", DisableUUIDRouting())}
 	handler.Initialize(s)
-	req, _ := handler.BuildAttachmentRequest(context.Background(), mb, whatsappTestChannels[0], "https://example.org/v1/media/41", nil)
+	req, _ := handler.BuildAttachmentRequest(context.Background(), whatsappTestChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer wac_admin_system_user_token", req.Header.Get("Authorization"))
 }
@@ -922,5 +922,5 @@ func TestWhatsAppBuildAttachmentRequest(t *testing.T) {
 func newServerWithWAC(backend courier.Backend) *courier.Server {
 	cfg := runtime.NewDefaultConfig()
 	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
-	return courier.NewServer(cfg, backend)
+	return courier.NewServer(runtime.NewTestRuntime(cfg), backend)
 }

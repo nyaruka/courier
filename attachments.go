@@ -15,6 +15,7 @@ import (
 
 	"github.com/h2non/filetype"
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
@@ -42,7 +43,7 @@ type fetchAttachmentResponse struct {
 	LogUUID    clogs.UUID  `json:"log_uuid"`
 }
 
-func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAttachmentResponse, error) {
+func fetchAttachment(ctx context.Context, rt *runtime.Runtime, b Backend, r *http.Request) (*fetchAttachmentResponse, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading request body: %w", err)
@@ -63,7 +64,7 @@ func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAtt
 
 	clog := NewChannelLogForAttachmentFetch(ch, GetHandler(ch.ChannelType()).RedactValues(ch))
 
-	attachment, err := FetchAndStoreAttachment(ctx, b, ch, fa.URL, clog)
+	attachment, err := FetchAndStoreAttachment(ctx, rt, b, ch, fa.URL, clog)
 
 	// try to write channel log even if we have an error
 	clog.End()
@@ -78,7 +79,7 @@ func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAtt
 	return &fetchAttachmentResponse{Attachment: attachment, LogUUID: clog.UUID}, nil
 }
 
-func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, attURL string, clog *ChannelLog) (*Attachment, error) {
+func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, b Backend, channel Channel, attURL string, clog *ChannelLog) (*Attachment, error) {
 	parsedURL, err := url.Parse(attURL)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse attachment url '%s': %w", attURL, err)
@@ -89,7 +90,7 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 	handler := GetHandler(channel.ChannelType())
 	builder, isBuilder := handler.(AttachmentRequestBuilder)
 	if isBuilder {
-		attRequest, err = builder.BuildAttachmentRequest(ctx, b, channel, parsedURL.String(), clog)
+		attRequest, err = builder.BuildAttachmentRequest(ctx, channel, parsedURL.String(), clog)
 	} else {
 		attRequest, err = http.NewRequest(http.MethodGet, attURL, nil)
 	}
@@ -97,7 +98,7 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 		return nil, fmt.Errorf("unable to create attachment request: %w", err)
 	}
 
-	trace, err := httpx.DoTrace(b.HttpClient(), attRequest, nil, b.HttpAccess(), maxAttBodyReadBytes)
+	trace, err := httpx.DoTrace(rt.HTTP, attRequest, nil, rt.HTTPAccess, maxAttBodyReadBytes)
 	if trace != nil {
 		clog.HTTP(trace)
 
