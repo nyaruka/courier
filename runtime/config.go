@@ -45,7 +45,7 @@ type Config struct {
 	FacebookWebhookSecret        string `help:"the secret for Facebook webhook URL verification"`
 	WhatsappAdminSystemUserToken string `help:"the token of the admin system user for WhatsApp"`
 
-	DisallowedNetworks []string   `help:"comma separated list of IP addresses and networks which we disallow fetching attachments from"`
+	DisallowedNetworks []string   `help:"list of IP addresses and networks (CIDR notation) which we disallow making outgoing HTTP requests to"`
 	MediaDomain        string     `help:"the domain on which we'll try to resolve outgoing media URLs"`
 	MaxWorkers         int        `help:"the maximum number of go routines that will be used for sending (set to 0 to disable sending)"`
 	AuthToken          string     `help:"the authentication token need to access non-channel endpoints"`
@@ -93,14 +93,10 @@ func NewDefaultConfig() *Config {
 		FacebookWebhookSecret:        "missing_facebook_webhook_secret",
 		WhatsappAdminSystemUserToken: "missing_whatsapp_admin_system_user_token",
 
-		DisallowedNetworks: []string{
-			`127.0.0.0/8`, `::1`, `::ffff:0:0/96`, `fe80::/10`, `fc00::/7`,
-			`10.0.0.0/8`, `172.16.0.0/12`, `172.32.0.0/16`, `192.168.0.0/16`, `100.64.0.0/10`,
-			`169.254.0.0/16`, `0.0.0.0/8`,
-		},
-		MaxWorkers: 32,
-		LogLevel:   slog.LevelWarn,
-		Version:    "Dev",
+		DisallowedNetworks: []string{`127.0.0.0/8`, `::1`, `fe80::/10`, `fc00::/7`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `100.64.0.0/10`, `169.254.0.0/16`, `0.0.0.0/8`},
+		MaxWorkers:         32,
+		LogLevel:           slog.LevelWarn,
+		Version:            "Dev",
 	}
 }
 
