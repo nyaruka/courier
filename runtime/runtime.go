@@ -24,7 +24,7 @@ type Runtime struct {
 	S3     *s3x.Service
 	CW     *cwatch.Service
 
-	HTTP *http.Client
+	HTTP       *http.Client
 	HTTPAccess *httpx.AccessConfig
 
 	Writers *Writers
@@ -69,7 +69,10 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 	transport.IdleConnTimeout = 15 * time.Second
 	rt.HTTP = &http.Client{Transport: transport, Timeout: 30 * time.Second}
 
-	disallowedIPs, disallowedNets, _ := cfg.ParseDisallowedNetworks()
+	disallowedIPs, disallowedNets, err := cfg.ParseDisallowedNetworks()
+	if err != nil {
+		return nil, fmt.Errorf("error parsing disallowed networks: %w", err)
+	}
 	rt.HTTPAccess = httpx.NewAccessConfig(10*time.Second, disallowedIPs, disallowedNets)
 
 	rt.Spool = dynamo.NewSpool(rt.Dynamo, rt.Config.SpoolDir+"/dynamo", 30*time.Second)

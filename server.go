@@ -34,7 +34,7 @@ const (
 	contextRequestStart
 )
 
-// NewServer creates a new Server for the passed in configuration. The server will have to be started
+// NewServer creates a new Server for the passed in runtime. The server will have to be started
 // afterwards, which is when configuration options are checked.
 func NewServer(rt *runtime.Runtime, backend Backend) *Server {
 	// create our top level router
@@ -42,7 +42,7 @@ func NewServer(rt *runtime.Runtime, backend Backend) *Server {
 	return NewServerWithLogger(rt, backend, logger)
 }
 
-// NewServerWithLogger creates a new Server for the passed in configuration. The server will have to be started
+// NewServerWithLogger creates a new Server for the passed in runtime. The server will have to be started
 // afterwards, which is when configuration options are checked.
 func NewServerWithLogger(rt *runtime.Runtime, backend Backend, logger *slog.Logger) *Server {
 	// channelRouter holds the dynamically-registered channel handler routes - mounted at /c/ on the public listener
@@ -235,7 +235,6 @@ type Server struct {
 	waitGroup *sync.WaitGroup
 	stopChan  chan bool
 	stopped   bool
-
 }
 
 func (s *Server) initializeChannelHandlers() {
@@ -428,4 +427,3 @@ func (s *Server) tokenAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 		h(w, r)
 	}
 }
-
