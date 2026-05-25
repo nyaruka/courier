@@ -3,7 +3,6 @@ package courier_test
 import (
 	"context"
 	"io"
-	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
@@ -195,7 +194,6 @@ func TestFetchAttachment(t *testing.T) {
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 	uuids.SetGenerator(uuids.NewSeededGenerator(1234, dates.NewSequentialNow(time.Date(2024, 9, 11, 14, 33, 0, 0, time.UTC), time.Second)))
 
-	logger := slog.Default()
 	cfg := runtime.NewDefaultConfig()
 	cfg.AuthToken = "sesame"
 	cfg.PublicPort = 8180
@@ -205,7 +203,7 @@ func TestFetchAttachment(t *testing.T) {
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 	mb.AddChannel(mockChannel)
 
-	server := courier.NewServerWithLogger(runtime.NewTestRuntime(cfg), mb, logger)
+	server := courier.NewServer(runtime.NewTestRuntime(cfg), mb)
 	require.NoError(t, server.Start())
 	defer server.Stop()
 
@@ -269,7 +267,7 @@ func TestListeners(t *testing.T) {
 	mb := test.NewMockBackend()
 	mb.AddChannel(test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, nil))
 
-	server := courier.NewServerWithLogger(runtime.NewTestRuntime(cfg), mb, slog.Default())
+	server := courier.NewServer(runtime.NewTestRuntime(cfg), mb)
 	require.NoError(t, server.Start())
 	defer server.Stop()
 

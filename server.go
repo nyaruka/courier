@@ -37,14 +37,6 @@ const (
 // NewServer creates a new Server for the passed in runtime. The server will have to be started
 // afterwards, which is when configuration options are checked.
 func NewServer(rt *runtime.Runtime, backend Backend) *Server {
-	// create our top level router
-	logger := slog.Default()
-	return NewServerWithLogger(rt, backend, logger)
-}
-
-// NewServerWithLogger creates a new Server for the passed in runtime. The server will have to be started
-// afterwards, which is when configuration options are checked.
-func NewServerWithLogger(rt *runtime.Runtime, backend Backend, logger *slog.Logger) *Server {
 	// channelRouter holds the dynamically-registered channel handler routes - mounted at /c/ on the public listener
 	channelRouter := chi.NewRouter()
 
