@@ -345,7 +345,6 @@ func TestOutgoing(t *testing.T) {
 			"password":           "Password",
 			"username":           "Username",
 			"use_national":       true,
-			"verify_ssl":         false,
 			"dlr_mask":           "3",
 			models.ConfigSendURL: "http://example.com/send",
 		})

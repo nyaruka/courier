@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26"
@@ -103,32 +103,42 @@ func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.
 
 // RequestHTTP does the given request, logging the trace, and returns the response
 func (h *BaseHandler) RequestHTTP(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
-	return h.RequestHTTPWithClient(h.backend.HttpClient(true), req, clog)
+	return h.requestHTTPWithClient(h.backend.HttpClient(true), req, clog)
 }
 
 // RequestHTTP does the given request, logging the trace, and returns the response
 func (h *BaseHandler) RequestHTTPInsecure(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
-	return h.RequestHTTPWithClient(h.backend.HttpClient(false), req, clog)
+	return h.requestHTTPWithClient(h.backend.HttpClient(false), req, clog)
+}
+
+// userAgent returns the User-Agent header value for handler HTTP calls. Only the major.minor
+// portion of the version is included to avoid leaking specific build details.
+func userAgent(version string) string {
+	parts := strings.SplitN(version, ".", 3)
+	if len(parts) >= 2 {
+		return "Courier/" + parts[0] + "." + parts[1]
+	}
+	return "Courier/" + version
 }
 
 // RequestHTTPProxied is like RequestHTTP but routes through the configured outbound proxy
 // (SendProxyURL) when one is set. Use this for handlers that send to user-configured URLs.
 func (h *BaseHandler) RequestHTTPProxied(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
-	return h.RequestHTTPWithClient(h.backend.HttpClientProxied(true), req, clog)
+	return h.requestHTTPWithClient(h.backend.HttpClientProxied(true), req, clog)
 }
 
 // RequestHTTPProxiedInsecure is like RequestHTTPInsecure but routes through the configured
 // outbound proxy (SendProxyURL) when one is set.
 func (h *BaseHandler) RequestHTTPProxiedInsecure(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
-	return h.RequestHTTPWithClient(h.backend.HttpClientProxied(false), req, clog)
+	return h.requestHTTPWithClient(h.backend.HttpClientProxied(false), req, clog)
 }
 
 // RequestHTTP does the given request using the given client, logging the trace, and returns the response
-func (h *BaseHandler) RequestHTTPWithClient(client *http.Client, req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
+func (h *BaseHandler) requestHTTPWithClient(client *http.Client, req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
 	var resp *http.Response
 	var body []byte
 
-	req.Header.Set("User-Agent", fmt.Sprintf("Courier/%s", h.server.Config().Version))
+	req.Header.Set("User-Agent", userAgent(h.server.Config().Version))
 
 	trace, err := httpx.DoTrace(client, req, nil, h.backend.HttpAccess(), 0)
 	if trace != nil {
