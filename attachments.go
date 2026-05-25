@@ -97,7 +97,7 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 		return nil, fmt.Errorf("unable to create attachment request: %w", err)
 	}
 
-	trace, err := httpx.DoTrace(b.HttpClient(true), attRequest, nil, b.HttpAccess(), maxAttBodyReadBytes)
+	trace, err := httpx.DoTrace(b.HttpClient(), attRequest, nil, b.HttpAccess(), maxAttBodyReadBytes)
 	if trace != nil {
 		clog.HTTP(trace)
 

@@ -341,7 +341,7 @@ func (mb *MockBackend) ResolveMedia(ctx context.Context, mediaUrl string) (*mode
 	return media, nil
 }
 
-func (mb *MockBackend) HttpClient(bool) *http.Client {
+func (mb *MockBackend) HttpClient() *http.Client {
 	return http.DefaultClient
 }
 

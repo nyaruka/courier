@@ -2,7 +2,6 @@ package rapidpro
 
 import (
 	"context"
-	"crypto/tls"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -64,9 +63,8 @@ type backend struct {
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
 
-	httpClient         *http.Client
-	httpClientInsecure *http.Client
-	httpAccess         *httpx.AccessConfig
+	httpClient *http.Client
+	httpAccess *httpx.AccessConfig
 
 	mediaCache   *vkutil.IntervalHash
 	mediaMutexes syncx.HashMutex
@@ -96,20 +94,13 @@ func NewBackend(rt *runtime.Runtime) courier.Backend {
 	transport.MaxIdleConnsPerHost = 8
 	transport.IdleConnTimeout = 15 * time.Second
 
-	insecureTransport := http.DefaultTransport.(*http.Transport).Clone()
-	insecureTransport.MaxIdleConns = 64
-	insecureTransport.MaxIdleConnsPerHost = 8
-	insecureTransport.IdleConnTimeout = 15 * time.Second
-	insecureTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-
 	disallowedIPs, disallowedNets, _ := rt.Config.ParseDisallowedNetworks()
 
 	return &backend{
 		rt: rt,
 
-		httpClient:         &http.Client{Transport: transport, Timeout: 30 * time.Second},
-		httpClientInsecure: &http.Client{Transport: insecureTransport, Timeout: 30 * time.Second},
-		httpAccess:         httpx.NewAccessConfig(10*time.Second, disallowedIPs, disallowedNets),
+		httpClient: &http.Client{Transport: transport, Timeout: 30 * time.Second},
+		httpAccess: httpx.NewAccessConfig(10*time.Second, disallowedIPs, disallowedNets),
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
@@ -677,11 +668,8 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (*models.Me
 	return media, nil
 }
 
-func (b *backend) HttpClient(secure bool) *http.Client {
-	if secure {
-		return b.httpClient
-	}
-	return b.httpClientInsecure
+func (b *backend) HttpClient() *http.Client {
+	return b.httpClient
 }
 
 func (b *backend) HttpAccess() *httpx.AccessConfig {
