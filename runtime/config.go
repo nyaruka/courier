@@ -1,15 +1,12 @@
 package runtime
 
 import (
-	"encoding/csv"
 	"fmt"
-	"io"
 	"log"
 	"log/slog"
 	"net"
 	"net/url"
 	"os"
-	"strings"
 
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/ezconf"
@@ -49,7 +46,7 @@ type Config struct {
 	FacebookWebhookSecret        string `help:"the secret for Facebook webhook URL verification"`
 	WhatsappAdminSystemUserToken string `help:"the token of the admin system user for WhatsApp"`
 
-	DisallowedNetworks string     `help:"comma separated list of IP addresses and networks which we disallow fetching attachments from"`
+	DisallowedNetworks []string   `help:"list of IP addresses and networks (CIDR notation) which we disallow making outgoing HTTP requests to"`
 	SendProxyURL       string     `validate:"omitempty,http_url" help:"optional URL of a forward HTTP proxy for handlers that send to user-configured URLs"`
 	MediaDomain        string     `help:"the domain on which we'll try to resolve outgoing media URLs"`
 	MaxWorkers         int        `help:"the maximum number of go routines that will be used for sending (set to 0 to disable sending)"`
@@ -101,7 +98,7 @@ func NewDefaultConfig() *Config {
 		FacebookWebhookSecret:        "missing_facebook_webhook_secret",
 		WhatsappAdminSystemUserToken: "missing_whatsapp_admin_system_user_token",
 
-		DisallowedNetworks: `127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,169.254.0.0/16,fe80::/10`,
+		DisallowedNetworks: []string{`127.0.0.0/8`, `::1`, `fe80::/10`, `fc00::/7`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `100.64.0.0/10`, `169.254.0.0/16`, `0.0.0.0/8`},
 		MaxWorkers:         32,
 		LogLevel:           slog.LevelWarn,
 		Version:            "Dev",
@@ -143,10 +140,5 @@ func (c *Config) Validate() error {
 
 // ParseDisallowedNetworks parses the list of IPs and IP networks (written in CIDR notation)
 func (c *Config) ParseDisallowedNetworks() ([]net.IP, []*net.IPNet, error) {
-	addrs, err := csv.NewReader(strings.NewReader(c.DisallowedNetworks)).Read()
-	if err != nil && err != io.EOF {
-		return nil, nil, err
-	}
-
-	return httpx.ParseNetworks(addrs...)
+	return httpx.ParseNetworks(c.DisallowedNetworks...)
 }
