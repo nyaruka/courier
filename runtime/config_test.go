@@ -27,17 +27,21 @@ func TestConfigValidate(t *testing.T) {
 	}
 }
 
-func TestSendProxyURLParsing(t *testing.T) {
+func TestParseSendProxyURL(t *testing.T) {
 	cfg := runtime.NewDefaultConfig()
 	cfg.SendProxyURL = "http://proxy.example.com:3128"
-
 	require.NoError(t, cfg.Validate())
-	require.NotNil(t, cfg.SendProxyURLParsed)
-	assert.Equal(t, "proxy.example.com:3128", cfg.SendProxyURLParsed.Host)
-	assert.Equal(t, "http", cfg.SendProxyURLParsed.Scheme)
 
-	// empty SendProxyURL leaves SendProxyURLParsed nil
+	u, err := cfg.ParseSendProxyURL()
+	require.NoError(t, err)
+	require.NotNil(t, u)
+	assert.Equal(t, "proxy.example.com:3128", u.Host)
+	assert.Equal(t, "http", u.Scheme)
+
+	// empty SendProxyURL returns (nil, nil)
 	cfg = runtime.NewDefaultConfig()
 	require.NoError(t, cfg.Validate())
-	assert.Nil(t, cfg.SendProxyURLParsed)
+	u, err = cfg.ParseSendProxyURL()
+	require.NoError(t, err)
+	assert.Nil(t, u)
 }

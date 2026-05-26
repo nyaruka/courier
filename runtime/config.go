@@ -59,9 +59,6 @@ type Config struct {
 
 	// ExcludeChannels is the list of channels to exclude, empty means exclude none
 	ExcludeChannels []string
-
-	// SendProxyURLParsed is the parsed form of SendProxyURL, populated by Validate.
-	SendProxyURLParsed *url.URL
 }
 
 // NewDefaultConfig returns a new default configuration object
@@ -128,12 +125,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("unable to parse 'DisallowedNetworks': %w", err)
 	}
 
-	if c.SendProxyURL != "" {
-		u, err := url.Parse(c.SendProxyURL)
-		if err != nil {
-			return fmt.Errorf("unable to parse 'SendProxyURL': %w", err)
-		}
-		c.SendProxyURLParsed = u
+	if _, err := c.ParseSendProxyURL(); err != nil {
+		return fmt.Errorf("unable to parse 'SendProxyURL': %w", err)
 	}
 	return nil
 }
@@ -141,4 +134,12 @@ func (c *Config) Validate() error {
 // ParseDisallowedNetworks parses the list of IPs and IP networks (written in CIDR notation)
 func (c *Config) ParseDisallowedNetworks() ([]net.IP, []*net.IPNet, error) {
 	return httpx.ParseNetworks(c.DisallowedNetworks...)
+}
+
+// ParseSendProxyURL parses SendProxyURL. Returns (nil, nil) when SendProxyURL is empty.
+func (c *Config) ParseSendProxyURL() (*url.URL, error) {
+	if c.SendProxyURL == "" {
+		return nil, nil
+	}
+	return url.Parse(c.SendProxyURL)
 }

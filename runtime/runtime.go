@@ -74,11 +74,20 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 	rt.HTTP = &http.Client{Transport: transport, Timeout: 30 * time.Second}
 
 	// build a proxied variant when SendProxyURL is configured; otherwise reuse the regular client
-	// so handlers can always go through HTTPProxied without behavior change
+	// so handlers can always go through HTTPProxied without behavior change.
+	//
+	// Note on the SSRF blocklist: HTTPAccess's IP blocklist below is evaluated against the
+	// connection's dial target. When the proxy is set, requests dial the proxy host rather than
+	// the destination, so the in-process blocklist applies to the proxy hop only — protection of
+	// the eventual destination is delegated to the proxy's own egress rules.
+	proxyURL, err := cfg.ParseSendProxyURL()
+	if err != nil {
+		return nil, fmt.Errorf("error parsing send proxy URL: %w", err)
+	}
 	rt.HTTPProxied = rt.HTTP
-	if cfg.SendProxyURLParsed != nil {
+	if proxyURL != nil {
 		proxiedTransport := transport.Clone()
-		proxiedTransport.Proxy = http.ProxyURL(cfg.SendProxyURLParsed)
+		proxiedTransport.Proxy = http.ProxyURL(proxyURL)
 		rt.HTTPProxied = &http.Client{Transport: proxiedTransport, Timeout: 30 * time.Second}
 	}
 
