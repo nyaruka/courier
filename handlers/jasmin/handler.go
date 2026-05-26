@@ -184,7 +184,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return err
 	}
 
-	resp, respBody, err := h.RequestHTTPProxied(req, clog)
+	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
 		return courier.ErrConnectionFailed
 	} else if resp.StatusCode/100 != 2 {

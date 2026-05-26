@@ -148,7 +148,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	req, _ := http.NewRequest("POST", sendURL+"/"+string(msg.Channel().UUID())+"/", bytes.NewReader(jsonx.MustMarshal(payload)))
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, _, err := h.RequestHTTPProxied(req, clog)
+	resp, _, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
 		return courier.ErrConnectionFailed
 	} else if resp.StatusCode/100 == 4 {
