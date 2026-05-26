@@ -5,6 +5,7 @@ import (
 	"log"
 	"log/slog"
 	"net"
+	"net/url"
 	"os"
 
 	"github.com/nyaruka/courier/v26/utils"
@@ -46,6 +47,7 @@ type Config struct {
 	WhatsappAdminSystemUserToken string `help:"the token of the admin system user for WhatsApp"`
 
 	DisallowedNetworks []string   `help:"list of IP addresses and networks (CIDR notation) which we disallow making outgoing HTTP requests to"`
+	SendProxyURL       string     `validate:"omitempty,http_url" help:"optional URL of a forward HTTP proxy for handlers that send to user-configured URLs"`
 	MediaDomain        string     `help:"the domain on which we'll try to resolve outgoing media URLs"`
 	MaxWorkers         int        `help:"the maximum number of go routines that will be used for sending (set to 0 to disable sending)"`
 	AuthToken          string     `help:"the authentication token need to access non-channel endpoints"`
@@ -122,10 +124,22 @@ func (c *Config) Validate() error {
 	if _, _, err := c.ParseDisallowedNetworks(); err != nil {
 		return fmt.Errorf("unable to parse 'DisallowedNetworks': %w", err)
 	}
+
+	if _, err := c.ParseSendProxyURL(); err != nil {
+		return fmt.Errorf("unable to parse 'SendProxyURL': %w", err)
+	}
 	return nil
 }
 
 // ParseDisallowedNetworks parses the list of IPs and IP networks (written in CIDR notation)
 func (c *Config) ParseDisallowedNetworks() ([]net.IP, []*net.IPNet, error) {
 	return httpx.ParseNetworks(c.DisallowedNetworks...)
+}
+
+// ParseSendProxyURL parses SendProxyURL. Returns (nil, nil) when SendProxyURL is empty.
+func (c *Config) ParseSendProxyURL() (*url.URL, error) {
+	if c.SendProxyURL == "" {
+		return nil, nil
+	}
+	return url.Parse(c.SendProxyURL)
 }

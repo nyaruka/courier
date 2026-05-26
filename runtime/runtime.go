@@ -27,6 +27,10 @@ type Runtime struct {
 	HTTP       *http.Client
 	HTTPAccess *httpx.AccessConfig
 
+	// HTTPProxied is the HTTP client used by handlers that send to user-configured URLs. When
+	// SendProxyURL is set, it routes through that forward proxy. Otherwise it's the same as HTTP.
+	HTTPProxied *http.Client
+
 	Writers *Writers
 	Spool   *dynamo.Spool
 }
@@ -69,6 +73,24 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 	transport.IdleConnTimeout = 15 * time.Second
 	rt.HTTP = &http.Client{Transport: transport, Timeout: 30 * time.Second}
 
+	// build a proxied variant when SendProxyURL is configured; otherwise reuse the regular client
+	// so handlers can always go through HTTPProxied without behavior change.
+	//
+	// Note on the SSRF blocklist: HTTPAccess's IP blocklist below is evaluated against the
+	// connection's dial target. When the proxy is set, requests dial the proxy host rather than
+	// the destination, so the in-process blocklist applies to the proxy hop only — protection of
+	// the eventual destination is delegated to the proxy's own egress rules.
+	proxyURL, err := cfg.ParseSendProxyURL()
+	if err != nil {
+		return nil, fmt.Errorf("error parsing send proxy URL: %w", err)
+	}
+	rt.HTTPProxied = rt.HTTP
+	if proxyURL != nil {
+		proxiedTransport := transport.Clone()
+		proxiedTransport.Proxy = http.ProxyURL(proxyURL)
+		rt.HTTPProxied = &http.Client{Transport: proxiedTransport, Timeout: 30 * time.Second}
+	}
+
 	disallowedIPs, disallowedNets, err := cfg.ParseDisallowedNetworks()
 	if err != nil {
 		return nil, fmt.Errorf("error parsing disallowed networks: %w", err)
@@ -85,7 +107,7 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 // Runtime but don't bring up real backing services. It populates HTTP with http.DefaultClient so
 // code paths that issue outbound HTTP requests work against test servers.
 func NewTestRuntime(cfg *Config) *Runtime {
-	return &Runtime{Config: cfg, HTTP: http.DefaultClient}
+	return &Runtime{Config: cfg, HTTP: http.DefaultClient, HTTPProxied: http.DefaultClient}
 }
 
 func (r *Runtime) Start() error {
