@@ -1,3 +1,8 @@
+v26.1.41 (2026-05-26)
+-------------------------
+ * Update default cloudwatch namespace to Courier
+ * Route external channel send URLs through optional outbound HTTP proxy
+
 v26.1.40 (2026-05-25)
 -------------------------
  * Update gocommon to v1.80.1
