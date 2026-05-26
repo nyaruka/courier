@@ -80,7 +80,7 @@ func NewDefaultConfig() *Config {
 		AWSRegion:          "us-east-1",
 
 		MetricsReporting:    "off",
-		CloudwatchNamespace: "Temba/Courier",
+		CloudwatchNamespace: "Courier",
 		DeploymentID:        "dev",
 		InstanceID:          hostname,
 
