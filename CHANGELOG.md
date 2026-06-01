@@ -1,3 +1,7 @@
+v26.1.42 (2026-06-01)
+-------------------------
+ * Update phonenumbers to v1.8.0
+
 v26.1.41 (2026-05-26)
 -------------------------
  * Update default cloudwatch namespace to Courier
