@@ -168,8 +168,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		}
 	}
 
-	// if we are unicode, encode the body to UTF-16BE (UCS-2) ourselves and tell kannel the charset matches so it
-	// doesn't attempt (and possibly fail with "Charset or body misformed, rejected") a server-side recode
+	// if we are unicode, encode the body to UTF-16BE (UCS-2) ourselves and don't send a charset param - that way
+	// kannel skips its server-side recode entirely (which fails with "Charset or body misformed, rejected" on
+	// builds compiled without iconv) and passes our already-encoded body straight through as coding=2 / UCS-2
 	if encoding == encodingUnicode {
 		encoder := unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM).NewEncoder()
 		utf16beText, err := encoder.String(handlers.GetTextAndAttachments(msg))
@@ -177,7 +178,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			return err
 		}
 		form["coding"] = []string{"2"}
-		form["charset"] = []string{"UTF-16BE"}
 		form["text"] = []string{utf16beText}
 	}
 
