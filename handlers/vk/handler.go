@@ -522,7 +522,8 @@ func (h *handler) downloadMedia(mediaURL string) (io.Reader, error) {
 		return nil, err
 	}
 
-	if res, err := httpx.Do(h.Runtime().HTTP, req, nil, h.Runtime().HTTPAccess); err == nil {
+	// access control is enforced by the client's transport, so no access config is passed here
+	if res, err := httpx.Do(h.Runtime().HTTP, req, nil, nil); err == nil {
 		return res.Body, nil
 	} else {
 		return nil, err

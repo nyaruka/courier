@@ -65,8 +65,10 @@ func TestIncoming(t *testing.T) {
 }
 
 func TestOutgoing(t *testing.T) {
-	defer httpx.SetRequestor(httpx.DefaultRequestor)
-	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
+	// create and start our backend and server
+	mb := test.NewMockBackend()
+	s := courier.NewServer(runtime.NewTestRuntime(testConfig()), mb)
+	s.Runtime().HTTP.Transport = httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/send": {
 			httpx.NewMockResponse(200, nil, []byte(`SENT`)),
 			httpx.MockConnectionError,
@@ -74,11 +76,7 @@ func TestOutgoing(t *testing.T) {
 			httpx.NewMockResponse(429, nil, []byte(`too much!`)),
 			httpx.NewMockResponse(403, nil, []byte(`stop!`)),
 		},
-	}))
-
-	// create and start our backend and server
-	mb := test.NewMockBackend()
-	s := courier.NewServer(runtime.NewTestRuntime(testConfig()), mb)
+	})
 
 	require.NoError(t, s.Start())
 	defer s.Stop()
@@ -175,22 +173,6 @@ func TestOutgoing(t *testing.T) {
 func TestFetchAttachment(t *testing.T) {
 	testJPG := test.ReadFile("test/testdata/test.jpg")
 
-	httpMocks := httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
-		"http://mock.com/media/hello.jpg": {
-			httpx.NewMockResponse(200, nil, testJPG),
-		},
-		"http://mock.com/media/hello.mp3": {
-			httpx.NewMockResponse(404, nil, []byte(`No such file`)),
-		},
-		"http://mock.com/media/hello.pdf": {
-			httpx.MockConnectionError,
-		},
-	})
-	httpMocks.SetIgnoreLocal(true)
-
-	defer httpx.SetRequestor(httpx.DefaultRequestor)
-	httpx.SetRequestor(httpMocks)
-
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 	uuids.SetGenerator(uuids.NewSeededGenerator(1234, dates.NewSequentialNow(time.Date(2024, 9, 11, 14, 33, 0, 0, time.UTC), time.Second)))
 
@@ -204,6 +186,17 @@ func TestFetchAttachment(t *testing.T) {
 	mb.AddChannel(mockChannel)
 
 	server := courier.NewServer(runtime.NewTestRuntime(cfg), mb)
+	server.Runtime().HTTP.Transport = httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+		"http://mock.com/media/hello.jpg": {
+			httpx.NewMockResponse(200, nil, testJPG),
+		},
+		"http://mock.com/media/hello.mp3": {
+			httpx.NewMockResponse(404, nil, []byte(`No such file`)),
+		},
+		"http://mock.com/media/hello.pdf": {
+			httpx.MockConnectionError,
+		},
+	})
 	require.NoError(t, server.Start())
 	defer server.Stop()
 

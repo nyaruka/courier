@@ -303,19 +303,17 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	// reset send URL
 	sendURL = "https://channels.jiochat.com"
 
-	defer httpx.SetRequestor(httpx.DefaultRequestor)
-	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
-		"https://channels.jiochat.com/auth/token.action": {
-			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"access_token": "SESAME"}`)),
-		},
-	}))
-
 	// ensure that we start with no cached token
 	rc := mb.RedisPool().Get()
 	defer rc.Close()
 	rc.Do("DEL", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab")
 
 	s := newServer(mb)
+	s.Runtime().HTTP.Transport = httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+		"https://channels.jiochat.com/auth/token.action": {
+			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"access_token": "SESAME"}`)),
+		},
+	})
 	handler := newHandler().(*handler)
 	handler.Initialize(s)
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))

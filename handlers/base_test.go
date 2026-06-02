@@ -15,14 +15,6 @@ import (
 )
 
 func TestRequestHTTP(t *testing.T) {
-	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
-		"https://api.messages.com/send.json": {
-			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
-			httpx.NewMockResponse(400, nil, []byte(`{"status":"error"}`)),
-		},
-	}))
-	defer httpx.SetRequestor(httpx.DefaultRequestor)
-
 	mb := test.NewMockBackend()
 	mc := test.NewMockChannel("7a8ff1d4-f211-4492-9d05-e1905f6da8c8", "NX", "1234", "EC", []string{urns.Phone.Prefix}, nil)
 	cf := &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc"}
@@ -30,6 +22,12 @@ func TestRequestHTTP(t *testing.T) {
 	clog := courier.NewChannelLogForSend(mm, nil)
 
 	server := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
+	server.Runtime().HTTP.Transport = httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+		"https://api.messages.com/send.json": {
+			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
+			httpx.NewMockResponse(400, nil, []byte(`{"status":"error"}`)),
+		},
+	})
 
 	h := handlers.NewBaseHandler("NX", "Test")
 	h.SetServer(server)

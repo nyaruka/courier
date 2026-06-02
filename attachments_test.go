@@ -18,8 +18,12 @@ import (
 func TestFetchAndStoreAttachment(t *testing.T) {
 	testJPG := test.ReadFile("test/testdata/test.jpg")
 
-	defer httpx.SetRequestor(httpx.DefaultRequestor)
-	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
+	defer uuids.SetGenerator(uuids.DefaultGenerator)
+	uuids.SetGenerator(uuids.NewSeededGenerator(1234, time.Now))
+
+	ctx := context.Background()
+	rt := runtime.NewTestRuntime(runtime.NewDefaultConfig())
+	rt.HTTP.Transport = httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/media/hello.jpg": {
 			httpx.NewMockResponse(200, nil, testJPG),
 		},
@@ -41,13 +45,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 		"http://mock.com/media/hello7": {
 			httpx.NewMockResponse(200, nil, []byte(`hello world`)),
 		},
-	}))
-
-	defer uuids.SetGenerator(uuids.DefaultGenerator)
-	uuids.SetGenerator(uuids.NewSeededGenerator(1234, time.Now))
-
-	ctx := context.Background()
-	rt := runtime.NewTestRuntime(runtime.NewDefaultConfig())
+	})
 	mb := test.NewMockBackend()
 
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
