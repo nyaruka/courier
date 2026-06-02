@@ -32,17 +32,17 @@ func TestChannelLog(t *testing.T) {
 
 	// make a request that will have a response
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
-	traces, _, err := courier.TraceHTTP(httpClient, req, 0)
+	trace, _, err := courier.TraceHTTP(httpClient, req, 0)
 	assert.NoError(t, err)
 
-	clog.HTTP(traces[0])
+	clog.HTTP(trace)
 
 	// make a request that has no response (connection error); the client wraps the transport's error
 	req, _ = http.NewRequest("POST", "https://api.messages.com/send.json", nil)
-	traces, _, err = courier.TraceHTTP(httpClient, req, 0)
+	trace, _, err = courier.TraceHTTP(httpClient, req, 0)
 	assert.ErrorContains(t, err, "unable to connect to server")
 
-	clog.HTTP(traces[0])
+	clog.HTTP(trace)
 	clog.Error(&clogs.Error{Code: "not_right", Message: "Something not right"})
 	clog.RawError(errors.New("this is an error"))
 	clog.End()

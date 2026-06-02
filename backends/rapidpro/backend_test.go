@@ -846,9 +846,8 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	// make a request that will have a response
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
-	traces, _, err := courier.TraceHTTP(httpClient, req, 0)
+	trace, _, err := courier.TraceHTTP(httpClient, req, 0)
 	ts.NoError(err)
-	trace := traces[0]
 
 	clog1 := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, nil)
 	clog1.HTTP(trace)

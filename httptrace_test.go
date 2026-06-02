@@ -22,11 +22,11 @@ func TestTraceHTTP(t *testing.T) {
 
 	// a body within the limit is read in full, captured into the trace, and returns no error
 	req, _ := http.NewRequest("GET", url, nil)
-	traces, resp, err := courier.TraceHTTP(clientWithBody([]byte("hello")), req, 1024)
+	trace, resp, err := courier.TraceHTTP(clientWithBody([]byte("hello")), req, 1024)
 	require.NoError(t, err)
-	require.Len(t, traces, 1)
+	require.NotNil(t, trace)
 	assert.Equal(t, 200, resp.StatusCode)
-	assert.Equal(t, []byte("hello"), traces[0].ResponseBody)
+	assert.Equal(t, []byte("hello"), trace.ResponseBody)
 
 	// a body exceeding the limit is surfaced as ErrResponseSize (deferred onto the body by the tracing
 	// transport, then drained back out by TraceHTTP)
@@ -36,7 +36,19 @@ func TestTraceHTTP(t *testing.T) {
 
 	// a limit of 0 disables the bound: the whole body is read and captured with no error
 	req, _ = http.NewRequest("GET", url, nil)
-	traces, _, err = courier.TraceHTTP(clientWithBody(bytes.Repeat([]byte("x"), 100)), req, 0)
+	trace, _, err = courier.TraceHTTP(clientWithBody(bytes.Repeat([]byte("x"), 100)), req, 0)
 	require.NoError(t, err)
-	assert.Len(t, traces[0].ResponseBody, 100)
+	assert.Len(t, trace.ResponseBody, 100)
+
+	// a redirect yields only the final hop's trace, not one per hop
+	redirectClient := &http.Client{Transport: httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+		"https://example.com/redirect": {httpx.NewMockResponse(302, map[string]string{"Location": url}, nil)},
+		url:                            {httpx.NewMockResponse(200, nil, []byte("final"))},
+	})}
+	req, _ = http.NewRequest("GET", "https://example.com/redirect", nil)
+	trace, resp, err = courier.TraceHTTP(redirectClient, req, 0)
+	require.NoError(t, err)
+	require.NotNil(t, trace)
+	assert.Equal(t, 200, resp.StatusCode)
+	assert.Equal(t, []byte("final"), trace.ResponseBody)
 }

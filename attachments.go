@@ -102,8 +102,8 @@ func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, b Backend
 	// attachment URLs are untrusted, so bound the body read at maxAttBodyReadBytes — TraceHTTP surfaces
 	// an oversized body as httpx.ErrResponseSize. access control (the SSRF blocklist) is enforced by
 	// rt.HTTP's transport, so a denied request comes back as an error with a nil response.
-	traces, resp, err := TraceHTTP(rt.HTTP, attRequest, maxAttBodyReadBytes)
-	for _, trace := range traces {
+	trace, resp, err := TraceHTTP(rt.HTTP, attRequest, maxAttBodyReadBytes)
+	if trace != nil {
 		clog.HTTP(trace)
 	}
 
@@ -117,7 +117,6 @@ func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, b Backend
 		return nil, err
 	}
 
-	trace := traces[len(traces)-1]
 	mimeType, extension := getAttachmentType(trace)
 
 	storageURL, err := b.SaveAttachment(ctx, channel, mimeType, trace.ResponseBody, extension)

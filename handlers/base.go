@@ -116,12 +116,11 @@ func (h *BaseHandler) RequestHTTPProxied(req *http.Request, clog *courier.Channe
 func (h *BaseHandler) requestHTTP(client *http.Client, req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
 	req.Header.Set("User-Agent", userAgent(h.rt.Config.Version))
 
-	// trace via the client's transport, which already enforces access control (the SSRF blocklist).
-	// each request hop is logged — one in the common case, or several if the channel redirects.
-	traces, resp, err := courier.TraceHTTP(client, req, 0)
+	// trace via the client's transport, which already enforces access control (the SSRF blocklist)
+	trace, resp, err := courier.TraceHTTP(client, req, 0)
 
 	var body []byte
-	for _, trace := range traces {
+	if trace != nil {
 		clog.HTTP(trace)
 		body = trace.ResponseBody
 	}

@@ -205,9 +205,9 @@ func TestFetchAttachment(t *testing.T) {
 		if authToken != "" {
 			req.Header.Set("Authorization", "Bearer "+authToken)
 		}
-		traces, _, err := courier.TraceHTTP(http.DefaultClient, req, 0)
+		trace, _, err := courier.TraceHTTP(http.DefaultClient, req, 0)
 		require.NoError(t, err)
-		return traces[0].Response.StatusCode, traces[0].ResponseBody
+		return trace.Response.StatusCode, trace.ResponseBody
 	}
 
 	// try to submit with no auth header

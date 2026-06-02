@@ -7,12 +7,14 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 )
 
-// TraceHTTP performs req, capturing an HTTP trace of each request and response. Tracing is layered onto
-// the given client's transport for this single call rather than shared on the client itself, so
+// TraceHTTP performs req, returning a trace of the request and its final response. Tracing is layered
+// onto the given client's transport for this single call rather than shared on the client itself, so
 // concurrent callers never race on trace state; any other middleware already on the client's transport
-// (e.g. access control) stays in effect. Each request hop is captured as its own trace — one in the
-// common case, or several if the server issues redirects, with the captured trace and the returned
-// response being those of the final hop.
+// (e.g. access control) stays in effect.
+//
+// If the server redirects, only the final hop's trace is returned — the intermediate redirect hops are
+// dropped — so a redirected request yields a single trace, as httpx.DoTrace did, rather than one per
+// hop. The returned trace is nil only if the request couldn't be issued at all.
 //
 // maxBodyBytes bounds both how many bytes are read from each response body (rejecting a larger body
 // with httpx.ErrResponseSize, the protection needed when fetching from untrusted endpoints) and how
@@ -21,8 +23,8 @@ import (
 // The returned response and error otherwise mirror http.Client.Do — on a transport error the response
 // is nil and the error is set — except that a body-read error (e.g. ErrResponseSize), which the tracing
 // transport defers onto the response body, is surfaced here as the returned error so callers see it the
-// same way httpx.DoTrace reported it. The body remains available via the final trace's ResponseBody.
-func TraceHTTP(client *http.Client, req *http.Request, maxBodyBytes int) ([]*httpx.Trace, *http.Response, error) {
+// same way httpx.DoTrace reported it. The body remains available via the trace's ResponseBody.
+func TraceHTTP(client *http.Client, req *http.Request, maxBodyBytes int) (*httpx.Trace, *http.Response, error) {
 	// WithBodyLimit (inside WithTracing, so the bound applies before the body is buffered) caps the
 	// bytes read; WithTracing then captures up to maxBodyBytes of that bounded body into the trace.
 	tracing := httpx.WithTracing(httpx.WithBodyLimit(client.Transport, maxBodyBytes), maxBodyBytes)
@@ -44,5 +46,11 @@ func TraceHTTP(client *http.Client, req *http.Request, maxBodyBytes int) ([]*htt
 		}
 	}
 
-	return tracing.Traces(), resp, err
+	// keep only the final hop's trace; on a redirect the earlier hops are the 3xx responses that led
+	// here and would otherwise each produce a separate channel-log entry
+	traces := tracing.Traces()
+	if len(traces) == 0 {
+		return nil, resp, err
+	}
+	return traces[len(traces)-1], resp, err
 }
