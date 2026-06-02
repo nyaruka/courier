@@ -170,7 +170,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	// if we are UTF8, set our coding appropriately
 	if encoding == encodingUnicode {
 		form["coding"] = []string{"2"}
-		form["charset"] = []string{"utf8"}
+		form["charset"] = []string{"utf-8"}
 	}
 
 	// our send URL may have form parameters in it already, append our own afterwards
