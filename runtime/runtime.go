@@ -109,7 +109,9 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 // dedicated client so code paths that issue outbound HTTP requests work against test servers, and so
 // tests can install a mocking transport via httpx.WithMocking without mutating http.DefaultClient.
 func NewTestRuntime(cfg *Config) *Runtime {
-	client := &http.Client{}
+	// give the client a timeout matching the production clients so a test that accidentally lets a
+	// request escape its mocking transport fails fast instead of hanging
+	client := &http.Client{Timeout: 30 * time.Second}
 	return &Runtime{Config: cfg, HTTP: client, HTTPProxied: client}
 }
 

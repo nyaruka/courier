@@ -3,6 +3,7 @@ package courier_test
 import (
 	"context"
 	"errors"
+	"net"
 	"testing"
 	"time"
 
@@ -108,4 +109,34 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	att, err = courier.FetchAndStoreAttachment(ctx, rt, mb, mockChannel, "http://mock.com/media/hello.txt", clog)
 	assert.EqualError(t, err, "boom")
 	assert.Nil(t, att)
+}
+
+func TestFetchAndStoreAttachmentAccessDenied(t *testing.T) {
+	defer uuids.SetGenerator(uuids.DefaultGenerator)
+	uuids.SetGenerator(uuids.NewSeededGenerator(1234, time.Now))
+
+	ctx := context.Background()
+
+	rt := runtime.NewTestRuntime(runtime.NewDefaultConfig())
+
+	// wrap the transport in access control that blocks loopback, so a fetch of a disallowed host is
+	// rejected before any connection is made; the mocking transport underneath has no entries and so
+	// would panic if a request ever reached it, guarding against the access check silently passing
+	access := httpx.NewAccessConfig(time.Second, []net.IP{net.ParseIP("127.0.0.1")}, nil)
+	rt.HTTP.Transport = httpx.WithAccessControl(httpx.WithMocking(nil, map[string][]*httpx.MockResponse{}), access)
+
+	mb := test.NewMockBackend()
+	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
+	mb.AddChannel(mockChannel)
+
+	clog := courier.NewChannelLogForAttachmentFetch(mockChannel, nil)
+
+	// a request denied by the SSRF blocklist should yield an "unavailable" attachment rather than an error
+	att, err := courier.FetchAndStoreAttachment(ctx, rt, mb, mockChannel, "http://127.0.0.1/media/blocked.jpg", clog)
+	assert.NoError(t, err)
+	assert.Equal(t, &courier.Attachment{ContentType: "unavailable", URL: "http://127.0.0.1/media/blocked.jpg"}, att)
+
+	// nothing is saved to storage, but the denied request is still logged
+	assert.Empty(t, mb.SavedAttachments())
+	assert.Len(t, clog.HttpLogs, 1)
 }
