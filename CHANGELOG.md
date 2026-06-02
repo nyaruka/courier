@@ -1,3 +1,8 @@
+v26.1.44 (2026-06-02)
+-------------------------
+ * Merge pull request #1029 from nyaruka/fix-kannel-unicode-charset
+ * Send kannel unicode messages as UTF-16BE to avoid charset recode errors
+
 v26.1.43 (2026-06-02)
 -------------------------
  * Merge pull request #1028 from nyaruka/fix-charset-KN
