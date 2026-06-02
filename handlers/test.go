@@ -380,6 +380,10 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 	mb.AddChannel(channel)
 	handler.Initialize(s)
 
+	// the test runtime shares one HTTP client between HTTP and HTTPProxied, so installing a mocking
+	// transport on it intercepts every request a handler makes via either client
+	rt := s.Runtime()
+
 	for _, tc := range testCases {
 		mb.Reset()
 
@@ -388,12 +392,15 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 
 			msg := tc.Msg(mb, channel)
 
-			var mockHTTP *httpx.MockRequestor
+			var mockHTTP *httpx.MockTransport
 			actualRequests := make([]*http.Request, 0, 1)
 
+			// reset to the default transport each case, then install a mocking transport when the
+			// case provides mocks
+			rt.HTTP.Transport = nil
 			if len(tc.MockResponses) > 0 {
-				mockHTTP = httpx.NewMockRequestor(tc.MockResponses).Clone()
-				httpx.SetRequestor(mockHTTP)
+				mockHTTP = httpx.WithMocking(nil, tc.MockResponses)
+				rt.HTTP.Transport = mockHTTP
 			}
 
 			clog := courier.NewChannelLogForSend(msg, handler.RedactValues(channel))
@@ -404,7 +411,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			externalIDs := res.ExternalIDs()
 
 			if mockHTTP != nil {
-				httpx.SetRequestor(httpx.DefaultRequestor)
+				rt.HTTP.Transport = nil
 
 				actualRequests = mockHTTP.Requests()
 

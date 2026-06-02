@@ -17,13 +17,12 @@ import (
 )
 
 func TestChannelLog(t *testing.T) {
-	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
+	httpClient := &http.Client{Transport: httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
 			httpx.MockConnectionError,
 		},
-	}))
-	defer httpx.SetRequestor(httpx.DefaultRequestor)
+	})}
 
 	uuids.SetGenerator(uuids.NewSeededGenerator(1234, dates.NewSequentialNow(time.Date(2024, 9, 11, 14, 33, 0, 0, time.UTC), time.Second)))
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
@@ -33,15 +32,15 @@ func TestChannelLog(t *testing.T) {
 
 	// make a request that will have a response
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
-	trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
+	trace, err := httpx.DoTrace(httpClient, req, nil, nil, 0)
 	assert.NoError(t, err)
 
 	clog.HTTP(trace)
 
-	// make a request that has no response (connection error)
+	// make a request that has no response (connection error); the client wraps the transport's error
 	req, _ = http.NewRequest("POST", "https://api.messages.com/send.json", nil)
-	trace, err = httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
-	assert.EqualError(t, err, "unable to connect to server")
+	trace, err = httpx.DoTrace(httpClient, req, nil, nil, 0)
+	assert.ErrorContains(t, err, "unable to connect to server")
 
 	clog.HTTP(trace)
 	clog.Error(&clogs.Error{Code: "not_right", Message: "Something not right"})

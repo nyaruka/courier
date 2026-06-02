@@ -838,16 +838,15 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 		return dynamo.GetItem(ctx, ts.b.rt.Dynamo, ts.b.rt.Writers.Main.Table(), (&ChannelLog{clog}).DynamoKey())
 	}
 
-	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
+	httpClient := &http.Client{Transport: httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
 		},
-	}))
-	defer httpx.SetRequestor(httpx.DefaultRequestor)
+	})}
 
 	// make a request that will have a response
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
-	trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
+	trace, err := httpx.DoTrace(httpClient, req, nil, nil, 0)
 	ts.NoError(err)
 
 	clog1 := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, nil)

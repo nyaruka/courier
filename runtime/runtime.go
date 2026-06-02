@@ -24,8 +24,7 @@ type Runtime struct {
 	S3     *s3x.Service
 	CW     *cwatch.Service
 
-	HTTP       *http.Client
-	HTTPAccess *httpx.AccessConfig
+	HTTP *http.Client
 
 	// HTTPProxied is the HTTP client used by handlers that send to user-configured URLs. When
 	// SendProxyURL is set, it routes through that forward proxy. Otherwise it's the same as HTTP.
@@ -67,19 +66,27 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 		return nil, fmt.Errorf("error creating Cloudwatch service: %w", err)
 	}
 
+	// parse the SSRF blocklist up front so it can be baked into each HTTP client's transport via
+	// httpx.WithAccessControl, rather than passed to every request.
+	disallowedIPs, disallowedNets, err := cfg.ParseDisallowedNetworks()
+	if err != nil {
+		return nil, fmt.Errorf("error parsing disallowed networks: %w", err)
+	}
+	httpAccess := httpx.NewAccessConfig(10*time.Second, disallowedIPs, disallowedNets)
+
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConns = 64
 	transport.MaxIdleConnsPerHost = 8
 	transport.IdleConnTimeout = 15 * time.Second
-	rt.HTTP = &http.Client{Transport: transport, Timeout: 30 * time.Second}
+	rt.HTTP = &http.Client{Transport: httpx.WithAccessControl(transport, httpAccess), Timeout: 30 * time.Second}
 
 	// build a proxied variant when SendProxyURL is configured; otherwise reuse the regular client
 	// so handlers can always go through HTTPProxied without behavior change.
 	//
-	// Note on the SSRF blocklist: HTTPAccess's IP blocklist below is evaluated against the
-	// connection's dial target. When the proxy is set, requests dial the proxy host rather than
-	// the destination, so the in-process blocklist applies to the proxy hop only — protection of
-	// the eventual destination is delegated to the proxy's own egress rules.
+	// Note on the SSRF blocklist: the access control wrapped into each transport resolves the
+	// destination URL's host and rejects the request if it maps to a disallowed IP. This check runs
+	// regardless of the proxy; when the proxy is set the request still dials the proxy rather than the
+	// destination, so the proxy's own egress rules govern the actual connection to the destination.
 	proxyURL, err := cfg.ParseSendProxyURL()
 	if err != nil {
 		return nil, fmt.Errorf("error parsing send proxy URL: %w", err)
@@ -88,14 +95,8 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 	if proxyURL != nil {
 		proxiedTransport := transport.Clone()
 		proxiedTransport.Proxy = http.ProxyURL(proxyURL)
-		rt.HTTPProxied = &http.Client{Transport: proxiedTransport, Timeout: 30 * time.Second}
+		rt.HTTPProxied = &http.Client{Transport: httpx.WithAccessControl(proxiedTransport, httpAccess), Timeout: 30 * time.Second}
 	}
-
-	disallowedIPs, disallowedNets, err := cfg.ParseDisallowedNetworks()
-	if err != nil {
-		return nil, fmt.Errorf("error parsing disallowed networks: %w", err)
-	}
-	rt.HTTPAccess = httpx.NewAccessConfig(10*time.Second, disallowedIPs, disallowedNets)
 
 	rt.Spool = dynamo.NewSpool(rt.Dynamo, rt.Config.SpoolDir+"/dynamo", 30*time.Second)
 	rt.Writers = newWriters(cfg, rt.Dynamo, rt.Spool)
@@ -104,10 +105,14 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 }
 
 // NewTestRuntime returns a minimal Runtime wrapping the given config, suitable for tests that need a
-// Runtime but don't bring up real backing services. It populates HTTP with http.DefaultClient so
-// code paths that issue outbound HTTP requests work against test servers.
+// Runtime but don't bring up real backing services. It populates HTTP (shared by HTTPProxied) with a
+// dedicated client so code paths that issue outbound HTTP requests work against test servers, and so
+// tests can install a mocking transport via httpx.WithMocking without mutating http.DefaultClient.
 func NewTestRuntime(cfg *Config) *Runtime {
-	return &Runtime{Config: cfg, HTTP: http.DefaultClient, HTTPProxied: http.DefaultClient}
+	// give the client a timeout matching the production clients so a test that accidentally lets a
+	// request escape its mocking transport fails fast instead of hanging
+	client := &http.Client{Timeout: 30 * time.Second}
+	return &Runtime{Config: cfg, HTTP: client, HTTPProxied: client}
 }
 
 func (r *Runtime) Start() error {

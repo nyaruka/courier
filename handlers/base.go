@@ -120,7 +120,9 @@ func (h *BaseHandler) requestHTTP(client *http.Client, req *http.Request, clog *
 
 	req.Header.Set("User-Agent", userAgent(h.rt.Config.Version))
 
-	trace, err := httpx.DoTrace(client, req, nil, h.rt.HTTPAccess, 0)
+	// access control (the SSRF blocklist) is enforced by the client's transport, so no access config
+	// is passed here
+	trace, err := httpx.DoTrace(client, req, nil, nil, 0)
 	if trace != nil {
 		clog.HTTP(trace)
 		resp = trace.Response

@@ -2,6 +2,7 @@ package runtime_test
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/runtime"
@@ -18,28 +19,33 @@ func TestHTTPProxied(t *testing.T) {
 	require.NoError(t, err)
 	assert.Same(t, rt.HTTP, rt.HTTPProxied)
 
-	// with SendProxyURL configured, HTTPProxied is a distinct client whose transport resolves the proxy URL
+	// stand up a stub forward proxy; a forward-proxied http:// request arrives here carrying the
+	// target's host, which lets us confirm the proxied client actually routes through it. The access
+	// control wrapped onto the transport hides the underlying *http.Transport, so we assert on
+	// behavior rather than inspecting the proxy func directly.
+	var proxiedHost string
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		proxiedHost = r.Host
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer proxy.Close()
+
+	// with SendProxyURL configured, HTTPProxied is a distinct client that routes through the proxy.
+	// clear the SSRF blocklist so the IP-literal target below (never actually dialed) isn't rejected
+	// by access control before it can be proxied.
 	cfg = runtime.NewDefaultConfig()
-	cfg.SendProxyURL = "http://proxy.example.com:3128"
+	cfg.DisallowedNetworks = nil
+	cfg.SendProxyURL = proxy.URL
 	require.NoError(t, cfg.Validate())
 
 	rt, err = newRuntimeForHTTPTest(cfg)
 	require.NoError(t, err)
 	require.NotSame(t, rt.HTTP, rt.HTTPProxied)
 
-	req, _ := http.NewRequest("POST", "https://example.org/hook", nil)
-	proxy, err := rt.HTTPProxied.Transport.(*http.Transport).Proxy(req)
+	resp, err := rt.HTTPProxied.Get("http://93.184.216.34/hook")
 	require.NoError(t, err)
-	require.NotNil(t, proxy, "transport should resolve a proxy URL when SendProxyURL is set")
-	assert.Equal(t, "proxy.example.com:3128", proxy.Host)
-	assert.Equal(t, "http", proxy.Scheme)
-
-	// the regular HTTP client doesn't route to the configured proxy
-	proxy, err = rt.HTTP.Transport.(*http.Transport).Proxy(req)
-	require.NoError(t, err)
-	if proxy != nil {
-		assert.NotEqual(t, "proxy.example.com:3128", proxy.Host)
-	}
+	resp.Body.Close()
+	assert.Equal(t, "93.184.216.34", proxiedHost, "proxied client should route through the configured proxy")
 }
 
 // newRuntimeForHTTPTest constructs a Runtime by calling NewRuntime, which builds the HTTP and HTTPProxied
