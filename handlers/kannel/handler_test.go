@@ -162,11 +162,37 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
-				"text":     {"☺"},
+				// ☺ (U+263A) encoded as UTF-16BE bytes 0x26 0x3a
+				"text":     {string([]byte{0x26, 0x3a})},
 				"to":       {"+250788383383"},
 				"from":     {"2020"},
 				"coding":   {"2"},
-				"charset":  {"utf-8"},
+				"charset":  {"UTF-16BE"},
+				"dlr-mask": {"27"},
+				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
+				"username": {"Username"},
+				"password": {"Password"},
+			},
+		}},
+	},
+	{
+		Label:           "Unicode Send Mixed",
+		MsgText:         "Hi ☺",
+		MsgURN:          "tel:+250788383383",
+		MsgHighPriority: false,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				// "Hi ☺" encoded as UTF-16BE: H=0x0048 i=0x0069 space=0x0020 ☺=0x263a
+				"text":     {string([]byte{0x00, 0x48, 0x00, 0x69, 0x00, 0x20, 0x26, 0x3a})},
+				"to":       {"+250788383383"},
+				"from":     {"2020"},
+				"coding":   {"2"},
+				"charset":  {"UTF-16BE"},
 				"dlr-mask": {"27"},
 				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
 				"username": {"Username"},
