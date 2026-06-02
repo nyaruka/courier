@@ -1,3 +1,10 @@
+v26.1.45 (2026-06-02)
+-------------------------
+ * Merge pull request #1030 from nyaruka/fix-kannel-omit-charset
+ * Don't send charset param for kannel unicode - body is already UTF-16BE
+ * Revert "Don't send charset param for kannel unicode - body is already UTF-16BE"
+ * Don't send charset param for kannel unicode - body is already UTF-16BE
+
 v26.1.44 (2026-06-02)
 -------------------------
  * Merge pull request #1029 from nyaruka/fix-kannel-unicode-charset
