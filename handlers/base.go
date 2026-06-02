@@ -9,7 +9,6 @@ import (
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
-	"github.com/nyaruka/gocommon/httpx"
 )
 
 var defaultRedactConfigKeys = []string{models.ConfigAuthToken, models.ConfigAPIKey, models.ConfigSecret, models.ConfigPassword, models.ConfigSendAuthorization}
@@ -115,17 +114,15 @@ func (h *BaseHandler) RequestHTTPProxied(req *http.Request, clog *courier.Channe
 
 // requestHTTP does the given request using the given client, logging the trace, and returns the response
 func (h *BaseHandler) requestHTTP(client *http.Client, req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
-	var resp *http.Response
-	var body []byte
-
 	req.Header.Set("User-Agent", userAgent(h.rt.Config.Version))
 
-	// access control (the SSRF blocklist) is enforced by the client's transport, so no access config
-	// is passed here
-	trace, err := httpx.DoTrace(client, req, nil, nil, 0)
-	if trace != nil {
+	// trace via the client's transport, which already enforces access control (the SSRF blocklist).
+	// each request hop is logged — one in the common case, or several if the channel redirects.
+	traces, resp, err := courier.TraceHTTP(client, req, 0)
+
+	var body []byte
+	for _, trace := range traces {
 		clog.HTTP(trace)
-		resp = trace.Response
 		body = trace.ResponseBody
 	}
 	if err != nil {

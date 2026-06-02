@@ -100,7 +100,10 @@ func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, b Backend
 	}
 
 	// access control (the SSRF blocklist) is enforced by rt.HTTP's transport, so no access config is
-	// passed here; a denied request comes back as an error with a nil response
+	// passed here; a denied request comes back as an error with a nil response. we deliberately use
+	// DoTrace rather than TraceHTTP/httpx.WithTracing because attachment URLs are untrusted: DoTrace
+	// bounds the body read at maxAttBodyReadBytes (returning ErrResponseSize) instead of buffering an
+	// arbitrarily large response into memory.
 	trace, err := httpx.DoTrace(rt.HTTP, attRequest, nil, nil, maxAttBodyReadBytes)
 	if trace != nil {
 		clog.HTTP(trace)

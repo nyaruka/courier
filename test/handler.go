@@ -52,14 +52,16 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier
 	// log a request that contains a header value that should be redacted; goes through the runtime's
 	// HTTP client so tests can intercept it with a mocking transport
 	req, _ := httpx.NewRequest(ctx, "GET", "http://mock.com/send", nil, map[string]string{"Authorization": "Token sesame"})
-	trace, err := httpx.DoTrace(h.rt.HTTP, req, nil, nil, 1024)
-	clog.HTTP(trace)
+	traces, resp, err := courier.TraceHTTP(h.rt.HTTP, req, 1024)
+	for _, trace := range traces {
+		clog.HTTP(trace)
+	}
 
-	if err != nil || trace.Response.StatusCode/100 == 5 {
+	if err != nil || resp.StatusCode/100 == 5 {
 		return courier.ErrConnectionFailed
-	} else if trace.Response.StatusCode == 403 {
+	} else if resp.StatusCode == 403 {
 		return courier.ErrContactStopped
-	} else if trace.Response.StatusCode == 429 {
+	} else if resp.StatusCode == 429 {
 		return courier.ErrConnectionThrottled
 	}
 
