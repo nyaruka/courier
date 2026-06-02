@@ -162,11 +162,12 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
-				// ☺ (U+263A) encoded as UTF-16BE bytes 0x26 0x3a, no charset param so kannel skips its recode
+				// ☺ (U+263A) encoded as UTF-16BE bytes 0x26 0x3a
 				"text":     {string([]byte{0x26, 0x3a})},
 				"to":       {"+250788383383"},
 				"from":     {"2020"},
 				"coding":   {"2"},
+				"charset":  {"UTF-16BE"},
 				"dlr-mask": {"27"},
 				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
 				"username": {"Username"},
@@ -191,6 +192,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"to":       {"+250788383383"},
 				"from":     {"2020"},
 				"coding":   {"2"},
+				"charset":  {"UTF-16BE"},
 				"dlr-mask": {"27"},
 				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
 				"username": {"Username"},
