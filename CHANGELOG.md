@@ -1,3 +1,9 @@
+v26.1.43 (2026-06-02)
+-------------------------
+ * Merge pull request #1028 from nyaruka/fix-charset-KN
+ * Fix kannel charset parameter
+ * Only run code review when PR is opened
+
 v26.1.42 (2026-06-01)
 -------------------------
  * Update phonenumbers to v1.8.0
