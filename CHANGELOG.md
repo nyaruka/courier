@@ -1,3 +1,7 @@
+v26.1.46 (2026-06-03)
+-------------------------
+ * Update gocommon to v1.81.1 and adopt httpx transport middleware
+
 v26.1.45 (2026-06-02)
 -------------------------
  * Merge pull request #1030 from nyaruka/fix-kannel-omit-charset
