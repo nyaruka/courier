@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, clog *courier.ChannelLog) ([]SendRequest, error) {
@@ -21,7 +22,13 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 
 // newBasePayload creates a SendRequest with common fields populated.
 func newBasePayload(msg courier.MsgOut) SendRequest {
-	return SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
+	request := SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual"}
+	if urn := msg.URN(); urn.Scheme() == urns.BSUID.Prefix {
+		request.Recipient = urn.Path()
+	} else {
+		request.To = urn.Path()
+	}
+	return request
 }
 
 func (p SendRequest) withTemplate(templating *models.Templating) SendRequest {

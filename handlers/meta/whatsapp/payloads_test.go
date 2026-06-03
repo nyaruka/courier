@@ -28,6 +28,7 @@ func TestGetMsgPayloads(t *testing.T) {
 		attachments           []string
 		quickReplies          []models.QuickReply
 		locale                i18n.Locale
+		urn                   urns.URN
 		expectedPayloadsCount int
 		expectedType          string // type of first payload
 		checkFunc             func(*testing.T, []whatsapp.SendRequest, *courier.ChannelLog)
@@ -38,12 +39,14 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Pick an option",
 			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Option 1", Extra: "Description 1"}, {Type: "text", Text: "Option 2", Extra: "Description 2"}},
+			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 2,
 			expectedType:          "image",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 2, len(payloads))
 				// First should be image attachment
 				assert.Equal(t, "image", payloads[0].Type)
+				assert.Equal(t, "250788123123", payloads[0].To)
 				assert.NotNil(t, payloads[0].Image)
 				assert.Equal(t, "https://example.com/image.jpg", payloads[0].Image.Link)
 				// Second should be interactive list
@@ -61,12 +64,14 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Choose wisely",
 			attachments:           []string{"video/mp4:https://example.com/video.mp4"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Yes", Extra: "Agree"}, {Type: "text", Text: "No", Extra: "Disagree"}},
+			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 2,
 			expectedType:          "video",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 2, len(payloads))
 				// First should be video attachment
 				assert.Equal(t, "video", payloads[0].Type)
+				assert.Equal(t, "250788123123", payloads[0].To)
 				assert.NotNil(t, payloads[0].Video)
 				// Second should be interactive list
 				assert.Equal(t, "interactive", payloads[1].Type)
@@ -79,12 +84,14 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Select an option",
 			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Option 1"}, {Type: "text", Text: "Option 2"}},
+			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				// Should be interactive button with image header
 				assert.Equal(t, "interactive", payloads[0].Type)
+				assert.Equal(t, "250788123123", payloads[0].To)
 				assert.NotNil(t, payloads[0].Interactive)
 				assert.Equal(t, "button", payloads[0].Interactive.Type)
 				// Check header
@@ -101,12 +108,14 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Watch and choose",
 			attachments:           []string{"video/mp4:https://example.com/video.mp4"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Like"}, {Type: "text", Text: "Dislike"}, {Type: "text", Text: "Share"}},
+			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				// Should be interactive button with video header
 				assert.Equal(t, "interactive", payloads[0].Type)
+				assert.Equal(t, "250788123123", payloads[0].To)
 				assert.Equal(t, "button", payloads[0].Interactive.Type)
 				// Check header
 				assert.NotNil(t, payloads[0].Interactive.Header)
@@ -122,12 +131,14 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Review this",
 			attachments:           []string{"document/pdf:https://example.com/document.pdf"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Approve"}},
+			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				// Should be interactive button with document header
 				assert.Equal(t, "interactive", payloads[0].Type)
+				assert.Equal(t, "250788123123", payloads[0].To)
 				assert.Equal(t, "button", payloads[0].Interactive.Type)
 				// Check header
 				assert.NotNil(t, payloads[0].Interactive.Header)
@@ -142,12 +153,14 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Listen and respond",
 			attachments:           []string{"audio/mp3:https://example.com/audio.mp3"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Good"}, {Type: "text", Text: "Bad"}},
+			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 2,
 			expectedType:          "audio",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 2, len(payloads))
 				// First should be audio (not used as header)
 				assert.Equal(t, "audio", payloads[0].Type)
+				assert.Equal(t, "250788123123", payloads[0].To)
 				assert.NotNil(t, payloads[0].Audio)
 				// Second should be interactive button WITHOUT header
 				assert.Equal(t, "interactive", payloads[1].Type)
@@ -165,12 +178,14 @@ func TestGetMsgPayloads(t *testing.T) {
 				{Type: "text", Text: "Option 7"}, {Type: "text", Text: "Option 8"}, {Type: "text", Text: "Option 9"},
 				{Type: "text", Text: "Option 10"}, {Type: "text", Text: "Option 11"}, {Type: "text", Text: "Option 12"},
 			},
+			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				// Should be interactive list with exactly 10 rows
 				assert.Equal(t, "interactive", payloads[0].Type)
+				assert.Equal(t, "250788123123", payloads[0].To)
 				assert.Equal(t, "list", payloads[0].Interactive.Type)
 				assert.Equal(t, 10, len(payloads[0].Interactive.Action.Sections[0].Rows))
 				// Verify it's the first 10 options
@@ -194,11 +209,13 @@ func TestGetMsgPayloads(t *testing.T) {
 				{Type: "text", Text: "Option 13", Extra: "Desc 13"}, {Type: "text", Text: "Option 14", Extra: "Desc 14"},
 				{Type: "text", Text: "Option 15", Extra: "Desc 15"},
 			},
+			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "interactive", payloads[0].Type)
+				assert.Equal(t, "250788123123", payloads[0].To)
 				assert.Equal(t, "list", payloads[0].Interactive.Type)
 				assert.Equal(t, 10, len(payloads[0].Interactive.Action.Sections[0].Rows))
 				// Verify descriptions are preserved for first 10
@@ -213,11 +230,13 @@ func TestGetMsgPayloads(t *testing.T) {
 			label:                 "4 QRs without Extra - should use list (>3 buttons)",
 			text:                  "Pick one",
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "A"}, {Type: "text", Text: "B"}, {Type: "text", Text: "C"}, {Type: "text", Text: "D"}},
+			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "interactive", payloads[0].Type)
+				assert.Equal(t, "250788123123", payloads[0].To)
 				assert.Equal(t, "list", payloads[0].Interactive.Type)
 				assert.Equal(t, 4, len(payloads[0].Interactive.Action.Sections[0].Rows))
 			},
@@ -226,11 +245,13 @@ func TestGetMsgPayloads(t *testing.T) {
 			label:                 "3 QRs without Extra and no attachment - should use buttons",
 			text:                  "Quick choice",
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}, {Type: "text", Text: "Maybe"}},
+			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "interactive", payloads[0].Type)
+				assert.Equal(t, "250788123123", payloads[0].To)
 				assert.Equal(t, "button", payloads[0].Interactive.Type)
 				assert.Equal(t, 3, len(payloads[0].Interactive.Action.Buttons))
 				assert.Nil(t, payloads[0].Interactive.Header)
@@ -240,11 +261,13 @@ func TestGetMsgPayloads(t *testing.T) {
 			label:                 "No quick replies with attachment and text - should have caption",
 			text:                  "Check this out",
 			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
+			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "image",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "image", payloads[0].Type)
+				assert.Equal(t, "250788123123", payloads[0].To)
 				assert.NotNil(t, payloads[0].Image)
 				assert.Equal(t, "Check this out", payloads[0].Image.Caption)
 			},
@@ -254,6 +277,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Multiple files",
 			attachments:           []string{"image/jpeg:https://example.com/image1.jpg", "image/jpeg:https://example.com/image2.jpg"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Download"}},
+			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 2,
 			expectedType:          "image",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -263,10 +287,24 @@ func TestGetMsgPayloads(t *testing.T) {
 				assert.Equal(t, "https://example.com/image2.jpg", payloads[0].Image.Link)
 				// Then interactive with first attachment as header
 				assert.Equal(t, "interactive", payloads[1].Type)
+				assert.Equal(t, "250788123123", payloads[1].To)
 				assert.Equal(t, "button", payloads[1].Interactive.Type)
 				assert.NotNil(t, payloads[1].Interactive.Header)
 				assert.Equal(t, "image", payloads[1].Interactive.Header.Type)
 				assert.Equal(t, "https://example.com/image1.jpg", payloads[1].Interactive.Header.Image.Link)
+			},
+		},
+		{
+			label:                 "Send message by BSUID",
+			text:                  "Hello, BSUID",
+			urn:                   "bsuid:US.1234",
+			expectedPayloadsCount: 1,
+			expectedType:          "text",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+				assert.Equal(t, 1, len(payloads))
+				assert.Equal(t, "text", payloads[0].Type)
+				assert.Equal(t, "US.1234", payloads[0].Recipient)
+				assert.Equal(t, "Hello, BSUID", payloads[0].Text.Body)
 			},
 		},
 	}
@@ -274,7 +312,7 @@ func TestGetMsgPayloads(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.label, func(t *testing.T) {
 			// Create mock message
-			mockMsg := test.NewMockMsg("87995844-2017-4ba0-bc73-f3da75b32f9b", channel, "whatsapp:250788123123", tc.text, tc.attachments)
+			mockMsg := test.NewMockMsg("87995844-2017-4ba0-bc73-f3da75b32f9b", channel, tc.urn, tc.text, tc.attachments)
 			mockMsg.SetQuickReplies(tc.quickReplies)
 			var msg courier.MsgOut = mockMsg
 			if tc.locale != "" {
