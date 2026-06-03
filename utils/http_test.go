@@ -2,14 +2,21 @@ package utils_test
 
 import (
 	"bytes"
+	"io"
 	"net/http"
 	"testing"
+	"testing/iotest"
 
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// roundTripFunc adapts a function to an http.RoundTripper for tests.
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 func TestTraceHTTP(t *testing.T) {
 	const url = "https://example.com/thing"
@@ -51,4 +58,15 @@ func TestTraceHTTP(t *testing.T) {
 	require.NotNil(t, trace)
 	assert.Equal(t, 200, resp.StatusCode)
 	assert.Equal(t, []byte("final"), trace.ResponseBody)
+
+	// a body-read error must be surfaced as the returned error even with no read limit (maxBodyBytes
+	// 0), matching httpx.DoTrace — WithTraces only replays it on resp.Body, so TraceHTTP must drain
+	// unconditionally to recover it
+	errClient := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+		body := io.MultiReader(bytes.NewReader([]byte("partial")), iotest.ErrReader(io.ErrUnexpectedEOF))
+		return &http.Response{Status: "200 OK", StatusCode: 200, Proto: "HTTP/1.1", ProtoMajor: 1, ProtoMinor: 1, Header: make(http.Header), Body: io.NopCloser(body)}, nil
+	})}
+	req, _ = http.NewRequest("GET", url, nil)
+	_, _, err = utils.TraceHTTP(errClient, req, 0)
+	assert.ErrorIs(t, err, io.ErrUnexpectedEOF)
 }

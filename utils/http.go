@@ -36,11 +36,13 @@ func TraceHTTP(client *http.Client, req *http.Request, maxBodyBytes int) (*httpx
 		Timeout:       client.Timeout,
 	}).Do(req)
 
-	// When a read limit is in effect, WithReadLimit surfaces an oversized body as a read error which
-	// WithTraces replays on resp.Body rather than returning. Drain the final response to surface that
-	// (or any other deferred read error) as the returned error, as httpx.DoTrace did; the body is still
-	// available via the trace's ResponseBody.
-	if err == nil && maxBodyBytes > 0 && resp != nil {
+	// WithTraces replays a body-read error (an oversized body surfaced as ErrResponseSize by
+	// WithReadLimit, or a truncated/short read) on resp.Body rather than returning it. Drain the final
+	// response to surface that error as the returned error, as httpx.DoTrace did; the body is still
+	// available via the trace's ResponseBody. The drain is O(1) on success (bytes.Reader.WriteTo into
+	// io.Discard), so this runs unconditionally — gating it on a read limit would silently swallow
+	// read errors for limit-less callers.
+	if err == nil && resp != nil {
 		if _, drainErr := io.Copy(io.Discard, resp.Body); drainErr != nil {
 			err = drainErr
 		}
