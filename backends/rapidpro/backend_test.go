@@ -17,6 +17,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
+	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
@@ -846,7 +847,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	// make a request that will have a response
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
-	trace, _, err := courier.TraceHTTP(httpClient, req, 0)
+	trace, _, err := utils.TraceHTTP(httpClient, req, 0)
 	ts.NoError(err)
 
 	clog1 := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, nil)

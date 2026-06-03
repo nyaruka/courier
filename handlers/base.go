@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/courier/v26/utils"
 )
 
 var defaultRedactConfigKeys = []string{models.ConfigAuthToken, models.ConfigAPIKey, models.ConfigSecret, models.ConfigPassword, models.ConfigSendAuthorization}
@@ -117,7 +118,7 @@ func (h *BaseHandler) requestHTTP(client *http.Client, req *http.Request, clog *
 	req.Header.Set("User-Agent", userAgent(h.rt.Config.Version))
 
 	// trace via the client's transport, which already enforces access control (the SSRF blocklist)
-	trace, resp, err := courier.TraceHTTP(client, req, 0)
+	trace, resp, err := utils.TraceHTTP(client, req, 0)
 
 	var body []byte
 	if trace != nil {

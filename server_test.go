@@ -12,6 +12,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
@@ -205,7 +206,7 @@ func TestFetchAttachment(t *testing.T) {
 		if authToken != "" {
 			req.Header.Set("Authorization", "Bearer "+authToken)
 		}
-		trace, _, err := courier.TraceHTTP(http.DefaultClient, req, 0)
+		trace, _, err := utils.TraceHTTP(http.DefaultClient, req, 0)
 		require.NoError(t, err)
 		return trace.Response.StatusCode, trace.ResponseBody
 	}

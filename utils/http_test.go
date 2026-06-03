@@ -1,11 +1,11 @@
-package courier_test
+package utils_test
 
 import (
 	"bytes"
 	"net/http"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +22,7 @@ func TestTraceHTTP(t *testing.T) {
 
 	// a body within the limit is read in full, captured into the trace, and returns no error
 	req, _ := http.NewRequest("GET", url, nil)
-	trace, resp, err := courier.TraceHTTP(clientWithBody([]byte("hello")), req, 1024)
+	trace, resp, err := utils.TraceHTTP(clientWithBody([]byte("hello")), req, 1024)
 	require.NoError(t, err)
 	require.NotNil(t, trace)
 	assert.Equal(t, 200, resp.StatusCode)
@@ -31,12 +31,12 @@ func TestTraceHTTP(t *testing.T) {
 	// a body exceeding the limit is surfaced as ErrResponseSize (deferred onto the body by the tracing
 	// transport, then drained back out by TraceHTTP)
 	req, _ = http.NewRequest("GET", url, nil)
-	_, _, err = courier.TraceHTTP(clientWithBody(bytes.Repeat([]byte("x"), 100)), req, 10)
+	_, _, err = utils.TraceHTTP(clientWithBody(bytes.Repeat([]byte("x"), 100)), req, 10)
 	assert.ErrorIs(t, err, httpx.ErrResponseSize)
 
 	// a limit of 0 disables the bound: the whole body is read and captured with no error
 	req, _ = http.NewRequest("GET", url, nil)
-	trace, _, err = courier.TraceHTTP(clientWithBody(bytes.Repeat([]byte("x"), 100)), req, 0)
+	trace, _, err = utils.TraceHTTP(clientWithBody(bytes.Repeat([]byte("x"), 100)), req, 0)
 	require.NoError(t, err)
 	assert.Len(t, trace.ResponseBody, 100)
 
@@ -46,7 +46,7 @@ func TestTraceHTTP(t *testing.T) {
 		url:                            {httpx.NewMockResponse(200, nil, []byte("final"))},
 	})}
 	req, _ = http.NewRequest("GET", "https://example.com/redirect", nil)
-	trace, resp, err = courier.TraceHTTP(redirectClient, req, 0)
+	trace, resp, err = utils.TraceHTTP(redirectClient, req, 0)
 	require.NoError(t, err)
 	require.NotNil(t, trace)
 	assert.Equal(t, 200, resp.StatusCode)
