@@ -309,7 +309,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	rc.Do("DEL", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab")
 
 	s := newServer(mb)
-	s.Runtime().HTTP.Transport = httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://channels.jiochat.com/auth/token.action": {
 			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"access_token": "SESAME"}`)),
 		},

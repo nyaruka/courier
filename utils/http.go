@@ -25,9 +25,9 @@ import (
 // transport defers onto the response body, is surfaced here as the returned error so callers see it the
 // same way httpx.DoTrace reported it. The body remains available via the trace's ResponseBody.
 func TraceHTTP(client *http.Client, req *http.Request, maxBodyBytes int) (*httpx.Trace, *http.Response, error) {
-	// WithBodyLimit (inside WithTracing, so the bound applies before the body is buffered) caps the
-	// bytes read; WithTracing then captures up to maxBodyBytes of that bounded body into the trace.
-	tracing := httpx.WithTracing(httpx.WithBodyLimit(client.Transport, maxBodyBytes), maxBodyBytes)
+	// WithReadLimit (inside WithTraces, so the bound applies before the body is buffered) caps the
+	// bytes read from the response body; WithTraces then captures that bounded body into the trace.
+	tracing := httpx.WithTraces(httpx.WithReadLimit(client.Transport, maxBodyBytes))
 
 	resp, err := (&http.Client{
 		Transport:     tracing,
@@ -36,8 +36,8 @@ func TraceHTTP(client *http.Client, req *http.Request, maxBodyBytes int) (*httpx
 		Timeout:       client.Timeout,
 	}).Do(req)
 
-	// When a body limit is in effect, WithBodyLimit surfaces an oversized body as a read error which
-	// WithTracing replays on resp.Body rather than returning. Drain the final response to surface that
+	// When a read limit is in effect, WithReadLimit surfaces an oversized body as a read error which
+	// WithTraces replays on resp.Body rather than returning. Drain the final response to surface that
 	// (or any other deferred read error) as the returned error, as httpx.DoTrace did; the body is still
 	// available via the trace's ResponseBody.
 	if err == nil && maxBodyBytes > 0 && resp != nil {

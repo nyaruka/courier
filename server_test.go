@@ -69,7 +69,7 @@ func TestOutgoing(t *testing.T) {
 	// create and start our backend and server
 	mb := test.NewMockBackend()
 	s := courier.NewServer(runtime.NewTestRuntime(testConfig()), mb)
-	s.Runtime().HTTP.Transport = httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/send": {
 			httpx.NewMockResponse(200, nil, []byte(`SENT`)),
 			httpx.MockConnectionError,
@@ -187,7 +187,7 @@ func TestFetchAttachment(t *testing.T) {
 	mb.AddChannel(mockChannel)
 
 	server := courier.NewServer(runtime.NewTestRuntime(cfg), mb)
-	server.Runtime().HTTP.Transport = httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+	server.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/media/hello.jpg": {
 			httpx.NewMockResponse(200, nil, testJPG),
 		},

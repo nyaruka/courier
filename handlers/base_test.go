@@ -22,7 +22,7 @@ func TestRequestHTTP(t *testing.T) {
 	clog := courier.NewChannelLogForSend(mm, nil)
 
 	server := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
-	server.Runtime().HTTP.Transport = httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+	server.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
 			httpx.NewMockResponse(400, nil, []byte(`{"status":"error"}`)),

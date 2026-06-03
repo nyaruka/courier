@@ -392,14 +392,14 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 
 			msg := tc.Msg(mb, channel)
 
-			var mockHTTP *httpx.MockTransport
+			var mockHTTP *httpx.MocksTransport
 			actualRequests := make([]*http.Request, 0, 1)
 
 			// reset to the default transport each case, then install a mocking transport when the
 			// case provides mocks
 			rt.HTTP.Transport = nil
 			if len(tc.MockResponses) > 0 {
-				mockHTTP = httpx.WithMocking(nil, tc.MockResponses)
+				mockHTTP = httpx.WithMocks(nil, tc.MockResponses)
 				rt.HTTP.Transport = mockHTTP
 			}
 

@@ -839,7 +839,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 		return dynamo.GetItem(ctx, ts.b.rt.Dynamo, ts.b.rt.Writers.Main.Table(), (&ChannelLog{clog}).DynamoKey())
 	}
 
-	httpClient := &http.Client{Transport: httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+	httpClient := &http.Client{Transport: httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
 		},

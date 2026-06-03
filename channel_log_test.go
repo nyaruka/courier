@@ -18,7 +18,7 @@ import (
 )
 
 func TestChannelLog(t *testing.T) {
-	httpClient := &http.Client{Transport: httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+	httpClient := &http.Client{Transport: httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
 			httpx.MockConnectionError,

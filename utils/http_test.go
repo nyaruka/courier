@@ -15,7 +15,7 @@ func TestTraceHTTP(t *testing.T) {
 	const url = "https://example.com/thing"
 
 	clientWithBody := func(body []byte) *http.Client {
-		return &http.Client{Transport: httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+		return &http.Client{Transport: httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 			url: {httpx.NewMockResponse(200, nil, body)},
 		})}
 	}
@@ -41,7 +41,7 @@ func TestTraceHTTP(t *testing.T) {
 	assert.Len(t, trace.ResponseBody, 100)
 
 	// a redirect yields only the final hop's trace, not one per hop
-	redirectClient := &http.Client{Transport: httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+	redirectClient := &http.Client{Transport: httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://example.com/redirect": {httpx.NewMockResponse(302, map[string]string{"Location": url}, nil)},
 		url:                            {httpx.NewMockResponse(200, nil, []byte("final"))},
 	})}

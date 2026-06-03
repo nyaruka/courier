@@ -15,14 +15,14 @@ import (
 func TestLogs(t *testing.T) {
 	ctx := context.Background()
 
-	httpClient := &http.Client{Transport: httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+	httpClient := &http.Client{Transport: httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://ivr.com/start":  {httpx.NewMockResponse(200, nil, []byte("OK"))},
 		"http://ivr.com/hangup": {httpx.NewMockResponse(400, nil, []byte("Oops"))},
 	})}
 
 	// trace each request by layering a tracing transport over the mocking client for that single call
 	doTrace := func(req *http.Request) (*httpx.Trace, error) {
-		tracing := httpx.WithTracing(httpClient.Transport, -1)
+		tracing := httpx.WithTraces(httpClient.Transport)
 		_, err := (&http.Client{Transport: tracing}).Do(req)
 		traces := tracing.Traces()
 		if len(traces) == 0 {
