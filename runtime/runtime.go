@@ -107,7 +107,7 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 // NewTestRuntime returns a minimal Runtime wrapping the given config, suitable for tests that need a
 // Runtime but don't bring up real backing services. It populates HTTP (shared by HTTPProxied) with a
 // dedicated client so code paths that issue outbound HTTP requests work against test servers, and so
-// tests can install a mocking transport via httpx.WithMocking without mutating http.DefaultClient.
+// tests can install a mocking transport via httpx.WithMocks without mutating http.DefaultClient.
 func NewTestRuntime(cfg *Config) *Runtime {
 	// give the client a timeout matching the production clients so a test that accidentally lets a
 	// request escape its mocking transport fails fast instead of hanging

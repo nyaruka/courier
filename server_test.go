@@ -12,6 +12,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
@@ -68,7 +69,7 @@ func TestOutgoing(t *testing.T) {
 	// create and start our backend and server
 	mb := test.NewMockBackend()
 	s := courier.NewServer(runtime.NewTestRuntime(testConfig()), mb)
-	s.Runtime().HTTP.Transport = httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/send": {
 			httpx.NewMockResponse(200, nil, []byte(`SENT`)),
 			httpx.MockConnectionError,
@@ -186,7 +187,7 @@ func TestFetchAttachment(t *testing.T) {
 	mb.AddChannel(mockChannel)
 
 	server := courier.NewServer(runtime.NewTestRuntime(cfg), mb)
-	server.Runtime().HTTP.Transport = httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+	server.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/media/hello.jpg": {
 			httpx.NewMockResponse(200, nil, testJPG),
 		},
@@ -205,7 +206,7 @@ func TestFetchAttachment(t *testing.T) {
 		if authToken != "" {
 			req.Header.Set("Authorization", "Bearer "+authToken)
 		}
-		trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
+		trace, _, err := utils.TraceHTTP(http.DefaultClient, req, 0)
 		require.NoError(t, err)
 		return trace.Response.StatusCode, trace.ResponseBody
 	}

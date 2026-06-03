@@ -8,6 +8,7 @@ import (
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -52,14 +53,16 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier
 	// log a request that contains a header value that should be redacted; goes through the runtime's
 	// HTTP client so tests can intercept it with a mocking transport
 	req, _ := httpx.NewRequest(ctx, "GET", "http://mock.com/send", nil, map[string]string{"Authorization": "Token sesame"})
-	trace, err := httpx.DoTrace(h.rt.HTTP, req, nil, nil, 1024)
-	clog.HTTP(trace)
+	trace, resp, err := utils.TraceHTTP(h.rt.HTTP, req, 1024)
+	if trace != nil {
+		clog.HTTP(trace)
+	}
 
-	if err != nil || trace.Response.StatusCode/100 == 5 {
+	if err != nil || resp.StatusCode/100 == 5 {
 		return courier.ErrConnectionFailed
-	} else if trace.Response.StatusCode == 403 {
+	} else if resp.StatusCode == 403 {
 		return courier.ErrContactStopped
-	} else if trace.Response.StatusCode == 429 {
+	} else if resp.StatusCode == 429 {
 		return courier.ErrConnectionThrottled
 	}
 

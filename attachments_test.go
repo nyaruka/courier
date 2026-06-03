@@ -24,7 +24,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 
 	ctx := context.Background()
 	rt := runtime.NewTestRuntime(runtime.NewDefaultConfig())
-	rt.HTTP.Transport = httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/media/hello.jpg": {
 			httpx.NewMockResponse(200, nil, testJPG),
 		},
@@ -123,7 +123,7 @@ func TestFetchAndStoreAttachmentAccessDenied(t *testing.T) {
 	// rejected before any connection is made; the mocking transport underneath has no entries and so
 	// would panic if a request ever reached it, guarding against the access check silently passing
 	access := httpx.NewAccessConfig(time.Second, []net.IP{net.ParseIP("127.0.0.1")}, nil)
-	rt.HTTP.Transport = httpx.WithAccessControl(httpx.WithMocking(nil, map[string][]*httpx.MockResponse{}), access)
+	rt.HTTP.Transport = httpx.WithAccessControl(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{}), access)
 
 	mb := test.NewMockBackend()
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})

@@ -15,23 +15,34 @@ import (
 func TestLogs(t *testing.T) {
 	ctx := context.Background()
 
-	httpClient := &http.Client{Transport: httpx.WithMocking(nil, map[string][]*httpx.MockResponse{
+	httpClient := &http.Client{Transport: httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://ivr.com/start":  {httpx.NewMockResponse(200, nil, []byte("OK"))},
 		"http://ivr.com/hangup": {httpx.NewMockResponse(400, nil, []byte("Oops"))},
 	})}
+
+	// trace each request by layering a tracing transport over the mocking client for that single call
+	doTrace := func(req *http.Request) (*httpx.Trace, error) {
+		tracing := httpx.WithTraces(httpClient.Transport)
+		_, err := (&http.Client{Transport: tracing}).Do(req)
+		traces := tracing.Traces()
+		if len(traces) == 0 {
+			return nil, err
+		}
+		return traces[len(traces)-1], err
+	}
 
 	clog1 := clogs.New("type1", nil, []string{"sesame"})
 	clog2 := clogs.New("type1", nil, []string{"sesame"})
 
 	req1, _ := httpx.NewRequest(ctx, "GET", "http://ivr.com/start", nil, map[string]string{"Authorization": "Token sesame"})
-	trace1, err := httpx.DoTrace(httpClient, req1, nil, nil, -1)
+	trace1, err := doTrace(req1)
 	require.NoError(t, err)
 
 	clog1.HTTP(trace1)
 	clog1.End()
 
 	req2, _ := httpx.NewRequest(ctx, "GET", "http://ivr.com/hangup", nil, nil)
-	trace2, err := httpx.DoTrace(httpClient, req2, nil, nil, -1)
+	trace2, err := doTrace(req2)
 	require.NoError(t, err)
 
 	clog2.HTTP(trace2)

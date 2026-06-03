@@ -99,17 +99,19 @@ func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, b Backend
 		return nil, fmt.Errorf("unable to create attachment request: %w", err)
 	}
 
-	// access control (the SSRF blocklist) is enforced by rt.HTTP's transport, so no access config is
-	// passed here; a denied request comes back as an error with a nil response
-	trace, err := httpx.DoTrace(rt.HTTP, attRequest, nil, nil, maxAttBodyReadBytes)
+	// attachment URLs are untrusted, so bound the body read at maxAttBodyReadBytes — TraceHTTP surfaces
+	// an oversized body as httpx.ErrResponseSize. access control (the SSRF blocklist) is enforced by
+	// rt.HTTP's transport, so a denied request comes back as an error with a nil response.
+	trace, resp, err := utils.TraceHTTP(rt.HTTP, attRequest, maxAttBodyReadBytes)
 	if trace != nil {
 		clog.HTTP(trace)
+	}
 
-		// if we got a non-200 response, return the attachment with a pseudo content type which tells the caller
-		// to continue without the attachment
-		if trace.Response == nil || trace.Response.StatusCode/100 != 2 || errors.Is(err, httpx.ErrResponseSize) || errors.Is(err, httpx.ErrAccessConfig) {
-			return &Attachment{ContentType: "unavailable", URL: attURL}, nil
-		}
+	// if we didn't get a usable 2xx response — connection failure, access denied, a non-2xx status, or
+	// a body exceeding the size limit — return a pseudo content type which tells the caller to continue
+	// without the attachment
+	if resp == nil || resp.StatusCode/100 != 2 || errors.Is(err, httpx.ErrResponseSize) || errors.Is(err, httpx.ErrAccessConfig) {
+		return &Attachment{ContentType: "unavailable", URL: attURL}, nil
 	}
 	if err != nil {
 		return nil, err
