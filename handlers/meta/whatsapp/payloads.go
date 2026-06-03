@@ -20,14 +20,19 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 	return buildContentPayloads(msg, maxMsgLength, clog)
 }
 
+// RecipientFields returns the to and recipient field values for the given URN, using the recipient field for
+// business-scoped user ID (BSUID) URNs and the to field otherwise.
+func RecipientFields(urn urns.URN) (to, recipient string) {
+	if urn.Scheme() == urns.BSUID.Prefix {
+		return "", urn.Path()
+	}
+	return urn.Path(), ""
+}
+
 // newBasePayload creates a SendRequest with common fields populated.
 func newBasePayload(msg courier.MsgOut) SendRequest {
 	request := SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual"}
-	if urn := msg.URN(); urn.Scheme() == urns.BSUID.Prefix {
-		request.Recipient = urn.Path()
-	} else {
-		request.To = urn.Path()
-	}
+	request.To, request.Recipient = RecipientFields(msg.URN())
 	return request
 }
 

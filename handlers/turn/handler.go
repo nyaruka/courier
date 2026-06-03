@@ -368,12 +368,10 @@ type recipient struct {
 	Recipient string `json:"recipient,omitempty"`
 }
 
-// newRecipient builds the recipient fields from the message URN, using recipient for BSUID URNs and to otherwise.
+// newRecipient builds the recipient fields from the message URN.
 func newRecipient(msg courier.MsgOut) recipient {
-	if urn := msg.URN(); urn.Scheme() == urns.BSUID.Prefix {
-		return recipient{Recipient: urn.Path()}
-	}
-	return recipient{To: msg.URN().Path()}
+	to, rcpt := whatsapp.RecipientFields(msg.URN())
+	return recipient{To: to, Recipient: rcpt}
 }
 
 type mtTextPayload struct {
@@ -494,6 +492,8 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 	var payloads []any
 	var err error
 
+	rcpt := newRecipient(msg)
+
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 
 	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "text")
@@ -525,14 +525,14 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 			mediaPayload := &mediaObject{ID: mediaID, Link: mediaURL}
 			if strings.HasPrefix(mimeType, "audio") {
 				payload := mtAudioPayload{
-					recipient: newRecipient(msg),
+					recipient: rcpt,
 					Type:      "audio",
 				}
 				payload.Audio = mediaPayload
 				payloads = append(payloads, payload)
 			} else if strings.HasPrefix(mimeType, "application") || strings.HasPrefix(mimeType, "document") {
 				payload := mtDocumentPayload{
-					recipient: newRecipient(msg),
+					recipient: rcpt,
 					Type:      "document",
 				}
 				if attachmentCount == 0 && !isInteractiveMsg {
@@ -549,7 +549,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 				payloads = append(payloads, payload)
 			} else if strings.HasPrefix(mimeType, "image") {
 				payload := mtImagePayload{
-					recipient: newRecipient(msg),
+					recipient: rcpt,
 					Type:      "image",
 				}
 				if attachmentCount == 0 && !isInteractiveMsg {
@@ -560,7 +560,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 				payloads = append(payloads, payload)
 			} else if strings.HasPrefix(mimeType, "video") {
 				payload := mtVideoPayload{
-					recipient: newRecipient(msg),
+					recipient: rcpt,
 					Type:      "video",
 				}
 				if attachmentCount == 0 && !isInteractiveMsg {
@@ -582,13 +582,13 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 				var payload mtTextPayload
 				if strings.Contains(part, "https://") || strings.Contains(part, "http://") {
 					payload = mtTextPayload{
-						recipient:  newRecipient(msg),
+						recipient:  rcpt,
 						Type:       "text",
 						PreviewURL: true,
 					}
 				} else {
 					payload = mtTextPayload{
-						recipient: newRecipient(msg),
+						recipient: rcpt,
 						Type:      "text",
 					}
 				}
@@ -601,7 +601,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 			for i, part := range parts {
 				if i < (len(parts) - 1) { //if split into more than one message, the first parts will be text and the last interactive
 					payload := mtTextPayload{
-						recipient: newRecipient(msg),
+						recipient: rcpt,
 						Type:      "text",
 					}
 					payload.Text.Body = part
@@ -609,7 +609,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 
 				} else {
 					payload := mtInteractivePayload{
-						recipient: newRecipient(msg),
+						recipient: rcpt,
 						Type:      "interactive",
 					}
 
@@ -668,7 +668,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 			}
 
 			payload := templatePayload{
-				recipient: newRecipient(msg),
+				recipient: rcpt,
 				Type:      "template",
 			}
 			payload.Template.Namespace = namespace
@@ -707,7 +707,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 				for i, part := range parts {
 					if i < (len(parts) - 1) { //if split into more than one message, the first parts will be text and the last interactive
 						payload := mtTextPayload{
-							recipient: newRecipient(msg),
+							recipient: rcpt,
 							Type:      "text",
 						}
 						payload.Text.Body = part
@@ -715,7 +715,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 
 					} else {
 						payload := mtInteractivePayload{
-							recipient: newRecipient(msg),
+							recipient: rcpt,
 							Type:      "interactive",
 						}
 
@@ -766,13 +766,13 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 					var payload mtTextPayload
 					if strings.Contains(part, "https://") || strings.Contains(part, "http://") {
 						payload = mtTextPayload{
-							recipient:  newRecipient(msg),
+							recipient:  rcpt,
 							Type:       "text",
 							PreviewURL: true,
 						}
 					} else {
 						payload = mtTextPayload{
-							recipient: newRecipient(msg),
+							recipient: rcpt,
 							Type:      "text",
 						}
 					}
