@@ -307,6 +307,23 @@ func TestGetMsgPayloads(t *testing.T) {
 				assert.Equal(t, "Hello, BSUID", payloads[0].Text.Body)
 			},
 		},
+		{
+			label:                 "Send media and quick replies by BSUID",
+			text:                  "Pick an option",
+			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "Option 1"}, {Type: "text", Text: "Option 2"}},
+			urn:                   "bsuid:US.1234",
+			expectedPayloadsCount: 1,
+			expectedType:          "interactive",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+				// every payload builder routes through newBasePayload, so the recipient field must be
+				// populated (and to left empty) for media/interactive flows too, not just plain text
+				assert.Equal(t, 1, len(payloads))
+				assert.Equal(t, "interactive", payloads[0].Type)
+				assert.Equal(t, "US.1234", payloads[0].Recipient)
+				assert.Empty(t, payloads[0].To)
+			},
+		},
 	}
 
 	for _, tc := range tcs {
