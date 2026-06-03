@@ -620,6 +620,23 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
+		Label:   "Plain Send with BSUID",
+		MsgText: "Simple Message",
+		MsgURN:  "bsuid:US.1234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/v1/messages",
+				Body: `{"recipient":"US.1234","type":"text","text":{"body":"Simple Message"}}`,
+			},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
 		Label:   "Unicode Send",
 		MsgText: "☺",
 		MsgURN:  "whatsapp:250788123123",
