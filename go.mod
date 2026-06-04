@@ -18,7 +18,7 @@ require (
 	github.com/h2non/filetype v1.1.3
 	github.com/lib/pq v1.12.3
 	github.com/nyaruka/ezconf v0.6.1
-	github.com/nyaruka/gocommon v1.81.3
+	github.com/nyaruka/gocommon v1.82.0
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/vkutil v0.20.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -28,6 +28,8 @@ require (
 	github.com/vinovest/sqlx v1.7.2
 	golang.org/x/oauth2 v0.36.0
 )
+
+require github.com/nyaruka/phonenumbers/v2 v2.0.0-rc1 // indirect
 
 require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
@@ -66,7 +68,6 @@ require (
 	github.com/muir/sqltoken v0.5.2 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.1 // indirect
-	github.com/nyaruka/phonenumbers v1.8.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/samber/lo v1.53.0 // indirect
 	github.com/samber/slog-common v0.22.0 // indirect
