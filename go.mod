@@ -29,8 +29,6 @@ require (
 	golang.org/x/oauth2 v0.36.0
 )
 
-require github.com/nyaruka/phonenumbers/v2 v2.0.0-rc1 // indirect
-
 require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	github.com/antchfx/xpath v1.3.6 // indirect
@@ -68,6 +66,7 @@ require (
 	github.com/muir/sqltoken v0.5.2 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.1 // indirect
+	github.com/nyaruka/phonenumbers/v2 v2.0.0-rc1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/samber/lo v1.53.0 // indirect
 	github.com/samber/slog-common v0.22.0 // indirect
