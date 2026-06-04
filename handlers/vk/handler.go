@@ -19,7 +19,6 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -522,8 +521,8 @@ func (h *handler) downloadMedia(mediaURL string) (io.Reader, error) {
 		return nil, err
 	}
 
-	// access control is enforced by the client's transport, so no access config is passed here
-	if res, err := httpx.Do(h.Runtime().HTTP, req, nil, nil); err == nil {
+	// access control is enforced by the client's transport
+	if res, err := h.Runtime().HTTP.Do(req); err == nil {
 		return res.Body, nil
 	} else {
 		return nil, err
