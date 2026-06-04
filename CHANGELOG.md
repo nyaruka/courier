@@ -1,3 +1,7 @@
+v26.1.47 (2026-06-04)
+-------------------------
+ * Update to gocommon v1.82.0 (phonenumbers v2)
+
 v26.1.46 (2026-06-03)
 -------------------------
  * Update gocommon to v1.81.1 and adopt httpx transport middleware
