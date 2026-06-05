@@ -349,6 +349,23 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
+		Label:   "Plain Send with BSUID",
+		MsgText: "Simple Message",
+		MsgURN:  "bsuid:US.1234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://waba-v2.360dialog.io/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/messages",
+				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","recipient":"US.1234","type":"text","text":{"body":"Simple Message","preview_url":false}}`,
+			},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
 		Label:   "Plain Send with user_id in response",
 		MsgText: "Simple Message",
 		MsgURN:  "whatsapp:250788123123",
