@@ -76,6 +76,22 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier
 	return nil
 }
 
+// SendEvent sends the given transient event, logging any HTTP calls or errors
+func (h *mockHandler) SendEvent(ctx context.Context, ch courier.Channel, eventType courier.EventOutType, urn urns.URN, clog *courier.ChannelLog) error {
+	req, _ := httpx.NewRequest(ctx, "POST", "http://mock.com/event", nil, nil)
+	trace, resp, err := utils.TraceHTTP(h.rt.HTTP, req, 1024)
+	if trace != nil {
+		clog.HTTP(trace)
+	}
+
+	if err != nil || resp.StatusCode/100 != 2 {
+		return courier.ErrConnectionFailed
+	}
+	return nil
+}
+
+var _ courier.EventSender = (*mockHandler)(nil)
+
 func (h *mockHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.StatusUpdate) error {
 	return courier.WriteStatusSuccess(w, statuses)
 }

@@ -48,6 +48,11 @@ func WriteChannelEventSuccess(w http.ResponseWriter, event ChannelEvent) error {
 	return WriteDataResponse(w, http.StatusOK, "Event Accepted", []any{NewEventReceiveData(event)})
 }
 
+// WriteTypingIndicatorSuccess writes a JSON response indicating we handled a typing indicator
+func WriteTypingIndicatorSuccess(w http.ResponseWriter) error {
+	return WriteDataResponse(w, http.StatusOK, "Typing Indicator Accepted", []any{})
+}
+
 // WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it
 func WriteMsgSuccess(w http.ResponseWriter, msgs []MsgIn) error {
 	data := []any{}

@@ -41,6 +41,8 @@ const (
 	configEncoding        = "encoding"
 	encodingDefault       = "D"
 	encodingSmart         = "S"
+
+	configSendTypingURL = "send_typing_url"
 )
 
 var defaultFromFields = []string{"from", "sender"}
@@ -86,7 +88,38 @@ func (h *handler) Initialize(s *courier.Server) error {
 	s.AddHandlerRoute(h, http.MethodPost, "stopped", courier.ChannelLogTypeEventReceive, h.receiveStopContact)
 	s.AddHandlerRoute(h, http.MethodGet, "stopped", courier.ChannelLogTypeEventReceive, h.receiveStopContact)
 
+	s.AddHandlerRoute(h, http.MethodPost, "typing", courier.ChannelLogTypeEventReceive, h.receiveTyping)
+
 	return nil
+}
+
+type typingForm struct {
+	From string `name:"from" validate:"required"`
+}
+
+// receiveTyping is our HTTP handler function for typing indicators from the contact
+func (h *handler) receiveTyping(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+	form := &typingForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+
+	// create our URN
+	urn := urns.NilURN
+	if channel.Schemes()[0] == urns.Phone.Prefix {
+		urn, err = urns.ParsePhone(form.From, channel.Country(), true, false)
+	} else {
+		urn, err = urns.NewFromParts(channel.Schemes()[0], form.From, nil, "")
+	}
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+
+	if err := h.Backend().WriteTypingIndicator(ctx, channel, urn); err != nil {
+		return nil, err
+	}
+	return nil, courier.WriteTypingIndicatorSuccess(w)
 }
 
 type stopContactForm struct {
@@ -393,6 +426,33 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	return nil
 }
+
+// SendEvent sends a typing indicator by POSTing to the channel's configured typing URL, if any
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, eventType courier.EventOutType, urn urns.URN, clog *courier.ChannelLog) error {
+	typingURL := ch.StringConfigForKey(configSendTypingURL, "")
+	if typingURL == "" {
+		return courier.ErrChannelConfig
+	}
+
+	payload := jsonx.MustMarshal(map[string]string{"type": string(eventType), "to": urn.Path()})
+
+	req, err := http.NewRequest(http.MethodPost, typingURL, bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, _, err := h.RequestHTTPProxied(req, clog)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	} else if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
+	}
+
+	return nil
+}
+
+var _ courier.EventSender = (*handler)(nil)
 
 type quickReplyXMLItem struct {
 	XMLName xml.Name `xml:"item"`

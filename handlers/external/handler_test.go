@@ -1,6 +1,7 @@
 package external
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"testing"
@@ -9,9 +10,11 @@ import (
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -192,6 +195,21 @@ var handleTestCases = []IncomingTestCase{
 	{
 		Label:                "Stopped event No Params",
 		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "field 'from' required",
+	},
+	{
+		Label:                "Typing Indicator",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/typing/",
+		Data:                 "from=%2B2349067554729",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Typing Indicator Accepted",
+		ExpectedTyping:       []urns.URN{"tel:+2349067554729"},
+	},
+	{
+		Label:                "Typing Indicator No Params",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/typing/",
+		Data:                 "nothing=here",
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "field 'from' required",
 	},
@@ -1022,4 +1040,45 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigSendAuthorization: "Token ABCDEF",
 		})
 	RunOutgoingTestCases(t, jsonChannelWithSendAuthorization, newHandler(), jsonSendTestCases, []string{"Token ABCDEF"}, nil)
+}
+
+func TestSendEvent(t *testing.T) {
+	mb := test.NewMockBackend()
+	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
+
+	h := newHandler().(*handler)
+	h.Initialize(s)
+
+	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+		"http://example.com/typing": {
+			httpx.NewMockResponse(200, nil, []byte(`OK`)),
+			httpx.NewMockResponse(403, nil, []byte(`nope`)),
+			httpx.MockConnectionError,
+		},
+	})
+
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+		[]string{urns.Phone.Prefix},
+		map[string]any{configSendTypingURL: "http://example.com/typing"},
+	)
+
+	clog := courier.NewChannelLogForEventSend(ch, nil)
+	err := h.SendEvent(context.Background(), ch, courier.EventOutTypeTyping, "tel:+250788123123", clog)
+	assert.NoError(t, err)
+	assert.Len(t, clog.HttpLogs, 1)
+	assert.Equal(t, "http://example.com/typing", clog.HttpLogs[0].URL)
+	assert.Contains(t, clog.HttpLogs[0].Request, `{"to":"+250788123123","type":"typing"}`)
+
+	// non-2XX response is a response error
+	err = h.SendEvent(context.Background(), ch, courier.EventOutTypeTyping, "tel:+250788123123", clog)
+	assert.Equal(t, courier.ErrResponseStatus, err)
+
+	// as is a connection error
+	err = h.SendEvent(context.Background(), ch, courier.EventOutTypeTyping, "tel:+250788123123", clog)
+	assert.Equal(t, courier.ErrConnectionFailed, err)
+
+	// channel without a typing URL configured can't send
+	noURL := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
+	err = h.SendEvent(context.Background(), noURL, courier.EventOutTypeTyping, "tel:+250788123123", clog)
+	assert.Equal(t, courier.ErrChannelConfig, err)
 }

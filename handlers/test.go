@@ -71,6 +71,7 @@ type IncomingTestCase struct {
 	ExpectedMsgID         int64
 	ExpectedStatuses      []ExpectedStatus
 	ExpectedEvents        []ExpectedEvent
+	ExpectedTyping        []urns.URN
 	ExpectedErrors        []*clogs.Error
 	ExpectedNewURN        *models.NewURNSpec
 	NoLogsExpected        bool
@@ -225,6 +226,8 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 					assert.Equal(t, expectedEvent.Time, actualEvent.OccurredOn())
 				}
 			}
+
+			assert.Equal(t, tc.ExpectedTyping, mb.WrittenTypingIndicators(), "unexpected typing indicators written")
 
 			if tc.ExpectedContactName != nil {
 				require.Equal(*tc.ExpectedContactName, mb.LastContactName())

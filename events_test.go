@@ -1,0 +1,99 @@
+package courier_test
+
+import (
+	"net/http"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestSendEvent(t *testing.T) {
+	defer uuids.SetGenerator(uuids.DefaultGenerator)
+	uuids.SetGenerator(uuids.NewSeededGenerator(1234, dates.NewSequentialNow(time.Date(2024, 9, 11, 14, 33, 0, 0, time.UTC), time.Second)))
+
+	cfg := runtime.NewDefaultConfig()
+	cfg.AuthToken = "sesame"
+	cfg.PublicPort = 8180
+	cfg.InternalPort = 8181
+
+	mb := test.NewMockBackend()
+	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
+	mb.AddChannel(mockChannel)
+
+	// add a channel whose type has no handler registered and thus can't send events
+	brokenChannel := test.NewMockChannel("53e5aafa-8155-449d-9009-fcb30d54bd26", "XX", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
+	mb.AddChannel(brokenChannel)
+
+	server := courier.NewServer(runtime.NewTestRuntime(cfg), mb)
+	server.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+		"http://mock.com/event": {
+			httpx.NewMockResponse(200, nil, []byte(`OK`)),
+			httpx.NewMockResponse(502, nil, []byte(`bad gateway`)),
+		},
+	})
+	require.NoError(t, server.Start())
+	defer server.Stop()
+
+	submit := func(body, authToken string) (int, []byte) {
+		req, _ := http.NewRequest("POST", "http://localhost:8181/ci/event/send", strings.NewReader(body))
+		if authToken != "" {
+			req.Header.Set("Authorization", "Bearer "+authToken)
+		}
+		trace, _, err := utils.TraceHTTP(http.DefaultClient, req, 0)
+		require.NoError(t, err)
+		return trace.Response.StatusCode, trace.ResponseBody
+	}
+
+	// try to submit with no auth header
+	statusCode, respBody := submit(`{}`, "")
+	assert.Equal(t, 401, statusCode)
+	assert.Equal(t, "Unauthorized", string(respBody))
+
+	// try to submit with empty body
+	statusCode, respBody = submit(`{}`, "sesame")
+	assert.Equal(t, 400, statusCode)
+	assert.Contains(t, string(respBody), `Field validation for 'Type' failed on the 'required' tag`)
+
+	// try to submit with an unsupported event type
+	statusCode, respBody = submit(`{"type": "dancing", "channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "urn": "tel:+250788123123"}`, "sesame")
+	assert.Equal(t, 400, statusCode)
+	assert.Contains(t, string(respBody), `Field validation for 'Type' failed on the 'eq' tag`)
+
+	// try to submit with non-existent channel
+	statusCode, respBody = submit(`{"type": "typing", "channel_uuid": "c25aab53-f23a-46c9-8ae3-1af850ad9fd9", "channel_type": "VV", "urn": "tel:+250788123123"}`, "sesame")
+	assert.Equal(t, 400, statusCode)
+	assert.Contains(t, string(respBody), `channel not found`)
+
+	// try to submit for a channel type that can't send events
+	statusCode, respBody = submit(`{"type": "typing", "channel_uuid": "53e5aafa-8155-449d-9009-fcb30d54bd26", "channel_type": "XX", "urn": "tel:+250788123123"}`, "sesame")
+	assert.Equal(t, 400, statusCode)
+	assert.Contains(t, string(respBody), `channel type XX can't send typing events`)
+
+	// submit for a channel that can
+	statusCode, respBody = submit(`{"type": "typing", "channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "urn": "tel:+250788123123"}`, "sesame")
+	assert.Equal(t, 200, statusCode)
+	assert.JSONEq(t, `{"log_uuid": "0191e180-7d60-7000-aded-7d8b151cbd5b"}`, string(respBody))
+
+	assert.Len(t, mb.WrittenChannelLogs(), 1)
+	clog := mb.WrittenChannelLogs()[0]
+	assert.Equal(t, courier.ChannelLogTypeEventSend, clog.Type)
+	assert.Len(t, clog.HttpLogs, 1)
+	assert.Equal(t, "http://mock.com/event", clog.HttpLogs[0].URL)
+
+	// a send error still writes a channel log but returns an error response
+	statusCode, respBody = submit(`{"type": "typing", "channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "urn": "tel:+250788123123"}`, "sesame")
+	assert.Equal(t, 400, statusCode)
+	assert.Contains(t, string(respBody), `channel connection failed`)
+	assert.Len(t, mb.WrittenChannelLogs(), 2)
+}

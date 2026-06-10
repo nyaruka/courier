@@ -49,6 +49,10 @@ type Backend interface {
 	// WriteChannelEvent writes the passed in channel event returning any error
 	WriteChannelEvent(context.Context, ChannelEvent, *ChannelLog) error
 
+	// WriteTypingIndicator records that the contact with the given URN is typing so that chat UIs can surface
+	// that. Unlike channel events, typing indicators are transient and never persisted.
+	WriteTypingIndicator(context.Context, Channel, urns.URN) error
+
 	// WriteChannelLog writes the passed in channel log to our backend
 	WriteChannelLog(context.Context, *ChannelLog) error
 

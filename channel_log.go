@@ -10,6 +10,7 @@ import (
 const (
 	ChannelLogTypeUnknown         clogs.Type = "unknown"
 	ChannelLogTypeMsgSend         clogs.Type = "msg_send"
+	ChannelLogTypeEventSend       clogs.Type = "event_send"
 	ChannelLogTypeMsgStatus       clogs.Type = "msg_status"
 	ChannelLogTypeMsgReceive      clogs.Type = "msg_receive"
 	ChannelLogTypeEventReceive    clogs.Type = "event_receive"
@@ -77,6 +78,11 @@ func NewChannelLogForSend(msg MsgOut, redactVals []string) *ChannelLog {
 // NewChannelLogForSend creates a new channel log for an attachment fetch
 func NewChannelLogForAttachmentFetch(ch Channel, redactVals []string) *ChannelLog {
 	return newChannelLog(ChannelLogTypeAttachmentFetch, ch, nil, redactVals)
+}
+
+// NewChannelLogForEventSend creates a new channel log for an event send
+func NewChannelLogForEventSend(ch Channel, redactVals []string) *ChannelLog {
+	return newChannelLog(ChannelLogTypeEventSend, ch, nil, redactVals)
 }
 
 // NewChannelLog creates a new channel log with the given type and channel

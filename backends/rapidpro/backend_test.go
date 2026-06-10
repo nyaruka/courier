@@ -161,6 +161,32 @@ func (ts *BackendTestSuite) TestContact() {
 
 }
 
+func (ts *BackendTestSuite) TestWriteTypingIndicator() {
+	testsuite.ResetValkey(ts.T(), ts.b.rt)
+
+	ctx := context.Background()
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+
+	rc := ts.b.rt.VK.Get()
+	defer rc.Close()
+
+	// a URN with no matching contact is a noop
+	err := ts.b.WriteTypingIndicator(ctx, knChannel, urns.URN("tel:+16055741111"))
+	ts.NoError(err)
+
+	exists, err := redis.Bool(rc.Do("EXISTS", "typing:a984069d-0008-4d8c-a772-b14a8a6acccc"))
+	ts.NoError(err)
+	ts.False(exists)
+
+	// a URN belonging to a contact in our testdata writes a marker with a TTL
+	err = ts.b.WriteTypingIndicator(ctx, knChannel, urns.URN("tel:+12067799192"))
+	ts.NoError(err)
+
+	ttl, err := redis.Int(rc.Do("TTL", "typing:a984069d-0008-4d8c-a772-b14a8a6acccc"))
+	ts.NoError(err)
+	ts.Equal(10, ttl)
+}
+
 func (ts *BackendTestSuite) TestContactRace() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)

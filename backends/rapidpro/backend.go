@@ -43,6 +43,9 @@ const (
 
 	// our timeout for backend operations
 	backendTimeout = time.Second * 20
+
+	// how long a typing indicator stays visible (in seconds)
+	typingIndicatorTTL = 10
 )
 
 var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
@@ -579,6 +582,35 @@ func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEv
 	defer cancel()
 
 	return writeChannelEvent(timeout, b, event, clog)
+}
+
+const sqlSelectContactUUIDByURN = `
+SELECT c.uuid
+  FROM contacts_contact c
+  JOIN contacts_contacturn u ON u.contact_id = c.id
+ WHERE u.org_id = $1 AND u.identity = $2 AND c.is_active = TRUE`
+
+// WriteTypingIndicator records that the contact with the given URN is typing as a short lived valkey key which
+// the chat UI reads when polling - stale typing indicators are of no interest to anyone so nothing is persisted.
+func (b *backend) WriteTypingIndicator(ctx context.Context, channel courier.Channel, urn urns.URN) error {
+	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
+	defer cancel()
+
+	ch := channel.(*models.Channel)
+
+	var contactUUID models.ContactUUID
+	err := b.rt.DB.GetContext(timeout, &contactUUID, sqlSelectContactUUIDByURN, ch.OrgID(), urn.Identity())
+	if err == sql.ErrNoRows {
+		return nil // not a contact we know, nothing to record
+	} else if err != nil {
+		return fmt.Errorf("error looking up contact for typing indicator: %w", err)
+	}
+
+	vc := b.rt.VK.Get()
+	defer vc.Close()
+
+	_, err = vc.Do("SET", fmt.Sprintf("typing:%s", contactUUID), "1", "EX", typingIndicatorTTL)
+	return err
 }
 
 // WriteChannelLog persists the passed in log to our database, for rapidpro we swallow all errors, logging isn't critical

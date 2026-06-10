@@ -35,12 +35,13 @@ type MockBackend struct {
 	mutex     sync.RWMutex
 	redisPool *redis.Pool
 
-	writtenMsgs          []courier.MsgIn
-	writtenMsgStatuses   []courier.StatusUpdate
-	writtenChannelEvents []courier.ChannelEvent
-	writtenChannelLogs   []*courier.ChannelLog
-	savedAttachments     []*SavedAttachment
-	storageError         error
+	writtenMsgs             []courier.MsgIn
+	writtenMsgStatuses      []courier.StatusUpdate
+	writtenChannelEvents    []courier.ChannelEvent
+	writtenChannelLogs      []*courier.ChannelLog
+	writtenTypingIndicators []urns.URN
+	savedAttachments        []*SavedAttachment
+	storageError            error
 
 	lastContactName string
 	urnAuthTokens   map[urns.URN]map[string]string
@@ -276,6 +277,15 @@ func (mb *MockBackend) WriteChannelEvent(ctx context.Context, event courier.Chan
 	return nil
 }
 
+// WriteTypingIndicator records that the contact with the given URN is typing
+func (mb *MockBackend) WriteTypingIndicator(ctx context.Context, channel courier.Channel, urn urns.URN) error {
+	mb.mutex.Lock()
+	defer mb.mutex.Unlock()
+
+	mb.writtenTypingIndicators = append(mb.writtenTypingIndicators, urn)
+	return nil
+}
+
 // GetChannel returns the channel with the passed in type and channel uuid
 func (mb *MockBackend) GetChannel(ctx context.Context, cType models.ChannelType, uuid models.ChannelUUID) (courier.Channel, error) {
 	channel, found := mb.channels[uuid]
@@ -352,6 +362,7 @@ func (mb *MockBackend) WrittenMsgs() []courier.MsgIn                  { return m
 func (mb *MockBackend) WrittenMsgStatuses() []courier.StatusUpdate    { return mb.writtenMsgStatuses }
 func (mb *MockBackend) WrittenChannelEvents() []courier.ChannelEvent  { return mb.writtenChannelEvents }
 func (mb *MockBackend) WrittenChannelLogs() []*courier.ChannelLog     { return mb.writtenChannelLogs }
+func (mb *MockBackend) WrittenTypingIndicators() []urns.URN           { return mb.writtenTypingIndicators }
 func (mb *MockBackend) SavedAttachments() []*SavedAttachment          { return mb.savedAttachments }
 func (mb *MockBackend) URNAuthTokens() map[urns.URN]map[string]string { return mb.urnAuthTokens }
 
@@ -385,6 +396,7 @@ func (mb *MockBackend) Reset() {
 	mb.writtenMsgStatuses = nil
 	mb.writtenChannelEvents = nil
 	mb.writtenChannelLogs = nil
+	mb.writtenTypingIndicators = nil
 	mb.urnAuthTokens = nil
 }
 

@@ -121,6 +121,7 @@ func (s *Server) Start() error {
 	internalRouter.MethodNotAllowed(s.handle405("internal"))
 	internalRouter.Get("/", s.handleHealth)
 	internalRouter.Post("/ci/attachment/fetch", s.tokenAuthRequired(s.handleFetchAttachment))
+	internalRouter.Post("/ci/event/send", s.tokenAuthRequired(s.handleSendEvent))
 
 	s.publicServer = &http.Server{
 		Addr:         publicAddr,
@@ -352,6 +353,22 @@ func (s *Server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
 	resp, err := fetchAttachment(ctx, s.rt, s.backend, r)
 	if err != nil {
 		slog.Error("error fetching attachment", "error", err)
+		WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonx.MustMarshal(resp))
+}
+
+func (s *Server) handleSendEvent(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	defer cancel()
+
+	resp, err := sendEvent(ctx, s.backend, r)
+	if err != nil {
+		slog.Error("error sending event", "error", err)
 		WriteError(w, http.StatusBadRequest, err)
 		return
 	}
