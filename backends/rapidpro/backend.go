@@ -590,6 +590,11 @@ SELECT c.uuid
   JOIN contacts_contacturn u ON u.contact_id = c.id
  WHERE u.org_id = $1 AND u.identity = $2 AND c.is_active = TRUE`
 
+// the valkey key used to mark that the given contact is currently typing
+func typingKey(contactUUID models.ContactUUID) string {
+	return fmt.Sprintf("typing:%s", contactUUID)
+}
+
 // WriteTypingIndicator records that the contact with the given URN is typing as a short lived valkey key which
 // the chat UI reads when polling - stale typing indicators are of no interest to anyone so nothing is persisted.
 func (b *backend) WriteTypingIndicator(ctx context.Context, channel courier.Channel, urn urns.URN) error {
@@ -609,7 +614,7 @@ func (b *backend) WriteTypingIndicator(ctx context.Context, channel courier.Chan
 	vc := b.rt.VK.Get()
 	defer vc.Close()
 
-	_, err = vc.Do("SET", fmt.Sprintf("typing:%s", contactUUID), "1", "EX", typingIndicatorTTL)
+	_, err = vc.Do("SET", typingKey(contactUUID), "1", "EX", typingIndicatorTTL)
 	return err
 }
 

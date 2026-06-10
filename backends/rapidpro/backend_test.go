@@ -185,6 +185,16 @@ func (ts *BackendTestSuite) TestWriteTypingIndicator() {
 	ttl, err := redis.Int(rc.Do("TTL", "typing:a984069d-0008-4d8c-a772-b14a8a6acccc"))
 	ts.NoError(err)
 	ts.Equal(10, ttl)
+
+	// an incoming message from the contact clears the marker
+	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgReceive, knChannel, nil)
+	msg := ts.b.NewIncomingMsg(ctx, knChannel, urns.URN("tel:+12067799192"), "stopped typing", "", clog)
+	err = ts.b.WriteMsg(ctx, msg, clog)
+	ts.NoError(err)
+
+	exists, err = redis.Bool(rc.Do("EXISTS", "typing:a984069d-0008-4d8c-a772-b14a8a6acccc"))
+	ts.NoError(err)
+	ts.False(exists)
 }
 
 func (ts *BackendTestSuite) TestContactRace() {

@@ -112,6 +112,11 @@ func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLo
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
+	// an incoming message means the contact is no longer typing
+	if _, err := rc.Do("DEL", typingKey(contact.UUID_)); err != nil {
+		slog.Error("error clearing typing indicator", "error", err, "msg", m.UUID_, "contact", contact.ID_)
+	}
+
 	// queue to mailroom for handling
 	if err := queueMsgHandling(ctx, rc, contact, m); err != nil {
 		slog.Error("error queueing msg handling", "error", err, "msg", m.UUID_, "contact", contact.ID_)
