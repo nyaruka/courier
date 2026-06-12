@@ -801,6 +801,34 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MsgURN:  "whatsapp:250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
+				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#250012) some error","code": 250012 }}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/messages",
+				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Error","preview_url":false}}`,
+			},
+		},
+		ExpectedError: courier.ErrFailedWithReason("250012", "(#250012) some error"),
+	},
+	{
+		Label:   "Error Channel Contact Pair limit hit",
+		MsgText: "Pair limit",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://waba-v2.360dialog.io/messages": {
+				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#131056) (Business Account, Consumer Account) pair rate limit hit","code": 131056 }}`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
+		Label:   "Error Throttled",
+		MsgText: "Error",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://waba-v2.360dialog.io/messages": {
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#130429) Rate limit hit","code": 130429 }}`)),
 			},
 		},
@@ -810,7 +838,24 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Error","preview_url":false}}`,
 			},
 		},
-		ExpectedError: courier.ErrFailedWithReason("130429", "(#130429) Rate limit hit"),
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
+		Label:   "Error Message",
+		MsgText: "Error",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://waba-v2.360dialog.io/messages": {
+				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "Other error with message","code": 0 }}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/messages",
+				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Error","preview_url":false}}`,
+			},
+		},
+		ExpectedError: courier.ErrFailedWithReason("0", "Other error with message"),
 	},
 	{
 		Label:   "Error Connection",
