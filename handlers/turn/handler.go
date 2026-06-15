@@ -924,17 +924,12 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *courier.S
 		return courier.ErrResponseUnparseable
 	}
 
+	if slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Error.Code) {
+		return courier.ErrConnectionThrottled
+	}
+
 	if respPayload.Error.Code != 0 || respPayload.Error.Message != "" {
-
-		if slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Error.Code) {
-			return courier.ErrConnectionThrottled
-		}
-
-		if respPayload.Error.Code != 0 {
-			return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
-		} else if respPayload.Error.Message != "" {
-			return courier.ErrFailedWithReason("0", respPayload.Error.Message)
-		}
+		return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}
 
 	if len(respPayload.Errors) > 0 {

@@ -762,7 +762,7 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 		return "", courier.ErrConnectionThrottled
 	}
 
-	if respPayload.Error.Code != 0 {
+	if respPayload.Error.Code != 0 || respPayload.Error.Message != "" {
 		return "", courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}
 

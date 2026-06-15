@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -325,7 +326,11 @@ func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, r
 		return "", courier.ErrResponseUnparseable
 	}
 
-	if respPayload.Error.Code != 0 {
+	if slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Error.Code) {
+		return "", courier.ErrConnectionThrottled
+	}
+
+	if respPayload.Error.Code != 0 || respPayload.Error.Message != "" {
 		return "", courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}
 
