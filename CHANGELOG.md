@@ -1,3 +1,8 @@
+v26.2.0 (2026-06-15)
+-------------------------
+ * Update dependencies
+ * Handle throttling and bare-message errors consistently across WhatsApp Cloud send paths
+
 v26.1.48 (2026-06-04)
 -------------------------
  * Update to gocommon v1.83.0
