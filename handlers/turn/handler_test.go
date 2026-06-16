@@ -1052,6 +1052,17 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrConnectionThrottled,
 	},
 	{
+		Label:   "Error Retryable",
+		MsgText: "Error",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(400, nil, []byte(`{ "error": {"message": "Media upload error","code": 131053 }}`)),
+			},
+		},
+		ExpectedError: courier.ErrRetryableWithReason("131053", "Media upload error"),
+	},
+	{
 		Label:   "Error",
 		MsgText: "Error",
 		MsgURN:  "whatsapp:250788123123",

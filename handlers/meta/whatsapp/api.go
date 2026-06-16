@@ -26,6 +26,10 @@ var IgnoreStatuses = map[string]bool{
 
 var WACThrottlingErrorCodes = []int{4, 80007, 130429, 131048, 131056, 133016}
 
+// WACRetryableErrorCodes are error codes for transient failures that should be retried rather than failed. 131053
+// is a media upload/download error which is often caused by Meta failing to fetch the media from the given link.
+var WACRetryableErrorCodes = []int{131053}
+
 // see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media#example-2
 type MOMedia struct {
 	Caption  string `json:"caption"`

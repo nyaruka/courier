@@ -928,6 +928,10 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *courier.S
 		return courier.ErrConnectionThrottled
 	}
 
+	if slices.Contains(whatsapp.WACRetryableErrorCodes, respPayload.Error.Code) {
+		return courier.ErrRetryableWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
+	}
+
 	if respPayload.Error.Code != 0 || respPayload.Error.Message != "" {
 		return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}
@@ -935,6 +939,9 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *courier.S
 	if len(respPayload.Errors) > 0 {
 		if slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Errors[0].Code) {
 			return courier.ErrConnectionThrottled
+		}
+		if slices.Contains(whatsapp.WACRetryableErrorCodes, respPayload.Errors[0].Code) {
+			return courier.ErrRetryableWithReason(strconv.Itoa(respPayload.Errors[0].Code), respPayload.Errors[0].Title)
 		}
 		return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Errors[0].Code), respPayload.Errors[0].Title)
 	}
