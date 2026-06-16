@@ -762,6 +762,10 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 		return "", courier.ErrConnectionThrottled
 	}
 
+	if slices.Contains(whatsapp.WACRetryableErrorCodes, respPayload.Error.Code) {
+		return "", courier.ErrRetryableWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
+	}
+
 	if respPayload.Error.Code != 0 || respPayload.Error.Message != "" {
 		return "", courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}

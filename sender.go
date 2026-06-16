@@ -139,6 +139,18 @@ func ErrFailedWithReason(code, desc string) *SendError {
 	}
 }
 
+// ErrRetryableWithReason is like ErrFailedWithReason but for failures that may be transient and so should be retried
+func ErrRetryableWithReason(code, desc string) *SendError {
+	return &SendError{
+		msg:         "channel rejected send with retryable reason",
+		retryable:   true,
+		loggable:    false,
+		clogCode:    "rejected_with_reason",
+		clogMsg:     desc,
+		clogExtCode: code,
+	}
+}
+
 // Foreman takes care of managing our set of sending workers and assigns msgs for each to send
 type Foreman struct {
 	server           *Server

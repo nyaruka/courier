@@ -841,6 +841,23 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedError: courier.ErrConnectionThrottled,
 	},
 	{
+		Label:   "Error Retryable",
+		MsgText: "Error",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://waba-v2.360dialog.io/messages": {
+				httpx.NewMockResponse(400, nil, []byte(`{ "error": {"message": "Media upload error","code": 131053 }}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/messages",
+				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Error","preview_url":false}}`,
+			},
+		},
+		ExpectedError: courier.ErrRetryableWithReason("131053", "Media upload error"),
+	},
+	{
 		Label:   "Error Message",
 		MsgText: "Error",
 		MsgURN:  "whatsapp:250788123123",
