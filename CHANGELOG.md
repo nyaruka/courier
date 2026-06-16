@@ -1,3 +1,7 @@
+v26.2.1 (2026-06-16)
+-------------------------
+ * Retry WhatsApp Cloud media upload errors (131053) instead of failing them
+
 v26.2.0 (2026-06-15)
 -------------------------
  * Update dependencies
