@@ -1,14 +1,15 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq" // postgres driver
-	awsx "github.com/nyaruka/gocommon/aws"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
@@ -52,10 +53,12 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 	rt.DB.SetMaxIdleConns(4)
 	rt.DB.SetMaxOpenConns(16)
 
+	ctx := context.Background()
+
 	// resolve the AWS region from the standard SDK default chain (AWS_REGION / AWS_DEFAULT_REGION env
 	// vars, shared config, etc.) so we can reason about region-qualified S3 hostnames without a
 	// courier-specific region setting.
-	awsCfg, err := awsx.NewConfig("", "", "")
+	awsCfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error resolving AWS config: %w", err)
 	}
@@ -66,9 +69,10 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 	}
 	rt.AWSRegion = awsCfg.Region
 
-	// pass empty credentials and region to the AWS service constructors so the SDK resolves them from
-	// its default chain (env vars, instance/task IAM role, shared config/credentials files, etc.)
-	rt.Dynamo, err = dynamo.NewClient("", "", "", cfg.DynamoEndpoint)
+	// the AWS service constructors resolve credentials (and region) from the SDK default chain (env
+	// vars, instance/task IAM role, shared config/credentials files, etc.); S3 still needs the region
+	// explicitly for region-qualified virtual-host object URLs.
+	rt.Dynamo, err = dynamo.NewClient(ctx, cfg.DynamoEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("error creating DynamoDB client: %w", err)
 	}
@@ -78,12 +82,12 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 		return nil, fmt.Errorf("error creating Valkey pool: %w", err)
 	}
 
-	rt.S3, err = s3x.NewService("", "", "", cfg.S3Endpoint, cfg.S3PathStyle)
+	rt.S3, err = s3x.NewService(ctx, rt.AWSRegion, cfg.S3Endpoint, cfg.S3PathStyle)
 	if err != nil {
 		return nil, fmt.Errorf("error creating S3 service: %w", err)
 	}
 
-	rt.CW, err = cwatch.NewService("", "", "", cfg.CloudwatchNamespace, cfg.DeploymentID)
+	rt.CW, err = cwatch.NewService(ctx, cfg.CloudwatchNamespace, cfg.DeploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Cloudwatch service: %w", err)
 	}
