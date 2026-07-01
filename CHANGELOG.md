@@ -1,3 +1,8 @@
+v26.3.0 (2026-07-01)
+-------------------------
+ * Resolve AWS credentials and region from the standard SDK default chain
+ * Bump CLA Assistant action to v2.6.1 to fix Node 24 incompatibility
+
 v26.2.1 (2026-06-16)
 -------------------------
  * Retry WhatsApp Cloud media upload errors (131053) instead of failing them
