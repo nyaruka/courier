@@ -59,6 +59,11 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error resolving AWS config: %w", err)
 	}
+	// the SDK doesn't error when no region can be resolved, it just leaves it empty, so fail fast here
+	// rather than let an empty region silently break region-qualified S3 hostname handling
+	if awsCfg.Region == "" {
+		return nil, fmt.Errorf("no AWS region resolved - set AWS_REGION or AWS_DEFAULT_REGION")
+	}
 	rt.AWSRegion = awsCfg.Region
 
 	// pass empty credentials and region to the AWS service constructors so the SDK resolves them from

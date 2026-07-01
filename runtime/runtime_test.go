@@ -11,6 +11,9 @@ import (
 )
 
 func TestHTTPProxied(t *testing.T) {
+	// NewRuntime resolves the AWS region from the SDK default chain and fails if none is set
+	t.Setenv("AWS_REGION", "us-east-1")
+
 	// without SendProxyURL configured, HTTPProxied is the same client as HTTP
 	cfg := runtime.NewDefaultConfig()
 	require.NoError(t, cfg.Validate())
