@@ -26,10 +26,6 @@ type Config struct {
 	InternalAddress string `help:"the network interface address our internal web server will bind to"`
 	InternalPort    int    `help:"the port our internal web server will listen on"`
 
-	AWSAccessKeyID     string `help:"access key ID to use for AWS services"`
-	AWSSecretAccessKey string `help:"secret access key to use for AWS services"`
-	AWSRegion          string `help:"region to use for AWS services, e.g. us-east-1"`
-
 	MetricsReporting    string `validate:"eq=off|eq=basic|eq=advanced"     help:"the level of metrics reporting"`
 	CloudwatchNamespace string `help:"the namespace to use for cloudwatch metrics"`
 	DeploymentID        string `help:"the deployment identifier to use for metrics"`
@@ -74,10 +70,6 @@ func NewDefaultConfig() *Config {
 		PublicPort:      8080,
 		InternalAddress: "localhost",
 		InternalPort:    8081,
-
-		AWSAccessKeyID:     "",
-		AWSSecretAccessKey: "",
-		AWSRegion:          "us-east-1",
 
 		MetricsReporting:    "off",
 		CloudwatchNamespace: "Courier",

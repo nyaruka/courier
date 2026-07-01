@@ -30,9 +30,11 @@ environment variables and parameters and for more details on each option.
 
 ### AWS services:
 
- * `COURIER_AWS_ACCESS_KEY_ID`: AWS access key id used to authenticate to AWS
- * `COURIER_AWS_SECRET_ACCESS_KEY`: AWS secret access key used to authenticate to AWS
- * `COURIER_AWS_REGION`: AWS region (e.g. `eu-west-1`)
+The AWS region and credentials are resolved via the standard AWS SDK default chain — the `AWS_REGION`
+(or `AWS_DEFAULT_REGION`) environment variable, the instance/task IAM role, the
+`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` environment variables, and the shared config/credentials
+files. There is no built-in default region, so `AWS_REGION` (or `AWS_DEFAULT_REGION`) must be set.
+
  * `COURIER_S3_ATTACHMENTS_BUCKET`: name of your S3 bucket (e.g. `rp-attachments`)
 
 ### Logging and error reporting:
