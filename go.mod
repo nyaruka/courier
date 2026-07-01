@@ -18,7 +18,7 @@ require (
 	github.com/h2non/filetype v1.1.3
 	github.com/lib/pq v1.12.3
 	github.com/nyaruka/ezconf v0.6.1
-	github.com/nyaruka/gocommon v1.83.0
+	github.com/nyaruka/gocommon v1.84.0
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/vkutil v0.20.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -33,7 +33,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	github.com/antchfx/xpath v1.3.6 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.13 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.32.25 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.32.25
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.24 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.29 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.29 // indirect
