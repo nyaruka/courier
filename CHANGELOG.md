@@ -1,3 +1,7 @@
+v26.3.1 (2026-07-01)
+-------------------------
+ * Update dependencies
+
 v26.3.0 (2026-07-01)
 -------------------------
  * Resolve AWS credentials and region from the standard SDK default chain
