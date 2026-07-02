@@ -134,6 +134,15 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 				slog.Error("error queuing status change to writer", "error", err, "msg_uuid", c.MsgUUID, "msg_status", c.MsgStatus)
 			}
 		}
+
+		// publish changes to any subscribed history sockets - best-effort with its own short timeout so a Centrifugo
+		// or Valkey stall can't eat into the batch's DB write budget
+		pubCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+
+		if err := models.PublishStatusChanges(pubCtx, b.rt, changes); err != nil {
+			slog.Error("error publishing status changes", "error", err)
+		}
 	}
 
 	return unresolved, nil

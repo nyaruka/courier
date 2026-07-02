@@ -98,20 +98,52 @@ func (s *StatusChange) DynamoKey() dynamo.Key {
 func (s *StatusChange) MarshalDynamo() (*dynamo.Item, error) {
 	data := map[string]any{
 		"created_on": s.CreatedOn,
-		"status":     dynamoStatuses[s.MsgStatus],
+		"status":     statusNames[s.MsgStatus],
 	}
-	if s.MsgStatus == MsgStatusFailed && s.FailedReason == "E" {
-		data["reason"] = "error_limit"
+	if reason := s.reason(); reason != "" {
+		data["reason"] = reason
 	}
 
 	return &dynamo.Item{Key: s.DynamoKey(), OrgID: int(s.OrgID), Data: data}, nil
 }
 
-var dynamoStatuses = map[MsgStatus]string{
+// the client facing names of the statuses, as used in both history items and published events
+var statusNames = map[MsgStatus]string{
 	MsgStatusWired:     "wired",
 	MsgStatusSent:      "sent",
 	MsgStatusDelivered: "delivered",
 	MsgStatusRead:      "read",
 	MsgStatusErrored:   "errored",
 	MsgStatusFailed:    "failed",
+}
+
+// the client facing reason for this change, or "" if there isn't one
+func (s *StatusChange) reason() string {
+	if s.MsgStatus == MsgStatusFailed && s.FailedReason == "E" {
+		return "error_limit"
+	}
+	return ""
+}
+
+// msgStatusChangedEvent matches the JSON of goflow's msg_status_changed event - we don't import goflow so this has
+// to be kept in sync manually, but the shape is pinned by tests
+type msgStatusChangedEvent struct {
+	UUID      uuids.UUID `json:"uuid"`
+	Type      string     `json:"type"`
+	CreatedOn time.Time  `json:"created_on"`
+	MsgUUID   MsgUUID    `json:"msg_uuid"`
+	Status    string     `json:"status"`
+	Reason    string     `json:"reason,omitempty"`
+}
+
+// historyEvent renders this change as the msg_status_changed event published to the contact's history socket
+func (s *StatusChange) historyEvent() *msgStatusChangedEvent {
+	return &msgStatusChangedEvent{
+		UUID:      uuids.NewV7(),
+		Type:      "msg_status_changed",
+		CreatedOn: s.CreatedOn,
+		MsgUUID:   s.MsgUUID,
+		Status:    statusNames[s.MsgStatus],
+		Reason:    s.reason(),
+	}
 }
