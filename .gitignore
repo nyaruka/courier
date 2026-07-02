@@ -2,6 +2,8 @@
 .devcontainer
 .claude/
 CLAUDE.md
+CODEX.md
+AGENTS.md
 coverage.text
 deploy
 fabfile.*
