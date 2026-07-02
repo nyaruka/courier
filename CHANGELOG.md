@@ -1,3 +1,7 @@
+v26.3.2 (2026-07-02)
+-------------------------
+ * Support sending WhatsApp messages by BSUID URN
+
 v26.3.1 (2026-07-01)
 -------------------------
  * Update dependencies
