@@ -8,12 +8,12 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/centrifugal/gocent/v3"
 	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
+	"github.com/nyaruka/gocommon/centrifugo"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/vkutil"
 	"github.com/vinovest/sqlx"
@@ -26,7 +26,7 @@ type Runtime struct {
 	VK         *redis.Pool
 	S3         *s3x.Service
 	CW         *cwatch.Service
-	Centrifugo *gocent.Client
+	Centrifugo centrifugo.Client
 
 	// AWSRegion is the region resolved from the standard AWS SDK default chain. It's kept here so code
 	// that needs to reason about region-qualified S3 hostnames (e.g. media URL resolution) can use it
@@ -94,7 +94,7 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 		return nil, fmt.Errorf("error creating Cloudwatch service: %w", err)
 	}
 
-	rt.Centrifugo = gocent.New(gocent.Config{Addr: cfg.CentrifugoEndpoint, Key: cfg.CentrifugoKey})
+	rt.Centrifugo = centrifugo.NewClient(cfg.CentrifugoEndpoint, cfg.CentrifugoKey)
 
 	// parse the SSRF blocklist up front so it can be baked into each HTTP client's transport via
 	// httpx.WithAccessControl, rather than passed to every request.
@@ -146,7 +146,7 @@ func NewTestRuntime(cfg *Config) *Runtime {
 		Config:      cfg,
 		HTTP:        client,
 		HTTPProxied: client,
-		Centrifugo:  gocent.New(gocent.Config{Addr: cfg.CentrifugoEndpoint, Key: cfg.CentrifugoKey}),
+		Centrifugo:  centrifugo.NewMockClient(),
 	}
 }
 
