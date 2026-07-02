@@ -27,6 +27,20 @@ jobs:
           SERVICES: s3,dynamodb,cloudwatch
         ports:
           - 4566:4566
+      centrifugo:
+        image: centrifugo/centrifugo:v6.8.3
+        env:
+          # API served on the internal port at /ws/api, matching the dev compose so the test config is identical
+          CENTRIFUGO_HTTP_SERVER_INTERNAL_PORT: 9000
+          CENTRIFUGO_HTTP_API_HANDLER_PREFIX: /ws/api
+          CENTRIFUGO_HTTP_API_KEY: dev-api-key
+          # redis engine on valkey DB 6 so the test suite can clear channel history by flushing that DB
+          CENTRIFUGO_ENGINE_TYPE: redis
+          CENTRIFUGO_ENGINE_REDIS_ADDRESS: redis://valkey:6379/6
+          # history on the namespaces the suite reads back from (production keeps its own no-history config)
+          CENTRIFUGO_CHANNEL_NAMESPACES: '[{"name":"notifications","history_size":100,"history_ttl":"300s"},{"name":"history","history_size":100,"history_ttl":"300s"}]'
+        ports:
+          - 9000:9000
 
     steps:
       - name: Checkout code
