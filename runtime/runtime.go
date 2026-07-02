@@ -142,7 +142,12 @@ func NewTestRuntime(cfg *Config) *Runtime {
 	// give the client a timeout matching the production clients so a test that accidentally lets a
 	// request escape its mocking transport fails fast instead of hanging
 	client := &http.Client{Timeout: 30 * time.Second}
-	return &Runtime{Config: cfg, HTTP: client, HTTPProxied: client}
+	return &Runtime{
+		Config:      cfg,
+		HTTP:        client,
+		HTTPProxied: client,
+		Centrifugo:  gocent.New(gocent.Config{Addr: cfg.CentrifugoEndpoint, Key: cfg.CentrifugoKey}),
+	}
 }
 
 func (r *Runtime) Start() error {
