@@ -142,6 +142,13 @@ func (b *backend) Start() error {
 		log.Info("attachments bucket ok")
 	}
 
+	// test that the Centrifugo server is reachable and accepts our key
+	if _, err := b.rt.Centrifugo.Info(ctx); err != nil {
+		log.Error("centrifugo not reachable", "error", err)
+	} else {
+		log.Info("centrifugo ok")
+	}
+
 	if err := b.rt.Start(); err != nil {
 		return fmt.Errorf("error starting runtime: %w", err)
 	} else {

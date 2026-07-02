@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/centrifugal/gocent/v3"
 	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/gocommon/aws/cwatch"
@@ -19,12 +20,13 @@ import (
 )
 
 type Runtime struct {
-	Config *Config
-	DB     *sqlx.DB
-	Dynamo *dynamodb.Client
-	VK     *redis.Pool
-	S3     *s3x.Service
-	CW     *cwatch.Service
+	Config     *Config
+	DB         *sqlx.DB
+	Dynamo     *dynamodb.Client
+	VK         *redis.Pool
+	S3         *s3x.Service
+	CW         *cwatch.Service
+	Centrifugo *gocent.Client
 
 	// AWSRegion is the region resolved from the standard AWS SDK default chain. It's kept here so code
 	// that needs to reason about region-qualified S3 hostnames (e.g. media URL resolution) can use it
@@ -92,6 +94,8 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 		return nil, fmt.Errorf("error creating Cloudwatch service: %w", err)
 	}
 
+	rt.Centrifugo = gocent.New(gocent.Config{Addr: cfg.CentrifugoEndpoint, Key: cfg.CentrifugoKey})
+
 	// parse the SSRF blocklist up front so it can be baked into each HTTP client's transport via
 	// httpx.WithAccessControl, rather than passed to every request.
 	disallowedIPs, disallowedNets, err := cfg.ParseDisallowedNetworks()
@@ -138,7 +142,12 @@ func NewTestRuntime(cfg *Config) *Runtime {
 	// give the client a timeout matching the production clients so a test that accidentally lets a
 	// request escape its mocking transport fails fast instead of hanging
 	client := &http.Client{Timeout: 30 * time.Second}
-	return &Runtime{Config: cfg, HTTP: client, HTTPProxied: client}
+	return &Runtime{
+		Config:      cfg,
+		HTTP:        client,
+		HTTPProxied: client,
+		Centrifugo:  gocent.New(gocent.Config{Addr: cfg.CentrifugoEndpoint, Key: cfg.CentrifugoKey}),
+	}
 }
 
 func (r *Runtime) Start() error {

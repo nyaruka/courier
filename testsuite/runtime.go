@@ -2,11 +2,14 @@ package testsuite
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"os"
 	"path"
 	"testing"
 
+	"github.com/centrifugal/gocent/v3"
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
 	"github.com/stretchr/testify/require"
@@ -37,6 +40,8 @@ func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
 	cfg.DynamoEndpoint = "http://localstack:4566"
 	cfg.DynamoTablePrefix = "Test"
 	cfg.SpoolDir = absPath("./_test_spool")
+	cfg.CentrifugoEndpoint = "http://centrifugo:9000/ws/api"
+	cfg.CentrifugoKey = "dev-api-key"
 
 	rt, err := runtime.NewRuntime(cfg)
 	require.NoError(t, err)
@@ -71,6 +76,37 @@ func ResetValkey(t *testing.T, rt *runtime.Runtime) {
 
 	_, err := r.Do("FLUSHDB")
 	require.NoError(t, err)
+}
+
+// ResetCentrifugo clears any channel history Centrifugo is holding between tests. The dev and CI Centrifugo use valkey
+// DB 6 for their engine (see the centrifugo service config), so flushing that DB drops all retained publications.
+func ResetCentrifugo(t *testing.T, rt *runtime.Runtime) {
+	t.Helper()
+
+	vc, err := redis.Dial("tcp", "valkey:6379")
+	require.NoError(t, err, "error connecting to centrifugo valkey db")
+	defer vc.Close()
+
+	_, err = vc.Do("SELECT", 6)
+	require.NoError(t, err)
+	_, err = vc.Do("FLUSHDB")
+	require.NoError(t, err, "error flushing centrifugo valkey db")
+}
+
+// CentrifugoHistory returns the JSON payloads published to the given Centrifugo channel, oldest first. The channel's
+// namespace must have history enabled - the dev and CI Centrifugo enable it so tests can read publishes back; the
+// production config does not.
+func CentrifugoHistory(t *testing.T, rt *runtime.Runtime, channel string) []json.RawMessage {
+	t.Helper()
+
+	res, err := rt.Centrifugo.History(t.Context(), channel, gocent.WithLimit(-1))
+	require.NoError(t, err)
+
+	msgs := make([]json.RawMessage, len(res.Publications))
+	for i, p := range res.Publications {
+		msgs[i] = p.Data
+	}
+	return msgs
 }
 
 // Converts a project root relative path to an absolute path usable in any test. This is needed because go tests

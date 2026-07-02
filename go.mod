@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.59.2
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.104.2
 	github.com/buger/jsonparser v1.2.0
+	github.com/centrifugal/gocent/v3 v3.4.0
 	github.com/getsentry/sentry-go v0.47.0
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/go-playground/validator/v10 v10.30.3
