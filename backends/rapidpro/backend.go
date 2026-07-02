@@ -143,7 +143,7 @@ func (b *backend) Start() error {
 	}
 
 	// test that the Centrifugo server is reachable and accepts our key
-	if _, err := b.rt.Centrifugo.Info(ctx); err != nil {
+	if err := b.rt.Centrifugo.Info(ctx); err != nil {
 		log.Error("centrifugo not reachable", "error", err)
 	} else {
 		log.Info("centrifugo ok")
