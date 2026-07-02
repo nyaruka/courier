@@ -66,7 +66,7 @@ func NewDefaultConfig() *Config {
 	return &Config{
 		DB:       "postgres://temba:temba@postgres/temba?sslmode=disable",
 		Valkey:   "valkey://valkey:6379/15",
-		SpoolDir: "/var/spool/courier",
+		SpoolDir: "./_spool",
 
 		Domain:          "localhost",
 		PublicAddress:   "",
