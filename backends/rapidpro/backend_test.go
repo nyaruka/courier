@@ -3,6 +3,7 @@ package rapidpro
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -21,6 +22,7 @@ import (
 	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
+	"github.com/nyaruka/gocommon/centrifugo"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/httpx"
@@ -554,6 +556,47 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(m.ErrorCount, 3)
 	ts.Equal(null.String("E"), m.FailedReason)
 
+}
+
+func (ts *BackendTestSuite) TestMsgStatusSocketPublish() {
+	ctx := context.Background()
+	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgStatus, channel, nil)
+
+	ts.b.rt.Centrifugo.(*centrifugo.MockClient).Clear()
+
+	vc := ts.b.rt.VK.Get()
+	defer vc.Close()
+
+	socket := "history:a984069d-0008-4d8c-a772-b14a8a6acccc"
+
+	// put test message back into queued state
+	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL WHERE id = $1`, 10001)
+
+	// write a status update before the contact's socket is subscribed... nothing is published
+	status := ts.b.NewStatusUpdate(channel, "0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusSent, clog)
+	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
+	ts.b.statusWriter.Flush()
+
+	ts.Empty(testsuite.CentrifugoHistory(ts.T(), ts.b.rt, socket))
+
+	// mark the socket subscribed (as the authorizing service would) and write another status update
+	_, err := vc.Do("SET", "socket-subs:"+socket, "1")
+	ts.NoError(err)
+	defer vc.Do("DEL", "socket-subs:"+socket)
+
+	status = ts.b.NewStatusUpdate(channel, "0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusDelivered, clog)
+	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
+	ts.b.statusWriter.Flush()
+
+	sent := testsuite.CentrifugoHistory(ts.T(), ts.b.rt, socket)
+	if ts.Len(sent, 1) {
+		var decoded map[string]any
+		ts.NoError(json.Unmarshal(sent[0], &decoded))
+		ts.Equal("msg_status_changed", decoded["type"])
+		ts.Equal("0199df10-10dc-7e6e-834b-3d959ece93b2", decoded["msg_uuid"])
+		ts.Equal("delivered", decoded["status"])
+	}
 }
 
 func (ts *BackendTestSuite) TestSentExternalIDCaching() {

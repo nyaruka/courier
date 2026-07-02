@@ -134,6 +134,11 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*models
 				slog.Error("error queuing status change to writer", "error", err, "msg_uuid", c.MsgUUID, "msg_status", c.MsgStatus)
 			}
 		}
+
+		// publish changes to any subscribed history sockets - best-effort, never fails the status write
+		if err := models.PublishStatusChanges(ctx, b.rt, changes); err != nil {
+			slog.Error("error publishing status changes", "error", err)
+		}
 	}
 
 	return unresolved, nil
