@@ -1,14 +1,21 @@
+# General
+*~
 .DS_Store
+.vscode/
 .devcontainer
+deploy
+fabfile.py
+
+# AI
 .claude/
 CLAUDE.md
 CODEX.md
 AGENTS.md
-coverage.text
-deploy
-fabfile.*
 
-/_test_spool
+# Go
+coverage.text
+
+# Project specific
+/courier
 /_spool
-_storage
-courier
+/_test_spool
