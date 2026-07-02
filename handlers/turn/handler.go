@@ -198,9 +198,9 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 		date := time.Unix(ts, 0).UTC()
 
 		// create our URN
-		urn, err := urns.New(urns.WhatsApp, msg.From)
+		urn, err := urns.ParsePhone(msg.From, channel.Country(), true, false)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid whatsapp id"))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid phone number"))
 		}
 
 		text := ""
@@ -248,11 +248,11 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 		}
 
 		if msg.FromBSUID != "" {
-			userIDURN, urnErr := urns.New(urns.BSUID, msg.FromBSUID)
+			userIDURN, urnErr := urns.New(urns.WhatsApp, msg.FromBSUID)
 			if urnErr == nil {
 				event.WithNewURN(userIDURN, models.NewURNAppend)
 			} else {
-				courier.LogRequestError(r, channel, fmt.Errorf("invalid from_bsuid for BSUID URN: %w", urnErr))
+				courier.LogRequestError(r, channel, fmt.Errorf("invalid from_bsuid for WhatsApp URN: %w", urnErr))
 			}
 		}
 

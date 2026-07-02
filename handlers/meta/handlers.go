@@ -274,7 +274,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					continue
 				}
 
-				date, urn, text, mediaURL, mediaID, err, finalErr := waMsg.ExtractData(clog)
+				date, urn, text, mediaURL, mediaID, err, finalErr := waMsg.ExtractData(channel.Country(), clog)
 				if finalErr != nil {
 					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, finalErr)
 				}
@@ -299,13 +299,13 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					event.WithAttachment(mediaURL)
 				}
 
-				// if we have a user_id, add it as secondary BSUID URN
+				// if we have a user_id, add it as secondary WhatsApp URN
 				if waMsg.FromUserID != "" {
-					userIDURN, urnErr := urns.New(urns.BSUID, waMsg.FromUserID)
+					userIDURN, urnErr := urns.New(urns.WhatsApp, waMsg.FromUserID)
 					if urnErr == nil {
 						event.WithNewURN(userIDURN, models.NewURNAppend)
 					} else {
-						courier.LogRequestError(r, channel, fmt.Errorf("invalid user_id for BSUID URN: %w", urnErr))
+						courier.LogRequestError(r, channel, fmt.Errorf("invalid user_id for WhatsApp URN: %w", urnErr))
 					}
 				}
 
@@ -724,9 +724,9 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 	// if we got a user_id in the response, set it as a new URN on the send result so the backend
 	// can queue a contact_changed task to append it to the contact
 	if userID != "" {
-		userIDURN, err := urns.New(urns.BSUID, userID)
+		userIDURN, err := urns.New(urns.WhatsApp, userID)
 		if err != nil {
-			clog.RawError(fmt.Errorf("unable to make BSUID URN from user_id %s: %w", userID, err))
+			clog.RawError(fmt.Errorf("unable to make WhatsApp URN from user_id %s: %w", userID, err))
 		} else {
 			res.SetNewURN(userIDURN)
 		}

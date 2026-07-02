@@ -39,7 +39,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Pick an option",
 			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Option 1", Extra: "Description 1"}, {Type: "text", Text: "Option 2", Extra: "Description 2"}},
-			urn:                   "whatsapp:250788123123",
+			urn:                   "tel:+250788123123",
 			expectedPayloadsCount: 2,
 			expectedType:          "image",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -64,7 +64,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Choose wisely",
 			attachments:           []string{"video/mp4:https://example.com/video.mp4"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Yes", Extra: "Agree"}, {Type: "text", Text: "No", Extra: "Disagree"}},
-			urn:                   "whatsapp:250788123123",
+			urn:                   "tel:+250788123123",
 			expectedPayloadsCount: 2,
 			expectedType:          "video",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -84,7 +84,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Select an option",
 			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Option 1"}, {Type: "text", Text: "Option 2"}},
-			urn:                   "whatsapp:250788123123",
+			urn:                   "tel:+250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -108,7 +108,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Watch and choose",
 			attachments:           []string{"video/mp4:https://example.com/video.mp4"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Like"}, {Type: "text", Text: "Dislike"}, {Type: "text", Text: "Share"}},
-			urn:                   "whatsapp:250788123123",
+			urn:                   "tel:+250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -131,7 +131,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Review this",
 			attachments:           []string{"document/pdf:https://example.com/document.pdf"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Approve"}},
-			urn:                   "whatsapp:250788123123",
+			urn:                   "tel:+250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -153,7 +153,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Listen and respond",
 			attachments:           []string{"audio/mp3:https://example.com/audio.mp3"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Good"}, {Type: "text", Text: "Bad"}},
-			urn:                   "whatsapp:250788123123",
+			urn:                   "tel:+250788123123",
 			expectedPayloadsCount: 2,
 			expectedType:          "audio",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -178,7 +178,7 @@ func TestGetMsgPayloads(t *testing.T) {
 				{Type: "text", Text: "Option 7"}, {Type: "text", Text: "Option 8"}, {Type: "text", Text: "Option 9"},
 				{Type: "text", Text: "Option 10"}, {Type: "text", Text: "Option 11"}, {Type: "text", Text: "Option 12"},
 			},
-			urn:                   "whatsapp:250788123123",
+			urn:                   "tel:+250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -209,7 +209,7 @@ func TestGetMsgPayloads(t *testing.T) {
 				{Type: "text", Text: "Option 13", Extra: "Desc 13"}, {Type: "text", Text: "Option 14", Extra: "Desc 14"},
 				{Type: "text", Text: "Option 15", Extra: "Desc 15"},
 			},
-			urn:                   "whatsapp:250788123123",
+			urn:                   "tel:+250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -230,7 +230,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			label:                 "4 QRs without Extra - should use list (>3 buttons)",
 			text:                  "Pick one",
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "A"}, {Type: "text", Text: "B"}, {Type: "text", Text: "C"}, {Type: "text", Text: "D"}},
-			urn:                   "whatsapp:250788123123",
+			urn:                   "tel:+250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -245,7 +245,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			label:                 "3 QRs without Extra and no attachment - should use buttons",
 			text:                  "Quick choice",
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}, {Type: "text", Text: "Maybe"}},
-			urn:                   "whatsapp:250788123123",
+			urn:                   "tel:+250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -261,7 +261,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			label:                 "No quick replies with attachment and text - should have caption",
 			text:                  "Check this out",
 			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
-			urn:                   "whatsapp:250788123123",
+			urn:                   "tel:+250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "image",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -277,7 +277,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Multiple files",
 			attachments:           []string{"image/jpeg:https://example.com/image1.jpg", "image/jpeg:https://example.com/image2.jpg"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Download"}},
-			urn:                   "whatsapp:250788123123",
+			urn:                   "tel:+250788123123",
 			expectedPayloadsCount: 2,
 			expectedType:          "image",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -297,7 +297,7 @@ func TestGetMsgPayloads(t *testing.T) {
 		{
 			label:                 "Send message by BSUID",
 			text:                  "Hello, BSUID",
-			urn:                   "bsuid:US.1234",
+			urn:                   "whatsapp:US.1234",
 			expectedPayloadsCount: 1,
 			expectedType:          "text",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -312,7 +312,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Pick an option",
 			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Option 1"}, {Type: "text", Text: "Option 2"}},
-			urn:                   "bsuid:US.1234",
+			urn:                   "whatsapp:US.1234",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {

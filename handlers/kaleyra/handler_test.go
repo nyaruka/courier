@@ -22,7 +22,7 @@ var incomingCases = []IncomingTestCase{
 		Label:                "Receive Msg",
 		URL:                  receiveMsgURL + "?created_at=1603914166&type=text&from=14133881111&name=John%20Cruz&body=Hello%20World",
 		ExpectedContactName:  Sp("John Cruz"),
-		ExpectedURN:          "whatsapp:14133881111",
+		ExpectedURN:          "tel:+14133881111",
 		ExpectedMsgText:      Sp("Hello World"),
 		ExpectedAttachments:  []string{},
 		ExpectedRespStatus:   200,
@@ -32,7 +32,7 @@ var incomingCases = []IncomingTestCase{
 		Label:                "Receive Media",
 		URL:                  receiveMsgURL + "?created_at=1603914166&type=image&from=14133881111&name=John%20Cruz&media_url=https://link.to/image.jpg",
 		ExpectedContactName:  Sp("John Cruz"),
-		ExpectedURN:          "whatsapp:14133881111",
+		ExpectedURN:          "tel:+14133881111",
 		ExpectedMsgText:      Sp(""),
 		ExpectedAttachments:  []string{"https://link.to/image.jpg"},
 		ExpectedRespStatus:   200,
@@ -62,7 +62,7 @@ var incomingCases = []IncomingTestCase{
 		URL:                  receiveMsgURL + "?created_at=1603914166&type=text&from=notnumber&name=John%20Cruz&body=Hi",
 		ExpectedContactName:  Sp("John Cruz"),
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "invalid whatsapp id",
+		ExpectedBodyContains: "invalid phone number",
 	},
 	{
 		Label:                "Receive Blank From",
@@ -106,7 +106,7 @@ var sendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Plain Send",
 		MsgText: "Simple Message",
-		MsgURN:  "whatsapp:14133881111",
+		MsgURN:  "tel:+14133881111",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.kaleyra.io/v1/SID/messages": {httpx.NewMockResponse(200, nil, []byte(`{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`))},
 		},
@@ -121,7 +121,7 @@ var sendTestCases = []OutgoingTestCase{
 	{
 		Label:   "URL Send",
 		MsgText: "foo https://foo.bar bar",
-		MsgURN:  "whatsapp:14133881111",
+		MsgURN:  "tel:+14133881111",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.kaleyra.io/v1/SID/messages": {httpx.NewMockResponse(200, nil, []byte(`{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`))},
 		},
@@ -136,7 +136,7 @@ var sendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Plain Send Error",
 		MsgText: "Error",
-		MsgURN:  "whatsapp:14133881112",
+		MsgURN:  "tel:+14133881112",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.kaleyra.io/v1/SID/messages": {httpx.NewMockResponse(400, nil, []byte(`{"error":{"to":"invalid number"}}`))},
 		},
@@ -152,7 +152,7 @@ var sendTestCases = []OutgoingTestCase{
 		Label:          "Medias Send",
 		MsgText:        "Medias",
 		MsgAttachments: []string{"image/jpg:https://foo.bar/image.jpg", "image/png:https://foo.bar/video.mp4"},
-		MsgURN:         "whatsapp:14133881111",
+		MsgURN:         "tel:+14133881111",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.kaleyra.io/v1/SID/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{"id":"f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0"}`)),
@@ -177,7 +177,7 @@ var sendTestCases = []OutgoingTestCase{
 		Label:          "Media Send Error",
 		MsgText:        "Medias",
 		MsgAttachments: []string{"image/jpg:https://foo.bar/image.jpg", "image/png:https://foo.bar/video.wmv"},
-		MsgURN:         "whatsapp:14133881111",
+		MsgURN:         "tel:+14133881111",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.kaleyra.io/v1/SID/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{"id":"f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0"}`)),

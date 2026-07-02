@@ -81,9 +81,9 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 	}
 
 	// build urn
-	urn, err := urns.New(urns.WhatsApp, form.From)
+	urn, err := urns.ParsePhone(form.From, channel.Country(), true, false)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid whatsapp id"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid phone number"))
 	}
 
 	// parse created_at timestamp
@@ -247,6 +247,7 @@ func (h *handler) newSendForm(channel courier.Channel, msgType, toContact string
 		"from":         channel.Address(),
 		"callback_url": statusURL,
 		"type":         msgType,
-		"to":           toContact,
+		// tel URNs carry a leading + which Kaleyra doesn't want on the to field
+		"to": strings.TrimLeft(toContact, "+"),
 	}
 }

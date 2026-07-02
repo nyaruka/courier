@@ -16,13 +16,13 @@
                 "profile": {
                   "name": "Kerry Fisher"
                 },
-                "wa_id": "5678"
+                "wa_id": "250788123123"
               }
             ],
             "statuses": [
               {
                 "id": "external_id",
-                "recipient_id": "5678",
+                "recipient_id": "250788123123",
                 "status": "in_orbit",
                 "timestamp": "1454119029",
                 "type": "message",

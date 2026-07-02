@@ -17,13 +17,13 @@
                   "name": "Kerry Fisher",
                   "username": "@kfisher"
                 },
-                "wa_id": "5678",
+                "wa_id": "250788123123",
                 "user_id": "US.1234"
               }
             ],
             "messages": [
               {
-                "from": "5678",
+                "from": "250788123123",
                 "from_user_id": "US.1234",
                 "id": "external_id",
                 "timestamp": "1454119029",

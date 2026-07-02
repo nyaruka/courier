@@ -2,6 +2,9 @@ module github.com/nyaruka/courier/v26
 
 go 1.26.0
 
+// TODO: dev-only - remove once gocommon with loosened WhatsApp URN validation is released
+replace github.com/nyaruka/gocommon => /Users/norbert/.wt/gocommon/bsuid-whatsapp-flip
+
 require (
 	github.com/antchfx/xmlquery v1.5.1
 	github.com/aws/aws-sdk-go-v2 v1.42.1
@@ -30,6 +33,8 @@ require (
 )
 
 require github.com/centrifugal/gocent/v3 v3.4.0 // indirect
+
+require github.com/nyaruka/phonenumbers/v2 v2.0.2 // indirect
 
 require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
@@ -68,7 +73,6 @@ require (
 	github.com/muir/sqltoken v0.5.2 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.1 // indirect
-	github.com/nyaruka/phonenumbers/v2 v2.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/samber/lo v1.53.0 // indirect
 	github.com/samber/slog-common v0.22.0 // indirect

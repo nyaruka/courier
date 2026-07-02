@@ -346,7 +346,7 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedBodyContains:  `"type":"msg"`,
 		ExpectedContactName:   Sp("Jerry Cooney"),
 		ExpectedMsgText:       Sp("hello world"),
-		ExpectedURN:           "whatsapp:250788123123",
+		ExpectedURN:           "tel:+250788123123",
 		ExpectedExternalID:    "41",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		NoQueueErrorCheck:     true,
@@ -360,10 +360,10 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedBodyContains:  `"type":"msg"`,
 		ExpectedContactName:   Sp("Jerry Cooney"),
 		ExpectedMsgText:       Sp("hello world"),
-		ExpectedURN:           "whatsapp:250788123123",
+		ExpectedURN:           "tel:+250788123123",
 		ExpectedExternalID:    "41",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
-		ExpectedNewURN:        &models.NewURNSpec{Value: "bsuid:US.1234", Action: models.NewURNAppend},
+		ExpectedNewURN:        &models.NewURNSpec{Value: "whatsapp:US.1234", Action: models.NewURNAppend},
 		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 	},
@@ -375,7 +375,7 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedBodyContains:  `"type":"msg"`,
 		ExpectedContactName:   Sp("Jerry Cooney"),
 		ExpectedMsgText:       Sp("hello world"),
-		ExpectedURN:           "whatsapp:250788123123",
+		ExpectedURN:           "tel:+250788123123",
 		ExpectedExternalID:    "41",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		ExpectedNewURN:        nil,
@@ -389,7 +389,7 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp("hello world"),
-		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedURN:          "tel:+250788123123",
 		ExpectedExternalID:   "41",
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
@@ -401,7 +401,7 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp(""),
 		ExpectedAttachments:  []string{"https://foo.bar/v1/media/41"},
-		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedURN:          "tel:+250788123123",
 		ExpectedExternalID:   "41",
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
@@ -412,7 +412,7 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp("BUTTON1"),
-		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedURN:          "tel:+250788123123",
 		ExpectedExternalID:   "41",
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
@@ -424,7 +424,7 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp("the caption"),
 		ExpectedAttachments:  []string{"https://foo.bar/v1/media/41"},
-		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedURN:          "tel:+250788123123",
 		ExpectedExternalID:   "41",
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
@@ -436,7 +436,7 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp("the caption"),
 		ExpectedAttachments:  []string{"https://foo.bar/v1/media/41"},
-		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedURN:          "tel:+250788123123",
 		ExpectedExternalID:   "41",
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
@@ -447,7 +447,7 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp("BUTTON1"),
-		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedURN:          "tel:+250788123123",
 		ExpectedExternalID:   "41",
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
@@ -458,7 +458,7 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp("ROW1"),
-		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedURN:          "tel:+250788123123",
 		ExpectedExternalID:   "41",
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
@@ -470,7 +470,7 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp(""),
 		ExpectedAttachments:  []string{"geo:0.000000,1.000000"},
-		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedURN:          "tel:+250788123123",
 		ExpectedExternalID:   "41",
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
@@ -482,7 +482,7 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp(""),
 		ExpectedAttachments:  []string{"https://foo.bar/v1/media/41"},
-		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedURN:          "tel:+250788123123",
 		ExpectedExternalID:   "41",
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
@@ -494,7 +494,7 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp(""),
 		ExpectedAttachments:  []string{"https://foo.bar/v1/media/41"},
-		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedURN:          "tel:+250788123123",
 		ExpectedExternalID:   "41",
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
@@ -506,7 +506,7 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp("the caption"),
 		ExpectedAttachments:  []string{},
-		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedURN:          "tel:+250788123123",
 		ExpectedExternalID:   "41",
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
@@ -529,7 +529,7 @@ var testCasesTurn = []IncomingTestCase{
 		URL:                  turnWhatsappReceiveURL,
 		Data:                 invalidFrom,
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "invalid whatsapp id",
+		ExpectedBodyContains: "invalid phone number",
 	},
 	{
 		Label:                "Receive invalid timestamp",
@@ -588,7 +588,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Link Sending",
 		MsgText: "Link Sending https://link.com",
-		MsgURN:  "whatsapp:250788123123",
+		MsgURN:  "tel:+250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -605,7 +605,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Plain Send",
 		MsgText: "Simple Message",
-		MsgURN:  "whatsapp:250788123123",
+		MsgURN:  "tel:+250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -622,7 +622,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Plain Send with BSUID",
 		MsgText: "Simple Message",
-		MsgURN:  "bsuid:US.1234",
+		MsgURN:  "whatsapp:US.1234",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -639,7 +639,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Unicode Send",
 		MsgText: "☺",
-		MsgURN:  "whatsapp:250788123123",
+		MsgURN:  "tel:+250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -654,7 +654,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Error Field",
 		MsgText: "Error",
-		MsgURN:  "whatsapp:250788123123",
+		MsgURN:  "tel:+250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "errors": [{"title":"Error Sending", "code": 232}] }`)),
@@ -669,7 +669,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Error Field Retryable",
 		MsgText: "Error",
-		MsgURN:  "whatsapp:250788123123",
+		MsgURN:  "tel:+250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "errors": [{"title":"Media upload error", "code": 131053}] }`)),
@@ -684,7 +684,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Audio attachment but upload fails",
 		MsgText:        "audio has no caption, sent as text",
-		MsgURN:         "whatsapp:250788123123",
+		MsgURN:         "tel:+250788123123",
 		MsgAttachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://foo.bar/audio.mp3": {
@@ -709,7 +709,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Audio Send with link in text",
 		MsgText:        "audio has no caption, sent as text with a https://example.com",
-		MsgURN:         "whatsapp:250788123123",
+		MsgURN:         "tel:+250788123123",
 		MsgAttachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://foo.bar/audio.mp3": {
@@ -734,7 +734,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Document Send",
 		MsgText:        "document caption",
-		MsgURN:         "whatsapp:250788123123",
+		MsgURN:         "tel:+250788123123",
 		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://foo.bar/document.pdf": {
@@ -757,7 +757,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Document Send, document link",
 		MsgText:        "document caption",
-		MsgURN:         "whatsapp:250788123123",
+		MsgURN:         "tel:+250788123123",
 		MsgAttachments: []string{"document:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
@@ -772,7 +772,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Image Send",
 		MsgText:        "image caption",
-		MsgURN:         "whatsapp:250788123123",
+		MsgURN:         "tel:+250788123123",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://foo.bar/image.jpg": {
@@ -795,7 +795,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Video Send",
 		MsgText:        "video caption",
-		MsgURN:         "whatsapp:250788123123",
+		MsgURN:         "tel:+250788123123",
 		MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://foo.bar/video.mp4": {
@@ -818,7 +818,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:     "Template Send",
 		MsgText:   "templated message",
-		MsgURN:    "whatsapp:250788123123",
+		MsgURN:    "tel:+250788123123",
 		MsgLocale: "eng",
 		MsgTemplating: `{
 			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"}, 
@@ -846,7 +846,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:     "Template Send no variables",
 		MsgText:   "templated message",
-		MsgURN:    "whatsapp:250788123123",
+		MsgURN:    "tel:+250788123123",
 		MsgLocale: "eng",
 		MsgTemplating: `{
 			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
@@ -867,7 +867,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:     "Template no language",
 		MsgText:   "templated message",
-		MsgURN:    "whatsapp:250788123123",
+		MsgURN:    "tel:+250788123123",
 		MsgLocale: "eng-US",
 		MsgTemplating: `{
 			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
@@ -894,7 +894,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:     "Template Namespace",
 		MsgText:   "templated message",
-		MsgURN:    "whatsapp:250788123123",
+		MsgURN:    "tel:+250788123123",
 		MsgLocale: "eng-US",
 		MsgTemplating: `{
 			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
@@ -922,7 +922,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:     "Template Invalid Language",
 		MsgText:   "templated message",
-		MsgURN:    "whatsapp:250788123123",
+		MsgURN:    "tel:+250788123123",
 		MsgLocale: "bnt",
 		MsgTemplating: `{
 			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
@@ -948,7 +948,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:           "Interactive Button Message Send",
 		MsgText:         "Interactive Button Msg",
-		MsgURN:          "whatsapp:250788123123",
+		MsgURN:          "tel:+250788123123",
 		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "BUTTON1"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
@@ -964,7 +964,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:           "Interactive List QRs Extra Send",
 		MsgText:         "Interactive List QRs Extra Msg",
-		MsgURN:          "whatsapp:250788123123",
+		MsgURN:          "tel:+250788123123",
 		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "OPTION1", Extra: "This option is the most popular"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
@@ -980,7 +980,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:           "Interactive List QRs Extra Empty Send",
 		MsgText:         "Interactive List QRs Extra Empty",
-		MsgURN:          "whatsapp:250788123123",
+		MsgURN:          "tel:+250788123123",
 		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "OPTION1", Extra: ""}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
@@ -996,7 +996,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:           "Interactive List Message Send",
 		MsgText:         "Interactive List Msg",
-		MsgURN:          "whatsapp:250788123123",
+		MsgURN:          "tel:+250788123123",
 		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "ROW1"}, {Type: "text", Text: "ROW2"}, {Type: "text", Text: "ROW3", Extra: "Third description"}, {Type: "text", Text: "ROW4"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
@@ -1013,7 +1013,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:           "Interactive Button Message Send with attachment",
 		MsgText:         "Interactive Button Msg",
-		MsgURN:          "whatsapp:250788123123",
+		MsgURN:          "tel:+250788123123",
 		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "BUTTON1"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
@@ -1031,7 +1031,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:           "Interactive List Message Send with attachment",
 		MsgText:         "Interactive List Msg",
-		MsgURN:          "whatsapp:250788123123",
+		MsgURN:          "tel:+250788123123",
 		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "ROW1"}, {Type: "text", Text: "ROW2"}, {Type: "text", Text: "ROW3"}, {Type: "text", Text: "ROW4"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
@@ -1049,7 +1049,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:           "Interactive with location request",
 		MsgText:         "Interactive send location",
-		MsgURN:          "whatsapp:250788123123",
+		MsgURN:          "tel:+250788123123",
 		MsgQuickReplies: []models.QuickReply{{Type: "location"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
@@ -1064,7 +1064,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Error Channel Contact Pair limit hit",
 		MsgText: "Pair limit",
-		MsgURN:  "whatsapp:250788123123",
+		MsgURN:  "tel:+250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#131056) (Business Account, Consumer Account) pair rate limit hit","code": 131056 }}`)),
@@ -1075,7 +1075,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Error Throttled",
 		MsgText: "Error",
-		MsgURN:  "whatsapp:250788123123",
+		MsgURN:  "tel:+250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#130429) Rate limit hit","code": 130429 }}`)),
@@ -1086,7 +1086,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Error Retryable",
 		MsgText: "Error",
-		MsgURN:  "whatsapp:250788123123",
+		MsgURN:  "tel:+250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(400, nil, []byte(`{ "error": {"message": "Media upload error","code": 131053 }}`)),
@@ -1097,7 +1097,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Error",
 		MsgText: "Error",
-		MsgURN:  "whatsapp:250788123123",
+		MsgURN:  "tel:+250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#368) Temporarily blocked for policies violations","code": 368 }}`)),
@@ -1108,7 +1108,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Error Message",
 		MsgText: "Error",
-		MsgURN:  "whatsapp:250788123123",
+		MsgURN:  "tel:+250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "Other error with message","code": 0 }}`)),
@@ -1119,7 +1119,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Error Connection",
 		MsgText: "Error",
-		MsgURN:  "whatsapp:250788123123",
+		MsgURN:  "tel:+250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(500, nil, []byte(`Bad Gateway`)),
@@ -1133,7 +1133,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Media Upload Error",
 		MsgText:        "document caption",
-		MsgURN:         "whatsapp:250788123123",
+		MsgURN:         "tel:+250788123123",
 		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://foo.bar/document.pdf": {
@@ -1156,7 +1156,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Previous Media Upload Error",
 		MsgText:        "document caption",
-		MsgURN:         "whatsapp:250788123123",
+		MsgURN:         "tel:+250788123123",
 		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
@@ -1171,7 +1171,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Media Upload OK",
 		MsgText:        "video caption",
-		MsgURN:         "whatsapp:250788123123",
+		MsgURN:         "tel:+250788123123",
 		MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://foo.bar/video.mp4": {
@@ -1194,7 +1194,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Cached Media",
 		MsgText:        "video caption",
-		MsgURN:         "whatsapp:250788123123",
+		MsgURN:         "tel:+250788123123",
 		MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
@@ -1209,7 +1209,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Document Upload OK",
 		MsgText:        "document caption",
-		MsgURN:         "whatsapp:250788123123",
+		MsgURN:         "tel:+250788123123",
 		MsgAttachments: []string{"application/pdf:https://foo.bar/document2.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://foo.bar/document2.pdf": {
@@ -1232,7 +1232,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Cached Document",
 		MsgText:        "document caption",
-		MsgURN:         "whatsapp:250788123123",
+		MsgURN:         "tel:+250788123123",
 		MsgAttachments: []string{"application/pdf:https://foo.bar/document2.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {

@@ -15,6 +15,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -143,14 +144,14 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	text := form.Body
-	if channel.IsScheme(urns.WhatsApp) && form.ButtonText != "" {
+	if isWhatsApp(channel) && form.ButtonText != "" {
 		text = form.ButtonText
 	}
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, form.MessageSID, clog)
 
-	if form.ExternalUserId != "" && channel.IsScheme(urns.WhatsApp) {
+	if form.ExternalUserId != "" && isWhatsApp(channel) {
 		userIDURN, urnErr := h.parseURN(channel, form.ExternalUserId, i18n.Country(form.FromCountry))
 
 		if urnErr == nil {
@@ -243,14 +244,14 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return err
 	}
 
-	// do we have a template and support whatsapp scheme?
-	if msg.Templating() != nil && channel.IsScheme(urns.WhatsApp) {
+	// do we have a template and are we a whatsapp channel?
+	if msg.Templating() != nil && isWhatsApp(channel) {
 		if msg.Templating().ExternalID == "" {
 			return courier.ErrMessageInvalid
 		}
 
 		form := url.Values{
-			"To":             []string{fmt.Sprintf("%s:+%s", urns.WhatsApp.Prefix, msg.URN().Path())},
+			"To":             []string{fmt.Sprintf("%s:+%s", urns.WhatsApp.Prefix, strings.TrimPrefix(msg.URN().Path(), "+"))},
 			"StatusCallback": []string{callbackURL},
 			"ContentSid":     []string{msg.Templating().ExternalID},
 		}
@@ -367,8 +368,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			}
 
 			// for whatsapp channels, we have to prepend whatsapp to the To and From
-			if channel.IsScheme(urns.WhatsApp) {
-				form["To"][0] = fmt.Sprintf("%s:+%s", urns.WhatsApp.Prefix, form["To"][0])
+			if isWhatsApp(channel) {
+				form["To"][0] = fmt.Sprintf("%s:+%s", urns.WhatsApp.Prefix, strings.TrimPrefix(form["To"][0], "+"))
 				form["From"][0] = fmt.Sprintf("%s:%s", urns.WhatsApp.Prefix, form["From"][0])
 			}
 
@@ -455,8 +456,14 @@ func (h *handler) RedactValues(ch courier.Channel) []string {
 	}
 }
 
+// isWhatsApp returns whether the channel sends over WhatsApp, i.e. it supports the whatsapp scheme (Twilio
+// WhatsApp channels support both tel and whatsapp so we can't rely on the channel serving only one scheme)
+func isWhatsApp(channel courier.Channel) bool {
+	return slices.Contains(channel.Schemes(), urns.WhatsApp.Prefix)
+}
+
 func (h *handler) parseURN(channel courier.Channel, text string, country i18n.Country) (urns.URN, error) {
-	if channel.IsScheme(urns.WhatsApp) {
+	if isWhatsApp(channel) {
 		// Twilio Whatsapp from is in the form: whatsapp:+12211414154 or +12211414154
 		var fromTel string
 		parts := strings.Split(text, ":")
@@ -467,12 +474,12 @@ func (h *handler) parseURN(channel courier.Channel, text string, country i18n.Co
 		}
 
 		if dot := strings.Index(fromTel, "."); dot >= 0 && dot < len(fromTel)-1 {
-			// if we have a BSUID, use that as the URN
-			return urns.New(urns.BSUID, fromTel)
+			// a business-scoped user ID becomes the WhatsApp URN
+			return urns.New(urns.WhatsApp, fromTel)
 		}
 
-		// trim off left +, official whatsapp IDs dont have that
-		return urns.New(urns.WhatsApp, strings.TrimLeft(fromTel, "+"))
+		// otherwise it's a phone number, which becomes a tel URN
+		return urns.ParsePhone(fromTel, country, true, true)
 	}
 
 	return urns.ParsePhone(text, country, true, true)
