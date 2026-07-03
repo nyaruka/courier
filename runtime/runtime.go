@@ -26,7 +26,7 @@ type Runtime struct {
 	VK         *redis.Pool
 	S3         *s3x.Service
 	CW         *cwatch.Service
-	Centrifugo centrifugo.Client
+	Centrifugo *centrifugo.Service
 
 	// AWSRegion is the region resolved from the standard AWS SDK default chain. It's kept here so code
 	// that needs to reason about region-qualified S3 hostnames (e.g. media URL resolution) can use it
@@ -94,7 +94,7 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 		return nil, fmt.Errorf("error creating Cloudwatch service: %w", err)
 	}
 
-	rt.Centrifugo = centrifugo.NewClient(cfg.CentrifugoEndpoint, cfg.CentrifugoKey)
+	rt.Centrifugo = centrifugo.NewService(centrifugo.NewClient(cfg.CentrifugoEndpoint, cfg.CentrifugoKey), rt.VK)
 
 	// parse the SSRF blocklist up front so it can be baked into each HTTP client's transport via
 	// httpx.WithAccessControl, rather than passed to every request.
@@ -146,7 +146,9 @@ func NewTestRuntime(cfg *Config) *Runtime {
 		Config:      cfg,
 		HTTP:        client,
 		HTTPProxied: client,
-		Centrifugo:  centrifugo.NewMockClient(),
+		// note the nil valkey pool: publishing requires a subscriber presence lookup, so tests that
+		// exercise a publish path need a runtime with a real pool (i.e. testsuite.Runtime)
+		Centrifugo: centrifugo.NewService(centrifugo.NewMockClient(), nil),
 	}
 }
 

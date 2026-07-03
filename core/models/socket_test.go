@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/testsuite"
+	"github.com/nyaruka/gocommon/centrifugo"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,7 +57,7 @@ func TestPublishStatusChanges(t *testing.T) {
 	assert.Empty(t, testsuite.CentrifugoHistory(t, rt, contact2Socket))
 
 	// mark contact 1's socket subscribed (as the authorizing service would)
-	_, err := vc.Do("SET", "socket-subs:"+contact1Socket, "1")
+	_, err := vc.Do("SET", centrifugo.SubscriptionKey(contact1Socket), "1")
 	require.NoError(t, err)
 
 	// now only contact 1's change is published
@@ -77,7 +78,7 @@ func TestPublishStatusChanges(t *testing.T) {
 	assert.NotContains(t, decoded, "reason") // omitted when there isn't one
 
 	// mark contact 2's socket subscribed as well and both changes are published
-	_, err = vc.Do("SET", "socket-subs:"+contact2Socket, "1")
+	_, err = vc.Do("SET", centrifugo.SubscriptionKey(contact2Socket), "1")
 	require.NoError(t, err)
 
 	require.NoError(t, models.PublishStatusChanges(ctx, rt, changes))
