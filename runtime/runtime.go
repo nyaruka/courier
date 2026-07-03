@@ -146,7 +146,9 @@ func NewTestRuntime(cfg *Config) *Runtime {
 		Config:      cfg,
 		HTTP:        client,
 		HTTPProxied: client,
-		Centrifugo:  centrifugo.NewService(centrifugo.NewMockClient(), nil),
+		// note the nil valkey pool: publishing requires a subscriber presence lookup, so tests that
+		// exercise a publish path need a runtime with a real pool (i.e. testsuite.Runtime)
+		Centrifugo: centrifugo.NewService(centrifugo.NewMockClient(), nil),
 	}
 }
 
