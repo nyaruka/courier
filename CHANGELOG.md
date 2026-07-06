@@ -1,3 +1,9 @@
+v26.3.4 (2026-07-06)
+-------------------------
+ * Remove InstanceID config setting
+ * Publish instance level metrics without a Host dimension
+ * Remove app node registry
+
 v26.3.3 (2026-07-06)
 -------------------------
  * Rename PublicAddress/PublicPort config to InternetAddress/InternetPort
