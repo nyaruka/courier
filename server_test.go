@@ -278,18 +278,19 @@ func TestListeners(t *testing.T) {
 		method string
 		url    string
 		status int
+		body   string // asserted as JSON when non-empty
 	}{
 		// internet listener: health at /, /c/*
-		{"internet: health", "GET", internetURL + "/", 200},
-		{"internet: channel route (bad params)", "GET", internetURL + "/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive", 400},
-		{"internet: internal route not exposed", "POST", internetURL + "/ci/attachment/fetch", 404},
-		{"internet: unknown path", "GET", internetURL + "/nope", 404},
+		{"internet: health", "GET", internetURL + "/", 200, `{"component": "courier", "listener": "internet", "version": "Dev"}`},
+		{"internet: channel route (bad params)", "GET", internetURL + "/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive", 400, ""},
+		{"internet: internal route not exposed", "POST", internetURL + "/ci/attachment/fetch", 404, ""},
+		{"internet: unknown path", "GET", internetURL + "/nope", 404, ""},
 
 		// internal listener: health at /, /ci/*
-		{"internal: health", "GET", internalURL + "/", 200},
-		{"internal: internal route (no auth)", "POST", internalURL + "/ci/attachment/fetch", 401},
-		{"internal: channel route not exposed", "GET", internalURL + "/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive", 404},
-		{"internal: unknown path", "GET", internalURL + "/nope", 404},
+		{"internal: health", "GET", internalURL + "/", 200, `{"component": "courier", "listener": "internal", "version": "Dev"}`},
+		{"internal: internal route (no auth)", "POST", internalURL + "/ci/attachment/fetch", 401, ""},
+		{"internal: channel route not exposed", "GET", internalURL + "/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive", 404, ""},
+		{"internal: unknown path", "GET", internalURL + "/nope", 404, ""},
 	}
 
 	for _, tc := range tcs {
@@ -298,9 +299,14 @@ func TestListeners(t *testing.T) {
 
 		resp, err := client.Do(req)
 		require.NoError(t, err, tc.label)
+		respBody, err := io.ReadAll(resp.Body)
+		require.NoError(t, err, tc.label)
 		resp.Body.Close()
 
 		assert.Equal(t, tc.status, resp.StatusCode, tc.label)
+		if tc.body != "" {
+			assert.JSONEq(t, tc.body, string(respBody), tc.label)
+		}
 	}
 }
 
