@@ -660,15 +660,16 @@ func (b *backend) reportMetrics(ctx context.Context) (int, error) {
 	b.dbWaitDuration = dbStats.WaitDuration
 	b.redisWaitDuration = redisStats.WaitDuration
 
-	hostDim := cwatch.Dimension("Host", b.rt.Config.InstanceID)
+	// instance level metrics are published without an instance dimension so that instances (which come and go with
+	// deploys) are just samples of the same metric, and can be aggregated with statistics like Max and Sum
 	metrics = append(metrics,
-		cwatch.Datum("DBConnectionsInUse", float64(dbStats.InUse), cwtypes.StandardUnitCount, hostDim),
-		cwatch.Datum("DBConnectionWaitDuration", float64(dbWaitDurationInPeriod)/float64(time.Second), cwtypes.StandardUnitSeconds, hostDim),
-		cwatch.Datum("ValkeyConnectionsInUse", float64(redisStats.ActiveCount), cwtypes.StandardUnitCount, hostDim),
-		cwatch.Datum("ValkeyConnectionsWaitDuration", float64(redisWaitDurationInPeriod)/float64(time.Second), cwtypes.StandardUnitSeconds, hostDim),
+		cwatch.Datum("DBConnectionsInUse", float64(dbStats.InUse), cwtypes.StandardUnitCount),
+		cwatch.Datum("DBConnectionWaitDuration", float64(dbWaitDurationInPeriod)/float64(time.Second), cwtypes.StandardUnitSeconds),
+		cwatch.Datum("ValkeyConnectionsInUse", float64(redisStats.ActiveCount), cwtypes.StandardUnitCount),
+		cwatch.Datum("ValkeyConnectionsWaitDuration", float64(redisWaitDurationInPeriod)/float64(time.Second), cwtypes.StandardUnitSeconds),
 		cwatch.Datum("QueuedMsgs", float64(bulkSize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "bulk")),
 		cwatch.Datum("QueuedMsgs", float64(prioritySize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "priority")),
-		cwatch.Datum("DynamoSpooledItems", float64(b.rt.Spool.Size()), cwtypes.StandardUnitCount, hostDim),
+		cwatch.Datum("DynamoSpooledItems", float64(b.rt.Spool.Size()), cwtypes.StandardUnitCount),
 	)
 
 	if err := b.rt.CW.Send(ctx, metrics...); err != nil {
