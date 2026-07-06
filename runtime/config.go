@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net"
 	"net/url"
-	"os"
 
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/ezconf"
@@ -29,7 +28,6 @@ type Config struct {
 	MetricsReporting    string `validate:"eq=off|eq=basic|eq=advanced"     help:"the level of metrics reporting"`
 	CloudwatchNamespace string `help:"the namespace to use for cloudwatch metrics"`
 	DeploymentID        string `help:"the deployment identifier to use for metrics"`
-	InstanceID          string `help:"the instance identifier to use for metrics"`
 
 	DynamoEndpoint    string `help:"DynamoDB service endpoint, e.g. https://dynamodb.us-east-1.amazonaws.com"`
 	DynamoTablePrefix string `help:"prefix to use for DynamoDB tables"`
@@ -62,7 +60,6 @@ type Config struct {
 
 // NewDefaultConfig returns a new default configuration object
 func NewDefaultConfig() *Config {
-	hostname, _ := os.Hostname()
 	return &Config{
 		DB:       "postgres://temba:temba@postgres/temba?sslmode=disable",
 		Valkey:   "valkey://valkey:6379/15",
@@ -77,7 +74,6 @@ func NewDefaultConfig() *Config {
 		MetricsReporting:    "off",
 		CloudwatchNamespace: "Courier",
 		DeploymentID:        "dev",
-		InstanceID:          hostname,
 
 		DynamoEndpoint:    "", // let library generate it
 		DynamoTablePrefix: "Temba",

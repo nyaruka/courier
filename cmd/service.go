@@ -26,7 +26,7 @@ func Service(version, date string) error {
 
 	// if we have a DSN entry, try to initialize it
 	if cfg.SentryDSN != "" {
-		err := sentry.Init(sentry.ClientOptions{Dsn: cfg.SentryDSN, ServerName: cfg.InstanceID, Release: version, AttachStacktrace: true})
+		err := sentry.Init(sentry.ClientOptions{Dsn: cfg.SentryDSN, Release: version, AttachStacktrace: true})
 		if err != nil {
 			return err
 		}
