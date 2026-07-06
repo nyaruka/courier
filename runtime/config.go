@@ -21,8 +21,8 @@ type Config struct {
 	SentryDSN string `help:"the DSN used for logging errors to Sentry"`
 
 	Domain          string `help:"the domain courier is exposed on"`
-	PublicAddress   string `help:"the address our public web server will bind to, empty means all interfaces"`
-	PublicPort      int    `help:"the port our public web server will listen on"`
+	InternetAddress string `help:"the address our internet facing web server will bind to, empty means all interfaces"`
+	InternetPort    int    `help:"the port our internet facing web server will listen on"`
 	InternalAddress string `help:"the address our internal web server will bind to, empty means all interfaces"`
 	InternalPort    int    `help:"the port our internal web server will listen on"`
 
@@ -69,8 +69,8 @@ func NewDefaultConfig() *Config {
 		SpoolDir: "./_spool",
 
 		Domain:          "localhost",
-		PublicAddress:   "",
-		PublicPort:      8080,
+		InternetAddress: "",
+		InternetPort:    8080,
 		InternalAddress: "",
 		InternalPort:    8081,
 

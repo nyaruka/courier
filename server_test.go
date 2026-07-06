@@ -26,7 +26,7 @@ func testConfig() *runtime.Config {
 	cfg := runtime.NewDefaultConfig()
 	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
 	cfg.Valkey = "valkey://valkey:6379/0"
-	cfg.PublicPort = 8180
+	cfg.InternetPort = 8180
 	cfg.InternalPort = 8181
 	return cfg
 }
@@ -179,7 +179,7 @@ func TestFetchAttachment(t *testing.T) {
 
 	cfg := runtime.NewDefaultConfig()
 	cfg.AuthToken = "sesame"
-	cfg.PublicPort = 8180
+	cfg.InternetPort = 8180
 	cfg.InternalPort = 8181
 
 	mb := test.NewMockBackend()
