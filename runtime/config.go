@@ -21,9 +21,9 @@ type Config struct {
 	SentryDSN string `help:"the DSN used for logging errors to Sentry"`
 
 	Domain          string `help:"the domain courier is exposed on"`
-	PublicAddress   string `help:"the network interface address our public web server will bind to"`
+	PublicAddress   string `help:"the address our public web server will bind to, empty means all interfaces"`
 	PublicPort      int    `help:"the port our public web server will listen on"`
-	InternalAddress string `help:"the network interface address our internal web server will bind to"`
+	InternalAddress string `help:"the address our internal web server will bind to, empty means all interfaces"`
 	InternalPort    int    `help:"the port our internal web server will listen on"`
 
 	MetricsReporting    string `validate:"eq=off|eq=basic|eq=advanced"     help:"the level of metrics reporting"`
@@ -71,7 +71,7 @@ func NewDefaultConfig() *Config {
 		Domain:          "localhost",
 		PublicAddress:   "",
 		PublicPort:      8080,
-		InternalAddress: "localhost",
+		InternalAddress: "",
 		InternalPort:    8081,
 
 		MetricsReporting:    "off",
