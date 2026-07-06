@@ -36,8 +36,6 @@ import (
 )
 
 const (
-	appNodesRunningKey = "app-nodes:running"
-
 	// the name for our message queue
 	msgQueueName = "msgs"
 
@@ -198,42 +196,7 @@ func (b *backend) Start() error {
 
 	b.startMetricsReporter(time.Minute)
 
-	if err := b.checkLastShutdown(ctx); err != nil {
-		return err
-	}
-
 	log.Info("backend started")
-	return nil
-}
-
-func (b *backend) checkLastShutdown(ctx context.Context) error {
-	nodeID := fmt.Sprintf("courier:%s", b.rt.Config.InstanceID)
-	vc := b.rt.VK.Get()
-	defer vc.Close()
-
-	exists, err := redis.Bool(redis.DoContext(vc, ctx, "HEXISTS", appNodesRunningKey, nodeID))
-	if err != nil {
-		return fmt.Errorf("error checking last shutdown: %w", err)
-	}
-
-	if exists {
-		slog.Error("node did not shutdown cleanly last time")
-	} else {
-		if _, err := redis.DoContext(vc, ctx, "HSET", appNodesRunningKey, nodeID, time.Now().UTC().Format(time.RFC3339)); err != nil {
-			return fmt.Errorf("error setting app node state: %w", err)
-		}
-	}
-	return nil
-}
-
-func (b *backend) recordShutdown(ctx context.Context) error {
-	nodeID := fmt.Sprintf("courier:%s", b.rt.Config.InstanceID)
-	vc := b.rt.VK.Get()
-	defer vc.Close()
-
-	if _, err := redis.DoContext(vc, ctx, "HDEL", appNodesRunningKey, nodeID); err != nil {
-		return fmt.Errorf("error recording shutdown: %w", err)
-	}
 	return nil
 }
 
@@ -292,10 +255,6 @@ func (b *backend) Stop() error {
 	b.writerWG.Wait()
 
 	b.rt.Stop()
-
-	if err := b.recordShutdown(context.TODO()); err != nil {
-		return fmt.Errorf("error recording shutdown: %w", err)
-	}
 
 	log.Info("backend stopped")
 	return nil
