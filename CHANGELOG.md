@@ -1,3 +1,11 @@
+v26.3.3 (2026-07-06)
+-------------------------
+ * Rename PublicAddress/PublicPort config to InternetAddress/InternetPort
+ * Change default internal address to bind all interfaces
+ * Update to gocommon v1.86.2
+ * Fail startup if spool directories aren't writable
+ * Add Centrifugo client to runtime
+
 v26.3.2 (2026-07-02)
 -------------------------
  * Support sending WhatsApp messages by BSUID URN
