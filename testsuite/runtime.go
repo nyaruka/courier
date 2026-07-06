@@ -85,7 +85,8 @@ func CentrifugoHistory(t *testing.T, rt *runtime.Runtime, channel string) []json
 	var history []json.RawMessage
 	for _, p := range rt.Centrifugo.Client.(*centrifugo.MockClient).Publications() {
 		if p.Channel == channel {
-			history = append(history, p.Data)
+			// Publication.Data is any but the mock records publications with their data re-marshaled
+			history = append(history, p.Data.(json.RawMessage))
 		}
 	}
 	return history

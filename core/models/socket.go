@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/nyaruka/courier/v26/runtime"
@@ -28,12 +27,7 @@ func HistorySocket(contactUUID ContactUUID) string {
 func PublishStatusChanges(ctx context.Context, rt *runtime.Runtime, changes []*StatusChange) error {
 	pubs := make([]*centrifugo.Publication, len(changes))
 	for i, c := range changes {
-		socket := HistorySocket(c.ContactUUID)
-		data, err := json.Marshal(c.historyEvent())
-		if err != nil {
-			return fmt.Errorf("error marshaling status change event for %s: %w", socket, err)
-		}
-		pubs[i] = &centrifugo.Publication{Channel: socket, Data: data}
+		pubs[i] = &centrifugo.Publication{Channel: HistorySocket(c.ContactUUID), Data: c.historyEvent()}
 	}
 
 	if err := rt.Centrifugo.Publish(ctx, pubs...); err != nil {
