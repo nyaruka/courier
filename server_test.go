@@ -252,7 +252,7 @@ func TestFetchAttachment(t *testing.T) {
 	assert.JSONEq(t, `{"attachment": {"content_type": "unavailable", "url": "http://mock.com/media/hello.pdf", "size": 0}, "log_uuid": "0191e180-8530-7000-8ef6-384876655d1b"}`, string(respBody))
 }
 
-// TestListeners verifies that public and internal endpoints are correctly split between
+// TestListeners verifies that internet and internal endpoints are correctly split between
 // the two listener ports.
 func TestListeners(t *testing.T) {
 	cfg := testConfig()
@@ -265,7 +265,7 @@ func TestListeners(t *testing.T) {
 	require.NoError(t, server.Start())
 	defer server.Stop()
 
-	const publicURL = "http://localhost:8180"
+	const internetURL = "http://localhost:8180"
 	const internalURL = "http://localhost:8181"
 
 	// don't follow redirects so we can observe StripSlashes redirects directly
@@ -279,11 +279,11 @@ func TestListeners(t *testing.T) {
 		url    string
 		status int
 	}{
-		// public listener: health at /, /c/*
-		{"public: health", "GET", publicURL + "/", 200},
-		{"public: channel route (bad params)", "GET", publicURL + "/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive", 400},
-		{"public: internal route not exposed", "POST", publicURL + "/ci/attachment/fetch", 404},
-		{"public: unknown path", "GET", publicURL + "/nope", 404},
+		// internet listener: health at /, /c/*
+		{"internet: health", "GET", internetURL + "/", 200},
+		{"internet: channel route (bad params)", "GET", internetURL + "/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive", 400},
+		{"internet: internal route not exposed", "POST", internetURL + "/ci/attachment/fetch", 404},
+		{"internet: unknown path", "GET", internetURL + "/nope", 404},
 
 		// internal listener: health at /, /ci/*
 		{"internal: health", "GET", internalURL + "/", 200},

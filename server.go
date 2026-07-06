@@ -37,11 +37,11 @@ const (
 // NewServer creates a new Server for the passed in runtime. The server will have to be started
 // afterwards, which is when configuration options are checked.
 func NewServer(rt *runtime.Runtime, backend Backend) *Server {
-	// channelRouter holds the dynamically-registered channel handler routes - mounted at /c/ on the public listener
+	// channelRouter holds the dynamically-registered channel handler routes - mounted at /c/ on the internet listener
 	channelRouter := chi.NewRouter()
 
 	// testRouter mounts channelRouter at /c/ so handler tests can dispatch requests via Router() without
-	// spinning up the listener. It mirrors the public listener's middleware stack so tests exercise the
+	// spinning up the listener. It mirrors the internet listener's middleware stack so tests exercise the
 	// same chain that /c/* traffic hits in production.
 	testRouter := chi.NewRouter()
 	testRouter.Use(middleware.Compress(flate.DefaultCompression))
@@ -72,21 +72,21 @@ func (s *Server) Start() error {
 	// bind both listener sockets up front so callers know we're accepting connections by the
 	// time Start returns, and so a bind failure fails fast before we've started the backend,
 	// spool flushers, or anything else that would need to be unwound
-	publicAddr := fmt.Sprintf("%s:%d", s.rt.Config.PublicAddress, s.rt.Config.PublicPort)
-	publicLn, err := net.Listen("tcp", publicAddr)
+	internetAddr := fmt.Sprintf("%s:%d", s.rt.Config.PublicAddress, s.rt.Config.PublicPort)
+	internetLn, err := net.Listen("tcp", internetAddr)
 	if err != nil {
-		return fmt.Errorf("error binding public listener on %s: %w", publicAddr, err)
+		return fmt.Errorf("error binding internet listener on %s: %w", internetAddr, err)
 	}
 	internalAddr := fmt.Sprintf("%s:%d", s.rt.Config.InternalAddress, s.rt.Config.InternalPort)
 	internalLn, err := net.Listen("tcp", internalAddr)
 	if err != nil {
-		publicLn.Close()
+		internetLn.Close()
 		return fmt.Errorf("error binding internal listener on %s: %w", internalAddr, err)
 	}
 
 	// start our backend
 	if err := s.backend.Start(); err != nil {
-		publicLn.Close()
+		internetLn.Close()
 		internalLn.Close()
 		return err
 	}
@@ -97,20 +97,20 @@ func (s *Server) Start() error {
 	// initialize our handlers (wires routes into channelRouter)
 	s.initializeChannelHandlers()
 
-	// public listener — exposes /c/*, /
-	publicRouter := chi.NewRouter()
-	publicRouter.Use(middleware.Compress(flate.DefaultCompression))
-	publicRouter.Use(middleware.StripSlashes)
-	publicRouter.Use(middleware.RequestID)
-	publicRouter.Use(middleware.RealIP)
-	publicRouter.Use(middleware.Recoverer)
-	publicRouter.Use(middleware.Timeout(30 * time.Second))
-	publicRouter.NotFound(s.handle404("public"))
-	publicRouter.MethodNotAllowed(s.handle405("public"))
-	publicRouter.Get("/", s.handleHealth)
-	publicRouter.Mount("/c/", s.channelRouter)
+	// internet listener — exposes /c/*, /
+	internetRouter := chi.NewRouter()
+	internetRouter.Use(middleware.Compress(flate.DefaultCompression))
+	internetRouter.Use(middleware.StripSlashes)
+	internetRouter.Use(middleware.RequestID)
+	internetRouter.Use(middleware.RealIP)
+	internetRouter.Use(middleware.Recoverer)
+	internetRouter.Use(middleware.Timeout(30 * time.Second))
+	internetRouter.NotFound(s.handle404("internet"))
+	internetRouter.MethodNotAllowed(s.handle405("internet"))
+	internetRouter.Get("/", s.handleHealth("internet"))
+	internetRouter.Mount("/c/", s.channelRouter)
 
-	// internal listener — only /ci/* routes and /, no public-facing concerns
+	// internal listener — only /ci/* routes and /, no internet-facing concerns
 	internalRouter := chi.NewRouter()
 	internalRouter.Use(middleware.Compress(flate.DefaultCompression))
 	internalRouter.Use(middleware.StripSlashes)
@@ -119,12 +119,12 @@ func (s *Server) Start() error {
 	internalRouter.Use(middleware.Timeout(30 * time.Second))
 	internalRouter.NotFound(s.handle404("internal"))
 	internalRouter.MethodNotAllowed(s.handle405("internal"))
-	internalRouter.Get("/", s.handleHealth)
+	internalRouter.Get("/", s.handleHealth("internal"))
 	internalRouter.Post("/ci/attachment/fetch", s.tokenAuthRequired(s.handleFetchAttachment))
 
-	s.publicServer = &http.Server{
-		Addr:         publicAddr,
-		Handler:      publicRouter,
+	s.internetServer = &http.Server{
+		Addr:         internetAddr,
+		Handler:      internetRouter,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 45 * time.Second,
 		IdleTimeout:  90 * time.Second,
@@ -142,10 +142,10 @@ func (s *Server) Start() error {
 	go func() {
 		defer s.waitGroup.Done()
 
-		log := slog.With("comp", "server", "listener", "public", "address", s.publicServer.Addr)
+		log := slog.With("comp", "server", "listener", "internet", "address", s.internetServer.Addr)
 		log.Info("server started", "version", s.rt.Config.Version)
 
-		err := s.publicServer.Serve(publicLn)
+		err := s.internetServer.Serve(internetLn)
 		if err != nil && err != http.ErrServerClosed {
 			log.Error("error listening", "error", err)
 		}
@@ -179,8 +179,8 @@ func (s *Server) Stop() error {
 	s.foreman.Stop()
 
 	// shut down both HTTP servers
-	if err := s.publicServer.Shutdown(context.Background()); err != nil {
-		log.Error("error shutting down server", "listener", "public", "error", err, "state", "stopping")
+	if err := s.internetServer.Shutdown(context.Background()); err != nil {
+		log.Error("error shutting down server", "listener", "internet", "error", err, "state", "stopping")
 	}
 	if err := s.internalServer.Shutdown(context.Background()); err != nil {
 		log.Error("error shutting down server", "listener", "internal", "error", err, "state", "stopping")
@@ -215,7 +215,7 @@ func (s *Server) Router() chi.Router { return s.testRouter }
 type Server struct {
 	backend Backend
 
-	publicServer   *http.Server
+	internetServer *http.Server
 	internalServer *http.Server
 	channelRouter  *chi.Mux
 	testRouter     *chi.Mux
@@ -393,17 +393,20 @@ func (s *Server) handle405(listener string) http.HandlerFunc {
 	}
 }
 
-// handleHealth is the liveness probe used by ALB health checks. Registered at the root of
+// handleHealth returns the liveness probe used by ALB health checks. Registered at the root of
 // both listeners and not under any /c or /ci prefix, so no listener rule routes client traffic
-// to it — only direct ALB→target health probes reach it. Also returns the running version so
-// it doubles as a debug endpoint.
-func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonx.MustMarshal(map[string]string{
-		"component": "courier",
-		"version":   s.rt.Config.Version,
-	}))
+// to it — only direct ALB→target health probes reach it. Also returns the running version and
+// which listener was hit so it doubles as a debug endpoint.
+func (s *Server) handleHealth(listener string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonx.MustMarshal(map[string]string{
+			"component": "courier",
+			"listener":  listener,
+			"version":   s.rt.Config.Version,
+		}))
+	}
 }
 
 // wraps a handler to make it use token auth
