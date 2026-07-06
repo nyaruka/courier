@@ -172,19 +172,14 @@ func (b *backend) Start() error {
 	}, time.Minute)
 	b.channelsByAddr.Start()
 
-	// make sure our spool dirs are writable
-	err = courier.EnsureSpoolDirPresent(b.rt.Config.SpoolDir, "msgs")
-	if err == nil {
-		err = courier.EnsureSpoolDirPresent(b.rt.Config.SpoolDir, "statuses")
+	// make sure our spool dirs are writable - fail hard so a misconfigured spool volume can't
+	// silently drop msgs and statuses spooled during database outages
+	for _, subdir := range []string{"msgs", "statuses", "events"} {
+		if err := courier.EnsureSpoolDirPresent(b.rt.Config.SpoolDir, subdir); err != nil {
+			return err
+		}
 	}
-	if err == nil {
-		err = courier.EnsureSpoolDirPresent(b.rt.Config.SpoolDir, "events")
-	}
-	if err != nil {
-		log.Error("spool directories not writable", "error", err)
-	} else {
-		log.Info("spool directories ok")
-	}
+	log.Info("spool directories ok")
 
 	// create our batched writers and start them
 	b.statusWriter = NewStatusWriter(b, b.rt.Config.SpoolDir)
