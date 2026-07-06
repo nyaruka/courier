@@ -68,12 +68,22 @@ func startSpoolFlushers(s *Server) {
 }
 
 // EnsureSpoolDirPresent checks that the passed in spool directory is present and writable
-func EnsureSpoolDirPresent(spoolDir string, subdir string) (err error) {
-	msgsDir := path.Join(spoolDir, subdir)
-	if _, err = os.Stat(msgsDir); os.IsNotExist(err) {
-		err = os.MkdirAll(msgsDir, 0770)
+func EnsureSpoolDirPresent(spoolDir string, subdir string) error {
+	dir := path.Join(spoolDir, subdir)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0770); err != nil {
+			return err
+		}
 	}
-	return err
+
+	// creating the directory isn't enough - it can exist but be unwritable, e.g. a read-only mount,
+	// so probe with an actual write (flushers ignore non-json files so a leftover probe is harmless)
+	probe, err := os.CreateTemp(dir, ".probe-*")
+	if err != nil {
+		return fmt.Errorf("spool directory %s not writable: %w", dir, err)
+	}
+	probe.Close()
+	return os.Remove(probe.Name())
 }
 
 // creates a new spool flusher
