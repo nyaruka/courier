@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -214,12 +213,9 @@ func contactForMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.Chan
 // match one. For a WhatsApp business-scoped user ID (a whatsapp URN in the CC.xxx form) with a phone number
 // attached as its new URN, that's the phone number's (all-digit) whatsapp URN.
 func altLookupURNs(m *MsgIn) []urns.URN {
-	if m.NewURN_ == nil || m.URN_.Scheme() != urns.WhatsApp.Prefix {
-		return nil
-	}
-
-	// only business-scoped user IDs (which contain a "."), not all-digit whatsapp phone numbers
-	if !strings.Contains(m.URN_.Path(), ".") {
+	// only when the primary URN is a whatsapp business-scoped user ID (not an all-digit phone number) with a
+	// phone number attached as its new URN
+	if m.NewURN_ == nil || !urns.IsWhatsAppBSUID(m.URN_) {
 		return nil
 	}
 

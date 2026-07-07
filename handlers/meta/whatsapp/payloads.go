@@ -3,7 +3,6 @@ package whatsapp
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/nyaruka/courier/v26"
@@ -21,14 +20,11 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 	return buildContentPayloads(msg, maxMsgLength, clog)
 }
 
-// allDigitsRegex matches a WhatsApp identity that is a phone number rather than a business-scoped user ID.
-var allDigitsRegex = regexp.MustCompile(`^[0-9]+$`)
-
 // RecipientFields returns the to and recipient field values for the given URN. A whatsapp URN may hold either a
 // phone number (all digits) or a business-scoped user ID (the CC.xxx form); the business-scoped user ID goes in
 // the recipient field and the phone number goes in the to field.
 func RecipientFields(urn urns.URN) (to, recipient string) {
-	if urn.Scheme() == urns.WhatsApp.Prefix && !allDigitsRegex.MatchString(urn.Path()) {
+	if urns.IsWhatsAppBSUID(urn) {
 		return "", urn.Path()
 	}
 	return urn.Path(), ""
