@@ -3,6 +3,7 @@ package whatsapp
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/nyaruka/courier/v26"
@@ -20,14 +21,20 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 	return buildContentPayloads(msg, maxMsgLength, clog)
 }
 
-// RecipientFields returns the to and recipient field values for the given URN, using the recipient field for
-// WhatsApp (business-scoped user ID) URNs and the to field for phone number (tel) URNs.
+// allDigitsRegex matches a WhatsApp identity that is a phone number rather than a business-scoped user ID.
+var allDigitsRegex = regexp.MustCompile(`^[0-9]+$`)
+
+// RecipientFields returns the to and recipient field values for the given URN. The recipient field is used only
+// for business-scoped user IDs (a whatsapp URN whose path is not all digits, e.g. "US.1234"); phone numbers go
+// in the to field. A whatsapp URN may carry a phone number too (legacy contacts stored the sender phone as a
+// whatsapp URN with all digits), so we route those to the to field just like tel URNs.
 func RecipientFields(urn urns.URN) (to, recipient string) {
-	if urn.Scheme() == urns.WhatsApp.Prefix {
-		return "", urn.Path()
+	path := urn.Path()
+	if urn.Scheme() == urns.WhatsApp.Prefix && !allDigitsRegex.MatchString(path) {
+		return "", path
 	}
-	// tel URNs carry a leading + which the WhatsApp API doesn't want on the to field
-	return strings.TrimPrefix(urn.Path(), "+"), ""
+	// tel URNs (and legacy all-digit whatsapp URNs) carry a phone number; the WhatsApp API doesn't want the leading +
+	return strings.TrimPrefix(path, "+"), ""
 }
 
 // newBasePayload creates a SendRequest with common fields populated.

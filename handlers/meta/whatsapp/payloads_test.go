@@ -15,6 +15,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestRecipientFields(t *testing.T) {
+	tcs := []struct {
+		urn               urns.URN
+		expectedTo        string
+		expectedRecipient string
+	}{
+		{urn: "tel:+250788123123", expectedTo: "250788123123", expectedRecipient: ""},     // phone number -> to (leading + trimmed)
+		{urn: "whatsapp:US.1234", expectedTo: "", expectedRecipient: "US.1234"},           // business-scoped user ID -> recipient
+		{urn: "whatsapp:250788123123", expectedTo: "250788123123", expectedRecipient: ""}, // legacy all-digit whatsapp URN -> to
+	}
+
+	for _, tc := range tcs {
+		to, recipient := whatsapp.RecipientFields(tc.urn)
+		assert.Equal(t, tc.expectedTo, to, "to mismatch for %s", tc.urn)
+		assert.Equal(t, tc.expectedRecipient, recipient, "recipient mismatch for %s", tc.urn)
+	}
+}
+
 func TestGetMsgPayloads(t *testing.T) {
 	ctx := context.Background()
 	maxMsgLength := 4096
@@ -304,7 +322,24 @@ func TestGetMsgPayloads(t *testing.T) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "text", payloads[0].Type)
 				assert.Equal(t, "US.1234", payloads[0].Recipient)
+				assert.Empty(t, payloads[0].To)
 				assert.Equal(t, "Hello, BSUID", payloads[0].Text.Body)
+			},
+		},
+		{
+			// legacy contacts stored the sender phone as a whatsapp URN with all digits; those must still
+			// route to the to field (as a phone number), not the recipient (BSUID) field
+			label:                 "Send message by legacy all-digit whatsapp URN",
+			text:                  "Hello, legacy",
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "text",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+				assert.Equal(t, 1, len(payloads))
+				assert.Equal(t, "text", payloads[0].Type)
+				assert.Equal(t, "250788123123", payloads[0].To)
+				assert.Empty(t, payloads[0].Recipient)
+				assert.Equal(t, "Hello, legacy", payloads[0].Text.Body)
 			},
 		},
 		{
