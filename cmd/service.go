@@ -15,11 +15,12 @@ import (
 	slogsentry "github.com/samber/slog-sentry/v2"
 )
 
-// shutdownTimeout is how long we allow for a graceful shutdown before exiting hard. Nothing courier does on
-// shutdown should take long (sends are capped at 35s, everything else is faster) so if we hit this something is
+// shutdownTimeout is how long we allow for a graceful shutdown before exiting hard. The shutdown phases are
+// individually bounded (in-flight requests and the final status flush at 30s, in-flight sends at 35s) but run
+// partly in sequence, so a legitimate slow shutdown can approach ~60s. Past this budget something is genuinely
 // wedged, and it's better to exit with a record of why than be killed by the orchestrator. Orchestrator stop
 // timeouts should be set a bit above this so the watchdog fires first.
-const shutdownTimeout = 45 * time.Second
+const shutdownTimeout = 90 * time.Second
 
 // Service starts the courier service, blocks until a termination signal is received, then stops it.
 func Service(version, date string) error {
