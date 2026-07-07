@@ -197,8 +197,8 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 		}
 		date := time.Unix(ts, 0).UTC()
 
-		// create our URN
-		urn, err := urns.ParsePhone(msg.From, channel.Country(), true, false)
+		// create our URN - WhatsApp IDs are full international numbers, so we parse without a country hint
+		urn, err := urns.ParsePhone(msg.From, "", true, false)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid phone number"))
 		}

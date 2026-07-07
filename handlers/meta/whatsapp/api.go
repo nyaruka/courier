@@ -9,7 +9,6 @@ import (
 
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
-	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -102,7 +101,7 @@ type WAMessage struct {
 	Errors []WAError `json:"errors"`
 }
 
-func (m WAMessage) ExtractData(country i18n.Country, clog *courier.ChannelLog) (time.Time, urns.URN, string, string, string, error, error) {
+func (m WAMessage) ExtractData(clog *courier.ChannelLog) (time.Time, urns.URN, string, string, string, error, error) {
 	var err error
 	var finalErr error
 	var date time.Time
@@ -119,7 +118,8 @@ func (m WAMessage) ExtractData(country i18n.Country, clog *courier.ChannelLog) (
 	}
 	date = parseTimestamp(ts)
 
-	urn, err = urns.ParsePhone(m.From, country, true, false)
+	// WhatsApp IDs are full international numbers, so we parse without a country hint
+	urn, err = urns.ParsePhone(m.From, "", true, false)
 	if err != nil {
 		finalErr = errors.New("invalid phone number")
 		return date, urn, text, mediaURL, mediaID, err, finalErr

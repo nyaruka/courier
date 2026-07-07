@@ -80,8 +80,8 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or media"))
 	}
 
-	// build urn
-	urn, err := urns.ParsePhone(form.From, channel.Country(), true, false)
+	// build urn - WhatsApp IDs are full international numbers, so we parse without a country hint
+	urn, err := urns.ParsePhone(form.From, "", true, false)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid phone number"))
 	}

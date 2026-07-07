@@ -130,7 +130,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					continue
 				}
 
-				date, urn, text, mediaURL, mediaID, err, finalErr := waMsg.ExtractData(channel.Country(), clog)
+				date, urn, text, mediaURL, mediaID, err, finalErr := waMsg.ExtractData(clog)
 				if finalErr != nil {
 					return nil, nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, finalErr.Error())
 				}
