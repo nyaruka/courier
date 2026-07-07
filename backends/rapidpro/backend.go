@@ -29,7 +29,7 @@ import (
 	"github.com/nyaruka/gocommon/cache"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/jsonx"
-	"github.com/nyaruka/gocommon/spool"
+	"github.com/nyaruka/gocommon/spools"
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -55,9 +55,9 @@ type backend struct {
 	writerWG     *sync.WaitGroup
 
 	// spools of items which couldn't be written to the database and will be retried later
-	msgSpool    *spool.Spool[*MsgIn]
-	statusSpool *spool.Spool[*models.StatusUpdate]
-	eventSpool  *spool.Spool[*ChannelEvent]
+	msgSpool    *spools.Spool[*MsgIn]
+	statusSpool *spools.Spool[*models.StatusUpdate]
+	eventSpool  *spools.Spool[*ChannelEvent]
 
 	channelsByUUID *cache.Local[models.ChannelUUID, *models.Channel]
 	channelsByAddr *cache.Local[models.ChannelAddress, *models.Channel]
@@ -178,9 +178,9 @@ func (b *backend) Start() error {
 
 	// create our spools and start their background flushing - their Start fails if a spool directory isn't
 	// writable so a misconfigured spool volume can't silently drop items during database outages
-	b.msgSpool = spool.New(path.Join(b.rt.Config.SpoolDir, "msgs"), 30*time.Second, spool.MarshalJSON, spool.UnmarshalJSON, b.flushMsgs)
-	b.statusSpool = spool.New(path.Join(b.rt.Config.SpoolDir, "statuses"), 30*time.Second, spool.MarshalJSON, spool.UnmarshalJSON, b.flushStatuses)
-	b.eventSpool = spool.New(path.Join(b.rt.Config.SpoolDir, "events"), 30*time.Second, spool.MarshalJSON, spool.UnmarshalJSON, b.flushEvents)
+	b.msgSpool = spools.New(path.Join(b.rt.Config.SpoolDir, "msgs"), 30*time.Second, spools.MarshalJSON, spools.UnmarshalJSON, b.flushMsgs)
+	b.statusSpool = spools.New(path.Join(b.rt.Config.SpoolDir, "statuses"), 30*time.Second, spools.MarshalJSON, spools.UnmarshalJSON, b.flushStatuses)
+	b.eventSpool = spools.New(path.Join(b.rt.Config.SpoolDir, "events"), 30*time.Second, spools.MarshalJSON, spools.UnmarshalJSON, b.flushEvents)
 	if err := b.msgSpool.Start(); err != nil {
 		return err
 	}
