@@ -148,18 +148,26 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		text = form.ButtonText
 	}
 
-	// build our msg
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, form.MessageSID, clog)
-
+	// if we have a business-scoped user ID (ExternalUserId), make that WhatsApp URN the primary URN and
+	// attach the phone number as a secondary URN
+	appendURN := urns.NilURN
 	if form.ExternalUserId != "" && isWhatsApp(channel) {
 		userIDURN, urnErr := h.parseURN(channel, form.ExternalUserId, i18n.Country(form.FromCountry))
 
 		if urnErr == nil {
-			msg.WithNewURN(userIDURN, models.NewURNAppend)
+			appendURN = urn
+			urn = userIDURN
 		} else {
 			slog.Warn("ignoring invalid ExternalUserId for message", "ExternalUserId", form.ExternalUserId, "MessageSID", form.MessageSID, "Error", urnErr.Error())
 
 		}
+	}
+
+	// build our msg
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, form.MessageSID, clog)
+
+	if appendURN != urns.NilURN {
+		msg.WithNewURN(appendURN, models.NewURNAppend)
 	}
 
 	// process any attached media

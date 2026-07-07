@@ -148,6 +148,20 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					}
 				}
 
+				// ExtractData gives us the phone number as a tel URN; if the message also carries a
+				// business-scoped user ID, make that WhatsApp URN the primary URN and attach the phone
+				// number as a secondary URN
+				appendURN := urns.NilURN
+				if waMsg.FromUserID != "" {
+					userIDURN, urnErr := urns.New(urns.WhatsApp, waMsg.FromUserID)
+					if urnErr == nil {
+						appendURN = urn
+						urn = userIDURN
+					} else {
+						courier.LogRequestError(r, channel, fmt.Errorf("invalid user_id for WhatsApp URN: %w", urnErr))
+					}
+				}
+
 				// create our message
 				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, waMsg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[waMsg.From])
 
@@ -155,14 +169,8 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					event.WithAttachment(mediaURL)
 				}
 
-				// if we have a user_id, add it as secondary WhatsApp URN
-				if waMsg.FromUserID != "" {
-					userIDURN, urnErr := urns.New(urns.WhatsApp, waMsg.FromUserID)
-					if urnErr == nil {
-						event.WithNewURN(userIDURN, models.NewURNAppend)
-					} else {
-						courier.LogRequestError(r, channel, fmt.Errorf("invalid user_id for WhatsApp URN: %w", urnErr))
-					}
+				if appendURN != urns.NilURN {
+					event.WithNewURN(appendURN, models.NewURNAppend)
 				}
 
 				err = h.Backend().WriteMsg(ctx, event, clog)

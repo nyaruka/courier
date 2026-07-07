@@ -46,10 +46,10 @@ var whatsappIncomingTests = []IncomingTestCase{
 		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Hello World"),
-		ExpectedURN:           "tel:+250788123123",
+		ExpectedURN:           "whatsapp:US.1234",
 		ExpectedExternalID:    "external_id",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
-		ExpectedNewURN:        &models.NewURNSpec{Value: "whatsapp:US.1234", Action: models.NewURNAppend},
+		ExpectedNewURN:        &models.NewURNSpec{Value: "tel:+250788123123", Action: models.NewURNAppend},
 		PrepRequest:           addValidSignature,
 	},
 	{
