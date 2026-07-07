@@ -15,6 +15,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestRecipientFields(t *testing.T) {
+	tcs := []struct {
+		urn               urns.URN
+		expectedTo        string
+		expectedRecipient string
+	}{
+		{urn: "whatsapp:250788123123", expectedTo: "250788123123", expectedRecipient: ""}, // phone number -> to
+		{urn: "whatsapp:US.1234", expectedTo: "", expectedRecipient: "US.1234"},            // business-scoped user ID -> recipient
+	}
+
+	for _, tc := range tcs {
+		to, recipient := whatsapp.RecipientFields(tc.urn)
+		assert.Equal(t, tc.expectedTo, to, "to mismatch for %s", tc.urn)
+		assert.Equal(t, tc.expectedRecipient, recipient, "recipient mismatch for %s", tc.urn)
+	}
+}
+
 func TestGetMsgPayloads(t *testing.T) {
 	ctx := context.Background()
 	maxMsgLength := 4096
@@ -297,7 +314,7 @@ func TestGetMsgPayloads(t *testing.T) {
 		{
 			label:                 "Send message by BSUID",
 			text:                  "Hello, BSUID",
-			urn:                   "bsuid:US.1234",
+			urn:                   "whatsapp:US.1234",
 			expectedPayloadsCount: 1,
 			expectedType:          "text",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
@@ -312,7 +329,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			text:                  "Pick an option",
 			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Option 1"}, {Type: "text", Text: "Option 2"}},
-			urn:                   "bsuid:US.1234",
+			urn:                   "whatsapp:US.1234",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {

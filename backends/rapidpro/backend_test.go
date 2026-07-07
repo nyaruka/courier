@@ -945,6 +945,48 @@ func (ts *BackendTestSuite) TestSaveAttachment() {
 	ts.Equal("http://localstack:4566/test-attachments/attachments/1/c00e/5d67/c00e5d67-c275-4389-aded-7d8b151cbd5b.jpg", newURL)
 }
 
+func (ts *BackendTestSuite) TestContactForMsg() {
+	ctx := context.Background()
+	waChannel := ts.getChannel("WAC", "dbc126ed-66bc-4e28-b67b-81dc33277a17")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, waChannel, nil)
+
+	// an incoming WhatsApp message with a business-scoped user ID is keyed on the BSUID (primary URN) with the
+	// phone number attached as its new URN
+	newBSUIDMsg := func(bsuid, phone urns.URN) *MsgIn {
+		m := ts.b.NewIncomingMsg(ctx, waChannel, bsuid, "hi", "", clog).(*MsgIn)
+		m.WithNewURN(phone, models.NewURNAppend)
+		return m
+	}
+	lookup := func(urn urns.URN) *models.Contact {
+		c, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, urn, nil, "", false, clog)
+		ts.NoError(err)
+		return c
+	}
+
+	// no existing contact: a message with a BSUID and phone creates one keyed on the BSUID
+	c1, err := contactForMsg(ctx, ts.b, newBSUIDMsg("whatsapp:US.9876", "whatsapp:12065551234"), clog)
+	ts.NoError(err)
+	ts.True(c1.IsNew_)
+	ts.Equal(c1.ID_, lookup("whatsapp:US.9876").ID_)
+
+	// existing contact known only by its all-digit whatsapp URN: a new BSUID is matched to it (not duplicated)
+	// and the BSUID is added to it
+	existingByPhone, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, "whatsapp:12065559999", nil, "", true, clog)
+	ts.NoError(err)
+
+	matched, err := contactForMsg(ctx, ts.b, newBSUIDMsg("whatsapp:US.5555", "whatsapp:12065559999"), clog)
+	ts.NoError(err)
+	ts.False(matched.IsNew_)
+	ts.Equal(existingByPhone.ID_, matched.ID_)
+	ts.Equal(existingByPhone.ID_, lookup("whatsapp:US.5555").ID_) // BSUID now resolves to the same contact
+
+	// existing contact already known by the BSUID: matched directly
+	matchedByBSUID, err := contactForMsg(ctx, ts.b, newBSUIDMsg("whatsapp:US.9876", "whatsapp:12065551234"), clog)
+	ts.NoError(err)
+	ts.False(matchedByBSUID.IsNew_)
+	ts.Equal(c1.ID_, matchedByBSUID.ID_)
+}
+
 func (ts *BackendTestSuite) TestWriteMsg() {
 	ctx := context.Background()
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
