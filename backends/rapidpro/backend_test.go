@@ -945,6 +945,55 @@ func (ts *BackendTestSuite) TestSaveAttachment() {
 	ts.Equal("http://localstack:4566/test-attachments/attachments/1/c00e/5d67/c00e5d67-c275-4389-aded-7d8b151cbd5b.jpg", newURL)
 }
 
+func (ts *BackendTestSuite) TestContactForMsg() {
+	ctx := context.Background()
+	waChannel := ts.getChannel("WAC", "dbc126ed-66bc-4e28-b67b-81dc33277a17")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, waChannel, nil)
+
+	newBSUIDMsg := func(bsuid, phone urns.URN) *MsgIn {
+		m := ts.b.NewIncomingMsg(ctx, waChannel, bsuid, "hi", "", clog).(*MsgIn)
+		m.WithNewURN(phone, models.NewURNAppend)
+		return m
+	}
+	lookup := func(urn urns.URN) *models.Contact {
+		c, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, urn, nil, "", false, clog)
+		ts.NoError(err)
+		return c
+	}
+
+	// no existing contact: a message with a BSUID and phone creates one keyed on the BSUID
+	c1, err := contactForMsg(ctx, ts.b, newBSUIDMsg("whatsapp:US.9876", "tel:+12065551234"), clog)
+	ts.NoError(err)
+	ts.True(c1.IsNew_)
+	ts.Equal(c1.ID_, lookup("whatsapp:US.9876").ID_)
+
+	// existing contact known only by a tel URN: a new BSUID is matched to it (not duplicated) and added to it
+	existingByTel, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, "tel:+12065559999", nil, "", true, clog)
+	ts.NoError(err)
+
+	matchedByTel, err := contactForMsg(ctx, ts.b, newBSUIDMsg("whatsapp:US.5555", "tel:+12065559999"), clog)
+	ts.NoError(err)
+	ts.False(matchedByTel.IsNew_)
+	ts.Equal(existingByTel.ID_, matchedByTel.ID_)
+	ts.Equal(existingByTel.ID_, lookup("whatsapp:US.5555").ID_) // BSUID now resolves to the same contact
+
+	// existing contact known only by a legacy all-digit whatsapp URN: a new BSUID is matched to it too
+	existingByWA, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, "whatsapp:12065558888", nil, "", true, clog)
+	ts.NoError(err)
+
+	matchedByWA, err := contactForMsg(ctx, ts.b, newBSUIDMsg("whatsapp:US.8888", "tel:+12065558888"), clog)
+	ts.NoError(err)
+	ts.False(matchedByWA.IsNew_)
+	ts.Equal(existingByWA.ID_, matchedByWA.ID_)
+	ts.Equal(existingByWA.ID_, lookup("whatsapp:US.8888").ID_)
+
+	// existing contact already known by the BSUID: matched directly, no alternative lookup needed
+	matchedByBSUID, err := contactForMsg(ctx, ts.b, newBSUIDMsg("whatsapp:US.9876", "tel:+12065551234"), clog)
+	ts.NoError(err)
+	ts.False(matchedByBSUID.IsNew_)
+	ts.Equal(c1.ID_, matchedByBSUID.ID_)
+}
+
 func (ts *BackendTestSuite) TestWriteMsg() {
 	ctx := context.Background()
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")

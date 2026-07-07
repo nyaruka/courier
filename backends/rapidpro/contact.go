@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -158,4 +159,95 @@ func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *m
 	b.stats.RecordContactCreated()
 
 	return contact, nil
+}
+
+// contactForMsg resolves the contact for an incoming message. It normally looks the contact up by (or creates it
+// from) the message's primary URN. But when a WhatsApp message arrives with a business-scoped user ID as its
+// primary URN and a phone number attached as its new URN, we also look for an existing contact by that phone
+// number - in both its legacy all-digit whatsapp form and its tel form - so a contact which predates the BSUID is
+// reused rather than duplicated. In that case the BSUID is added to the matched contact so it stays the message's
+// (highest priority) URN.
+func contactForMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLog) (*models.Contact, error) {
+	altURNs := altLookupURNs(m)
+
+	// simple case: no alternative URNs to consider, look up or create by the primary URN
+	if len(altURNs) == 0 {
+		return contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
+	}
+
+	// try the primary URN first, without creating a contact
+	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, false, clog)
+	if err != nil {
+		return nil, err
+	}
+	if contact != nil {
+		return contact, nil
+	}
+
+	// the primary URN didn't match an existing contact, try the alternatives
+	for _, alt := range altURNs {
+		contact, err = contactForURN(ctx, b, m.OrgID_, m.channel, alt, nil, "", false, clog)
+		if err != nil {
+			return nil, err
+		}
+		if contact != nil {
+			// matched an existing contact by an alternative URN - add the primary URN to it so the message
+			// stays attributed to the primary URN
+			if err := addContactURN(ctx, b, m.channel, contact, m.URN_, m.URNAuthTokens_); err != nil {
+				return nil, err
+			}
+			return contact, nil
+		}
+	}
+
+	// no existing contact matched any URN, create one from the primary URN
+	return contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
+}
+
+// altLookupURNs returns alternative URNs to look up an existing contact by when the message's primary URN doesn't
+// match one. For a WhatsApp business-scoped user ID (a whatsapp URN in the CC.xxx form) with a phone number
+// attached as its new URN, those are the phone number in its legacy all-digit whatsapp form and its tel form.
+func altLookupURNs(m *MsgIn) []urns.URN {
+	if m.NewURN_ == nil || m.URN_.Scheme() != urns.WhatsApp.Prefix {
+		return nil
+	}
+
+	// only business-scoped user IDs (which contain a "."), not all-digit whatsapp phone numbers
+	if !strings.Contains(m.URN_.Path(), ".") {
+		return nil
+	}
+
+	phone := m.NewURN_.Value
+	if phone.Scheme() != urns.Phone.Prefix {
+		return nil
+	}
+	digits := strings.TrimPrefix(phone.Path(), "+")
+
+	var altURNs []urns.URN
+	if waURN, err := urns.New(urns.WhatsApp, digits); err == nil {
+		altURNs = append(altURNs, waURN)
+	}
+	return append(altURNs, phone)
+}
+
+// addContactURN adds the given URN to the contact (if not already present) and points the contact's URNID at it,
+// so the incoming message is attributed to this URN.
+func addContactURN(ctx context.Context, b *backend, channel *models.Channel, contact *models.Contact, urn urns.URN, authTokens map[string]string) error {
+	tx, err := b.rt.DB.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("error beginning transaction: %w", err)
+	}
+
+	contactURN, err := models.GetOrCreateContactURN(ctx, tx, channel, contact.ID_, urn, authTokens)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error adding URN to contact: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("error committing transaction: %w", err)
+	}
+
+	contact.URNID_ = contactURN.ID
+	return nil
 }
