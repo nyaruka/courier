@@ -1,3 +1,8 @@
+v26.3.5 (2026-07-07)
+-------------------------
+ * Update to gocommon v1.88.0 and rework Postgres spools on generic spool package
+ * Exit hard if graceful shutdown exceeds 90 seconds
+
 v26.3.4 (2026-07-06)
 -------------------------
  * Remove InstanceID config setting
