@@ -29,6 +29,7 @@ import (
 	"github.com/nyaruka/gocommon/cache"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/spool"
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -52,6 +53,11 @@ type backend struct {
 
 	statusWriter *StatusWriter
 	writerWG     *sync.WaitGroup
+
+	// spools of items which couldn't be written to the database and will be retried later
+	msgSpool    *spool.Spool[*MsgIn]
+	statusSpool *spool.Spool[*models.StatusUpdate]
+	eventSpool  *spool.Spool[*ChannelEvent]
 
 	channelsByUUID *cache.Local[models.ChannelUUID, *models.Channel]
 	channelsByAddr *cache.Local[models.ChannelAddress, *models.Channel]
@@ -170,17 +176,24 @@ func (b *backend) Start() error {
 	}, time.Minute)
 	b.channelsByAddr.Start()
 
-	// make sure our spool dirs are writable - fail hard so a misconfigured spool volume can't
-	// silently drop msgs and statuses spooled during database outages
-	for _, subdir := range []string{"msgs", "statuses", "events"} {
-		if err := courier.EnsureSpoolDirPresent(b.rt.Config.SpoolDir, subdir); err != nil {
-			return err
-		}
+	// create our spools and start their background flushing - their Start fails if a spool directory isn't
+	// writable so a misconfigured spool volume can't silently drop items during database outages
+	b.msgSpool = spool.New(path.Join(b.rt.Config.SpoolDir, "msgs"), 30*time.Second, spool.MarshalJSON, spool.UnmarshalJSON, b.flushMsgs)
+	b.statusSpool = spool.New(path.Join(b.rt.Config.SpoolDir, "statuses"), 30*time.Second, spool.MarshalJSON, spool.UnmarshalJSON, b.flushStatuses)
+	b.eventSpool = spool.New(path.Join(b.rt.Config.SpoolDir, "events"), 30*time.Second, spool.MarshalJSON, spool.UnmarshalJSON, b.flushEvents)
+	if err := b.msgSpool.Start(); err != nil {
+		return err
 	}
-	log.Info("spool directories ok")
+	if err := b.statusSpool.Start(); err != nil {
+		return err
+	}
+	if err := b.eventSpool.Start(); err != nil {
+		return err
+	}
+	log.Info("spools ok")
 
 	// create our batched writers and start them
-	b.statusWriter = NewStatusWriter(b, b.rt.Config.SpoolDir)
+	b.statusWriter = NewStatusWriter(b)
 	b.statusWriter.Start(b.writerWG)
 
 	// store the system user id
@@ -188,11 +201,6 @@ func (b *backend) Start() error {
 	if err != nil {
 		return err
 	}
-
-	// register and start our spool flushers
-	courier.RegisterFlusher(path.Join(b.rt.Config.SpoolDir, "msgs"), b.flushMsgFile)
-	courier.RegisterFlusher(path.Join(b.rt.Config.SpoolDir, "statuses"), b.flushStatusFile)
-	courier.RegisterFlusher(path.Join(b.rt.Config.SpoolDir, "events"), b.flushChannelEventFile)
 
 	b.startMetricsReporter(time.Minute)
 
@@ -253,6 +261,11 @@ func (b *backend) Stop() error {
 
 	// wait for them to flush fully
 	b.writerWG.Wait()
+
+	// stop our spools' background flushing (after the status writer since its failures are spooled)
+	b.msgSpool.Stop()
+	b.statusSpool.Stop()
+	b.eventSpool.Stop()
 
 	b.rt.Stop()
 
@@ -670,6 +683,7 @@ func (b *backend) reportMetrics(ctx context.Context) (int, error) {
 		cwatch.Datum("QueuedMsgs", float64(bulkSize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "bulk")),
 		cwatch.Datum("QueuedMsgs", float64(prioritySize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "priority")),
 		cwatch.Datum("DynamoSpooledItems", float64(b.rt.Spool.Size()), cwtypes.StandardUnitCount),
+		cwatch.Datum("PostgresSpooledItems", float64(b.msgSpool.Size()+b.statusSpool.Size()+b.eventSpool.Size()), cwtypes.StandardUnitCount),
 	)
 
 	if err := b.rt.CW.Send(ctx, metrics...); err != nil {

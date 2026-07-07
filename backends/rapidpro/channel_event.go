@@ -2,11 +2,7 @@ package rapidpro
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"log"
 	"log/slog"
-	"os"
 	"strconv"
 	"time"
 
@@ -84,7 +80,7 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 	}
 
 	if err != nil {
-		err = courier.WriteToSpool(b.rt.Config.SpoolDir, "events", dbEvent)
+		err = b.eventSpool.Add([]*ChannelEvent{dbEvent})
 	}
 
 	return err
@@ -118,18 +114,26 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clo
 	return nil
 }
 
-func (b *backend) flushChannelEventFile(filename string, contents []byte) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
+// flushEvents is the flush function for the event spool - it retries writing spooled channel events to the database,
+// returning those that fail again so they're respooled
+func (b *backend) flushEvents(ctx context.Context, batch []*ChannelEvent) ([]*ChannelEvent, error) {
+	var failed []*ChannelEvent
 
-	event := &ChannelEvent{}
-	err := json.Unmarshal(contents, event)
-	if err != nil {
-		log.Printf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err)
-		os.Rename(filename, fmt.Sprintf("%s.error", filename))
-		return nil
+	for _, event := range batch {
+		ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+		err := b.flushEvent(ctx, event)
+		cancel()
+
+		if err != nil {
+			slog.Error("error flushing spooled channel event", "error", err, "event", event.UUID_)
+			failed = append(failed, event)
+		}
 	}
 
+	return failed, nil
+}
+
+func (b *backend) flushEvent(ctx context.Context, event *ChannelEvent) error {
 	// look up our channel
 	channel, err := b.GetChannel(ctx, models.AnyChannelType, event.ChannelUUID_)
 	if err != nil {

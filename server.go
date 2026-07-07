@@ -91,9 +91,6 @@ func (s *Server) Start() error {
 		return err
 	}
 
-	// start our spool flushers
-	startSpoolFlushers(s)
-
 	// initialize our handlers (wires routes into channelRouter)
 	s.initializeChannelHandlers()
 
