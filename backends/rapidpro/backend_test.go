@@ -985,6 +985,25 @@ func (ts *BackendTestSuite) TestContactForMsg() {
 	ts.NoError(err)
 	ts.False(matchedByBSUID.IsNew_)
 	ts.Equal(c1.ID_, matchedByBSUID.ID_)
+
+	// BSUID already owned by one contact while the phone belongs to a different contact: the message resolves to
+	// the BSUID owner (matched BSUID-first) and the phone contact is left untouched
+	bsuidOwner, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, "whatsapp:US.7777", nil, "", true, clog)
+	ts.NoError(err)
+	phoneOwner, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, "whatsapp:12065557777", nil, "", true, clog)
+	ts.NoError(err)
+	ts.NotEqual(bsuidOwner.ID_, phoneOwner.ID_)
+
+	resolved, err := contactForMsg(ctx, ts.b, newBSUIDMsg("whatsapp:US.7777", "whatsapp:12065557777"), clog)
+	ts.NoError(err)
+	ts.Equal(bsuidOwner.ID_, resolved.ID_)                       // resolved to the BSUID owner, not duplicated
+	ts.Equal(phoneOwner.ID_, lookup("whatsapp:12065557777").ID_) // phone stayed on its original contact
+
+	// addContactURN must not steal a URN that already belongs to another contact - it rolls back and reports moved
+	moved, err := addContactURN(ctx, ts.b, waChannel, phoneOwner, "whatsapp:US.7777", nil)
+	ts.NoError(err)
+	ts.True(moved)
+	ts.Equal(bsuidOwner.ID_, lookup("whatsapp:US.7777").ID_) // BSUID still owned by its original contact
 }
 
 func (ts *BackendTestSuite) TestWriteMsg() {

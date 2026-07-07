@@ -193,8 +193,14 @@ func contactForMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.Chan
 		if contact != nil {
 			// matched an existing contact by the phone number - add the BSUID to it so the message stays
 			// attributed to the BSUID
-			if err := addContactURN(ctx, b, m.channel, contact, m.URN_, m.URNAuthTokens_); err != nil {
+			moved, err := addContactURN(ctx, b, m.channel, contact, m.URN_, m.URNAuthTokens_)
+			if err != nil {
 				return nil, err
+			}
+			// between our BSUID lookup above and now, the BSUID was claimed by another contact - don't steal
+			// it, re-look-up the BSUID and return the contact that already owns it
+			if moved {
+				return contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 			}
 			return contact, nil
 		}
@@ -221,23 +227,31 @@ func altLookupURNs(m *MsgIn) []urns.URN {
 }
 
 // addContactURN adds the given URN to the contact (if not already present) and points the contact's URNID at it,
-// so the incoming message is attributed to this URN.
-func addContactURN(ctx context.Context, b *backend, channel *models.Channel, contact *models.Contact, urn urns.URN, authTokens map[string]string) error {
+// so the incoming message is attributed to this URN. If the URN already belonged to a different contact, it
+// returns moved=true without stealing it (the transaction is rolled back), leaving it on its current owner.
+func addContactURN(ctx context.Context, b *backend, channel *models.Channel, contact *models.Contact, urn urns.URN, authTokens map[string]string) (moved bool, err error) {
 	tx, err := b.rt.DB.BeginTxx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("error beginning transaction: %w", err)
+		return false, fmt.Errorf("error beginning transaction: %w", err)
 	}
 
 	contactURN, err := models.GetOrCreateContactURN(ctx, tx, channel, contact.ID_, urn, authTokens)
 	if err != nil {
 		tx.Rollback()
-		return fmt.Errorf("error adding URN to contact: %w", err)
+		return false, fmt.Errorf("error adding URN to contact: %w", err)
+	}
+
+	// GetOrCreateContactURN will have re-pointed the URN from its previous owner to us - we don't want to steal
+	// it, so roll back and let the caller re-look-up the contact that already owns it
+	if contactURN.PrevContactID != models.NilContactID {
+		tx.Rollback()
+		return true, nil
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("error committing transaction: %w", err)
+		return false, fmt.Errorf("error committing transaction: %w", err)
 	}
 
 	contact.URNID_ = contactURN.ID
-	return nil
+	return false, nil
 }
