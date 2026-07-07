@@ -53,7 +53,9 @@ type StatusWriter struct {
 func NewStatusWriter(b *backend, spoolDir string) *StatusWriter {
 	return &StatusWriter{
 		Batcher: syncx.NewBatcher(func(batch []*models.StatusUpdate) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			// keep this comfortably under the shutdown watchdog since final flushes happen during shutdown -
+			// statuses that can't be written in time will be spooled instead
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 
 			b.writeStatuseUpdates(ctx, spoolDir, batch)
