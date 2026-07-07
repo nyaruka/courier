@@ -86,7 +86,7 @@ CREATE TABLE msgs_optin (
 DROP TABLE IF EXISTS msgs_msg CASCADE;
 CREATE TABLE msgs_msg (
     id bigserial PRIMARY KEY,
-    uuid uuid NOT NULL,
+    uuid uuid NOT NULL UNIQUE,
     org_id integer NOT NULL REFERENCES orgs_org(id) ON DELETE CASCADE,
     channel_id integer REFERENCES channels_channel(id) ON DELETE CASCADE,
     contact_id integer NOT NULL REFERENCES contacts_contact(id) ON DELETE CASCADE,

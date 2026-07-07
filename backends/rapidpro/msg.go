@@ -5,11 +5,8 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
-	"os"
 	"strings"
 	"time"
 
@@ -103,7 +100,7 @@ func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLo
 		// if we failed, log and write to spool
 		slog.Error("error writing to db", "error", err, "msg", m.UUID())
 
-		if err := courier.WriteToSpool(b.rt.Config.SpoolDir, "msgs", m); err != nil {
+		if err := b.msgSpool.Add([]*MsgIn{m}); err != nil {
 			return fmt.Errorf("error writing msg to spool: %w", err)
 		}
 		return nil
@@ -143,18 +140,26 @@ func writeMsgToDB(ctx context.Context, b *backend, m *MsgIn, clog *courier.Chann
 // Msg flusher for flushing failed writes
 //-----------------------------------------------------------------------------
 
-func (b *backend) flushMsgFile(filename string, contents []byte) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
+// flushMsgs is the flush function for the msg spool - it retries writing spooled msgs to the database, returning
+// those that fail again so they're respooled
+func (b *backend) flushMsgs(ctx context.Context, batch []*MsgIn) ([]*MsgIn, error) {
+	var failed []*MsgIn
 
-	m := &MsgIn{}
-	err := json.Unmarshal(contents, m)
-	if err != nil {
-		log.Printf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err)
-		os.Rename(filename, fmt.Sprintf("%s.error", filename))
-		return nil
+	for _, m := range batch {
+		ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+		err := b.flushMsg(ctx, m)
+		cancel()
+
+		if err != nil {
+			slog.Error("error flushing spooled msg", "error", err, "msg", m.UUID())
+			failed = append(failed, m)
+		}
 	}
 
+	return failed, nil
+}
+
+func (b *backend) flushMsg(ctx context.Context, m *MsgIn) error {
 	// look up our channel
 	channel, err := b.GetChannel(ctx, models.AnyChannelType, m.ChannelUUID_)
 	if err != nil {

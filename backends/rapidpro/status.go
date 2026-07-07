@@ -2,10 +2,8 @@ package rapidpro
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/nyaruka/courier/v26"
@@ -29,19 +27,20 @@ func newStatusUpdate(channel courier.Channel, uuid models.MsgUUID, externalID st
 	}
 }
 
-func (b *backend) flushStatusFile(filename string, contents []byte) error {
-	ctx := context.Background()
-	status := &models.StatusUpdate{}
-	err := json.Unmarshal(contents, status)
-	if err != nil {
-		slog.Info(fmt.Sprintf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err))
-		os.Rename(filename, fmt.Sprintf("%s.error", filename))
-		return nil
-	}
+// flushStatuses is the flush function for the status spool - it retries writing spooled status updates to the
+// database, returning those that fail again so they're respooled
+func (b *backend) flushStatuses(ctx context.Context, batch []*models.StatusUpdate) ([]*models.StatusUpdate, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
 
-	// try to flush to our db
-	_, err = b.writeStatusUpdatesToDB(ctx, []*models.StatusUpdate{status})
-	return err
+	unresolved, err := b.writeStatusUpdatesToDB(ctx, batch)
+	if err != nil {
+		return nil, err // no partial success from a batched update so retry the whole batch later
+	}
+	for _, s := range unresolved {
+		slog.Warn(fmt.Sprintf("unable to find message with channel_id=%d and external_identifier=%s", s.ChannelID_, s.ExternalIdentifier_))
+	}
+	return nil, nil
 }
 
 // StatusWriter handles batched writes of status updates to the database
@@ -50,7 +49,7 @@ type StatusWriter struct {
 }
 
 // NewStatusWriter creates a new status update writer
-func NewStatusWriter(b *backend, spoolDir string) *StatusWriter {
+func NewStatusWriter(b *backend) *StatusWriter {
 	return &StatusWriter{
 		Batcher: syncx.NewBatcher(func(batch []*models.StatusUpdate) {
 			// keep this comfortably under the shutdown watchdog since final flushes happen during shutdown -
@@ -58,20 +57,22 @@ func NewStatusWriter(b *backend, spoolDir string) *StatusWriter {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 
-			b.writeStatuseUpdates(ctx, spoolDir, batch)
+			b.writeStatuseUpdates(ctx, batch)
 
 		}, 1000, time.Millisecond*500, 1000),
 	}
 }
 
 // tries to write a batch of message statuses to the database and spools those that fail
-func (b *backend) writeStatuseUpdates(ctx context.Context, spoolDir string, batch []*models.StatusUpdate) {
+func (b *backend) writeStatuseUpdates(ctx context.Context, batch []*models.StatusUpdate) {
 	log := slog.With("comp", "status writer")
 
 	unresolved, err := b.writeStatusUpdatesToDB(ctx, batch)
 
 	// if we received an error, try again one at a time (in case it is one value hanging us up)
 	if err != nil {
+		var toSpool []*models.StatusUpdate
+
 		for _, s := range batch {
 			_, err = b.writeStatusUpdatesToDB(ctx, []*models.StatusUpdate{s})
 			if err != nil {
@@ -84,10 +85,13 @@ func (b *backend) writeStatuseUpdates(ctx context.Context, spoolDir string, batc
 
 				log.Error("error writing msg status", "error", err)
 
-				err := courier.WriteToSpool(spoolDir, "statuses", s)
-				if err != nil {
-					log.Error("error writing status to spool", "error", err) // just have to log and move on
-				}
+				toSpool = append(toSpool, s)
+			}
+		}
+
+		if len(toSpool) > 0 {
+			if err := b.statusSpool.Add(toSpool); err != nil {
+				log.Error("error writing statuses to spool", "error", err) // just have to log and move on
 			}
 		}
 	} else {
