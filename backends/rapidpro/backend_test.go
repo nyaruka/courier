@@ -1374,6 +1374,20 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 
 	// check we've cached 3 media lookups
 	assertvk.HLen(ts.T(), rc, fmt.Sprintf("{media-lookups}:%s", time.Now().In(time.UTC).Format("2006-01-02")), 3)
+
+	// without an S3 region (e.g. local dev using path-style URLs), stripping is a no-op: unqualified URLs
+	// still resolve and region-qualified URLs no longer match our media domain
+	origRegion := ts.b.rt.S3.Region
+	ts.b.rt.S3.Region = ""
+	defer func() { ts.b.rt.S3.Region = origRegion }()
+
+	media, err := ts.b.ResolveMedia(ctx, "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg")
+	ts.NoError(err)
+	ts.NotNil(media)
+
+	media, err = ts.b.ResolveMedia(ctx, "http://nyaruka.us-east-1.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg")
+	ts.NoError(err)
+	ts.Nil(media)
 }
 
 func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID models.ContactID) {
