@@ -11,7 +11,7 @@ import (
 )
 
 func TestHTTPProxied(t *testing.T) {
-	// NewRuntime resolves the AWS region from the SDK default chain and fails if none is set
+	// the default config uses virtual-host style S3 URLs, which require a resolvable region
 	t.Setenv("AWS_REGION", "us-east-1")
 
 	// without SendProxyURL configured, HTTPProxied is the same client as HTTP
