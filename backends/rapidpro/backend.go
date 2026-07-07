@@ -591,7 +591,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (*models.Me
 	mediaUUID := uuidRegex.FindString(u.Path)
 
 	// if hostname isn't our media domain, or path doesn't contain a UUID, don't try to resolve
-	if strings.Replace(u.Hostname(), fmt.Sprintf("%s.", b.rt.AWSRegion), "", -1) != b.rt.Config.MediaDomain || mediaUUID == "" {
+	if b.stripS3Region(u.Hostname()) != b.rt.Config.MediaDomain || mediaUUID == "" {
 		return nil, nil
 	}
 
@@ -620,11 +620,21 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (*models.Me
 	}
 
 	// if we found a media record but it doesn't match the URL, don't use it
-	if media == nil || (media.URL() != mediaUrl && media.URL() != strings.Replace(mediaUrl, fmt.Sprintf("%s.", b.rt.AWSRegion), "", -1)) {
+	if media == nil || (media.URL() != mediaUrl && media.URL() != b.stripS3Region(mediaUrl)) {
 		return nil, nil
 	}
 
 	return media, nil
+}
+
+// strips the region qualifier that S3 adds to virtual-host style URLs so they can be compared against our
+// unqualified media domain and URLs, e.g. foo.s3.us-east-1.amazonaws.com becomes foo.s3.amazonaws.com. No-op
+// when there's no region (e.g. local dev setups using path-style URLs).
+func (b *backend) stripS3Region(s string) string {
+	if b.rt.S3.Region == "" {
+		return s
+	}
+	return strings.Replace(s, fmt.Sprintf("%s.", b.rt.S3.Region), "", -1)
 }
 
 func (b *backend) reportMetrics(ctx context.Context) (int, error) {

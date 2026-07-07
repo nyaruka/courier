@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq" // postgres driver
@@ -27,11 +26,6 @@ type Runtime struct {
 	S3         *s3x.Service
 	CW         *cwatch.Service
 	Centrifugo *centrifugo.Service
-
-	// AWSRegion is the region resolved from the standard AWS SDK default chain. It's kept here so code
-	// that needs to reason about region-qualified S3 hostnames (e.g. media URL resolution) can use it
-	// without a courier-specific region config setting.
-	AWSRegion string
 
 	HTTP *http.Client
 
@@ -57,23 +51,8 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 
 	ctx := context.Background()
 
-	// resolve the AWS region from the standard SDK default chain (AWS_REGION / AWS_DEFAULT_REGION env
-	// vars, shared config, etc.) so we can reason about region-qualified S3 hostnames without a
-	// courier-specific region setting.
-	awsCfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error resolving AWS config: %w", err)
-	}
-	// the SDK doesn't error when no region can be resolved, it just leaves it empty, so fail fast here
-	// rather than let an empty region silently break region-qualified S3 hostname handling
-	if awsCfg.Region == "" {
-		return nil, fmt.Errorf("no AWS region resolved - set AWS_REGION or AWS_DEFAULT_REGION")
-	}
-	rt.AWSRegion = awsCfg.Region
-
-	// the AWS service constructors resolve credentials (and region) from the SDK default chain (env
-	// vars, instance/task IAM role, shared config/credentials files, etc.); S3 still needs the region
-	// explicitly for region-qualified virtual-host object URLs.
+	// the AWS service constructors resolve credentials and region from the SDK default chain (env
+	// vars, instance/task IAM role, shared config/credentials files, etc.)
 	rt.Dynamo, err = dynamo.NewClient(ctx, cfg.DynamoEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("error creating DynamoDB client: %w", err)
@@ -84,7 +63,7 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 		return nil, fmt.Errorf("error creating Valkey pool: %w", err)
 	}
 
-	rt.S3, err = s3x.NewService(ctx, rt.AWSRegion, cfg.S3Endpoint, cfg.S3PathStyle)
+	rt.S3, err = s3x.NewService(ctx, cfg.S3Endpoint, cfg.S3PathStyle)
 	if err != nil {
 		return nil, fmt.Errorf("error creating S3 service: %w", err)
 	}
