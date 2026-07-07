@@ -33,9 +33,12 @@ func (b *backend) flushStatuses(ctx context.Context, batch []*models.StatusUpdat
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
 
-	_, err := b.writeStatusUpdatesToDB(ctx, batch)
+	unresolved, err := b.writeStatusUpdatesToDB(ctx, batch)
 	if err != nil {
 		return nil, err // no partial success from a batched update so retry the whole batch later
+	}
+	for _, s := range unresolved {
+		slog.Warn(fmt.Sprintf("unable to find message with channel_id=%d and external_identifier=%s", s.ChannelID_, s.ExternalIdentifier_))
 	}
 	return nil, nil
 }

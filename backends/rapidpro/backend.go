@@ -683,7 +683,9 @@ func (b *backend) reportMetrics(ctx context.Context) (int, error) {
 		cwatch.Datum("QueuedMsgs", float64(bulkSize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "bulk")),
 		cwatch.Datum("QueuedMsgs", float64(prioritySize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "priority")),
 		cwatch.Datum("DynamoSpooledItems", float64(b.rt.Spool.Size()), cwtypes.StandardUnitCount),
-		cwatch.Datum("PostgresSpooledItems", float64(b.msgSpool.Size()+b.statusSpool.Size()+b.eventSpool.Size()), cwtypes.StandardUnitCount),
+		cwatch.Datum("PostgresSpooledItems", float64(b.msgSpool.Size()), cwtypes.StandardUnitCount, cwatch.Dimension("SpoolName", "msgs")),
+		cwatch.Datum("PostgresSpooledItems", float64(b.statusSpool.Size()), cwtypes.StandardUnitCount, cwatch.Dimension("SpoolName", "statuses")),
+		cwatch.Datum("PostgresSpooledItems", float64(b.eventSpool.Size()), cwtypes.StandardUnitCount, cwatch.Dimension("SpoolName", "events")),
 	)
 
 	if err := b.rt.CW.Send(ctx, metrics...); err != nil {

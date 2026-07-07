@@ -1405,6 +1405,62 @@ func (ts *BackendTestSuite) assertQueuedContactTask(contactID models.ContactID, 
 	ts.Equal(expectedBody, body["task"])
 }
 
+func (ts *BackendTestSuite) TestSpools() {
+	ctx := context.Background()
+	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
+	urn := urns.URN("tel:+12065552222")
+
+	// drain anything left over from previous runs so we can assert absolute sizes, and delete whatever those
+	// leftovers wrote so our row count assertions start from zero
+	ts.NoError(ts.b.msgSpool.Flush())
+	ts.NoError(ts.b.statusSpool.Flush())
+	ts.NoError(ts.b.eventSpool.Flush())
+	ts.b.rt.DB.MustExec(`DELETE FROM msgs_msg WHERE text = 'spool-flush-test'`)
+	ts.b.rt.DB.MustExec(`DELETE FROM channels_channelevent WHERE extra::jsonb->>'ref_id' = 'spool-flush'`)
+
+	// spool an incoming msg as if the database had been down when it was received
+	msg := ts.b.NewIncomingMsg(ctx, channel, urn, "spool-flush-test", "spool-ext1", clog).(*MsgIn)
+	ts.NoError(ts.b.msgSpool.Add([]*MsgIn{msg}))
+	ts.Equal(1, ts.b.msgSpool.Size())
+
+	// flushing should write it to the database and queue it for handling
+	ts.NoError(ts.b.msgSpool.Flush())
+	ts.Equal(0, ts.b.msgSpool.Size())
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'spool-flush-test'`).Returns(1)
+
+	// flushing a replayed copy of the same msg is deduped by its unique violation rather than failed
+	ts.NoError(ts.b.msgSpool.Add([]*MsgIn{msg}))
+	ts.NoError(ts.b.msgSpool.Flush())
+	ts.Equal(0, ts.b.msgSpool.Size())
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'spool-flush-test'`).Returns(1)
+
+	// spool a status update for an existing message
+	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q' WHERE id = $1`, 10001)
+	status := ts.b.NewStatusUpdate(channel, "0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusSent, clog).(*models.StatusUpdate)
+	ts.NoError(ts.b.statusSpool.Add([]*models.StatusUpdate{status}))
+	ts.Equal(1, ts.b.statusSpool.Size())
+
+	ts.NoError(ts.b.statusSpool.Flush())
+	ts.Equal(0, ts.b.statusSpool.Size())
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT status FROM msgs_msg WHERE id = 10001`).Returns("S")
+
+	// a status that can't be resolved to a message flushes without error (logged and dropped)
+	unresolved := ts.b.NewStatusUpdateByExternalID(channel, "no-such-ext-id", models.MsgStatusDelivered, clog).(*models.StatusUpdate)
+	ts.NoError(ts.b.statusSpool.Add([]*models.StatusUpdate{unresolved}))
+	ts.NoError(ts.b.statusSpool.Flush())
+	ts.Equal(0, ts.b.statusSpool.Size())
+
+	// spool a channel event
+	event := ts.b.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithExtra(map[string]string{"ref_id": "spool-flush"}).(*ChannelEvent)
+	ts.NoError(ts.b.eventSpool.Add([]*ChannelEvent{event}))
+	ts.Equal(1, ts.b.eventSpool.Size())
+
+	ts.NoError(ts.b.eventSpool.Flush())
+	ts.Equal(0, ts.b.eventSpool.Size())
+	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM channels_channelevent WHERE extra::jsonb->>'ref_id' = 'spool-flush'`).Returns(1)
+}
+
 func TestMsgSuite(t *testing.T) {
 	suite.Run(t, new(BackendTestSuite))
 }
