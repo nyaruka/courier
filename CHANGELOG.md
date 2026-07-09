@@ -1,3 +1,7 @@
+v26.3.7 (2026-07-09)
+-------------------------
+ * Update to latest gocommon
+
 v26.3.6 (2026-07-08)
 -------------------------
  * Update to gocommon 1.89.3 and use region from s3x.Service
