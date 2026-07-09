@@ -201,6 +201,10 @@ func contactForMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.Chan
 			if moved {
 				return contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 			}
+			// migrate the matched whatsapp phone URN onto the tel scheme so the phone number is stored as a tel URN
+			if err := flipWhatsAppPhoneToTel(ctx, b, m.OrgID_, alt); err != nil {
+				return nil, err
+			}
 			return contact, nil
 		}
 	}
@@ -250,4 +254,53 @@ func addContactURN(ctx context.Context, b *backend, channel *models.Channel, con
 
 	contact.URNID_ = contactURN.ID
 	return false, nil
+}
+
+// flipWhatsAppPhoneToTel migrates a WhatsApp phone URN (an all-digit whatsapp URN) onto the equivalent tel URN, in
+// place, so a phone number that predates BSUIDs and was stored as a whatsapp URN is moved onto the tel scheme once we
+// resolve a contact by it. It's a no-op if the URN isn't a whatsapp phone number or can't be parsed as one, or if the
+// equivalent tel URN already exists (on this or any other contact) - we don't steal or duplicate it, so the guard
+// covers the "no other matching tel URN on a different contact" case (and, conservatively, the same-contact case too).
+func flipWhatsAppPhoneToTel(ctx context.Context, b *backend, orgID models.OrgID, phoneURN urns.URN) error {
+	if phoneURN.Scheme() != urns.WhatsApp.Prefix || urns.IsWhatsAppBSUID(phoneURN) {
+		return nil
+	}
+
+	telURN, err := urns.ParsePhone("+"+phoneURN.Path(), "", false, false)
+	if err != nil {
+		return nil // not a parseable phone number, leave it on the whatsapp scheme
+	}
+
+	tx, err := b.rt.DB.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("error beginning transaction: %w", err)
+	}
+
+	// if the tel URN already exists (on any contact), don't steal or duplicate it - leave the whatsapp URN as-is
+	_, err = models.GetContactURNByIdentity(ctx, tx, orgID, telURN)
+	if err == nil {
+		tx.Rollback()
+		return nil
+	}
+	if err != sql.ErrNoRows {
+		tx.Rollback()
+		return fmt.Errorf("error looking up tel URN: %w", err)
+	}
+
+	// load the whatsapp phone URN we just matched and rewrite it in place onto the tel scheme
+	waURN, err := models.GetContactURNByIdentity(ctx, tx, orgID, phoneURN)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error getting whatsapp phone URN: %w", err)
+	}
+	waURN.Identity = string(telURN.Identity())
+	waURN.Scheme = telURN.Scheme()
+	waURN.Path = telURN.Path()
+
+	if err := models.UpdateContactURNFully(ctx, tx, waURN); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error flipping whatsapp phone URN to tel: %w", err)
+	}
+
+	return tx.Commit()
 }

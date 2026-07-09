@@ -204,7 +204,7 @@ UPDATE contacts_contacturn
 
 const sqlFullyUpdateURN = `
 UPDATE contacts_contacturn
-   SET channel_id = :channel_id, contact_id = :contact_id, identity = :identity, path = :path, display = :display, auth_tokens = :auth_tokens, priority = :priority
+   SET channel_id = :channel_id, contact_id = :contact_id, identity = :identity, scheme = :scheme, path = :path, display = :display, auth_tokens = :auth_tokens, priority = :priority
  WHERE id = :id`
 
 // UpdateContactURN updates the channel and contact on an existing URN
@@ -223,7 +223,7 @@ func UpdateContactURN(ctx context.Context, tx *sqlx.Tx, urn *ContactURN) error {
 	return err
 }
 
-// UpdateContactURNFully updates the identity, channel and contact on an existing URN
+// UpdateContactURNFully updates the identity, scheme, path, channel and contact on an existing URN
 func UpdateContactURNFully(ctx context.Context, tx *sqlx.Tx, urn *ContactURN) error {
 	// see https://github.com/vinovest/sqlx/issues/447
 	rows, err := tx.NamedQuery(sqlFullyUpdateURN, urn)

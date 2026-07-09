@@ -979,6 +979,9 @@ func (ts *BackendTestSuite) TestContactForMsg() {
 	ts.False(matched.IsNew_)
 	ts.Equal(existingByPhone.ID_, matched.ID_)
 	ts.Equal(existingByPhone.ID_, lookup("whatsapp:US.5555").ID_) // BSUID now resolves to the same contact
+	// the matched whatsapp phone URN was flipped to a tel URN in place
+	ts.Nil(lookup("whatsapp:12065559999"))                        // whatsapp phone URN no longer exists
+	ts.Equal(existingByPhone.ID_, lookup("tel:+12065559999").ID_) // now stored as a tel URN on the same contact
 
 	// existing contact already known by the BSUID: matched directly
 	matchedByBSUID, err := contactForMsg(ctx, ts.b, newBSUIDMsg("whatsapp:US.9876", "whatsapp:12065551234"), clog)
@@ -1004,6 +1007,20 @@ func (ts *BackendTestSuite) TestContactForMsg() {
 	ts.NoError(err)
 	ts.True(moved)
 	ts.Equal(bsuidOwner.ID_, lookup("whatsapp:US.7777").ID_) // BSUID still owned by its original contact
+
+	// the equivalent tel URN already belongs to a different contact: don't steal it, so the matched whatsapp phone
+	// URN is left as-is rather than flipped
+	telOwner, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, "tel:+12065558888", nil, "", true, clog)
+	ts.NoError(err)
+	waPhoneOwner, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, "whatsapp:12065558888", nil, "", true, clog)
+	ts.NoError(err)
+	ts.NotEqual(telOwner.ID_, waPhoneOwner.ID_)
+
+	notFlipped, err := contactForMsg(ctx, ts.b, newBSUIDMsg("whatsapp:US.8888", "whatsapp:12065558888"), clog)
+	ts.NoError(err)
+	ts.Equal(waPhoneOwner.ID_, notFlipped.ID_)                     // matched by the whatsapp phone URN
+	ts.Equal(waPhoneOwner.ID_, lookup("whatsapp:12065558888").ID_) // whatsapp phone URN was NOT flipped
+	ts.Equal(telOwner.ID_, lookup("tel:+12065558888").ID_)         // tel URN still on its original contact
 }
 
 func (ts *BackendTestSuite) TestWriteMsg() {
