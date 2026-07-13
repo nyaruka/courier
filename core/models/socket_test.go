@@ -71,6 +71,7 @@ func TestPublishStatusChanges(t *testing.T) {
 	var decoded map[string]any
 	require.NoError(t, json.Unmarshal(sent[0], &decoded))
 	assert.True(t, uuids.Is(decoded["uuid"].(string)))
+	assert.NotEqual(t, decoded["msg_uuid"], decoded["uuid"]) // event UUID is freshly generated
 	assert.Equal(t, "msg_status_changed", decoded["type"])
 	assert.Equal(t, "2025-11-10T16:14:30.123456789Z", decoded["created_on"])
 	assert.Equal(t, "0199df0f-9f82-7689-b02d-f34105991321", decoded["msg_uuid"])
