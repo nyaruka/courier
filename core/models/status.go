@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/uuids"
+	"github.com/nyaruka/goflow/core/events"
 	"github.com/nyaruka/null/v3"
 )
 
@@ -125,25 +126,9 @@ func (s *StatusChange) reason() string {
 	return ""
 }
 
-// msgStatusChangedEvent matches the JSON of goflow's msg_status_changed event - we don't import goflow so this has
-// to be kept in sync manually, but the shape is pinned by tests
-type msgStatusChangedEvent struct {
-	UUID      uuids.UUID `json:"uuid"`
-	Type      string     `json:"type"`
-	CreatedOn time.Time  `json:"created_on"`
-	MsgUUID   MsgUUID    `json:"msg_uuid"`
-	Status    string     `json:"status"`
-	Reason    string     `json:"reason,omitempty"`
-}
-
 // historyEvent renders this change as the msg_status_changed event published to the contact's history socket
-func (s *StatusChange) historyEvent() *msgStatusChangedEvent {
-	return &msgStatusChangedEvent{
-		UUID:      uuids.NewV7(),
-		Type:      "msg_status_changed",
-		CreatedOn: s.CreatedOn,
-		MsgUUID:   s.MsgUUID,
-		Status:    statusNames[s.MsgStatus],
-		Reason:    s.reason(),
-	}
+func (s *StatusChange) historyEvent() *events.MsgStatusChanged {
+	e := events.NewMsgStatusChanged(events.EventUUID(s.MsgUUID), statusNames[s.MsgStatus], s.reason())
+	e.CreatedOn_ = s.CreatedOn
+	return e
 }

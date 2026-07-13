@@ -19,6 +19,7 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/nyaruka/ezconf v0.6.1
 	github.com/nyaruka/gocommon v1.89.4
+	github.com/nyaruka/goflow v0.279.1
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/vkutil v0.21.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -29,7 +30,10 @@ require (
 	golang.org/x/oauth2 v0.36.0
 )
 
-require github.com/centrifugal/gocent/v3 v3.4.0 // indirect
+require (
+	github.com/blevesearch/segment v0.9.1 // indirect
+	github.com/centrifugal/gocent/v3 v3.4.0 // indirect
+)
 
 require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
