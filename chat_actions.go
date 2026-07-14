@@ -27,18 +27,17 @@ const (
 	// expressible on some platforms (elsewhere indicators can only expire on their own)
 	ChatActionTypingStopped ChatAction = "typing_stopped"
 
-	// ChatActionMarkRead shows the contact that their messages have been read - not yet implemented by any
-	// handler and will likely need a message reference added to the request for platforms that mark
-	// individual messages as read
+	// ChatActionMarkRead shows the contact that their messages have been read
 	ChatActionMarkRead ChatAction = "mark_read"
 )
 
-// ChatActionSend is a request to send a chat action to a contact. MsgUUID is the newest incoming message
-// and is required by channels whose actions reference a message, e.g. WhatsApp.
+// ChatActionSend is a request to send a chat action to a contact. MsgExternalID is the platform's own
+// identifier for the newest incoming message (as seen on msg_received events) and is required by channels
+// whose actions reference a message, e.g. WhatsApp.
 type ChatActionSend struct {
-	Action  ChatAction     `json:"action"             validate:"required,oneof=typing_started typing_stopped mark_read"`
-	URN     urns.URN       `json:"urn"                validate:"required"`
-	MsgUUID models.MsgUUID `json:"msg_uuid,omitempty" validate:"omitempty,uuid"`
+	Action        ChatAction `json:"action"                    validate:"required,oneof=typing_started typing_stopped mark_read"`
+	URN           urns.URN   `json:"urn"                       validate:"required"`
+	MsgExternalID string     `json:"msg_external_id,omitempty"`
 }
 
 type sendChatActionRequest struct {

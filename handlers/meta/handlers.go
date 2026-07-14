@@ -754,16 +754,8 @@ func (h *handler) ChatActions(courier.Channel) map[courier.ChatAction]time.Durat
 // acceptable because we only send one when a reply is being composed.
 // See https://developers.facebook.com/docs/whatsapp/cloud-api/typing-indicators
 func (h *handler) SendChatAction(ctx context.Context, ch courier.Channel, send *courier.ChatActionSend, clog *courier.ChannelLog) error {
-	if send.MsgUUID == "" {
-		return fmt.Errorf("%s action requires msg_uuid", send.Action)
-	}
-
-	wamid, err := h.Backend().GetMsgExternalIdentifier(ctx, ch, send.MsgUUID)
-	if err != nil {
-		return fmt.Errorf("error getting external identifier for msg %s: %w", send.MsgUUID, err)
-	}
-	if wamid == "" {
-		return fmt.Errorf("msg %s has no external identifier", send.MsgUUID)
+	if send.MsgExternalID == "" {
+		return fmt.Errorf("%s action requires msg_external_id", send.Action)
 	}
 
 	type typingIndicator struct {
@@ -774,7 +766,7 @@ func (h *handler) SendChatAction(ctx context.Context, ch courier.Channel, send *
 		Status           string           `json:"status"`
 		MessageID        string           `json:"message_id"`
 		TypingIndicator  *typingIndicator `json:"typing_indicator,omitempty"`
-	}{MessagingProduct: "whatsapp", Status: "read", MessageID: wamid}
+	}{MessagingProduct: "whatsapp", Status: "read", MessageID: send.MsgExternalID}
 
 	if send.Action == courier.ChatActionTypingStarted {
 		payload.TypingIndicator = &typingIndicator{Type: "text"}

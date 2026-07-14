@@ -972,7 +972,6 @@ func TestWhatsAppSendChatAction(t *testing.T) {
 	channel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WAC", "12345_ID", "", []string{urns.WhatsApp.Prefix}, map[string]any{models.ConfigAuthToken: "a123"})
 
 	mb := test.NewMockBackend()
-	mb.SetMsgExternalIdentifier("0199df10-9519-7fe2-a29c-c890d1713673", "wamid.HBgMNTU3")
 
 	cfg := runtime.NewDefaultConfig()
 	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
@@ -994,33 +993,31 @@ func TestWhatsAppSendChatAction(t *testing.T) {
 	assert.Equal(t, map[courier.ChatAction]time.Duration{courier.ChatActionTypingStarted: 20 * time.Second, courier.ChatActionMarkRead: 0}, h.ChatActions(channel))
 	assert.Nil(t, newHandler("FBA", "Facebook").(*handler).ChatActions(channel))
 
+	send := &courier.ChatActionSend{Action: courier.ChatActionTypingStarted, URN: "whatsapp:5511987654321", MsgExternalID: "wamid.HBgMNTU3"}
+
 	// a typing indicator is sent as a mark-as-read call with a typing_indicator field
 	clog := courier.NewChannelLogForChatActionSend(channel, nil)
-	err := h.SendChatAction(context.Background(), channel, &courier.ChatActionSend{Action: courier.ChatActionTypingStarted, URN: "whatsapp:5511987654321", MsgUUID: "0199df10-9519-7fe2-a29c-c890d1713673"}, clog)
+	err := h.SendChatAction(context.Background(), channel, send, clog)
 	assert.NoError(t, err)
 	assert.Len(t, clog.HttpLogs, 1)
 	assert.Equal(t, "https://graph.facebook.com/12345_ID/messages", clog.HttpLogs[0].URL)
 	assert.Contains(t, clog.HttpLogs[0].Request, `{"messaging_product":"whatsapp","status":"read","message_id":"wamid.HBgMNTU3","typing_indicator":{"type":"text"}}`)
 
 	// a read receipt is the same call without the typing_indicator field
-	err = h.SendChatAction(context.Background(), channel, &courier.ChatActionSend{Action: courier.ChatActionMarkRead, URN: "whatsapp:5511987654321", MsgUUID: "0199df10-9519-7fe2-a29c-c890d1713673"}, clog)
+	err = h.SendChatAction(context.Background(), channel, &courier.ChatActionSend{Action: courier.ChatActionMarkRead, URN: "whatsapp:5511987654321", MsgExternalID: "wamid.HBgMNTU3"}, clog)
 	assert.NoError(t, err)
 	assert.Len(t, clog.HttpLogs, 2)
 	assert.Contains(t, clog.HttpLogs[1].Request, `{"messaging_product":"whatsapp","status":"read","message_id":"wamid.HBgMNTU3"}`)
 
 	// an error response is a response error
-	err = h.SendChatAction(context.Background(), channel, &courier.ChatActionSend{Action: courier.ChatActionTypingStarted, URN: "whatsapp:5511987654321", MsgUUID: "0199df10-9519-7fe2-a29c-c890d1713673"}, clog)
+	err = h.SendChatAction(context.Background(), channel, send, clog)
 	assert.Equal(t, courier.ErrResponseStatus, err)
 
 	// as is a connection error
-	err = h.SendChatAction(context.Background(), channel, &courier.ChatActionSend{Action: courier.ChatActionTypingStarted, URN: "whatsapp:5511987654321", MsgUUID: "0199df10-9519-7fe2-a29c-c890d1713673"}, clog)
+	err = h.SendChatAction(context.Background(), channel, send, clog)
 	assert.Equal(t, courier.ErrConnectionFailed, err)
 
-	// a request without a msg_uuid can't be sent
+	// a request without a msg external ID can't be sent
 	err = h.SendChatAction(context.Background(), channel, &courier.ChatActionSend{Action: courier.ChatActionTypingStarted, URN: "whatsapp:5511987654321"}, clog)
-	assert.ErrorContains(t, err, "requires msg_uuid")
-
-	// as can't one whose msg we can't find
-	err = h.SendChatAction(context.Background(), channel, &courier.ChatActionSend{Action: courier.ChatActionTypingStarted, URN: "whatsapp:5511987654321", MsgUUID: "0199df10-9519-7fe2-a29c-c890d1713674"}, clog)
-	assert.ErrorContains(t, err, "error getting external identifier")
+	assert.ErrorContains(t, err, "requires msg_external_id")
 }

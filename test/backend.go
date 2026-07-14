@@ -41,7 +41,6 @@ type MockBackend struct {
 	writtenChannelLogs   []*courier.ChannelLog
 	savedAttachments     []*SavedAttachment
 	storageError         error
-	msgExternalIDs       map[models.MsgUUID]string
 
 	lastContactName string
 	urnAuthTokens   map[urns.URN]map[string]string
@@ -87,28 +86,6 @@ func NewMockBackend() *MockBackend {
 // DeleteMsgByExternalID delete a message we receive an event that it should be deleted
 func (mb *MockBackend) DeleteMsgByExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
 	return nil
-}
-
-// SetMsgExternalIdentifier sets the external identifier that will be returned for the given msg UUID
-func (mb *MockBackend) SetMsgExternalIdentifier(uuid models.MsgUUID, externalID string) {
-	mb.mutex.Lock()
-	defer mb.mutex.Unlock()
-
-	if mb.msgExternalIDs == nil {
-		mb.msgExternalIDs = make(map[models.MsgUUID]string)
-	}
-	mb.msgExternalIDs[uuid] = externalID
-}
-
-// GetMsgExternalIdentifier returns the platform's identifier for the given incoming message
-func (mb *MockBackend) GetMsgExternalIdentifier(ctx context.Context, channel courier.Channel, uuid models.MsgUUID) (string, error) {
-	mb.mutex.RLock()
-	defer mb.mutex.RUnlock()
-
-	if extID, found := mb.msgExternalIDs[uuid]; found {
-		return extID, nil
-	}
-	return "", fmt.Errorf("no incoming message with UUID %s", uuid)
 }
 
 // NewIncomingMsg creates a new message from the given params

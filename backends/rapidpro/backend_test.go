@@ -77,29 +77,6 @@ func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *models.Chann
 	return channel.(*models.Channel)
 }
 
-func (ts *BackendTestSuite) TestGetMsgExternalIdentifier() {
-	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	fbaChannel := ts.getChannel("FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
-	ctx := context.Background()
-
-	// incoming message on this channel
-	extID, err := ts.b.GetMsgExternalIdentifier(ctx, knChannel, "0199df10-9519-7fe2-a29c-c890d1713673")
-	ts.NoError(err)
-	ts.Equal("ext2", extID)
-
-	// outgoing messages aren't returned
-	_, err = ts.b.GetMsgExternalIdentifier(ctx, knChannel, "0199df0f-9f82-7689-b02d-f34105991321")
-	ts.ErrorContains(err, "no incoming message")
-
-	// nor incoming messages on a different channel
-	_, err = ts.b.GetMsgExternalIdentifier(ctx, fbaChannel, "0199df10-9519-7fe2-a29c-c890d1713673")
-	ts.ErrorContains(err, "no incoming message")
-
-	// nor messages that don't exist
-	_, err = ts.b.GetMsgExternalIdentifier(ctx, knChannel, "0199df0f-0000-7000-8000-000000000000")
-	ts.ErrorContains(err, "no incoming message")
-}
-
 func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ctx := context.Background()
