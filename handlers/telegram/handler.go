@@ -289,13 +289,13 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 }
 
 // SendChatAction sends a typing indicator to the contact as a chat action, see https://core.telegram.org/bots/api#sendchataction
-func (h *handler) SendChatAction(ctx context.Context, ch courier.Channel, action courier.ChatAction, urn urns.URN, clog *courier.ChannelLog) error {
+func (h *handler) SendChatAction(ctx context.Context, ch courier.Channel, send *courier.ChatActionSend, clog *courier.ChannelLog) error {
 	authToken := ch.StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
 		return courier.ErrChannelConfig
 	}
 
-	form := url.Values{"chat_id": []string{urn.Path()}, "action": []string{"typing"}}
+	form := url.Values{"chat_id": []string{send.URN.Path()}, "action": []string{"typing"}}
 
 	sendURL := fmt.Sprintf("%s/bot%s/sendChatAction", apiURL, authToken)
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))

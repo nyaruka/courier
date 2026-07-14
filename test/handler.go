@@ -78,7 +78,7 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier
 }
 
 // SendChatAction sends the given chat action, logging any HTTP calls or errors
-func (h *mockHandler) SendChatAction(ctx context.Context, ch courier.Channel, action courier.ChatAction, urn urns.URN, clog *courier.ChannelLog) error {
+func (h *mockHandler) SendChatAction(ctx context.Context, ch courier.Channel, send *courier.ChatActionSend, clog *courier.ChannelLog) error {
 	req, _ := httpx.NewRequest(ctx, "POST", "http://mock.com/action", nil, nil)
 	trace, resp, err := utils.TraceHTTP(h.rt.HTTP, req, 1024)
 	if trace != nil {

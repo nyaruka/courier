@@ -32,7 +32,7 @@ type ChannelHandler interface {
 	// should be resent to sustain it (zero if it never needs resending). Support can vary between channels
 	// of the same type, e.g. by config.
 	ChatActions(Channel) map[ChatAction]time.Duration
-	SendChatAction(context.Context, Channel, ChatAction, urns.URN, *ChannelLog) error
+	SendChatAction(context.Context, Channel, *ChatActionSend, *ChannelLog) error
 
 	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []StatusUpdate) error
 	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []MsgIn) error

@@ -28,6 +28,9 @@ type Backend interface {
 	// DeleteMsgByExternalID deletes a message that has been deleted on the channel side
 	DeleteMsgByExternalID(ctx context.Context, channel Channel, externalID string) error
 
+	// GetMsgExternalIdentifier returns the platform's identifier for the given incoming message
+	GetMsgExternalIdentifier(ctx context.Context, channel Channel, uuid models.MsgUUID) (string, error)
+
 	// NewIncomingMsg creates a new message from the given params
 	NewIncomingMsg(context.Context, Channel, urns.URN, string, string, *ChannelLog) MsgIn
 

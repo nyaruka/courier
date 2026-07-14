@@ -994,8 +994,10 @@ func TestSendChatAction(t *testing.T) {
 		map[string]any{models.ConfigAuthToken: "auth_token"},
 	)
 
+	send := &courier.ChatActionSend{Action: courier.ChatActionTypingStarted, URN: "telegram:12345"}
+
 	clog := courier.NewChannelLogForChatActionSend(ch, nil)
-	err := h.SendChatAction(context.Background(), ch, courier.ChatActionTypingStarted, "telegram:12345", clog)
+	err := h.SendChatAction(context.Background(), ch, send, clog)
 	assert.NoError(t, err)
 	assert.Len(t, clog.HttpLogs, 1)
 	assert.Equal(t, "https://api.telegram.org/botauth_token/sendChatAction", clog.HttpLogs[0].URL)
@@ -1006,15 +1008,15 @@ func TestSendChatAction(t *testing.T) {
 	assert.Equal(t, map[courier.ChatAction]time.Duration{courier.ChatActionTypingStarted: 4 * time.Second}, h.ChatActions(ch))
 
 	// non-ok response is a response error
-	err = h.SendChatAction(context.Background(), ch, courier.ChatActionTypingStarted, "telegram:12345", clog)
+	err = h.SendChatAction(context.Background(), ch, send, clog)
 	assert.Equal(t, courier.ErrResponseStatus, err)
 
 	// as is a connection error
-	err = h.SendChatAction(context.Background(), ch, courier.ChatActionTypingStarted, "telegram:12345", clog)
+	err = h.SendChatAction(context.Background(), ch, send, clog)
 	assert.Equal(t, courier.ErrConnectionFailed, err)
 
 	// channel without an auth token can't send
 	noAuth := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US", []string{urns.Telegram.Prefix}, map[string]any{})
-	err = h.SendChatAction(context.Background(), noAuth, courier.ChatActionTypingStarted, "telegram:12345", clog)
+	err = h.SendChatAction(context.Background(), noAuth, send, clog)
 	assert.Equal(t, courier.ErrChannelConfig, err)
 }

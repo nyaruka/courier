@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/gocommon/urns"
 )
 
 var defaultRedactConfigKeys = []string{models.ConfigAuthToken, models.ConfigAPIKey, models.ConfigSecret, models.ConfigPassword, models.ConfigSendAuthorization}
@@ -105,8 +104,8 @@ func (h *BaseHandler) ChatActions(courier.Channel) map[courier.ChatAction]time.D
 }
 
 // SendChatAction is a stub for handlers that don't support chat actions and shouldn't be reachable
-// because ChatActionSupport declares no support
-func (h *BaseHandler) SendChatAction(ctx context.Context, ch courier.Channel, action courier.ChatAction, urn urns.URN, clog *courier.ChannelLog) error {
+// because ChatActions declares no support
+func (h *BaseHandler) SendChatAction(ctx context.Context, ch courier.Channel, send *courier.ChatActionSend, clog *courier.ChannelLog) error {
 	return fmt.Errorf("chat actions not supported by %s handler", h.channelType)
 }
 

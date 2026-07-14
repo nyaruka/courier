@@ -735,6 +735,77 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 	return nil
 }
 
+// WhatsApp displays typing indicators for up to 25 seconds or until a reply is sent
+var wacChatActions = map[courier.ChatAction]time.Duration{
+	courier.ChatActionTypingStarted: 20 * time.Second,
+	courier.ChatActionMarkRead:      0,
+}
+
+// ChatActions declares support for typing indicators and read receipts on WhatsApp channels
+func (h *handler) ChatActions(courier.Channel) map[courier.ChatAction]time.Duration {
+	if h.ChannelType() == "WAC" {
+		return wacChatActions
+	}
+	return nil
+}
+
+// SendChatAction sends typing indicators and read receipts, which are both variations of marking the
+// referenced incoming message as read - a typing indicator always also marks messages as read, which is
+// acceptable because we only send one when a reply is being composed.
+// See https://developers.facebook.com/docs/whatsapp/cloud-api/typing-indicators
+func (h *handler) SendChatAction(ctx context.Context, ch courier.Channel, send *courier.ChatActionSend, clog *courier.ChannelLog) error {
+	if send.MsgUUID == "" {
+		return fmt.Errorf("%s action requires msg_uuid", send.Action)
+	}
+
+	wamid, err := h.Backend().GetMsgExternalIdentifier(ctx, ch, send.MsgUUID)
+	if err != nil {
+		return fmt.Errorf("error getting external identifier for msg %s: %w", send.MsgUUID, err)
+	}
+	if wamid == "" {
+		return fmt.Errorf("msg %s has no external identifier", send.MsgUUID)
+	}
+
+	type typingIndicator struct {
+		Type string `json:"type"`
+	}
+	payload := &struct {
+		MessagingProduct string           `json:"messaging_product"`
+		Status           string           `json:"status"`
+		MessageID        string           `json:"message_id"`
+		TypingIndicator  *typingIndicator `json:"typing_indicator,omitempty"`
+	}{MessagingProduct: "whatsapp", Status: "read", MessageID: wamid}
+
+	if send.Action == courier.ChatActionTypingStarted {
+		payload.TypingIndicator = &typingIndicator{Type: "text"}
+	}
+
+	base, _ := url.Parse(graphURL)
+	path, _ := url.Parse(fmt.Sprintf("/%s/messages", ch.Address()))
+
+	req, err := http.NewRequest(http.MethodPost, base.ResolveReference(path).String(), bytes.NewReader(jsonx.MustMarshal(payload)))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", h.Runtime().Config.WhatsappAdminSystemUserToken))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, respBody, err := h.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	}
+
+	response := &struct {
+		Success bool `json:"success"`
+	}{}
+	if err := json.Unmarshal(respBody, response); err != nil || resp.StatusCode/100 != 2 || !response.Success {
+		return courier.ErrResponseStatus
+	}
+
+	return nil
+}
+
 func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *courier.ChannelLog) (string, error) {
 	jsonBody := jsonx.MustMarshal(payload)
 

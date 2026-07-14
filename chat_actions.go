@@ -33,11 +33,18 @@ const (
 	ChatActionMarkRead ChatAction = "mark_read"
 )
 
+// ChatActionSend is a request to send a chat action to a contact. MsgUUID is the newest incoming message
+// and is required by channels whose actions reference a message, e.g. WhatsApp.
+type ChatActionSend struct {
+	Action  ChatAction     `json:"action"             validate:"required,oneof=typing_started typing_stopped mark_read"`
+	URN     urns.URN       `json:"urn"                validate:"required"`
+	MsgUUID models.MsgUUID `json:"msg_uuid,omitempty" validate:"omitempty,uuid"`
+}
+
 type sendChatActionRequest struct {
-	Action      ChatAction         `json:"action"       validate:"required,oneof=typing_started typing_stopped mark_read"`
+	ChatActionSend
 	ChannelType models.ChannelType `json:"channel_type" validate:"required"`
 	ChannelUUID models.ChannelUUID `json:"channel_uuid" validate:"required,uuid"`
-	URN         urns.URN           `json:"urn"          validate:"required"`
 }
 
 type sendChatActionResponse struct {
@@ -78,7 +85,7 @@ func sendChatAction(ctx context.Context, s *Server, r *http.Request) (*sendChatA
 
 	clog := NewChannelLogForChatActionSend(ch, handler.RedactValues(ch))
 
-	err = handler.SendChatAction(ctx, ch, sa.Action, sa.URN, clog)
+	err = handler.SendChatAction(ctx, ch, &sa.ChatActionSend, clog)
 
 	// chat actions are frequent and boring when they succeed so we only write logs for errors
 	clog.End()

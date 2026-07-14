@@ -314,6 +314,20 @@ func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.UR
 }
 
 // DeleteMsgByExternalID resolves a message external id and queues a task to mailroom to delete it
+// GetMsgExternalIdentifier returns the platform's identifier for the given incoming message
+func (b *backend) GetMsgExternalIdentifier(ctx context.Context, channel courier.Channel, uuid models.MsgUUID) (string, error) {
+	ch := channel.(*models.Channel)
+
+	var extID string
+	err := b.rt.DB.GetContext(ctx, &extID, `SELECT COALESCE(external_identifier, '') FROM msgs_msg WHERE uuid = $1 AND channel_id = $2 AND direction = 'I'`, uuid, ch.ID())
+	if err == sql.ErrNoRows {
+		return "", fmt.Errorf("no incoming message with UUID %s on channel %s", uuid, ch.UUID())
+	} else if err != nil {
+		return "", fmt.Errorf("error querying msg external identifier: %w", err)
+	}
+	return extID, nil
+}
+
 func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
 	ch := channel.(*models.Channel)
 	row := b.rt.DB.QueryRowContext(ctx, `SELECT uuid, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_identifier = $2 AND direction = 'I'`, ch.ID(), externalID)
