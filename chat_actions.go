@@ -71,7 +71,7 @@ func sendChatAction(ctx context.Context, s *Server, r *http.Request) (*sendChatA
 	if handler == nil {
 		return &sendChatActionResponse{Supported: false}, nil
 	}
-	interval, supported := handler.ChatActions()[sa.Action]
+	interval, supported := handler.ChatActions(ch)[sa.Action]
 	if !supported {
 		return &sendChatActionResponse{Supported: false}, nil
 	}
