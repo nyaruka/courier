@@ -100,7 +100,7 @@ func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
 }
 
 // ChatActions declares no support for any chat action - handlers that can send them should override
-func (h *BaseHandler) ChatActions() map[courier.ChatAction]time.Duration {
+func (h *BaseHandler) ChatActions(courier.Channel) map[courier.ChatAction]time.Duration {
 	return nil
 }
 

@@ -324,7 +324,7 @@ func (h *handler) SendChatAction(ctx context.Context, ch courier.Channel, action
 var chatActions = map[courier.ChatAction]time.Duration{courier.ChatActionTypingStarted: 4 * time.Second}
 
 // ChatActions declares support for typing indicators
-func (h *handler) ChatActions() map[courier.ChatAction]time.Duration {
+func (h *handler) ChatActions(courier.Channel) map[courier.ChatAction]time.Duration {
 	return chatActions
 }
 

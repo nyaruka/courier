@@ -119,7 +119,7 @@ func (s *Server) Start() error {
 	internalRouter.Get("/", s.handleHealth("internal"))
 	internalRouter.Post("/ci/attachment/fetch", s.tokenAuthRequired(s.handleFetchAttachment))
 	internalRouter.Post("/ci/chat_action/send", s.tokenAuthRequired(s.handleSendChatAction))
-	internalRouter.Get("/ci/channel_types", s.tokenAuthRequired(s.handleChannelTypes))
+	internalRouter.Get("/ci/channel/info", s.tokenAuthRequired(s.handleChannelInfo))
 
 	s.internetServer = &http.Server{
 		Addr:         internetAddr,
@@ -376,10 +376,19 @@ func (s *Server) handleSendChatAction(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonx.MustMarshal(resp))
 }
 
-func (s *Server) handleChannelTypes(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleChannelInfo(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	defer cancel()
+
+	resp, err := getChannelInfo(ctx, s, r)
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonx.MustMarshal(channelTypes()))
+	w.Write(jsonx.MustMarshal(resp))
 }
 
 // handle404 returns a 404 handler. The internal listener logs at Error level (sentry-routed via slog-sentry)
