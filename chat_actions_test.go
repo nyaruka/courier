@@ -59,10 +59,15 @@ func TestSendChatAction(t *testing.T) {
 	assert.Equal(t, 400, statusCode)
 	assert.Contains(t, string(respBody), `Field validation for 'Action' failed on the 'required' tag`)
 
-	// try to submit with an unsupported action
+	// try to submit with an invalid action
 	statusCode, respBody = submit(`{"action": "dancing", "channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "urn": "tel:+250788123123"}`, "sesame")
 	assert.Equal(t, 400, statusCode)
-	assert.Contains(t, string(respBody), `Field validation for 'Action' failed on the 'eq' tag`)
+	assert.Contains(t, string(respBody), `Field validation for 'Action' failed on the 'oneof' tag`)
+
+	// a valid action the channel's handler doesn't declare support for isn't an error but isn't supported
+	statusCode, respBody = submit(`{"action": "typing_stopped", "channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "urn": "tel:+250788123123"}`, "sesame")
+	assert.Equal(t, 200, statusCode)
+	assert.JSONEq(t, `{"supported": false}`, string(respBody))
 
 	// try to submit with non-existent channel
 	statusCode, respBody = submit(`{"action": "typing_started", "channel_uuid": "c25aab53-f23a-46c9-8ae3-1af850ad9fd9", "channel_type": "VV", "urn": "tel:+250788123123"}`, "sesame")
@@ -93,4 +98,31 @@ func TestSendChatAction(t *testing.T) {
 	assert.Equal(t, courier.ChannelLogTypeChatActionSend, clog.Type)
 	assert.Len(t, clog.HttpLogs, 1)
 	assert.Equal(t, "http://mock.com/action", clog.HttpLogs[0].URL)
+}
+
+func TestChannelTypes(t *testing.T) {
+	cfg := runtime.NewDefaultConfig()
+	cfg.AuthToken = "sesame"
+	cfg.InternetPort = 8180
+	cfg.InternalPort = 8181
+
+	mb := test.NewMockBackend()
+	server := courier.NewServer(runtime.NewTestRuntime(cfg), mb)
+	require.NoError(t, server.Start())
+	defer server.Stop()
+
+	req, _ := http.NewRequest("GET", "http://localhost:8181/ci/channel_types", nil)
+	trace, _, err := utils.TraceHTTP(http.DefaultClient, req, 0)
+	require.NoError(t, err)
+	assert.Equal(t, 401, trace.Response.StatusCode)
+
+	req, _ = http.NewRequest("GET", "http://localhost:8181/ci/channel_types", nil)
+	req.Header.Set("Authorization", "Bearer sesame")
+	trace, _, err = utils.TraceHTTP(http.DefaultClient, req, 0)
+	require.NoError(t, err)
+	assert.Equal(t, 200, trace.Response.StatusCode)
+
+	// only the mock handler is registered in this test binary, and channel types with nothing to declare
+	// are omitted entirely
+	assert.JSONEq(t, `{"MCK": {"chat_actions": {"typing_started": 10}}}`, string(trace.ResponseBody))
 }

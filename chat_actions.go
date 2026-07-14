@@ -18,12 +18,23 @@ import (
 // sends these are fire and forget - they aren't queued and there are no statuses or retries.
 type ChatAction string
 
-// ChatActionTypingStarted shows a typing indicator to the contact. It expires on the platform's own
-// schedule so should be resent at the interval the handler declares via ChatActionSupport to sustain it.
-const ChatActionTypingStarted ChatAction = "typing_started"
+const (
+	// ChatActionTypingStarted shows a typing indicator to the contact. It expires on the platform's own
+	// schedule so should be resent at the interval the handler declares via ChatActions to sustain it.
+	ChatActionTypingStarted ChatAction = "typing_started"
+
+	// ChatActionTypingStopped clears a typing indicator - not yet implemented by any handler and only
+	// expressible on some platforms (elsewhere indicators can only expire on their own)
+	ChatActionTypingStopped ChatAction = "typing_stopped"
+
+	// ChatActionMarkRead shows the contact that their messages have been read - not yet implemented by any
+	// handler and will likely need a message reference added to the request for platforms that mark
+	// individual messages as read
+	ChatActionMarkRead ChatAction = "mark_read"
+)
 
 type sendChatActionRequest struct {
-	Action      ChatAction         `json:"action"       validate:"required,eq=typing_started"`
+	Action      ChatAction         `json:"action"       validate:"required,oneof=typing_started typing_stopped mark_read"`
 	ChannelType models.ChannelType `json:"channel_type" validate:"required"`
 	ChannelUUID models.ChannelUUID `json:"channel_uuid" validate:"required,uuid"`
 	URN         urns.URN           `json:"urn"          validate:"required"`
