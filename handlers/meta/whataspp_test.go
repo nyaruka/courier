@@ -963,3 +963,61 @@ func newServerWithWAC(backend courier.Backend) *courier.Server {
 	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
 	return courier.NewServer(runtime.NewTestRuntime(cfg), backend)
 }
+
+func TestWhatsAppSendChatAction(t *testing.T) {
+	// other tests repoint graphURL at mock servers, so pin it for this test
+	defer func(u string) { graphURL = u }(graphURL)
+	graphURL = "https://graph.facebook.com/v22.0/"
+
+	channel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WAC", "12345_ID", "", []string{urns.WhatsApp.Prefix}, map[string]any{models.ConfigAuthToken: "a123"})
+
+	mb := test.NewMockBackend()
+
+	cfg := runtime.NewDefaultConfig()
+	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
+	s := courier.NewServer(runtime.NewTestRuntime(cfg), mb)
+
+	h := newHandler("WAC", "WhatsApp Cloud").(*handler)
+	h.Initialize(s)
+
+	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+		"https://graph.facebook.com/12345_ID/messages": {
+			httpx.NewMockResponse(200, nil, []byte(`{"success": true}`)),
+			httpx.NewMockResponse(200, nil, []byte(`{"success": true}`)),
+			httpx.NewMockResponse(400, nil, []byte(`{"error": {"message": "(#131009) Parameter value is not valid", "code": 131009}}`)),
+			httpx.MockConnectionError,
+		},
+	})
+
+	// typing indicators and read receipts are supported on WhatsApp channels, but not Facebook/Instagram
+	assert.Equal(t, map[courier.ChatAction]time.Duration{courier.ChatActionTypingStarted: 20 * time.Second, courier.ChatActionMarkRead: 0}, h.ChatActions(channel))
+	assert.Nil(t, newHandler("FBA", "Facebook").(*handler).ChatActions(channel))
+
+	send := &courier.ChatActionSend{Action: courier.ChatActionTypingStarted, URN: "whatsapp:5511987654321", MsgExternalID: "wamid.HBgMNTU3"}
+
+	// a typing indicator is sent as a mark-as-read call with a typing_indicator field
+	clog := courier.NewChannelLogForChatActionSend(channel, nil)
+	err := h.SendChatAction(context.Background(), channel, send, clog)
+	assert.NoError(t, err)
+	assert.Len(t, clog.HttpLogs, 1)
+	assert.Equal(t, "https://graph.facebook.com/12345_ID/messages", clog.HttpLogs[0].URL)
+	assert.Contains(t, clog.HttpLogs[0].Request, `{"messaging_product":"whatsapp","status":"read","message_id":"wamid.HBgMNTU3","typing_indicator":{"type":"text"}}`)
+
+	// a read receipt is the same call without the typing_indicator field
+	err = h.SendChatAction(context.Background(), channel, &courier.ChatActionSend{Action: courier.ChatActionMarkRead, URN: "whatsapp:5511987654321", MsgExternalID: "wamid.HBgMNTU3"}, clog)
+	assert.NoError(t, err)
+	assert.Len(t, clog.HttpLogs, 2)
+	assert.Contains(t, clog.HttpLogs[1].Request, `{"messaging_product":"whatsapp","status":"read","message_id":"wamid.HBgMNTU3"}`)
+
+	// an error response is a response error
+	err = h.SendChatAction(context.Background(), channel, send, clog)
+	assert.Equal(t, courier.ErrResponseStatus, err)
+
+	// as is a connection error
+	err = h.SendChatAction(context.Background(), channel, send, clog)
+	assert.Equal(t, courier.ErrConnectionFailed, err)
+
+	// a request without a msg external ID can't be sent
+	err = h.SendChatAction(context.Background(), channel, &courier.ChatActionSend{Action: courier.ChatActionTypingStarted, URN: "whatsapp:5511987654321"}, clog)
+	assert.ErrorContains(t, err, "requires msg_external_id")
+}

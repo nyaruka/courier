@@ -288,6 +288,46 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	return nil
 }
 
+// SendChatAction sends a typing indicator to the contact as a chat action, see https://core.telegram.org/bots/api#sendchataction
+func (h *handler) SendChatAction(ctx context.Context, ch courier.Channel, send *courier.ChatActionSend, clog *courier.ChannelLog) error {
+	authToken := ch.StringConfigForKey(models.ConfigAuthToken, "")
+	if authToken == "" {
+		return courier.ErrChannelConfig
+	}
+
+	form := url.Values{"chat_id": []string{send.URN.Path()}, "action": []string{"typing"}}
+
+	sendURL := fmt.Sprintf("%s/bot%s/sendChatAction", apiURL, authToken)
+	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, respBody, err := h.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	}
+
+	response := &struct {
+		Ok bool `json:"ok"`
+	}{}
+	if err := json.Unmarshal(respBody, response); err != nil || resp.StatusCode/100 != 2 || !response.Ok {
+		return courier.ErrResponseStatus
+	}
+
+	return nil
+}
+
+// Telegram displays typing indicators for 5 seconds or until the bot sends a message, so they need
+// resending more often than that to sustain
+var chatActions = map[courier.ChatAction]time.Duration{courier.ChatActionTypingStarted: 4 * time.Second}
+
+// ChatActions declares support for typing indicators
+func (h *handler) ChatActions(courier.Channel) map[courier.ChatAction]time.Duration {
+	return chatActions
+}
+
 type fileResponse struct {
 	Ok          bool   `json:"ok"`
 	ErrorCode   int    `json:"error_code"`

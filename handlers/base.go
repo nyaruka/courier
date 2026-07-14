@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26"
@@ -94,6 +96,17 @@ func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
 		}
 	}
 	return vals
+}
+
+// ChatActions declares no support for any chat action - handlers that can send them should override
+func (h *BaseHandler) ChatActions(courier.Channel) map[courier.ChatAction]time.Duration {
+	return nil
+}
+
+// SendChatAction is a stub for handlers that don't support chat actions and shouldn't be reachable
+// because ChatActions declares no support
+func (h *BaseHandler) SendChatAction(ctx context.Context, ch courier.Channel, send *courier.ChatActionSend, clog *courier.ChannelLog) error {
+	return fmt.Errorf("chat actions not supported by %s handler", h.channelType)
 }
 
 // GetChannel returns the channel

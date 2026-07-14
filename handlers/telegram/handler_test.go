@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -12,10 +13,12 @@ import (
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/stretchr/testify/assert"
 )
 
 var helloMsg = `{
@@ -965,4 +968,55 @@ func TestOutgoing(t *testing.T) {
 	)
 
 	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"auth_token"}, nil)
+}
+
+func TestSendChatAction(t *testing.T) {
+	// other tests repoint apiURL at mock servers, so pin it for this test
+	defer func(u string) { apiURL = u }(apiURL)
+	apiURL = "https://api.telegram.org"
+
+	mb := test.NewMockBackend()
+	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
+
+	h := newHandler().(*handler)
+	h.Initialize(s)
+
+	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+		"https://api.telegram.org/botauth_token/sendChatAction": {
+			httpx.NewMockResponse(200, nil, []byte(`{"ok": true, "result": true}`)),
+			httpx.NewMockResponse(400, nil, []byte(`{"ok": false, "error_code": 400, "description": "Bad Request"}`)),
+			httpx.MockConnectionError,
+		},
+	})
+
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US",
+		[]string{urns.Telegram.Prefix},
+		map[string]any{models.ConfigAuthToken: "auth_token"},
+	)
+
+	send := &courier.ChatActionSend{Action: courier.ChatActionTypingStarted, URN: "telegram:12345"}
+
+	clog := courier.NewChannelLogForChatActionSend(ch, nil)
+	err := h.SendChatAction(context.Background(), ch, send, clog)
+	assert.NoError(t, err)
+	assert.Len(t, clog.HttpLogs, 1)
+	assert.Equal(t, "https://api.telegram.org/botauth_token/sendChatAction", clog.HttpLogs[0].URL)
+	assert.Contains(t, clog.HttpLogs[0].Request, "chat_id=12345")
+	assert.Contains(t, clog.HttpLogs[0].Request, "action=typing")
+
+	// typing indicators display for ~5 seconds so should be resent more often than that to sustain
+	assert.Equal(t, map[courier.ChatAction]time.Duration{courier.ChatActionTypingStarted: 4 * time.Second}, h.ChatActions(ch))
+
+	// non-ok response is a response error
+	err = h.SendChatAction(context.Background(), ch, send, clog)
+	assert.Equal(t, courier.ErrResponseStatus, err)
+
+	// as is a connection error
+	err = h.SendChatAction(context.Background(), ch, send, clog)
+	assert.Equal(t, courier.ErrConnectionFailed, err)
+
+	// channel without an auth token can't send
+	noAuth := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US", []string{urns.Telegram.Prefix}, map[string]any{})
+	err = h.SendChatAction(context.Background(), noAuth, send, clog)
+	assert.Equal(t, courier.ErrChannelConfig, err)
 }
