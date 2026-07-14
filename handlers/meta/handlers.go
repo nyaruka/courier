@@ -735,18 +735,18 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 	return nil
 }
 
-// WhatsApp displays typing indicators for up to 25 seconds or until a reply is sent
-var wacChatActions = map[courier.ChatAction]time.Duration{
-	courier.ChatActionTypingStarted: 20 * time.Second,
-	courier.ChatActionMarkRead:      0,
+// WhatsApp displays typing indicators for up to 25 seconds or until a reply is sent. Messenger and
+// Instagram do support typing indicators but via sender actions - not yet implemented.
+var chatActions = map[models.ChannelType]map[courier.ChatAction]time.Duration{
+	"WAC": {
+		courier.ChatActionTypingStarted: 20 * time.Second,
+		courier.ChatActionMarkRead:      0,
+	},
 }
 
 // ChatActions declares support for typing indicators and read receipts on WhatsApp channels
 func (h *handler) ChatActions(courier.Channel) map[courier.ChatAction]time.Duration {
-	if h.ChannelType() == "WAC" {
-		return wacChatActions
-	}
-	return nil
+	return chatActions[h.ChannelType()]
 }
 
 // SendChatAction sends typing indicators and read receipts, which are both variations of marking the
