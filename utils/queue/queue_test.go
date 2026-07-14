@@ -59,8 +59,9 @@ func TestLua(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// get ourselves aligned with a second boundary
-	delay := time.Second*2 - time.Duration(time.Now().UnixNano()%int64(time.Second))
+	// align ourselves to mid-second so that our operations don't race the dethrottler (which fires just after
+	// each second boundary) or second boundaries themselves
+	delay := time.Second*2 - time.Duration(time.Now().UnixNano()%int64(time.Second)) + time.Millisecond*500
 	time.Sleep(delay)
 
 	// mark chan1 as rate limited
@@ -189,8 +190,9 @@ func TestLua(t *testing.T) {
 	err = queue.PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":34}]`, queue.HighPriority)
 	assert.NoError(t, err)
 
+	// 3 seconds so it's still set when we check at ~2 seconds but reliably expired when we check at ~5 seconds
 	rc.Do("SET", "rate_limit:chan1", "engaged")
-	rc.Do("EXPIRE", "rate_limit:chan1", 5)
+	rc.Do("EXPIRE", "rate_limit:chan1", 3)
 
 	// we have the rate limit set
 	q, value, err = queue.PopFromQueue(rc, "msgs")
@@ -213,10 +215,17 @@ func TestLua(t *testing.T) {
 	// but if we wait for the rate limit to expire
 	time.Sleep(3 * time.Second)
 
-	// next should be 34
-	q, value, err = queue.PopFromQueue(rc, "msgs")
-	assert.NoError(t, err)
-	assert.NotEqual(t, q, queue.EmptyQueue)
+	// next should be 34.. tho we poll because we can't rely on the dethrottler having moved the queue back
+	// to active at an exact time
+	for deadline := time.Now().Add(5 * time.Second); ; {
+		q, value, err = queue.PopFromQueue(rc, "msgs")
+		assert.NoError(t, err)
+		if value != "" || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	assert.Equal(t, queue.WorkerToken("msgs:chan1|10"), q)
 	assert.Equal(t, `{"id":34}`, value)
 
 	// nothing should be left
