@@ -1,3 +1,8 @@
+v26.3.8 (2026-07-14)
+-------------------------
+ * Update to latest goflow
+ * Use goflow's msg_status_changed event instead of hand-rolled struct
+
 v26.3.7 (2026-07-09)
 -------------------------
  * Update to latest gocommon
