@@ -1,5 +1,12 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+    tags: ["**"]
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 jobs:
   test:
     name: Test
@@ -32,8 +39,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Get Go cache paths
+        id: go-cache-paths
+        run: |
+          echo "gomodcache=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
+          echo "gocache=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+          echo "goversion=$(go env GOVERSION)" >> $GITHUB_OUTPUT
+
+      - name: Cache Go modules and build cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ${{ steps.go-cache-paths.outputs.gomodcache }}
+            ${{ steps.go-cache-paths.outputs.gocache }}
+          key: go-${{ steps.go-cache-paths.outputs.goversion }}-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            go-${{ steps.go-cache-paths.outputs.goversion }}-
+            go-
+
+      - name: Compile tests
+        # pre-compiles all test binaries with default parallelism since -p=1 in the real run serializes
+        # compilation as well as test execution
+        run: |
+          go test -run '^$' -cover ./...
+
       - name: Run tests
-        run: go test -p=1 -coverprofile=coverage.text -covermode=atomic ./...
+        run: go test -p=1 -cover ./...
 
   release:
     name: Release
