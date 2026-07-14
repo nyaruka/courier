@@ -125,26 +125,26 @@ func TestChannelInfo(t *testing.T) {
 	}
 
 	// no auth
-	statusCode, respBody := fetch("?type=MCK&uuid=e4bb1578-29da-4fa5-a214-9da19dd24230", "")
+	statusCode, respBody := fetch("?uuid=e4bb1578-29da-4fa5-a214-9da19dd24230", "")
 	assert.Equal(t, 401, statusCode)
 
-	// missing params
+	// missing uuid
 	statusCode, respBody = fetch("", "sesame")
 	assert.Equal(t, 400, statusCode)
-	assert.Contains(t, string(respBody), "missing type or uuid parameter")
+	assert.Contains(t, string(respBody), "missing uuid parameter")
 
 	// non-existent channel
-	statusCode, respBody = fetch("?type=VV&uuid=c25aab53-f23a-46c9-8ae3-1af850ad9fd9", "sesame")
+	statusCode, respBody = fetch("?uuid=c25aab53-f23a-46c9-8ae3-1af850ad9fd9", "sesame")
 	assert.Equal(t, 400, statusCode)
 	assert.Contains(t, string(respBody), "channel not found")
 
 	// channel whose handler declares chat action support
-	statusCode, respBody = fetch("?type=MCK&uuid=e4bb1578-29da-4fa5-a214-9da19dd24230", "sesame")
+	statusCode, respBody = fetch("?uuid=e4bb1578-29da-4fa5-a214-9da19dd24230", "sesame")
 	assert.Equal(t, 200, statusCode)
 	assert.JSONEq(t, `{"chat_actions": {"typing_started": 10}}`, string(respBody))
 
 	// channel with no handler has no capabilities to declare
-	statusCode, respBody = fetch("?type=XX&uuid=53e5aafa-8155-449d-9009-fcb30d54bd26", "sesame")
+	statusCode, respBody = fetch("?uuid=53e5aafa-8155-449d-9009-fcb30d54bd26", "sesame")
 	assert.Equal(t, 200, statusCode)
 	assert.JSONEq(t, `{}`, string(respBody))
 }

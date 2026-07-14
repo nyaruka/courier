@@ -18,13 +18,12 @@ type channelInfo struct {
 }
 
 func getChannelInfo(ctx context.Context, s *Server, r *http.Request) (*channelInfo, error) {
-	typ := models.ChannelType(r.URL.Query().Get("type"))
 	uuid := models.ChannelUUID(r.URL.Query().Get("uuid"))
-	if typ == "" || uuid == "" {
-		return nil, fmt.Errorf("missing type or uuid parameter")
+	if uuid == "" {
+		return nil, fmt.Errorf("missing uuid parameter")
 	}
 
-	ch, err := s.backend.GetChannel(ctx, typ, uuid)
+	ch, err := s.backend.GetChannel(ctx, models.AnyChannelType, uuid)
 	if err != nil {
 		return nil, fmt.Errorf("error getting channel: %w", err)
 	}
