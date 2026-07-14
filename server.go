@@ -119,7 +119,7 @@ func (s *Server) Start() error {
 	internalRouter.Get("/", s.handleHealth("internal"))
 	internalRouter.Post("/ci/attachment/fetch", s.tokenAuthRequired(s.handleFetchAttachment))
 	internalRouter.Post("/ci/chat_action/send", s.tokenAuthRequired(s.handleSendChatAction))
-	internalRouter.Get("/ci/channel/info", s.tokenAuthRequired(s.handleChannelInfo))
+	internalRouter.Get("/ci/channel/info/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", s.tokenAuthRequired(s.handleChannelInfo))
 
 	s.internetServer = &http.Server{
 		Addr:         internetAddr,
