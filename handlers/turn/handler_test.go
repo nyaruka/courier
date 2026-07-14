@@ -1254,9 +1254,9 @@ func TestWhatsAppOutgoing(t *testing.T) {
 		map[string]any{models.ConfigAuthToken: "a123", "base_url": "https://example.org", "fb_namespace": "waba_namespace"})
 
 	RunOutgoingTestCases(t, channel, newHandler(), defaultSendTestCases, []string{"a123"}, nil)
-	failedMediaCache.Flush()
+	failedMediaCache.Clear()
 	RunOutgoingTestCases(t, channel, newHandler(), mediaCacheSendTestCases, []string{"a123"}, nil)
-	failedMediaCache.Flush()
+	failedMediaCache.Clear()
 }
 
 func TestGetSupportedLanguage(t *testing.T) {

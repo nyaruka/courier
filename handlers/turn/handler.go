@@ -23,12 +23,12 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/handlers/meta/whatsapp"
 	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/gocommon/cache"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/vkutil"
-	"github.com/patrickmn/go-cache"
 )
 
 var (
@@ -37,13 +37,14 @@ var (
 	configNamespace = "fb_namespace"
 
 	mediaCacheKeyPattern = "turn_whatsapp_media_%s"
-	failedMediaCache     *cache.Cache
+	failedMediaCache     *cache.Local[string, bool]
 )
 
 func init() {
 	courier.RegisterHandler(newHandler())
 
-	failedMediaCache = cache.New(15*time.Minute, 15*time.Minute)
+	failedMediaCache = cache.NewLocal[string, bool](nil, 15*time.Minute)
+	failedMediaCache.Start()
 }
 
 type handler struct {
@@ -805,10 +806,9 @@ func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL
 
 	// check in failure cache
 	failKey := fmt.Sprintf("%s-%s", msg.Channel().UUID(), mediaURL)
-	found, _ := failedMediaCache.Get(failKey)
 
-	// any non nil value means we cached a failure, don't try again until our cache expires
-	if found != nil {
+	// if we cached a failure, don't try again until our cache expires
+	if failedMediaCache.Get(failKey) {
 		return "", nil
 	}
 
@@ -820,7 +820,7 @@ func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
-		failedMediaCache.Set(failKey, true, cache.DefaultExpiration)
+		failedMediaCache.Set(failKey, true)
 		return "", nil
 	}
 
@@ -842,7 +842,7 @@ func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL
 
 	resp, respBody, err = h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
-		failedMediaCache.Set(failKey, true, cache.DefaultExpiration)
+		failedMediaCache.Set(failKey, true)
 		if err != nil {
 			return "", fmt.Errorf("error uploading media to whatsapp: %w", err)
 		} else {

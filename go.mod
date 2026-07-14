@@ -22,7 +22,6 @@ require (
 	github.com/nyaruka/goflow v0.280.0
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/vkutil v0.21.0
-	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/samber/slog-multi v1.8.0
 	github.com/samber/slog-sentry/v2 v2.11.0
 	github.com/stretchr/testify v1.11.1
