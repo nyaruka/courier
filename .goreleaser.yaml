@@ -3,7 +3,6 @@ builds:
   - main: ./cmd/courier/main.go
     binary: courier
     goos:
-      - darwin
       - linux
     goarch:
       - amd64
