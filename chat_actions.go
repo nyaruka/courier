@@ -44,6 +44,9 @@ type sendChatActionResponse struct {
 	Interval  int  `json:"interval,omitempty"` // seconds until the action should be resent to sustain it
 }
 
+// Handles a chat action send request. Callers should treat supported=false as "stop sending for this
+// conversation" and any error response as "stop sending until a new typing session starts" - a failed send
+// means no indicator is showing, and this bounds how many error logs a broken channel can generate.
 func sendChatAction(ctx context.Context, b Backend, r *http.Request) (*sendChatActionResponse, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
