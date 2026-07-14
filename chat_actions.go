@@ -11,7 +11,6 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -41,9 +40,8 @@ type sendChatActionRequest struct {
 }
 
 type sendChatActionResponse struct {
-	Supported bool       `json:"supported"`
-	Interval  int        `json:"interval,omitempty"` // seconds until the action should be resent to sustain it
-	LogUUID   clogs.UUID `json:"log_uuid,omitempty"`
+	Supported bool `json:"supported"`
+	Interval  int  `json:"interval,omitempty"` // seconds until the action should be resent to sustain it
 }
 
 func sendChatAction(ctx context.Context, b Backend, r *http.Request) (*sendChatActionResponse, error) {
@@ -75,10 +73,12 @@ func sendChatAction(ctx context.Context, b Backend, r *http.Request) (*sendChatA
 
 	err = sender.SendChatAction(ctx, ch, sa.Action, sa.URN, clog)
 
-	// try to write channel log even if we have an error
+	// chat actions are frequent and boring when they succeed so we only write logs for errors
 	clog.End()
-	if logErr := b.WriteChannelLog(ctx, clog); logErr != nil {
-		slog.Error("error writing log", "error", logErr)
+	if clog.IsError() {
+		if logErr := b.WriteChannelLog(ctx, clog); logErr != nil {
+			slog.Error("error writing log", "error", logErr)
+		}
 	}
 
 	if err != nil {
@@ -88,6 +88,5 @@ func sendChatAction(ctx context.Context, b Backend, r *http.Request) (*sendChatA
 	return &sendChatActionResponse{
 		Supported: true,
 		Interval:  int(sender.ChatActionInterval(sa.Action) / time.Second),
-		LogUUID:   clog.UUID,
 	}, nil
 }

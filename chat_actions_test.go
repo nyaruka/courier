@@ -4,24 +4,18 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSendChatAction(t *testing.T) {
-	defer uuids.SetGenerator(uuids.DefaultGenerator)
-	uuids.SetGenerator(uuids.NewSeededGenerator(1234, dates.NewSequentialNow(time.Date(2024, 9, 11, 14, 33, 0, 0, time.UTC), time.Second)))
-
 	cfg := runtime.NewDefaultConfig()
 	cfg.AuthToken = "sesame"
 	cfg.InternetPort = 8180
@@ -84,17 +78,19 @@ func TestSendChatAction(t *testing.T) {
 	// submit for a channel that can
 	statusCode, respBody = submit(`{"action": "typing_started", "channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "urn": "tel:+250788123123"}`, "sesame")
 	assert.Equal(t, 200, statusCode)
-	assert.JSONEq(t, `{"supported": true, "interval": 10, "log_uuid": "0191e180-7d60-7000-aded-7d8b151cbd5b"}`, string(respBody))
+	assert.JSONEq(t, `{"supported": true, "interval": 10}`, string(respBody))
+
+	// successful sends don't write channel logs
+	assert.Len(t, mb.WrittenChannelLogs(), 0)
+
+	// a send error returns an error response and writes a channel log
+	statusCode, respBody = submit(`{"action": "typing_started", "channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "urn": "tel:+250788123123"}`, "sesame")
+	assert.Equal(t, 400, statusCode)
+	assert.Contains(t, string(respBody), `channel connection failed`)
 
 	assert.Len(t, mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
 	assert.Equal(t, courier.ChannelLogTypeChatActionSend, clog.Type)
 	assert.Len(t, clog.HttpLogs, 1)
 	assert.Equal(t, "http://mock.com/action", clog.HttpLogs[0].URL)
-
-	// a send error still writes a channel log but returns an error response
-	statusCode, respBody = submit(`{"action": "typing_started", "channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "urn": "tel:+250788123123"}`, "sesame")
-	assert.Equal(t, 400, statusCode)
-	assert.Contains(t, string(respBody), `channel connection failed`)
-	assert.Len(t, mb.WrittenChannelLogs(), 2)
 }
