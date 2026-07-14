@@ -28,9 +28,9 @@ type ChannelHandler interface {
 	GetChannel(context.Context, *http.Request) (Channel, error)
 	Send(context.Context, MsgOut, *SendResult, *ChannelLog) error
 
-	// ChatActionSupport returns whether this handler can send the given chat action, and if so, how often
-	// it should be resent to sustain it (zero if it never needs resending)
-	ChatActionSupport(ChatAction) (bool, time.Duration)
+	// ChatActions returns the chat actions this handler can send, mapped to how often each should be
+	// resent to sustain it (zero if it never needs resending)
+	ChatActions() map[ChatAction]time.Duration
 	SendChatAction(context.Context, Channel, ChatAction, urns.URN, *ChannelLog) error
 
 	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []StatusUpdate) error

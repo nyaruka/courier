@@ -1003,9 +1003,7 @@ func TestSendChatAction(t *testing.T) {
 	assert.Contains(t, clog.HttpLogs[0].Request, "action=typing")
 
 	// typing indicators display for ~5 seconds so should be resent more often than that to sustain
-	supported, interval := h.ChatActionSupport(courier.ChatActionTypingStarted)
-	assert.True(t, supported)
-	assert.Equal(t, 4*time.Second, interval)
+	assert.Equal(t, map[courier.ChatAction]time.Duration{courier.ChatActionTypingStarted: 4 * time.Second}, h.ChatActions())
 
 	// non-ok response is a response error
 	err = h.SendChatAction(context.Background(), ch, courier.ChatActionTypingStarted, "telegram:12345", clog)

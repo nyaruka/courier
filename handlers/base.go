@@ -99,9 +99,9 @@ func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
 	return vals
 }
 
-// ChatActionSupport declares no support for any chat action - handlers that can send them should override
-func (h *BaseHandler) ChatActionSupport(courier.ChatAction) (bool, time.Duration) {
-	return false, 0
+// ChatActions declares no support for any chat action - handlers that can send them should override
+func (h *BaseHandler) ChatActions() map[courier.ChatAction]time.Duration {
+	return nil
 }
 
 // SendChatAction is a stub for handlers that don't support chat actions and shouldn't be reachable

@@ -91,12 +91,9 @@ func (h *mockHandler) SendChatAction(ctx context.Context, ch courier.Channel, ac
 	return nil
 }
 
-// ChatActionSupport declares support for typing indicators with a 10 second resend interval
-func (h *mockHandler) ChatActionSupport(action courier.ChatAction) (bool, time.Duration) {
-	if action == courier.ChatActionTypingStarted {
-		return true, 10 * time.Second
-	}
-	return false, 0
+// ChatActions declares support for typing indicators with a 10 second resend interval
+func (h *mockHandler) ChatActions() map[courier.ChatAction]time.Duration {
+	return map[courier.ChatAction]time.Duration{courier.ChatActionTypingStarted: 10 * time.Second}
 }
 
 func (h *mockHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.StatusUpdate) error {
