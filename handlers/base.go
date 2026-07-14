@@ -2,14 +2,17 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var defaultRedactConfigKeys = []string{models.ConfigAuthToken, models.ConfigAPIKey, models.ConfigSecret, models.ConfigPassword, models.ConfigSendAuthorization}
@@ -94,6 +97,17 @@ func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
 		}
 	}
 	return vals
+}
+
+// ChatActionSupport declares no support for any chat action - handlers that can send them should override
+func (h *BaseHandler) ChatActionSupport(courier.ChatAction) (bool, time.Duration) {
+	return false, 0
+}
+
+// SendChatAction is a stub for handlers that don't support chat actions and shouldn't be reachable
+// because ChatActionSupport declares no support
+func (h *BaseHandler) SendChatAction(ctx context.Context, ch courier.Channel, action courier.ChatAction, urn urns.URN, clog *courier.ChannelLog) error {
+	return fmt.Errorf("chat actions not supported by %s handler", h.channelType)
 }
 
 // GetChannel returns the channel

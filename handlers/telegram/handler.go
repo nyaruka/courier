@@ -319,13 +319,14 @@ func (h *handler) SendChatAction(ctx context.Context, ch courier.Channel, action
 	return nil
 }
 
-// ChatActionInterval returns the interval for resending chat actions - Telegram displays typing indicators
-// for 5 seconds or until the bot sends a message
-func (h *handler) ChatActionInterval(courier.ChatAction) time.Duration {
-	return 4 * time.Second
+// ChatActionSupport declares support for typing indicators, which Telegram displays for 5 seconds or
+// until the bot sends a message, so they need resending more often than that to sustain
+func (h *handler) ChatActionSupport(action courier.ChatAction) (bool, time.Duration) {
+	if action == courier.ChatActionTypingStarted {
+		return true, 4 * time.Second
+	}
+	return false, 0
 }
-
-var _ courier.ChatActionSender = (*handler)(nil)
 
 type fileResponse struct {
 	Ok          bool   `json:"ok"`

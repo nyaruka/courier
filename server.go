@@ -363,7 +363,7 @@ func (s *Server) handleSendChatAction(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	resp, err := sendChatAction(ctx, s.backend, r)
+	resp, err := sendChatAction(ctx, s, r)
 	if err != nil {
 		slog.Error("error sending chat action", "error", err)
 		WriteError(w, http.StatusBadRequest, err)

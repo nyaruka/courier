@@ -19,18 +19,8 @@ import (
 type ChatAction string
 
 // ChatActionTypingStarted shows a typing indicator to the contact. It expires on the platform's own
-// schedule so should be resent every ChatActionInterval to sustain it.
+// schedule so should be resent at the interval the handler declares via ChatActionSupport to sustain it.
 const ChatActionTypingStarted ChatAction = "typing_started"
-
-// ChatActionSender is the interface handlers should satisfy if they can send chat actions to contacts.
-type ChatActionSender interface {
-	// SendChatAction sends the given action to the given URN
-	SendChatAction(context.Context, Channel, ChatAction, urns.URN, *ChannelLog) error
-
-	// ChatActionInterval returns how often the given action should be resent to sustain it - i.e. the
-	// platform's display TTL minus a safety margin - or zero if it doesn't need resending
-	ChatActionInterval(ChatAction) time.Duration
-}
 
 type sendChatActionRequest struct {
 	Action      ChatAction         `json:"action"       validate:"required,eq=typing_started"`
@@ -47,7 +37,7 @@ type sendChatActionResponse struct {
 // Handles a chat action send request. Callers should treat supported=false as "stop sending for this
 // conversation" and any error response as "stop sending until a new typing session starts" - a failed send
 // means no indicator is showing, and this bounds how many error logs a broken channel can generate.
-func sendChatAction(ctx context.Context, b Backend, r *http.Request) (*sendChatActionResponse, error) {
+func sendChatAction(ctx context.Context, s *Server, r *http.Request) (*sendChatActionResponse, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading request body: %w", err)
@@ -61,25 +51,28 @@ func sendChatAction(ctx context.Context, b Backend, r *http.Request) (*sendChatA
 		return nil, err
 	}
 
-	ch, err := b.GetChannel(ctx, sa.ChannelType, sa.ChannelUUID)
+	ch, err := s.backend.GetChannel(ctx, sa.ChannelType, sa.ChannelUUID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting channel: %w", err)
 	}
 
-	handler := GetHandler(ch.ChannelType())
-	sender, canSend := handler.(ChatActionSender)
-	if !canSend {
+	handler := s.GetHandler(ch)
+	if handler == nil {
+		return &sendChatActionResponse{Supported: false}, nil
+	}
+	supported, interval := handler.ChatActionSupport(sa.Action)
+	if !supported {
 		return &sendChatActionResponse{Supported: false}, nil
 	}
 
 	clog := NewChannelLogForChatActionSend(ch, handler.RedactValues(ch))
 
-	err = sender.SendChatAction(ctx, ch, sa.Action, sa.URN, clog)
+	err = handler.SendChatAction(ctx, ch, sa.Action, sa.URN, clog)
 
 	// chat actions are frequent and boring when they succeed so we only write logs for errors
 	clog.End()
 	if clog.IsError() {
-		if logErr := b.WriteChannelLog(ctx, clog); logErr != nil {
+		if logErr := s.backend.WriteChannelLog(ctx, clog); logErr != nil {
 			slog.Error("error writing log", "error", logErr)
 		}
 	}
@@ -90,6 +83,6 @@ func sendChatAction(ctx context.Context, b Backend, r *http.Request) (*sendChatA
 
 	return &sendChatActionResponse{
 		Supported: true,
-		Interval:  int(sender.ChatActionInterval(sa.Action) / time.Second),
+		Interval:  int(interval / time.Second),
 	}, nil
 }

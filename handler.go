@@ -3,6 +3,7 @@ package courier
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -26,6 +27,11 @@ type ChannelHandler interface {
 	RedactValues(Channel) []string
 	GetChannel(context.Context, *http.Request) (Channel, error)
 	Send(context.Context, MsgOut, *SendResult, *ChannelLog) error
+
+	// ChatActionSupport returns whether this handler can send the given chat action, and if so, how often
+	// it should be resent to sustain it (zero if it never needs resending)
+	ChatActionSupport(ChatAction) (bool, time.Duration)
+	SendChatAction(context.Context, Channel, ChatAction, urns.URN, *ChannelLog) error
 
 	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []StatusUpdate) error
 	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []MsgIn) error
