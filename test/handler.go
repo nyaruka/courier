@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
@@ -75,6 +76,27 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier
 
 	return nil
 }
+
+// SendChatAction sends the given chat action, logging any HTTP calls or errors
+func (h *mockHandler) SendChatAction(ctx context.Context, ch courier.Channel, action courier.ChatAction, urn urns.URN, clog *courier.ChannelLog) error {
+	req, _ := httpx.NewRequest(ctx, "POST", "http://mock.com/action", nil, nil)
+	trace, resp, err := utils.TraceHTTP(h.rt.HTTP, req, 1024)
+	if trace != nil {
+		clog.HTTP(trace)
+	}
+
+	if err != nil || resp.StatusCode/100 != 2 {
+		return courier.ErrConnectionFailed
+	}
+	return nil
+}
+
+// ChatActionInterval returns the interval for resending chat actions
+func (h *mockHandler) ChatActionInterval(courier.ChatAction) time.Duration {
+	return 10 * time.Second
+}
+
+var _ courier.ChatActionSender = (*mockHandler)(nil)
 
 func (h *mockHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.StatusUpdate) error {
 	return courier.WriteStatusSuccess(w, statuses)
