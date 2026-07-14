@@ -1,3 +1,9 @@
+v26.3.9 (2026-07-14)
+-------------------------
+ * Add support for sending chat actions (typing indicators, read receipts) via new internal endpoint, implemented for Telegram and WhatsApp Cloud
+ * Add internal endpoint to get channel info such as supported chat actions
+ * Replace unmaintained patrickmn/go-cache with gocommon's cache.Local
+
 v26.3.8 (2026-07-14)
 -------------------------
  * Update to latest goflow
