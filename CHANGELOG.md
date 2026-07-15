@@ -1,3 +1,8 @@
+v26.3.10 (2026-07-15)
+-------------------------
+ * Throttle sustained chat actions to their declared interval so callers don't need to know per-channel cadences
+ * Stop building darwin release binaries
+
 v26.3.9 (2026-07-14)
 -------------------------
  * Add support for sending chat actions (typing indicators, read receipts) via new internal endpoint, implemented for Telegram and WhatsApp Cloud
