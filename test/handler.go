@@ -13,6 +13,7 @@ import (
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/core/events"
 )
 
 func init() {
@@ -77,8 +78,8 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier
 	return nil
 }
 
-// SendChatAction sends the given chat action, logging any HTTP calls or errors
-func (h *mockHandler) SendChatAction(ctx context.Context, ch courier.Channel, send *courier.ChatActionSend, clog *courier.ChannelLog) error {
+// RelayEvent relays the given event, logging any HTTP calls or errors
+func (h *mockHandler) RelayEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
 	req, _ := httpx.NewRequest(ctx, "POST", "http://mock.com/action", nil, nil)
 	trace, resp, err := utils.TraceHTTP(h.rt.HTTP, req, 1024)
 	if trace != nil {
@@ -91,9 +92,9 @@ func (h *mockHandler) SendChatAction(ctx context.Context, ch courier.Channel, se
 	return nil
 }
 
-// ChatActions declares support for typing indicators with a 10 second resend interval
-func (h *mockHandler) ChatActions(courier.Channel) map[courier.ChatAction]time.Duration {
-	return map[courier.ChatAction]time.Duration{courier.ChatActionTypingStarted: 10 * time.Second}
+// RelayableEvents declares support for typing indicators with a 10 second resend interval
+func (h *mockHandler) RelayableEvents(courier.Channel) map[string]time.Duration {
+	return map[string]time.Duration{events.TypeTypingStarted: 10 * time.Second}
 }
 
 func (h *mockHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.StatusUpdate) error {

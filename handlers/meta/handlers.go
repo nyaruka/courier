@@ -25,6 +25,7 @@ import (
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/core/events"
 )
 
 // Endpoints we hit
@@ -737,40 +738,37 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 
 // WhatsApp displays typing indicators for up to 25 seconds or until a reply is sent. Messenger and
 // Instagram do support typing indicators but via sender actions - not yet implemented.
-var chatActions = map[models.ChannelType]map[courier.ChatAction]time.Duration{
-	"WAC": {
-		courier.ChatActionTypingStarted: 20 * time.Second,
-		courier.ChatActionMarkRead:      0,
-	},
+var relayableEvents = map[models.ChannelType]map[string]time.Duration{
+	"WAC": {events.TypeTypingStarted: 20 * time.Second},
 }
 
-// ChatActions declares support for typing indicators and read receipts on WhatsApp channels
-func (h *handler) ChatActions(courier.Channel) map[courier.ChatAction]time.Duration {
-	return chatActions[h.ChannelType()]
+// RelayableEvents declares support for typing indicators on WhatsApp channels
+func (h *handler) RelayableEvents(courier.Channel) map[string]time.Duration {
+	return relayableEvents[h.ChannelType()]
 }
 
-// SendChatAction sends typing indicators and read receipts, which are both variations of marking the
-// referenced incoming message as read - a typing indicator always also marks messages as read, which is
-// acceptable because we only send one when a reply is being composed.
+// RelayEvent relays a typing started event as a typing indicator, which WhatsApp implements as marking
+// the referenced incoming message as read with a typing_indicator field - so it also marks messages as
+// read, which is acceptable because we only send one when a reply is being composed.
 // See https://developers.facebook.com/docs/whatsapp/cloud-api/typing-indicators
-func (h *handler) SendChatAction(ctx context.Context, ch courier.Channel, send *courier.ChatActionSend, clog *courier.ChannelLog) error {
-	if send.MsgExternalID == "" {
-		return fmt.Errorf("%s action requires msg_external_id", send.Action)
+func (h *handler) RelayEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+	typing, ok := event.(*events.TypingStarted)
+	if !ok {
+		return fmt.Errorf("unsupported event type: %s", event.Type())
+	}
+	if typing.MsgExternalID == "" {
+		return fmt.Errorf("%s event requires msg_external_id", event.Type())
 	}
 
-	type typingIndicator struct {
-		Type string `json:"type"`
-	}
 	payload := &struct {
-		MessagingProduct string           `json:"messaging_product"`
-		Status           string           `json:"status"`
-		MessageID        string           `json:"message_id"`
-		TypingIndicator  *typingIndicator `json:"typing_indicator,omitempty"`
-	}{MessagingProduct: "whatsapp", Status: "read", MessageID: send.MsgExternalID}
-
-	if send.Action == courier.ChatActionTypingStarted {
-		payload.TypingIndicator = &typingIndicator{Type: "text"}
-	}
+		MessagingProduct string `json:"messaging_product"`
+		Status           string `json:"status"`
+		MessageID        string `json:"message_id"`
+		TypingIndicator  struct {
+			Type string `json:"type"`
+		} `json:"typing_indicator"`
+	}{MessagingProduct: "whatsapp", Status: "read", MessageID: typing.MsgExternalID}
+	payload.TypingIndicator.Type = "text"
 
 	base, _ := url.Parse(graphURL)
 	path, _ := url.Parse(fmt.Sprintf("/%s/messages", ch.Address()))

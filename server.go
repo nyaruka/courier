@@ -118,7 +118,7 @@ func (s *Server) Start() error {
 	internalRouter.MethodNotAllowed(s.handle405("internal"))
 	internalRouter.Get("/", s.handleHealth("internal"))
 	internalRouter.Post("/ci/attachment/fetch", s.tokenAuthRequired(s.handleFetchAttachment))
-	internalRouter.Post("/ci/chat_action/send", s.tokenAuthRequired(s.handleSendChatAction))
+	internalRouter.Post("/ci/event/send", s.tokenAuthRequired(s.handleSendEvent))
 	internalRouter.Get("/ci/channel/info/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", s.tokenAuthRequired(s.handleChannelInfo))
 
 	s.internetServer = &http.Server{
@@ -360,13 +360,13 @@ func (s *Server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonx.MustMarshal(resp))
 }
 
-func (s *Server) handleSendChatAction(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleSendEvent(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	resp, err := sendChatAction(ctx, s, r)
+	resp, err := sendEvent(ctx, s, r)
 	if err != nil {
-		slog.Error("error sending chat action", "error", err)
+		slog.Error("error sending event", "error", err)
 		WriteError(w, http.StatusBadRequest, err)
 		return
 	}

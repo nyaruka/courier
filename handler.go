@@ -8,6 +8,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/core/events"
 )
 
 // ChannelHandleFunc is the interface ChannelHandlers must satisfy to handle incoming requests.
@@ -28,11 +29,11 @@ type ChannelHandler interface {
 	GetChannel(context.Context, *http.Request) (Channel, error)
 	Send(context.Context, MsgOut, *SendResult, *ChannelLog) error
 
-	// ChatActions returns the chat actions that can be sent on the given channel, mapped to how often each
-	// should be resent to sustain it (zero if it never needs resending). Support can vary between channels
-	// of the same type, e.g. by config.
-	ChatActions(Channel) map[ChatAction]time.Duration
-	SendChatAction(context.Context, Channel, *ChatActionSend, *ChannelLog) error
+	// RelayableEvents returns the engine event types (e.g. typing_started) that can be relayed to the
+	// given channel's platform, mapped to how often each should be resent to sustain its effect (zero if
+	// it never needs resending). Support can vary between channels of the same type, e.g. by config.
+	RelayableEvents(Channel) map[string]time.Duration
+	RelayEvent(context.Context, Channel, events.Event, *ChannelLog) error
 
 	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []StatusUpdate) error
 	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []MsgIn) error

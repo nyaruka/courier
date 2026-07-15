@@ -10,11 +10,12 @@ import (
 )
 
 // channelInfo describes the capabilities of a channel so that callers don't need to encode platform
-// knowledge themselves. Capabilities can vary between channels of the same type, e.g. by config. Chat
-// action intervals are in seconds. Intended to grow other capability info over time, e.g. messaging
+// knowledge themselves. Capabilities can vary between channels of the same type, e.g. by config.
+// Relayable events are the engine event types that can be relayed to the channel's platform, mapped to
+// their resend intervals in seconds. Intended to grow other capability info over time, e.g. messaging
 // window durations.
 type channelInfo struct {
-	ChatActions map[ChatAction]int `json:"chat_actions,omitempty"`
+	RelayableEvents map[string]int `json:"relayable_events,omitempty"`
 }
 
 func getChannelInfo(ctx context.Context, s *Server, r *http.Request) (*channelInfo, error) {
@@ -29,10 +30,10 @@ func getChannelInfo(ctx context.Context, s *Server, r *http.Request) (*channelIn
 
 	handler := s.GetHandler(ch)
 	if handler != nil {
-		if actions := handler.ChatActions(ch); len(actions) > 0 {
-			info.ChatActions = make(map[ChatAction]int, len(actions))
-			for action, interval := range actions {
-				info.ChatActions[action] = int(interval / time.Second)
+		if relayable := handler.RelayableEvents(ch); len(relayable) > 0 {
+			info.RelayableEvents = make(map[string]int, len(relayable))
+			for eventType, interval := range relayable {
+				info.RelayableEvents[eventType] = int(interval / time.Second)
 			}
 		}
 	}
