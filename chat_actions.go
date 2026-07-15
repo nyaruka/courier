@@ -54,6 +54,10 @@ type sendChatActionResponse struct {
 // Handles a chat action send request. Callers should treat supported=false as "stop sending for this
 // conversation" and any error response as "stop sending until a new typing session starts" - a failed send
 // means no indicator is showing, and this bounds how many error logs a broken channel can generate.
+//
+// Sustained actions (interval > 0) are throttled per conversation: repeats within the interval are
+// reported as success without a send, so callers can relay actions at whatever cadence suits them and the
+// platform still sees at most one send per interval.
 func sendChatAction(ctx context.Context, s *Server, r *http.Request) (*sendChatActionResponse, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -82,6 +86,25 @@ func sendChatAction(ctx context.Context, s *Server, r *http.Request) (*sendChatA
 		return &sendChatActionResponse{Supported: false}, nil
 	}
 
+	intervalSecs := int(interval / time.Second)
+	resp := &sendChatActionResponse{Supported: true, Interval: intervalSecs}
+
+	// sustained actions are throttled to their interval with a valkey key that expires when the platform
+	// needs a resend - one-shot actions (interval 0, or anything below our 1 second resolution) always
+	// go through
+	throttleKey := fmt.Sprintf("chat-actions:%s|%s|%s", ch.UUID(), sa.URN.Identity(), sa.Action)
+	if intervalSecs > 0 {
+		rc := s.rt.VK.Get()
+		reply, err := rc.Do("SET", throttleKey, "1", "EX", intervalSecs, "NX")
+		rc.Close()
+		if err != nil {
+			// a valkey problem shouldn't break chat actions so proceed unthrottled
+			slog.Error("error checking chat action throttle", "error", err, "key", throttleKey)
+		} else if reply == nil {
+			return resp, nil // already sent within the interval
+		}
+	}
+
 	clog := NewChannelLogForChatActionSend(ch, handler.RedactValues(ch))
 
 	err = handler.SendChatAction(ctx, ch, &sa.ChatActionSend, clog)
@@ -95,11 +118,18 @@ func sendChatAction(ctx context.Context, s *Server, r *http.Request) (*sendChatA
 	}
 
 	if err != nil {
+		// a failed send didn't show an indicator, so clear the throttle rather than suppressing the next
+		// attempt - e.g. a new typing session starting within the interval
+		if intervalSecs > 0 {
+			rc := s.rt.VK.Get()
+			if _, delErr := rc.Do("DEL", throttleKey); delErr != nil {
+				slog.Error("error clearing chat action throttle", "error", delErr, "key", throttleKey)
+			}
+			rc.Close()
+		}
+
 		return nil, fmt.Errorf("error sending %s action on channel %s: %w", sa.Action, ch.UUID(), err)
 	}
 
-	return &sendChatActionResponse{
-		Supported: true,
-		Interval:  int(interval / time.Second),
-	}, nil
+	return resp, nil
 }

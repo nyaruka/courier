@@ -8,6 +8,7 @@ import (
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -16,10 +17,12 @@ import (
 )
 
 func TestSendChatAction(t *testing.T) {
-	cfg := runtime.NewDefaultConfig()
-	cfg.AuthToken = "sesame"
-	cfg.InternetPort = 8180
-	cfg.InternalPort = 8181
+	_, rt := testsuite.Runtime(t) // throttling needs a real valkey
+	rt.Config.AuthToken = "sesame"
+	rt.Config.InternetPort = 8180
+	rt.Config.InternalPort = 8181
+
+	testsuite.ResetValkey(t, rt)
 
 	mb := test.NewMockBackend()
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
@@ -29,10 +32,11 @@ func TestSendChatAction(t *testing.T) {
 	brokenChannel := test.NewMockChannel("53e5aafa-8155-449d-9009-fcb30d54bd26", "XX", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 	mb.AddChannel(brokenChannel)
 
-	server := courier.NewServer(runtime.NewTestRuntime(cfg), mb)
+	server := courier.NewServer(rt, mb)
 	server.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/action": {
 			httpx.NewMockResponse(200, nil, []byte(`OK`)),
+			httpx.NewMockResponse(502, nil, []byte(`bad gateway`)),
 			httpx.NewMockResponse(502, nil, []byte(`bad gateway`)),
 		},
 	})
@@ -88,8 +92,15 @@ func TestSendChatAction(t *testing.T) {
 	// successful sends don't write channel logs
 	assert.Len(t, mb.WrittenChannelLogs(), 0)
 
-	// a send error returns an error response and writes a channel log
+	// repeating within the interval for the same conversation is throttled - reported as success but no
+	// send is made (the mock transport's next response isn't consumed)
 	statusCode, respBody = submit(`{"action": "typing_started", "channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "urn": "tel:+250788123123"}`, "sesame")
+	assert.Equal(t, 200, statusCode)
+	assert.JSONEq(t, `{"supported": true, "interval": 10}`, string(respBody))
+	assert.Len(t, mb.WrittenChannelLogs(), 0)
+
+	// a send error (different URN so not throttled) returns an error response and writes a channel log
+	statusCode, respBody = submit(`{"action": "typing_started", "channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "urn": "tel:+250788123124"}`, "sesame")
 	assert.Equal(t, 400, statusCode)
 	assert.Contains(t, string(respBody), `channel connection failed`)
 
@@ -98,6 +109,13 @@ func TestSendChatAction(t *testing.T) {
 	assert.Equal(t, courier.ChannelLogTypeChatActionSend, clog.Type)
 	assert.Len(t, clog.HttpLogs, 1)
 	assert.Equal(t, "http://mock.com/action", clog.HttpLogs[0].URL)
+
+	// and clears the throttle, so a retry for that conversation attempts another send (consuming the
+	// second 502 mock) instead of being suppressed as a success
+	statusCode, respBody = submit(`{"action": "typing_started", "channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "urn": "tel:+250788123124"}`, "sesame")
+	assert.Equal(t, 400, statusCode)
+	assert.Contains(t, string(respBody), `channel connection failed`)
+	assert.Len(t, mb.WrittenChannelLogs(), 2)
 }
 
 func TestChannelInfo(t *testing.T) {
