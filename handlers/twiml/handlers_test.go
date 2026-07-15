@@ -454,7 +454,7 @@ var twaTestCases = []IncomingTestCase{
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "whatsapp:14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
 	{Label: "Receive BSUID Valid", URL: twaReceiveURL, Data: waReceiveBSUIDValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: "whatsapp:14133881111", ExpectedNewURN: &models.NewURNSpec{Value: "bsuid:US.1234", Action: models.NewURNAppend}, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: "whatsapp:US.1234", ExpectedNewURN: &models.NewURNSpec{Value: "whatsapp:14133881111", Action: models.NewURNAppend}, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid", URL: twaReceiveURL, Data: waReceiveButtonValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Confirm"), ExpectedURN: "whatsapp:14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",

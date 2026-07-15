@@ -59,10 +59,10 @@ var testCasesD3C = []IncomingTestCase{
 		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Hello World"),
-		ExpectedURN:           "whatsapp:5678",
+		ExpectedURN:           "whatsapp:US.1234",
 		ExpectedExternalID:    "external_id",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
-		ExpectedNewURN:        &models.NewURNSpec{Value: "bsuid:US.1234", Action: models.NewURNAppend},
+		ExpectedNewURN:        &models.NewURNSpec{Value: "whatsapp:5678", Action: models.NewURNAppend},
 	},
 	{
 		Label:                 "Receive Duplicate Valid Message",
@@ -351,7 +351,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 	{
 		Label:   "Plain Send with BSUID",
 		MsgText: "Simple Message",
-		MsgURN:  "bsuid:US.1234",
+		MsgURN:  "whatsapp:US.1234",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -377,14 +377,14 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 		ExpectedContactURNs: map[string]bool{
 			"whatsapp:250788123123": true,
-			"bsuid:US.1234":         true,
+			"whatsapp:US.1234":      true,
 		},
 	},
 	{
 		Label:               "Plain Send with user_id already on contact",
 		MsgText:             "Simple Message",
 		MsgURN:              "whatsapp:250788123123",
-		MsgContactOtherURNs: []urns.URN{"bsuid:US.1234"},
+		MsgContactOtherURNs: []urns.URN{"whatsapp:US.1234"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "contacts": [{"input": "250788123123", "user_id": "US.1234"}], "messages": [{"id": "157b5e14568e8"}] }`)),

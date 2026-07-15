@@ -118,7 +118,7 @@ func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLo
 }
 
 func writeMsgToDB(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLog) (*models.Contact, error) {
-	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
+	contact, err := contactForMsg(ctx, b, m, clog)
 
 	if err != nil {
 		// our db is down, write to the spool, we will write/queue this later

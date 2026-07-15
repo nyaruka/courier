@@ -20,10 +20,11 @@ func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, c
 	return buildContentPayloads(msg, maxMsgLength, clog)
 }
 
-// RecipientFields returns the to and recipient field values for the given URN, using the recipient field for
-// business-scoped user ID (BSUID) URNs and the to field otherwise.
+// RecipientFields returns the to and recipient field values for the given URN. A whatsapp URN may hold either a
+// phone number (all digits) or a business-scoped user ID (the CC.xxx form); the business-scoped user ID goes in
+// the recipient field and the phone number goes in the to field.
 func RecipientFields(urn urns.URN) (to, recipient string) {
-	if urn.Scheme() == urns.BSUID.Prefix {
+	if urns.IsWhatsAppBSUID(urn) {
 		return "", urn.Path()
 	}
 	return urn.Path(), ""

@@ -236,6 +236,19 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			courier.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", msg.Type))
 		}
 
+		// the phone number is a whatsapp URN; if the message also carries a business-scoped user ID, make that
+		// WhatsApp URN the primary URN and attach the phone number as a secondary URN
+		appendURN := urns.NilURN
+		if msg.FromBSUID != "" {
+			userIDURN, urnErr := urns.New(urns.WhatsApp, msg.FromBSUID)
+			if urnErr == nil {
+				appendURN = urn
+				urn = userIDURN
+			} else {
+				courier.LogRequestError(r, channel, fmt.Errorf("invalid from_bsuid for WhatsApp URN: %w", urnErr))
+			}
+		}
+
 		// create our message
 		event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, msg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[msg.From])
 
@@ -248,13 +261,8 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			event.WithAttachment(mediaURL)
 		}
 
-		if msg.FromBSUID != "" {
-			userIDURN, urnErr := urns.New(urns.BSUID, msg.FromBSUID)
-			if urnErr == nil {
-				event.WithNewURN(userIDURN, models.NewURNAppend)
-			} else {
-				courier.LogRequestError(r, channel, fmt.Errorf("invalid from_bsuid for BSUID URN: %w", urnErr))
-			}
+		if appendURN != urns.NilURN {
+			event.WithNewURN(appendURN, models.NewURNAppend)
 		}
 
 		err = h.Backend().WriteMsg(ctx, event, clog)
