@@ -167,10 +167,10 @@ func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *m
 // is reused rather than duplicated. In that case the BSUID is added to the matched contact so it stays the
 // message's (highest priority) URN.
 func contactForMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLog) (*models.Contact, error) {
-	altURNs := altLookupURNs(m)
+	alt := altLookupURN(m)
 
-	// simple case: no alternative URNs to consider, look up or create by the primary URN
-	if len(altURNs) == 0 {
+	// simple case: no alternative URN to consider, look up or create by the primary URN
+	if alt == urns.NilURN {
 		return contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 	}
 
@@ -183,43 +183,41 @@ func contactForMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.Chan
 		return contact, nil
 	}
 
-	// the BSUID didn't match an existing contact, try the alternatives (the phone number's whatsapp URN)
-	for _, alt := range altURNs {
-		contact, err = contactForURN(ctx, b, m.OrgID_, m.channel, alt, nil, "", false, clog)
+	// the BSUID didn't match an existing contact, try the alternative (the phone number's whatsapp URN)
+	contact, err = contactForURN(ctx, b, m.OrgID_, m.channel, alt, nil, "", false, clog)
+	if err != nil {
+		return nil, err
+	}
+	if contact != nil {
+		// matched an existing contact by the phone number - add the BSUID to it so the message stays
+		// attributed to the BSUID
+		moved, err := addContactURN(ctx, b, m.channel, contact, m.URN_, m.URNAuthTokens_)
 		if err != nil {
 			return nil, err
 		}
-		if contact != nil {
-			// matched an existing contact by the phone number - add the BSUID to it so the message stays
-			// attributed to the BSUID
-			moved, err := addContactURN(ctx, b, m.channel, contact, m.URN_, m.URNAuthTokens_)
-			if err != nil {
-				return nil, err
-			}
-			// between our BSUID lookup above and now, the BSUID was claimed by another contact - don't steal
-			// it, re-look-up the BSUID and return the contact that already owns it
-			if moved {
-				return contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
-			}
-			return contact, nil
+		// between our BSUID lookup above and now, the BSUID was claimed by another contact - don't steal
+		// it, re-look-up the BSUID and return the contact that already owns it
+		if moved {
+			return contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 		}
+		return contact, nil
 	}
 
 	// no existing contact matched any URN, create one from the primary URN
 	return contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 }
 
-// altLookupURNs returns alternative URNs to look up an existing contact by when the message's primary URN doesn't
-// match one. For a WhatsApp business-scoped user ID (a whatsapp URN in the CC.xxx form) with a phone number
-// attached as its new URN, that's the phone number's (all-digit) whatsapp URN.
-func altLookupURNs(m *MsgIn) []urns.URN {
+// altLookupURN returns the URN to look up an existing contact by when the message's primary URN doesn't match one.
+// For a WhatsApp business-scoped user ID (a whatsapp URN in the CC.xxx form) with a phone number attached as its
+// new URN, that's the phone number's (all-digit) whatsapp URN; otherwise NilURN.
+func altLookupURN(m *MsgIn) urns.URN {
 	// only when the primary URN is a whatsapp business-scoped user ID (not an all-digit phone number) with a
 	// phone number attached as its new URN
 	if m.NewURN_ == nil || !urns.IsWhatsAppBSUID(m.URN_) {
-		return nil
+		return urns.NilURN
 	}
 
-	return []urns.URN{m.NewURN_.Value}
+	return m.NewURN_.Value
 }
 
 // addContactURN adds the given URN to the contact (if not already present) and points the contact's URNID at it,
