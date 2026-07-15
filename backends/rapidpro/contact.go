@@ -180,6 +180,9 @@ func contactForMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.Chan
 		return nil, err
 	}
 	if contact != nil {
+		// the BSUID already resolves a contact - don't queue the phone as a new URN, as an append could steal
+		// it from a different contact that currently owns it
+		m.NewURN_ = nil
 		return contact, nil
 	}
 
@@ -221,8 +224,9 @@ func altLookupURN(m *MsgIn) urns.URN {
 }
 
 // addContactURN adds the given URN to the contact (if not already present) and points the contact's URNID at it,
-// so the incoming message is attributed to this URN. If the URN already belonged to a different contact, it
-// returns moved=true without stealing it (the transaction is rolled back), leaving it on its current owner.
+// so the incoming message is attributed to this URN. If the URN already belonged to a different contact (or was
+// claimed concurrently), it returns moved=true without stealing it (the transaction is rolled back), leaving it
+// on its current owner for the caller to re-look-up.
 func addContactURN(ctx context.Context, b *backend, channel *models.Channel, contact *models.Contact, urn urns.URN, authTokens map[string]string) (moved bool, err error) {
 	tx, err := b.rt.DB.BeginTxx(ctx, nil)
 	if err != nil {
@@ -232,6 +236,12 @@ func addContactURN(ctx context.Context, b *backend, channel *models.Channel, con
 	contactURN, err := models.GetOrCreateContactURN(ctx, tx, channel, contact.ID_, urn, authTokens)
 	if err != nil {
 		tx.Rollback()
+
+		// a concurrent receive inserted the URN after our lookup missed it - treat it like a steal and let the
+		// caller re-look-up the contact that now owns it, rather than spooling the message
+		if dbutil.IsUniqueViolation(err) {
+			return true, nil
+		}
 		return false, fmt.Errorf("error adding URN to contact: %w", err)
 	}
 

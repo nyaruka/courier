@@ -994,10 +994,12 @@ func (ts *BackendTestSuite) TestContactForMsg() {
 	ts.NoError(err)
 	ts.NotEqual(bsuidOwner.ID_, phoneOwner.ID_)
 
-	resolved, err := contactForMsg(ctx, ts.b, newBSUIDMsg("whatsapp:US.7777", "whatsapp:12065557777"), clog)
+	msg := newBSUIDMsg("whatsapp:US.7777", "whatsapp:12065557777")
+	resolved, err := contactForMsg(ctx, ts.b, msg, clog)
 	ts.NoError(err)
 	ts.Equal(bsuidOwner.ID_, resolved.ID_)                       // resolved to the BSUID owner, not duplicated
 	ts.Equal(phoneOwner.ID_, lookup("whatsapp:12065557777").ID_) // phone stayed on its original contact
+	ts.Nil(msg.NewURN_)                                          // phone not queued to mailroom, so an append can't steal it later
 
 	// addContactURN must not steal a URN that already belongs to another contact - it rolls back and reports moved
 	moved, err := addContactURN(ctx, ts.b, waChannel, phoneOwner, "whatsapp:US.7777", nil)
