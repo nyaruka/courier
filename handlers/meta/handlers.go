@@ -738,20 +738,20 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 
 // WhatsApp displays typing indicators for up to 25 seconds or until a reply is sent. Messenger and
 // Instagram do support typing indicators but via sender actions - not yet implemented.
-var relayableEvents = map[models.ChannelType]map[string]time.Duration{
+var sendableEvents = map[models.ChannelType]map[string]time.Duration{
 	"WAC": {events.TypeTypingStarted: 20 * time.Second},
 }
 
-// RelayableEvents declares support for typing indicators on WhatsApp channels
-func (h *handler) RelayableEvents(courier.Channel) map[string]time.Duration {
-	return relayableEvents[h.ChannelType()]
+// SendableEvents declares support for typing indicators on WhatsApp channels
+func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
+	return sendableEvents[h.ChannelType()]
 }
 
-// RelayEvent relays a typing started event as a typing indicator, which WhatsApp implements as marking
+// SendEvent sends a typing started event as a typing indicator, which WhatsApp implements as marking
 // the referenced incoming message as read with a typing_indicator field - so it also marks messages as
 // read, which is acceptable because we only send one when a reply is being composed.
 // See https://developers.facebook.com/docs/whatsapp/cloud-api/typing-indicators
-func (h *handler) RelayEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
 	typing, ok := event.(*events.TypingStarted)
 	if !ok {
 		return fmt.Errorf("unsupported event type: %s", event.Type())

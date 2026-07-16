@@ -78,8 +78,8 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier
 	return nil
 }
 
-// RelayEvent relays the given event, logging any HTTP calls or errors
-func (h *mockHandler) RelayEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+// SendEvent sends the given event, logging any HTTP calls or errors
+func (h *mockHandler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
 	req, _ := httpx.NewRequest(ctx, "POST", "http://mock.com/action", nil, nil)
 	trace, resp, err := utils.TraceHTTP(h.rt.HTTP, req, 1024)
 	if trace != nil {
@@ -92,8 +92,8 @@ func (h *mockHandler) RelayEvent(ctx context.Context, ch courier.Channel, event 
 	return nil
 }
 
-// RelayableEvents declares support for typing indicators with a 10 second resend interval
-func (h *mockHandler) RelayableEvents(courier.Channel) map[string]time.Duration {
+// SendableEvents declares support for typing indicators with a 10 second resend interval
+func (h *mockHandler) SendableEvents(courier.Channel) map[string]time.Duration {
 	return map[string]time.Duration{events.TypeTypingStarted: 10 * time.Second}
 }
 

@@ -29,11 +29,11 @@ type ChannelHandler interface {
 	GetChannel(context.Context, *http.Request) (Channel, error)
 	Send(context.Context, MsgOut, *SendResult, *ChannelLog) error
 
-	// RelayableEvents returns the engine event types (e.g. typing_started) that can be relayed to the
+	// SendableEvents returns the engine event types (e.g. typing_started) that can be sent to the
 	// given channel's platform, mapped to how often each should be resent to sustain its effect (zero if
 	// it never needs resending). Support can vary between channels of the same type, e.g. by config.
-	RelayableEvents(Channel) map[string]time.Duration
-	RelayEvent(context.Context, Channel, events.Event, *ChannelLog) error
+	SendableEvents(Channel) map[string]time.Duration
+	SendEvent(context.Context, Channel, events.Event, *ChannelLog) error
 
 	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []StatusUpdate) error
 	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []MsgIn) error

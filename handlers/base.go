@@ -99,15 +99,15 @@ func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
 	return vals
 }
 
-// RelayableEvents declares no support for relaying any events - handlers that can relay them should override
-func (h *BaseHandler) RelayableEvents(courier.Channel) map[string]time.Duration {
+// SendableEvents declares no support for sending any events - handlers that can send them should override
+func (h *BaseHandler) SendableEvents(courier.Channel) map[string]time.Duration {
 	return nil
 }
 
-// RelayEvent is a stub for handlers that can't relay events and shouldn't be reachable because
-// RelayableEvents declares no support
-func (h *BaseHandler) RelayEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
-	return fmt.Errorf("event relaying not supported by %s handler", h.channelType)
+// SendEvent is a stub for handlers that can't send events and shouldn't be reachable because
+// SendableEvents declares no support
+func (h *BaseHandler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+	return fmt.Errorf("event sending not supported by %s handler", h.channelType)
 }
 
 // GetChannel returns the channel

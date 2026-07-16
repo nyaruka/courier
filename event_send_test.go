@@ -28,7 +28,7 @@ func TestSendEvent(t *testing.T) {
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 	mb.AddChannel(mockChannel)
 
-	// add a channel whose type has no handler registered and thus can't relay events
+	// add a channel whose type has no handler registered and thus can't send events
 	brokenChannel := test.NewMockChannel("53e5aafa-8155-449d-9009-fcb30d54bd26", "XX", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 	mb.AddChannel(brokenChannel)
 
@@ -82,25 +82,25 @@ func TestSendEvent(t *testing.T) {
 	assert.Equal(t, 400, statusCode)
 	assert.Contains(t, string(respBody), `unknown type: 'dancing'`)
 
-	// try to submit with a real event type that isn't relayable
+	// try to submit with a real event type that isn't sendable
 	statusCode, respBody = submit(`{"channel_type": "MCK", "event": {"uuid": "0197b335-6ded-79a4-95a6-3af85b57f108", "type": "contact_language_changed", "created_on": "2026-07-15T12:00:00Z", "language": "eng"}}`, "sesame")
 	assert.Equal(t, 400, statusCode)
-	assert.Contains(t, string(respBody), `contact_language_changed is not a relayable event type`)
+	assert.Contains(t, string(respBody), `contact_language_changed is not a sendable event type`)
 
-	// try to submit an incoming event - only user/bot originated events can be relayed to a platform
+	// try to submit an incoming event - only user/bot originated events can be sent to a platform
 	statusCode, respBody = submit(typingEvent("MCK", "typing_started", "incoming", "e4bb1578-29da-4fa5-a214-9da19dd24230", "tel:+250788123123"), "sesame")
 	assert.Equal(t, 400, statusCode)
-	assert.Contains(t, string(respBody), `only outgoing events can be relayed`)
+	assert.Contains(t, string(respBody), `only outgoing events can be sent`)
 
 	// try to submit an event missing the channel or urn routing fields
 	statusCode, respBody = submit(typingEvent("MCK", "typing_started", "outgoing", "", "tel:+250788123123"), "sesame")
 	assert.Equal(t, 400, statusCode)
-	assert.Contains(t, string(respBody), `event requires channel and urn to be relayed`)
+	assert.Contains(t, string(respBody), `event requires channel and urn to be sent`)
 	statusCode, respBody = submit(typingEvent("MCK", "typing_started", "outgoing", "e4bb1578-29da-4fa5-a214-9da19dd24230", ""), "sesame")
 	assert.Equal(t, 400, statusCode)
-	assert.Contains(t, string(respBody), `event requires channel and urn to be relayed`)
+	assert.Contains(t, string(respBody), `event requires channel and urn to be sent`)
 
-	// a relayable event type the channel's handler doesn't declare support for isn't an error but isn't supported
+	// a sendable event type the channel's handler doesn't declare support for isn't an error but isn't supported
 	statusCode, respBody = submit(typingEvent("MCK", "typing_stopped", "outgoing", "e4bb1578-29da-4fa5-a214-9da19dd24230", "tel:+250788123123"), "sesame")
 	assert.Equal(t, 200, statusCode)
 	assert.JSONEq(t, `{"supported": false}`, string(respBody))
@@ -110,7 +110,7 @@ func TestSendEvent(t *testing.T) {
 	assert.Equal(t, 400, statusCode)
 	assert.Contains(t, string(respBody), `channel not found`)
 
-	// submitting for a channel type that can't relay events isn't an error but response says unsupported
+	// submitting for a channel type that can't send events isn't an error but response says unsupported
 	statusCode, respBody = submit(typingEvent("XX", "typing_started", "outgoing", "53e5aafa-8155-449d-9009-fcb30d54bd26", "tel:+250788123123"), "sesame")
 	assert.Equal(t, 200, statusCode)
 	assert.JSONEq(t, `{"supported": false}`, string(respBody))
@@ -121,7 +121,7 @@ func TestSendEvent(t *testing.T) {
 	assert.Equal(t, 200, statusCode)
 	assert.JSONEq(t, `{"supported": true, "interval": 10}`, string(respBody))
 
-	// successful relays don't write channel logs
+	// successful sends don't write channel logs
 	assert.Len(t, mb.WrittenChannelLogs(), 0)
 
 	// repeating within the interval for the same conversation is throttled - reported as success but no
@@ -131,14 +131,14 @@ func TestSendEvent(t *testing.T) {
 	assert.JSONEq(t, `{"supported": true, "interval": 10}`, string(respBody))
 	assert.Len(t, mb.WrittenChannelLogs(), 0)
 
-	// a relay error (different URN so not throttled) returns an error response and writes a channel log
+	// a send error (different URN so not throttled) returns an error response and writes a channel log
 	statusCode, respBody = submit(typingEvent("MCK", "typing_started", "outgoing", "e4bb1578-29da-4fa5-a214-9da19dd24230", "tel:+250788123124"), "sesame")
 	assert.Equal(t, 400, statusCode)
 	assert.Contains(t, string(respBody), `channel connection failed`)
 
 	assert.Len(t, mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
-	assert.Equal(t, courier.ChannelLogTypeEventRelay, clog.Type)
+	assert.Equal(t, courier.ChannelLogTypeEventSend, clog.Type)
 	assert.Len(t, clog.HttpLogs, 1)
 	assert.Equal(t, "http://mock.com/action", clog.HttpLogs[0].URL)
 
@@ -189,10 +189,10 @@ func TestChannelInfo(t *testing.T) {
 	assert.Equal(t, 400, statusCode)
 	assert.Contains(t, string(respBody), "channel not found")
 
-	// channel whose handler declares relayable events
+	// channel whose handler declares sendable events
 	statusCode, respBody = fetch("e4bb1578-29da-4fa5-a214-9da19dd24230", "sesame")
 	assert.Equal(t, 200, statusCode)
-	assert.JSONEq(t, `{"relayable_events": {"typing_started": 10}}`, string(respBody))
+	assert.JSONEq(t, `{"sendable_events": {"typing_started": 10}}`, string(respBody))
 
 	// channel with no handler has no capabilities to declare
 	statusCode, respBody = fetch("53e5aafa-8155-449d-9009-fcb30d54bd26", "sesame")

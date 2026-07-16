@@ -966,7 +966,7 @@ func newServerWithWAC(backend courier.Backend) *courier.Server {
 	return courier.NewServer(runtime.NewTestRuntime(cfg), backend)
 }
 
-func TestWhatsAppRelayEvent(t *testing.T) {
+func TestWhatsAppSendEvent(t *testing.T) {
 	// other tests repoint graphURL at mock servers, so pin it for this test
 	defer func(u string) { graphURL = u }(graphURL)
 	graphURL = "https://graph.facebook.com/v22.0/"
@@ -991,33 +991,33 @@ func TestWhatsAppRelayEvent(t *testing.T) {
 	})
 
 	// typing indicators are supported on WhatsApp channels, but not Facebook/Instagram
-	assert.Equal(t, map[string]time.Duration{events.TypeTypingStarted: 20 * time.Second}, h.RelayableEvents(channel))
-	assert.Nil(t, newHandler("FBA", "Facebook").(*handler).RelayableEvents(channel))
+	assert.Equal(t, map[string]time.Duration{events.TypeTypingStarted: 20 * time.Second}, h.SendableEvents(channel))
+	assert.Nil(t, newHandler("FBA", "Facebook").(*handler).SendableEvents(channel))
 
 	channelRef := assets.NewChannelReference("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WhatsApp")
 	typing := events.NewTypingStarted(events.DirectionOutgoing, channelRef, "whatsapp:5511987654321", "wamid.HBgMNTU3")
 
 	// a typing indicator is sent as a mark-as-read call with a typing_indicator field
-	clog := courier.NewChannelLogForEventRelay(channel, nil)
-	err := h.RelayEvent(context.Background(), channel, typing, clog)
+	clog := courier.NewChannelLogForEventSend(channel, nil)
+	err := h.SendEvent(context.Background(), channel, typing, clog)
 	assert.NoError(t, err)
 	assert.Len(t, clog.HttpLogs, 1)
 	assert.Equal(t, "https://graph.facebook.com/12345_ID/messages", clog.HttpLogs[0].URL)
 	assert.Contains(t, clog.HttpLogs[0].Request, `{"messaging_product":"whatsapp","status":"read","message_id":"wamid.HBgMNTU3","typing_indicator":{"type":"text"}}`)
 
 	// an error response is a response error
-	err = h.RelayEvent(context.Background(), channel, typing, clog)
+	err = h.SendEvent(context.Background(), channel, typing, clog)
 	assert.Equal(t, courier.ErrResponseStatus, err)
 
 	// as is a connection error
-	err = h.RelayEvent(context.Background(), channel, typing, clog)
+	err = h.SendEvent(context.Background(), channel, typing, clog)
 	assert.Equal(t, courier.ErrConnectionFailed, err)
 
-	// an event without a msg external ID can't be relayed
-	err = h.RelayEvent(context.Background(), channel, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "whatsapp:5511987654321", ""), clog)
+	// an event without a msg external ID can't be sent
+	err = h.SendEvent(context.Background(), channel, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "whatsapp:5511987654321", ""), clog)
 	assert.ErrorContains(t, err, "requires msg_external_id")
 
 	// nor can an event type the handler doesn't declare support for
-	err = h.RelayEvent(context.Background(), channel, events.NewTypingStopped(events.DirectionOutgoing, channelRef, "whatsapp:5511987654321", ""), clog)
+	err = h.SendEvent(context.Background(), channel, events.NewTypingStopped(events.DirectionOutgoing, channelRef, "whatsapp:5511987654321", ""), clog)
 	assert.ErrorContains(t, err, "unsupported event type: typing_stopped")
 }

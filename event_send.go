@@ -16,7 +16,7 @@ import (
 	"github.com/nyaruka/goflow/core/events"
 )
 
-// sendEventRequest is a request to relay an engine event, e.g. a user typing indicator, to a channel's
+// sendEventRequest is a request to send an engine event, e.g. a user typing indicator, to a channel's
 // platform. Unlike message sends these are fire and forget - they aren't queued and there are no statuses
 // or retries. The event's own channel/urn/msg_external_id fields say where it should go - channel_type is
 // needed alongside because channels are looked up by type + UUID.
@@ -32,10 +32,10 @@ type sendEventResponse struct {
 
 // Handles an event send request. Callers should treat supported=false as "stop sending for this
 // conversation" and any error response as "stop sending until a new typing session starts" - a failed
-// relay means no indicator is showing, and this bounds how many error logs a broken channel can generate.
+// send means no indicator is showing, and this bounds how many error logs a broken channel can generate.
 //
 // Sustained events (interval > 0) are throttled per conversation: repeats within the interval are
-// reported as success without a send, so callers can relay events at whatever cadence suits them and the
+// reported as success without a send, so callers can send events at whatever cadence suits them and the
 // platform still sees at most one send per interval.
 func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventResponse, error) {
 	body, err := io.ReadAll(r.Body)
@@ -56,7 +56,7 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 		return nil, fmt.Errorf("error reading event: %w", err)
 	}
 
-	// the event types we know how to relay, and their routing fields
+	// the event types we know how to send, and their routing fields
 	var direction events.Direction
 	var channelRef *assets.ChannelReference
 	var urn urns.URN
@@ -66,15 +66,15 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 	case *events.TypingStopped:
 		direction, channelRef, urn = typed.Direction, typed.Channel, typed.URN
 	default:
-		return nil, fmt.Errorf("%s is not a relayable event type", event.Type())
+		return nil, fmt.Errorf("%s is not a sendable event type", event.Type())
 	}
 
-	// relaying to a platform only makes sense for events originating from a user or bot
+	// sending to a platform only makes sense for events originating from a user or bot
 	if direction != events.DirectionOutgoing {
-		return nil, fmt.Errorf("only outgoing events can be relayed")
+		return nil, fmt.Errorf("only outgoing events can be sent")
 	}
 	if channelRef == nil || urn == urns.NilURN {
-		return nil, fmt.Errorf("event requires channel and urn to be relayed")
+		return nil, fmt.Errorf("event requires channel and urn to be sent")
 	}
 
 	ch, err := s.backend.GetChannel(ctx, req.ChannelType, models.ChannelUUID(channelRef.UUID))
@@ -86,7 +86,7 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 	if handler == nil {
 		return &sendEventResponse{Supported: false}, nil
 	}
-	interval, supported := handler.RelayableEvents(ch)[event.Type()]
+	interval, supported := handler.SendableEvents(ch)[event.Type()]
 	if !supported {
 		return &sendEventResponse{Supported: false}, nil
 	}
@@ -97,24 +97,24 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 	// sustained events are throttled to their interval with a valkey key that expires when the platform
 	// needs a resend - one-shot events (interval 0, or anything below our 1 second resolution) always
 	// go through
-	throttleKey := fmt.Sprintf("event-relays:%s|%s|%s", ch.UUID(), urn.Identity(), event.Type())
+	throttleKey := fmt.Sprintf("event-sends:%s|%s|%s", ch.UUID(), urn.Identity(), event.Type())
 	if intervalSecs > 0 {
 		rc := s.rt.VK.Get()
 		reply, err := rc.Do("SET", throttleKey, "1", "EX", intervalSecs, "NX")
 		rc.Close()
 		if err != nil {
-			// a valkey problem shouldn't break event relaying so proceed unthrottled
-			slog.Error("error checking event relay throttle", "error", err, "key", throttleKey)
+			// a valkey problem shouldn't break event sending so proceed unthrottled
+			slog.Error("error checking event send throttle", "error", err, "key", throttleKey)
 		} else if reply == nil {
 			return resp, nil // already sent within the interval
 		}
 	}
 
-	clog := NewChannelLogForEventRelay(ch, handler.RedactValues(ch))
+	clog := NewChannelLogForEventSend(ch, handler.RedactValues(ch))
 
-	err = handler.RelayEvent(ctx, ch, event, clog)
+	err = handler.SendEvent(ctx, ch, event, clog)
 
-	// event relays are frequent and boring when they succeed so we only write logs for errors
+	// event sends are frequent and boring when they succeed so we only write logs for errors
 	clog.End()
 	if clog.IsError() {
 		if logErr := s.backend.WriteChannelLog(ctx, clog); logErr != nil {
@@ -123,17 +123,17 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 	}
 
 	if err != nil {
-		// a failed relay didn't show an indicator, so clear the throttle rather than suppressing the next
+		// a failed send didn't show an indicator, so clear the throttle rather than suppressing the next
 		// attempt - e.g. a new typing session starting within the interval
 		if intervalSecs > 0 {
 			rc := s.rt.VK.Get()
 			if _, delErr := rc.Do("DEL", throttleKey); delErr != nil {
-				slog.Error("error clearing event relay throttle", "error", delErr, "key", throttleKey)
+				slog.Error("error clearing event send throttle", "error", delErr, "key", throttleKey)
 			}
 			rc.Close()
 		}
 
-		return nil, fmt.Errorf("error relaying %s event on channel %s: %w", event.Type(), ch.UUID(), err)
+		return nil, fmt.Errorf("error sending %s event on channel %s: %w", event.Type(), ch.UUID(), err)
 	}
 
 	return resp, nil

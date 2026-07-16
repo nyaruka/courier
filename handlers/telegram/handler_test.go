@@ -972,7 +972,7 @@ func TestOutgoing(t *testing.T) {
 	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"auth_token"}, nil)
 }
 
-func TestRelayEvent(t *testing.T) {
+func TestSendEvent(t *testing.T) {
 	// other tests repoint apiURL at mock servers, so pin it for this test
 	defer func(u string) { apiURL = u }(apiURL)
 	apiURL = "https://api.telegram.org"
@@ -998,8 +998,8 @@ func TestRelayEvent(t *testing.T) {
 
 	typing := events.NewTypingStarted(events.DirectionOutgoing, assets.NewChannelReference("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "Telegram"), "telegram:12345", "")
 
-	clog := courier.NewChannelLogForEventRelay(ch, nil)
-	err := h.RelayEvent(context.Background(), ch, typing, clog)
+	clog := courier.NewChannelLogForEventSend(ch, nil)
+	err := h.SendEvent(context.Background(), ch, typing, clog)
 	assert.NoError(t, err)
 	assert.Len(t, clog.HttpLogs, 1)
 	assert.Equal(t, "https://api.telegram.org/botauth_token/sendChatAction", clog.HttpLogs[0].URL)
@@ -1007,22 +1007,22 @@ func TestRelayEvent(t *testing.T) {
 	assert.Contains(t, clog.HttpLogs[0].Request, "action=typing")
 
 	// typing indicators display for ~5 seconds so should be resent more often than that to sustain
-	assert.Equal(t, map[string]time.Duration{events.TypeTypingStarted: 4 * time.Second}, h.RelayableEvents(ch))
+	assert.Equal(t, map[string]time.Duration{events.TypeTypingStarted: 4 * time.Second}, h.SendableEvents(ch))
 
 	// non-ok response is a response error
-	err = h.RelayEvent(context.Background(), ch, typing, clog)
+	err = h.SendEvent(context.Background(), ch, typing, clog)
 	assert.Equal(t, courier.ErrResponseStatus, err)
 
 	// as is a connection error
-	err = h.RelayEvent(context.Background(), ch, typing, clog)
+	err = h.SendEvent(context.Background(), ch, typing, clog)
 	assert.Equal(t, courier.ErrConnectionFailed, err)
 
 	// channel without an auth token can't send
 	noAuth := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US", []string{urns.Telegram.Prefix}, map[string]any{})
-	err = h.RelayEvent(context.Background(), noAuth, typing, clog)
+	err = h.SendEvent(context.Background(), noAuth, typing, clog)
 	assert.Equal(t, courier.ErrChannelConfig, err)
 
-	// an event type the handler doesn't declare support for can't be relayed
-	err = h.RelayEvent(context.Background(), ch, events.NewTypingStopped(events.DirectionOutgoing, nil, "telegram:12345", ""), clog)
+	// an event type the handler doesn't declare support for can't be sent
+	err = h.SendEvent(context.Background(), ch, events.NewTypingStopped(events.DirectionOutgoing, nil, "telegram:12345", ""), clog)
 	assert.ErrorContains(t, err, "unsupported event type: typing_stopped")
 }

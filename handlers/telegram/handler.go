@@ -289,9 +289,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	return nil
 }
 
-// RelayEvent relays a typing started event to the contact as a typing chat action, see
+// SendEvent sends a typing started event to the contact as a typing chat action, see
 // https://core.telegram.org/bots/api#sendchataction
-func (h *handler) RelayEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
 	typing, ok := event.(*events.TypingStarted)
 	if !ok {
 		return fmt.Errorf("unsupported event type: %s", event.Type())
@@ -328,11 +328,11 @@ func (h *handler) RelayEvent(ctx context.Context, ch courier.Channel, event even
 
 // Telegram displays typing indicators for 5 seconds or until the bot sends a message, so they need
 // resending more often than that to sustain
-var relayableEvents = map[string]time.Duration{events.TypeTypingStarted: 4 * time.Second}
+var sendableEvents = map[string]time.Duration{events.TypeTypingStarted: 4 * time.Second}
 
-// RelayableEvents declares support for typing indicators
-func (h *handler) RelayableEvents(courier.Channel) map[string]time.Duration {
-	return relayableEvents
+// SendableEvents declares support for typing indicators
+func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
+	return sendableEvents
 }
 
 type fileResponse struct {
