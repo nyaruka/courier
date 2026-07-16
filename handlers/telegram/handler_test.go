@@ -18,6 +18,8 @@ import (
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/assets"
+	"github.com/nyaruka/goflow/core/events"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -970,7 +972,7 @@ func TestOutgoing(t *testing.T) {
 	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"auth_token"}, nil)
 }
 
-func TestSendChatAction(t *testing.T) {
+func TestSendEvent(t *testing.T) {
 	// other tests repoint apiURL at mock servers, so pin it for this test
 	defer func(u string) { apiURL = u }(apiURL)
 	apiURL = "https://api.telegram.org"
@@ -994,10 +996,10 @@ func TestSendChatAction(t *testing.T) {
 		map[string]any{models.ConfigAuthToken: "auth_token"},
 	)
 
-	send := &courier.ChatActionSend{Action: courier.ChatActionTypingStarted, URN: "telegram:12345"}
+	typing := events.NewTypingStarted(events.DirectionOutgoing, assets.NewChannelReference("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "Telegram"), "telegram:12345", "")
 
-	clog := courier.NewChannelLogForChatActionSend(ch, nil)
-	err := h.SendChatAction(context.Background(), ch, send, clog)
+	clog := courier.NewChannelLogForEventSend(ch, nil)
+	err := h.SendEvent(context.Background(), ch, typing, clog)
 	assert.NoError(t, err)
 	assert.Len(t, clog.HttpLogs, 1)
 	assert.Equal(t, "https://api.telegram.org/botauth_token/sendChatAction", clog.HttpLogs[0].URL)
@@ -1005,18 +1007,22 @@ func TestSendChatAction(t *testing.T) {
 	assert.Contains(t, clog.HttpLogs[0].Request, "action=typing")
 
 	// typing indicators display for ~5 seconds so should be resent more often than that to sustain
-	assert.Equal(t, map[courier.ChatAction]time.Duration{courier.ChatActionTypingStarted: 4 * time.Second}, h.ChatActions(ch))
+	assert.Equal(t, map[string]time.Duration{events.TypeTypingStarted: 4 * time.Second}, h.SendableEvents(ch))
 
 	// non-ok response is a response error
-	err = h.SendChatAction(context.Background(), ch, send, clog)
+	err = h.SendEvent(context.Background(), ch, typing, clog)
 	assert.Equal(t, courier.ErrResponseStatus, err)
 
 	// as is a connection error
-	err = h.SendChatAction(context.Background(), ch, send, clog)
+	err = h.SendEvent(context.Background(), ch, typing, clog)
 	assert.Equal(t, courier.ErrConnectionFailed, err)
 
 	// channel without an auth token can't send
 	noAuth := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US", []string{urns.Telegram.Prefix}, map[string]any{})
-	err = h.SendChatAction(context.Background(), noAuth, send, clog)
+	err = h.SendEvent(context.Background(), noAuth, typing, clog)
 	assert.Equal(t, courier.ErrChannelConfig, err)
+
+	// an event type the handler doesn't declare support for can't be sent
+	err = h.SendEvent(context.Background(), ch, events.NewTypingStopped(events.DirectionOutgoing, nil, "telegram:12345", ""), clog)
+	assert.ErrorContains(t, err, "unsupported event type: typing_stopped")
 }

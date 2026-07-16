@@ -17,6 +17,7 @@ import (
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/core/events"
 )
 
 var apiURL = "https://api.telegram.org"
@@ -288,14 +289,20 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	return nil
 }
 
-// SendChatAction sends a typing indicator to the contact as a chat action, see https://core.telegram.org/bots/api#sendchataction
-func (h *handler) SendChatAction(ctx context.Context, ch courier.Channel, send *courier.ChatActionSend, clog *courier.ChannelLog) error {
+// SendEvent sends a typing started event to the contact as a typing chat action, see
+// https://core.telegram.org/bots/api#sendchataction
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+	typing, ok := event.(*events.TypingStarted)
+	if !ok {
+		return fmt.Errorf("unsupported event type: %s", event.Type())
+	}
+
 	authToken := ch.StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
 		return courier.ErrChannelConfig
 	}
 
-	form := url.Values{"chat_id": []string{send.URN.Path()}, "action": []string{"typing"}}
+	form := url.Values{"chat_id": []string{typing.URN.Path()}, "action": []string{"typing"}}
 
 	sendURL := fmt.Sprintf("%s/bot%s/sendChatAction", apiURL, authToken)
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
@@ -321,11 +328,11 @@ func (h *handler) SendChatAction(ctx context.Context, ch courier.Channel, send *
 
 // Telegram displays typing indicators for 5 seconds or until the bot sends a message, so they need
 // resending more often than that to sustain
-var chatActions = map[courier.ChatAction]time.Duration{courier.ChatActionTypingStarted: 4 * time.Second}
+var sendableEvents = map[string]time.Duration{events.TypeTypingStarted: 4 * time.Second}
 
-// ChatActions declares support for typing indicators
-func (h *handler) ChatActions(courier.Channel) map[courier.ChatAction]time.Duration {
-	return chatActions
+// SendableEvents declares support for typing indicators
+func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
+	return sendableEvents
 }
 
 type fileResponse struct {

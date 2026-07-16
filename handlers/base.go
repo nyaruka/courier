@@ -12,6 +12,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/goflow/core/events"
 )
 
 var defaultRedactConfigKeys = []string{models.ConfigAuthToken, models.ConfigAPIKey, models.ConfigSecret, models.ConfigPassword, models.ConfigSendAuthorization}
@@ -98,15 +99,15 @@ func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
 	return vals
 }
 
-// ChatActions declares no support for any chat action - handlers that can send them should override
-func (h *BaseHandler) ChatActions(courier.Channel) map[courier.ChatAction]time.Duration {
+// SendableEvents declares no support for sending any events - handlers that can send them should override
+func (h *BaseHandler) SendableEvents(courier.Channel) map[string]time.Duration {
 	return nil
 }
 
-// SendChatAction is a stub for handlers that don't support chat actions and shouldn't be reachable
-// because ChatActions declares no support
-func (h *BaseHandler) SendChatAction(ctx context.Context, ch courier.Channel, send *courier.ChatActionSend, clog *courier.ChannelLog) error {
-	return fmt.Errorf("chat actions not supported by %s handler", h.channelType)
+// SendEvent is a stub for handlers that can't send events and shouldn't be reachable because
+// SendableEvents declares no support
+func (h *BaseHandler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+	return fmt.Errorf("event sending not supported by %s handler", h.channelType)
 }
 
 // GetChannel returns the channel
