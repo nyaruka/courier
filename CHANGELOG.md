@@ -1,3 +1,8 @@
+v26.3.11 (2026-07-16)
+-------------------------
+ * Rework chat action sending into event sending which uses goflow engine events as its vocabulary
+ * Drop support for mark_read as standalone action since WhatsApp typing indicators already mark messages as read
+
 v26.3.10 (2026-07-15)
 -------------------------
  * Throttle sustained chat actions to their declared interval so callers don't need to know per-channel cadences
