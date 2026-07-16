@@ -119,7 +119,6 @@ func (s *Server) Start() error {
 	internalRouter.Get("/", s.handleHealth("internal"))
 	internalRouter.Post("/ci/attachment/fetch", s.tokenAuthRequired(s.handleFetchAttachment))
 	internalRouter.Post("/ci/event/send", s.tokenAuthRequired(s.handleSendEvent))
-	internalRouter.Get("/ci/channel/info/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", s.tokenAuthRequired(s.handleChannelInfo))
 
 	s.internetServer = &http.Server{
 		Addr:         internetAddr,
@@ -367,21 +366,6 @@ func (s *Server) handleSendEvent(w http.ResponseWriter, r *http.Request) {
 	resp, err := sendEvent(ctx, s, r)
 	if err != nil {
 		slog.Error("error sending event", "error", err)
-		WriteError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonx.MustMarshal(resp))
-}
-
-func (s *Server) handleChannelInfo(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
-	defer cancel()
-
-	resp, err := getChannelInfo(ctx, s, r)
-	if err != nil {
 		WriteError(w, http.StatusBadRequest, err)
 		return
 	}

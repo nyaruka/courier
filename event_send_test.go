@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier/v26"
-	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/courier/v26/utils"
@@ -148,54 +147,4 @@ func TestSendEvent(t *testing.T) {
 	assert.Equal(t, 400, statusCode)
 	assert.Contains(t, string(respBody), `channel connection failed`)
 	assert.Len(t, mb.WrittenChannelLogs(), 2)
-}
-
-func TestChannelInfo(t *testing.T) {
-	cfg := runtime.NewDefaultConfig()
-	cfg.AuthToken = "sesame"
-	cfg.InternetPort = 8180
-	cfg.InternalPort = 8181
-
-	mb := test.NewMockBackend()
-	mb.AddChannel(test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{}))
-	mb.AddChannel(test.NewMockChannel("53e5aafa-8155-449d-9009-fcb30d54bd26", "XX", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{}))
-
-	server := courier.NewServer(runtime.NewTestRuntime(cfg), mb)
-	require.NoError(t, server.Start())
-	defer server.Stop()
-
-	fetch := func(path, authToken string) (int, []byte) {
-		req, _ := http.NewRequest("GET", "http://localhost:8181/ci/channel/info/"+path, nil)
-		if authToken != "" {
-			req.Header.Set("Authorization", "Bearer "+authToken)
-		}
-		trace, _, err := utils.TraceHTTP(http.DefaultClient, req, 0)
-		require.NoError(t, err)
-		return trace.Response.StatusCode, trace.ResponseBody
-	}
-
-	// no auth
-	statusCode, respBody := fetch("e4bb1578-29da-4fa5-a214-9da19dd24230", "")
-	assert.Equal(t, 401, statusCode)
-
-	// missing or invalid uuid doesn't match the route
-	statusCode, _ = fetch("", "sesame")
-	assert.Equal(t, 404, statusCode)
-	statusCode, _ = fetch("notauuid", "sesame")
-	assert.Equal(t, 404, statusCode)
-
-	// non-existent channel
-	statusCode, respBody = fetch("c25aab53-f23a-46c9-8ae3-1af850ad9fd9", "sesame")
-	assert.Equal(t, 400, statusCode)
-	assert.Contains(t, string(respBody), "channel not found")
-
-	// channel whose handler declares sendable events
-	statusCode, respBody = fetch("e4bb1578-29da-4fa5-a214-9da19dd24230", "sesame")
-	assert.Equal(t, 200, statusCode)
-	assert.JSONEq(t, `{"sendable_events": {"typing_started": 10}}`, string(respBody))
-
-	// channel with no handler has no capabilities to declare
-	statusCode, respBody = fetch("53e5aafa-8155-449d-9009-fcb30d54bd26", "sesame")
-	assert.Equal(t, 200, statusCode)
-	assert.JSONEq(t, `{}`, string(respBody))
 }
