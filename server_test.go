@@ -233,7 +233,7 @@ func TestFetchAttachment(t *testing.T) {
 
 	statusCode, respBody = submit(`{"channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "url": "http://mock.com/media/hello.jpg"}`, "sesame")
 	assert.Equal(t, 200, statusCode)
-	assert.JSONEq(t, `{"attachment": {"content_type": "image/jpeg", "url": "https://backend.com/attachments/cdf7ed27-5ad5-4028-b664-880fc7581c77.jpg", "size": 17301}, "log_uuid": "0191e180-7d60-7000-aded-7d8b151cbd5b"}`, string(respBody))
+	assert.JSONEq(t, `{"attachment": {"content_type": "image/jpeg", "url": "https://backend.com/attachments/f8844b62-b014-4975-9a98-cfcce3019710.jpg", "size": 17301}, "log_uuid": "0191e180-7d60-7000-8e0f-6b2abe4360d8"}`, string(respBody))
 
 	assert.Len(t, mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
@@ -244,12 +244,12 @@ func TestFetchAttachment(t *testing.T) {
 	// if fetching attachment from channel returns non-200, return unavailable attachment so caller doesn't retry
 	statusCode, respBody = submit(`{"channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "url": "http://mock.com/media/hello.mp3"}`, "sesame")
 	assert.Equal(t, 200, statusCode)
-	assert.JSONEq(t, `{"attachment": {"content_type": "unavailable", "url": "http://mock.com/media/hello.mp3", "size": 0}, "log_uuid": "0191e180-8148-7000-95b3-58675999c4b7"}`, string(respBody))
+	assert.JSONEq(t, `{"attachment": {"content_type": "unavailable", "url": "http://mock.com/media/hello.mp3", "size": 0}, "log_uuid": "0191e180-8148-7000-b92b-40dae35f038b"}`, string(respBody))
 
 	// same if fetching attachment times out
 	statusCode, respBody = submit(`{"channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "url": "http://mock.com/media/hello.pdf"}`, "sesame")
 	assert.Equal(t, 200, statusCode)
-	assert.JSONEq(t, `{"attachment": {"content_type": "unavailable", "url": "http://mock.com/media/hello.pdf", "size": 0}, "log_uuid": "0191e180-8530-7000-8ef6-384876655d1b"}`, string(respBody))
+	assert.JSONEq(t, `{"attachment": {"content_type": "unavailable", "url": "http://mock.com/media/hello.pdf", "size": 0}, "log_uuid": "0191e180-8530-7000-8920-17713634b9f5"}`, string(respBody))
 }
 
 // TestListeners verifies that internet and internal endpoints are correctly split between

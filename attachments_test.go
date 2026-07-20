@@ -57,7 +57,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	att, err := courier.FetchAndStoreAttachment(ctx, rt, mb, mockChannel, "http://mock.com/media/hello.jpg", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "image/jpeg", att.ContentType)
-	assert.Equal(t, "https://backend.com/attachments/cdf7ed27-5ad5-4028-b664-880fc7581c77.jpg", att.URL)
+	assert.Equal(t, "https://backend.com/attachments/f8844b62-b014-4975-9a98-cfcce3019710.jpg", att.URL)
 	assert.Equal(t, 17301, att.Size)
 
 	assert.Len(t, mb.SavedAttachments(), 1)
@@ -68,7 +68,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	att, err = courier.FetchAndStoreAttachment(ctx, rt, mb, mockChannel, "http://mock.com/media/hello2", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "image/jpeg", att.ContentType)
-	assert.Equal(t, "https://backend.com/attachments/547deaf7-7620-4434-95b3-58675999c4b7.jpg", att.URL)
+	assert.Equal(t, "https://backend.com/attachments/d4bb9822-7160-4af3-b92b-40dae35f038b.jpg", att.URL)
 	assert.Equal(t, 17301, att.Size)
 
 	assert.Len(t, mb.SavedAttachments(), 2)
@@ -94,13 +94,13 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	att, err = courier.FetchAndStoreAttachment(ctx, rt, mb, mockChannel, "http://mock.com/media/hello3", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "image/jpeg", att.ContentType)
-	assert.Equal(t, "https://backend.com/attachments/338ff339-5663-49ed-8ef6-384876655d1b.jpg", att.URL)
+	assert.Equal(t, "https://backend.com/attachments/e5273bef-6a8d-421f-8920-17713634b9f5.jpg", att.URL)
 	assert.Equal(t, 17301, att.Size)
 
 	att, err = courier.FetchAndStoreAttachment(ctx, rt, mb, mockChannel, "http://mock.com/media/hello7", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "application/octet-stream", att.ContentType)
-	assert.Equal(t, "https://backend.com/attachments/9b955e36-ac16-4c6b-8ab6-9b9af5cd042a.", att.URL)
+	assert.Equal(t, "https://backend.com/attachments/f87921a1-0484-4660-9955-f9b28b006b78.", att.URL)
 	assert.Equal(t, 11, att.Size)
 
 	// an actual error on our part should be returned as an error
