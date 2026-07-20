@@ -691,7 +691,7 @@ var testWelcomeMessageCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 validConversationStarted,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0199dd4c-8a88-7000-95b3-58675999c4b7"}`,
+		ExpectedBodyContains: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0199dd4c-8a88-7000-b92b-40dae35f038b"}`,
 		ExpectedEvents: []ExpectedEvent{
 			{Type: models.EventTypeWelcomeMessage, URN: "viber:xy5/5y6O81+/kbWHpLhBoA=="},
 		},
