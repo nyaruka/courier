@@ -1,3 +1,7 @@
+v26.3.13 (2026-07-20)
+-------------------------
+ * Update to gocommon v1.89.7
+
 v26.3.12 (2026-07-16)
 -------------------------
  * Remove internal channel info endpoint since capability is exercised per event send instead of queried up front
