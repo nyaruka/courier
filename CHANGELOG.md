@@ -1,3 +1,8 @@
+v26.3.14 (2026-07-21)
+-------------------------
+ * Log and ignore unknown Kannel delivery report statuses instead of marking messages as failed
+ * Update dependencies
+
 v26.3.13 (2026-07-20)
 -------------------------
  * Update to gocommon v1.89.7
