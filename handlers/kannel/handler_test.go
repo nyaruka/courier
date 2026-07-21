@@ -77,8 +77,9 @@ var handleTestCases = []IncomingTestCase{
 	{
 		Label:                "Status Invalid Status",
 		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=66",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "unknown status '66', must be one of 1,2,4,8,16",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"F"`,
+		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a06fa-467d-7786-b9cb-5b42177cd53f", Status: models.MsgStatusFailed}},
 	},
 	{
 		Label:                "Status Valid by UUID",

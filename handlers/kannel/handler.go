@@ -106,7 +106,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%d', must be one of 1,2,4,8,16", form.Status))
+		msgStatus = models.MsgStatusFailed
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
