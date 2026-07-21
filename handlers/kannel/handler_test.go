@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -75,11 +76,24 @@ var handleTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "field 'status' required"},
 	{
-		Label:                "Status Invalid Status",
+		Label:                "Status Unknown",
 		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=66",
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a06fa-467d-7786-b9cb-5b42177cd53f", Status: models.MsgStatusFailed}},
+		ExpectedBodyContains: "ignoring unknown status '66'",
+		ExpectedErrors:       []*clogs.Error{courier.ErrorExternal("dlr:66", "unknown delivery report status '66'")},
+	},
+	{
+		Label:                "Status Unknown Negative",
+		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=-1",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ignoring unknown status '-1'",
+		ExpectedErrors:       []*clogs.Error{courier.ErrorExternal("dlr:-1", "unknown delivery report status '-1'")},
+	},
+	{
+		Label:                "Status Zero",
+		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=0",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "field 'status' required",
 	},
 	{
 		Label:                "Status Valid by UUID",
