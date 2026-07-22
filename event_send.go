@@ -110,6 +110,17 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 		}
 	}
 
+	// a typing stopped event ends the typing session, so clear any typing started throttle - otherwise
+	// a new session starting within the interval would have its first typing started suppressed
+	if event.Type() == events.TypeTypingStopped {
+		startedKey := fmt.Sprintf("event-sends:%s|%s|%s", ch.UUID(), urn.Identity(), events.TypeTypingStarted)
+		rc := s.rt.VK.Get()
+		if _, err := rc.Do("DEL", startedKey); err != nil {
+			slog.Error("error clearing event send throttle", "error", err, "key", startedKey)
+		}
+		rc.Close()
+	}
+
 	clog := NewChannelLogForEventSend(ch, handler.RedactValues(ch))
 
 	err = handler.SendEvent(ctx, ch, event, clog)

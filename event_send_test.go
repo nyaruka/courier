@@ -27,6 +27,10 @@ func TestSendEvent(t *testing.T) {
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 	mb.AddChannel(mockChannel)
 
+	// add a channel that also supports typing stopped events
+	stoppableChannel := test.NewMockChannel("f8be89c7-58b5-4d3c-8e5c-c0d049f4d43b", "MCK", "2021", "US", []string{urns.Phone.Prefix}, map[string]any{"supports_stop": true})
+	mb.AddChannel(stoppableChannel)
+
 	// add a channel whose type has no handler registered and thus can't send events
 	brokenChannel := test.NewMockChannel("53e5aafa-8155-449d-9009-fcb30d54bd26", "XX", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 	mb.AddChannel(brokenChannel)
@@ -37,6 +41,9 @@ func TestSendEvent(t *testing.T) {
 			httpx.NewMockResponse(200, nil, []byte(`OK`)),
 			httpx.NewMockResponse(502, nil, []byte(`bad gateway`)),
 			httpx.NewMockResponse(502, nil, []byte(`bad gateway`)),
+			httpx.NewMockResponse(200, nil, []byte(`OK`)),
+			httpx.NewMockResponse(200, nil, []byte(`OK`)),
+			httpx.NewMockResponse(200, nil, []byte(`OK`)),
 		},
 	})
 	require.NoError(t, server.Start())
@@ -147,4 +154,24 @@ func TestSendEvent(t *testing.T) {
 	assert.Equal(t, 400, statusCode)
 	assert.Contains(t, string(respBody), `channel connection failed`)
 	assert.Len(t, mb.WrittenChannelLogs(), 2)
+
+	// a typing started on the stoppable channel is sent and throttled as usual
+	statusCode, respBody = submit(typingEvent("MCK", "typing_started", "outgoing", "f8be89c7-58b5-4d3c-8e5c-c0d049f4d43b", "tel:+250788123123"), "sesame")
+	assert.Equal(t, 200, statusCode)
+	assert.JSONEq(t, `{"supported": true, "interval": 10}`, string(respBody))
+	statusCode, respBody = submit(typingEvent("MCK", "typing_started", "outgoing", "f8be89c7-58b5-4d3c-8e5c-c0d049f4d43b", "tel:+250788123123"), "sesame")
+	assert.Equal(t, 200, statusCode)
+	assert.JSONEq(t, `{"supported": true, "interval": 10}`, string(respBody))
+
+	// a typing stopped is a one-shot send (no interval in response) which ends the typing session...
+	statusCode, respBody = submit(typingEvent("MCK", "typing_stopped", "outgoing", "f8be89c7-58b5-4d3c-8e5c-c0d049f4d43b", "tel:+250788123123"), "sesame")
+	assert.Equal(t, 200, statusCode)
+	assert.JSONEq(t, `{"supported": true}`, string(respBody))
+
+	// ...clearing the started throttle so a new typing session isn't suppressed - this send consumes the
+	// last mock response, which repeating within the interval wouldn't
+	statusCode, respBody = submit(typingEvent("MCK", "typing_started", "outgoing", "f8be89c7-58b5-4d3c-8e5c-c0d049f4d43b", "tel:+250788123123"), "sesame")
+	assert.Equal(t, 200, statusCode)
+	assert.JSONEq(t, `{"supported": true, "interval": 10}`, string(respBody))
+	assert.Len(t, mb.WrittenChannelLogs(), 2) // and all of that succeeded so no new channel logs
 }
