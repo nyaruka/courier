@@ -990,9 +990,8 @@ func TestWhatsAppSendEvent(t *testing.T) {
 		},
 	})
 
-	// typing indicators are supported on WhatsApp channels, but not Facebook/Instagram
+	// typing indicators are supported on WhatsApp channels, but there's no explicit stop
 	assert.Equal(t, map[string]time.Duration{events.TypeTypingStarted: 20 * time.Second}, h.SendableEvents(channel))
-	assert.Nil(t, newHandler("FBA", "Facebook").(*handler).SendableEvents(channel))
 
 	channelRef := assets.NewChannelReference("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WhatsApp")
 	typing := events.NewTypingStarted(events.DirectionOutgoing, channelRef, "whatsapp:5511987654321", "wamid.HBgMNTU3")

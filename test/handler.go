@@ -92,8 +92,12 @@ func (h *mockHandler) SendEvent(ctx context.Context, ch courier.Channel, event e
 	return nil
 }
 
-// SendableEvents declares support for typing indicators with a 10 second resend interval
-func (h *mockHandler) SendableEvents(courier.Channel) map[string]time.Duration {
+// SendableEvents declares support for typing started with a 10 second resend interval, plus typing
+// stopped for channels configured with supports_stop - so tests can cover both capability cases
+func (h *mockHandler) SendableEvents(ch courier.Channel) map[string]time.Duration {
+	if ch.BoolConfigForKey("supports_stop", false) {
+		return map[string]time.Duration{events.TypeTypingStarted: 10 * time.Second, events.TypeTypingStopped: 0}
+	}
 	return map[string]time.Duration{events.TypeTypingStarted: 10 * time.Second}
 }
 

@@ -17,6 +17,8 @@ import (
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/assets"
+	"github.com/nyaruka/goflow/core/events"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -617,6 +619,63 @@ func TestFacebookOutgoing(t *testing.T) {
 	checkRedacted := []string{"wac_admin_system_user_token", "missing_facebook_app_secret", "missing_facebook_webhook_secret", "a123"}
 
 	RunOutgoingTestCases(t, channel, newHandler("FBA", "Facebook"), facebookOutgoingTests, checkRedacted, nil)
+}
+
+func TestFacebookSendEvent(t *testing.T) {
+	channel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", []string{urns.Facebook.Prefix}, map[string]any{models.ConfigAuthToken: "a123"})
+
+	mb := test.NewMockBackend()
+	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
+
+	h := newHandler("FBA", "Facebook").(*handler)
+	h.Initialize(s)
+
+	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+		"https://graph.facebook.com/v22.0/me/messages*": {
+			httpx.NewMockResponse(200, nil, []byte(`{"recipient_id": "5678"}`)),
+			httpx.NewMockResponse(200, nil, []byte(`{"recipient_id": "5678"}`)),
+			httpx.NewMockResponse(400, nil, []byte(`{"error": {"message": "Invalid user", "code": 100}}`)),
+			httpx.MockConnectionError,
+		},
+	})
+
+	// typing events are supported on both Facebook and Instagram channels, including explicit stop
+	expected := map[string]time.Duration{events.TypeTypingStarted: 15 * time.Second, events.TypeTypingStopped: 0}
+	assert.Equal(t, expected, h.SendableEvents(channel))
+	assert.Equal(t, expected, newHandler("IG", "Instagram").(*handler).SendableEvents(channel))
+
+	channelRef := assets.NewChannelReference("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "Facebook")
+
+	// a typing started event is sent as a typing_on sender action
+	clog := courier.NewChannelLogForEventSend(channel, nil)
+	err := h.SendEvent(context.Background(), channel, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "facebook:5678", ""), clog)
+	assert.NoError(t, err)
+	assert.Len(t, clog.HttpLogs, 1)
+	assert.Equal(t, "https://graph.facebook.com/v22.0/me/messages?access_token=a123", clog.HttpLogs[0].URL)
+	assert.Contains(t, clog.HttpLogs[0].Request, `{"recipient":{"id":"5678"},"sender_action":"typing_on"}`)
+
+	// and a typing stopped event as a typing_off sender action
+	err = h.SendEvent(context.Background(), channel, events.NewTypingStopped(events.DirectionOutgoing, channelRef, "facebook:5678", ""), clog)
+	assert.NoError(t, err)
+	assert.Len(t, clog.HttpLogs, 2)
+	assert.Contains(t, clog.HttpLogs[1].Request, `{"recipient":{"id":"5678"},"sender_action":"typing_off"}`)
+
+	// an error response is a response error
+	err = h.SendEvent(context.Background(), channel, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "facebook:5678", ""), clog)
+	assert.Equal(t, courier.ErrResponseStatus, err)
+
+	// as is a connection error
+	err = h.SendEvent(context.Background(), channel, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "facebook:5678", ""), clog)
+	assert.Equal(t, courier.ErrConnectionFailed, err)
+
+	// a channel without an auth token config can't send
+	noAuth := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", []string{urns.Facebook.Prefix}, nil)
+	err = h.SendEvent(context.Background(), noAuth, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "facebook:5678", ""), clog)
+	assert.Equal(t, courier.ErrChannelConfig, err)
+
+	// nor can an event type the handler doesn't know how to send
+	err = h.SendEvent(context.Background(), channel, events.NewContactLanguageChanged("eng"), clog)
+	assert.ErrorContains(t, err, "unsupported event type: contact_language_changed")
 }
 
 func TestSigning(t *testing.T) {

@@ -737,21 +737,86 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 }
 
 // WhatsApp displays typing indicators for up to 25 seconds or until a reply is sent. Messenger and
-// Instagram do support typing indicators but via sender actions - not yet implemented.
+// Instagram display them for up to 20 seconds and are the rare platforms with an explicit off action.
 var sendableEvents = map[models.ChannelType]map[string]time.Duration{
+	"FBA": {events.TypeTypingStarted: 15 * time.Second, events.TypeTypingStopped: 0},
+	"IG":  {events.TypeTypingStarted: 15 * time.Second, events.TypeTypingStopped: 0},
 	"WAC": {events.TypeTypingStarted: 20 * time.Second},
 }
 
-// SendableEvents declares support for typing indicators on WhatsApp channels
+// SendableEvents declares support for typing indicators
 func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
 	return sendableEvents[h.ChannelType()]
 }
 
-// SendEvent sends a typing started event as a typing indicator, which WhatsApp implements as marking
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+	if h.ChannelType() == "FBA" || h.ChannelType() == "IG" {
+		return h.sendFacebookInstagramEvent(ctx, ch, event, clog)
+	} else if h.ChannelType() == "WAC" {
+		return h.sendWhatsAppEvent(ctx, ch, event, clog)
+	}
+
+	return fmt.Errorf("unsupported channel type")
+}
+
+// Sends typing started/stopped events as typing_on/typing_off sender actions.
+// See https://developers.facebook.com/docs/messenger-platform/send-messages/sender-actions
+func (h *handler) sendFacebookInstagramEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+	var urn urns.URN
+	var action string
+	switch typed := event.(type) {
+	case *events.TypingStarted:
+		urn, action = typed.URN, "typing_on"
+	case *events.TypingStopped:
+		urn, action = typed.URN, "typing_off"
+	default:
+		return fmt.Errorf("unsupported event type: %s", event.Type())
+	}
+
+	accessToken := ch.StringConfigForKey(models.ConfigAuthToken, "")
+	if accessToken == "" {
+		return courier.ErrChannelConfig
+	}
+
+	// sender action requests can only contain the recipient and the action
+	payload := &struct {
+		Recipient struct {
+			ID string `json:"id"`
+		} `json:"recipient"`
+		SenderAction string `json:"sender_action"`
+	}{SenderAction: action}
+	payload.Recipient.ID = urn.Path()
+
+	msgURL, _ := url.Parse(sendURL)
+	query := url.Values{}
+	query.Set("access_token", accessToken)
+	msgURL.RawQuery = query.Encode()
+
+	req, err := http.NewRequest(http.MethodPost, msgURL.String(), bytes.NewReader(jsonx.MustMarshal(payload)))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, respBody, err := h.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	}
+
+	respPayload := &messenger.SendResponse{}
+	if err := json.Unmarshal(respBody, respPayload); err != nil || resp.StatusCode/100 != 2 || respPayload.Error.Code != 0 {
+		return courier.ErrResponseStatus
+	}
+
+	return nil
+}
+
+// Sends a typing started event as a typing indicator, which WhatsApp implements as marking
 // the referenced incoming message as read with a typing_indicator field - so it also marks messages as
 // read, which is acceptable because we only send one when a reply is being composed.
 // See https://developers.facebook.com/docs/whatsapp/cloud-api/typing-indicators
-func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+func (h *handler) sendWhatsAppEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
 	typing, ok := event.(*events.TypingStarted)
 	if !ok {
 		return fmt.Errorf("unsupported event type: %s", event.Type())
