@@ -1,3 +1,8 @@
+v26.3.15 (2026-07-22)
+-------------------------
+ * Add typing event support to Facebook and Instagram channels
+ * Update goflow to v0.284.0
+
 v26.3.14 (2026-07-21)
 -------------------------
  * Log and ignore unknown Kannel delivery report statuses instead of marking messages as failed
