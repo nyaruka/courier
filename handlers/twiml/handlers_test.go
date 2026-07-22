@@ -5,16 +5,20 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"fmt"
 
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/assets"
+	"github.com/nyaruka/goflow/core/events"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -1444,4 +1448,64 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	req, _ = swHandler.BuildAttachmentRequest(context.Background(), swChannel, "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "", req.Header.Get("Authorization"))
+}
+
+func TestSendEvent(t *testing.T) {
+	channel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
+		[]string{urns.WhatsApp.Prefix},
+		map[string]any{
+			configAccountSID:       "accountSID",
+			models.ConfigAuthToken: "authToken",
+		},
+	)
+
+	mb := test.NewMockBackend()
+	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
+
+	h := newTWIMLHandler("TWA", "Twilio Whatsapp", true).(*handler)
+	h.Initialize(s)
+
+	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+		"https://messaging.twilio.com/v3/Indicators/Typing.json": {
+			httpx.NewMockResponse(200, nil, []byte(`{"success": true}`)),
+			httpx.NewMockResponse(400, nil, []byte(`{"code": 21211, "message": "Invalid message SID"}`)),
+			httpx.MockConnectionError,
+		},
+	})
+
+	// typing indicators are supported on Twilio WhatsApp channels but no other TWIML channel types
+	assert.Equal(t, map[string]time.Duration{events.TypeTypingStarted: 20 * time.Second}, h.SendableEvents(channel))
+	assert.Nil(t, newTWIMLHandler("T", "Twilio", true).(*handler).SendableEvents(channel))
+
+	channelRef := assets.NewChannelReference("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "Twilio Whatsapp")
+	typing := events.NewTypingStarted(events.DirectionOutgoing, channelRef, "whatsapp:12065551212", "SMabcdef1234567890abcdef1234567890")
+
+	// a typing indicator is sent as a typing indicators resource call referencing the incoming message
+	clog := courier.NewChannelLogForEventSend(channel, nil)
+	err := h.SendEvent(context.Background(), channel, typing, clog)
+	assert.NoError(t, err)
+	assert.Len(t, clog.HttpLogs, 1)
+	assert.Equal(t, "https://messaging.twilio.com/v3/Indicators/Typing.json", clog.HttpLogs[0].URL)
+	assert.Contains(t, clog.HttpLogs[0].Request, `{"channel":"WHATSAPP","messageId":"SMabcdef1234567890abcdef1234567890"}`)
+
+	// an error response is a response error
+	err = h.SendEvent(context.Background(), channel, typing, clog)
+	assert.Equal(t, courier.ErrResponseStatus, err)
+
+	// as is a connection error
+	err = h.SendEvent(context.Background(), channel, typing, clog)
+	assert.Equal(t, courier.ErrConnectionFailed, err)
+
+	// an event without a msg external ID can't be sent
+	err = h.SendEvent(context.Background(), channel, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "whatsapp:12065551212", ""), clog)
+	assert.ErrorContains(t, err, "requires msg_external_id")
+
+	// a channel without complete auth config can't send
+	noAuth := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US", []string{urns.WhatsApp.Prefix}, map[string]any{})
+	err = h.SendEvent(context.Background(), noAuth, typing, clog)
+	assert.Equal(t, courier.ErrChannelConfig, err)
+
+	// nor can an event type the handler doesn't declare support for
+	err = h.SendEvent(context.Background(), channel, events.NewTypingStopped(events.DirectionOutgoing, channelRef, "whatsapp:12065551212", ""), clog)
+	assert.ErrorContains(t, err, "unsupported event type: typing_stopped")
 }
