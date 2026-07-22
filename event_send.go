@@ -111,7 +111,9 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 	}
 
 	// a typing stopped event ends the typing session, so clear any typing started throttle - otherwise
-	// a new session starting within the interval would have its first typing started suppressed
+	// a new session starting within the interval would have its first typing started suppressed. This is
+	// intentionally unconditional on the send outcome: if the stop fails the indicator times out on its
+	// own, and an extra typing started is harmless where a suppressed one isn't.
 	if event.Type() == events.TypeTypingStopped {
 		startedKey := fmt.Sprintf("event-sends:%s|%s|%s", ch.UUID(), urn.Identity(), events.TypeTypingStarted)
 		rc := s.rt.VK.Get()
