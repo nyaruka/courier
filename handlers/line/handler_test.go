@@ -9,9 +9,12 @@ import (
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/assets"
+	"github.com/nyaruka/goflow/core/events"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -623,4 +626,52 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	req, _ := lnHandler.BuildAttachmentRequest(context.Background(), testChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer the-auth-token", req.Header.Get("Authorization"))
+}
+
+func TestSendEvent(t *testing.T) {
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US", []string{urns.Line.Prefix}, map[string]any{"auth_token": "AccessToken"})
+
+	mb := test.NewMockBackend()
+	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
+	h := newHandler().(*handler)
+	h.Initialize(s)
+
+	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+		"https://api.line.me/v2/bot/chat/loading/start": {
+			httpx.NewMockResponse(202, nil, []byte(`{}`)),
+			httpx.NewMockResponse(400, nil, []byte(`{"message": "The property, 'chatId', in the request body is invalid"}`)),
+			httpx.MockConnectionError,
+		},
+	})
+
+	// typing indicators are supported but there's no explicit stop
+	assert.Equal(t, map[string]time.Duration{events.TypeTypingStarted: 15 * time.Second}, h.SendableEvents(ch))
+
+	channelRef := assets.NewChannelReference("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LINE")
+	typing := events.NewTypingStarted(events.DirectionOutgoing, channelRef, "line:uabcdefghij", "")
+
+	// a typing started event is sent as a loading indicator
+	clog := courier.NewChannelLogForEventSend(ch, nil)
+	err := h.SendEvent(context.Background(), ch, typing, clog)
+	assert.NoError(t, err)
+	assert.Len(t, clog.HttpLogs, 1)
+	assert.Equal(t, "https://api.line.me/v2/bot/chat/loading/start", clog.HttpLogs[0].URL)
+	assert.Contains(t, clog.HttpLogs[0].Request, `{"chatId":"uabcdefghij","loadingSeconds":20}`)
+
+	// an error response is a response error
+	err = h.SendEvent(context.Background(), ch, typing, clog)
+	assert.Equal(t, courier.ErrResponseStatus, err)
+
+	// as is a connection error
+	err = h.SendEvent(context.Background(), ch, typing, clog)
+	assert.Equal(t, courier.ErrConnectionFailed, err)
+
+	// a channel without an auth token config can't send
+	noAuth := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US", []string{urns.Line.Prefix}, nil)
+	err = h.SendEvent(context.Background(), noAuth, typing, clog)
+	assert.Equal(t, courier.ErrChannelConfig, err)
+
+	// nor can an event type the handler doesn't declare support for
+	err = h.SendEvent(context.Background(), ch, events.NewTypingStopped(events.DirectionOutgoing, channelRef, "line:uabcdefghij", ""), clog)
+	assert.ErrorContains(t, err, "unsupported event type: typing_stopped")
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/core/events"
 )
 
 var (
@@ -50,6 +51,10 @@ var (
 	// get user
 	actionGetUser = "/users.get.json"
 	paramUserIds  = "user_ids"
+
+	// set activity
+	actionSetActivity = "/messages.setActivity.json"
+	paramType         = "type"
 
 	// send message
 	actionSendMessage = "/messages.send.json"
@@ -373,6 +378,52 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 		}
 	}
 	return ""
+}
+
+// VK displays typing activity for up to 10 seconds or until a message is sent
+var sendableEvents = map[string]time.Duration{events.TypeTypingStarted: 8 * time.Second}
+
+// SendableEvents declares support for typing indicators
+func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
+	return sendableEvents
+}
+
+// SendEvent sends a typing started event to the contact as a typing activity, see
+// https://dev.vk.com/en/method/messages.setActivity
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+	typing, ok := event.(*events.TypingStarted)
+	if !ok {
+		return fmt.Errorf("unsupported event type: %s", event.Type())
+	}
+
+	if ch.StringConfigForKey(models.ConfigAuthToken, "") == "" {
+		return courier.ErrChannelConfig
+	}
+
+	params := buildApiBaseParams(ch)
+	params.Set(paramUserId, typing.URN.Path())
+	params.Set(paramType, "typing")
+
+	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionSetActivity, nil)
+	if err != nil {
+		return err
+	}
+	req.URL.RawQuery = params.Encode()
+
+	resp, respBody, err := h.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	}
+	if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
+	}
+
+	// VK reports errors in a 200 response, success is {"response": 1}
+	if _, err := jsonparser.GetInt(respBody, responseOutgoingMessageKey); err != nil {
+		return courier.ErrResponseStatus
+	}
+
+	return nil
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
