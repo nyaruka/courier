@@ -147,18 +147,26 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		text = form.ButtonText
 	}
 
-	// build our msg
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, form.MessageSID, clog)
-
+	// if we have a business-scoped user ID (ExternalUserId), make that WhatsApp URN the primary URN and attach
+	// the phone number as a secondary URN
+	appendURN := urns.NilURN
 	if form.ExternalUserId != "" && channel.IsScheme(urns.WhatsApp) {
 		userIDURN, urnErr := h.parseURN(channel, form.ExternalUserId, i18n.Country(form.FromCountry))
 
 		if urnErr == nil {
-			msg.WithNewURN(userIDURN, models.NewURNAppend)
+			appendURN = urn
+			urn = userIDURN
 		} else {
 			slog.Warn("ignoring invalid ExternalUserId for message", "ExternalUserId", form.ExternalUserId, "MessageSID", form.MessageSID, "Error", urnErr.Error())
 
 		}
+	}
+
+	// build our msg
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, form.MessageSID, clog)
+
+	if appendURN != urns.NilURN {
+		msg.WithNewURN(appendURN, models.NewURNAppend)
 	}
 
 	// process any attached media
@@ -467,8 +475,8 @@ func (h *handler) parseURN(channel courier.Channel, text string, country i18n.Co
 		}
 
 		if dot := strings.Index(fromTel, "."); dot >= 0 && dot < len(fromTel)-1 {
-			// if we have a BSUID, use that as the URN
-			return urns.New(urns.BSUID, fromTel)
+			// a business-scoped user ID becomes a WhatsApp URN
+			return urns.New(urns.WhatsApp, fromTel)
 		}
 
 		// trim off left +, official whatsapp IDs dont have that

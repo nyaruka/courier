@@ -360,10 +360,10 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedBodyContains:  `"type":"msg"`,
 		ExpectedContactName:   Sp("Jerry Cooney"),
 		ExpectedMsgText:       Sp("hello world"),
-		ExpectedURN:           "whatsapp:250788123123",
+		ExpectedURN:           "whatsapp:US.1234",
 		ExpectedExternalID:    "41",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
-		ExpectedNewURN:        &models.NewURNSpec{Value: "bsuid:US.1234", Action: models.NewURNAppend},
+		ExpectedNewURN:        &models.NewURNSpec{Value: "whatsapp:250788123123", Action: models.NewURNAppend},
 		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 	},
@@ -622,7 +622,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Plain Send with BSUID",
 		MsgText: "Simple Message",
-		MsgURN:  "bsuid:US.1234",
+		MsgURN:  "whatsapp:US.1234",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
