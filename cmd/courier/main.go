@@ -11,7 +11,6 @@ import (
 	_ "github.com/nyaruka/courier/v26/handlers/arabiacell"
 	_ "github.com/nyaruka/courier/v26/handlers/bandwidth"
 	_ "github.com/nyaruka/courier/v26/handlers/burstsms"
-	_ "github.com/nyaruka/courier/v26/handlers/chip"
 	_ "github.com/nyaruka/courier/v26/handlers/clickatell"
 	_ "github.com/nyaruka/courier/v26/handlers/clickmobile"
 	_ "github.com/nyaruka/courier/v26/handlers/clicksend"
