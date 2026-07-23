@@ -825,20 +825,7 @@ func (h *handler) sendWhatsAppEvent(ctx context.Context, ch courier.Channel, eve
 		return fmt.Errorf("%s event requires msg_external_id", event.Type())
 	}
 
-	type typingIndicator struct {
-		Type string `json:"type"`
-	}
-	payload := &struct {
-		MessagingProduct string          `json:"messaging_product"`
-		Status           string          `json:"status"`
-		MessageID        string          `json:"message_id"`
-		TypingIndicator  typingIndicator `json:"typing_indicator"`
-	}{
-		MessagingProduct: "whatsapp",
-		Status:           "read",
-		MessageID:        typing.MsgExternalID,
-		TypingIndicator:  typingIndicator{Type: "text"},
-	}
+	payload := whatsapp.NewTypingRequest(typing.MsgExternalID)
 
 	base, _ := url.Parse(graphURL)
 	path, _ := url.Parse(fmt.Sprintf("/%s/messages", ch.Address()))

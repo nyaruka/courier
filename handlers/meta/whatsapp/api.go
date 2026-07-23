@@ -349,6 +349,24 @@ type SendResponse struct {
 	} `json:"error"`
 }
 
+// A request to mark an incoming message as read and show a typing indicator, which lasts until a reply
+// is sent or 25 seconds pass. See https://developers.facebook.com/docs/whatsapp/cloud-api/typing-indicators
+type TypingRequest struct {
+	MessagingProduct string `json:"messaging_product"`
+	Status           string `json:"status"`
+	MessageID        string `json:"message_id"`
+	TypingIndicator  struct {
+		Type string `json:"type"`
+	} `json:"typing_indicator"`
+}
+
+// NewTypingRequest creates a typing indicator request referencing the given incoming message
+func NewTypingRequest(msgID string) *TypingRequest {
+	r := &TypingRequest{MessagingProduct: "whatsapp", Status: "read", MessageID: msgID}
+	r.TypingIndicator.Type = "text"
+	return r
+}
+
 // UserID returns the user_id from the first contact in the response if present.
 func (r *SendResponse) UserID() string {
 	if len(r.Contacts) > 0 && r.Contacts[0].UserID != "" {

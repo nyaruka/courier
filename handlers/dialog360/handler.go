@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier/v26"
@@ -18,6 +19,7 @@ import (
 	"github.com/nyaruka/courier/v26/handlers/meta/whatsapp"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/core/events"
 )
 
 const (
@@ -299,6 +301,59 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		} else {
 			res.SetNewURN(userIDURN)
 		}
+	}
+
+	return nil
+}
+
+// WhatsApp displays typing indicators for up to 25 seconds or until a reply is sent
+var sendableEvents = map[string]time.Duration{events.TypeTypingStarted: 20 * time.Second}
+
+// SendableEvents declares support for typing indicators
+func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
+	return sendableEvents
+}
+
+// SendEvent sends a typing started event as a typing indicator, which WhatsApp implements as marking
+// the referenced incoming message as read with a typing_indicator field - so it also marks messages as
+// read, which is acceptable because we only send one when a reply is being composed.
+// See https://developers.facebook.com/docs/whatsapp/cloud-api/typing-indicators
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+	typing, ok := event.(*events.TypingStarted)
+	if !ok {
+		return fmt.Errorf("unsupported event type: %s", event.Type())
+	}
+	if typing.MsgExternalID == "" {
+		return fmt.Errorf("%s event requires msg_external_id", event.Type())
+	}
+
+	accessToken := ch.StringConfigForKey(models.ConfigAuthToken, "")
+	baseURL, err := url.Parse(ch.StringConfigForKey(models.ConfigBaseURL, ""))
+	if accessToken == "" || err != nil {
+		return courier.ErrChannelConfig
+	}
+	sendURL, _ := baseURL.Parse("/messages")
+
+	payload := whatsapp.NewTypingRequest(typing.MsgExternalID)
+
+	req, err := http.NewRequest(http.MethodPost, sendURL.String(), bytes.NewReader(jsonx.MustMarshal(payload)))
+	if err != nil {
+		return err
+	}
+	req.Header.Set(d3AuthorizationKey, accessToken)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, respBody, err := h.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	}
+
+	response := &struct {
+		Success bool `json:"success"`
+	}{}
+	if err := json.Unmarshal(respBody, response); err != nil || resp.StatusCode/100 != 2 || !response.Success {
+		return courier.ErrResponseStatus
 	}
 
 	return nil

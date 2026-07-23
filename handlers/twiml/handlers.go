@@ -11,6 +11,7 @@ import (
 	"crypto/sha1"
 	_ "embed"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier/v26"
@@ -30,6 +32,7 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
+	"github.com/nyaruka/goflow/core/events"
 )
 
 const (
@@ -47,6 +50,8 @@ const (
 var (
 	maxMsgLength  = 1600
 	twilioBaseURL = "https://api.twilio.com"
+
+	typingIndicatorURL = "https://messaging.twilio.com/v3/Indicators/Typing.json"
 
 	//go:embed errors.json
 	errorCodes []byte
@@ -423,6 +428,63 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			}
 		}
 
+	}
+
+	return nil
+}
+
+// WhatsApp displays typing indicators for up to 25 seconds or until a reply is sent - other channel
+// types have no typing indicator support
+var sendableEvents = map[models.ChannelType]map[string]time.Duration{
+	"TWA": {events.TypeTypingStarted: 20 * time.Second},
+}
+
+// SendableEvents declares support for typing indicators on WhatsApp channels
+func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
+	return sendableEvents[h.ChannelType()]
+}
+
+// SendEvent sends a typing started event as a typing indicator, which Twilio implements as marking the
+// referenced incoming message as read and displaying an indicator until a reply is sent.
+// See https://www.twilio.com/docs/whatsapp/api/typing-indicators-resource
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+	typing, ok := event.(*events.TypingStarted)
+	if !ok {
+		return fmt.Errorf("unsupported event type: %s", event.Type())
+	}
+	if typing.MsgExternalID == "" {
+		return fmt.Errorf("%s event requires msg_external_id", event.Type())
+	}
+
+	accountSID := ch.StringConfigForKey(configAccountSID, "")
+	accountToken := ch.StringConfigForKey(models.ConfigAuthToken, "")
+	if accountSID == "" || accountToken == "" {
+		return courier.ErrChannelConfig
+	}
+
+	payload := &struct {
+		Channel   string `json:"channel"`
+		MessageID string `json:"messageId"`
+	}{Channel: "WHATSAPP", MessageID: typing.MsgExternalID}
+
+	req, err := http.NewRequest(http.MethodPost, typingIndicatorURL, bytes.NewReader(jsonx.MustMarshal(payload)))
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(accountSID, accountToken)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, respBody, err := h.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	}
+
+	response := &struct {
+		Success bool `json:"success"`
+	}{}
+	if err := json.Unmarshal(respBody, response); err != nil || resp.StatusCode/100 != 2 || !response.Success {
+		return courier.ErrResponseStatus
 	}
 
 	return nil
