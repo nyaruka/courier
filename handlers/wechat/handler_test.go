@@ -21,6 +21,8 @@ import (
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/assets"
+	"github.com/nyaruka/goflow/core/events"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -384,4 +386,69 @@ func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US", []string{urns.WeChat.Prefix}, map[string]any{configAppSecret: "secret123", configAppID: "app-id"})
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret123"}, setupBackend)
+}
+
+func TestSendEvent(t *testing.T) {
+	// other tests repoint sendURL at mock servers, so pin it for this test
+	defer func(u string) { sendURL = u }(sendURL)
+	sendURL = "https://api.weixin.qq.com/cgi-bin"
+
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US", []string{urns.WeChat.Prefix}, map[string]any{configAppSecret: "secret123", configAppID: "app-id"})
+
+	mb := test.NewMockBackend()
+
+	// ensure there's a cached access token
+	rc := mb.RedisPool().Get()
+	defer rc.Close()
+	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+
+	s := newServer(mb)
+	h := newHandler().(*handler)
+	h.Initialize(s)
+
+	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+		"https://api.weixin.qq.com/cgi-bin/message/custom/typing*": {
+			httpx.NewMockResponse(200, nil, []byte(`{"errcode": 0, "errmsg": "ok"}`)),
+			httpx.NewMockResponse(200, nil, []byte(`{"errcode": 0, "errmsg": "ok"}`)),
+			httpx.NewMockResponse(200, nil, []byte(`{"errcode": 45015, "errmsg": "response out of time limit"}`)),
+			httpx.NewMockResponse(400, nil, []byte(`bad request`)),
+			httpx.MockConnectionError,
+		},
+	})
+
+	// typing events are supported including explicit stop
+	assert.Equal(t, map[string]time.Duration{events.TypeTypingStarted: 12 * time.Second, events.TypeTypingStopped: 0}, h.SendableEvents(ch))
+
+	channelRef := assets.NewChannelReference("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WeChat")
+	typing := events.NewTypingStarted(events.DirectionOutgoing, channelRef, "wechat:abcde12345", "")
+
+	// a typing started event is sent as a Typing command
+	clog := courier.NewChannelLogForEventSend(ch, nil)
+	err := h.SendEvent(context.Background(), ch, typing, clog)
+	assert.NoError(t, err)
+	assert.Len(t, clog.HttpLogs, 1)
+	assert.Contains(t, clog.HttpLogs[0].URL, "https://api.weixin.qq.com/cgi-bin/message/custom/typing")
+	assert.Contains(t, clog.HttpLogs[0].Request, `{"touser":"abcde12345","command":"Typing"}`)
+
+	// and a typing stopped event as a CancelTyping command
+	err = h.SendEvent(context.Background(), ch, events.NewTypingStopped(events.DirectionOutgoing, channelRef, "wechat:abcde12345", ""), clog)
+	assert.NoError(t, err)
+	assert.Len(t, clog.HttpLogs, 2)
+	assert.Contains(t, clog.HttpLogs[1].Request, `{"touser":"abcde12345","command":"CancelTyping"}`)
+
+	// a WeChat error in a 200 response is a response error
+	err = h.SendEvent(context.Background(), ch, typing, clog)
+	assert.Equal(t, courier.ErrResponseStatus, err)
+
+	// as is a non-2XX response
+	err = h.SendEvent(context.Background(), ch, typing, clog)
+	assert.Equal(t, courier.ErrResponseStatus, err)
+
+	// and a connection error is a connection error
+	err = h.SendEvent(context.Background(), ch, typing, clog)
+	assert.Equal(t, courier.ErrConnectionFailed, err)
+
+	// an event type the handler doesn't declare support for can't be sent
+	err = h.SendEvent(context.Background(), ch, events.NewContactLanguageChanged("eng"), clog)
+	assert.ErrorContains(t, err, "unsupported event type: contact_language_changed")
 }

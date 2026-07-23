@@ -22,6 +22,7 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/core/events"
 )
 
 var (
@@ -211,6 +212,74 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		if err != nil || resp.StatusCode/100 == 5 {
 			return courier.ErrConnectionFailed
 		}
+	}
+
+	return nil
+}
+
+// WeChat displays typing status for up to 15 seconds or until a reply is sent, and has an explicit
+// cancel command
+var sendableEvents = map[string]time.Duration{
+	events.TypeTypingStarted: 12 * time.Second,
+	events.TypeTypingStopped: 0,
+}
+
+// SendableEvents declares support for typing indicators
+func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
+	return sendableEvents
+}
+
+// SendEvent sends typing started/stopped events as Typing/CancelTyping customer service commands, see
+// https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Service_Center_messages.html
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+	var urn urns.URN
+	var command string
+	switch typed := event.(type) {
+	case *events.TypingStarted:
+		urn, command = typed.URN, "Typing"
+	case *events.TypingStopped:
+		urn, command = typed.URN, "CancelTyping"
+	default:
+		return fmt.Errorf("unsupported event type: %s", event.Type())
+	}
+
+	accessToken, err := h.getAccessToken(ch, clog)
+	if err != nil {
+		return err
+	}
+
+	form := url.Values{
+		"access_token": []string{accessToken},
+	}
+	typingURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "message/custom/typing"))
+	typingURL.RawQuery = form.Encode()
+
+	payload := &struct {
+		ToUser  string `json:"touser"`
+		Command string `json:"command"`
+	}{ToUser: urn.Path(), Command: command}
+
+	requestBody := &bytes.Buffer{}
+	json.NewEncoder(requestBody).Encode(payload)
+
+	req, err := http.NewRequest(http.MethodPost, typingURL.String(), requestBody)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, respBody, err := h.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	}
+	if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
+	}
+
+	// WeChat reports errors in a 200 response, success is errcode 0
+	if errcode, err := jsonparser.GetInt(respBody, "errcode"); err != nil || errcode != 0 {
+		return courier.ErrResponseStatus
 	}
 
 	return nil

@@ -19,12 +19,15 @@ import (
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/core/events"
 )
 
 var (
 	replySendURL = "https://api.line.me/v2/bot/message/reply"
 	pushSendURL  = "https://api.line.me/v2/bot/message/push"
+	loadingURL   = "https://api.line.me/v2/bot/chat/loading/start"
 	mediaDataURL = "https://api-data.line.me/v2/bot/message"
 	maxMsgLength = 2000
 	maxMsgSend   = 5
@@ -282,6 +285,52 @@ type mtPayload struct {
 
 type mtResponse struct {
 	Message string `json:"message"`
+}
+
+// LINE displays its loading indicator for the requested number of seconds or until a reply is sent,
+// and only supports it in 1:1 chats
+var sendableEvents = map[string]time.Duration{events.TypeTypingStarted: 15 * time.Second}
+
+// SendableEvents declares support for typing indicators
+func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
+	return sendableEvents
+}
+
+// SendEvent sends a typing started event to the contact as a loading indicator, see
+// https://developers.line.biz/en/docs/messaging-api/use-loading-indicator/
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+	typing, ok := event.(*events.TypingStarted)
+	if !ok {
+		return fmt.Errorf("unsupported event type: %s", event.Type())
+	}
+
+	authToken := ch.StringConfigForKey(models.ConfigAuthToken, "")
+	if authToken == "" {
+		return courier.ErrChannelConfig
+	}
+
+	payload := &struct {
+		ChatID         string `json:"chatId"`
+		LoadingSeconds int    `json:"loadingSeconds"`
+	}{ChatID: typing.URN.Path(), LoadingSeconds: 20}
+
+	req, err := http.NewRequest(http.MethodPost, loadingURL, bytes.NewReader(jsonx.MustMarshal(payload)))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authToken))
+
+	resp, _, err := h.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	}
+	if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
+	}
+
+	return nil
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
