@@ -18,8 +18,8 @@ require (
 	github.com/h2non/filetype v1.1.3
 	github.com/lib/pq v1.12.3
 	github.com/nyaruka/ezconf v0.6.1
-	github.com/nyaruka/gocommon v1.89.7
-	github.com/nyaruka/goflow v0.284.0
+	github.com/nyaruka/gocommon v1.90.1
+	github.com/nyaruka/goflow v0.284.3
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/vkutil v0.21.0
 	github.com/samber/slog-multi v1.8.0
