@@ -1,3 +1,7 @@
+v26.3.16 (2026-07-22)
+-------------------------
+ * Add typing event support to 360Dialog and Twilio WhatsApp channels
+
 v26.3.15 (2026-07-22)
 -------------------------
  * Add typing event support to Facebook and Instagram channels
