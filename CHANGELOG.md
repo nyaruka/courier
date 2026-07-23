@@ -1,3 +1,9 @@
+v26.3.17 (2026-07-23)
+-------------------------
+ * Add typing event support to LINE, VK and WeChat channels
+ * Remove CHP channel handler
+ * Update to latest goflow and gocommon
+
 v26.3.16 (2026-07-22)
 -------------------------
  * Add typing event support to 360Dialog and Twilio WhatsApp channels
