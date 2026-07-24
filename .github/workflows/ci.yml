@@ -46,6 +46,13 @@ jobs:
           echo "gocache=$(go env GOCACHE)" >> $GITHUB_OUTPUT
           echo "goversion=$(go env GOVERSION)" >> $GITHUB_OUTPUT
 
+      - name: Install zstd
+        # zstd must be installed before the cache step so actions/cache uses fast multithreaded
+        # zstd compression instead of falling back to single-threaded gzip
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends zstd
+
       - name: Cache Go modules and build cache
         uses: actions/cache@v5
         with:
