@@ -1,3 +1,7 @@
+v26.3.19 (2026-07-27)
+-------------------------
+ * Update to vkutil v0.22.0 and gocommon v1.92.0 which now provides the fair queue as queues.FairV2
+
 v26.3.18 (2026-07-27)
 -------------------------
  * Add support for WhatsApp flow (nfm) replies with structured payloads passed to mailroom
