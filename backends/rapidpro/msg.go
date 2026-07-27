@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -29,6 +30,7 @@ type MsgIn struct {
 	ContactName_   string             `json:"contact_name"`
 	URNAuthTokens_ map[string]string  `json:"auth_tokens"`
 	NewURN_        *models.NewURNSpec `json:"new_urn,omitempty"`
+	Payload_       json.RawMessage    `json:"payload,omitempty"`
 
 	channel   *models.Channel
 	duplicate bool
@@ -51,6 +53,7 @@ func (m *MsgIn) WithNewURN(urn urns.URN, action models.NewURNAction) courier.Msg
 	m.NewURN_ = &models.NewURNSpec{Value: urn, Action: action}
 	return m
 }
+func (m *MsgIn) WithPayload(payload json.RawMessage) courier.MsgIn { m.Payload_ = payload; return m }
 
 func (m *MsgIn) hash() string {
 	hash := sha1.Sum([]byte(m.Text_ + "|" + strings.Join(m.Attachments_, "|")))

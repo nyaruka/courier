@@ -1,10 +1,12 @@
 package whatsapp
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nyaruka/courier/v26"
@@ -97,6 +99,11 @@ type WAMessage struct {
 			ID    string `json:"id"`
 			Title string `json:"title"`
 		} `json:"list_reply,omitempty"`
+		NFMReply struct {
+			Name         string `json:"name"`
+			Body         string `json:"body"`
+			ResponseJSON string `json:"response_json"`
+		} `json:"nfm_reply,omitempty"`
 	} `json:"interactive,omitempty"`
 	Errors []WAError `json:"errors"`
 }
@@ -173,6 +180,8 @@ func (m WAMessage) ExtractTextAndMedia() (string, string, string, error) {
 		text = m.Interactive.ButtonReply.Title
 	} else if m.Type == "interactive" && m.Interactive.Type == "list_reply" {
 		text = m.Interactive.ListReply.Title
+	} else if m.Type == "interactive" && m.Interactive.Type == "nfm_reply" {
+		text = m.Interactive.NFMReply.Body
 	} else {
 		// we received a message type we do not support.
 		err = fmt.Errorf("unsupported message type %s", m.Type)
@@ -180,6 +189,18 @@ func (m WAMessage) ExtractTextAndMedia() (string, string, string, error) {
 
 	return text, mediaURL, mediaID, err
 
+}
+
+// ExtractPayload returns the structured payload of this message if it has one - i.e. for a flow (nfm) reply, the
+// response JSON if it's a valid JSON object - or nil if it doesn't.
+func (m WAMessage) ExtractPayload() json.RawMessage {
+	if m.Type == "interactive" && m.Interactive.Type == "nfm_reply" {
+		raw := strings.TrimSpace(m.Interactive.NFMReply.ResponseJSON)
+		if strings.HasPrefix(raw, "{") && json.Valid([]byte(raw)) {
+			return json.RawMessage(raw)
+		}
+	}
+	return nil
 }
 
 type WAStatus struct {

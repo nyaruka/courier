@@ -278,6 +278,20 @@ var testCasesD3C = []IncomingTestCase{
 		ExpectedExternalID:    "external_id",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
+	{
+		Label:                 "Receive Valid Interactive Flow Reply Message",
+		URL:                   d3CReceiveURL,
+		Data:                  string(test.ReadFile("../meta/testdata/wac/nfm_reply.json")),
+		ExpectedRespStatus:    200,
+		ExpectedBodyContains:  "Handled",
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+		ExpectedMsgText:       Sp("Sent"),
+		ExpectedPayload:       `{"flow_token": "fl0w+t0k3n", "first_name": "Bob", "age": "32"}`,
+		ExpectedURN:           "whatsapp:5678",
+		ExpectedExternalID:    "external_id",
+		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
 }
 
 func buildMockD3MediaService(testChannels []courier.Channel, testCases []IncomingTestCase) *httptest.Server {
