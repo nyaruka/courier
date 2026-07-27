@@ -8,10 +8,10 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/gocommon/jsonx"
-	"github.com/nyaruka/vkutil/queues"
+	"github.com/nyaruka/gocommon/queues"
 )
 
-var mrQueue = queues.NewFair("tasks:realtime", 100)
+var mrQueue = queues.NewFairV2("tasks:realtime", 100)
 
 func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *MsgIn) error {
 	channel := m.Channel().(*models.Channel)
