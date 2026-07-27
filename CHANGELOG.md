@@ -1,3 +1,7 @@
+v26.3.18 (2026-07-27)
+-------------------------
+ * Add support for WhatsApp flow (nfm) replies with structured payloads passed to mailroom
+
 v26.3.17 (2026-07-23)
 -------------------------
  * Add typing event support to LINE, VK and WeChat channels
