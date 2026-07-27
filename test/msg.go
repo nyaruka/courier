@@ -1,6 +1,7 @@
 package test
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/nyaruka/courier/v26"
@@ -37,6 +38,7 @@ type MockMsg struct {
 	receivedOn *time.Time
 	sentOn     *time.Time
 	newURN     *models.NewURNSpec
+	payload    json.RawMessage
 }
 
 func NewMockMsg(uuid models.MsgUUID, channel courier.Channel, urn urns.URN, text string, attachments []string) *MockMsg {
@@ -90,6 +92,11 @@ func (m *MockMsg) WithNewURN(urn urns.URN, action models.NewURNAction) courier.M
 	return m
 }
 func (m *MockMsg) NewURN() *models.NewURNSpec { return m.newURN }
+func (m *MockMsg) WithPayload(payload json.RawMessage) courier.MsgIn {
+	m.payload = payload
+	return m
+}
+func (m *MockMsg) Payload() json.RawMessage { return m.payload }
 
 // used to create outgoing messages for testing
 func (m *MockMsg) WithUUID(uuid models.MsgUUID) courier.MsgOut        { m.uuid = uuid; return m }

@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/nyaruka/courier/v26/core/models"
@@ -84,6 +85,7 @@ type MsgIn interface {
 	WithURNAuthTokens(tokens map[string]string) MsgIn
 	WithReceivedOn(date time.Time) MsgIn
 	WithNewURN(urn urns.URN, action models.NewURNAction) MsgIn
+	WithPayload(payload json.RawMessage) MsgIn
 }
 
 // StatusUpdate represents a status update on a message

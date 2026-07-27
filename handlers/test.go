@@ -66,6 +66,7 @@ type IncomingTestCase struct {
 	ExpectedURN           urns.URN
 	ExpectedURNAuthTokens map[urns.URN]map[string]string
 	ExpectedAttachments   []string
+	ExpectedPayload       string
 	ExpectedDate          time.Time
 	ExpectedExternalID    string
 	ExpectedMsgID         int64
@@ -184,6 +185,11 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 				}
 				if len(tc.ExpectedAttachments) > 0 {
 					assert.Equal(t, tc.ExpectedAttachments, msg.Attachments())
+				}
+				if tc.ExpectedPayload != "" {
+					assert.JSONEq(t, tc.ExpectedPayload, string(msg.Payload()))
+				} else {
+					assert.Nil(t, msg.Payload())
 				}
 				if !tc.ExpectedDate.IsZero() {
 					assert.Equal(t, tc.ExpectedDate.Local(), msg.ReceivedOn().Local())

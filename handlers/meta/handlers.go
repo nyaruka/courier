@@ -300,6 +300,10 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					event.WithAttachment(mediaURL)
 				}
 
+				if payload := waMsg.ExtractPayload(); payload != nil {
+					event.WithPayload(payload)
+				}
+
 				// if we have a user_id, add it as secondary BSUID URN
 				if waMsg.FromUserID != "" {
 					userIDURN, urnErr := urns.New(urns.BSUID, waMsg.FromUserID)
