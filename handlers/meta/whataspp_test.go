@@ -317,6 +317,20 @@ var whatsappIncomingTests = []IncomingTestCase{
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		PrepRequest:           addValidSignature,
 	},
+	{
+		Label:                 "Receive Interactive Flow Reply Message With Non-Object Response JSON",
+		URL:                   whatappReceiveURL,
+		Data:                  string(test.ReadFile("./testdata/wac/nfm_reply_non_object.json")),
+		ExpectedRespStatus:    200,
+		ExpectedBodyContains:  "Handled",
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+		ExpectedMsgText:       Sp("Sent"),
+		ExpectedURN:           "whatsapp:5678",
+		ExpectedExternalID:    "external_id",
+		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+		PrepRequest:           addValidSignature,
+	},
 }
 
 func TestWhatsAppIncoming(t *testing.T) {

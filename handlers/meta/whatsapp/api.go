@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nyaruka/courier/v26"
@@ -191,10 +192,13 @@ func (m WAMessage) ExtractTextAndMedia() (string, string, string, error) {
 }
 
 // ExtractPayload returns the structured payload of this message if it has one - i.e. for a flow (nfm) reply, the
-// response JSON - or nil if it doesn't.
+// response JSON if it's a valid JSON object - or nil if it doesn't.
 func (m WAMessage) ExtractPayload() json.RawMessage {
-	if m.Type == "interactive" && m.Interactive.Type == "nfm_reply" && json.Valid([]byte(m.Interactive.NFMReply.ResponseJSON)) {
-		return json.RawMessage(m.Interactive.NFMReply.ResponseJSON)
+	if m.Type == "interactive" && m.Interactive.Type == "nfm_reply" {
+		raw := strings.TrimSpace(m.Interactive.NFMReply.ResponseJSON)
+		if strings.HasPrefix(raw, "{") && json.Valid([]byte(raw)) {
+			return json.RawMessage(raw)
+		}
 	}
 	return nil
 }

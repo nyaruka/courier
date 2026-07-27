@@ -302,6 +302,8 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 
 				if payload := waMsg.ExtractPayload(); payload != nil {
 					event.WithPayload(payload)
+				} else if waMsg.Interactive.Type == "nfm_reply" && waMsg.Interactive.NFMReply.ResponseJSON != "" {
+					courier.LogRequestError(r, channel, errors.New("nfm_reply response_json is not a valid JSON object"))
 				}
 
 				// if we have a user_id, add it as secondary BSUID URN
