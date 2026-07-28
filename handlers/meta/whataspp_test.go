@@ -998,7 +998,7 @@ func newServerWithWAC(backend courier.Backend) *courier.Server {
 func TestWhatsAppSendEvent(t *testing.T) {
 	// other tests repoint graphURL at mock servers, so pin it for this test
 	defer func(u string) { graphURL = u }(graphURL)
-	graphURL = "https://graph.facebook.com/v22.0/"
+	graphURL = "https://graph.facebook.com/v25.0/"
 
 	channel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WAC", "12345_ID", "", []string{urns.WhatsApp.Prefix}, map[string]any{models.ConfigAuthToken: "a123"})
 
