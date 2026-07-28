@@ -324,6 +324,36 @@ func TestGetMsgPayloads(t *testing.T) {
 				assert.Empty(t, payloads[0].To)
 			},
 		},
+		{
+			label:                 "Form QR - should use flow interactive, other QRs ignored",
+			text:                  "Book an appointment",
+			quickReplies:          []models.QuickReply{{Type: "form", Text: "Book now", Extra: "123456"}, {Type: "text", Text: "Yes"}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "interactive",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+				assert.Equal(t, 1, len(payloads))
+				assert.Equal(t, "interactive", payloads[0].Type)
+				assert.Equal(t, "flow", payloads[0].Interactive.Type)
+				assert.Equal(t, "Book an appointment", payloads[0].Interactive.Body.Text)
+				assert.Equal(t, "flow", payloads[0].Interactive.Action.Name)
+				assert.Equal(t, &whatsapp.FlowParameters{FlowMessageVersion: "3", FlowID: "123456", FlowCTA: "Book now"}, payloads[0].Interactive.Action.Parameters)
+			},
+		},
+		{
+			label:                 "Form QR without form ID - should be ignored and logged",
+			text:                  "Book an appointment",
+			quickReplies:          []models.QuickReply{{Type: "form", Text: "Book now"}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "text",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+				assert.Equal(t, 1, len(payloads))
+				assert.Equal(t, "text", payloads[0].Type)
+				assert.Len(t, clog.Errors, 1)
+				assert.Equal(t, "form quick reply is missing a form ID and can't be sent", clog.Errors[0].Message)
+			},
+		},
 	}
 
 	for _, tc := range tcs {

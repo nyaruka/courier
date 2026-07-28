@@ -308,29 +308,41 @@ type Template struct {
 	Components []*Component `json:"components,omitempty"`
 }
 
+// see https://developers.facebook.com/docs/whatsapp/flows/gettingstarted/sendingaflow
+type FlowParameters struct {
+	FlowMessageVersion string `json:"flow_message_version"`
+	FlowID             string `json:"flow_id"`
+	FlowCTA            string `json:"flow_cta"`
+}
+
+type Header struct {
+	Type     string `json:"type"`
+	Text     string `json:"text,omitempty"`
+	Video    *Media `json:"video,omitempty"`
+	Image    *Media `json:"image,omitempty"`
+	Document *Media `json:"document,omitempty"`
+}
+
+type Action struct {
+	Name       string          `json:"name,omitempty"`
+	Button     string          `json:"button,omitempty"`
+	Sections   []Section       `json:"sections,omitempty"`
+	Buttons    []Button        `json:"buttons,omitempty"`
+	Parameters *FlowParameters `json:"parameters,omitempty"`
+}
+
 // see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#interactive-object
 // e.g. https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#interactive-messages
 type Interactive struct {
-	Type   string `json:"type"`
-	Header *struct {
-		Type     string `json:"type"`
-		Text     string `json:"text,omitempty"`
-		Video    *Media `json:"video,omitempty"`
-		Image    *Media `json:"image,omitempty"`
-		Document *Media `json:"document,omitempty"`
-	} `json:"header,omitempty"`
-	Body struct {
+	Type   string  `json:"type"`
+	Header *Header `json:"header,omitempty"`
+	Body   struct {
 		Text string `json:"text"`
 	} `json:"body" validate:"required"`
 	Footer *struct {
 		Text string `json:"text"`
 	} `json:"footer,omitempty"`
-	Action *struct {
-		Name     string    `json:"name,omitempty"`
-		Button   string    `json:"button,omitempty"`
-		Sections []Section `json:"sections,omitempty"`
-		Buttons  []Button  `json:"buttons,omitempty"`
-	} `json:"action,omitempty"`
+	Action *Action `json:"action,omitempty"`
 }
 
 // see https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#request-syntax
