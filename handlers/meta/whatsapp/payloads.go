@@ -48,6 +48,7 @@ func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.Ch
 	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "text")
 	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeLocation)
 	formQRs := FilterFormQuickReplies(msg.QuickReplies(), clog)
+	urlQRs := FilterURLQuickReplies(msg.QuickReplies(), clog)
 	menuButton := handlers.GetText("Menu", msg.Locale())
 
 	qrsAsList := shouldUseList(qrs)
@@ -62,7 +63,7 @@ func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.Ch
 
 	// determine if the attachment can be used as a header in an interactive message
 	hasHeaderAttachment := false
-	if len(msg.Attachments()) > 0 && len(qrs) > 0 && len(qrs) <= 3 && len(locationQRs) == 0 && len(formQRs) == 0 && !qrsAsList {
+	if len(msg.Attachments()) > 0 && len(qrs) > 0 && len(qrs) <= 3 && len(locationQRs) == 0 && len(formQRs) == 0 && len(urlQRs) == 0 && !qrsAsList {
 		attType, _ := handlers.SplitAttachment(msg.Attachments()[0])
 		attType = strings.Split(attType, "/")[0]
 		// only certain media types can be used as an interactive header
@@ -82,7 +83,7 @@ func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.Ch
 		attType = strings.Split(attType, "/")[0]
 
 		// only non-audio single attachment messages can have captions
-		if attType != "audio" && len(msgParts) == 1 && len(msg.Attachments()) == 1 && len(qrs) == 0 && len(locationQRs) == 0 && len(formQRs) == 0 {
+		if attType != "audio" && len(msgParts) == 1 && len(msg.Attachments()) == 1 && len(qrs) == 0 && len(locationQRs) == 0 && len(formQRs) == 0 && len(urlQRs) == 0 {
 			caption = msgParts[0]
 		}
 
@@ -107,6 +108,9 @@ func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.Ch
 
 		case isLastPart && len(formQRs) > 0:
 			payloads = append(payloads, buildFlowPayload(msg, part, formQRs[0]))
+
+		case isLastPart && len(urlQRs) > 0:
+			payloads = append(payloads, buildCTAURLPayload(msg, part, urlQRs[0]))
 
 		case isLastPart && len(qrs) > 0 && !qrsAsList:
 			ps, err := buildButtonPayload(msg, part, qrs, hasHeaderAttachment)
@@ -194,6 +198,20 @@ func FilterFormQuickReplies(qrs []models.QuickReply, clog *courier.ChannelLog) [
 	return f
 }
 
+// FilterURLQuickReplies returns quick replies of type "url" that have an extra value (the URL), logging an error for
+// any that don't since they can't be sent.
+func FilterURLQuickReplies(qrs []models.QuickReply, clog *courier.ChannelLog) []models.QuickReply {
+	f := make([]models.QuickReply, 0, len(qrs))
+	for _, qr := range handlers.FilterQuickRepliesByType(qrs, models.QuickReplyTypeURL) {
+		if qr.Extra == "" {
+			clog.Error(&clogs.Error{Message: "URL quick reply is missing a URL and can't be sent"})
+			continue
+		}
+		f = append(f, qr)
+	}
+	return f
+}
+
 func buildLocationRequestPayload(msg courier.MsgOut, body string) SendRequest {
 	p := newBasePayload(msg)
 	p.Type = "interactive"
@@ -213,7 +231,21 @@ func buildFlowPayload(msg courier.MsgOut, body string, qr models.QuickReply) Sen
 	}{Text: body}}
 	interactive.Action = &Action{
 		Name:       "flow",
-		Parameters: &FlowParameters{FlowMessageVersion: "3", FlowID: qr.Extra, FlowCTA: qr.GetText()},
+		Parameters: &ActionParameters{FlowMessageVersion: "3", FlowID: qr.Extra, FlowCTA: qr.GetText()},
+	}
+	p.Interactive = &interactive
+	return p
+}
+
+func buildCTAURLPayload(msg courier.MsgOut, body string, qr models.QuickReply) SendRequest {
+	p := newBasePayload(msg)
+	p.Type = "interactive"
+	interactive := Interactive{Type: "cta_url", Body: struct {
+		Text string `json:"text"`
+	}{Text: body}}
+	interactive.Action = &Action{
+		Name:       "cta_url",
+		Parameters: &ActionParameters{DisplayText: qr.GetText(), URL: qr.Extra},
 	}
 	p.Interactive = &interactive
 	return p

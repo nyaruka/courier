@@ -129,6 +129,7 @@ const (
 const (
 	QuickReplyTypeLocation = "location"
 	QuickReplyTypeForm     = "form"
+	QuickReplyTypeURL      = "url"
 )
 
 type QuickReply struct {
@@ -143,6 +144,9 @@ func (qr QuickReply) GetText() string {
 	}
 	if qr.Type == QuickReplyTypeForm && qr.Text == "" {
 		return "Open Form"
+	}
+	if qr.Type == QuickReplyTypeURL && qr.Text == "" {
+		return "Open Link"
 	}
 	return qr.Text
 }
