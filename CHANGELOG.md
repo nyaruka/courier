@@ -1,3 +1,8 @@
+v26.3.20 (2026-07-28)
+-------------------------
+ * Add support for sending form quick replies as WhatsApp flow messages
+ * Update FB graph API version to v25.0
+
 v26.3.19 (2026-07-27)
 -------------------------
  * Update to vkutil v0.22.0 and gocommon v1.92.0 which now provides the fair queue as queues.FairV2
