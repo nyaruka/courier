@@ -1,3 +1,7 @@
+v26.3.21 (2026-07-28)
+-------------------------
+ * Add support for sending url quick replies as WhatsApp CTA URL button messages
+
 v26.3.20 (2026-07-28)
 -------------------------
  * Add support for sending form quick replies as WhatsApp flow messages
