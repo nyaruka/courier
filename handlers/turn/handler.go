@@ -403,10 +403,11 @@ type mtInteractivePayload struct {
 			Text string `json:"text"`
 		} `json:"footer,omitempty"`
 		Action struct {
-			Name     string      `json:"name,omitempty"`
-			Button   string      `json:"button,omitempty"`
-			Sections []mtSection `json:"sections,omitempty"`
-			Buttons  []mtButton  `json:"buttons,omitempty"`
+			Name       string                   `json:"name,omitempty"`
+			Button     string                   `json:"button,omitempty"`
+			Sections   []mtSection              `json:"sections,omitempty"`
+			Buttons    []mtButton               `json:"buttons,omitempty"`
+			Parameters *whatsapp.FlowParameters `json:"parameters,omitempty"`
 		} `json:"action" validate:"required"`
 	} `json:"interactive"`
 }
@@ -505,9 +506,10 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 		}
 	}
 
-	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "location")
+	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeLocation)
+	formQRs := whatsapp.FilterFormQuickReplies(msg.QuickReplies(), clog)
 
-	isInteractiveMsg := len(msg.QuickReplies()) > 0
+	isInteractiveMsg := len(qrs) > 0 || len(locationQRs) > 0 || len(formQRs) > 0
 
 	textAsCaption := false
 
@@ -620,6 +622,18 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 						payload.Interactive.Action.Name = "send_location"
 						payloads = append(payloads, payload)
 
+					} else if len(formQRs) > 0 {
+						qr := formQRs[0]
+						payload.Interactive.Type = "flow"
+						payload.Interactive.Body.Text = part
+						payload.Interactive.Action.Name = "flow"
+						payload.Interactive.Action.Parameters = &whatsapp.FlowParameters{
+							FlowMessageVersion: "3",
+							FlowID:             qr.Extra,
+							FlowCTA:            qr.GetText(),
+						}
+						payloads = append(payloads, payload)
+
 					} else if !qrsAsList { // we show buttons
 						payload.Interactive.Type = "button"
 						payload.Interactive.Body.Text = part
@@ -724,6 +738,18 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 							payload.Interactive.Type = "location_request_message"
 							payload.Interactive.Body.Text = part
 							payload.Interactive.Action.Name = "send_location"
+							payloads = append(payloads, payload)
+
+						} else if len(formQRs) > 0 {
+							qr := formQRs[0]
+							payload.Interactive.Type = "flow"
+							payload.Interactive.Body.Text = part
+							payload.Interactive.Action.Name = "flow"
+							payload.Interactive.Action.Parameters = &whatsapp.FlowParameters{
+								FlowMessageVersion: "3",
+								FlowID:             qr.Extra,
+								FlowCTA:            qr.GetText(),
+							}
 							payloads = append(payloads, payload)
 
 						} else if !qrsAsList { // we show buttons

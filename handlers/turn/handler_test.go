@@ -1062,6 +1062,21 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
+		Label:           "Interactive with form",
+		MsgText:         "Interactive form msg",
+		MsgURN:          "whatsapp:250788123123",
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Text: "Book now", Extra: "123456"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"flow","body":{"text":"Interactive form msg"},"action":{"name":"flow","parameters":{"flow_message_version":"3","flow_id":"123456","flow_cta":"Book now"}}}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
 		Label:   "Error Channel Contact Pair limit hit",
 		MsgText: "Pair limit",
 		MsgURN:  "whatsapp:250788123123",

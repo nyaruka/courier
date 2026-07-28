@@ -126,7 +126,10 @@ const (
 	MsgOriginChat      MsgOrigin = "chat"
 )
 
-const QuickReplyTypeLocation = "location"
+const (
+	QuickReplyTypeLocation = "location"
+	QuickReplyTypeForm     = "form"
+)
 
 type QuickReply struct {
 	Type  string `json:"type"            validate:"required"`
@@ -137,6 +140,9 @@ type QuickReply struct {
 func (qr QuickReply) GetText() string {
 	if qr.Type == QuickReplyTypeLocation && qr.Text == "" {
 		return "Send Location"
+	}
+	if qr.Type == QuickReplyTypeForm && qr.Text == "" {
+		return "Open Form"
 	}
 	return qr.Text
 }

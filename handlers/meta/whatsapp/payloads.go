@@ -46,7 +46,8 @@ func (p SendRequest) withTemplate(templating *models.Templating) SendRequest {
 func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.ChannelLog) ([]SendRequest, error) {
 	msgParts := splitText(msg, maxMsgLength)
 	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "text")
-	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "location")
+	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeLocation)
+	formQRs := FilterFormQuickReplies(msg.QuickReplies(), clog)
 	menuButton := handlers.GetText("Menu", msg.Locale())
 
 	qrsAsList := shouldUseList(qrs)
@@ -61,7 +62,7 @@ func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.Ch
 
 	// determine if the attachment can be used as a header in an interactive message
 	hasHeaderAttachment := false
-	if len(msg.Attachments()) > 0 && len(qrs) > 0 && len(qrs) <= 3 && len(locationQRs) == 0 && !qrsAsList {
+	if len(msg.Attachments()) > 0 && len(qrs) > 0 && len(qrs) <= 3 && len(locationQRs) == 0 && len(formQRs) == 0 && !qrsAsList {
 		attType, _ := handlers.SplitAttachment(msg.Attachments()[0])
 		attType = strings.Split(attType, "/")[0]
 		// only certain media types can be used as an interactive header
@@ -81,7 +82,7 @@ func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.Ch
 		attType = strings.Split(attType, "/")[0]
 
 		// only non-audio single attachment messages can have captions
-		if attType != "audio" && len(msgParts) == 1 && len(msg.Attachments()) == 1 && len(qrs) == 0 && len(locationQRs) == 0 {
+		if attType != "audio" && len(msgParts) == 1 && len(msg.Attachments()) == 1 && len(qrs) == 0 && len(locationQRs) == 0 && len(formQRs) == 0 {
 			caption = msgParts[0]
 		}
 
@@ -103,6 +104,9 @@ func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.Ch
 		switch {
 		case isLastPart && len(locationQRs) > 0:
 			payloads = append(payloads, buildLocationRequestPayload(msg, part))
+
+		case isLastPart && len(formQRs) > 0:
+			payloads = append(payloads, buildFlowPayload(msg, part, formQRs[0]))
 
 		case isLastPart && len(qrs) > 0 && !qrsAsList:
 			ps, err := buildButtonPayload(msg, part, qrs, hasHeaderAttachment)
@@ -176,18 +180,41 @@ func buildMediaPayload(msg courier.MsgOut, attachmentIdx int, caption string) (S
 	return p, nil
 }
 
+// FilterFormQuickReplies returns quick replies of type "form" that have an extra value (the form ID), logging an
+// error for any that don't since they can't be sent.
+func FilterFormQuickReplies(qrs []models.QuickReply, clog *courier.ChannelLog) []models.QuickReply {
+	f := make([]models.QuickReply, 0, len(qrs))
+	for _, qr := range handlers.FilterQuickRepliesByType(qrs, models.QuickReplyTypeForm) {
+		if qr.Extra == "" {
+			clog.Error(&clogs.Error{Message: "form quick reply is missing a form ID and can't be sent"})
+			continue
+		}
+		f = append(f, qr)
+	}
+	return f
+}
+
 func buildLocationRequestPayload(msg courier.MsgOut, body string) SendRequest {
 	p := newBasePayload(msg)
 	p.Type = "interactive"
 	interactive := Interactive{Type: "location_request_message", Body: struct {
 		Text string `json:"text"`
 	}{Text: body}}
-	interactive.Action = &struct {
-		Name     string    `json:"name,omitempty"`
-		Button   string    `json:"button,omitempty"`
-		Sections []Section `json:"sections,omitempty"`
-		Buttons  []Button  `json:"buttons,omitempty"`
-	}{Name: "send_location"}
+	interactive.Action = &Action{Name: "send_location"}
+	p.Interactive = &interactive
+	return p
+}
+
+func buildFlowPayload(msg courier.MsgOut, body string, qr models.QuickReply) SendRequest {
+	p := newBasePayload(msg)
+	p.Type = "interactive"
+	interactive := Interactive{Type: "flow", Body: struct {
+		Text string `json:"text"`
+	}{Text: body}}
+	interactive.Action = &Action{
+		Name:       "flow",
+		Parameters: &FlowParameters{FlowMessageVersion: "3", FlowID: qr.Extra, FlowCTA: qr.GetText()},
+	}
 	p.Interactive = &interactive
 	return p
 }
@@ -220,42 +247,19 @@ func buildButtonPayload(msg courier.MsgOut, body string, qrs []models.QuickReply
 
 		switch attType {
 		case "image":
-			interactive.Header = &struct {
-				Type     string `json:"type"`
-				Text     string `json:"text,omitempty"`
-				Video    *Media `json:"video,omitempty"`
-				Image    *Media `json:"image,omitempty"`
-				Document *Media `json:"document,omitempty"`
-			}{Type: "image", Image: &Media{Link: attURL}}
+			interactive.Header = &Header{Type: "image", Image: &Media{Link: attURL}}
 		case "video":
-			interactive.Header = &struct {
-				Type     string `json:"type"`
-				Text     string `json:"text,omitempty"`
-				Video    *Media `json:"video,omitempty"`
-				Image    *Media `json:"image,omitempty"`
-				Document *Media `json:"document,omitempty"`
-			}{Type: "video", Video: &Media{Link: attURL}}
+			interactive.Header = &Header{Type: "video", Video: &Media{Link: attURL}}
 		case "document":
 			filename, err := utils.BasePathForURL(attURL)
 			if err != nil {
 				return nil, err
 			}
-			interactive.Header = &struct {
-				Type     string `json:"type"`
-				Text     string `json:"text,omitempty"`
-				Video    *Media `json:"video,omitempty"`
-				Image    *Media `json:"image,omitempty"`
-				Document *Media `json:"document,omitempty"`
-			}{Type: "document", Document: &Media{Link: attURL, Filename: filename}}
+			interactive.Header = &Header{Type: "document", Document: &Media{Link: attURL, Filename: filename}}
 		}
 	}
 
-	interactive.Action = &struct {
-		Name     string    `json:"name,omitempty"`
-		Button   string    `json:"button,omitempty"`
-		Sections []Section `json:"sections,omitempty"`
-		Buttons  []Button  `json:"buttons,omitempty"`
-	}{Buttons: buildButtons(qrs)}
+	interactive.Action = &Action{Buttons: buildButtons(qrs)}
 	p.Interactive = &interactive
 	payloads = append(payloads, p)
 	return payloads, nil
@@ -278,12 +282,7 @@ func buildListPayload(msg courier.MsgOut, body string, qrs []models.QuickReply, 
 		}
 	}
 
-	interactive.Action = &struct {
-		Name     string    `json:"name,omitempty"`
-		Button   string    `json:"button,omitempty"`
-		Sections []Section `json:"sections,omitempty"`
-		Buttons  []Button  `json:"buttons,omitempty"`
-	}{Button: menuButton, Sections: []Section{section}}
+	interactive.Action = &Action{Button: menuButton, Sections: []Section{section}}
 	p.Interactive = &interactive
 	return p
 }
