@@ -1109,6 +1109,52 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedLogErrors: []*clogs.Error{{Message: "form quick reply is missing a form ID and can't be sent"}},
 	},
 	{
+		Label:           "Interactive with URL button",
+		MsgText:         "Interactive URL msg",
+		MsgURN:          "whatsapp:250788123123",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit", Extra: "https://example.com"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"cta_url","body":{"text":"Interactive URL msg"},"action":{"name":"cta_url","parameters":{"display_text":"Visit","url":"https://example.com"}}}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:           "Interactive with URL button, with extra quick replies ignored and default display text",
+		MsgText:         "Interactive URL msg",
+		MsgURN:          "whatsapp:250788123123",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Extra: "https://example.com"}, {Type: "text", Text: "Yes"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"cta_url","body":{"text":"Interactive URL msg"},"action":{"name":"cta_url","parameters":{"display_text":"Open Link","url":"https://example.com"}}}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:           "Interactive with URL button missing URL, sent as text",
+		MsgText:         "Interactive URL msg",
+		MsgURN:          "whatsapp:250788123123",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"to":"250788123123","type":"text","text":{"body":"Interactive URL msg"}}`,
+		}},
+		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedLogErrors: []*clogs.Error{{Message: "URL quick reply is missing a URL and can't be sent"}},
+	},
+	{
 		Label:   "Error Channel Contact Pair limit hit",
 		MsgText: "Pair limit",
 		MsgURN:  "whatsapp:250788123123",

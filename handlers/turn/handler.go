@@ -403,11 +403,11 @@ type mtInteractivePayload struct {
 			Text string `json:"text"`
 		} `json:"footer,omitempty"`
 		Action struct {
-			Name       string                   `json:"name,omitempty"`
-			Button     string                   `json:"button,omitempty"`
-			Sections   []mtSection              `json:"sections,omitempty"`
-			Buttons    []mtButton               `json:"buttons,omitempty"`
-			Parameters *whatsapp.FlowParameters `json:"parameters,omitempty"`
+			Name       string                     `json:"name,omitempty"`
+			Button     string                     `json:"button,omitempty"`
+			Sections   []mtSection                `json:"sections,omitempty"`
+			Buttons    []mtButton                 `json:"buttons,omitempty"`
+			Parameters *whatsapp.ActionParameters `json:"parameters,omitempty"`
 		} `json:"action" validate:"required"`
 	} `json:"interactive"`
 }
@@ -508,8 +508,9 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 
 	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeLocation)
 	formQRs := whatsapp.FilterFormQuickReplies(msg.QuickReplies(), clog)
+	urlQRs := whatsapp.FilterURLQuickReplies(msg.QuickReplies(), clog)
 
-	isInteractiveMsg := len(qrs) > 0 || len(locationQRs) > 0 || len(formQRs) > 0
+	isInteractiveMsg := len(qrs) > 0 || len(locationQRs) > 0 || len(formQRs) > 0 || len(urlQRs) > 0
 
 	textAsCaption := false
 
@@ -627,10 +628,21 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 						payload.Interactive.Type = "flow"
 						payload.Interactive.Body.Text = part
 						payload.Interactive.Action.Name = "flow"
-						payload.Interactive.Action.Parameters = &whatsapp.FlowParameters{
+						payload.Interactive.Action.Parameters = &whatsapp.ActionParameters{
 							FlowMessageVersion: "3",
 							FlowID:             qr.Extra,
 							FlowCTA:            qr.GetText(),
+						}
+						payloads = append(payloads, payload)
+
+					} else if len(urlQRs) > 0 {
+						qr := urlQRs[0]
+						payload.Interactive.Type = "cta_url"
+						payload.Interactive.Body.Text = part
+						payload.Interactive.Action.Name = "cta_url"
+						payload.Interactive.Action.Parameters = &whatsapp.ActionParameters{
+							DisplayText: qr.GetText(),
+							URL:         qr.Extra,
 						}
 						payloads = append(payloads, payload)
 
@@ -745,10 +757,21 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 							payload.Interactive.Type = "flow"
 							payload.Interactive.Body.Text = part
 							payload.Interactive.Action.Name = "flow"
-							payload.Interactive.Action.Parameters = &whatsapp.FlowParameters{
+							payload.Interactive.Action.Parameters = &whatsapp.ActionParameters{
 								FlowMessageVersion: "3",
 								FlowID:             qr.Extra,
 								FlowCTA:            qr.GetText(),
+							}
+							payloads = append(payloads, payload)
+
+						} else if len(urlQRs) > 0 {
+							qr := urlQRs[0]
+							payload.Interactive.Type = "cta_url"
+							payload.Interactive.Body.Text = part
+							payload.Interactive.Action.Name = "cta_url"
+							payload.Interactive.Action.Parameters = &whatsapp.ActionParameters{
+								DisplayText: qr.GetText(),
+								URL:         qr.Extra,
 							}
 							payloads = append(payloads, payload)
 
