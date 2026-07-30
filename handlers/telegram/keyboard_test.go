@@ -74,6 +74,16 @@ func TestKeyboardFromReplies(t *testing.T) {
 				true, true,
 			},
 		},
+		{
+
+			[]models.QuickReply{{Type: "form", Extra: "https://example.com/form"}, {Type: "text", Text: "Skip"}},
+			&telegram.ReplyKeyboardMarkup{
+				[][]telegram.KeyboardButton{
+					{{Text: "Open Form", WebApp: &telegram.WebAppInfo{URL: "https://example.com/form"}}, {Text: "Skip"}},
+				},
+				true, true,
+			},
+		},
 	}
 
 	for _, tc := range tcs {

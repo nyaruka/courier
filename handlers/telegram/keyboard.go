@@ -4,11 +4,17 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 )
 
+// WebAppInfo describes a Mini App to be launched, see https://core.telegram.org/bots/api/#webappinfo
+type WebAppInfo struct {
+	URL string `json:"url"`
+}
+
 // KeyboardButton is button on a keyboard, see https://core.telegram.org/bots/api/#keyboardbutton
 type KeyboardButton struct {
-	Text            string `json:"text"`
-	RequestContact  bool   `json:"request_contact,omitempty"`
-	RequestLocation bool   `json:"request_location,omitempty"`
+	Text            string      `json:"text"`
+	RequestContact  bool        `json:"request_contact,omitempty"`
+	RequestLocation bool        `json:"request_location,omitempty"`
+	WebApp          *WebAppInfo `json:"web_app,omitempty"`
 }
 
 // ReplyKeyboardMarkup models a keyboard, see https://core.telegram.org/bots/api/#replykeyboardmarkup
@@ -27,10 +33,15 @@ func NewKeyboardFromReplies(replies []models.QuickReply) *ReplyKeyboardMarkup {
 		keyboard[i] = make([]KeyboardButton, len(rows[i]))
 		for j := range rows[i] {
 			keyboard[i][j].Text = rows[i][j].GetText()
-			if rows[i][j].Type == models.QuickReplyTypeLocation {
-				keyboard[i][j].RequestLocation = true
-			}
 
+			// a button can specify at most one of these optional fields, but each reply is its own button so text,
+			// location and form replies can all appear on the same keyboard
+			switch rows[i][j].Type {
+			case models.QuickReplyTypeLocation:
+				keyboard[i][j].RequestLocation = true
+			case models.QuickReplyTypeForm:
+				keyboard[i][j].WebApp = &WebAppInfo{URL: rows[i][j].Extra}
+			}
 		}
 	}
 
