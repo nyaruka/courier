@@ -3,6 +3,7 @@ package whatsapp_test
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/nyaruka/courier/v26"
@@ -382,6 +383,48 @@ func TestGetMsgPayloads(t *testing.T) {
 				assert.Equal(t, "text", payloads[0].Type)
 				assert.Len(t, clog.Errors, 1)
 				assert.Equal(t, "URL quick reply is missing a URL and can't be sent", clog.Errors[0].Message)
+			},
+		},
+		{
+			label:                 "Text between 1024 and 4096 without attachments or QRs - should be a single text message",
+			text:                  strings.Repeat("x", 2000),
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "text",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+				assert.Equal(t, 1, len(payloads))
+				assert.Equal(t, 2000, len(payloads[0].Text.Body))
+			},
+		},
+		{
+			label:                 "Text between 1024 and 4096 with QRs - should split so interactive body stays within 1024",
+			text:                  strings.Repeat("x", 2000),
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 2,
+			expectedType:          "text",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+				assert.Equal(t, 2, len(payloads))
+				assert.Equal(t, "text", payloads[0].Type)
+				assert.Equal(t, "interactive", payloads[1].Type)
+				assert.LessOrEqual(t, len(payloads[1].Interactive.Body.Text), 1024)
+			},
+		},
+		{
+			label:                 "Text between 1024 and 4096 with attachment - should split so nothing exceeds caption limit",
+			text:                  strings.Repeat("x", 2000),
+			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 3,
+			expectedType:          "image",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+				assert.Equal(t, 3, len(payloads))
+				assert.Equal(t, "image", payloads[0].Type)
+				assert.Equal(t, "", payloads[0].Image.Caption)
+				assert.Equal(t, "text", payloads[1].Type)
+				assert.Equal(t, "text", payloads[2].Type)
+				assert.LessOrEqual(t, len(payloads[1].Text.Body), 1024)
+				assert.LessOrEqual(t, len(payloads[2].Text.Body), 1024)
 			},
 		},
 	}
