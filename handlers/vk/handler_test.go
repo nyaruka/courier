@@ -223,7 +223,9 @@ const keyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"text","lab
 
 const singleButtonKeyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"text","label":"A","payload":"\"A\""},"color":"primary"}]],"inline":false}`
 
-const locationAndURLKeyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"location","payload":"\"Send Location\""}},{"action":{"type":"open_link","label":"Visit","link":"http://example.com","payload":"\"Visit\""},"color":"primary"}]],"inline":false}`
+const locationAndURLKeyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"location","payload":"\"Send Location\""}}],[{"action":{"type":"open_link","label":"Visit","link":"http://example.com","payload":"\"Visit\""},"color":"primary"}]],"inline":false}`
+
+const locationSplitsRowKeyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"text","label":"A","payload":"\"A\""},"color":"primary"}],[{"action":{"type":"location","payload":"\"Send Location\""}}],[{"action":{"type":"text","label":"B","payload":"\"B\""},"color":"primary"}]],"inline":false}`
 
 var testCases = []IncomingTestCase{
 	{
@@ -528,6 +530,23 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "keyboard": {locationAndURLKeyboardJson}, "message": {"Send keyboard"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
+			},
+		},
+		ExpectedExtIDs: []string{"1"},
+	},
+	{
+		Label:           "Send keyboard, location type takes a row of its own",
+		MsgText:         "Send keyboard",
+		MsgURN:          "vk:123456789",
+		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "A"}, {Type: "location"}, {Type: "text", Text: "B"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.vk.com/method/messages.send.json?*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "keyboard": {locationSplitsRowKeyboardJson}, "message": {"Send keyboard"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
 		ExpectedExtIDs: []string{"1"},

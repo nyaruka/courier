@@ -23,9 +23,37 @@ type ButtonAction struct {
 	Payload string `json:"payload"`
 }
 
+// splitOutLocations re-organizes rows so that each location reply gets a row to itself, as VK rejects a keyboard
+// which puts a location button on a row with anything else.
+func splitOutLocations(rows [][]models.QuickReply) [][]models.QuickReply {
+	split := make([][]models.QuickReply, 0, len(rows))
+
+	for _, row := range rows {
+		cur := make([]models.QuickReply, 0, len(row))
+
+		for _, qr := range row {
+			if qr.Type != models.QuickReplyTypeLocation {
+				cur = append(cur, qr)
+				continue
+			}
+			if len(cur) > 0 {
+				split = append(split, cur)
+				cur = make([]models.QuickReply, 0, len(row))
+			}
+			split = append(split, []models.QuickReply{qr})
+		}
+
+		if len(cur) > 0 {
+			split = append(split, cur)
+		}
+	}
+
+	return split
+}
+
 // NewKeyboardFromReplies creates a keyboard from the given quick replies
 func NewKeyboardFromReplies(replies []models.QuickReply) *Keyboard {
-	rows := models.QuickRepliesToRows(replies, 10, 30, 2)
+	rows := splitOutLocations(models.QuickRepliesToRows(replies, 10, 30, 2))
 	buttons := make([][]ButtonPayload, len(rows))
 
 	for i := range rows {
