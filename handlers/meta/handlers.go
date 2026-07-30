@@ -40,6 +40,9 @@ var (
 	// max for the body
 	maxMsgLength = 1000
 
+	// max for the body of WhatsApp messages
+	maxMsgLengthWAC = 4096
+
 	// Sticker ID substitutions
 	stickerIDToEmoji = map[int64]string{
 		369239263222822: "👍", // small
@@ -712,7 +715,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 	path, _ := url.Parse(fmt.Sprintf("/%s/messages", msg.Channel().Address()))
 	wacPhoneURL := base.ResolveReference(path)
 
-	requestPayloads, err := whatsapp.GetMsgPayloads(ctx, msg, maxMsgLength, clog)
+	requestPayloads, err := whatsapp.GetMsgPayloads(ctx, msg, maxMsgLengthWAC, clog)
 	if err != nil {
 		return err
 	}
