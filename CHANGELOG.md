@@ -1,3 +1,9 @@
+v26.3.22 (2026-07-30)
+-------------------------
+ * Ignore quick replies of types a channel doesn't support, logging a channel error for each one dropped
+ * Add support for sending url quick replies on Line, Viber and VK, and location quick replies on VK
+ * Add support for sending form quick replies as Telegram Mini App buttons
+
 v26.3.21 (2026-07-28)
 -------------------------
  * Add support for sending url quick replies as WhatsApp CTA URL button messages
