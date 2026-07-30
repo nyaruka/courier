@@ -11,6 +11,7 @@ import (
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/courier/v26/utils/clogs"
 )
 
 var (
@@ -54,6 +55,20 @@ func FilterQuickRepliesByType(qrs []models.QuickReply, types ...string) []models
 	for _, qr := range qrs {
 		if slices.Contains(types, qr.Type) {
 			t = append(t, qr)
+		}
+	}
+	return t
+}
+
+// FilterSupportedQuickReplies returns quick replies of the given types only, logging an error for each one dropped
+// because the channel can't render its type.
+func FilterSupportedQuickReplies(qrs []models.QuickReply, clog *courier.ChannelLog, types ...string) []models.QuickReply {
+	t := make([]models.QuickReply, 0, len(qrs))
+	for _, qr := range qrs {
+		if slices.Contains(types, qr.Type) {
+			t = append(t, qr)
+		} else {
+			clog.Error(&clogs.Error{Message: fmt.Sprintf("quick reply of type %s isn't supported by this channel and can't be sent", qr.Type)})
 		}
 	}
 	return t

@@ -202,7 +202,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 
 	// figure out whether we have a keyboard to send as well - we only support text and location quick replies
-	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText, models.QuickReplyTypeLocation)
+	qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation)
 	var keyboard *ReplyKeyboardMarkup
 	if len(qrs) > 0 {
 		keyboard = NewKeyboardFromReplies(qrs)

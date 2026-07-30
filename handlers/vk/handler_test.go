@@ -20,6 +20,7 @@ import (
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/courier/v26/utils/clogs"
 )
 
 const (
@@ -507,6 +508,11 @@ var outgoingCases = []OutgoingTestCase{
 				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "keyboard": {singleButtonKeyboardJson}, "message": {"Send keyboard"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type location isn't supported by this channel and can't be sent"},
+			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
+			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
+		},
 		ExpectedExtIDs: []string{"1"},
 	},
 	{
@@ -523,6 +529,11 @@ var outgoingCases = []OutgoingTestCase{
 			{
 				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Send keyboard"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
+		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type location isn't supported by this channel and can't be sent"},
+			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
+			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"1"},
 	},

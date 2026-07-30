@@ -843,6 +843,10 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Yes"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
 		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
+			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
+		},
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
@@ -857,6 +861,10 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
+			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
