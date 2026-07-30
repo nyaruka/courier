@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/core/events"
@@ -128,7 +129,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			webAppPayload = json.RawMessage(raw)
 		} else {
 			text = payload.Message.WebAppData.Data
-			courier.LogRequestError(r, channel, errors.New("web_app_data data is not a valid JSON object"))
+			clog.Error(&clogs.Error{Message: "web_app_data data is not a valid JSON object"})
 		}
 	}
 

@@ -740,6 +740,7 @@ var testCases = []IncomingTestCase{
 		ExpectedURN:          "telegram:3527065#nicpottier",
 		ExpectedExternalID:   "98",
 		ExpectedDate:         time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC),
+		ExpectedErrors:       []*clogs.Error{{Message: "web_app_data data is not a valid JSON object"}},
 	},
 	{
 		Label:                "Receive Empty",
