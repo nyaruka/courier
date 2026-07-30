@@ -129,7 +129,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		Label:           "Quick Reply, unsupported types ignored",
 		MsgText:         "Are you happy?",
 		MsgURN:          "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MsgQuickReplies: []models.QuickReply{{Type: "form", Extra: "1234"}, {Type: "text", Text: "Yes"}, {Type: "url", Extra: "http://example.com"}},
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Extra: "1234"}, {Type: "text", Text: "Yes"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://chatapi.viber.com/pa/send_message": {
 				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
@@ -141,14 +141,46 @@ var defaultSendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedLogErrors: []*clogs.Error{
 			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
-			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
+		},
+	},
+	{
+		Label:           "Quick Reply, URL Type",
+		MsgText:         "Read more?",
+		MsgURN:          "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit", Extra: "http://example.com"}, {Type: "text", Text: "No"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Read more?","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"open-url","ActionBody":"http://example.com","Text":"Visit","TextSize":"regular","Columns":"3"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular","Columns":"3"}]}}`,
+		}},
+	},
+	{
+		Label:           "Quick Reply, URL Type without a URL is dropped",
+		MsgText:         "Are you happy?",
+		MsgURN:          "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit"}, {Type: "text", Text: "Yes"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular","Columns":"6"}]}}`,
+		}},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type url is missing its extra value and can't be sent"},
 		},
 	},
 	{
 		Label:           "Quick Reply, only unsupported types means no keyboard",
 		MsgText:         "Are you happy?",
 		MsgURN:          "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MsgQuickReplies: []models.QuickReply{{Type: "form", Extra: "1234"}, {Type: "url", Extra: "http://example.com"}},
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Extra: "1234"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://chatapi.viber.com/pa/send_message": {
 				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
@@ -160,7 +192,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedLogErrors: []*clogs.Error{
 			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
-			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
 		},
 	},
 	{

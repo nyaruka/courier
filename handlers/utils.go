@@ -60,15 +60,17 @@ func FilterQuickRepliesByType(qrs []models.QuickReply, types ...string) []models
 	return t
 }
 
-// FilterSupportedQuickReplies returns quick replies of the given types only, logging an error for each one dropped
-// because the channel can't render its type.
+// FilterSupportedQuickReplies returns quick replies of the given types only, logging a channel error for each one
+// dropped - either because the channel can't render its type, or because it's missing the extra value its type needs.
 func FilterSupportedQuickReplies(qrs []models.QuickReply, clog *courier.ChannelLog, types ...string) []models.QuickReply {
 	t := make([]models.QuickReply, 0, len(qrs))
 	for _, qr := range qrs {
-		if slices.Contains(types, qr.Type) {
-			t = append(t, qr)
-		} else {
+		if !slices.Contains(types, qr.Type) {
 			clog.Error(&clogs.Error{Message: fmt.Sprintf("quick reply of type %s isn't supported by this channel and can't be sent", qr.Type)})
+		} else if qr.RequiresExtra() && qr.Extra == "" {
+			clog.Error(&clogs.Error{Message: fmt.Sprintf("quick reply of type %s is missing its extra value and can't be sent", qr.Type)})
+		} else {
+			t = append(t, qr)
 		}
 	}
 	return t

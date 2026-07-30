@@ -256,6 +256,7 @@ type QuickReplyItem struct {
 		Type  string `json:"type"`
 		Label string `json:"label"`
 		Text  string `json:"text,omitempty"`
+		URI   string `json:"uri,omitempty"`
 	} `json:"action"`
 }
 
@@ -342,7 +343,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	// all msg parts in JSON
 	var jsonMsgs []string
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
-	qrs := msg.QuickReplies()
+	qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeURL)
 
 	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, false, clog)
 	if err != nil {
@@ -393,6 +394,11 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 					item.Action.Type = "message"
 					item.Action.Label = qr.GetText()
 					item.Action.Text = qr.GetText()
+					items = append(items, item)
+				case models.QuickReplyTypeURL:
+					item.Action.Type = "uri"
+					item.Action.Label = qr.GetText()
+					item.Action.URI = qr.Extra
 					items = append(items, item)
 				}
 

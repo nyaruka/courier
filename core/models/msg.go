@@ -139,6 +139,11 @@ type QuickReply struct {
 	Extra string `json:"extra,omitempty"`
 }
 
+// RequiresExtra returns whether quick replies of this type need an extra value - a form ID or a URL - to be sendable
+func (qr QuickReply) RequiresExtra() bool {
+	return qr.Type == QuickReplyTypeForm || qr.Type == QuickReplyTypeURL
+}
+
 func (qr QuickReply) GetText() string {
 	if qr.Type == QuickReplyTypeLocation && qr.Text == "" {
 		return "Send Location"

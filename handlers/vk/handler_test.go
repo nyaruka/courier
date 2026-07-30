@@ -223,6 +223,10 @@ const keyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"text","lab
 
 const singleButtonKeyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"text","label":"A","payload":"\"A\""},"color":"primary"}]],"inline":false}`
 
+const locationAndURLKeyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"location","payload":"\"Send Location\""}}],[{"action":{"type":"open_link","label":"Visit","link":"http://example.com","payload":"\"Visit\""},"color":"primary"}]],"inline":false}`
+
+const locationSplitsRowKeyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"text","label":"A","payload":"\"A\""},"color":"primary"}],[{"action":{"type":"location","payload":"\"Send Location\""}}],[{"action":{"type":"text","label":"B","payload":"\"B\""},"color":"primary"}]],"inline":false}`
+
 var testCases = []IncomingTestCase{
 	{
 		Label:                "Receive Message",
@@ -497,7 +501,7 @@ var outgoingCases = []OutgoingTestCase{
 		Label:           "Send keyboard, unsupported types ignored",
 		MsgText:         "Send keyboard",
 		MsgURN:          "vk:123456789",
-		MsgQuickReplies: []models.QuickReply{{Type: "location"}, {Type: "text", Text: "A"}, {Type: "form", Extra: "1234"}, {Type: "url", Extra: "http://example.com"}},
+		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "A"}, {Type: "form", Extra: "1234"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.vk.com/method/messages.send.json?*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
@@ -509,9 +513,61 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedLogErrors: []*clogs.Error{
-			{Message: "quick reply of type location isn't supported by this channel and can't be sent"},
 			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
-			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
+		},
+		ExpectedExtIDs: []string{"1"},
+	},
+	{
+		Label:           "Send keyboard, location and URL types",
+		MsgText:         "Send keyboard",
+		MsgURN:          "vk:123456789",
+		MsgQuickReplies: []models.QuickReply{{Type: "location"}, {Type: "url", Text: "Visit", Extra: "http://example.com"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.vk.com/method/messages.send.json?*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "keyboard": {locationAndURLKeyboardJson}, "message": {"Send keyboard"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
+			},
+		},
+		ExpectedExtIDs: []string{"1"},
+	},
+	{
+		Label:           "Send keyboard, location type takes a row of its own",
+		MsgText:         "Send keyboard",
+		MsgURN:          "vk:123456789",
+		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "A"}, {Type: "location"}, {Type: "text", Text: "B"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.vk.com/method/messages.send.json?*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "keyboard": {locationSplitsRowKeyboardJson}, "message": {"Send keyboard"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
+			},
+		},
+		ExpectedExtIDs: []string{"1"},
+	},
+	{
+		Label:           "Send keyboard, URL type without a URL is dropped",
+		MsgText:         "Send keyboard",
+		MsgURN:          "vk:123456789",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit"}, {Type: "text", Text: "A"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.vk.com/method/messages.send.json?*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "keyboard": {singleButtonKeyboardJson}, "message": {"Send keyboard"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
+			},
+		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type url is missing its extra value and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"1"},
 	},
@@ -519,7 +575,7 @@ var outgoingCases = []OutgoingTestCase{
 		Label:           "Send keyboard, only unsupported types means no keyboard",
 		MsgText:         "Send keyboard",
 		MsgURN:          "vk:123456789",
-		MsgQuickReplies: []models.QuickReply{{Type: "location"}, {Type: "form", Extra: "1234"}, {Type: "url", Extra: "http://example.com"}},
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Extra: "1234"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.vk.com/method/messages.send.json?*": {
 				httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
@@ -531,9 +587,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedLogErrors: []*clogs.Error{
-			{Message: "quick reply of type location isn't supported by this channel and can't be sent"},
 			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
-			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"1"},
 	},
