@@ -88,6 +88,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// deal with attachments
 	mediaURL := ""
+	var webAppPayload json.RawMessage
 	if len(payload.Message.Photo) > 0 {
 		// grab the largest photo less than 100k
 		photo := payload.Message.Photo[0]
@@ -118,6 +119,17 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			phone = fmt.Sprintf("(%s)", payload.Message.Contact.PhoneNumber)
 		}
 		text = utils.JoinNonEmpty(" ", payload.Message.Contact.FirstName, payload.Message.Contact.LastName, phone)
+	} else if payload.Message.WebAppData != nil {
+		// data sent back from a Mini App opened by a form quick reply.. which we require to be a JSON object that
+		// becomes our structured payload, falling back to treating it as plain text if it isn't
+		raw := strings.TrimSpace(payload.Message.WebAppData.Data)
+		if strings.HasPrefix(raw, "{") && json.Valid([]byte(raw)) {
+			text = payload.Message.WebAppData.ButtonText
+			webAppPayload = json.RawMessage(raw)
+		} else {
+			text = payload.Message.WebAppData.Data
+			courier.LogRequestError(r, channel, errors.New("web_app_data data is not a valid JSON object"))
+		}
 	}
 
 	// we had an error downloading media
@@ -131,6 +143,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	if mediaURL != "" {
 		msg.WithAttachment(mediaURL)
 	}
+	if webAppPayload != nil {
+		msg.WithPayload(webAppPayload)
+	}
+
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
@@ -201,8 +217,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		caption = msg.Text()
 	}
 
-	// figure out whether we have a keyboard to send as well - we only support text and location quick replies
-	qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation)
+	// figure out whether we have a keyboard to send as well - form replies open the URL in Extra as a Mini App
+	qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm)
 	var keyboard *ReplyKeyboardMarkup
 	if len(qrs) > 0 {
 		keyboard = NewKeyboardFromReplies(qrs)
@@ -450,5 +466,9 @@ type moPayload struct {
 			FirstName   string `json:"first_name"`
 			LastName    string `json:"last_name"`
 		}
+		WebAppData *struct {
+			Data       string `json:"data"`
+			ButtonText string `json:"button_text"`
+		} `json:"web_app_data"`
 	} `json:"message"`
 }

@@ -521,6 +521,58 @@ var contactMsg = `
     }
 }`
 
+var webAppDataMsg = `
+{
+    "update_id": 900946537,
+    "message": {
+        "message_id": 97,
+        "from": {
+            "id": 3527065,
+            "first_name": "Nic",
+            "last_name": "Pottier",
+            "username": "Nicpottier"
+        },
+        "chat": {
+            "id": 3527065,
+            "first_name": "Nic",
+            "last_name": "Pottier",
+            "username": "Nicpottier",
+            "type": "private"
+        },
+        "date": 1493845755,
+        "web_app_data": {
+            "data": "{\"first_name\": \"Bob\", \"age\": \"32\"}",
+            "button_text": "Register"
+        }
+    }
+}`
+
+var webAppDataNonJSONMsg = `
+{
+    "update_id": 900946538,
+    "message": {
+        "message_id": 98,
+        "from": {
+            "id": 3527065,
+            "first_name": "Nic",
+            "last_name": "Pottier",
+            "username": "Nicpottier"
+        },
+        "chat": {
+            "id": 3527065,
+            "first_name": "Nic",
+            "last_name": "Pottier",
+            "username": "Nicpottier",
+            "type": "private"
+        },
+        "date": 1493845755,
+        "web_app_data": {
+            "data": "bob,32",
+            "button_text": "Register"
+        }
+    }
+}`
+
 var testCases = []IncomingTestCase{
 	{
 
@@ -662,6 +714,31 @@ var testCases = []IncomingTestCase{
 		ExpectedMsgText:      Sp("Adolf Taxi (0788531373)"),
 		ExpectedURN:          "telegram:3527065#nicpottier",
 		ExpectedExternalID:   "96",
+		ExpectedDate:         time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC),
+	},
+	{
+		Label:                "Receive WebApp Data",
+		URL:                  "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+		Data:                 webAppDataMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedContactName:  Sp("Nic Pottier"),
+		ExpectedMsgText:      Sp("Register"),
+		ExpectedPayload:      `{"first_name": "Bob", "age": "32"}`,
+		ExpectedURN:          "telegram:3527065#nicpottier",
+		ExpectedExternalID:   "97",
+		ExpectedDate:         time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC),
+	},
+	{
+		Label:                "Receive WebApp Data non-JSON",
+		URL:                  "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+		Data:                 webAppDataNonJSONMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedContactName:  Sp("Nic Pottier"),
+		ExpectedMsgText:      Sp("bob,32"),
+		ExpectedURN:          "telegram:3527065#nicpottier",
+		ExpectedExternalID:   "98",
 		ExpectedDate:         time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC),
 	},
 	{
@@ -831,10 +908,43 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
+		Label:           "Quick Reply, form type opens Mini App",
+		MsgText:         "Please register",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Text: "Register", Extra: "https://example.com/form"}, {Type: "text", Text: "Skip"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}},{"text":"Skip"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
+		Label:           "Quick Reply, form type without a URL is dropped",
+		MsgText:         "Please register",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Text: "Register"}, {Type: "text", Text: "Skip"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Skip"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type form is missing its extra value and can't be sent"},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
 		Label:           "Quick Reply, unsupported types ignored",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
-		MsgQuickReplies: []models.QuickReply{{Type: "form", Extra: "1234"}, {Type: "text", Text: "Yes"}, {Type: "url", Extra: "http://example.com"}},
+		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "url", Extra: "http://example.com"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
@@ -844,7 +954,6 @@ var outgoingCases = []OutgoingTestCase{
 			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Yes"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
 		},
 		ExpectedLogErrors: []*clogs.Error{
-			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
 			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"133"},
@@ -853,7 +962,7 @@ var outgoingCases = []OutgoingTestCase{
 		Label:           "Quick Reply, only unsupported types means no keyboard",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
-		MsgQuickReplies: []models.QuickReply{{Type: "form", Extra: "1234"}, {Type: "url", Extra: "http://example.com"}},
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Extra: "http://example.com"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
@@ -863,7 +972,6 @@ var outgoingCases = []OutgoingTestCase{
 			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
 		},
 		ExpectedLogErrors: []*clogs.Error{
-			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
 			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"133"},
