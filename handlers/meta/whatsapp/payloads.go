@@ -42,14 +42,24 @@ func (p SendRequest) withTemplate(templating *models.Templating) SendRequest {
 	return p
 }
 
+// maxCaptionAndBodyLength is the limit for media captions and interactive message bodies, which is lower than the
+// limit for plain text bodies
+const maxCaptionAndBodyLength = 1024
+
 // buildContentPayloads constructs payloads for a non-template message with text, attachments, and quick replies.
 func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.ChannelLog) ([]SendRequest, error) {
-	msgParts := splitText(msg, maxMsgLength)
 	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText)
 	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeLocation)
 	formQRs := FilterFormQuickReplies(msg.QuickReplies(), clog)
 	urlQRs := FilterURLQuickReplies(msg.QuickReplies(), clog)
 	menuButton := handlers.GetText("Menu", msg.Locale())
+
+	// if text could end up as a media caption or an interactive message body, use their lower length limit
+	if len(msg.Attachments()) > 0 || len(qrs) > 0 || len(locationQRs) > 0 || len(formQRs) > 0 || len(urlQRs) > 0 {
+		maxMsgLength = min(maxMsgLength, maxCaptionAndBodyLength)
+	}
+
+	msgParts := splitText(msg, maxMsgLength)
 
 	qrsAsList := shouldUseList(qrs)
 
