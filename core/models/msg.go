@@ -127,6 +127,7 @@ const (
 )
 
 const (
+	QuickReplyTypeText     = "text"
 	QuickReplyTypeLocation = "location"
 	QuickReplyTypeForm     = "form"
 	QuickReplyTypeURL      = "url"

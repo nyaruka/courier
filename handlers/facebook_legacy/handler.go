@@ -502,7 +502,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		// include any quick replies on the last piece we send
 		if i == (len(msgParts)+len(msg.Attachments()))-1 {
-			qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "text")
+			qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText)
 			for _, qr := range qrs {
 				payload.Message.QuickReplies = append(payload.Message.QuickReplies, mtQuickReply{qr.Text, qr.Text, "text"})
 			}

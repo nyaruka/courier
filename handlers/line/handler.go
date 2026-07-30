@@ -385,11 +385,11 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			for _, qr := range qrs {
 				item := QuickReplyItem{Type: "action"}
 				switch qr.Type {
-				case "location":
+				case models.QuickReplyTypeLocation:
 					item.Action.Type = "location"
 					item.Action.Label = qr.GetText()
 					items = append(items, item)
-				case "text":
+				case models.QuickReplyTypeText:
 					item.Action.Type = "message"
 					item.Action.Label = qr.GetText()
 					item.Action.Text = qr.GetText()
