@@ -1,3 +1,8 @@
+v26.3.23 (2026-07-30)
+-------------------------
+ * Keep captions and interactive message bodies within WhatsApp's 1024 char limit
+ * Increase max message length to 4096 for WhatsApp Cloud
+
 v26.3.22 (2026-07-30)
 -------------------------
  * Ignore quick replies of types a channel doesn't support, logging a channel error for each one dropped
