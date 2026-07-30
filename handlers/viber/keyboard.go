@@ -46,17 +46,21 @@ func NewKeyboardFromReplies(replies []models.QuickReply, buttonConfig map[string
 		for j := range rows[i] {
 			cols := 6 / len(rows[i])
 
-			actionType := "reply"
-			if rows[i][j].Type == models.QuickReplyTypeLocation {
-				actionType = "location-picker"
-			}
-
 			actionText := rows[i][j].GetText()
+
+			// for open-url buttons the action body is the URL itself, for the rest it's the button text
+			actionType, actionBody := "reply", actionText
+			switch rows[i][j].Type {
+			case models.QuickReplyTypeLocation:
+				actionType = "location-picker"
+			case models.QuickReplyTypeURL:
+				actionType, actionBody = "open-url", rows[i][j].Extra
+			}
 
 			button := KeyboardButton{
 				ActionType: actionType,
 				TextSize:   "regular",
-				ActionBody: actionText,
+				ActionBody: actionBody,
 				Text:       html.EscapeString(actionText),
 				Columns:    fmt.Sprint(cols),
 			}

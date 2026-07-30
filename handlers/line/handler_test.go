@@ -11,6 +11,7 @@ import (
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/assets"
@@ -516,6 +517,54 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Where are you?","quickReply":{"items":[{"type":"action","action":{"type":"location","label":"Share Pin"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
 			},
+		},
+	},
+	{
+		Label:           "URI Action Quick Reply",
+		MsgText:         "Read more?",
+		MsgURN:          "line:uabcdefghij",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit", Extra: "http://example.com"}, {Type: "text", Text: "No"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Read more?","quickReply":{"items":[{"type":"action","action":{"type":"uri","label":"Visit","uri":"http://example.com"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
+			},
+		},
+	},
+	{
+		Label:           "Quick Reply, URI Action without a URL is dropped",
+		MsgText:         "Read more?",
+		MsgURN:          "line:uabcdefghij",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit"}, {Type: "text", Text: "No"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Read more?","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
+			},
+		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type url is missing its extra value and can't be sent"},
+		},
+	},
+	{
+		Label:           "Quick Reply, unsupported types ignored",
+		MsgText:         "Are you happy?",
+		MsgURN:          "line:uabcdefghij",
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Extra: "1234"}, {Type: "text", Text: "Yes"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Are you happy?","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"Yes","text":"Yes"}}]}}]}`,
+			},
+		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
 		},
 	},
 	{
