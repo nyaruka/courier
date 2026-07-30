@@ -5,11 +5,13 @@ import (
 	"encoding/base64"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/courier/v26/utils/clogs"
 )
 
 var (
@@ -40,19 +42,33 @@ func SplitAttachment(attachment string) (string, string) {
 func TextOnlyQuickReplies(qrs []models.QuickReply) []string {
 	t := make([]string, 0, len(qrs))
 	for _, qr := range qrs {
-		if qr.Type == "text" {
+		if qr.Type == models.QuickReplyTypeText {
 			t = append(t, qr.Text)
 		}
 	}
 	return t
 }
 
-// FilterQuickRepliesByType returns quick replies of some type only
-func FilterQuickRepliesByType(qrs []models.QuickReply, type_ string) []models.QuickReply {
+// FilterQuickRepliesByType returns quick replies of the given types only
+func FilterQuickRepliesByType(qrs []models.QuickReply, types ...string) []models.QuickReply {
 	t := make([]models.QuickReply, 0, len(qrs))
 	for _, qr := range qrs {
-		if qr.Type == type_ {
+		if slices.Contains(types, qr.Type) {
 			t = append(t, qr)
+		}
+	}
+	return t
+}
+
+// FilterSupportedQuickReplies returns quick replies of the given types only, logging an error for each one dropped
+// because the channel can't render its type.
+func FilterSupportedQuickReplies(qrs []models.QuickReply, clog *courier.ChannelLog, types ...string) []models.QuickReply {
+	t := make([]models.QuickReply, 0, len(qrs))
+	for _, qr := range qrs {
+		if slices.Contains(types, qr.Type) {
+			t = append(t, qr)
+		} else {
+			clog.Error(&clogs.Error{Message: fmt.Sprintf("quick reply of type %s isn't supported by this channel and can't be sent", qr.Type)})
 		}
 	}
 	return t

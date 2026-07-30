@@ -45,7 +45,7 @@ func (p SendRequest) withTemplate(templating *models.Templating) SendRequest {
 // buildContentPayloads constructs payloads for a non-template message with text, attachments, and quick replies.
 func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.ChannelLog) ([]SendRequest, error) {
 	msgParts := splitText(msg, maxMsgLength)
-	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), "text")
+	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText)
 	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeLocation)
 	formQRs := FilterFormQuickReplies(msg.QuickReplies(), clog)
 	urlQRs := FilterURLQuickReplies(msg.QuickReplies(), clog)

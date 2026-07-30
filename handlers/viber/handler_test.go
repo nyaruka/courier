@@ -14,6 +14,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -123,6 +124,44 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Where Are you?","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"location-picker","ActionBody":"Share Pin","Text":"Share Pin","TextSize":"regular","Columns":"3"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular","Columns":"3"}]}}`,
 		}},
+	},
+	{
+		Label:           "Quick Reply, unsupported types ignored",
+		MsgText:         "Are you happy?",
+		MsgURN:          "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Extra: "1234"}, {Type: "text", Text: "Yes"}, {Type: "url", Extra: "http://example.com"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular","Columns":"6"}]}}`,
+		}},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
+			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
+		},
+	},
+	{
+		Label:           "Quick Reply, only unsupported types means no keyboard",
+		MsgText:         "Are you happy?",
+		MsgURN:          "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Extra: "1234"}, {Type: "url", Extra: "http://example.com"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b"}`,
+		}},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
+			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
+		},
 	},
 	{
 		Label:          "Send Attachment",

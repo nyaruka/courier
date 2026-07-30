@@ -831,6 +831,44 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
+		Label:           "Quick Reply, unsupported types ignored",
+		MsgText:         "Are you happy?",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Extra: "1234"}, {Type: "text", Text: "Yes"}, {Type: "url", Extra: "http://example.com"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Yes"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
+			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
+		Label:           "Quick Reply, only unsupported types means no keyboard",
+		MsgText:         "Are you happy?",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Extra: "1234"}, {Type: "url", Extra: "http://example.com"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
+			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
 		Label:           "Quick Reply with multiple attachments",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",

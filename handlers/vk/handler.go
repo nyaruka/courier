@@ -435,7 +435,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	params.Set(paramMessage, text)
 	params.Set(paramAttachments, attachments)
 
-	qrs := msg.QuickReplies()
+	// we only support text quick replies
+	qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText)
 	if len(qrs) != 0 {
 		keyboard := NewKeyboardFromReplies(qrs)
 

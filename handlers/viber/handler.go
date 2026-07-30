@@ -355,8 +355,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return courier.ErrChannelConfig
 	}
 
-	// figure out whether we have a keyboard to send as well
-	qrs := msg.QuickReplies()
+	// figure out whether we have a keyboard to send as well - we only support text and location quick replies
+	qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation)
 	var keyboard *Keyboard
 
 	if len(qrs) > 0 {
