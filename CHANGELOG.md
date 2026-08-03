@@ -1,3 +1,7 @@
+v26.3.24 (2026-08-03)
+-------------------------
+ * Allow cmd entry points to take customized config defaults
+
 v26.3.23 (2026-07-30)
 -------------------------
  * Keep captions and interactive message bodies within WhatsApp's 1024 char limit
