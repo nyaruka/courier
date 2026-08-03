@@ -1,6 +1,7 @@
 package runtime_test
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/runtime"
@@ -23,11 +24,13 @@ func TestLoadConfig(t *testing.T) {
 	base := runtime.NewDefaultConfig()
 	base.Domain = "example.com"
 	base.DisallowedNetworks = append(base.DisallowedNetworks, `192.0.2.0/24`)
+	base.LogLevel = slog.LevelError
 
 	cfg, err := runtime.LoadConfig(base, `--log-level=warn`)
 	assert.NoError(t, err)
 	assert.Equal(t, "example.com", cfg.Domain)
 	assert.Contains(t, cfg.DisallowedNetworks, `192.0.2.0/24`)
+	assert.Equal(t, slog.LevelWarn, cfg.LogLevel)
 
 	// but explicitly set values still take precedence
 	base = runtime.NewDefaultConfig()
