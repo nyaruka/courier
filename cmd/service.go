@@ -22,9 +22,13 @@ import (
 // timeouts should be set a bit above this so the watchdog fires first.
 const shutdownTimeout = 90 * time.Second
 
-// Service starts the courier service, blocks until a termination signal is received, then stops it.
-func Service(version, date string) error {
-	cfg := runtime.LoadConfig()
+// Service starts the courier service, blocks until a termination signal is received, then stops it. Configuration
+// is loaded on top of the given defaults, e.g. runtime.NewDefaultConfig().
+func Service(defaults *runtime.Config, version, date string) error {
+	cfg, err := runtime.LoadConfig(defaults)
+	if err != nil {
+		return err
+	}
 	cfg.Version = version
 
 	// configure our logger

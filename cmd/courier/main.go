@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/nyaruka/courier/v26/cmd"
+	"github.com/nyaruka/courier/v26/runtime"
 
 	// load available backends
 	_ "github.com/nyaruka/courier/v26/backends/rapidpro"
@@ -70,5 +71,5 @@ var (
 )
 
 func main() {
-	cmd.Run(cmd.Service(version, date))
+	cmd.Run(cmd.Service(runtime.NewDefaultConfig(), version, date))
 }

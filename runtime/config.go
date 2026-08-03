@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"fmt"
-	"log"
 	"log/slog"
 	"net"
 	"net/url"
@@ -95,17 +94,22 @@ func NewDefaultConfig() *Config {
 	}
 }
 
-func LoadConfig() *Config {
-	cfg := NewDefaultConfig()
+// LoadConfig loads configuration from a config file, environment variables and command line args, on top of the
+// given base config, e.g. NewDefaultConfig().
+func LoadConfig(cfg *Config, args ...string) (*Config, error) {
 	loader := ezconf.NewLoader(cfg, "courier", "Courier - A fast message broker for SMS and IP messages", []string{"config.toml"})
-	loader.MustLoad()
-
-	// ensure config is valid
-	if err := cfg.Validate(); err != nil {
-		log.Fatalf("invalid config: %s", err)
+	if len(args) > 0 { // allow tests to pass in args
+		loader.SetArgs(args...)
+	}
+	if err := loader.Load(); err != nil {
+		return nil, err
 	}
 
-	return cfg
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
+	}
+
+	return cfg, nil
 }
 
 // Validate validates the config
