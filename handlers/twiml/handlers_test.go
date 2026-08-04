@@ -1157,6 +1157,21 @@ var twaSendTestCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"1002"},
 	},
 	{
+		Label:   "Plain Send with BSUID as bsuid URN",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "bsuid:US.1234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"whatsapp:US.1234"}, "From": {"whatsapp:+12065551212"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
+			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		}},
+		ExpectedExtIDs: []string{"1002"},
+	},
+	{
 		Label:     "Template Send",
 		MsgText:   "templated message",
 		MsgURN:    "whatsapp:250788383383",
