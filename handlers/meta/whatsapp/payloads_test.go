@@ -16,6 +16,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestRecipientFields(t *testing.T) {
+	tcs := []struct {
+		urn               urns.URN
+		expectedTo        string
+		expectedRecipient string
+	}{
+		{urn: "whatsapp:250788123123", expectedTo: "250788123123", expectedRecipient: ""},                       // phone number -> to
+		{urn: "whatsapp:US.13491208655302741918", expectedTo: "", expectedRecipient: "US.13491208655302741918"}, // BSUID -> recipient
+		{urn: "bsuid:US.13491208655302741918", expectedTo: "", expectedRecipient: "US.13491208655302741918"},    // legacy bsuid scheme -> recipient
+	}
+
+	for _, tc := range tcs {
+		to, recipient := whatsapp.RecipientFields(tc.urn)
+		assert.Equal(t, tc.expectedTo, to, "to mismatch for %s", tc.urn)
+		assert.Equal(t, tc.expectedRecipient, recipient, "recipient mismatch for %s", tc.urn)
+	}
+}
+
 func TestGetMsgPayloads(t *testing.T) {
 	ctx := context.Background()
 	maxMsgLength := 4096

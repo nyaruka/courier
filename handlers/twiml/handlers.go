@@ -255,7 +255,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		}
 
 		form := url.Values{
-			"To":             []string{fmt.Sprintf("%s:+%s", urns.WhatsApp.Prefix, msg.URN().Path())},
+			"To":             []string{whatsAppAddress(msg.URN())},
 			"StatusCallback": []string{callbackURL},
 			"ContentSid":     []string{msg.Templating().ExternalID},
 		}
@@ -373,7 +373,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 			// for whatsapp channels, we have to prepend whatsapp to the To and From
 			if channel.IsScheme(urns.WhatsApp) {
-				form["To"][0] = fmt.Sprintf("%s:+%s", urns.WhatsApp.Prefix, form["To"][0])
+				form["To"][0] = whatsAppAddress(msg.URN())
 				form["From"][0] = fmt.Sprintf("%s:%s", urns.WhatsApp.Prefix, form["From"][0])
 			}
 
@@ -538,6 +538,15 @@ func (h *handler) parseURN(channel courier.Channel, text string, country i18n.Co
 	}
 
 	return urns.ParsePhone(text, country, true, true)
+}
+
+// whatsAppAddress formats the given URN as a Twilio WhatsApp address: whatsapp:+<digits> for a phone number
+// or whatsapp:<CC.xxx> for a business-scoped user ID, which takes no leading +
+func whatsAppAddress(urn urns.URN) string {
+	if urn.Scheme() == urns.BSUID.Prefix || urns.IsWhatsAppBSUID(urn) {
+		return fmt.Sprintf("%s:%s", urns.WhatsApp.Prefix, urn.Path())
+	}
+	return fmt.Sprintf("%s:+%s", urns.WhatsApp.Prefix, urn.Path())
 }
 
 func (h *handler) baseURL(c courier.Channel) string {
