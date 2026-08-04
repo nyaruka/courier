@@ -1,3 +1,7 @@
+v26.3.25 (2026-08-04)
+-------------------------
+ * Support sending to WhatsApp BSUIDs held as whatsapp URNs
+
 v26.3.24 (2026-08-03)
 -------------------------
  * Allow cmd entry points to take customized config defaults
