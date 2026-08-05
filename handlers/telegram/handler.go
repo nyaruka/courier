@@ -152,6 +152,28 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
+// clearReplyKeyboard sends and immediately deletes a blank message whose only purpose is to remove any reply
+// keyboard left showing by a previous message.. best effort, a failure here shouldn't fail the actual send
+func (h *handler) clearReplyKeyboard(msg courier.MsgOut, token string, clog *courier.ChannelLog) {
+	form := url.Values{
+		"chat_id":              []string{msg.URN().Path()},
+		"text":                 []string{"⠀"}, // braille blank, as Telegram doesn't accept empty or whitespace-only text
+		"disable_notification": []string{"true"},
+	}
+	externalID, err := h.sendMsgPart(msg, token, "sendMessage", form, nil, clog)
+	if err != nil {
+		return
+	}
+
+	form = url.Values{"chat_id": []string{msg.URN().Path()}, "message_id": []string{externalID}}
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/bot%s/deleteMessage", apiURL, token), strings.NewReader(form.Encode()))
+	if err != nil {
+		return
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	h.RequestHTTP(req, clog)
+}
+
 // filterQuickRepliesWithExtra returns quick replies of the given type that have the extra value the type requires,
 // logging a channel error for any that don't
 func filterQuickRepliesWithExtra(qrs []models.QuickReply, qrType string, clog *courier.ChannelLog) []models.QuickReply {
@@ -252,6 +274,20 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		keyboard = NewInlineKeyboardFromReplies(urlQRs)
 	case len(textQRs) > 0:
 		keyboard = NewKeyboardFromReplies(textQRs)
+	}
+
+	// a message can only have one kind of reply_markup, so a message carrying an inline keyboard can't itself remove
+	// a reply keyboard left showing by a previous message. When this message has multiple parts the earlier parts do
+	// that clearing, but when its only part will carry the inline keyboard, start by sending and deleting a blank
+	// placeholder message whose only purpose is to clear any previous reply keyboard.
+	if _, isInline := keyboard.(*InlineKeyboardMarkup); isInline {
+		numParts := len(attachments)
+		if msg.Text() != "" && caption == "" {
+			numParts++
+		}
+		if numParts == 1 {
+			h.clearReplyKeyboard(msg, authToken, clog)
+		}
 	}
 
 	// if we have text, send that if we aren't sending it as a caption

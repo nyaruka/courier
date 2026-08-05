@@ -915,11 +915,17 @@ var outgoingCases = []OutgoingTestCase{
 		MsgQuickReplies: []models.QuickReply{{Type: "form", Text: "Register", Extra: "https://example.com/form"}, {Type: "text", Text: "Skip"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 132 } }`)),
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+			"*/botauth_token/deleteMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": true }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}}]]}`}}},
+			{Path: "/botauth_token/sendMessage", Form: url.Values{"text": {"⠀"}, "chat_id": {"12345"}, "disable_notification": {"true"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+			{Path: "/botauth_token/deleteMessage", Form: url.Values{"chat_id": {"12345"}, "message_id": {"132"}}},
+			{Path: "/botauth_token/sendMessage", Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}}]]}`}}},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
@@ -948,13 +954,41 @@ var outgoingCases = []OutgoingTestCase{
 		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "url", Extra: "http://example.com"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 132 } }`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+			"*/botauth_token/deleteMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": true }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Path: "/botauth_token/sendMessage", Form: url.Values{"text": {"⠀"}, "chat_id": {"12345"}, "disable_notification": {"true"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+			{Path: "/botauth_token/deleteMessage", Form: url.Values{"chat_id": {"12345"}, "message_id": {"132"}}},
+			{Path: "/botauth_token/sendMessage", Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Open Link","url":"http://example.com"}]]}`}}},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
+		Label:           "Quick Reply, inline keyboard on multi-part message doesn't need a placeholder to clear",
+		MsgText:         "Please register",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Text: "Register", Extra: "https://example.com/form"}},
+		MsgAttachments:  []string{"application/pdf:https://foo.bar/doc1.pdf", "application/pdf:https://foo.bar/document.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+			"*/botauth_token/sendDocument": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Open Link","url":"http://example.com"}]]}`}}},
+			{Path: "/botauth_token/sendMessage", Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+			{Path: "/botauth_token/sendDocument", Form: url.Values{"caption": []string{""}, "chat_id": {"12345"}, "document": {"https://foo.bar/doc1.pdf"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+			{Path: "/botauth_token/sendDocument", Form: url.Values{"caption": []string{""}, "chat_id": {"12345"}, "document": {"https://foo.bar/document.pdf"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}}]]}`}}},
 		},
-		ExpectedExtIDs: []string{"133"},
+		ExpectedExtIDs: []string{"133", "133", "133"},
 	},
 	{
 		Label:           "Quick Reply, url type without a URL is dropped",
