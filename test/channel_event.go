@@ -16,9 +16,8 @@ type mockChannelEvent struct {
 	urn        urns.URN
 	occurredOn time.Time
 
-	contactName   string
-	urnAuthTokens map[string]string
-	extra         map[string]string
+	contactName string
+	extra       map[string]string
 }
 
 func (e *mockChannelEvent) EventUUID() uuids.UUID              { return uuids.UUID(e.uuid) }
@@ -37,11 +36,6 @@ func (e *mockChannelEvent) WithExtra(extra map[string]string) courier.ChannelEve
 
 func (e *mockChannelEvent) WithContactName(name string) courier.ChannelEvent {
 	e.contactName = name
-	return e
-}
-
-func (e *mockChannelEvent) WithURNAuthTokens(tokens map[string]string) courier.ChannelEvent {
-	e.urnAuthTokens = tokens
 	return e
 }
 

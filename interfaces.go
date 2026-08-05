@@ -67,7 +67,6 @@ type MsgOut interface {
 	ResponseToExternalID() string
 	IsResend() bool
 	Flow() *models.FlowReference
-	OptIn() *models.OptInReference
 	UserID() models.UserID
 	HighPriority() bool
 	Session() *models.Session
@@ -114,7 +113,6 @@ type ChannelEvent interface {
 	OccurredOn() time.Time
 
 	WithContactName(name string) ChannelEvent
-	WithURNAuthTokens(tokens map[string]string) ChannelEvent
 	WithExtra(extra map[string]string) ChannelEvent
 	WithOccurredOn(time.Time) ChannelEvent
 }

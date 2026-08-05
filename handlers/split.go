@@ -15,7 +15,6 @@ const (
 	MsgPartTypeText MsgPartType = iota
 	MsgPartTypeAttachment
 	MsgPartTypeCaptionedAttachment
-	MsgPartTypeOptIn
 )
 
 // MsgPart represents a message part - either Text or Attachment will be set
@@ -23,7 +22,6 @@ type MsgPart struct {
 	Type       MsgPartType
 	Text       string
 	Attachment string
-	OptIn      *models.OptInReference
 	IsFirst    bool
 	IsLast     bool
 }
@@ -38,10 +36,6 @@ type SplitOptions struct {
 func SplitMsg(m courier.MsgOut, opts SplitOptions) []MsgPart {
 	text := m.Text()
 	attachments := m.Attachments()
-
-	if m.OptIn() != nil {
-		return []MsgPart{{Type: MsgPartTypeOptIn, Text: text, OptIn: m.OptIn(), IsFirst: true, IsLast: true}}
-	}
 
 	// if we have a single attachment and text we may be able to combine them into a captioned attachment
 	if len(attachments) == 1 && len(text) > 0 && (len(text) <= opts.MaxCaptionLen || opts.MaxCaptionLen == 0) {

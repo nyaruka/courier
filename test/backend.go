@@ -269,10 +269,6 @@ func (mb *MockBackend) WriteChannelEvent(ctx context.Context, event courier.Chan
 	mb.writtenChannelEvents = append(mb.writtenChannelEvents, event)
 	mb.lastContactName = evt.contactName
 
-	if evt.urnAuthTokens != nil {
-		mb.recordURNAuthTokens(evt.urn, evt.urnAuthTokens)
-	}
-
 	return nil
 }
 

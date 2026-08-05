@@ -329,7 +329,6 @@ type OutgoingTestCase struct {
 	MsgHighPriority         bool
 	MsgResponseToExternalID string
 	MsgFlow                 *models.FlowReference
-	MsgOptIn                *models.OptInReference
 	MsgUserID               models.UserID
 	MsgOrigin               models.MsgOrigin
 	MsgContactLastSeenOn    *time.Time
@@ -369,9 +368,6 @@ func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch courier.Channel) courie
 	}
 	if tc.MsgFlow != nil {
 		m.WithFlow(tc.MsgFlow)
-	}
-	if tc.MsgOptIn != nil {
-		m.WithOptIn(tc.MsgOptIn)
 	}
 	return m
 }

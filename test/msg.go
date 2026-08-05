@@ -32,7 +32,6 @@ type MockMsg struct {
 	session              *models.Session
 
 	flow   *models.FlowReference
-	optIn  *models.OptInReference
 	userID models.UserID
 
 	receivedOn *time.Time
@@ -70,7 +69,6 @@ func (m *MockMsg) ResponseToExternalID() string      { return m.responseToExtern
 func (m *MockMsg) SentOn() *time.Time                { return m.sentOn }
 func (m *MockMsg) IsResend() bool                    { return m.isResend }
 func (m *MockMsg) Flow() *models.FlowReference       { return m.flow }
-func (m *MockMsg) OptIn() *models.OptInReference     { return m.optIn }
 func (m *MockMsg) UserID() models.UserID             { return m.userID }
 func (m *MockMsg) Session() *models.Session          { return m.session }
 func (m *MockMsg) HighPriority() bool                { return m.highPriority }
@@ -102,7 +100,6 @@ func (m *MockMsg) Payload() json.RawMessage { return m.payload }
 func (m *MockMsg) WithUUID(uuid models.MsgUUID) courier.MsgOut        { m.uuid = uuid; return m }
 func (m *MockMsg) WithTemplating(t *models.Templating) courier.MsgOut { m.templating = t; return m }
 func (m *MockMsg) WithFlow(f *models.FlowReference) courier.MsgOut    { m.flow = f; return m }
-func (m *MockMsg) WithOptIn(o *models.OptInReference) courier.MsgOut  { m.optIn = o; return m }
 func (m *MockMsg) WithUserID(uid models.UserID) courier.MsgOut        { m.userID = uid; return m }
 func (m *MockMsg) WithLocale(lc i18n.Locale) courier.MsgOut           { m.locale = lc; return m }
 func (m *MockMsg) WithURNAuth(token string) courier.MsgOut            { m.urnAuth = token; return m }

@@ -1186,15 +1186,6 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 		"new_contact": true,
 		"occurred_on": event.OccurredOn().Format(time.RFC3339Nano),
 	})
-
-	event = ts.b.NewChannelEvent(channel, models.EventTypeOptIn, urn, clog).WithExtra(map[string]string{"title": "Polls", "payload": "1"})
-	err = ts.b.WriteChannelEvent(ctx, event, clog)
-	ts.NoError(err)
-
-	dbE = testsuite.ReadDBEvent(ts.T(), ts.b.rt, event.UUID())
-	ts.Equal(dbE.EventType, models.EventTypeOptIn)
-	ts.Equal(null.Map[string](map[string]string{"title": "Polls", "payload": "1"}), dbE.Extra)
-	ts.Equal(null.Int(1), dbE.OptInID)
 }
 
 func (ts *BackendTestSuite) TestSessionTimeout() {

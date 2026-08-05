@@ -24,8 +24,6 @@ const (
 	EventTypeReferral        ChannelEventType = "referral"
 	EventTypeStopContact     ChannelEventType = "stop_contact"
 	EventTypeWelcomeMessage  ChannelEventType = "welcome_message"
-	EventTypeOptIn           ChannelEventType = "optin"
-	EventTypeOptOut          ChannelEventType = "optout"
 )
 
 // ChannelEvent represents an event on a channel.. that isn't a new message or status update
@@ -35,7 +33,6 @@ type ChannelEvent struct {
 	ChannelID_    ChannelID        `db:"channel_id"         json:"channel_id"`
 	URN_          urns.URN         `db:"urn"                json:"urn"`
 	EventType_    ChannelEventType `db:"event_type"         json:"event_type"`
-	OptInID_      null.Int         `db:"optin_id"           json:"optin_id"`
 	Extra_        null.Map[string] `db:"extra"              json:"extra"`
 	OccurredOn_   time.Time        `db:"occurred_on"        json:"occurred_on"`
 	ContactID_    ContactID        `db:"contact_id"         json:"-"`
@@ -67,8 +64,8 @@ func (e *ChannelEvent) OccurredOn() time.Time       { return e.OccurredOn_ }
 
 const sqlInsertChannelEvent = `
 INSERT INTO
-	channels_channelevent( org_id,  uuid,  channel_id,  contact_id,  contact_urn_id,  event_type,  optin_id,  extra,  occurred_on,  created_on, status,  log_uuids)
-				   VALUES(:org_id, :uuid, :channel_id, :contact_id, :contact_urn_id, :event_type, :optin_id, :extra, :occurred_on,       NOW(),    'P', :log_uuids)`
+	channels_channelevent( org_id,  uuid,  channel_id,  contact_id,  contact_urn_id,  event_type,  extra,  occurred_on,  created_on, status,  log_uuids)
+				   VALUES(:org_id, :uuid, :channel_id, :contact_id, :contact_urn_id, :event_type, :extra, :occurred_on,       NOW(),    'P', :log_uuids)`
 
 // InsertChannelEvent inserts the passed in channel event into the database
 func InsertChannelEvent(ctx context.Context, db *sqlx.DB, e *ChannelEvent) error {
