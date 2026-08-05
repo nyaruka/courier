@@ -107,11 +107,17 @@ func TestInlineKeyboardFromReplies(t *testing.T) {
 			},
 		},
 		{
-			[]models.QuickReply{{Type: "text", Text: "Skip"}, {Type: "url", Extra: "https://example.com"}, {Type: "form", Text: "Register", Extra: "https://example.com/form"}},
+			[]models.QuickReply{{Type: "url", Extra: "https://example.com"}, {Type: "url", Text: "Read More", Extra: "https://example.com/more"}},
 			&telegram.InlineKeyboardMarkup{
 				InlineKeyboard: [][]telegram.InlineKeyboardButton{
-					{{Text: "Skip", CallbackData: "Skip"}},
-					{{Text: "Open Link", URL: "https://example.com"}},
+					{{Text: "Open Link", URL: "https://example.com"}, {Text: "Read More", URL: "https://example.com/more"}},
+				},
+			},
+		},
+		{
+			[]models.QuickReply{{Type: "form", Text: "Register", Extra: "https://example.com/form"}},
+			&telegram.InlineKeyboardMarkup{
+				InlineKeyboard: [][]telegram.InlineKeyboardButton{
 					{{Text: "Register", WebApp: &telegram.WebAppInfo{URL: "https://example.com/form"}}},
 				},
 			},

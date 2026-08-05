@@ -945,7 +945,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Where Are you?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Send Location","request_location":true},{"text":"Ignore"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+			{Form: url.Values{"text": {"Where Are you?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Send Location","request_location":true}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
@@ -960,7 +960,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}},{"text":"Skip","callback_data":"Skip"}]]}`}}},
+			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}}]]}`}}},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
@@ -983,7 +983,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
-		Label:           "Quick Reply, mixed text and url types on one inline keyboard",
+		Label:           "Quick Reply, url type takes priority over text",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
 		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "url", Extra: "http://example.com"}},
@@ -993,7 +993,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Yes","callback_data":"Yes"},{"text":"Open Link","url":"http://example.com"}]]}`}}},
+			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Open Link","url":"http://example.com"}]]}`}}},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
@@ -1016,7 +1016,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
-		Label:           "Quick Reply, url type dropped when location forces a reply keyboard",
+		Label:           "Quick Reply, location type takes priority over url",
 		MsgText:         "Where are you?",
 		MsgURN:          "telegram:12345",
 		MsgQuickReplies: []models.QuickReply{{Type: "location"}, {Type: "url", Extra: "http://example.com"}},
@@ -1027,9 +1027,6 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Where are you?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Send Location","request_location":true}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
-		},
-		ExpectedLogErrors: []*clogs.Error{
-			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
