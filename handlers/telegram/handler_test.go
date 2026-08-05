@@ -1009,6 +1009,24 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
+		Label:           "Quick Reply, url type with an invalid URL is dropped",
+		MsgText:         "Are you happy?",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit Us", Extra: "example.com/visit"}, {Type: "url", Text: "Read More", Extra: "https://example.com/more"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Read More","url":"https://example.com/more"}]]}`}}},
+		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type url has an invalid URL and can't be sent: example.com/visit"},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
 		Label:           "Quick Reply, url type without a URL is dropped",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",

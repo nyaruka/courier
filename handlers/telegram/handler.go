@@ -229,7 +229,19 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	var keyboard any
 	if urlsOnly {
-		if qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeURL); len(qrs) > 0 {
+		qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeURL)
+
+		// Telegram rejects the entire message if a button URL isn't a valid absolute HTTP(S) URL, so drop invalid
+		// ones with a logged error instead of failing the send
+		qrs = slices.DeleteFunc(qrs, func(q models.QuickReply) bool {
+			if u, err := url.Parse(q.Extra); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+				clog.Error(&clogs.Error{Message: fmt.Sprintf("quick reply of type url has an invalid URL and can't be sent: %s", q.Extra)})
+				return true
+			}
+			return false
+		})
+
+		if len(qrs) > 0 {
 			keyboard = NewInlineKeyboardFromReplies(qrs)
 		}
 	} else {
