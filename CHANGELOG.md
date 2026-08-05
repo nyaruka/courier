@@ -1,3 +1,7 @@
+v26.3.27 (2026-08-05)
+-------------------------
+ * Remove creation of optin/optout channel events and sending of optin request messages
+
 v26.3.26 (2026-08-05)
 -------------------------
  * Save incoming WhatsApp BSUIDs as secondary whatsapp URNs
