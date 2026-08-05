@@ -20,7 +20,6 @@ type KeyboardButton struct {
 // ReplyKeyboardMarkup models a keyboard, see https://core.telegram.org/bots/api/#replykeyboardmarkup
 type ReplyKeyboardMarkup struct {
 	Keyboard        [][]KeyboardButton `json:"keyboard"`
-	IsPersistent    bool               `json:"is_persistent,omitempty"`
 	ResizeKeyboard  bool               `json:"resize_keyboard"`
 	OneTimeKeyboard bool               `json:"one_time_keyboard"`
 }
@@ -51,10 +50,9 @@ func NewKeyboardFromReplies(replies []models.QuickReply) *ReplyKeyboardMarkup {
 
 	// tapping a text button is itself the reply so those keyboards can be single use, but form and location buttons
 	// launch a separate interaction that the user might not complete, and one-time state syncs across their devices -
-	// so keep those keyboards available (and pinned open, for forms) until the next message clears them
+	// so keep those keyboards available until the next message clears them
 	return &ReplyKeyboardMarkup{
 		Keyboard:        keyboard,
-		IsPersistent:    hasForm,
 		ResizeKeyboard:  true,
 		OneTimeKeyboard: !hasForm && !hasLocation,
 	}

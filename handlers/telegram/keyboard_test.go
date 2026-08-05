@@ -87,7 +87,6 @@ func TestKeyboardFromReplies(t *testing.T) {
 				Keyboard: [][]telegram.KeyboardButton{
 					{{Text: "Open Form", WebApp: &telegram.WebAppInfo{URL: "https://example.com/form"}}, {Text: "Skip"}},
 				},
-				IsPersistent:    true,
 				ResizeKeyboard:  true,
 				OneTimeKeyboard: false,
 			},
