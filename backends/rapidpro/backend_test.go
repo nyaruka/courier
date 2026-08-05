@@ -474,7 +474,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	time.Sleep(2 * time.Millisecond)
 
 	// update to WIRED using external id
-	clog6 := updateStatusByExtID("ext1", models.MsgStatusWired)
+	updateStatusByExtID("ext1", models.MsgStatusWired)
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(models.MsgStatusWired, m.Status)
@@ -510,19 +510,12 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.NotNil(m.SentOn)
 
 	// reset our status to sent
-	status := ts.b.NewStatusUpdateByExternalID(channel, "ext1", models.MsgStatusSent, clog6)
-	err := ts.b.WriteStatusUpdate(ctx, status)
-	ts.NoError(err)
-	time.Sleep(time.Second)
+	updateStatusByExtID("ext1", models.MsgStatusSent)
 
 	// error our msg
 	now = time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)
-	status = ts.b.NewStatusUpdateByExternalID(channel, "ext1", models.MsgStatusErrored, clog6)
-	err = ts.b.WriteStatusUpdate(ctx, status)
-	ts.NoError(err)
-
-	time.Sleep(time.Second) // give committer time to write this
+	updateStatusByExtID("ext1", models.MsgStatusErrored)
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(m.Status, models.MsgStatusErrored)
@@ -533,11 +526,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(m.ExternalIdentifier, null.String("ext1"))
 
 	// second go
-	status = ts.b.NewStatusUpdateByExternalID(channel, "ext1", models.MsgStatusErrored, clog6)
-	err = ts.b.WriteStatusUpdate(ctx, status)
-	ts.NoError(err)
-
-	time.Sleep(time.Second) // give committer time to write this
+	updateStatusByExtID("ext1", models.MsgStatusErrored)
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(m.Status, models.MsgStatusErrored)
@@ -545,12 +534,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(null.NullString, m.FailedReason)
 
 	// third go
-	status = ts.b.NewStatusUpdateByExternalID(channel, "ext1", models.MsgStatusErrored, clog6)
-	err = ts.b.WriteStatusUpdate(ctx, status)
+	updateStatusByExtID("ext1", models.MsgStatusErrored)
 
-	time.Sleep(time.Second) // give committer time to write this
-
-	ts.NoError(err)
 	m = testsuite.ReadDBMsg(ts.T(), ts.b.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(m.Status, models.MsgStatusFailed)
 	ts.Equal(m.ErrorCount, 3)
