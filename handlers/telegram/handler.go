@@ -273,7 +273,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	// send each attachment
 	for i, attachment := range attachments {
 		var attachmentKeyBoard any
-		if i == len(msg.Attachments())-1 {
+		if i == len(attachments)-1 {
 			attachmentKeyBoard = keyboard
 		}
 

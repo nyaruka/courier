@@ -957,6 +957,52 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
+		Label:           "Quick Reply, form type takes priority over url",
+		MsgText:         "Please register",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Extra: "http://example.com"}, {Type: "form", Text: "Register", Extra: "https://example.com/form"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
+		Label:           "Quick Reply, url type with attachment",
+		MsgText:         "Check this out",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit", Extra: "http://example.com"}},
+		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendPhoto": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"caption": {"Check this out"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "photo": {"https://foo.bar/image.jpg"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Visit","url":"http://example.com"}]]}`}}},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
+		Label:           "Quick Reply, unknown type ignored",
+		MsgText:         "Are you happy?",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "video", Text: "Play"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
 		Label:           "Quick Reply, url type without a URL is dropped",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
