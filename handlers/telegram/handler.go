@@ -152,28 +152,6 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
-// clearReplyKeyboard sends and immediately deletes a blank message whose only purpose is to remove any reply
-// keyboard left showing by a previous message.. best effort, a failure here shouldn't fail the actual send
-func (h *handler) clearReplyKeyboard(msg courier.MsgOut, token string, clog *courier.ChannelLog) {
-	form := url.Values{
-		"chat_id":              []string{msg.URN().Path()},
-		"text":                 []string{"⠀"}, // braille blank, as Telegram doesn't accept empty or whitespace-only text
-		"disable_notification": []string{"true"},
-	}
-	externalID, err := h.sendMsgPart(msg, token, "sendMessage", form, nil, clog)
-	if err != nil {
-		return
-	}
-
-	form = url.Values{"chat_id": []string{msg.URN().Path()}, "message_id": []string{externalID}}
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/bot%s/deleteMessage", apiURL, token), strings.NewReader(form.Encode()))
-	if err != nil {
-		return
-	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	h.RequestHTTP(req, clog)
-}
-
 // filterQuickRepliesWithExtra returns quick replies of the given type that have the extra value the type requires,
 // logging a channel error for any that don't
 func filterQuickRepliesWithExtra(qrs []models.QuickReply, qrType string, clog *courier.ChannelLog) []models.QuickReply {
@@ -255,10 +233,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 
 	// figure out whether we have a keyboard to send as well.. only one type of quick reply is sent per message,
-	// using the same priority as other channels: location > form > url > text. Location and text replies become a
-	// reply keyboard, where a tap sends the reply as a normal message. Form and url replies become an inline
-	// keyboard which renders attached to the message on all Telegram clients: form replies as buttons that open
-	// the URL in Extra as a Mini App, and url replies as link buttons.
+	// using the same priority as other channels: location > form > url > text. URL replies become an inline
+	// keyboard of link buttons which renders attached to the message; the other types become a reply keyboard,
+	// with form replies as buttons that open the URL in Extra as a Mini App.
 	textQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText)
 	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeLocation)
 	formQRs := filterQuickRepliesWithExtra(msg.QuickReplies(), models.QuickReplyTypeForm, clog)
@@ -269,25 +246,11 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	case len(locationQRs) > 0:
 		keyboard = NewKeyboardFromReplies(locationQRs)
 	case len(formQRs) > 0:
-		keyboard = NewInlineKeyboardFromReplies(formQRs)
+		keyboard = NewKeyboardFromReplies(formQRs)
 	case len(urlQRs) > 0:
 		keyboard = NewInlineKeyboardFromReplies(urlQRs)
 	case len(textQRs) > 0:
 		keyboard = NewKeyboardFromReplies(textQRs)
-	}
-
-	// a message can only have one kind of reply_markup, so a message carrying an inline keyboard can't itself remove
-	// a reply keyboard left showing by a previous message. When this message has multiple parts the earlier parts do
-	// that clearing, but when its only part will carry the inline keyboard, start by sending and deleting a blank
-	// placeholder message whose only purpose is to clear any previous reply keyboard.
-	if _, isInline := keyboard.(*InlineKeyboardMarkup); isInline {
-		numParts := len(attachments)
-		if msg.Text() != "" && caption == "" {
-			numParts++
-		}
-		if numParts == 1 {
-			h.clearReplyKeyboard(msg, authToken, clog)
-		}
 	}
 
 	// if we have text, send that if we aren't sending it as a caption
