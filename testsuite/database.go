@@ -56,7 +56,6 @@ type DBMsg struct {
 	ErrorCount         int                  `db:"error_count"`
 	FailedReason       null.String          `db:"failed_reason"`
 	NextAttempt        *time.Time           `db:"next_attempt"`
-	OptInID            null.Int             `db:"optin_id"`
 	LogUUIDs           pq.StringArray       `db:"log_uuids"`
 }
 
@@ -76,7 +75,6 @@ type ChannelEvent struct {
 	ContactURNID models.ContactURNID     `db:"contact_urn_id"`
 	URN          urns.URN                `db:"urn"`
 	EventType    models.ChannelEventType `db:"event_type"`
-	OptInID      null.Int                `db:"optin_id"`
 	Extra        null.Map[string]        `db:"extra"`
 	Status       string                  `db:"status"`
 	OccurredOn   time.Time               `db:"occurred_on"`

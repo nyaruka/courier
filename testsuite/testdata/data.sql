@@ -41,12 +41,6 @@ DELETE FROM contacts_contacturn;
 INSERT INTO contacts_contacturn("id", "identity", "path", "scheme", "priority", "channel_id", "contact_id", "org_id")
                          VALUES(1000, 'tel:+12067799192', '+12067799192', 'tel', 50, 10, 100, 1);
 
-/* Msg optins with ids 1, 2 */
-DELETE FROM msgs_optin;
-INSERT INTO msgs_optin(id, uuid, org_id, name) VALUES
-                      (1, 'fc1cef6e-b5b1-452d-9528-a4b24db28eb0', 1, 'Polls'),
-                      (2, '2b1eba23-4a97-46ac-9022-11304412b32f', 1, 'Jokes');
-
 /** Msg with id 10000 */
 DELETE FROM msgs_msg;
 INSERT INTO msgs_msg("id", "uuid", "text", "high_priority", "created_on", "modified_on", "sent_on", "direction", "status", "visibility", "msg_type", "is_android",

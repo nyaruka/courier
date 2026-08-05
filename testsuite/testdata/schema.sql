@@ -75,14 +75,6 @@ CREATE TABLE IF NOT EXISTS contacts_contactfire (
     UNIQUE (contact_id, fire_type, scope)
 );
 
-DROP TABLE IF EXISTS msgs_optin CASCADE;
-CREATE TABLE msgs_optin (
-    id serial primary key,
-    uuid uuid NOT NULL,
-    org_id integer NOT NULL references orgs_org(id) on delete cascade,
-    name character varying(64)
-);
-
 DROP TABLE IF EXISTS msgs_msg CASCADE;
 CREATE TABLE msgs_msg (
     id bigserial PRIMARY KEY,
@@ -98,7 +90,6 @@ CREATE TABLE msgs_msg (
     text text NOT NULL,
     attachments character varying(255)[] NULL,
     quickreplies JSONB NULL,
-    optin_id integer REFERENCES msgs_optin(id) ON DELETE CASCADE,
     locale character varying(6) NULL,
     created_on timestamp with time zone NOT NULL,
     modified_on timestamp with time zone NOT NULL,
@@ -129,7 +120,6 @@ CREATE TABLE channels_channelevent (
     channel_id integer NOT NULL references channels_channel(id) on delete cascade,
     contact_id integer NOT NULL references contacts_contact(id) on delete cascade,
     contact_urn_id integer NOT NULL references contacts_contacturn(id) on delete cascade,
-    optin_id integer references msgs_optin(id) on delete cascade,
     org_id integer NOT NULL references orgs_org(id) on delete cascade,
     log_uuids uuid[]
 );
