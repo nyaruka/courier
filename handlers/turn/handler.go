@@ -507,8 +507,8 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 	}
 
 	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeLocation)
-	formQRs := whatsapp.FilterFormQuickReplies(msg.QuickReplies(), clog)
-	urlQRs := whatsapp.FilterURLQuickReplies(msg.QuickReplies(), clog)
+	formQRs := handlers.FilterQuickRepliesWithExtra(msg.QuickReplies(), models.QuickReplyTypeForm, clog)
+	urlQRs := handlers.FilterQuickRepliesWithExtra(msg.QuickReplies(), models.QuickReplyTypeURL, clog)
 
 	isInteractiveMsg := len(qrs) > 0 || len(locationQRs) > 0 || len(formQRs) > 0 || len(urlQRs) > 0
 

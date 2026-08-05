@@ -1123,7 +1123,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"to":"250788123123","type":"text","text":{"body":"Interactive form msg"}}`,
 		}},
 		ExpectedExtIDs:    []string{"157b5e14568e8"},
-		ExpectedLogErrors: []*clogs.Error{{Message: "form quick reply is missing a form ID and can't be sent"}},
+		ExpectedLogErrors: []*clogs.Error{{Message: "quick reply of type form is missing its extra value and can't be sent"}},
 	},
 	{
 		Label:           "Interactive with URL button",
@@ -1169,7 +1169,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"to":"250788123123","type":"text","text":{"body":"Interactive URL msg"}}`,
 		}},
 		ExpectedExtIDs:    []string{"157b5e14568e8"},
-		ExpectedLogErrors: []*clogs.Error{{Message: "URL quick reply is missing a URL and can't be sent"}},
+		ExpectedLogErrors: []*clogs.Error{{Message: "quick reply of type url is missing its extra value and can't be sent"}},
 	},
 	{
 		Label:   "Error Channel Contact Pair limit hit",

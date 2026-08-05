@@ -76,6 +76,20 @@ func FilterSupportedQuickReplies(qrs []models.QuickReply, clog *courier.ChannelL
 	return t
 }
 
+// FilterQuickRepliesWithExtra returns quick replies of the given type that also have the extra value their type
+// requires to be sendable, logging a channel error for any that don't
+func FilterQuickRepliesWithExtra(qrs []models.QuickReply, qrType string, clog *courier.ChannelLog) []models.QuickReply {
+	f := make([]models.QuickReply, 0, len(qrs))
+	for _, qr := range FilterQuickRepliesByType(qrs, qrType) {
+		if qr.RequiresExtra() && qr.Extra == "" {
+			clog.Error(&clogs.Error{Message: fmt.Sprintf("quick reply of type %s is missing its extra value and can't be sent", qr.Type)})
+		} else {
+			f = append(f, qr)
+		}
+	}
+	return f
+}
+
 // NameFromFirstLastUsername is a utility function to build a contact's name from the passed
 // in values, all of which can be empty
 func NameFromFirstLastUsername(first string, last string, username string) string {

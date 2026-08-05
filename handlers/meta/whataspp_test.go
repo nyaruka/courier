@@ -929,7 +929,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Interactive form msg","preview_url":false}}`,
 		}},
 		ExpectedExtIDs:    []string{"157b5e14568e8"},
-		ExpectedLogErrors: []*clogs.Error{{Message: "form quick reply is missing a form ID and can't be sent"}},
+		ExpectedLogErrors: []*clogs.Error{{Message: "quick reply of type form is missing its extra value and can't be sent"}},
 	},
 	{
 		Label:           "Interactive with URL button",
@@ -993,7 +993,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Interactive URL msg","preview_url":false}}`,
 		}},
 		ExpectedExtIDs:    []string{"157b5e14568e8"},
-		ExpectedLogErrors: []*clogs.Error{{Message: "URL quick reply is missing a URL and can't be sent"}},
+		ExpectedLogErrors: []*clogs.Error{{Message: "quick reply of type url is missing its extra value and can't be sent"}},
 	},
 	{
 		Label:   "Link Sending",

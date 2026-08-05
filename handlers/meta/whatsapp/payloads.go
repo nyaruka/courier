@@ -51,8 +51,8 @@ const maxCaptionAndBodyLength = 1024
 func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.ChannelLog) ([]SendRequest, error) {
 	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText)
 	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeLocation)
-	formQRs := FilterFormQuickReplies(msg.QuickReplies(), clog)
-	urlQRs := FilterURLQuickReplies(msg.QuickReplies(), clog)
+	formQRs := handlers.FilterQuickRepliesWithExtra(msg.QuickReplies(), models.QuickReplyTypeForm, clog)
+	urlQRs := handlers.FilterQuickRepliesWithExtra(msg.QuickReplies(), models.QuickReplyTypeURL, clog)
 	menuButton := handlers.GetText("Menu", msg.Locale())
 
 	// if text could end up as a media caption or an interactive message body, use their lower length limit
@@ -193,34 +193,6 @@ func buildMediaPayload(msg courier.MsgOut, attachmentIdx int, caption string) (S
 		p.Document = &media
 	}
 	return p, nil
-}
-
-// FilterFormQuickReplies returns quick replies of type "form" that have an extra value (the form ID), logging an
-// error for any that don't since they can't be sent.
-func FilterFormQuickReplies(qrs []models.QuickReply, clog *courier.ChannelLog) []models.QuickReply {
-	f := make([]models.QuickReply, 0, len(qrs))
-	for _, qr := range handlers.FilterQuickRepliesByType(qrs, models.QuickReplyTypeForm) {
-		if qr.Extra == "" {
-			clog.Error(&clogs.Error{Message: "form quick reply is missing a form ID and can't be sent"})
-			continue
-		}
-		f = append(f, qr)
-	}
-	return f
-}
-
-// FilterURLQuickReplies returns quick replies of type "url" that have an extra value (the URL), logging an error for
-// any that don't since they can't be sent.
-func FilterURLQuickReplies(qrs []models.QuickReply, clog *courier.ChannelLog) []models.QuickReply {
-	f := make([]models.QuickReply, 0, len(qrs))
-	for _, qr := range handlers.FilterQuickRepliesByType(qrs, models.QuickReplyTypeURL) {
-		if qr.Extra == "" {
-			clog.Error(&clogs.Error{Message: "URL quick reply is missing a URL and can't be sent"})
-			continue
-		}
-		f = append(f, qr)
-	}
-	return f
 }
 
 func buildLocationRequestPayload(msg courier.MsgOut, body string) SendRequest {
