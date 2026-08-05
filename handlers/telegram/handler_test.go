@@ -904,7 +904,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Where Are you?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Send Location","request_location":true}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+			{Form: url.Values{"text": {"Where Are you?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Send Location","request_location":true},{"text":"Ignore"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
@@ -919,7 +919,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}},{"text":"Skip"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
@@ -942,32 +942,35 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
-		Label:           "Quick Reply, url type takes priority over text",
+		Label:           "Quick Reply, url types as inline keyboard link buttons",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
-		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "url", Extra: "http://example.com"}},
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit Us", Extra: "http://example.com"}, {Type: "url", Extra: "http://example.com/more"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Open Link","url":"http://example.com"}]]}`}}},
+			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Visit Us","url":"http://example.com"},{"text":"Open Link","url":"http://example.com/more"}]]}`}}},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
-		Label:           "Quick Reply, form type takes priority over url",
+		Label:           "Quick Reply, url type mixed with reply keyboard types is dropped",
 		MsgText:         "Please register",
 		MsgURN:          "telegram:12345",
-		MsgQuickReplies: []models.QuickReply{{Type: "url", Extra: "http://example.com"}, {Type: "form", Text: "Register", Extra: "https://example.com/form"}},
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Extra: "http://example.com"}, {Type: "form", Text: "Register", Extra: "https://example.com/form"}, {Type: "text", Text: "Skip"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}},{"text":"Skip"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
@@ -988,7 +991,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
-		Label:           "Quick Reply, unknown type ignored",
+		Label:           "Quick Reply, unknown type dropped",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
 		MsgQuickReplies: []models.QuickReply{{Type: "video", Text: "Play"}},
@@ -999,6 +1002,9 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type video isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
@@ -1021,7 +1027,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
-		Label:           "Quick Reply, location type takes priority over url",
+		Label:           "Quick Reply, url type mixed with location is dropped",
 		MsgText:         "Where are you?",
 		MsgURN:          "telegram:12345",
 		MsgQuickReplies: []models.QuickReply{{Type: "location"}, {Type: "url", Extra: "http://example.com"}},
@@ -1033,7 +1039,32 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Where are you?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Send Location","request_location":true}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
 		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
+		},
 		ExpectedExtIDs: []string{"133"},
+	},
+	{
+		Label:           "Quick Reply, url type with multiple attachments",
+		MsgText:         "Check this out",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit", Extra: "http://example.com"}},
+		MsgAttachments:  []string{"application/pdf:https://foo.bar/doc1.pdf", "application/pdf:https://foo.bar/document.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+			"*/botauth_token/sendDocument": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Check this out"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+			{Form: url.Values{"caption": []string{""}, "chat_id": {"12345"}, "document": {"https://foo.bar/doc1.pdf"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+			{Form: url.Values{"caption": []string{""}, "chat_id": {"12345"}, "document": {"https://foo.bar/document.pdf"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Visit","url":"http://example.com"}]]}`}}},
+		},
+		ExpectedExtIDs: []string{"133", "133", "133"},
 	},
 	{
 		Label:           "Quick Reply with multiple attachments",

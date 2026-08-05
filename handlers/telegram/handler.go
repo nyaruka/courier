@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -152,20 +153,6 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
-// filterQuickRepliesWithExtra returns quick replies of the given type that have the extra value the type requires,
-// logging a channel error for any that don't
-func filterQuickRepliesWithExtra(qrs []models.QuickReply, qrType string, clog *courier.ChannelLog) []models.QuickReply {
-	f := make([]models.QuickReply, 0, len(qrs))
-	for _, qr := range handlers.FilterQuickRepliesByType(qrs, qrType) {
-		if qr.Extra == "" {
-			clog.Error(&clogs.Error{Message: fmt.Sprintf("quick reply of type %s is missing its extra value and can't be sent", qrType)})
-		} else {
-			f = append(f, qr)
-		}
-	}
-	return f
-}
-
 type mtResponse struct {
 	Ok          bool   `json:"ok" validate:"required"`
 	ErrorCode   int    `json:"error_code"`
@@ -232,25 +219,23 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		caption = msg.Text()
 	}
 
-	// figure out whether we have a keyboard to send as well.. only one type of quick reply is sent per message,
-	// using the same priority as other channels: location > form > url > text. URL replies become an inline
-	// keyboard of link buttons which renders attached to the message; the other types become a reply keyboard,
-	// with form replies as buttons that open the URL in Extra as a Mini App.
-	textQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText)
-	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeLocation)
-	formQRs := filterQuickRepliesWithExtra(msg.QuickReplies(), models.QuickReplyTypeForm, clog)
-	urlQRs := filterQuickRepliesWithExtra(msg.QuickReplies(), models.QuickReplyTypeURL, clog)
+	// figure out whether we have a keyboard to send as well - text, location and form replies can all appear on the
+	// same reply keyboard, with form replies as buttons that open the URL in Extra as a Mini App. URL replies can
+	// only be rendered as inline keyboard link buttons, and Telegram only allows one keyboard type per message, so
+	// they're only supported when they're the only type on the message, and dropped with a logged error otherwise.
+	urlsOnly := !slices.ContainsFunc(msg.QuickReplies(), func(q models.QuickReply) bool {
+		return q.Type != models.QuickReplyTypeURL
+	})
 
 	var keyboard any
-	switch {
-	case len(locationQRs) > 0:
-		keyboard = NewKeyboardFromReplies(locationQRs)
-	case len(formQRs) > 0:
-		keyboard = NewKeyboardFromReplies(formQRs)
-	case len(urlQRs) > 0:
-		keyboard = NewInlineKeyboardFromReplies(urlQRs)
-	case len(textQRs) > 0:
-		keyboard = NewKeyboardFromReplies(textQRs)
+	if urlsOnly {
+		if qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeURL); len(qrs) > 0 {
+			keyboard = NewInlineKeyboardFromReplies(qrs)
+		}
+	} else {
+		if qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm); len(qrs) > 0 {
+			keyboard = NewKeyboardFromReplies(qrs)
+		}
 	}
 
 	// if we have text, send that if we aren't sending it as a caption
