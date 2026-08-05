@@ -1,3 +1,7 @@
+v26.3.26 (2026-08-05)
+-------------------------
+ * Save incoming WhatsApp BSUIDs as secondary whatsapp URNs
+
 v26.3.25 (2026-08-04)
 -------------------------
  * Support sending to WhatsApp BSUIDs held as whatsapp URNs
