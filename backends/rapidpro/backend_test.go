@@ -982,6 +982,13 @@ func (ts *BackendTestSuite) TestContactForMsg() {
 	c2, err := contactForMsg(ctx, ts.b, newPhoneMsg("whatsapp:12065550000", urns.NilURN), clog)
 	ts.NoError(err)
 	ts.True(c2.IsNew_)
+
+	// adding a URN which belongs to another contact - as can happen if it's created after our lookups - doesn't
+	// steal it, and tells the caller to start over
+	added, err := addContactURN(ctx, ts.b, waChannel, existingByBSUID, "whatsapp:12065550000", nil)
+	ts.NoError(err)
+	ts.False(added)
+	ts.Equal(c2.ID_, lookup("whatsapp:12065550000").ID_)
 }
 
 func (ts *BackendTestSuite) TestSaveAttachment() {

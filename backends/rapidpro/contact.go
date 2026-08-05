@@ -215,8 +215,8 @@ func altLookupURN(m *MsgIn) urns.URN {
 }
 
 // addContactURN adds the given URN to the contact (if not already present) and points the contact's URNID at it, so
-// an incoming message is attributed to this URN. Returns false without adding if the URN belongs to another contact,
-// rather than stealing it.
+// an incoming message is attributed to this URN. Returns false without adding if the URN belongs to another contact
+// or was concurrently inserted by another writer, rather than stealing it - the caller should restart its lookup.
 func addContactURN(ctx context.Context, b *backend, channel *models.Channel, contact *models.Contact, urn urns.URN, authTokens map[string]string) (bool, error) {
 	tx, err := b.rt.DB.BeginTxx(ctx, nil)
 	if err != nil {
@@ -226,6 +226,11 @@ func addContactURN(ctx context.Context, b *backend, channel *models.Channel, con
 	contactURN, err := models.GetOrCreateContactURN(ctx, tx, channel, contact.ID_, urn, authTokens)
 	if err != nil {
 		tx.Rollback()
+
+		// the URN was inserted by someone else after we tried to look it up
+		if dbutil.IsUniqueViolation(err) {
+			return false, nil
+		}
 		return false, fmt.Errorf("error adding URN to contact: %w", err)
 	}
 
