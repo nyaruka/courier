@@ -52,11 +52,6 @@ func (h *handler) Initialize(s *courier.Server) error {
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
-	// a user tapped a callback button on an inline keyboard
-	if payload.CallbackQuery != nil {
-		return h.receiveCallbackQuery(ctx, channel, w, r, payload, clog)
-	}
-
 	// no message? ignore this
 	if payload.Message.MessageID == 0 {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
@@ -157,33 +152,6 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
-// receiveCallbackQuery handles a user tapping a callback button on an inline keyboard, turning the button's data
-// into an incoming message
-func (h *handler) receiveCallbackQuery(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
-	cq := payload.CallbackQuery
-
-	urn, err := urns.NewFromParts(urns.Telegram.Prefix, strconv.FormatInt(cq.From.ContactID, 10), nil, strings.ToLower(cq.From.Username))
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
-	name := handlers.NameFromFirstLastUsername(cq.From.FirstName, cq.From.LastName, cq.From.Username)
-
-	// answer the callback query so the client stops showing the button as loading.. best effort, an answer failing
-	// or expiring doesn't stop us accepting the message
-	authToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
-	form := url.Values{"callback_query_id": []string{cq.ID}}
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/bot%s/answerCallbackQuery", apiURL, authToken), strings.NewReader(form.Encode()))
-	if err == nil {
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		h.RequestHTTP(req, clog)
-	}
-
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, cq.Data, cq.ID, clog).WithContactName(name)
-
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
-}
-
 // filterQuickRepliesWithExtra returns quick replies of the given type that have the extra value the type requires,
 // logging a channel error for any that don't
 func filterQuickRepliesWithExtra(qrs []models.QuickReply, qrType string, clog *courier.ChannelLog) []models.QuickReply {
@@ -265,10 +233,10 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 
 	// figure out whether we have a keyboard to send as well.. only one type of quick reply is sent per message,
-	// using the same priority as other channels: location > form > url > text. Location requests only exist as
-	// reply keyboard buttons, everything else becomes an inline keyboard which renders attached to the message
-	// on all Telegram clients: form replies as buttons that open the URL in Extra as a Mini App, url replies as
-	// link buttons, and text replies as callback buttons.
+	// using the same priority as other channels: location > form > url > text. Location and text replies become a
+	// reply keyboard, where a tap sends the reply as a normal message. Form and url replies become an inline
+	// keyboard which renders attached to the message on all Telegram clients: form replies as buttons that open
+	// the URL in Extra as a Mini App, and url replies as link buttons.
 	textQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText)
 	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeLocation)
 	formQRs := filterQuickRepliesWithExtra(msg.QuickReplies(), models.QuickReplyTypeForm, clog)
@@ -283,7 +251,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	case len(urlQRs) > 0:
 		keyboard = NewInlineKeyboardFromReplies(urlQRs)
 	case len(textQRs) > 0:
-		keyboard = NewInlineKeyboardFromReplies(textQRs)
+		keyboard = NewKeyboardFromReplies(textQRs)
 	}
 
 	// if we have text, send that if we aren't sending it as a caption
@@ -533,14 +501,4 @@ type moPayload struct {
 			ButtonText string `json:"button_text"`
 		} `json:"web_app_data"`
 	} `json:"message"`
-	CallbackQuery *struct {
-		ID   string `json:"id"`
-		From struct {
-			ContactID int64  `json:"id"`
-			FirstName string `json:"first_name"`
-			LastName  string `json:"last_name"`
-			Username  string `json:"username"`
-		} `json:"from"`
-		Data string `json:"data"`
-	} `json:"callback_query"`
 }

@@ -1,7 +1,6 @@
 package telegram_test
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/core/models"
@@ -99,14 +98,6 @@ func TestInlineKeyboardFromReplies(t *testing.T) {
 		expected *telegram.InlineKeyboardMarkup
 	}{
 		{
-			[]models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}},
-			&telegram.InlineKeyboardMarkup{
-				InlineKeyboard: [][]telegram.InlineKeyboardButton{
-					{{Text: "Yes", CallbackData: "Yes"}, {Text: "No", CallbackData: "No"}},
-				},
-			},
-		},
-		{
 			[]models.QuickReply{{Type: "url", Extra: "https://example.com"}, {Type: "url", Text: "Read More", Extra: "https://example.com/more"}},
 			&telegram.InlineKeyboardMarkup{
 				InlineKeyboard: [][]telegram.InlineKeyboardButton{
@@ -119,15 +110,6 @@ func TestInlineKeyboardFromReplies(t *testing.T) {
 			&telegram.InlineKeyboardMarkup{
 				InlineKeyboard: [][]telegram.InlineKeyboardButton{
 					{{Text: "Register", WebApp: &telegram.WebAppInfo{URL: "https://example.com/form"}}},
-				},
-			},
-		},
-		{
-			// callback data is truncated to 64 bytes without splitting characters
-			[]models.QuickReply{{Type: "text", Text: strings.Repeat("é", 40)}},
-			&telegram.InlineKeyboardMarkup{
-				InlineKeyboard: [][]telegram.InlineKeyboardButton{
-					{{Text: strings.Repeat("é", 40), CallbackData: strings.Repeat("é", 32)}},
 				},
 			},
 		},

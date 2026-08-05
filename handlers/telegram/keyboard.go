@@ -1,8 +1,6 @@
 package telegram
 
 import (
-	"unicode/utf8"
-
 	"github.com/nyaruka/courier/v26/core/models"
 )
 
@@ -52,10 +50,9 @@ func NewKeyboardFromReplies(replies []models.QuickReply) *ReplyKeyboardMarkup {
 
 // InlineKeyboardButton is a button on an inline keyboard, see https://core.telegram.org/bots/api/#inlinekeyboardbutton
 type InlineKeyboardButton struct {
-	Text         string      `json:"text"`
-	CallbackData string      `json:"callback_data,omitempty"`
-	URL          string      `json:"url,omitempty"`
-	WebApp       *WebAppInfo `json:"web_app,omitempty"`
+	Text   string      `json:"text"`
+	URL    string      `json:"url,omitempty"`
+	WebApp *WebAppInfo `json:"web_app,omitempty"`
 }
 
 // InlineKeyboardMarkup models an inline keyboard, see https://core.telegram.org/bots/api/#inlinekeyboardmarkup
@@ -63,8 +60,8 @@ type InlineKeyboardMarkup struct {
 	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
 }
 
-// NewInlineKeyboardFromReplies creates an inline keyboard from the given quick replies - text replies become callback
-// buttons, url replies link buttons, and form replies buttons that open the URL in Extra as a Mini App
+// NewInlineKeyboardFromReplies creates an inline keyboard from the given quick replies - url replies become link
+// buttons and form replies buttons that open the URL in Extra as a Mini App
 func NewInlineKeyboardFromReplies(replies []models.QuickReply) *InlineKeyboardMarkup {
 	rows := models.QuickRepliesToRows(replies, 5, 30, 2)
 	keyboard := make([][]InlineKeyboardButton, len(rows))
@@ -79,21 +76,9 @@ func NewInlineKeyboardFromReplies(replies []models.QuickReply) *InlineKeyboardMa
 				keyboard[i][j].URL = rows[i][j].Extra
 			case models.QuickReplyTypeForm:
 				keyboard[i][j].WebApp = &WebAppInfo{URL: rows[i][j].Extra}
-			default:
-				// the tapped button's data comes back to us as the reply, and Telegram caps it at 64 bytes
-				keyboard[i][j].CallbackData = truncateBytes(rows[i][j].Text, 64)
 			}
 		}
 	}
 
 	return &InlineKeyboardMarkup{InlineKeyboard: keyboard}
-}
-
-// truncates a string to at most n bytes without splitting a multi-byte character
-func truncateBytes(s string, n int) string {
-	for len(s) > n {
-		_, size := utf8.DecodeLastRuneInString(s)
-		s = s[:len(s)-size]
-	}
-	return s
 }

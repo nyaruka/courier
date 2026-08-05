@@ -573,30 +573,6 @@ var webAppDataNonJSONMsg = `
     }
 }`
 
-var callbackQueryMsg = `
-{
-    "update_id": 900946539,
-    "callback_query": {
-        "id": "4382bfdwdsb323b2d9",
-        "from": {
-            "id": 3527065,
-            "first_name": "Nic",
-            "last_name": "Pottier",
-            "username": "Nicpottier"
-        },
-        "message": {
-            "message_id": 99,
-            "chat": {
-                "id": 3527065,
-                "type": "private"
-            },
-            "date": 1493845755,
-            "text": "Are you happy?"
-        },
-        "data": "Yes"
-    }
-}`
-
 var testCases = []IncomingTestCase{
 	{
 
@@ -767,17 +743,6 @@ var testCases = []IncomingTestCase{
 		ExpectedErrors:       []*clogs.Error{{Message: "web_app_data data is not a valid JSON object"}},
 	},
 	{
-		Label:                "Receive Callback Query",
-		URL:                  "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
-		Data:                 callbackQueryMsg,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedContactName:  Sp("Nic Pottier"),
-		ExpectedMsgText:      Sp("Yes"),
-		ExpectedURN:          "telegram:3527065#nicpottier",
-		ExpectedExternalID:   "4382bfdwdsb323b2d9",
-	},
-	{
 		Label:                "Receive Empty",
 		URL:                  "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
 		Data:                 emptyMsg,
@@ -833,14 +798,8 @@ var testCases = []IncomingTestCase{
 
 func buildMockTelegramService(testCases []IncomingTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-
-		if strings.HasSuffix(r.URL.Path, "/answerCallbackQuery") {
-			w.Write([]byte(`{ "ok": true, "result": true }`))
-			return
-		}
-
 		fileID := r.FormValue("file_id")
+		defer r.Body.Close()
 
 		filePath := ""
 
@@ -930,7 +889,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Yes","callback_data":"Yes"},{"text":"No","callback_data":"No"}]]}`}}},
+			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Yes"},{"text":"No"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
@@ -975,7 +934,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Skip","callback_data":"Skip"}]]}`}}},
+			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Skip"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
 		},
 		ExpectedLogErrors: []*clogs.Error{
 			{Message: "quick reply of type form is missing its extra value and can't be sent"},
@@ -1048,7 +1007,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
 			{Form: url.Values{"caption": []string{""}, "chat_id": {"12345"}, "document": {"https://foo.bar/doc1.pdf"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
-			{Form: url.Values{"caption": []string{""}, "chat_id": {"12345"}, "document": {"https://foo.bar/document.pdf"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Yes","callback_data":"Yes"},{"text":"No","callback_data":"No"}]]}`}}},
+			{Form: url.Values{"caption": []string{""}, "chat_id": {"12345"}, "document": {"https://foo.bar/document.pdf"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Yes"},{"text":"No"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
 		},
 		ExpectedExtIDs: []string{"133", "133", "133"},
 	},
