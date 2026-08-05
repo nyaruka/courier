@@ -50,6 +50,9 @@ func (e WAError) ErrorChannelLog(clog *courier.ChannelLog) {
 	clog.Error(courier.ErrorExternal(strconv.Itoa(e.Code), e.Title))
 }
 
+// note that we deliberately don't read the parent_user_id / from_parent_user_id fields that accompany the BSUID
+// fields below - a parent BSUID identifies the user across a business's portfolios rather than to this channel, and
+// isn't an address we can send to, so it isn't a messaging identity we have any use for
 type WAContact struct {
 	Profile struct {
 		Name string `json:"name"`
@@ -108,6 +111,17 @@ type WAMessage struct {
 	Errors []WAError `json:"errors"`
 }
 
+// Identifier returns the identifier of the sender of this message. Normally that's their phone number, but a user
+// who has adopted a WhatsApp username has their phone number omitted from the webhook entirely unless the business
+// meets one of the phone number retention conditions, and is identified only by their business-scoped user ID.
+// See https://developers.facebook.com/documentation/business-messaging/whatsapp/business-scoped-user-ids/
+func (m WAMessage) Identifier() string {
+	if m.From != "" {
+		return m.From
+	}
+	return m.FromUserID
+}
+
 func (m WAMessage) ExtractData(clog *courier.ChannelLog) (time.Time, urns.URN, string, string, string, error, error) {
 	var err error
 	var finalErr error
@@ -125,7 +139,7 @@ func (m WAMessage) ExtractData(clog *courier.ChannelLog) (time.Time, urns.URN, s
 	}
 	date = parseTimestamp(ts)
 
-	urn, err = urns.New(urns.WhatsApp, m.From)
+	urn, err = urns.New(urns.WhatsApp, m.Identifier())
 	if err != nil {
 		finalErr = errors.New("invalid whatsapp id")
 		return date, urn, text, mediaURL, mediaID, err, finalErr

@@ -14,17 +14,12 @@
             "contacts": [
               {
                 "profile": {
-                  "name": "Kerry Fisher",
-                  "username": "kfisher"
-                },
-                "user_id": "US.1234",
-                "parent_user_id": "US.ENT.5678"
+                  "name": "Kerry Fisher"
+                }
               }
             ],
             "messages": [
               {
-                "from_user_id": "US.1234",
-                "from_parent_user_id": "US.ENT.5678",
                 "id": "external_id",
                 "timestamp": "1454119029",
                 "text": {
