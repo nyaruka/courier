@@ -248,12 +248,15 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			event.WithAttachment(mediaURL)
 		}
 
+		// if we have a from_bsuid, add it as a secondary whatsapp URN (unless it's already the primary URN)
 		if msg.FromBSUID != "" {
-			userIDURN, urnErr := urns.New(urns.BSUID, msg.FromBSUID)
+			userIDURN, urnErr := urns.New(urns.WhatsApp, msg.FromBSUID)
 			if urnErr == nil {
-				event.WithNewURN(userIDURN, models.NewURNAppend)
+				if userIDURN != urn {
+					event.WithNewURN(userIDURN, models.NewURNAppend)
+				}
 			} else {
-				courier.LogRequestError(r, channel, fmt.Errorf("invalid from_bsuid for BSUID URN: %w", urnErr))
+				courier.LogRequestError(r, channel, fmt.Errorf("invalid from_bsuid for whatsapp URN: %w", urnErr))
 			}
 		}
 

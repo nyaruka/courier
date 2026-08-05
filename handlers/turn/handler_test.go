@@ -66,6 +66,25 @@ var helloMsgWithValidBSUID = `{
    }]
 }`
 
+var helloMsgFromBSUID = `{
+  "contacts":[{
+    "profile": {
+      "name": "Jerry Cooney"
+    },
+    "wa_id": "US.1234"
+  }],
+  "messages": [{
+    "from": "US.1234",
+    "from_bsuid": "US.1234",
+    "id": "41",
+    "timestamp": "1454119029",
+    "text": {
+      "body": "hello world"
+    },
+    "type": "text"
+   }]
+}`
+
 var helloMsgWithInvalidBSUID = `{
   "contacts":[{
     "profile": {
@@ -364,7 +383,21 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedURN:           "whatsapp:250788123123",
 		ExpectedExternalID:    "41",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
-		ExpectedNewURN:        &models.NewURNSpec{Value: "bsuid:US.1234", Action: models.NewURNAppend},
+		ExpectedNewURN:        &models.NewURNSpec{Value: "whatsapp:US.1234", Action: models.NewURNAppend},
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+	},
+	{
+		Label:                 "Receive Message from BSUID with no phone",
+		URL:                   turnWhatsappReceiveURL,
+		Data:                  helloMsgFromBSUID,
+		ExpectedRespStatus:    200,
+		ExpectedBodyContains:  `"type":"msg"`,
+		ExpectedContactName:   Sp("Jerry Cooney"),
+		ExpectedMsgText:       Sp("hello world"),
+		ExpectedURN:           "whatsapp:US.1234",
+		ExpectedExternalID:    "41",
+		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 	},
