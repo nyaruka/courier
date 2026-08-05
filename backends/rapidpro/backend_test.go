@@ -921,8 +921,10 @@ func (ts *BackendTestSuite) TestContactForMsg() {
 	waChannel := ts.getChannel("WAC", "dbc126ed-66bc-4e28-b67b-81dc33277a17")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, waChannel, nil)
 
-	newPhoneMsg := func(phone, bsuid urns.URN) *MsgIn {
-		m := ts.b.NewIncomingMsg(ctx, waChannel, phone, "hi", "", clog).(*MsgIn)
+	// sender is the primary URN - a phone number, or a BSUID for a webhook with no phone number, in which case
+	// handlers attach no new URN
+	newWAMsg := func(sender, bsuid urns.URN) *MsgIn {
+		m := ts.b.NewIncomingMsg(ctx, waChannel, sender, "hi", "", clog).(*MsgIn)
 		if bsuid != urns.NilURN {
 			m.WithNewURN(bsuid, models.NewURNAppend)
 		}
@@ -935,36 +937,76 @@ func (ts *BackendTestSuite) TestContactForMsg() {
 	}
 
 	// no existing contact: a message with a phone number and BSUID creates one keyed on the phone number
-	c1, err := contactForMsg(ctx, ts.b, newPhoneMsg("whatsapp:12065551234", "whatsapp:US.1234"), clog)
+	c1, err := contactForMsg(ctx, ts.b, newWAMsg("whatsapp:12065551234", "whatsapp:US.1234"), clog)
 	ts.NoError(err)
 	ts.True(c1.IsNew_)
 	ts.Equal(c1.ID_, lookup("whatsapp:12065551234").ID_)
 	ts.Nil(lookup("whatsapp:US.1234")) // BSUID is appended by mailroom, not here
+
+	// existing contact known only by the phone number: a message with that phone number and a BSUID is matched
+	// directly by the phone number
+	c1Again, err := contactForMsg(ctx, ts.b, newWAMsg("whatsapp:12065551234", "whatsapp:US.1234"), clog)
+	ts.NoError(err)
+	ts.False(c1Again.IsNew_)
+	ts.Equal(c1.ID_, c1Again.ID_)
+
+	// no existing contact: a BSUID-only message creates one keyed on the BSUID
+	b1, err := contactForMsg(ctx, ts.b, newWAMsg("whatsapp:US.7777", urns.NilURN), clog)
+	ts.NoError(err)
+	ts.True(b1.IsNew_)
+	ts.Equal(b1.ID_, lookup("whatsapp:US.7777").ID_)
+
+	// existing contact known only by a BSUID: a BSUID-only message is matched to it
+	b1Again, err := contactForMsg(ctx, ts.b, newWAMsg("whatsapp:US.7777", urns.NilURN), clog)
+	ts.NoError(err)
+	ts.False(b1Again.IsNew_)
+	ts.Equal(b1.ID_, b1Again.ID_)
 
 	// existing contact known only by a BSUID: a message with a new phone number and that BSUID is matched to it
 	// (not duplicated) and the phone number is added to it
 	existingByBSUID, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, "whatsapp:US.5555", nil, "", true, clog)
 	ts.NoError(err)
 
-	matched, err := contactForMsg(ctx, ts.b, newPhoneMsg("whatsapp:12065555555", "whatsapp:US.5555"), clog)
+	matched, err := contactForMsg(ctx, ts.b, newWAMsg("whatsapp:12065555555", "whatsapp:US.5555"), clog)
 	ts.NoError(err)
 	ts.False(matched.IsNew_)
 	ts.Equal(existingByBSUID.ID_, matched.ID_)
 	ts.Equal(existingByBSUID.ID_, lookup("whatsapp:12065555555").ID_) // phone number now resolves to the same contact
 	ts.NotEqual(existingByBSUID.URNID_, matched.URNID_)               // and the message is attributed to the phone URN
 
+	// existing contact known by both URNs: a message with both is matched directly by the phone number
+	matchedBoth, err := contactForMsg(ctx, ts.b, newWAMsg("whatsapp:12065555555", "whatsapp:US.5555"), clog)
+	ts.NoError(err)
+	ts.False(matchedBoth.IsNew_)
+	ts.Equal(existingByBSUID.ID_, matchedBoth.ID_)
+
+	// existing contact known by both URNs: a BSUID-only message is matched by the BSUID
+	matchedBSUIDOnly, err := contactForMsg(ctx, ts.b, newWAMsg("whatsapp:US.5555", urns.NilURN), clog)
+	ts.NoError(err)
+	ts.False(matchedBSUIDOnly.IsNew_)
+	ts.Equal(existingByBSUID.ID_, matchedBSUIDOnly.ID_)
+
+	// user changes their phone number: a message with a new phone number and their BSUID is matched by the BSUID
+	// and the new phone number is added alongside the old one
+	changedPhone, err := contactForMsg(ctx, ts.b, newWAMsg("whatsapp:12065556666", "whatsapp:US.5555"), clog)
+	ts.NoError(err)
+	ts.False(changedPhone.IsNew_)
+	ts.Equal(existingByBSUID.ID_, changedPhone.ID_)
+	ts.Equal(existingByBSUID.ID_, lookup("whatsapp:12065556666").ID_) // new phone number added
+	ts.Equal(existingByBSUID.ID_, lookup("whatsapp:12065555555").ID_) // old phone number retained
+
 	// existing contact known by the phone number: matched directly, even if another contact owns the BSUID
 	other, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, "whatsapp:US.9999", nil, "", true, clog)
 	ts.NoError(err)
 
-	matchedByPhone, err := contactForMsg(ctx, ts.b, newPhoneMsg("whatsapp:12065555555", "whatsapp:US.9999"), clog)
+	matchedByPhone, err := contactForMsg(ctx, ts.b, newWAMsg("whatsapp:12065555555", "whatsapp:US.9999"), clog)
 	ts.NoError(err)
 	ts.False(matchedByPhone.IsNew_)
 	ts.Equal(existingByBSUID.ID_, matchedByPhone.ID_)
 	ts.Equal(other.ID_, lookup("whatsapp:US.9999").ID_) // BSUID left with its owner, conflict is mailroom's to resolve
 
 	// no BSUID attached: existing single-URN resolution, a new phone number creates a new contact
-	c2, err := contactForMsg(ctx, ts.b, newPhoneMsg("whatsapp:12065550000", urns.NilURN), clog)
+	c2, err := contactForMsg(ctx, ts.b, newWAMsg("whatsapp:12065550000", urns.NilURN), clog)
 	ts.NoError(err)
 	ts.True(c2.IsNew_)
 
