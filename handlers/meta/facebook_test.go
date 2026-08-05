@@ -115,24 +115,8 @@ var facebookIncomingTests = []IncomingTestCase{
 		URL:                  "/c/fba/receive",
 		Data:                 string(test.ReadFile("./testdata/fba/notification_messages_optin.json")),
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Handled",
-		ExpectedEvents: []ExpectedEvent{
-			{Type: models.EventTypeOptIn, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "Bird Facts", "payload": "3456"}},
-		},
-		ExpectedURNAuthTokens: map[urns.URN]map[string]string{"facebook:5678": {"optin:3456": "12345678901234567890"}},
-		PrepRequest:           addValidSignature,
-	},
-	{
-		Label:                "Receive Notification Messages OptOut",
-		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/notification_messages_optout.json")),
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Handled",
-		ExpectedEvents: []ExpectedEvent{
-			{Type: models.EventTypeOptOut, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "Bird Facts", "payload": "3456"}},
-		},
-		ExpectedURNAuthTokens: map[urns.URN]map[string]string{"facebook:5678": {}},
-		PrepRequest:           addValidSignature,
+		ExpectedBodyContains: "ignoring optin",
+		PrepRequest:          addValidSignature,
 	},
 	{
 		Label:                "Receive Get Started",
@@ -546,21 +530,6 @@ var facebookOutgoingTests = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{"access_token": {"a123"}},
 			Body:   `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"file","payload":{"url":"https://foo.bar/document.pdf","is_reusable":true}}}}`,
-		}},
-		ExpectedExtIDs: []string{"mid.133"},
-	},
-	{
-		Label:    "Opt-in request",
-		MsgURN:   "facebook:12345",
-		MsgOptIn: &models.OptInReference{ID: 3456, Name: "Joke Of The Day"},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://graph.facebook.com/v25.0/me/messages*": {
-				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{"access_token": {"a123"}},
-			Body:   `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"template","payload":{"template_type":"notification_messages","title":"Joke Of The Day","payload":"3456"}}}}`,
 		}},
 		ExpectedExtIDs: []string{"mid.133"},
 	},

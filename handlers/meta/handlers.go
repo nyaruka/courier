@@ -417,35 +417,22 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 		}
 
 		if msg.OptIn != nil {
-			var event courier.ChannelEvent
-
 			if msg.OptIn.Type == "notification_messages" {
-				eventType := models.EventTypeOptIn
-				authToken := msg.OptIn.NotificationMessagesToken
-
-				if msg.OptIn.NotificationMessagesStatus == "STOP_NOTIFICATIONS" {
-					eventType = models.EventTypeOptOut
-					authToken = "" // so that we remove it
-				}
-
-				event = h.Backend().NewChannelEvent(channel, eventType, urn, clog).
-					WithOccurredOn(date).
-					WithExtra(map[string]string{titleKey: msg.OptIn.Title, payloadKey: msg.OptIn.Payload}).
-					WithURNAuthTokens(map[string]string{fmt.Sprintf("optin:%s", msg.OptIn.Payload): authToken})
+				data = append(data, courier.NewInfoData("ignoring optin"))
 			} else {
-
-				event = h.Backend().NewChannelEvent(channel, models.EventTypeReferral, urn, clog).
+				// this is an optin from the checkbox plugin, treat it as a referral
+				event := h.Backend().NewChannelEvent(channel, models.EventTypeReferral, urn, clog).
 					WithOccurredOn(date).
 					WithExtra(map[string]string{referrerIDKey: msg.OptIn.Ref})
-			}
 
-			err := h.Backend().WriteChannelEvent(ctx, event, clog)
-			if err != nil {
-				return nil, nil, err
-			}
+				err := h.Backend().WriteChannelEvent(ctx, event, clog)
+				if err != nil {
+					return nil, nil, err
+				}
 
-			events = append(events, event)
-			data = append(data, courier.NewEventReceiveData(event))
+				events = append(events, event)
+				data = append(data, courier.NewEventReceiveData(event))
+			}
 
 		} else if msg.Postback != nil {
 			// by default postbacks are treated as new conversations, unless we have referral information
@@ -638,15 +625,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 	// Send each text segment and attachment separately. We send attachments first as otherwise quick replies get
 	// attached to attachment segments and are hidden when images load.
 	for _, part := range handlers.SplitMsg(msg, handlers.SplitOptions{MaxTextLen: maxMsgLength}) {
-		if part.Type == handlers.MsgPartTypeOptIn {
-			payload.Message.Attachment = &messenger.Attachment{}
-			payload.Message.Attachment.Type = "template"
-			payload.Message.Attachment.Payload.TemplateType = "notification_messages"
-			payload.Message.Attachment.Payload.Title = part.OptIn.Name
-			payload.Message.Attachment.Payload.Payload = fmt.Sprint(part.OptIn.ID)
-			payload.Message.Text = ""
-
-		} else if part.Type == handlers.MsgPartTypeAttachment {
+		if part.Type == handlers.MsgPartTypeAttachment {
 			payload.Message.Attachment = &messenger.Attachment{}
 			attType, attURL := handlers.SplitAttachment(part.Attachment)
 			attType = strings.Split(attType, "/")[0]

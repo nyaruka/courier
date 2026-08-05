@@ -46,9 +46,6 @@ func queueEventHandling(ctx context.Context, rc redis.Conn, c *models.Contact, e
 		"new_contact": c.IsNew_,
 		"occurred_on": e.OccurredOn_,
 	}
-	if e.OptInID_ != 0 {
-		body["optin_id"] = e.OptInID_
-	}
 
 	return queueMailroomTask(ctx, rc, "event_received", e.OrgID_, e.ContactID_, body)
 }
