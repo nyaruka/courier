@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
@@ -153,6 +155,26 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
+// isValidButtonURL approximates Telegram's validation of inline keyboard button URLs, which accepts HTTP(S) and
+// tg:// URLs, rejects whitespace, and requires HTTP(S) hostnames to have a TLD (or be an IP address)
+func isValidButtonURL(s string) bool {
+	if strings.ContainsFunc(s, unicode.IsSpace) {
+		return false
+	}
+
+	u, err := url.Parse(s)
+	if err != nil {
+		return false
+	}
+	if u.Scheme == "tg" {
+		return true
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return false
+	}
+	return strings.Contains(u.Hostname(), ".") || net.ParseIP(u.Hostname()) != nil
+}
+
 type mtResponse struct {
 	Ok          bool   `json:"ok" validate:"required"`
 	ErrorCode   int    `json:"error_code"`
@@ -231,10 +253,10 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	if urlsOnly {
 		qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeURL)
 
-		// Telegram rejects the entire message if a button URL isn't a valid absolute HTTP(S) URL, so drop invalid
-		// ones with a logged error instead of failing the send
+		// Telegram rejects the entire message if a button URL isn't valid, so drop invalid ones with a logged error
+		// instead of failing the send
 		qrs = slices.DeleteFunc(qrs, func(q models.QuickReply) bool {
-			if u, err := url.Parse(q.Extra); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			if !isValidButtonURL(q.Extra) {
 				clog.Error(&clogs.Error{Message: fmt.Sprintf("quick reply of type url has an invalid URL and can't be sent: %s", q.Extra)})
 				return true
 			}

@@ -1009,10 +1009,10 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
-		Label:           "Quick Reply, url type with an invalid URL is dropped",
+		Label:           "Quick Reply, url types with invalid URLs are dropped",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
-		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit Us", Extra: "example.com/visit"}, {Type: "url", Text: "Read More", Extra: "https://example.com/more"}},
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit Us", Extra: "example.com/visit"}, {Type: "url", Text: "Local", Extra: "http://localhost/visit"}, {Type: "url", Text: "Spaced", Extra: "https://example.com/a page"}, {Type: "url", Text: "Read More", Extra: "https://example.com/more"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
@@ -1023,6 +1023,8 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedLogErrors: []*clogs.Error{
 			{Message: "quick reply of type url has an invalid URL and can't be sent: example.com/visit"},
+			{Message: "quick reply of type url has an invalid URL and can't be sent: http://localhost/visit"},
+			{Message: "quick reply of type url has an invalid URL and can't be sent: https://example.com/a page"},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
@@ -1279,4 +1281,35 @@ func TestSendEvent(t *testing.T) {
 	// an event type the handler doesn't declare support for can't be sent
 	err = h.SendEvent(context.Background(), ch, events.NewTypingStopped(events.DirectionOutgoing, nil, "telegram:12345", ""), clog)
 	assert.ErrorContains(t, err, "unsupported event type: typing_stopped")
+}
+
+func TestIsValidButtonURL(t *testing.T) {
+	valid := []string{
+		"http://example.com",
+		"https://example.com/path?x=1#y",
+		"https://example.com:8080/path",
+		"http://127.0.0.1/dev",
+		"http://[::1]/dev",
+		"https://exämple.com/ü",
+		"tg://user?id=123456",
+		"tg://resolve?domain=example",
+	}
+	for _, s := range valid {
+		assert.True(t, isValidButtonURL(s), "expected %s to be valid", s)
+	}
+
+	invalid := []string{
+		"",
+		"example.com",
+		"www.example.com/path",
+		"mailto:bob@example.com",
+		"ftp://example.com/file",
+		"http://",
+		"http://localhost/dev",
+		"https://example.com/a page",
+		"https://example .com",
+	}
+	for _, s := range invalid {
+		assert.False(t, isValidButtonURL(s), "expected %s to be invalid", s)
+	}
 }
