@@ -4,6 +4,14 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 )
 
+// Markup is a keyboard that can be sent as a message's reply_markup
+type Markup interface {
+	isMarkup()
+}
+
+func (*ReplyKeyboardMarkup) isMarkup()  {}
+func (*InlineKeyboardMarkup) isMarkup() {}
+
 // WebAppInfo describes a Mini App to be launched, see https://core.telegram.org/bots/api/#webappinfo
 type WebAppInfo struct {
 	URL string `json:"url"`
