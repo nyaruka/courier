@@ -1,3 +1,8 @@
+v26.3.28 (2026-08-05)
+-------------------------
+ * Handle WhatsApp message webhooks where the sender has no phone number
+ * Match incoming WhatsApp messages to existing contacts by BSUID when the phone number is new
+
 v26.3.27 (2026-08-05)
 -------------------------
  * Remove creation of optin/optout channel events and sending of optin request messages
