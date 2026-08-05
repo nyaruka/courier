@@ -159,7 +159,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		userIDURN, urnErr := h.parseURN(channel, form.ExternalUserId, i18n.Country(form.FromCountry))
 
 		if urnErr == nil {
-			msg.WithNewURN(userIDURN, models.NewURNAppend)
+			if userIDURN != urn {
+				msg.WithNewURN(userIDURN, models.NewURNAppend)
+			}
 		} else {
 			slog.Warn("ignoring invalid ExternalUserId for message", "ExternalUserId", form.ExternalUserId, "MessageSID", form.MessageSID, "Error", urnErr.Error())
 
@@ -529,8 +531,8 @@ func (h *handler) parseURN(channel courier.Channel, text string, country i18n.Co
 		}
 
 		if dot := strings.Index(fromTel, "."); dot >= 0 && dot < len(fromTel)-1 {
-			// if we have a BSUID, use that as the URN
-			return urns.New(urns.BSUID, fromTel)
+			// a business-scoped user ID becomes a whatsapp URN
+			return urns.New(urns.WhatsApp, fromTel)
 		}
 
 		// trim off left +, official whatsapp IDs dont have that

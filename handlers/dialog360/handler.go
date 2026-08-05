@@ -164,13 +164,15 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					courier.LogRequestError(r, channel, errors.New("nfm_reply response_json is not a valid JSON object"))
 				}
 
-				// if we have a user_id, add it as secondary BSUID URN
+				// if we have a user_id, add it as a secondary whatsapp URN (unless it's already the primary URN)
 				if waMsg.FromUserID != "" {
-					userIDURN, urnErr := urns.New(urns.BSUID, waMsg.FromUserID)
+					userIDURN, urnErr := urns.New(urns.WhatsApp, waMsg.FromUserID)
 					if urnErr == nil {
-						event.WithNewURN(userIDURN, models.NewURNAppend)
+						if userIDURN != urn {
+							event.WithNewURN(userIDURN, models.NewURNAppend)
+						}
 					} else {
-						courier.LogRequestError(r, channel, fmt.Errorf("invalid user_id for BSUID URN: %w", urnErr))
+						courier.LogRequestError(r, channel, fmt.Errorf("invalid user_id for whatsapp URN: %w", urnErr))
 					}
 				}
 
@@ -300,12 +302,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 
 	// if we got a user_id in the response, set it as a new URN on the send result so the backend
-	// can queue a contact_changed task to append it to the contact
+	// can queue a contact_changed task to append it to the contact (unless it's the URN we sent to)
 	if userID != "" {
-		userIDURN, err := urns.New(urns.BSUID, userID)
+		userIDURN, err := urns.New(urns.WhatsApp, userID)
 		if err != nil {
-			clog.RawError(fmt.Errorf("unable to make BSUID URN from user_id %s: %w", userID, err))
-		} else {
+			clog.RawError(fmt.Errorf("unable to make whatsapp URN from user_id %s: %w", userID, err))
+		} else if userIDURN != msg.URN() {
 			res.SetNewURN(userIDURN)
 		}
 	}
