@@ -428,6 +428,17 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		},
 	},
 	{
+		Label:   "Send to BSUID with same user_id in response",
+		MsgText: "Simple Message",
+		MsgURN:  "whatsapp:US.1234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://waba-v2.360dialog.io/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "contacts": [{"input": "US.1234", "user_id": "US.1234"}], "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
 		Label:               "Plain Send with user_id already on contact",
 		MsgText:             "Simple Message",
 		MsgURN:              "whatsapp:250788123123",
