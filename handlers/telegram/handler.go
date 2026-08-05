@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -52,6 +53,11 @@ func (h *handler) Initialize(s *courier.Server) error {
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+	// a user tapped a callback button on an inline keyboard
+	if payload.CallbackQuery != nil {
+		return h.receiveCallbackQuery(ctx, channel, w, r, payload, clog)
+	}
+
 	// no message? ignore this
 	if payload.Message.MessageID == 0 {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
@@ -152,6 +158,33 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
+// receiveCallbackQuery handles a user tapping a callback button on an inline keyboard, turning the button's data
+// into an incoming message
+func (h *handler) receiveCallbackQuery(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+	cq := payload.CallbackQuery
+
+	urn, err := urns.NewFromParts(urns.Telegram.Prefix, strconv.FormatInt(cq.From.ContactID, 10), nil, strings.ToLower(cq.From.Username))
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+
+	name := handlers.NameFromFirstLastUsername(cq.From.FirstName, cq.From.LastName, cq.From.Username)
+
+	// answer the callback query so the client stops showing the button as loading.. best effort, an answer failing
+	// or expiring doesn't stop us accepting the message
+	authToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
+	form := url.Values{"callback_query_id": []string{cq.ID}}
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/bot%s/answerCallbackQuery", apiURL, authToken), strings.NewReader(form.Encode()))
+	if err == nil {
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		h.RequestHTTP(req, clog)
+	}
+
+	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, cq.Data, cq.ID, clog).WithContactName(name)
+
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+}
+
 type mtResponse struct {
 	Ok          bool   `json:"ok" validate:"required"`
 	ErrorCode   int    `json:"error_code"`
@@ -161,7 +194,7 @@ type mtResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.Values, keyboard *ReplyKeyboardMarkup, clog *courier.ChannelLog) (string, error) {
+func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.Values, keyboard any, clog *courier.ChannelLog) (string, error) {
 	// either include or remove our keyboard
 	form.Add("parse_mode", "Markdown")
 	if keyboard == nil {
@@ -218,16 +251,29 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		caption = msg.Text()
 	}
 
-	// figure out whether we have a keyboard to send as well - form replies open the URL in Extra as a Mini App
-	qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm)
-	var keyboard *ReplyKeyboardMarkup
-	if len(qrs) > 0 {
-		keyboard = NewKeyboardFromReplies(qrs)
+	// figure out whether we have a keyboard to send as well - inline keyboards render attached to the message on all
+	// Telegram clients, so use one whenever possible: text replies become callback buttons, url replies link buttons,
+	// and form replies buttons that open the URL in Extra as a Mini App. Location requests only exist as reply
+	// keyboard buttons, and Telegram only allows one keyboard type per message, so a message with a location reply
+	// falls back to a reply keyboard, where url replies can't render and are dropped.
+	hasLocation := slices.ContainsFunc(msg.QuickReplies(), func(q models.QuickReply) bool {
+		return q.Type == models.QuickReplyTypeLocation
+	})
+
+	var keyboard any
+	if hasLocation {
+		if qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm); len(qrs) > 0 {
+			keyboard = NewKeyboardFromReplies(qrs)
+		}
+	} else {
+		if qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeURL, models.QuickReplyTypeForm); len(qrs) > 0 {
+			keyboard = NewInlineKeyboardFromReplies(qrs)
+		}
 	}
 
 	// if we have text, send that if we aren't sending it as a caption
 	if msg.Text() != "" && caption == "" {
-		var msgKeyBoard *ReplyKeyboardMarkup
+		var msgKeyBoard any
 		if len(attachments) == 0 {
 			msgKeyBoard = keyboard
 		}
@@ -244,7 +290,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	// send each attachment
 	for i, attachment := range attachments {
-		var attachmentKeyBoard *ReplyKeyboardMarkup
+		var attachmentKeyBoard any
 		if i == len(msg.Attachments())-1 {
 			attachmentKeyBoard = keyboard
 		}
@@ -472,4 +518,14 @@ type moPayload struct {
 			ButtonText string `json:"button_text"`
 		} `json:"web_app_data"`
 	} `json:"message"`
+	CallbackQuery *struct {
+		ID   string `json:"id"`
+		From struct {
+			ContactID int64  `json:"id"`
+			FirstName string `json:"first_name"`
+			LastName  string `json:"last_name"`
+			Username  string `json:"username"`
+		} `json:"from"`
+		Data string `json:"data"`
+	} `json:"callback_query"`
 }
