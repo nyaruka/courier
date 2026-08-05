@@ -85,10 +85,11 @@ type eventsPayload struct {
 		Profile struct {
 			Name string `json:"name"`
 		} `json:"profile"`
-		WaID string `json:"wa_id"`
+		WaID   string `json:"wa_id"`
+		UserID string `json:"user_id"`
 	} `json:"contacts"`
 	Messages []struct {
-		From      string `json:"from"      validate:"required"`
+		From      string `json:"from"`
 		FromBSUID string `json:"from_bsuid"`
 		ID        string `json:"id"        validate:"required"`
 		GroupID   string `json:"group_id,omitempty"`
@@ -175,9 +176,16 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 
 	seenMsgIDs := make(map[string]bool, 2)
 
+	// contacts are keyed by both identifiers they can carry, as a message from a user with a username may
+	// only reference them by their user_id
 	var contactNames = make(map[string]string)
 	for _, contact := range payload.Contacts {
-		contactNames[contact.WaID] = contact.Profile.Name
+		if contact.WaID != "" {
+			contactNames[contact.WaID] = contact.Profile.Name
+		}
+		if contact.UserID != "" {
+			contactNames[contact.UserID] = contact.Profile.Name
+		}
 	}
 
 	// first deal with any received messages
@@ -198,8 +206,11 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 		}
 		date := time.Unix(ts, 0).UTC()
 
-		// create our URN
-		urn, err := urns.New(urns.WhatsApp, msg.From)
+		// create our URN from the sender's phone number, falling back to their business-scoped user ID as a user
+		// who has adopted a WhatsApp username can have their phone number omitted from the webhook entirely
+		sender := cmp.Or(msg.From, msg.FromBSUID)
+
+		urn, err := urns.New(urns.WhatsApp, sender)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid whatsapp id"))
 		}
@@ -237,7 +248,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 		}
 
 		// create our message
-		event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, msg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[msg.From])
+		event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, msg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[sender])
 
 		// we had an error downloading media
 		if err != nil {
