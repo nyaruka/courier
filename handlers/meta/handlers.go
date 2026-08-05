@@ -264,8 +264,15 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 
 		for _, change := range entry.Changes {
 
+			// contacts are keyed by both identifiers they can carry, as a message from a user with a username may
+			// only reference them by their user_id
 			for _, contact := range change.Value.Contacts {
-				contactNames[contact.WaID] = contact.Profile.Name
+				if contact.WaID != "" {
+					contactNames[contact.WaID] = contact.Profile.Name
+				}
+				if contact.UserID != "" {
+					contactNames[contact.UserID] = contact.Profile.Name
+				}
 			}
 
 			for _, waMsg := range change.Value.Messages {
@@ -297,7 +304,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 				}
 
 				// create our message
-				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, waMsg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[waMsg.From])
+				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, waMsg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[waMsg.Identifier()])
 
 				if mediaURL != "" {
 					event.WithAttachment(mediaURL)

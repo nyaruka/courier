@@ -17,14 +17,14 @@
                   "name": "Kerry Fisher",
                   "username": "kfisher"
                 },
-                "user_id": "US.1234",
-                "parent_user_id": "US.ENT.5678"
+                "wa_id": "US.1234",
+                "user_id": "US.1234"
               }
             ],
             "messages": [
               {
+                "from": "US.1234",
                 "from_user_id": "US.1234",
-                "from_parent_user_id": "US.ENT.5678",
                 "id": "external_id",
                 "timestamp": "1454119029",
                 "text": {
