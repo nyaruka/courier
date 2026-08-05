@@ -162,7 +162,7 @@ type mtResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.Values, keyboard any, clog *courier.ChannelLog) (string, error) {
+func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.Values, keyboard Markup, clog *courier.ChannelLog) (string, error) {
 	// either include or remove our keyboard
 	form.Add("parse_mode", "Markdown")
 	if keyboard == nil {
@@ -227,7 +227,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return q.Type != models.QuickReplyTypeURL
 	})
 
-	var keyboard any
+	var keyboard Markup
 	if urlsOnly {
 		if qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeURL); len(qrs) > 0 {
 			keyboard = NewInlineKeyboardFromReplies(qrs)
@@ -240,7 +240,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	// if we have text, send that if we aren't sending it as a caption
 	if msg.Text() != "" && caption == "" {
-		var msgKeyBoard any
+		var msgKeyBoard Markup
 		if len(attachments) == 0 {
 			msgKeyBoard = keyboard
 		}
@@ -257,7 +257,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	// send each attachment
 	for i, attachment := range attachments {
-		var attachmentKeyBoard any
+		var attachmentKeyBoard Markup
 		if i == len(attachments)-1 {
 			attachmentKeyBoard = keyboard
 		}
