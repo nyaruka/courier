@@ -942,7 +942,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
-		Label:           "Quick Reply, unsupported types ignored",
+		Label:           "Quick Reply, url type mixed with reply keyboard types is dropped",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
 		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "url", Extra: "http://example.com"}},
@@ -960,10 +960,25 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
-		Label:           "Quick Reply, only unsupported types means no keyboard",
+		Label:           "Quick Reply, url types as inline keyboard link buttons",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
-		MsgQuickReplies: []models.QuickReply{{Type: "url", Extra: "http://example.com"}},
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit Us", Extra: "http://example.com"}, {Type: "url", Extra: "http://example.com/more"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Visit Us","url":"http://example.com"},{"text":"Open Link","url":"http://example.com/more"}]]}`}}},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
+		Label:           "Quick Reply, url type without a URL is dropped",
+		MsgText:         "Are you happy?",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit Us"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
@@ -973,7 +988,7 @@ var outgoingCases = []OutgoingTestCase{
 			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
 		},
 		ExpectedLogErrors: []*clogs.Error{
-			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
+			{Message: "quick reply of type url is missing its extra value and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -161,7 +162,7 @@ type mtResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.Values, keyboard *ReplyKeyboardMarkup, clog *courier.ChannelLog) (string, error) {
+func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.Values, keyboard any, clog *courier.ChannelLog) (string, error) {
 	// either include or remove our keyboard
 	form.Add("parse_mode", "Markdown")
 	if keyboard == nil {
@@ -218,16 +219,25 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		caption = msg.Text()
 	}
 
-	// figure out whether we have a keyboard to send as well - form replies open the URL in Extra as a Mini App
-	qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm)
-	var keyboard *ReplyKeyboardMarkup
-	if len(qrs) > 0 {
-		keyboard = NewKeyboardFromReplies(qrs)
+	// figure out whether we have a keyboard to send as well - form replies open the URL in Extra as a Mini App. URL
+	// replies become inline keyboard link buttons, but Telegram only allows one keyboard type per message, so they're
+	// only supported when the message has no other quick reply types needing the reply keyboard.
+	urlsOnly := !slices.ContainsFunc(msg.QuickReplies(), func(q models.QuickReply) bool { return q.Type != models.QuickReplyTypeURL })
+
+	var keyboard any
+	if urlsOnly {
+		if qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeURL); len(qrs) > 0 {
+			keyboard = NewInlineKeyboardFromReplies(qrs)
+		}
+	} else {
+		if qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm); len(qrs) > 0 {
+			keyboard = NewKeyboardFromReplies(qrs)
+		}
 	}
 
 	// if we have text, send that if we aren't sending it as a caption
 	if msg.Text() != "" && caption == "" {
-		var msgKeyBoard *ReplyKeyboardMarkup
+		var msgKeyBoard any
 		if len(attachments) == 0 {
 			msgKeyBoard = keyboard
 		}
@@ -244,7 +254,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	// send each attachment
 	for i, attachment := range attachments {
-		var attachmentKeyBoard *ReplyKeyboardMarkup
+		var attachmentKeyBoard any
 		if i == len(msg.Attachments())-1 {
 			attachmentKeyBoard = keyboard
 		}
