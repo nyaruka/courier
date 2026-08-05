@@ -904,7 +904,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Where Are you?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Send Location","request_location":true},{"text":"Ignore"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+			{Form: url.Values{"text": {"Where Are you?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Send Location","request_location":true},{"text":"Ignore"}]],"resize_keyboard":true,"one_time_keyboard":false}`}}},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},
@@ -919,7 +919,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}},{"text":"Skip"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}},{"text":"Skip"}]],"is_persistent":true,"resize_keyboard":true,"one_time_keyboard":false}`}}},
 		},
 		ExpectedExtIDs: []string{"133"},
 	},

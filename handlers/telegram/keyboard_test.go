@@ -17,71 +17,79 @@ func TestKeyboardFromReplies(t *testing.T) {
 
 			[]models.QuickReply{{Type: "text", Text: "OK"}},
 			&telegram.ReplyKeyboardMarkup{
-				[][]telegram.KeyboardButton{
+				Keyboard: [][]telegram.KeyboardButton{
 					{{Text: "OK"}},
 				},
-				true, true,
+				ResizeKeyboard:  true,
+				OneTimeKeyboard: true,
 			},
 		},
 		{
 			[]models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}, {Type: "text", Text: "Maybe"}},
 			&telegram.ReplyKeyboardMarkup{
-				[][]telegram.KeyboardButton{
+				Keyboard: [][]telegram.KeyboardButton{
 					{{Text: "Yes"}, {Text: "No"}, {Text: "Maybe"}},
 				},
-				true, true,
+				ResizeKeyboard:  true,
+				OneTimeKeyboard: true,
 			},
 		},
 		{
 			[]models.QuickReply{{Type: "text", Text: "Vanilla"}, {Type: "text", Text: "Chocolate"}, {Type: "text", Text: "Mint"}, {Type: "text", Text: "Lemon Sorbet"}, {Type: "text", Text: "Papaya"}, {Type: "text", Text: "Strawberry"}},
 			&telegram.ReplyKeyboardMarkup{
-				[][]telegram.KeyboardButton{
+				Keyboard: [][]telegram.KeyboardButton{
 					{{Text: "Vanilla"}, {Text: "Chocolate"}},
 					{{Text: "Mint"}, {Text: "Lemon Sorbet"}},
 					{{Text: "Papaya"}, {Text: "Strawberry"}},
 				},
-				true, true,
+				ResizeKeyboard:  true,
+				OneTimeKeyboard: true,
 			},
 		},
 		{
 			[]models.QuickReply{{Type: "text", Text: "A"}, {Type: "text", Text: "B"}, {Type: "text", Text: "C"}, {Type: "text", Text: "D"}, {Type: "text", Text: "Chicken"}, {Type: "text", Text: "Fish"}, {Type: "text", Text: "Peanut Butter Pickle"}},
 			&telegram.ReplyKeyboardMarkup{
-				[][]telegram.KeyboardButton{
+				Keyboard: [][]telegram.KeyboardButton{
 					{{Text: "A"}, {Text: "B"}, {Text: "C"}, {Text: "D"}},
 					{{Text: "Chicken"}, {Text: "Fish"}},
 					{{Text: "Peanut Butter Pickle"}},
 				},
-				true, true,
+				ResizeKeyboard:  true,
+				OneTimeKeyboard: true,
 			},
 		},
 		{
 
 			[]models.QuickReply{{Type: "location"}},
 			&telegram.ReplyKeyboardMarkup{
-				[][]telegram.KeyboardButton{
+				Keyboard: [][]telegram.KeyboardButton{
 					{{Text: "Send Location", RequestLocation: true}},
 				},
-				true, true,
+				ResizeKeyboard:  true,
+				OneTimeKeyboard: false,
 			},
 		},
 		{
 
 			[]models.QuickReply{{Type: "location", Text: "Share Location"}},
 			&telegram.ReplyKeyboardMarkup{
-				[][]telegram.KeyboardButton{
+				Keyboard: [][]telegram.KeyboardButton{
 					{{Text: "Share Location", RequestLocation: true}},
 				},
-				true, true,
+				ResizeKeyboard:  true,
+				OneTimeKeyboard: false,
 			},
 		},
 		{
 
 			[]models.QuickReply{{Type: "form", Extra: "https://example.com/form"}, {Type: "text", Text: "Skip"}},
 			&telegram.ReplyKeyboardMarkup{
-				[][]telegram.KeyboardButton{
+				Keyboard: [][]telegram.KeyboardButton{
 					{{Text: "Open Form", WebApp: &telegram.WebAppInfo{URL: "https://example.com/form"}}, {Text: "Skip"}},
 				},
-				true, true,
+				IsPersistent:    true,
+				ResizeKeyboard:  true,
+				OneTimeKeyboard: false,
 			},
 		},
 	}
