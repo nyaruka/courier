@@ -916,6 +916,66 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	dyntest.AssertCount(ts.T(), ts.b.rt.Dynamo, ts.b.rt.Writers.Main.Table(), 2)
 }
 
+func (ts *BackendTestSuite) TestContactForMsg() {
+	ctx := context.Background()
+	waChannel := ts.getChannel("WAC", "dbc126ed-66bc-4e28-b67b-81dc33277a17")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, waChannel, nil)
+
+	newPhoneMsg := func(phone, bsuid urns.URN) *MsgIn {
+		m := ts.b.NewIncomingMsg(ctx, waChannel, phone, "hi", "", clog).(*MsgIn)
+		if bsuid != urns.NilURN {
+			m.WithNewURN(bsuid, models.NewURNAppend)
+		}
+		return m
+	}
+	lookup := func(urn urns.URN) *models.Contact {
+		c, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, urn, nil, "", false, clog)
+		ts.NoError(err)
+		return c
+	}
+
+	// no existing contact: a message with a phone number and BSUID creates one keyed on the phone number
+	c1, err := contactForMsg(ctx, ts.b, newPhoneMsg("whatsapp:12065551234", "whatsapp:US.1234"), clog)
+	ts.NoError(err)
+	ts.True(c1.IsNew_)
+	ts.Equal(c1.ID_, lookup("whatsapp:12065551234").ID_)
+	ts.Nil(lookup("whatsapp:US.1234")) // BSUID is appended by mailroom, not here
+
+	// existing contact known only by a BSUID: a message with a new phone number and that BSUID is matched to it
+	// (not duplicated) and the phone number is added to it
+	existingByBSUID, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, "whatsapp:US.5555", nil, "", true, clog)
+	ts.NoError(err)
+
+	matched, err := contactForMsg(ctx, ts.b, newPhoneMsg("whatsapp:12065555555", "whatsapp:US.5555"), clog)
+	ts.NoError(err)
+	ts.False(matched.IsNew_)
+	ts.Equal(existingByBSUID.ID_, matched.ID_)
+	ts.Equal(existingByBSUID.ID_, lookup("whatsapp:12065555555").ID_) // phone number now resolves to the same contact
+	ts.NotEqual(existingByBSUID.URNID_, matched.URNID_)               // and the message is attributed to the phone URN
+
+	// existing contact known by the phone number: matched directly, even if another contact owns the BSUID
+	other, err := contactForURN(ctx, ts.b, waChannel.OrgID_, waChannel, "whatsapp:US.9999", nil, "", true, clog)
+	ts.NoError(err)
+
+	matchedByPhone, err := contactForMsg(ctx, ts.b, newPhoneMsg("whatsapp:12065555555", "whatsapp:US.9999"), clog)
+	ts.NoError(err)
+	ts.False(matchedByPhone.IsNew_)
+	ts.Equal(existingByBSUID.ID_, matchedByPhone.ID_)
+	ts.Equal(other.ID_, lookup("whatsapp:US.9999").ID_) // BSUID left with its owner, conflict is mailroom's to resolve
+
+	// no BSUID attached: existing single-URN resolution, a new phone number creates a new contact
+	c2, err := contactForMsg(ctx, ts.b, newPhoneMsg("whatsapp:12065550000", urns.NilURN), clog)
+	ts.NoError(err)
+	ts.True(c2.IsNew_)
+
+	// adding a URN which belongs to another contact - as can happen if it's created after our lookups - doesn't
+	// steal it, and tells the caller to start over
+	added, err := addContactURN(ctx, ts.b, waChannel, existingByBSUID, "whatsapp:12065550000", nil)
+	ts.NoError(err)
+	ts.False(added)
+	ts.Equal(c2.ID_, lookup("whatsapp:12065550000").ID_)
+}
+
 func (ts *BackendTestSuite) TestSaveAttachment() {
 	testJPG := test.ReadFile("../../test/testdata/test.jpg")
 	ctx := context.Background()
