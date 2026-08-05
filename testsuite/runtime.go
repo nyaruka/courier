@@ -40,6 +40,9 @@ func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
 	cfg.DynamoTablePrefix = "Test"
 	cfg.SpoolDir = absPath("./_test_spool")
 
+	// items spooled by a previous test run would be replayed into this run's reset database
+	require.NoError(t, os.RemoveAll(cfg.SpoolDir))
+
 	rt, err := runtime.NewRuntime(cfg)
 	require.NoError(t, err)
 
