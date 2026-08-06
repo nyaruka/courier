@@ -942,17 +942,32 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
-		Label:           "Quick Reply, unsupported types ignored",
+		Label:           "Quick Reply, url types as inline keyboard link buttons",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
-		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "url", Extra: "http://example.com"}},
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit Us", Extra: "http://example.com"}, {Type: "url", Extra: "http://example.com/more"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Yes"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Visit Us","url":"http://example.com"},{"text":"Open Link","url":"http://example.com/more"}]]}`}}},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
+		Label:           "Quick Reply, url type mixed with reply keyboard types is dropped",
+		MsgText:         "Please register",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Extra: "http://example.com"}, {Type: "form", Text: "Register", Extra: "https://example.com/form"}, {Type: "text", Text: "Skip"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}},{"text":"Skip"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
 		},
 		ExpectedLogErrors: []*clogs.Error{
 			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
@@ -960,10 +975,26 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"133"},
 	},
 	{
-		Label:           "Quick Reply, only unsupported types means no keyboard",
+		Label:           "Quick Reply, url type with attachment",
+		MsgText:         "Check this out",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit", Extra: "http://example.com"}},
+		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendPhoto": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"caption": {"Check this out"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "photo": {"https://foo.bar/image.jpg"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Visit","url":"http://example.com"}]]}`}}},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
+		Label:           "Quick Reply, unknown type dropped",
 		MsgText:         "Are you happy?",
 		MsgURN:          "telegram:12345",
-		MsgQuickReplies: []models.QuickReply{{Type: "url", Extra: "http://example.com"}},
+		MsgQuickReplies: []models.QuickReply{{Type: "video", Text: "Play"}},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
@@ -973,9 +1004,87 @@ var outgoingCases = []OutgoingTestCase{
 			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
 		},
 		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type video isn't supported by this channel and can't be sent"},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
+		Label:           "Quick Reply, url types with invalid URLs are dropped",
+		MsgText:         "Are you happy?",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit Us", Extra: "example.com/visit"}, {Type: "url", Text: "Local", Extra: "http://localhost/visit"}, {Type: "url", Text: "Spaced", Extra: "https://example.com/a page"}, {Type: "url", Text: "Read More", Extra: "https://example.com/more"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Read More","url":"https://example.com/more"}]]}`}}},
+		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type url has an invalid URL and can't be sent: example.com/visit"},
+			{Message: "quick reply of type url has an invalid URL and can't be sent: http://localhost/visit"},
+			{Message: "quick reply of type url has an invalid URL and can't be sent: https://example.com/a page"},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
+		Label:           "Quick Reply, url type without a URL is dropped",
+		MsgText:         "Are you happy?",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit Us"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+		},
+		ExpectedLogErrors: []*clogs.Error{
+			{Message: "quick reply of type url is missing its extra value and can't be sent"},
+		},
+		ExpectedExtIDs: []string{"133"},
+	},
+	{
+		Label:           "Quick Reply, url type mixed with location is dropped",
+		MsgText:         "Where are you?",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "location"}, {Type: "url", Extra: "http://example.com"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Where are you?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Send Location","request_location":true}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
+		},
+		ExpectedLogErrors: []*clogs.Error{
 			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"133"},
+	},
+	{
+		Label:           "Quick Reply, url type with multiple attachments",
+		MsgText:         "Check this out",
+		MsgURN:          "telegram:12345",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit", Extra: "http://example.com"}},
+		MsgAttachments:  []string{"application/pdf:https://foo.bar/doc1.pdf", "application/pdf:https://foo.bar/document.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+			"*/botauth_token/sendDocument": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Check this out"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+			{Form: url.Values{"caption": []string{""}, "chat_id": {"12345"}, "document": {"https://foo.bar/doc1.pdf"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+			{Form: url.Values{"caption": []string{""}, "chat_id": {"12345"}, "document": {"https://foo.bar/document.pdf"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Visit","url":"http://example.com"}]]}`}}},
+		},
+		ExpectedExtIDs: []string{"133", "133", "133"},
 	},
 	{
 		Label:           "Quick Reply with multiple attachments",
@@ -1172,4 +1281,35 @@ func TestSendEvent(t *testing.T) {
 	// an event type the handler doesn't declare support for can't be sent
 	err = h.SendEvent(context.Background(), ch, events.NewTypingStopped(events.DirectionOutgoing, nil, "telegram:12345", ""), clog)
 	assert.ErrorContains(t, err, "unsupported event type: typing_stopped")
+}
+
+func TestIsValidButtonURL(t *testing.T) {
+	valid := []string{
+		"http://example.com",
+		"https://example.com/path?x=1#y",
+		"https://example.com:8080/path",
+		"http://127.0.0.1/dev",
+		"http://[::1]/dev",
+		"https://exämple.com/ü",
+		"tg://user?id=123456",
+		"tg://resolve?domain=example",
+	}
+	for _, s := range valid {
+		assert.True(t, isValidButtonURL(s), "expected %s to be valid", s)
+	}
+
+	invalid := []string{
+		"",
+		"example.com",
+		"www.example.com/path",
+		"mailto:bob@example.com",
+		"ftp://example.com/file",
+		"http://",
+		"http://localhost/dev",
+		"https://example.com/a page",
+		"https://example .com",
+	}
+	for _, s := range invalid {
+		assert.False(t, isValidButtonURL(s), "expected %s to be invalid", s)
+	}
 }

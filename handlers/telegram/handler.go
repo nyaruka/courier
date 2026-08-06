@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
@@ -152,6 +155,26 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
+// isValidButtonURL approximates Telegram's validation of inline keyboard button URLs, which accepts HTTP(S) and
+// tg:// URLs, rejects whitespace, and requires HTTP(S) hostnames to have a TLD (or be an IP address)
+func isValidButtonURL(s string) bool {
+	if strings.ContainsFunc(s, unicode.IsSpace) {
+		return false
+	}
+
+	u, err := url.Parse(s)
+	if err != nil {
+		return false
+	}
+	if u.Scheme == "tg" {
+		return true
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return false
+	}
+	return strings.Contains(u.Hostname(), ".") || net.ParseIP(u.Hostname()) != nil
+}
+
 type mtResponse struct {
 	Ok          bool   `json:"ok" validate:"required"`
 	ErrorCode   int    `json:"error_code"`
@@ -161,7 +184,7 @@ type mtResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.Values, keyboard *ReplyKeyboardMarkup, clog *courier.ChannelLog) (string, error) {
+func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.Values, keyboard Markup, clog *courier.ChannelLog) (string, error) {
 	// either include or remove our keyboard
 	form.Add("parse_mode", "Markdown")
 	if keyboard == nil {
@@ -218,16 +241,40 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		caption = msg.Text()
 	}
 
-	// figure out whether we have a keyboard to send as well - form replies open the URL in Extra as a Mini App
-	qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm)
-	var keyboard *ReplyKeyboardMarkup
-	if len(qrs) > 0 {
-		keyboard = NewKeyboardFromReplies(qrs)
+	// figure out whether we have a keyboard to send as well - text, location and form replies can all appear on the
+	// same reply keyboard, with form replies as buttons that open the URL in Extra as a Mini App. URL replies can
+	// only be rendered as inline keyboard link buttons, and Telegram only allows one keyboard type per message, so
+	// they're only supported when they're the only type on the message, and dropped with a logged error otherwise.
+	urlsOnly := !slices.ContainsFunc(msg.QuickReplies(), func(q models.QuickReply) bool {
+		return q.Type != models.QuickReplyTypeURL
+	})
+
+	var keyboard Markup
+	if urlsOnly {
+		qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeURL)
+
+		// Telegram rejects the entire message if a button URL isn't valid, so drop invalid ones with a logged error
+		// instead of failing the send
+		qrs = slices.DeleteFunc(qrs, func(q models.QuickReply) bool {
+			if !isValidButtonURL(q.Extra) {
+				clog.Error(&clogs.Error{Message: fmt.Sprintf("quick reply of type url has an invalid URL and can't be sent: %s", q.Extra)})
+				return true
+			}
+			return false
+		})
+
+		if len(qrs) > 0 {
+			keyboard = NewInlineKeyboardFromReplies(qrs)
+		}
+	} else {
+		if qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm); len(qrs) > 0 {
+			keyboard = NewKeyboardFromReplies(qrs)
+		}
 	}
 
 	// if we have text, send that if we aren't sending it as a caption
 	if msg.Text() != "" && caption == "" {
-		var msgKeyBoard *ReplyKeyboardMarkup
+		var msgKeyBoard Markup
 		if len(attachments) == 0 {
 			msgKeyBoard = keyboard
 		}
@@ -244,8 +291,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	// send each attachment
 	for i, attachment := range attachments {
-		var attachmentKeyBoard *ReplyKeyboardMarkup
-		if i == len(msg.Attachments())-1 {
+		var attachmentKeyBoard Markup
+		if i == len(attachments)-1 {
 			attachmentKeyBoard = keyboard
 		}
 

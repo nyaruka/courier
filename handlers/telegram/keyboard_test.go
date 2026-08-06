@@ -91,3 +91,41 @@ func TestKeyboardFromReplies(t *testing.T) {
 		assert.Equal(t, tc.expected, kb, "keyboard mismatch for replies %v", tc.replies)
 	}
 }
+
+func TestInlineKeyboardFromReplies(t *testing.T) {
+	tcs := []struct {
+		replies  []models.QuickReply
+		expected *telegram.InlineKeyboardMarkup
+	}{
+		{
+			[]models.QuickReply{{Type: "url", Extra: "https://example.com"}, {Type: "url", Text: "Read More", Extra: "https://example.com/more"}},
+			&telegram.InlineKeyboardMarkup{
+				InlineKeyboard: [][]telegram.InlineKeyboardButton{
+					{{Text: "Open Link", URL: "https://example.com"}, {Text: "Read More", URL: "https://example.com/more"}},
+				},
+			},
+		},
+		{
+			[]models.QuickReply{{Type: "url", Text: "Visit Us", Extra: "https://example.com/visit"}},
+			&telegram.InlineKeyboardMarkup{
+				InlineKeyboard: [][]telegram.InlineKeyboardButton{
+					{{Text: "Visit Us", URL: "https://example.com/visit"}},
+				},
+			},
+		},
+		{
+			[]models.QuickReply{{Type: "url", Text: "Visit our website", Extra: "https://example.com"}, {Type: "url", Text: "Read the latest news", Extra: "https://example.com/news"}},
+			&telegram.InlineKeyboardMarkup{
+				InlineKeyboard: [][]telegram.InlineKeyboardButton{
+					{{Text: "Visit our website", URL: "https://example.com"}},
+					{{Text: "Read the latest news", URL: "https://example.com/news"}},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		kb := telegram.NewInlineKeyboardFromReplies(tc.replies)
+		assert.Equal(t, tc.expected, kb, "keyboard mismatch for replies %v", tc.replies)
+	}
+}
