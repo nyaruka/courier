@@ -1,3 +1,10 @@
+v26.3.29 (2026-08-06)
+-------------------------
+ * Use inline keyboards for Telegram url quick replies, falling back to reply keyboards for the rest
+ * Clear any previous reply keyboard before sending an inline keyboard
+ * Drop url quick replies with invalid URLs instead of failing the send
+ * Add shared helper for filtering quick replies that require an extra value
+
 v26.3.28 (2026-08-05)
 -------------------------
  * Handle WhatsApp message webhooks where the sender has no phone number
