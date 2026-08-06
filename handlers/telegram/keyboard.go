@@ -36,6 +36,7 @@ type ReplyKeyboardMarkup struct {
 func NewKeyboardFromReplies(replies []models.QuickReply) *ReplyKeyboardMarkup {
 	rows := models.QuickRepliesToRows(replies, 5, 30, 2)
 	keyboard := make([][]KeyboardButton, len(rows))
+	hasForm, hasLocation := false, false
 
 	for i := range rows {
 		keyboard[i] = make([]KeyboardButton, len(rows[i]))
@@ -47,13 +48,22 @@ func NewKeyboardFromReplies(replies []models.QuickReply) *ReplyKeyboardMarkup {
 			switch rows[i][j].Type {
 			case models.QuickReplyTypeLocation:
 				keyboard[i][j].RequestLocation = true
+				hasLocation = true
 			case models.QuickReplyTypeForm:
 				keyboard[i][j].WebApp = &WebAppInfo{URL: rows[i][j].Extra}
+				hasForm = true
 			}
 		}
 	}
 
-	return &ReplyKeyboardMarkup{Keyboard: keyboard, ResizeKeyboard: true, OneTimeKeyboard: true}
+	// tapping a text button is itself the reply so those keyboards can be single use, but form and location buttons
+	// launch a separate interaction that the user might not complete, and one-time state syncs across their devices -
+	// so keep those keyboards available until the next message clears them
+	return &ReplyKeyboardMarkup{
+		Keyboard:        keyboard,
+		ResizeKeyboard:  true,
+		OneTimeKeyboard: !hasForm && !hasLocation,
+	}
 }
 
 // InlineKeyboardButton is a button on an inline keyboard, see https://core.telegram.org/bots/api/#inlinekeyboardbutton
