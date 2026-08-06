@@ -49,10 +49,11 @@ const maxCaptionAndBodyLength = 1024
 
 // buildContentPayloads constructs payloads for a non-template message with text, attachments, and quick replies.
 func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.ChannelLog) ([]SendRequest, error) {
-	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText)
-	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeLocation)
-	formQRs := handlers.FilterQuickRepliesWithExtra(msg.QuickReplies(), models.QuickReplyTypeForm, clog)
-	urlQRs := handlers.FilterQuickRepliesWithExtra(msg.QuickReplies(), models.QuickReplyTypeURL, clog)
+	sqrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm, models.QuickReplyTypeURL)
+	qrs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeText)
+	locationQRs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeLocation)
+	formQRs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeForm)
+	urlQRs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeURL)
 	menuButton := handlers.GetText("Menu", msg.Locale())
 
 	// if text could end up as a media caption or an interactive message body, use their lower length limit
