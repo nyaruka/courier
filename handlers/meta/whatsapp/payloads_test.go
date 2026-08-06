@@ -370,7 +370,7 @@ func TestGetMsgPayloads(t *testing.T) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "text", payloads[0].Type)
 				assert.Len(t, clog.Errors, 1)
-				assert.Equal(t, "form quick reply is missing a form ID and can't be sent", clog.Errors[0].Message)
+				assert.Equal(t, "quick reply of type form is missing its extra value and can't be sent", clog.Errors[0].Message)
 			},
 		},
 		{
@@ -400,7 +400,7 @@ func TestGetMsgPayloads(t *testing.T) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "text", payloads[0].Type)
 				assert.Len(t, clog.Errors, 1)
-				assert.Equal(t, "URL quick reply is missing a URL and can't be sent", clog.Errors[0].Message)
+				assert.Equal(t, "quick reply of type url is missing its extra value and can't be sent", clog.Errors[0].Message)
 			},
 		},
 		{

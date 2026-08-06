@@ -512,7 +512,8 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 
-	qrs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText)
+	sqrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm, models.QuickReplyTypeURL)
+	qrs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeText)
 	qrsAsList := false
 	for i, qr := range qrs {
 		if i > 2 || qr.Extra != "" {
@@ -520,9 +521,9 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 		}
 	}
 
-	locationQRs := handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeLocation)
-	formQRs := whatsapp.FilterFormQuickReplies(msg.QuickReplies(), clog)
-	urlQRs := whatsapp.FilterURLQuickReplies(msg.QuickReplies(), clog)
+	locationQRs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeLocation)
+	formQRs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeForm)
+	urlQRs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeURL)
 
 	isInteractiveMsg := len(qrs) > 0 || len(locationQRs) > 0 || len(formQRs) > 0 || len(urlQRs) > 0
 
