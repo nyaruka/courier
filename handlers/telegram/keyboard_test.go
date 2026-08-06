@@ -61,7 +61,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 				[][]telegram.KeyboardButton{
 					{{Text: "Send Location", RequestLocation: true}},
 				},
-				true, true,
+				true, false,
 			},
 		},
 		{
@@ -71,7 +71,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 				[][]telegram.KeyboardButton{
 					{{Text: "Share Location", RequestLocation: true}},
 				},
-				true, true,
+				true, false,
 			},
 		},
 		{
@@ -81,7 +81,7 @@ func TestKeyboardFromReplies(t *testing.T) {
 				[][]telegram.KeyboardButton{
 					{{Text: "Open Form", WebApp: &telegram.WebAppInfo{URL: "https://example.com/form"}}, {Text: "Skip"}},
 				},
-				true, true,
+				true, false,
 			},
 		},
 	}
