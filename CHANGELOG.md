@@ -1,3 +1,9 @@
+v26.3.30 (2026-08-10)
+-------------------------
+ * Don't make Telegram keyboards single use when they contain form or location buttons
+ * Treat Turn HTTP 429 rate limits as throttled so messages retry
+ * Update GitHub actions to versions that run on Node.js 24
+
 v26.3.29 (2026-08-06)
 -------------------------
  * Use inline keyboards for Telegram url quick replies, falling back to reply keyboards for the rest
