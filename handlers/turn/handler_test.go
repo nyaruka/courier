@@ -1282,6 +1282,24 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrConnectionThrottled,
 	},
 	{
+		Label:   "Error Turn HTTP 429 Rate Limit Bucket",
+		MsgText: "Error",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(429, map[string]string{
+					"Content-Type":          "application/json; charset=utf-8",
+					"Retry-After":           "1",
+					"X-Ratelimit-Bucket":    "text",
+					"X-Ratelimit-Limit":     "20",
+					"X-Ratelimit-Remaining": "0",
+					"X-Ratelimit-Reset":     "1786331727.285",
+				}, []byte(`{"errors":[{"code":429,"title":"Rate limit hit for bucket text","details":"You are being rate limited by Turn. please read the documentation at https://whatsapp.turn.io/docs/"}]}`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Error Retryable",
 		MsgText: "Error",
 		MsgURN:  "whatsapp:250788123123",

@@ -995,6 +995,12 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *courier.S
 	if err != nil || resp.StatusCode/100 == 5 {
 		return courier.ErrConnectionFailed
 	}
+	// Turn returns HTTP 429 with its own rate-limit payload (errors[].code=429) and
+	// Retry-After / X-Ratelimit-* headers. Treat that as throttled so the message is
+	// retried via the errored queue rather than permanently failed.
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return courier.ErrConnectionThrottled
+	}
 
 	respPayload := &mtResponsePayload{}
 	err = json.Unmarshal(respBody, respPayload)
@@ -1002,7 +1008,7 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *courier.S
 		return courier.ErrResponseUnparseable
 	}
 
-	if slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Error.Code) {
+	if respPayload.Error.Code == 429 || slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Error.Code) {
 		return courier.ErrConnectionThrottled
 	}
 
@@ -1015,7 +1021,7 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *courier.S
 	}
 
 	if len(respPayload.Errors) > 0 {
-		if slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Errors[0].Code) {
+		if respPayload.Errors[0].Code == 429 || slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Errors[0].Code) {
 			return courier.ErrConnectionThrottled
 		}
 		if slices.Contains(whatsapp.WACRetryableErrorCodes, respPayload.Errors[0].Code) {
