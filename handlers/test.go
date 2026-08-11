@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -470,6 +471,12 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler courier
 		t.Run(tc.Label, func(t *testing.T) {
 			msg := tc.Msg(channel)
 
+			// drop any tasks a previous case queued for this contact so the assertion below sees only this case's
+			rc := rt.VK.Get()
+			_, err := rc.Do("DEL", contactQueueKey(channel, msg))
+			rc.Close()
+			require.NoError(t, err)
+
 			var mockHTTP *httpx.MocksTransport
 			actualRequests := make([]*http.Request, 0, 1)
 
@@ -517,29 +524,50 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler courier
 			status := models.NewStatusUpdate(channel, msg.UUID(), models.MsgStatusWired, clog)
 			models.OnSendComplete(ctx, rt, msg, status, res.NewURN(), clog)
 
-			if tc.ExpectedNewURN != "" {
-				assertContactChangedQueued(t, rt, channel, msg, tc.ExpectedNewURN)
-			}
+			assertContactChanged(t, rt, channel, msg, tc.ExpectedNewURN)
 
 			AssertChannelLogRedaction(t, clog, checkRedacted)
 		})
 	}
 }
 
-// asserts that a contact_changed task was queued for the given msg's contact with the given new URN
-func assertContactChangedQueued(t *testing.T, rt *runtime.Runtime, ch *models.Channel, msg *models.MsgOut, newURN urns.URN) {
+// the key of the queue that per-contact mailroom tasks are pushed onto
+func contactQueueKey(ch *models.Channel, msg *models.MsgOut) string {
+	return fmt.Sprintf("c:%d:%d", ch.OrgID(), msg.Contact_.ID)
+}
+
+// asserts which contact_changed task the completed send queued: expectedNewURN is empty for the cases where none
+// should be, which is what covers a send reporting a URN the contact already has.
+func assertContactChanged(t *testing.T, rt *runtime.Runtime, ch *models.Channel, msg *models.MsgOut, expectedNewURN urns.URN) {
 	rc := rt.VK.Get()
 	defer rc.Close()
 
-	tasks, err := redis.Strings(rc.Do("LRANGE", fmt.Sprintf("c:%d:%d", ch.OrgID(), msg.Contact_.ID), 0, -1))
+	tasks, err := redis.Strings(rc.Do("LRANGE", contactQueueKey(ch, msg), 0, -1))
 	require.NoError(t, err)
 
+	actual := make([]urns.URN, 0, len(tasks))
 	for _, task := range tasks {
-		if strings.Contains(task, `"type":"contact_changed"`) && strings.Contains(task, fmt.Sprintf(`"value":"%s"`, newURN)) {
-			return
+		payload := &struct {
+			Type string `json:"type"`
+			Task struct {
+				NewURN struct {
+					Value urns.URN `json:"value"`
+				} `json:"new_urn"`
+			} `json:"task"`
+		}{}
+		require.NoError(t, json.Unmarshal([]byte(task), payload), "error unmarshaling queued task: %s", task)
+
+		if payload.Type == "contact_changed" {
+			actual = append(actual, payload.Task.NewURN.Value)
 		}
 	}
-	assert.Fail(t, "expected contact_changed task", "no contact_changed task queued with new URN %s", newURN)
+
+	expected := make([]urns.URN, 0, 1)
+	if expectedNewURN != "" {
+		expected = append(expected, expectedNewURN)
+	}
+
+	assert.Equal(t, expected, actual, "contact_changed tasks mismatch")
 }
 
 // asserts that the given channel log doesn't contain any of the given values

@@ -128,13 +128,19 @@ func TestOutgoing(t *testing.T) {
 		require.NoError(t, queue.PushOntoQueue(rc, "msgs", string(ch.UUID()), 10, "["+string(jsonx.MustMarshal(m))+"]", queue.HighPriority))
 	}
 
-	// waits for the msg to reach the given status in the database (status writes are batched)
+	// waits for the msg to reach the given status in the database (status writes are batched), reporting the status
+	// it actually reached if it doesn't get there
 	assertStatus := func(uuid models.MsgUUID, expected models.MsgStatus) {
+		t.Helper()
+
 		var actual string
-		require.Eventuallyf(t, func() bool {
+		for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(100 * time.Millisecond) {
 			require.NoError(t, rt.DB.Get(&actual, `SELECT status FROM msgs_msg WHERE uuid = $1`, uuid))
-			return actual == string(expected)
-		}, 5*time.Second, 100*time.Millisecond, "expected msg %s to reach status %s (last was %s)", uuid, expected, &actual)
+			if actual == string(expected) {
+				return
+			}
+		}
+		require.Equal(t, string(expected), actual, "msg %s never reached expected status", uuid)
 	}
 
 	// try to send message via the channel without a handler.. should be marked as failed
