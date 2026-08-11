@@ -15,35 +15,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/buger/jsonparser"
-	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/handlers/meta/whatsapp"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/gocommon/cache"
-	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/vkutil"
 )
 
 var (
 	// max for the body
 	maxMsgLength    = 4096
 	configNamespace = "fb_namespace"
-
-	mediaCacheKeyPattern = "turn_whatsapp_media_%s"
-	failedMediaCache     *cache.Local[string, bool]
 )
 
 func init() {
 	courier.RegisterHandler(newHandler())
-
-	failedMediaCache = cache.NewLocal[string, bool](nil, 15*time.Minute)
-	failedMediaCache.Start()
 }
 
 type handler struct {
@@ -445,7 +434,6 @@ type mtButton struct {
 }
 
 type mediaObject struct {
-	ID       string `json:"id,omitempty"`
 	Link     string `json:"link,omitempty"`
 	Caption  string `json:"caption,omitempty"`
 	Filename string `json:"filename,omitempty"`
@@ -486,7 +474,7 @@ type mtVideoPayload struct {
 	Video *mediaObject `json:"video"`
 }
 
-func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]any, error) {
+func buildPayloads(msg courier.MsgOut, clog *courier.ChannelLog) ([]any, error) {
 	var payloads []any
 	var err error
 
@@ -542,15 +530,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 		for attachmentCount, attachment := range msg.Attachments() {
 
 			mimeType, mediaURL := handlers.SplitAttachment(attachment)
-			mediaID, err := h.fetchMediaID(ctx, msg, mediaURL, clog)
-			if err != nil {
-				slog.Error("error while uploading media to whatsapp", "error", err, "channel_uuid", msg.Channel().UUID())
-			}
-			fileURL := mediaURL
-			if err == nil && mediaID != "" {
-				mediaURL = ""
-			}
-			mediaPayload := &mediaObject{ID: mediaID, Link: mediaURL}
+			mediaPayload := &mediaObject{Link: mediaURL}
 			if strings.HasPrefix(mimeType, "audio") {
 				payload := mtAudioPayload{
 					recipient: rcpt,
@@ -567,7 +547,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 					mediaPayload.Caption = msg.Text()
 					textAsCaption = true
 				}
-				mediaPayload.Filename, err = utils.BasePathForURL(fileURL)
+				mediaPayload.Filename, err = utils.BasePathForURL(mediaURL)
 
 				// Logging error
 				if err != nil {
@@ -811,88 +791,6 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 	return payloads, err
 }
 
-// fetchMediaID tries to fetch the id for the uploaded media, setting the result in redis.
-func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL string, clog *courier.ChannelLog) (string, error) {
-	// check in cache first
-	cacheKey := fmt.Sprintf(mediaCacheKeyPattern, msg.Channel().UUID())
-	mediaCache := vkutil.NewIntervalHash(cacheKey, time.Hour*24, 2)
-
-	var mediaID string
-	var err error
-	h.WithValkeyConn(func(rc redis.Conn) {
-		mediaID, err = mediaCache.Get(ctx, rc, mediaURL)
-	})
-
-	if err != nil {
-		return "", fmt.Errorf("error reading media id from valkey: %s : %s: %w", cacheKey, mediaURL, err)
-	} else if mediaID != "" {
-		return mediaID, nil
-	}
-
-	// check in failure cache
-	failKey := fmt.Sprintf("%s-%s", msg.Channel().UUID(), mediaURL)
-
-	// if we cached a failure, don't try again until our cache expires
-	if failedMediaCache.Get(failKey) {
-		return "", nil
-	}
-
-	// download media
-	req, err := http.NewRequest("GET", mediaURL, nil)
-	if err != nil {
-		return "", fmt.Errorf("error building media request: %w", err)
-	}
-
-	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		failedMediaCache.Set(failKey, true)
-		return "", nil
-	}
-
-	// upload media to WhatsApp
-	baseURL := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "")
-	url, err := url.Parse(baseURL)
-	if err != nil {
-		return "", fmt.Errorf("invalid base url set for WA channel: %s: %w", baseURL, err)
-	}
-	dockerMediaURL, _ := url.Parse("/v1/media")
-
-	req, err = http.NewRequest("POST", dockerMediaURL.String(), bytes.NewReader(respBody))
-	if err != nil {
-		return "", fmt.Errorf("error building request to media endpoint: %w", err)
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")))
-	mediaType, _ := httpx.DetectContentType(respBody)
-	req.Header.Add("Content-Type", mediaType)
-
-	resp, respBody, err = h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		failedMediaCache.Set(failKey, true)
-		if err != nil {
-			return "", fmt.Errorf("error uploading media to whatsapp: %w", err)
-		} else {
-			return "", fmt.Errorf("non-200 response uploading media to whatsapp")
-		}
-	}
-
-	// take uploaded media id
-	mediaID, err = jsonparser.GetString(respBody, "media", "[0]", "id")
-	if err != nil {
-		return "", fmt.Errorf("error reading media id from response: %w", err)
-	}
-
-	// put in cache
-	h.WithValkeyConn(func(rc redis.Conn) {
-		err = mediaCache.Set(ctx, rc, mediaURL, mediaID)
-	})
-
-	if err != nil {
-		return "", fmt.Errorf("error setting media id in cache: %w", err)
-	}
-
-	return mediaID, nil
-}
-
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	accessToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	urlStr := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "")
@@ -902,9 +800,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 	sendURL, _ := url.Parse("/v1/messages")
 
-	requestPayloads, err := buildPayloads(ctx, msg, h, clog)
-
-	//requestPayloads, err := whatsapp.GetMsgPayloads(ctx, msg, maxMsgLength, clog)
+	requestPayloads, err := buildPayloads(msg, clog)
 	if err != nil {
 		return err
 	}
