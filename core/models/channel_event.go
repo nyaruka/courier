@@ -74,8 +74,8 @@ func (e *ChannelEvent) WithExtra(extra map[string]string) *ChannelEvent {
 }
 func (e *ChannelEvent) WithOccurredOn(t time.Time) *ChannelEvent { e.OccurredOn_ = t; return e }
 
-// channelEventRow is the database representation of a channel event
-type channelEventRow struct {
+// dbChannelEvent is the database representation of a channel event
+type dbChannelEvent struct {
 	UUID         ChannelEventUUID `db:"uuid"`
 	OrgID        OrgID            `db:"org_id"`
 	ChannelID    ChannelID        `db:"channel_id"`
@@ -100,7 +100,7 @@ func InsertChannelEvent(ctx context.Context, db *sqlx.DB, e *ChannelEvent, conta
 		logUUIDs[i] = string(e.LogUUIDs[i])
 	}
 
-	row := &channelEventRow{
+	row := &dbChannelEvent{
 		UUID:         e.UUID_,
 		OrgID:        e.Channel_.OrgID(),
 		ChannelID:    e.Channel_.ID(),

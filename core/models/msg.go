@@ -132,8 +132,8 @@ func (m *MsgIn) WithNewURN(urn urns.URN, action NewURNAction) *MsgIn {
 }
 func (m *MsgIn) WithPayload(payload json.RawMessage) *MsgIn { m.Payload_ = payload; return m }
 
-// msgInRow is the database representation of an incoming message
-type msgInRow struct {
+// dbMsgIn is the database representation of an incoming message
+type dbMsgIn struct {
 	OrgID              OrgID          `db:"org_id"`
 	UUID               MsgUUID        `db:"uuid"`
 	Text               string         `db:"text"`
@@ -161,7 +161,7 @@ func InsertIncomingMsg(ctx context.Context, db *sqlx.DB, m *MsgIn, contact *Cont
 		logUUIDs[i] = string(m.LogUUIDs[i])
 	}
 
-	row := &msgInRow{
+	row := &dbMsgIn{
 		OrgID:              m.Channel_.OrgID(),
 		UUID:               m.UUID_,
 		Text:               m.Text_,
