@@ -54,7 +54,6 @@ func newHandler() courier.ChannelHandler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Registry) error {
-	h.SetRegistry(s)
 	s.AddHandlerRoute(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
 	s.AddHandlerRoute(h, http.MethodPost, "rcv/msg/message", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	s.AddHandlerRoute(h, http.MethodPost, "rcv/event/menu", models.ChannelLogTypeEventReceive, handlers.JSONPayload(h, h.receiveMessage))

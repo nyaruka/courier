@@ -67,32 +67,10 @@ func Service(defaults *runtime.Config, version, date string) error {
 	// log what we can and can't reach before we start doing anything with it
 	testConnections(rt)
 
-	if err := rt.Start(); err != nil {
-		return fmt.Errorf("error starting runtime: %w", err)
-	}
-
-	// start the caches, spools and batched writers used by the read and write paths
-	if err := models.Start(rt); err != nil {
+	svc, err := startService(rt)
+	if err != nil {
 		return err
 	}
-
-	stop := make(chan bool)
-	wg := &sync.WaitGroup{}
-
-	// start our dethrottler if we are going to be doing some sending
-	if cfg.MaxWorkers > 0 {
-		queue.StartDethrottler(rt.VK, stop, wg, models.MsgQueueName)
-	}
-
-	startMetricsReporter(rt, time.Minute, stop, wg)
-
-	server := web.NewServer(rt)
-	if err := server.Start(); err != nil {
-		return err
-	}
-
-	foreman := sender.NewForeman(rt, cfg.MaxWorkers)
-	foreman.Start()
 
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
@@ -105,20 +83,73 @@ func Service(defaults *runtime.Config, version, date string) error {
 	})
 	defer watchdog.Stop()
 
-	// stop sending first so in-flight sends finish before the writers they depend on go away
-	foreman.Stop()
+	svc.stop()
 
-	if err := server.Stop(); err != nil {
-		return err
+	return nil
+}
+
+// service is the set of components this process runs, in the order they're started
+type service struct {
+	rt      *runtime.Runtime
+	quit    chan bool
+	waitFor *sync.WaitGroup
+	server  *web.Server
+	foreman *sender.Foreman
+}
+
+// startService starts each component in turn, unwinding whatever is already running if one of them fails, so that a
+// failure part way through doesn't leave the process with half a runtime
+func startService(rt *runtime.Runtime) (*service, error) {
+	s := &service{rt: rt, quit: make(chan bool), waitFor: &sync.WaitGroup{}}
+
+	if err := rt.Start(); err != nil {
+		return nil, fmt.Errorf("error starting runtime: %w", err)
+	}
+
+	// start the caches, spools and batched writers used by the read and write paths
+	if err := models.Start(rt); err != nil {
+		rt.Stop()
+		return nil, err
+	}
+
+	// start our dethrottler if we are going to be doing some sending
+	if rt.Config.MaxWorkers > 0 {
+		queue.StartDethrottler(rt.VK, s.quit, s.waitFor, models.MsgQueueName)
+	}
+
+	startMetricsReporter(rt, time.Minute, s.quit, s.waitFor)
+
+	server := web.NewServer(rt)
+	if err := server.Start(); err != nil {
+		s.stop()
+		return nil, err
+	}
+	s.server = server
+
+	foreman := sender.NewForeman(rt, rt.Config.MaxWorkers)
+	foreman.Start()
+	s.foreman = foreman
+
+	return s, nil
+}
+
+// stop stops each component in the reverse of the order it was started, skipping those which never started
+func (s *service) stop() {
+	// stop sending first so that in-flight sends finish before the writers they depend on go away
+	if s.foreman != nil {
+		s.foreman.Stop()
+	}
+	if s.server != nil {
+		if err := s.server.Stop(); err != nil {
+			slog.Error("error stopping server", "error", err)
+		}
 	}
 
 	// stop the dethrottler and metrics reporter
-	close(stop)
-	wg.Wait()
+	close(s.quit)
+	s.waitFor.Wait()
 
-	// stop the caches, spools and batched writers, then the runtime itself
+	// then the caches, spools and batched writers, and finally the runtime itself
 	models.Stop()
-	rt.Stop()
-
-	return nil
+	s.rt.Stop()
 }

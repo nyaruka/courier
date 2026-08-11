@@ -52,9 +52,9 @@ func WithRedactConfigKeys(keys ...string) func(*BaseHandler) {
 	}
 }
 
-// SetRegistry is called during initialization to give the handler the runtime it should use
-func (h *BaseHandler) SetRegistry(reg *courier.Registry) {
-	h.rt = reg.Runtime()
+// SetRuntime gives the handler the runtime it should use, and is called before Initialize
+func (h *BaseHandler) SetRuntime(rt *runtime.Runtime) {
+	h.rt = rt
 }
 
 // Runtime returns the runtime instance on the BaseHandler

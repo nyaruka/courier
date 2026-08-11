@@ -19,6 +19,10 @@ type ChannelHandleFunc func(context.Context, *models.Channel, http.ResponseWrite
 
 // ChannelHandler is the interface all handlers must satisfy
 type ChannelHandler interface {
+	// SetRuntime is called before Initialize to give the handler the runtime it should use. Handlers embedding
+	// handlers.BaseHandler get it from there rather than implementing it themselves.
+	SetRuntime(*runtime.Runtime)
+
 	Initialize(*Registry) error
 	Runtime() *runtime.Runtime
 	ChannelType() models.ChannelType
@@ -92,21 +96,16 @@ type Route struct {
 	Func    ChannelHandleFunc
 }
 
-// Registry is what a channel handler is initialized with. It carries the runtime the handler needs, and collects
-// the routes it registers so that the web server can mount them - which is what keeps the handler contract free of
-// any dependency on the HTTP server itself.
+// Registry is what a channel handler is initialized with. It collects the routes the handler registers so that the
+// web server can mount them, which is what keeps the handler contract free of any dependency on the server itself.
 type Registry struct {
-	rt     *runtime.Runtime
 	routes []*Route
 }
 
-// NewRegistry creates a new registry for handlers initialized against the given runtime
-func NewRegistry(rt *runtime.Runtime) *Registry {
-	return &Registry{rt: rt}
+// NewRegistry creates a new registry for a handler to register its routes with
+func NewRegistry() *Registry {
+	return &Registry{}
 }
-
-// Runtime returns the runtime handlers should use
-func (r *Registry) Runtime() *runtime.Runtime { return r.rt }
 
 // AddHandlerRoute records a route which the handler wants to serve
 func (r *Registry) AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.Type, handlerFunc ChannelHandleFunc) {

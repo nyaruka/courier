@@ -38,7 +38,6 @@ func newHandler(channelType models.ChannelType, name string) courier.ChannelHand
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Registry) error {
-	h.SetRegistry(s)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	s.AddHandlerRoute(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.receiveStatus))
 	return nil

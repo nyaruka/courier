@@ -223,8 +223,9 @@ func (s *Server) mountChannelHandlers() error {
 // MountHandler initializes the given handler and mounts the routes it registers, marking it as one this instance
 // serves. Tests use it to mount a single handler without starting the listeners.
 func (s *Server) MountHandler(handler courier.ChannelHandler) error {
-	reg := courier.NewRegistry(s.rt)
+	handler.SetRuntime(s.rt)
 
+	reg := courier.NewRegistry()
 	if err := handler.Initialize(reg); err != nil {
 		return fmt.Errorf("error initializing handler %s: %w", handler.ChannelType(), err)
 	}

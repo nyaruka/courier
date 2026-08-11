@@ -30,6 +30,7 @@ func NewMockHandler() courier.ChannelHandler {
 }
 
 func (h *mockHandler) Runtime() *runtime.Runtime             { return h.rt }
+func (h *mockHandler) SetRuntime(rt *runtime.Runtime)        { h.rt = rt }
 func (h *mockHandler) ChannelName() string                   { return "Mock Handler" }
 func (h *mockHandler) ChannelType() models.ChannelType       { return models.ChannelType("MCK") }
 func (h *mockHandler) UseChannelRouteUUID() bool             { return true }
@@ -41,7 +42,6 @@ func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (*models.
 
 // Initialize is called by the engine once everything is loaded
 func (h *mockHandler) Initialize(s *courier.Registry) error {
-	h.rt = s.Runtime()
 	s.AddHandlerRoute(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
 	return nil
 }

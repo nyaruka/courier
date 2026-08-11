@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -46,7 +45,7 @@ func TestRequestHTTP(t *testing.T) {
 	server := web.NewServer(rt)
 
 	h := handlers.NewBaseHandler("NX", "Test")
-	h.SetRegistry(courier.NewRegistry(server.Runtime()))
+	h.SetRuntime(server.Runtime())
 
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
 	resp, respBody, err := h.RequestHTTP(req, clog)
