@@ -310,7 +310,7 @@ func (s *Server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 				switch e := event.(type) {
 				case MsgIn:
 					LogMsgReceived(r, e)
-				case StatusUpdate:
+				case *models.StatusUpdate:
 					LogMsgStatusReceived(r, e)
 				case ChannelEvent:
 					LogChannelEventReceived(r, e)

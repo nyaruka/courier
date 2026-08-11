@@ -59,7 +59,7 @@ func WriteMsgSuccess(w http.ResponseWriter, msgs []MsgIn) error {
 }
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
-func WriteStatusSuccess(w http.ResponseWriter, statuses []StatusUpdate) error {
+func WriteStatusSuccess(w http.ResponseWriter, statuses []*models.StatusUpdate) error {
 	data := []any{}
 	for _, status := range statuses {
 		data = append(data, NewStatusData(status))
@@ -130,7 +130,7 @@ type StatusData struct {
 }
 
 // NewStatusData creates a new status data object for the passed in status
-func NewStatusData(status StatusUpdate) StatusData {
+func NewStatusData(status *models.StatusUpdate) StatusData {
 	return StatusData{
 		"status",
 		status.ChannelUUID(),

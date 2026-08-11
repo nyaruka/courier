@@ -113,7 +113,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	}
 
 	// if the message id was passed explicitely, use that
-	var status courier.StatusUpdate
+	var status *models.StatusUpdate
 	if receivedStatus.Reference != "" {
 		if !uuids.Is(receivedStatus.Reference) {
 			slog.Error("error converting Messagebird status reference to UUID", "error", err, "uuid", receivedStatus.Reference)

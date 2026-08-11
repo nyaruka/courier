@@ -157,7 +157,7 @@ func userAgent(version string) string {
 }
 
 // WriteStatusSuccessResponse writes a success response for the statuses
-func (h *BaseHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.StatusUpdate) error {
+func (h *BaseHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
 	return courier.WriteStatusSuccess(w, statuses)
 }
 

@@ -200,7 +200,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring non error delivery report")
 	}
 
-	var status courier.StatusUpdate
+	var status *models.StatusUpdate
 	if uuidString := r.URL.Query().Get("uuid"); uuids.Is(uuidString) {
 		// if the message UUID was passed explicitely, use that
 		status = h.Backend().NewStatusUpdate(channel, models.MsgUUID(uuidString), msgStatus, clog)

@@ -27,7 +27,7 @@ type SavedAttachment struct {
 type MockBackend struct {
 	channels          map[models.ChannelUUID]*models.Channel
 	channelsByAddress map[models.ChannelAddress]*models.Channel
-	contacts          map[urns.URN]courier.Contact
+	contacts          map[urns.URN]*models.Contact
 	outgoingMsgs      []courier.MsgOut
 	media             map[string]*models.Media // url -> Media
 	errorOnQueue      bool
@@ -36,7 +36,7 @@ type MockBackend struct {
 	redisPool *redis.Pool
 
 	writtenMsgs          []courier.MsgIn
-	writtenMsgStatuses   []courier.StatusUpdate
+	writtenMsgStatuses   []*models.StatusUpdate
 	writtenChannelEvents []courier.ChannelEvent
 	writtenChannelLogs   []*models.ChannelLog
 	savedAttachments     []*SavedAttachment
@@ -75,7 +75,7 @@ func NewMockBackend() *MockBackend {
 	return &MockBackend{
 		channels:          make(map[models.ChannelUUID]*models.Channel),
 		channelsByAddress: make(map[models.ChannelAddress]*models.Channel),
-		contacts:          make(map[urns.URN]courier.Contact),
+		contacts:          make(map[urns.URN]*models.Contact),
 		media:             make(map[string]*models.Media),
 		sentMsgs:          make(map[models.MsgUUID]bool),
 		seenExternalIDs:   make(map[string]models.MsgUUID),
@@ -108,7 +108,7 @@ func (mb *MockBackend) NewOutgoingMsg(channel *models.Channel, uuid models.MsgUU
 
 	// pre-register contact so it can be found by ID later (e.g. by QueueContactChanged)
 	if _, found := mb.contacts[urn]; !found {
-		mb.contacts[urn] = &mockContact{channel: channel, urn: urn, id: contact.ID, uuid: contact.UUID}
+		mb.contacts[urn] = &models.Contact{ID_: contact.ID, UUID_: contact.UUID}
 	}
 
 	return &MockMsg{
@@ -163,7 +163,7 @@ func (mb *MockBackend) ClearMsgSent(ctx context.Context, uuid models.MsgUUID) er
 }
 
 // OnSendComplete marks the passed msg as having been dealt with
-func (mb *MockBackend) OnSendComplete(ctx context.Context, msg courier.MsgOut, s courier.StatusUpdate, res *courier.SendResult, clog *models.ChannelLog) {
+func (mb *MockBackend) OnSendComplete(ctx context.Context, msg courier.MsgOut, s *models.StatusUpdate, res *courier.SendResult, clog *models.ChannelLog) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -172,8 +172,7 @@ func (mb *MockBackend) OnSendComplete(ctx context.Context, msg courier.MsgOut, s
 	// simulate queueing a contact_changed task by adding the new URN to the contacts map
 	if res != nil && res.NewURN() != urns.NilURN && !msg.Contact().HasOtherURN(res.NewURN()) {
 		for _, c := range mb.contacts {
-			mc := c.(*mockContact)
-			if mc.id == msg.Contact().ID {
+			if c.ID_ == msg.Contact().ID {
 				mb.contacts[res.NewURN()] = c
 				break
 			}
@@ -221,27 +220,29 @@ func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *mode
 }
 
 // NewStatusUpdate creates a new Status object for the given message id
-func (mb *MockBackend) NewStatusUpdate(channel *models.Channel, uuid models.MsgUUID, status models.MsgStatus, clog *models.ChannelLog) courier.StatusUpdate {
-	return &MockStatusUpdate{
-		channel:   channel,
-		msgUUID:   uuid,
-		status:    status,
-		createdOn: time.Now().In(time.UTC),
+func (mb *MockBackend) NewStatusUpdate(channel *models.Channel, uuid models.MsgUUID, status models.MsgStatus, clog *models.ChannelLog) *models.StatusUpdate {
+	return &models.StatusUpdate{
+		ChannelUUID_: channel.UUID(),
+		ChannelID_:   channel.ID(),
+		MsgUUID_:     uuid,
+		Status_:      status,
+		LogUUID:      clog.UUID,
 	}
 }
 
 // NewStatusUpdateByExternalID creates a new Status object for the given external id
-func (mb *MockBackend) NewStatusUpdateByExternalID(channel *models.Channel, externalID string, status models.MsgStatus, clog *models.ChannelLog) courier.StatusUpdate {
-	return &MockStatusUpdate{
-		channel:            channel,
-		externalIdentifier: externalID,
-		status:             status,
-		createdOn:          time.Now().In(time.UTC),
+func (mb *MockBackend) NewStatusUpdateByExternalID(channel *models.Channel, externalID string, status models.MsgStatus, clog *models.ChannelLog) *models.StatusUpdate {
+	return &models.StatusUpdate{
+		ChannelUUID_:        channel.UUID(),
+		ChannelID_:          channel.ID(),
+		ExternalIdentifier_: externalID,
+		Status_:             status,
+		LogUUID:             clog.UUID,
 	}
 }
 
 // WriteStatusUpdate writes the status update to our queue
-func (mb *MockBackend) WriteStatusUpdate(ctx context.Context, status courier.StatusUpdate) error {
+func (mb *MockBackend) WriteStatusUpdate(ctx context.Context, status *models.StatusUpdate) error {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -291,14 +292,14 @@ func (mb *MockBackend) GetChannelByAddress(ctx context.Context, cType models.Cha
 }
 
 // GetContact creates a new contact with the passed in channel and URN
-func (mb *MockBackend) GetContact(ctx context.Context, channel *models.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *models.ChannelLog) (courier.Contact, error) {
+func (mb *MockBackend) GetContact(ctx context.Context, channel *models.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *models.ChannelLog) (*models.Contact, error) {
 	contact, found := mb.contacts[urn]
 	if !found {
 		if !allowCreate {
 			return nil, nil
 		}
 
-		contact = &mockContact{channel: channel, urn: urn, authTokens: authTokens, uuid: models.ContactUUID(uuids.NewV4())}
+		contact = &models.Contact{OrgID_: channel.OrgID(), UUID_: models.ContactUUID(uuids.NewV4())}
 		mb.contacts[urn] = contact
 	}
 	return contact, nil
@@ -345,7 +346,7 @@ func (mb *MockBackend) RedisPool() *redis.Pool {
 ////////////////////////////////////////////////////////////////////////////////
 
 func (mb *MockBackend) WrittenMsgs() []courier.MsgIn                  { return mb.writtenMsgs }
-func (mb *MockBackend) WrittenMsgStatuses() []courier.StatusUpdate    { return mb.writtenMsgStatuses }
+func (mb *MockBackend) WrittenMsgStatuses() []*models.StatusUpdate    { return mb.writtenMsgStatuses }
 func (mb *MockBackend) WrittenChannelEvents() []courier.ChannelEvent  { return mb.writtenChannelEvents }
 func (mb *MockBackend) WrittenChannelLogs() []*models.ChannelLog      { return mb.writtenChannelLogs }
 func (mb *MockBackend) SavedAttachments() []*SavedAttachment          { return mb.savedAttachments }

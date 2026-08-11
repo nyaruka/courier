@@ -9,7 +9,7 @@ import (
 )
 
 // LogMsgStatusReceived logs our that we received a new MsgStatus
-func LogMsgStatusReceived(r *http.Request, status StatusUpdate) {
+func LogMsgStatusReceived(r *http.Request, status *models.StatusUpdate) {
 	if slog.Default().Enabled(r.Context(), slog.LevelDebug) {
 		slog.Debug("status updated",
 			"channel_uuid", status.ChannelUUID(),
