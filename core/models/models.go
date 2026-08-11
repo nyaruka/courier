@@ -54,8 +54,13 @@ var (
 	sentExternalIDs = vkutil.NewIntervalHash("sent-external-ids", time.Hour, 2) // 1 - 2 hours
 )
 
-// Start creates and starts the channel caches, spools and batched writers used by the read and write paths
+// Start creates and starts the channel caches, spools and batched writers used by the read and write paths. It
+// stops anything a previous Start left running, so that tests - which start the layer once per package but can
+// do so repeatedly within a process - don't leak the goroutines and connections of the previous one, or leave two
+// spools flushing the same directory.
 func Start(rt *runtime.Runtime) error {
+	Stop()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -110,22 +115,44 @@ func Start(rt *runtime.Runtime) error {
 	return nil
 }
 
-// Stop stops the channel caches, spools and batched writers
+// Stop stops the channel caches, spools and batched writers. Each piece is only stopped if it was started, so this
+// is safe to call twice, or after a Start that failed partway through.
 func Stop() {
-	channelsByUUID.Stop()
-	channelsByAddr.Stop()
+	if channelsByUUID != nil {
+		channelsByUUID.Stop()
+		channelsByUUID = nil
+	}
+	if channelsByAddr != nil {
+		channelsByAddr.Stop()
+		channelsByAddr = nil
+	}
 
 	// stop our batched status writer and wait for it to flush fully
-	statusWriter.Stop()
-	writerWG.Wait()
+	if statusWriter != nil {
+		statusWriter.Stop()
+		writerWG.Wait()
+		statusWriter = nil
+	}
 
 	// stop our spools' background flushing (after the status writer since its failures are spooled)
-	msgSpool.Stop()
-	statusSpool.Stop()
-	eventSpool.Stop()
+	if msgSpool != nil {
+		msgSpool.Stop()
+		msgSpool = nil
+	}
+	if statusSpool != nil {
+		statusSpool.Stop()
+		statusSpool = nil
+	}
+	if eventSpool != nil {
+		eventSpool.Stop()
+		eventSpool = nil
+	}
 }
 
 // SpoolSizes returns the number of items in the msg, status and event spools
 func SpoolSizes() (int, int, int) {
+	if msgSpool == nil || statusSpool == nil || eventSpool == nil {
+		return 0, 0, 0
+	}
 	return msgSpool.Size(), statusSpool.Size(), eventSpool.Size()
 }
