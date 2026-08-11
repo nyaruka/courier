@@ -64,7 +64,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
-	msg := h.Backend().NewIncomingMsg(ctx, c, urn, payload.MessageText, "", clog)
+	msg := models.NewIncomingMsg(c, urn, payload.MessageText, "", clog)
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 

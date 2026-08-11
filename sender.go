@@ -203,7 +203,6 @@ func (f *Foreman) Assign() {
 		"state", "started",
 		"senders", len(f.senders))
 
-	backend := f.server.Backend()
 	lastSleep := false
 
 	for {
@@ -217,7 +216,7 @@ func (f *Foreman) Assign() {
 		case sender := <-f.availableSenders:
 			// see if we have a message to work on
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-			msg, err := backend.PopNextOutgoingMsg(ctx)
+			msg, err := models.PopNextOutgoingMsg(ctx, f.server.rt)
 			cancel()
 
 			if err == nil && msg != nil {
@@ -293,7 +292,7 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 	log := slog.With("comp", "sender", "sender_id", w.id, "channel_uuid", msg.Channel().UUID())
 
 	server := w.foreman.server
-	backend := server.Backend()
+	rt := server.rt
 
 	// we don't want any individual send taking more than 35s
 	sendCTX, cancel := context.WithTimeout(context.Background(), time.Second*35)
@@ -309,14 +308,14 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 
 	// if this is a resend, clear our sent status
 	if msg.IsResend() {
-		err := backend.ClearMsgSent(sendCTX, msg.UUID())
+		err := models.ClearMsgSent(sendCTX, rt, msg.UUID())
 		if err != nil {
 			log.Error("error clearing sent status for msg", "error", err)
 		}
 	}
 
 	// was this msg already sent? (from a double queue?)
-	sent, err := backend.WasMsgSent(sendCTX, msg.UUID())
+	sent, err := models.WasMsgSent(sendCTX, rt, msg.UUID())
 
 	// failing on a lookup isn't a halting problem but we should log it
 	if err != nil {
@@ -335,12 +334,12 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 
 	if handler == nil {
 		// if there's no handler, create a FAILED status for it
-		status = backend.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusFailed, clog)
+		status = models.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusFailed, clog)
 		log.Error(fmt.Sprintf("unable to find handler for channel type: %s", msg.Channel().ChannelType()))
 
 	} else if sent {
 		// if this message was already sent, create a WIRED status for it
-		status = backend.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusWired, clog)
+		status = models.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusWired, clog)
 		log.Warn("duplicate send, marking as wired")
 
 	} else {
@@ -351,27 +350,29 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 	writeCTX, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	if err := backend.WriteStatusUpdate(writeCTX, status); err != nil {
+	if err := models.WriteStatusUpdate(writeCTX, rt, status); err != nil {
 		log.Info("error writing msg status", "error", err)
 	}
 
 	clog.End()
 
 	// write our logs as well
-	if err := backend.WriteChannelLog(writeCTX, clog); err != nil {
-		log.Info("error writing msg logs", "error", err)
-	}
+	models.WriteChannelLog(rt, clog)
 
 	// mark our send task as complete
-	backend.OnSendComplete(writeCTX, msg, status, res, clog)
+	var newURN urns.URN
+	if res != nil {
+		newURN = res.NewURN()
+	}
+	models.OnSendComplete(writeCTX, rt, msg, status, newURN, clog)
 }
 
 func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m *models.MsgOut, clog *models.ChannelLog, log *slog.Logger) (*models.StatusUpdate, *SendResult) {
-	backend := w.foreman.server.Backend()
+	rt := w.foreman.server.rt
 	res := &SendResult{}
 	err := h.Send(ctx, m, res, clog)
 
-	status := backend.NewStatusUpdate(m.Channel(), m.UUID(), models.MsgStatusWired, clog)
+	status := models.NewStatusUpdate(m.Channel(), m.UUID(), models.MsgStatusWired, clog)
 
 	// fow now we can only store one external id per message
 	if len(res.ExternalIDs()) > 0 {
@@ -393,8 +394,8 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m *models.
 
 		// if handler returned ErrContactStopped need to write a stop event
 		if serr == ErrContactStopped {
-			channelEvent := backend.NewChannelEvent(m.Channel(), models.EventTypeStopContact, m.URN(), clog)
-			if err = backend.WriteChannelEvent(ctx, channelEvent, clog); err != nil {
+			channelEvent := models.NewChannelEvent(m.Channel(), models.EventTypeStopContact, m.URN(), clog)
+			if err = models.WriteChannelEvent(ctx, rt, channelEvent, clog); err != nil {
 				log.Error("error writing stop event", "error", err)
 			}
 		}

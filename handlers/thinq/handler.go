@@ -75,12 +75,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	var msg *models.MsgIn
 
 	if form.Type == "sms" {
-		msg = h.Backend().NewIncomingMsg(ctx, channel, urn, form.Message, "", clog)
+		msg = models.NewIncomingMsg(channel, urn, form.Message, "", clog)
 	} else if form.Type == "mms" {
 		if strings.HasPrefix(form.Message, "http://") || strings.HasPrefix(form.Message, "https://") {
-			msg = h.Backend().NewIncomingMsg(ctx, channel, urn, "", "", clog).WithAttachment(form.Message)
+			msg = models.NewIncomingMsg(channel, urn, "", "", clog).WithAttachment(form.Message)
 		} else {
-			msg = h.Backend().NewIncomingMsg(ctx, channel, urn, "", "", clog).WithAttachment("data:" + form.Message)
+			msg = models.NewIncomingMsg(channel, urn, "", "", clog).WithAttachment("data:" + form.Message)
 		}
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown message type: %s", form.Type))
@@ -126,7 +126,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdateByExternalID(channel, form.GUID, msgStatus, clog)
+	status := models.NewStatusUpdateByExternalID(channel, form.GUID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 

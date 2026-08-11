@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
@@ -268,9 +269,9 @@ var cpAddressOutgoingCases = []OutgoingTestCase{
 	},
 }
 
-func setupBackend(mb *test.MockBackend) {
+func setupBackend(t *testing.T, rt *runtime.Runtime) {
 	// ensure there's a cached access token
-	rc := mb.RedisPool().Get()
+	rc := rt.VK.Get()
 	defer rc.Close()
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 }

@@ -91,7 +91,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// build our msg
-	dbMsg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Message, "", clog).WithReceivedOn(date)
+	dbMsg := models.NewIncomingMsg(channel, urn, form.Message, "", clog).WithReceivedOn(date)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{dbMsg}, w, r, clog)

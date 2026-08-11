@@ -151,10 +151,10 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (*models.Chan
 	//if object is 'page' returns type FBA, if object is 'instagram' returns type IG
 	if payload.Object == "page" {
 		channelAddress = payload.Entry[0].ID
-		return h.Backend().GetChannelByAddress(ctx, models.ChannelType("FBA"), models.ChannelAddress(channelAddress))
+		return models.GetChannelByAddress(ctx, h.Runtime(), models.ChannelType("FBA"), models.ChannelAddress(channelAddress))
 	} else if payload.Object == "instagram" {
 		channelAddress = payload.Entry[0].ID
-		return h.Backend().GetChannelByAddress(ctx, models.ChannelType("IG"), models.ChannelAddress(channelAddress))
+		return models.GetChannelByAddress(ctx, h.Runtime(), models.ChannelType("IG"), models.ChannelAddress(channelAddress))
 	} else {
 		if len(payload.Entry[0].Changes) == 0 {
 			return nil, fmt.Errorf("no changes found")
@@ -164,7 +164,7 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (*models.Chan
 		if channelAddress == "" {
 			return nil, fmt.Errorf("no channel address found")
 		}
-		return h.Backend().GetChannelByAddress(ctx, models.ChannelType("WAC"), models.ChannelAddress(channelAddress))
+		return models.GetChannelByAddress(ctx, h.Runtime(), models.ChannelType("WAC"), models.ChannelAddress(channelAddress))
 	}
 }
 
@@ -304,7 +304,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 				}
 
 				// create our message
-				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, waMsg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[waMsg.Identifier()])
+				event := models.NewIncomingMsg(channel, urn, text, waMsg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[waMsg.Identifier()])
 
 				if mediaURL != "" {
 					event.WithAttachment(mediaURL)
@@ -328,7 +328,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 					}
 				}
 
-				err = h.Backend().WriteMsg(ctx, event, clog)
+				err = models.WriteMsg(ctx, h.Runtime(), event, clog)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -354,8 +354,8 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 					statusError.ErrorChannelLog(clog)
 				}
 
-				event := h.Backend().NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
-				err := h.Backend().WriteStatusUpdate(ctx, event)
+				event := models.NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
+				err := models.WriteStatusUpdate(ctx, h.Runtime(), event)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -428,11 +428,11 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 				data = append(data, courier.NewInfoData("ignoring optin"))
 			} else {
 				// this is an optin from the checkbox plugin, treat it as a referral
-				event := h.Backend().NewChannelEvent(channel, models.EventTypeReferral, urn, clog).
+				event := models.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).
 					WithOccurredOn(date).
 					WithExtra(map[string]string{referrerIDKey: msg.OptIn.Ref})
 
-				err := h.Backend().WriteChannelEvent(ctx, event, clog)
+				err := models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -447,7 +447,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 			if msg.Postback.Referral.Ref != "" {
 				eventType = models.EventTypeReferral
 			}
-			event := h.Backend().NewChannelEvent(channel, eventType, urn, clog).WithOccurredOn(date)
+			event := models.NewChannelEvent(channel, eventType, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]string{titleKey: msg.Postback.Title, payloadKey: msg.Postback.Payload}
@@ -465,7 +465,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 
 			event = event.WithExtra(extra)
 
-			err := h.Backend().WriteChannelEvent(ctx, event, clog)
+			err := models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -475,7 +475,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 
 		} else if msg.Referral != nil {
 			// this is an incoming referral
-			event := h.Backend().NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithOccurredOn(date)
+			event := models.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]string{sourceKey: msg.Referral.Source, typeKey: msg.Referral.Type}
@@ -491,7 +491,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 			}
 			event = event.WithExtra(extra)
 
-			err := h.Backend().WriteChannelEvent(ctx, event, clog)
+			err := models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -512,7 +512,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 			}
 
 			if msg.Message.IsDeleted {
-				h.Backend().DeleteMsgByExternalID(ctx, channel, msg.Message.MID)
+				models.DeleteMsgByExternalID(ctx, h.Runtime(), channel, msg.Message.MID)
 				data = append(data, courier.NewInfoData("msg deleted"))
 				continue
 			}
@@ -549,14 +549,14 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 			}
 
 			// create our message
-			event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, msg.Message.MID, clog).WithReceivedOn(date)
+			event := models.NewIncomingMsg(channel, urn, text, msg.Message.MID, clog).WithReceivedOn(date)
 
 			// add any attachment URL found
 			for _, attURL := range attachmentURLs {
 				event.WithAttachment(attURL)
 			}
 
-			err := h.Backend().WriteMsg(ctx, event, clog)
+			err := models.WriteMsg(ctx, h.Runtime(), event, clog)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -568,8 +568,8 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 		} else if msg.Delivery != nil {
 			// this is a delivery report
 			for _, mid := range msg.Delivery.MIDs {
-				event := h.Backend().NewStatusUpdateByExternalID(channel, mid, models.MsgStatusDelivered, clog)
-				err := h.Backend().WriteStatusUpdate(ctx, event)
+				event := models.NewStatusUpdateByExternalID(channel, mid, models.MsgStatusDelivered, clog)
+				err := models.WriteStatusUpdate(ctx, h.Runtime(), event)
 				if err != nil {
 					return nil, nil, err
 				}

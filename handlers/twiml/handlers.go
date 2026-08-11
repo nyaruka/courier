@@ -153,7 +153,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, form.MessageSID, clog)
+	msg := models.NewIncomingMsg(channel, urn, text, form.MessageSID, clog)
 
 	if form.ExternalUserId != "" && channel.IsScheme(urns.WhatsApp) {
 		userIDURN, urnErr := h.parseURN(channel, form.ExternalUserId, i18n.Country(form.FromCountry))
@@ -203,10 +203,12 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	var status *models.StatusUpdate
 	if uuidString := r.URL.Query().Get("uuid"); uuids.Is(uuidString) {
 		// if the message UUID was passed explicitely, use that
-		status = h.Backend().NewStatusUpdate(channel, models.MsgUUID(uuidString), msgStatus, clog)
+		status = models.NewStatusUpdate(channel, models.MsgUUID(uuidString), msgStatus, clog)
 	} else {
-		status = h.Backend().NewStatusUpdateByExternalID(channel, form.MessageSID, msgStatus, clog)
+		status = models.NewStatusUpdateByExternalID(channel, form.MessageSID, msgStatus, clog)
 	}
+
+	var stopEvent *models.ChannelEvent
 
 	errorCode, _ := strconv.ParseInt(form.ErrorCode, 10, 64)
 	if errorCode != 0 {
@@ -217,19 +219,23 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 			}
 
 			// create a stop channel event
-			channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
-			err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
+			stopEvent = models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
+			err = models.WriteChannelEvent(ctx, h.Runtime(), stopEvent, clog)
 			if err != nil {
 				return nil, err
 			}
 		}
 		clog.Error(twilioError(errorCode))
 		if errorCode == errorThrottled {
-			status = h.Backend().NewStatusUpdateByExternalID(channel, form.MessageSID, models.MsgStatusErrored, clog)
+			status = models.NewStatusUpdateByExternalID(channel, form.MessageSID, models.MsgStatusErrored, clog)
 		}
 	}
 
-	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
+	events, err := handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
+	if stopEvent != nil {
+		events = append(events, stopEvent)
+	}
+	return events, err
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
@@ -245,7 +251,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 
 	channel := msg.Channel()
 
-	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, true, clog)
+	attachments, err := handlers.ResolveAttachments(ctx, h.Runtime(), msg.Attachments(), mediaSupport, true, clog)
 	if err != nil {
 		return err
 	}

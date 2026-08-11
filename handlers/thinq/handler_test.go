@@ -59,7 +59,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedURN:          "tel:+12065551234",
-		ExpectedAttachments:  []string{"data:" + testJpgBase64},
+		ExpectedAttachments:  []string{"image/jpeg:http://localstack:4566/test-attachments/attachments/1/2244/0ad6/22440ad6-cbd5-4fee-a12f-03a352fff1dd.jpg"},
 	},
 	{
 		Label:                "Status Valid",

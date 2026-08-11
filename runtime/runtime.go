@@ -35,6 +35,7 @@ type Runtime struct {
 
 	Writers *Writers
 	Spool   *dynamo.Spool
+	Stats   *StatsCollector
 }
 
 func NewRuntime(cfg *Config) (*Runtime, error) {
@@ -109,6 +110,7 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 
 	rt.Spool = dynamo.NewSpool(rt.Dynamo, rt.Config.SpoolDir+"/dynamo", 30*time.Second)
 	rt.Writers = newWriters(cfg, rt.Dynamo, rt.Spool)
+	rt.Stats = NewStatsCollector()
 
 	return rt, nil
 }
@@ -128,6 +130,7 @@ func NewTestRuntime(cfg *Config) *Runtime {
 		// note the nil valkey pool: publishing requires a subscriber presence lookup, so tests that
 		// exercise a publish path need a runtime with a real pool (i.e. testsuite.Runtime)
 		Centrifugo: centrifugo.NewService(centrifugo.NewMockClient(), nil),
+		Stats:      NewStatsCollector(),
 	}
 }
 

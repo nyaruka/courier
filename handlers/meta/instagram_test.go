@@ -20,7 +20,7 @@ import (
 )
 
 var instgramTestChannels = []*models.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "IG", "12345", "", []string{urns.Instagram.Prefix}, map[string]any{models.ConfigAuthToken: "a123"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "IG", "1234567890", "", []string{urns.Instagram.Prefix}, map[string]any{models.ConfigAuthToken: "a123"}),
 }
 
 var instagramIncomingTests = []IncomingTestCase{
@@ -30,7 +30,6 @@ var instagramIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/ig/hello_msg.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Hello World"),
 		ExpectedURN:           "instagram:5678",
@@ -420,7 +419,6 @@ func TestInstgramVerify(t *testing.T) {
 			ExpectedRespStatus:    200,
 			ExpectedBodyContains:  "yarchallenge",
 			NoLogsExpected:        true,
-			NoQueueErrorCheck:     true,
 			NoInvalidChannelCheck: true,
 		},
 		{
@@ -460,7 +458,7 @@ func TestInstagramDescribeURN(t *testing.T) {
 
 	channel := instgramTestChannels[0]
 	handler := newHandler("IG", "Instagram")
-	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), test.NewMockBackend()))
+	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())))
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -472,7 +470,7 @@ func TestInstagramDescribeURN(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.(courier.URNDescriber).DescribeURN(context.Background(), channel, tc.urn, clog)
+		metadata, _ := handler.(models.URNDescriber).DescribeURN(context.Background(), channel, tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 
@@ -480,8 +478,7 @@ func TestInstagramDescribeURN(t *testing.T) {
 }
 
 func TestInstagramBuildAttachmentRequest(t *testing.T) {
-	mb := test.NewMockBackend()
-	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
+	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
 	handler := &handler{NewBaseHandler(models.ChannelType("IG"), "Instagram", DisableUUIDRouting())}
 	handler.Initialize(s)

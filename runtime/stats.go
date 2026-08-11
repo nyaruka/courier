@@ -1,33 +1,31 @@
-package rapidpro
+package runtime
 
 import (
 	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
-	"github.com/nyaruka/courier/v26"
-	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 )
 
-type CountByType map[models.ChannelType]int
+type CountByType map[string]int
 
 // converts per channel counts into a set of cloudwatch metrics with type as a dimension, and a total count without type
 func (c CountByType) metrics(name string) []types.MetricDatum {
 	m := make([]types.MetricDatum, 0, len(c)+1)
 	for typ, count := range c {
-		m = append(m, cwatch.Datum(name, float64(count), types.StandardUnitCount, cwatch.Dimension("ChannelType", string(typ))))
+		m = append(m, cwatch.Datum(name, float64(count), types.StandardUnitCount, cwatch.Dimension("ChannelType", typ)))
 	}
 	return m
 }
 
-type DurationByType map[models.ChannelType]time.Duration
+type DurationByType map[string]time.Duration
 
-func (c DurationByType) metrics(name string, avgDenom func(models.ChannelType) int) []types.MetricDatum {
+func (c DurationByType) metrics(name string, avgDenom func(string) int) []types.MetricDatum {
 	m := make([]types.MetricDatum, 0, len(c)+1)
 	for typ, d := range c { // convert to averages
 		avgTime := d / time.Duration(avgDenom(typ))
-		m = append(m, cwatch.Datum(name, float64(avgTime)/float64(time.Second), types.StandardUnitSeconds, cwatch.Dimension("ChannelType", string(typ))))
+		m = append(m, cwatch.Datum(name, float64(avgTime)/float64(time.Second), types.StandardUnitSeconds, cwatch.Dimension("ChannelType", typ)))
 	}
 	return m
 }
@@ -75,8 +73,8 @@ func (s *Stats) ToMetrics(advanced bool) []types.MetricDatum {
 		metrics = append(metrics, s.IncomingStatuses.metrics("IncomingStatuses")...)
 		metrics = append(metrics, s.IncomingEvents.metrics("IncomingEvents")...)
 		metrics = append(metrics, s.IncomingIgnored.metrics("IncomingIgnored")...)
-		metrics = append(metrics, s.IncomingDuration.metrics("IncomingDuration", func(typ models.ChannelType) int { return s.IncomingRequests[typ] })...)
-		metrics = append(metrics, s.OutgoingDuration.metrics("OutgoingDuration", func(typ models.ChannelType) int { return s.OutgoingSends[typ] + s.OutgoingErrors[typ] })...)
+		metrics = append(metrics, s.IncomingDuration.metrics("IncomingDuration", func(typ string) int { return s.IncomingRequests[typ] })...)
+		metrics = append(metrics, s.OutgoingDuration.metrics("OutgoingDuration", func(typ string) int { return s.OutgoingSends[typ] + s.OutgoingErrors[typ] })...)
 		metrics = append(metrics, cwatch.Datum("ContactsCreated", float64(s.ContactsCreated), types.StandardUnitCount))
 	}
 
@@ -94,33 +92,27 @@ func NewStatsCollector() *StatsCollector {
 	return &StatsCollector{stats: newStats()}
 }
 
-func (c *StatsCollector) RecordIncoming(typ models.ChannelType, evts []courier.Event, d time.Duration) {
+// RecordIncoming records the receipt of a handler request with counts of the messages, statuses and events it produced
+func (c *StatsCollector) RecordIncoming(typ string, msgs, statuses, events, ignored int, d time.Duration) {
 	c.mutex.Lock()
 	c.stats.IncomingRequests[typ]++
-
-	for _, e := range evts {
-		switch ev := e.(type) {
-		case *models.MsgIn:
-			if ev.Duplicate_ {
-				c.stats.IncomingIgnored[typ]++
-				continue
-			}
-			c.stats.IncomingMessages[typ]++
-		case *models.StatusUpdate:
-			c.stats.IncomingStatuses[typ]++
-		case *models.ChannelEvent:
-			c.stats.IncomingEvents[typ]++
-		}
+	if msgs > 0 {
+		c.stats.IncomingMessages[typ] += msgs
 	}
-	if len(evts) == 0 {
-		c.stats.IncomingIgnored[typ]++
+	if statuses > 0 {
+		c.stats.IncomingStatuses[typ] += statuses
 	}
-
+	if events > 0 {
+		c.stats.IncomingEvents[typ] += events
+	}
+	if ignored > 0 {
+		c.stats.IncomingIgnored[typ] += ignored
+	}
 	c.stats.IncomingDuration[typ] += d
 	c.mutex.Unlock()
 }
 
-func (c *StatsCollector) RecordOutgoing(typ models.ChannelType, success bool, d time.Duration) {
+func (c *StatsCollector) RecordOutgoing(typ string, success bool, d time.Duration) {
 	c.mutex.Lock()
 	if success {
 		c.stats.OutgoingSends[typ]++

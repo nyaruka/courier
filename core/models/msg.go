@@ -2,13 +2,26 @@ package models
 
 import (
 	"context"
+	"crypto/sha1"
+	"database/sql"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"log/slog"
+	"strings"
 	"time"
 	"unicode/utf8"
 
+	"github.com/gomodule/redigo/redis"
+	filetype "github.com/h2non/filetype"
 	"github.com/lib/pq"
+	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/courier/v26/utils/queue"
+	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -90,18 +103,18 @@ type MsgIn struct {
 }
 
 // NewIncomingMsg creates a new incoming message
-func NewIncomingMsg(channel *Channel, urn urns.URN, text string, extID string, clogUUID clogs.UUID) *MsgIn {
+func NewIncomingMsg(channel *Channel, urn urns.URN, text string, extID string, clog *ChannelLog) *MsgIn {
 	now := time.Now()
 
 	return &MsgIn{
 		UUID_:        MsgUUID(uuids.NewV7()),
 		ChannelUUID_: channel.UUID(),
-		URN_:         urn,
-		Text_:        text,
-		ExternalID_:  extID,
+		URN_:         urns.URN(dbutil.ToValidUTF8(string(urn))), // strip out invalid UTF8 and NULL chars
+		Text_:        dbutil.ToValidUTF8(text),
+		ExternalID_:  dbutil.ToValidUTF8(extID),
 		CreatedOn_:   now,
 		ReceivedOn_:  &now,
-		LogUUIDs:     []clogs.UUID{clogUUID},
+		LogUUIDs:     []clogs.UUID{clog.UUID},
 
 		Channel_: channel,
 	}
@@ -177,6 +190,239 @@ func InsertIncomingMsg(ctx context.Context, db *sqlx.DB, m *MsgIn, contact *Cont
 
 	_, err := db.NamedExecContext(ctx, sqlInsertIncomingMsg, row)
 	return err
+}
+
+// WriteMsg writes the passed in incoming message to the database, or spools it if the database is unavailable. If
+// the message is detected to be a duplicate of one already received, it's marked as such and not written.
+func WriteMsg(ctx context.Context, rt *runtime.Runtime, msg *MsgIn, clog *ChannelLog) error {
+	// check if this message could be a duplicate and if so steal the original's UUID
+	if prevUUID := checkMsgAlreadyReceived(ctx, rt, msg); prevUUID != "" {
+		msg.UUID_ = prevUUID
+		msg.Duplicate_ = true
+		return nil
+	}
+
+	timeout, cancel := context.WithTimeout(ctx, fetchTimeout)
+	defer cancel()
+
+	if err := writeMsg(timeout, rt, msg, clog); err != nil {
+		return err
+	}
+
+	recordMsgReceived(ctx, rt, msg)
+
+	return nil
+}
+
+func writeMsg(ctx context.Context, rt *runtime.Runtime, m *MsgIn, clog *ChannelLog) error {
+	channel := m.Channel()
+
+	// check for data: attachment URLs which need to be fetched now - fetching of other URLs can be deferred until
+	// message handling and performed by calling the /ci/attachment/fetch endpoint
+	for i, attURL := range m.Attachments_ {
+		if strings.HasPrefix(attURL, "data:") {
+			attData, err := base64.StdEncoding.DecodeString(attURL[5:])
+			if err != nil {
+				clog.Error(ErrorAttachmentNotDecodable())
+				return fmt.Errorf("unable to decode attachment data: %w", err)
+			}
+
+			var contentType, extension string
+			fileType, _ := filetype.Match(attData[:300])
+			if fileType != filetype.Unknown {
+				contentType = fileType.MIME.Value
+				extension = fileType.Extension
+			} else {
+				contentType = "application/octet-stream"
+				extension = "bin"
+			}
+
+			newURL, err := SaveAttachment(ctx, rt, channel, contentType, attData, extension)
+			if err != nil {
+				return err
+			}
+			m.Attachments_[i] = fmt.Sprintf("%s:%s", contentType, newURL)
+		}
+	}
+
+	// try to write it our db
+	contact, err := writeMsgToDB(ctx, rt, m, clog)
+	if err != nil {
+		if dbutil.IsUniqueViolation(err) {
+			slog.Warn("duplicate incoming message detected, ignoring", "msg", m.UUID())
+			return nil
+		}
+
+		// if we failed, log and write to spool
+		slog.Error("error writing to db", "error", err, "msg", m.UUID())
+
+		if err := msgSpool.Add([]*MsgIn{m}); err != nil {
+			return fmt.Errorf("error writing msg to spool: %w", err)
+		}
+		return nil
+	}
+
+	rc := rt.VK.Get()
+	defer rc.Close()
+
+	// queue to mailroom for handling
+	if err := queueMsgHandling(ctx, rc, contact, m); err != nil {
+		slog.Error("error queueing msg handling", "error", err, "msg", m.UUID_, "contact", contact.ID_)
+	}
+
+	return err
+}
+
+func writeMsgToDB(ctx context.Context, rt *runtime.Runtime, m *MsgIn, clog *ChannelLog) (*Contact, error) {
+	contact, err := contactForMsg(ctx, rt, m, clog)
+
+	if err != nil {
+		// our db is down, write to the spool, we will write/queue this later
+		return nil, fmt.Errorf("error getting contact for message: %w", err)
+	}
+
+	if err := InsertIncomingMsg(ctx, rt.DB, m, contact); err != nil {
+		return nil, fmt.Errorf("error inserting message: %w", err)
+	}
+
+	return contact, nil
+}
+
+// flushMsgs is the flush function for the msg spool - it retries writing spooled msgs to the database, returning
+// those that fail again so they're respooled
+func flushMsgs(ctx context.Context, rt *runtime.Runtime, batch []*MsgIn) ([]*MsgIn, error) {
+	var failed []*MsgIn
+
+	for _, m := range batch {
+		ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+		err := flushMsg(ctx, rt, m)
+		cancel()
+
+		if err != nil {
+			slog.Error("error flushing spooled msg", "error", err, "msg", m.UUID())
+			failed = append(failed, m)
+		}
+	}
+
+	return failed, nil
+}
+
+func flushMsg(ctx context.Context, rt *runtime.Runtime, m *MsgIn) error {
+	// look up our channel
+	channel, err := GetChannel(ctx, rt, AnyChannelType, m.ChannelUUID_)
+	if err != nil {
+		return err
+	}
+	m.Channel_ = channel
+
+	// create log tho it won't be written
+	clog := NewChannelLog(ChannelLogTypeMsgReceive, channel, nil, nil)
+
+	// try to write it our db
+	contact, err := writeMsgToDB(ctx, rt, m, clog)
+	if err != nil {
+		if dbutil.IsUniqueViolation(err) {
+			slog.Warn("duplicate incoming message detected, ignoring", "msg", m.UUID())
+			return nil
+		}
+		return err // fail? oh well, we'll try again later
+	}
+
+	rc := rt.VK.Get()
+	defer rc.Close()
+
+	// queue to mailroom for handling
+	if err := queueMsgHandling(ctx, rc, contact, m); err != nil {
+		slog.Error("error queueing handling for de-spooled message", "error", err, "msg", m.UUID_, "contact", contact.ID_)
+	}
+
+	return nil
+}
+
+func msgHash(m *MsgIn) string {
+	hash := sha1.Sum([]byte(m.Text_ + "|" + strings.Join(m.Attachments_, "|")))
+	return hex.EncodeToString(hash[:])
+}
+
+// checks to see if this message has already been received and if so returns its UUID
+func checkMsgAlreadyReceived(ctx context.Context, rt *runtime.Runtime, m *MsgIn) MsgUUID {
+	rc := rt.VK.Get()
+	defer rc.Close()
+
+	// if we have an external id use that
+	if m.ExternalID_ != "" {
+		fingerprint := fmt.Sprintf("%s|%s|%s", m.Channel().UUID(), m.URN().Identity(), m.ExternalID())
+
+		if uuid, _ := receivedExternalIDs.Get(ctx, rc, fingerprint); uuid != "" {
+			return MsgUUID(uuid)
+		}
+	} else {
+		// otherwise de-dup based on text received from that channel+urn since last send
+		fingerprint := fmt.Sprintf("%s|%s", m.Channel().UUID(), m.URN().Identity())
+
+		if uuidAndHash, _ := receivedMsgs.Get(ctx, rc, fingerprint); uuidAndHash != "" {
+			prevUUID := uuidAndHash[:36]
+			prevHash := uuidAndHash[37:]
+
+			// if it is the same hash, return the UUID
+			if prevHash == msgHash(m) {
+				return MsgUUID(prevUUID)
+			}
+		}
+	}
+
+	return ""
+}
+
+// records that the given message has been received and written to the database
+func recordMsgReceived(ctx context.Context, rt *runtime.Runtime, m *MsgIn) {
+	rc := rt.VK.Get()
+	defer rc.Close()
+
+	if m.ExternalID_ != "" {
+		fingerprint := fmt.Sprintf("%s|%s|%s", m.Channel().UUID(), m.URN().Identity(), m.ExternalID())
+
+		if err := receivedExternalIDs.Set(ctx, rc, fingerprint, string(m.UUID())); err != nil {
+			slog.Error("error recording received external id", "msg", m.UUID(), "error", err)
+		}
+	} else {
+		fingerprint := fmt.Sprintf("%s|%s", m.Channel().UUID(), m.URN().Identity())
+
+		if err := receivedMsgs.Set(ctx, rc, fingerprint, fmt.Sprintf("%s|%s", m.UUID(), msgHash(m))); err != nil {
+			slog.Error("error recording received msg", "msg", m.UUID(), "error", err)
+		}
+	}
+}
+
+// clearMsgSeen clears our seen incoming messages for the passed in channel and URN
+func clearMsgSeen(ctx context.Context, vc redis.Conn, m *MsgOut) {
+	fingerprint := fmt.Sprintf("%s|%s", m.Channel().UUID(), m.URN().Identity())
+
+	if err := receivedMsgs.Del(ctx, vc, fingerprint); err != nil {
+		slog.Error("error clearing received msgs", "urn", m.URN().Identity(), "error", err)
+	}
+}
+
+// DeleteMsgByExternalID resolves a message external id and queues a task to mailroom to delete it
+func DeleteMsgByExternalID(ctx context.Context, rt *runtime.Runtime, channel *Channel, externalID string) error {
+	row := rt.DB.QueryRowContext(ctx, `SELECT uuid, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_identifier = $2 AND direction = 'I'`, channel.ID(), externalID)
+
+	var msgUUID MsgUUID
+	var contactID ContactID
+	if err := row.Scan(&msgUUID, &contactID); err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("error querying deleted msg: %w", err)
+	}
+
+	if msgUUID != "" && contactID != NilContactID {
+		rc := rt.VK.Get()
+		defer rc.Close()
+
+		if err := queueMsgDeleted(ctx, rc, channel, msgUUID, contactID); err != nil {
+			return fmt.Errorf("error queuing message deleted task: %w", err)
+		}
+	}
+
+	return nil
 }
 
 type MsgOrigin string
@@ -314,6 +560,142 @@ func (m *MsgOut) Flow() *FlowReference         { return m.Flow_ }
 func (m *MsgOut) UserID() UserID               { return m.UserID_ }
 func (m *MsgOut) Session() *Session            { return m.Session_ }
 func (m *MsgOut) HighPriority() bool           { return m.HighPriority_ }
+
+// PopNextOutgoingMsg pops the next message that needs to be sent, callers should call OnSendComplete with the
+// returned message when they have dealt with the message (regardless of whether it was sent or not)
+func PopNextOutgoingMsg(ctx context.Context, rt *runtime.Runtime) (*MsgOut, error) {
+	vc := rt.VK.Get()
+	defer vc.Close()
+
+	markComplete := func(token queue.WorkerToken) {
+		if err := queue.MarkComplete(vc, MsgQueueName, token); err != nil {
+			slog.Error("error marking queue task complete", "error", err)
+		}
+	}
+
+	// pop the next message off our queue
+	token, msgJSON, err := queue.PopFromQueue(vc, MsgQueueName)
+	if err != nil {
+		return nil, err
+	}
+
+	for token == queue.Retry {
+		token, msgJSON, err = queue.PopFromQueue(vc, MsgQueueName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if msgJSON == "" {
+		return nil, nil
+	}
+
+	msg := &MsgOut{}
+	if err := json.Unmarshal([]byte(msgJSON), msg); err != nil {
+		markComplete(token)
+		return nil, fmt.Errorf("unable to unmarshal message: %s: %w", string(msgJSON), err)
+	}
+
+	if err := utils.Validate(msg); err != nil {
+		markComplete(token)
+		return nil, fmt.Errorf("queued message failed validation: %s: %w", string(msgJSON), err)
+	}
+
+	// populate the channel on our msg object
+	channel, err := GetChannel(ctx, rt, AnyChannelType, msg.ChannelUUID_)
+	if err != nil {
+		markComplete(token)
+		return nil, err
+	}
+
+	// add some extra info to the popped message
+	msg.Channel_ = channel
+	msg.WorkerToken_ = token
+
+	// clear out our seen incoming messages
+	clearMsgSeen(ctx, vc, msg)
+
+	return msg, nil
+}
+
+// WasMsgSent returns whether we think the passed in message was already sent - used as a failsafe against double
+// sending messages (say if they were double queued)
+func WasMsgSent(ctx context.Context, rt *runtime.Runtime, uuid MsgUUID) (bool, error) {
+	rc := rt.VK.Get()
+	defer rc.Close()
+
+	return sentMsgs.IsMember(ctx, rc, string(uuid))
+}
+
+// ClearMsgSent clears any internal status that a message was previously sent - used in the case where a message is
+// being forced in being resent by a user
+func ClearMsgSent(ctx context.Context, rt *runtime.Runtime, uuid MsgUUID) error {
+	rc := rt.VK.Get()
+	defer rc.Close()
+
+	return sentMsgs.Rem(ctx, rc, string(uuid))
+}
+
+// OnSendComplete is called when the sender has finished trying to send a message, with the new URN from the send
+// result if there was one
+func OnSendComplete(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, status *StatusUpdate, newURN urns.URN, clog *ChannelLog) {
+	log := slog.With("channel", msg.Channel().UUID(), "msg", msg.UUID(), "clog", clog.UUID, "status", status)
+
+	rc := rt.VK.Get()
+	defer rc.Close()
+
+	if err := queue.MarkComplete(rc, MsgQueueName, msg.WorkerToken_); err != nil {
+		log.Error("unable to mark queue task complete", "error", err)
+	}
+
+	// if message won't be retried, mark as sent to avoid dupe sends
+	if status.Status() != MsgStatusErrored {
+		if err := sentMsgs.Add(ctx, rc, string(msg.UUID())); err != nil {
+			log.Error("unable to mark message sent", "error", err)
+		}
+	}
+
+	// if message was successfully sent, and we have a session timeout, update it
+	wasSuccess := status.Status() == MsgStatusWired || status.Status() == MsgStatusSent || status.Status() == MsgStatusDelivered || status.Status() == MsgStatusRead
+	if wasSuccess && msg.Session_ != nil && msg.Session_.Timeout > 0 {
+		if err := insertTimeoutFire(ctx, rt, msg); err != nil {
+			log.Error("unable to update session timeout", "error", err, "session_uuid", msg.Session_.UUID)
+		}
+	}
+
+	// if send result includes a new URN to add to the contact, queue a contact_changed task
+	if wasSuccess && newURN != urns.NilURN && !msg.Contact().HasOtherURN(newURN) {
+		ch := msg.Channel()
+		err := queueMailroomTask(ctx, rc, "contact_changed", ch.OrgID_, msg.Contact().ID, map[string]any{
+			"channel_id": ch.ID_,
+			"new_urn": map[string]string{
+				"value":  newURN.String(),
+				"action": "append",
+			},
+		})
+		if err != nil {
+			log.Error("unable to queue contact_changed task", "error", err)
+		}
+	}
+
+	rt.Stats.RecordOutgoing(string(msg.Channel().ChannelType()), wasSuccess, clog.Elapsed)
+}
+
+const sqlInsertTimeoutFire = `
+INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, fire_on, session_uuid, sprint_uuid)
+                          VALUES($1, $2, 'T', '', $3, $4, $5)
+ON CONFLICT DO NOTHING`
+
+// insertTimeoutFire inserts a timeout fire for the session associated with the given msg
+func insertTimeoutFire(ctx context.Context, rt *runtime.Runtime, m *MsgOut) error {
+	timeoutOn := dates.Now().Add(time.Duration(m.Session_.Timeout) * time.Second)
+
+	_, err := rt.DB.ExecContext(ctx, sqlInsertTimeoutFire, m.OrgID_, m.Contact_.ID, timeoutOn, m.Session_.UUID, m.Session_.SprintUUID)
+	if err != nil {
+		return fmt.Errorf("error inserting session timeout contact fire for session %s: %w", m.Session_.UUID, err)
+	}
+	return nil
+}
 
 // QuickRepliesToRows takes a slice of quick replies and re-organizes it into rows and columns
 func QuickRepliesToRows(replies []QuickReply, maxRows, maxRowRunes, paddingRunes int) [][]QuickReply {

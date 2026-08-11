@@ -121,7 +121,7 @@ func (h *handler) subscribeToEvents(ctx context.Context, channel *models.Channel
 		slog.Error("error subscribing to Facebook page events", "channel_uuid", channel.UUID())
 	}
 
-	h.Backend().WriteChannelLog(ctx, clog)
+	models.WriteChannelLog(h.Runtime(), clog)
 }
 
 type fbUser struct {
@@ -251,13 +251,13 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid facebook id"))
 		}
 		if msg.OptIn != nil {
-			event := h.Backend().NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithOccurredOn(date)
+			event := models.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]string{referrerIDKey: msg.OptIn.Ref}
 			event = event.WithExtra(extra)
 
-			err := h.Backend().WriteChannelEvent(ctx, event, clog)
+			err := models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
 			if err != nil {
 				return nil, err
 			}
@@ -271,7 +271,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			if msg.Postback.Referral.Ref != "" {
 				eventType = models.EventTypeReferral
 			}
-			event := h.Backend().NewChannelEvent(channel, eventType, urn, clog).WithOccurredOn(date)
+			event := models.NewChannelEvent(channel, eventType, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]string{
@@ -292,7 +292,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 
 			event = event.WithExtra(extra)
 
-			err := h.Backend().WriteChannelEvent(ctx, event, clog)
+			err := models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
 			if err != nil {
 				return nil, err
 			}
@@ -302,7 +302,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 
 		} else if msg.Referral != nil {
 			// this is an incoming referral
-			event := h.Backend().NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithOccurredOn(date)
+			event := models.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]string{sourceKey: msg.Referral.Source, typeKey: msg.Referral.Type}
@@ -318,7 +318,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			}
 			event = event.WithExtra(extra)
 
-			err := h.Backend().WriteChannelEvent(ctx, event, clog)
+			err := models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
 			if err != nil {
 				return nil, err
 			}
@@ -371,14 +371,14 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			}
 
 			// create our message
-			event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, msg.Message.MID, clog).WithReceivedOn(date)
+			event := models.NewIncomingMsg(channel, urn, text, msg.Message.MID, clog).WithReceivedOn(date)
 
 			// add any attachment URL found
 			for _, attURL := range attachmentURLs {
 				event.WithAttachment(attURL)
 			}
 
-			err := h.Backend().WriteMsg(ctx, event, clog)
+			err := models.WriteMsg(ctx, h.Runtime(), event, clog)
 			if err != nil {
 				return nil, err
 			}
@@ -390,8 +390,8 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		} else if msg.Delivery != nil {
 			// this is a delivery report
 			for _, mid := range msg.Delivery.MIDs {
-				event := h.Backend().NewStatusUpdateByExternalID(channel, mid, models.MsgStatusDelivered, clog)
-				err := h.Backend().WriteStatusUpdate(ctx, event)
+				event := models.NewStatusUpdateByExternalID(channel, mid, models.MsgStatusDelivered, clog)
+				err := models.WriteStatusUpdate(ctx, h.Runtime(), event)
 				if err != nil {
 					return nil, err
 				}

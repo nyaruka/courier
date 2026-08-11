@@ -3,8 +3,16 @@ package models
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"net/url"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
 
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/vinovest/sqlx"
 )
@@ -51,4 +59,82 @@ func LoadMediaByUUID(ctx context.Context, db *sqlx.DB, uuid uuids.UUID) (*Media,
 	media, alternates := records[0], records[1:]
 	media.Alternates_ = alternates
 	return media, nil
+}
+
+var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+
+// ResolveMedia resolves the passed in attachment URL to a media object
+func ResolveMedia(ctx context.Context, rt *runtime.Runtime, mediaUrl string) (*Media, error) {
+	u, err := url.Parse(mediaUrl)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing media URL: %w", err)
+	}
+
+	mediaUUID := uuidRegex.FindString(u.Path)
+
+	// if hostname isn't our media domain, or path doesn't contain a UUID, don't try to resolve
+	if stripS3Region(rt, u.Hostname()) != rt.Config.MediaDomain || mediaUUID == "" {
+		return nil, nil
+	}
+
+	unlock := mediaMutexes.Lock(mediaUUID)
+	defer unlock()
+
+	rc := rt.VK.Get()
+	defer rc.Close()
+
+	var media *Media
+	mediaJSON, err := mediaCache.Get(ctx, rc, mediaUUID)
+	if err != nil {
+		return nil, fmt.Errorf("error looking up cached media: %w", err)
+	}
+	if mediaJSON != "" {
+		jsonx.MustUnmarshal([]byte(mediaJSON), &media)
+	} else {
+		// lookup media in our database
+		media, err = LoadMediaByUUID(ctx, rt.DB, uuids.UUID(mediaUUID))
+		if err != nil {
+			return nil, fmt.Errorf("error looking up media: %w", err)
+		}
+
+		// cache it for future requests
+		mediaCache.Set(ctx, rc, mediaUUID, string(jsonx.MustMarshal(media)))
+	}
+
+	// if we found a media record but it doesn't match the URL, don't use it
+	if media == nil || (media.URL() != mediaUrl && media.URL() != stripS3Region(rt, mediaUrl)) {
+		return nil, nil
+	}
+
+	return media, nil
+}
+
+// strips the region qualifier that S3 adds to virtual-host style URLs so they can be compared against our
+// unqualified media domain and URLs, e.g. foo.s3.us-east-1.amazonaws.com becomes foo.s3.amazonaws.com. No-op
+// when there's no region (e.g. local dev setups using path-style URLs).
+func stripS3Region(rt *runtime.Runtime, s string) string {
+	if rt.S3.Region == "" {
+		return s
+	}
+	return strings.Replace(s, fmt.Sprintf("%s.", rt.S3.Region), "", -1)
+}
+
+// SaveAttachment saves an attachment to storage
+func SaveAttachment(ctx context.Context, rt *runtime.Runtime, ch *Channel, contentType string, data []byte, extension string) (string, error) {
+	// create our filename
+	filename := string(uuids.NewV4())
+	if extension != "" {
+		filename = fmt.Sprintf("%s.%s", filename, extension)
+	}
+
+	orgID := ch.OrgID()
+
+	path := filepath.Join("attachments", strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
+
+	storageURL, err := rt.S3.PutObject(ctx, rt.Config.S3AttachmentsBucket, path, contentType, data, s3types.ObjectCannedACLPublicRead)
+	if err != nil {
+		return "", fmt.Errorf("error saving attachment to storage (bytes=%d): %w", len(data), err)
+	}
+
+	return storageURL, nil
 }

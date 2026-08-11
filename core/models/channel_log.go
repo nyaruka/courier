@@ -2,8 +2,12 @@ package models
 
 import (
 	"fmt"
+	"log/slog"
+	"time"
 
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/httpx"
 )
 
@@ -103,4 +107,61 @@ func NewChannelLogForEventSend(ch *Channel, redactVals []string) *ChannelLog {
 // Deprecated: channel handlers should add user-facing error messages via .Error() instead
 func (l *ChannelLog) RawError(err error) {
 	l.Error(&clogs.Error{Message: err.Error()})
+}
+
+const dynamoChannelLogTTL = 7 * 24 * time.Hour // 1 week
+
+// dynamoChannelLog wraps a ChannelLog to add DynamoDB support
+type dynamoChannelLog struct {
+	*ChannelLog
+}
+
+func (l *dynamoChannelLog) DynamoKey() dynamo.Key {
+	pk := fmt.Sprintf("cha#%s#%s", l.ChannelUUID, l.UUID[len(l.UUID)-1:]) // 16 buckets for each channel
+	sk := fmt.Sprintf("log#%s", l.UUID)
+	return dynamo.Key{PK: pk, SK: sk}
+}
+
+func (l *dynamoChannelLog) MarshalDynamo() (*dynamo.Item, error) {
+	type DataGZ struct {
+		HttpLogs []*httpx.Log   `json:"http_logs"`
+		Errors   []*clogs.Error `json:"errors"`
+	}
+
+	dataGZ, err := dynamo.MarshalJSONGZ(&DataGZ{HttpLogs: l.HttpLogs, Errors: l.Errors})
+	if err != nil {
+		return nil, fmt.Errorf("error encoding http logs as JSON+GZip: %w", err)
+	}
+
+	ttl := l.CreatedOn.Add(dynamoChannelLogTTL)
+
+	return &dynamo.Item{
+		Key:   l.DynamoKey(),
+		OrgID: int(l.OrgID),
+		TTL:   &ttl,
+		Data: map[string]any{
+			"type":       l.Type,
+			"elapsed_ms": int(l.Elapsed / time.Millisecond),
+			"created_on": l.CreatedOn,
+			"is_error":   l.IsError(),
+		},
+		DataGZ: dataGZ,
+	}, nil
+}
+
+// WriteChannelLog queues the passed in channel log to be written to storage - all errors are swallowed after
+// logging since logging isn't critical
+func WriteChannelLog(rt *runtime.Runtime, clog *ChannelLog) {
+	log := slog.With("log_uuid", clog.UUID, "log_type", clog.Type, "channel_uuid", clog.ChannelUUID)
+
+	capacity, err := rt.Writers.Main.Queue(&dynamoChannelLog{clog})
+	if err != nil {
+		log.Error("error queuing channel log to writer", "error", err)
+		return
+	}
+	if capacity <= 0 {
+		log.With("storage", "dynamo").Error("channel log writer buffer full")
+	}
+
+	log.Debug("channel log queued")
 }

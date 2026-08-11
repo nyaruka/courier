@@ -147,9 +147,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid viber id"))
 		}
 		// build the channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeWelcomeMessage, urn, clog).WithContactName(ContactName)
+		channelEvent := models.NewChannelEvent(channel, models.EventTypeWelcomeMessage, urn, clog).WithContactName(ContactName)
 
-		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
+		err = models.WriteChannelEvent(ctx, h.Runtime(), channelEvent, clog)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
@@ -169,9 +169,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		}
 
 		// build the channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog).WithContactName(ContactName)
+		channelEvent := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog).WithContactName(ContactName)
 
-		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
+		err = models.WriteChannelEvent(ctx, h.Runtime(), channelEvent, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -189,9 +189,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid viber id"))
 		}
 		// build the channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
+		channelEvent := models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
 
-		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
+		err = models.WriteChannelEvent(ctx, h.Runtime(), channelEvent, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -201,7 +201,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 	case "failed":
 		clog.Type = models.ChannelLogTypeMsgStatus
 
-		msgStatus := h.Backend().NewStatusUpdateByExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), models.MsgStatusFailed, clog)
+		msgStatus := models.NewStatusUpdateByExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), models.MsgStatusFailed, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "delivered":
@@ -263,7 +263,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		}
 
 		// build our msg
-		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, fmt.Sprintf("%d", payload.MessageToken), clog).WithContactName(contactName)
+		msg := models.NewIncomingMsg(channel, urn, text, fmt.Sprintf("%d", payload.MessageToken), clog).WithContactName(contactName)
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)
 		}

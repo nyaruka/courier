@@ -158,7 +158,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid line id"))
 		}
 
-		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, lineEvent.ReplyToken, clog).WithReceivedOn(date)
+		msg := models.NewIncomingMsg(channel, urn, text, lineEvent.ReplyToken, clog).WithReceivedOn(date)
 
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)
@@ -342,7 +342,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	qrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeURL)
 
-	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, false, clog)
+	attachments, err := handlers.ResolveAttachments(ctx, h.Runtime(), msg.Attachments(), mediaSupport, false, clog)
 	if err != nil {
 		return fmt.Errorf("error resolving attachments: %w", err)
 	}

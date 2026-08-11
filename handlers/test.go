@@ -14,10 +14,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
-	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
@@ -50,7 +53,6 @@ type ExpectedEvent struct {
 // IncomingTestCase defines the test values for a particular test case
 type IncomingTestCase struct {
 	Label                 string
-	NoQueueErrorCheck     bool
 	NoInvalidChannelCheck bool
 	PrepRequest           RequestPrepFunc
 
@@ -69,7 +71,6 @@ type IncomingTestCase struct {
 	ExpectedPayload       string
 	ExpectedDate          time.Time
 	ExpectedExternalID    string
-	ExpectedMsgID         int64
 	ExpectedStatuses      []ExpectedStatus
 	ExpectedEvents        []ExpectedEvent
 	ExpectedErrors        []*clogs.Error
@@ -138,27 +139,67 @@ func testHandlerRequest(tb testing.TB, s *courier.Server, path string, headers m
 	return body
 }
 
-func newServer(backend courier.Backend) *courier.Server {
+// localOnlyTransport passes through requests to test servers on this host and rejects everything else
+type localOnlyTransport struct {
+	http.RoundTripper
+}
+
+func (t localOnlyTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if host := r.URL.Hostname(); host != "localhost" && host != "127.0.0.1" && host != "::1" {
+		return nil, fmt.Errorf("handler tests can't make requests outside this host: %s", r.URL)
+	}
+	return t.RoundTripper.RoundTrip(r)
+}
+
+func newServer(rt *runtime.Runtime) *courier.Server {
 	// for benchmarks, log to null
 	log.SetOutput(io.Discard)
 
-	cfg := runtime.NewDefaultConfig()
-	cfg.FacebookWebhookSecret = "fb_webhook_secret"
-	cfg.FacebookApplicationSecret = "fb_app_secret"
-	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
+	rt.Config.FacebookWebhookSecret = "fb_webhook_secret"
+	rt.Config.FacebookApplicationSecret = "fb_app_secret"
+	rt.Config.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
 
-	return courier.NewServer(runtime.NewTestRuntime(cfg), backend)
+	return courier.NewServer(rt)
 }
 
 // RunIncomingTestCases runs all the passed in tests cases for the passed in channel configurations
 func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler courier.ChannelHandler, testCases []IncomingTestCase) {
-	mb := test.NewMockBackend()
-	s := newServer(mb)
+	_, rt := testsuite.Runtime(t)
+
+	// state is reset once for the whole run rather than per case because handlers can carry state between
+	// requests, e.g. those which join the parts of a multi-part message via valkey
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	// handlers reach test servers on localhost so use a plain client rather than the runtime's, whose
+	// transport enforces the SSRF blocklist - but fail anything leaving the host so that a handler which
+	// isn't pointed at a test server (e.g. one describing a URN whilst a contact is created) is caught
+	// here rather than calling a real channel API
+	client := &http.Client{Transport: localOnlyTransport{http.DefaultTransport}, Timeout: 30 * time.Second}
+	rt.HTTP = client
+	rt.HTTPProxied = client
+
+	// data: attachments are saved to storage as they're received so ensure the bucket exists
+	rt.S3.Client.CreateBucket(t.Context(), &s3.CreateBucketInput{Bucket: aws.String(rt.Config.S3AttachmentsBucket)})
+
+	s := newServer(rt)
 
 	for _, ch := range channels {
-		mb.AddChannel(ch)
+		testsuite.InsertChannel(t, rt, ch)
 	}
+
+	// re-register the handler under test so that lookups by channel type - e.g. the URN describer used when
+	// creating a contact - resolve to this instance rather than the uninitialized one from its init()
+	courier.RegisterHandler(handler)
 	handler.Initialize(s)
+
+	// capture the events and channel logs of each handled request
+	var handledEvents []courier.Event
+	var handledLogs []*models.ChannelLog
+	s.OnRequestHandled(func(ch *models.Channel, evts []courier.Event, clog *models.ChannelLog) {
+		handledEvents = append(handledEvents, evts...)
+		handledLogs = append(handledLogs, clog)
+	})
 
 	mockNow := dates.NewSequentialNow(time.Date(2025, 10, 13, 11, 20, 0, 0, time.UTC), time.Second)
 
@@ -172,13 +213,45 @@ func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler cour
 		t.Run(tc.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			mb.Reset()
+			handledEvents = nil
+			handledLogs = nil
 
 			testHandlerRequest(t, s, tc.URL, tc.Headers, tc.Data, tc.MultipartForm, tc.ExpectedRespStatus, tc.ExpectedBodyContains, tc.PrepRequest)
 
+			// organize the events the handler returned by type
+			var msgs []*models.MsgIn
+			var statuses []*models.StatusUpdate
+			var events []*models.ChannelEvent
+			lastContactName := ""
+			var urnAuthTokens map[urns.URN]map[string]string
+
+			for _, event := range handledEvents {
+				switch e := event.(type) {
+				case *models.MsgIn:
+					msgs = append(msgs, e)
+					lastContactName = e.ContactName_
+					if e.URNAuthTokens_ != nil {
+						if urnAuthTokens == nil {
+							urnAuthTokens = make(map[urns.URN]map[string]string)
+						}
+						if urnAuthTokens[e.URN_] == nil {
+							urnAuthTokens[e.URN_] = make(map[string]string)
+						}
+						for k, v := range e.URNAuthTokens_ {
+							urnAuthTokens[e.URN_][k] = v
+						}
+					}
+				case *models.StatusUpdate:
+					statuses = append(statuses, e)
+				case *models.ChannelEvent:
+					events = append(events, e)
+					lastContactName = e.ContactName_
+				}
+			}
+
 			if tc.ExpectedMsgText != nil || tc.ExpectedAttachments != nil {
-				require.Len(mb.WrittenMsgs(), 1, "expected a msg to be written")
-				msg := mb.WrittenMsgs()[0]
+				require.Len(msgs, 1, "expected a msg to be written")
+				msg := msgs[0]
 
 				if tc.ExpectedMsgText != nil {
 					assert.Equal(t, *tc.ExpectedMsgText, msg.Text())
@@ -198,30 +271,34 @@ func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler cour
 					assert.Equal(t, tc.ExpectedExternalID, msg.ExternalID())
 				}
 				assert.Equal(t, tc.ExpectedURN, msg.URN())
+
+				if tc.ExpectedNewURN != nil {
+					assert.Equal(t, tc.ExpectedNewURN, msg.NewURN_, "new URN mismatch")
+				} else {
+					assert.Nil(t, msg.NewURN_, "unexpected new URN on message")
+				}
 			} else {
-				assert.Empty(t, mb.WrittenMsgs(), "unexpected msg written")
+				assert.Empty(t, msgs, "unexpected msg written")
 			}
 
-			actualStatuses := mb.WrittenMsgStatuses()
-			assert.Len(t, actualStatuses, len(tc.ExpectedStatuses), "unexpected number of status updates written")
+			assert.Len(t, statuses, len(tc.ExpectedStatuses), "unexpected number of status updates written")
 			for i, expectedStatus := range tc.ExpectedStatuses {
-				if (len(actualStatuses) - 1) < i {
+				if (len(statuses) - 1) < i {
 					break
 				}
-				actualStatus := actualStatuses[i]
+				actualStatus := statuses[i]
 
 				assert.Equal(t, expectedStatus.MsgUUID, actualStatus.MsgUUID(), "msg uuid mismatch for update %d", i)
 				assert.Equal(t, expectedStatus.ExternalID, actualStatus.ExternalIdentifier(), "external identifier mismatch for update %d", i)
 				assert.Equal(t, expectedStatus.Status, actualStatus.Status(), "status value mismatch for update %d", i)
 			}
 
-			actualEvents := mb.WrittenChannelEvents()
-			assert.Len(t, actualEvents, len(tc.ExpectedEvents), "unexpected number of events written")
+			assert.Len(t, events, len(tc.ExpectedEvents), "unexpected number of events written")
 			for i, expectedEvent := range tc.ExpectedEvents {
-				if (len(actualEvents) - 1) < i {
+				if (len(events) - 1) < i {
 					break
 				}
-				actualEvent := actualEvents[i]
+				actualEvent := events[i]
 
 				assert.Equal(t, expectedEvent.Type, actualEvent.EventType(), "event type mismatch for event %d", i)
 				assert.Equal(t, expectedEvent.URN, actualEvent.URN(), "URN mismatch for event %d", i)
@@ -233,45 +310,30 @@ func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler cour
 			}
 
 			if tc.ExpectedContactName != nil {
-				require.Equal(*tc.ExpectedContactName, mb.LastContactName())
+				require.Equal(*tc.ExpectedContactName, lastContactName)
 			}
 
-			if tc.ExpectedMsgText != nil || tc.ExpectedAttachments != nil {
-				msg := mb.WrittenMsgs()[0]
-				if tc.ExpectedNewURN != nil {
-					assert.Equal(t, tc.ExpectedNewURN, msg.NewURN_, "new URN mismatch")
-				} else {
-					assert.Nil(t, msg.NewURN_, "unexpected new URN on message")
-				}
-			}
-
-			assert.Equal(t, tc.ExpectedURNAuthTokens, mb.URNAuthTokens())
+			assert.Equal(t, tc.ExpectedURNAuthTokens, urnAuthTokens)
 
 			// unless we know there won't be a log, check one was written
 			if !tc.NoLogsExpected {
-				if assert.Equal(t, 1, len(mb.WrittenChannelLogs()), "expected a channel log") {
-
-					clog := mb.WrittenChannelLogs()[0]
+				if assert.Equal(t, 1, len(handledLogs), "expected a channel log") {
+					clog := handledLogs[0]
 					assert.Equal(t, append([]*clogs.Error{}, tc.ExpectedErrors...), clog.Errors, "unexpected errors logged")
 				}
 			}
 		})
 	}
 
-	// check non-channel specific error conditions against first test case
+	// check invalid channel condition against first test case
 	validCase := testCases[0]
-
-	if !validCase.NoQueueErrorCheck {
-		t.Run("Queue Error", func(t *testing.T) {
-			mb.SetErrorOnQueue(true)
-			defer mb.SetErrorOnQueue(false)
-			testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, validCase.MultipartForm, 400, "unable to queue message", validCase.PrepRequest)
-		})
-	}
 
 	if !validCase.NoInvalidChannelCheck {
 		t.Run("Receive With Invalid Channel", func(t *testing.T) {
-			mb.ClearChannels()
+			for _, ch := range channels {
+				rt.DB.MustExec(`DELETE FROM channels_channel WHERE uuid = $1`, ch.UUID())
+			}
+			models.FlushChannelCache()
 			testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, validCase.MultipartForm, 400, "channel not found", validCase.PrepRequest)
 		})
 	}
@@ -336,22 +398,35 @@ type OutgoingTestCase struct {
 
 	MockResponses map[string][]*httpx.MockResponse
 
-	ExpectedRequests    []ExpectedRequest
-	ExpectedExtIDs      []string
-	ExpectedError       error
-	ExpectedLogErrors   []*clogs.Error
-	ExpectedContactURNs map[string]bool
+	ExpectedRequests  []ExpectedRequest
+	ExpectedExtIDs    []string
+	ExpectedError     error
+	ExpectedLogErrors []*clogs.Error
+	ExpectedNewURN    urns.URN
 }
 
 // Msg creates the test message for this test case
-func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch *models.Channel) *models.MsgOut {
+func (tc *OutgoingTestCase) Msg(ch *models.Channel) *models.MsgOut {
 	msgOrigin := models.MsgOriginFlow
 	if tc.MsgOrigin != "" {
 		msgOrigin = tc.MsgOrigin
 	}
 
 	c := &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc", LastSeenOn: tc.MsgContactLastSeenOn, OtherURNs: tc.MsgContactOtherURNs}
-	m := mb.NewOutgoingMsg(ch, "0191e180-7d60-7000-aded-7d8b151cbd5b", c, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgResponseToExternalID, msgOrigin)
+
+	m := &models.MsgOut{
+		OrgID_:                ch.OrgID(),
+		UUID_:                 "0191e180-7d60-7000-aded-7d8b151cbd5b",
+		Contact_:              c,
+		URN_:                  urns.URN(tc.MsgURN),
+		Text_:                 tc.MsgText,
+		HighPriority_:         tc.MsgHighPriority,
+		QuickReplies_:         tc.MsgQuickReplies,
+		ResponseToExternalID_: tc.MsgResponseToExternalID,
+		Origin_:               msgOrigin,
+		ChannelUUID_:          ch.UUID(),
+		Channel_:              ch,
+	}
 	m.Locale_ = tc.MsgLocale
 	m.UserID_ = tc.MsgUserID
 	m.Attachments_ = append(m.Attachments_, tc.MsgAttachments...)
@@ -371,26 +446,29 @@ func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch *models.Channel) *model
 }
 
 // RunOutgoingTestCases runs all the passed in test cases against the channel
-func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler courier.ChannelHandler, testCases []OutgoingTestCase, checkRedacted []string, setupBackend func(*test.MockBackend)) {
-	mb := test.NewMockBackend()
-	if setupBackend != nil {
-		setupBackend(mb)
+func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler courier.ChannelHandler, testCases []OutgoingTestCase, checkRedacted []string, setup func(*testing.T, *runtime.Runtime)) {
+	ctx, rt := testsuite.Runtime(t)
+
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	// use a plain HTTP client so per-case mock transports can be installed, shared by HTTP and HTTPProxied so
+	// installing a mocking transport intercepts every request a handler makes via either client
+	client := &http.Client{Timeout: 30 * time.Second}
+	rt.HTTP = client
+	rt.HTTPProxied = client
+
+	if setup != nil {
+		setup(t, rt)
 	}
-	s := newServer(mb)
-	mb.AddChannel(channel)
+
+	s := newServer(rt)
+	testsuite.InsertChannel(t, rt, channel)
 	handler.Initialize(s)
 
-	// the test runtime shares one HTTP client between HTTP and HTTPProxied, so installing a mocking
-	// transport on it intercepts every request a handler makes via either client
-	rt := s.Runtime()
-
 	for _, tc := range testCases {
-		mb.Reset()
-
 		t.Run(tc.Label, func(t *testing.T) {
-			require := require.New(t)
-
-			msg := tc.Msg(mb, channel)
+			msg := tc.Msg(channel)
 
 			var mockHTTP *httpx.MocksTransport
 			actualRequests := make([]*http.Request, 0, 1)
@@ -404,10 +482,10 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler courier
 			}
 
 			clog := models.NewChannelLogForSend(msg, handler.RedactValues(channel))
-			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+			sendCtx, cancel := context.WithTimeout(ctx, time.Millisecond*100)
 
 			res := &courier.SendResult{}
-			serr := handler.Send(ctx, msg, res, clog)
+			serr := handler.Send(sendCtx, msg, res, clog)
 			externalIDs := res.ExternalIDs()
 
 			if mockHTTP != nil {
@@ -435,30 +513,33 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler courier
 			assert.Equal(t, tc.ExpectedError, serr, "send method error mismatch")
 			assert.Equal(t, append([]*clogs.Error{}, tc.ExpectedLogErrors...), clog.Errors, "channel log errors mismatch")
 
-			// simulate OnSendComplete so the backend can process send results (e.g. new URNs)
-			status := mb.NewStatusUpdate(channel, msg.UUID(), models.MsgStatusWired, clog)
-			mb.OnSendComplete(ctx, msg, status, res, clog)
+			// simulate the sender completing the send so send results (e.g. new URNs) are processed
+			status := models.NewStatusUpdate(channel, msg.UUID(), models.MsgStatusWired, clog)
+			models.OnSendComplete(ctx, rt, msg, status, res.NewURN(), clog)
 
-			if tc.ExpectedContactURNs != nil {
-				var contactUUID models.ContactUUID
-				for urn, shouldBePresent := range tc.ExpectedContactURNs {
-					contact, err := mb.GetContact(ctx, channel, urns.URN(urn), nil, "", true, clog)
-					require.NoError(err, "unexpected error getting contact for URN %s", urn)
-					if contactUUID == models.NilContactUUID && shouldBePresent {
-						contactUUID = contact.UUID()
-					}
-					if shouldBePresent {
-						require.Equal(contactUUID, contact.UUID())
-					} else {
-						require.NotEqual(contactUUID, contact.UUID())
-					}
-
-				}
+			if tc.ExpectedNewURN != "" {
+				assertContactChangedQueued(t, rt, channel, msg, tc.ExpectedNewURN)
 			}
 
 			AssertChannelLogRedaction(t, clog, checkRedacted)
 		})
 	}
+}
+
+// asserts that a contact_changed task was queued for the given msg's contact with the given new URN
+func assertContactChangedQueued(t *testing.T, rt *runtime.Runtime, ch *models.Channel, msg *models.MsgOut, newURN urns.URN) {
+	rc := rt.VK.Get()
+	defer rc.Close()
+
+	tasks, err := redis.Strings(rc.Do("LRANGE", fmt.Sprintf("c:%d:%d", ch.OrgID(), msg.Contact_.ID), 0, -1))
+	require.NoError(t, err)
+
+	for _, task := range tasks {
+		if strings.Contains(task, `"type":"contact_changed"`) && strings.Contains(task, fmt.Sprintf(`"value":"%s"`, newURN)) {
+			return
+		}
+	}
+	assert.Fail(t, "expected contact_changed task", "no contact_changed task queued with new URN %s", newURN)
 }
 
 // asserts that the given channel log doesn't contain any of the given values

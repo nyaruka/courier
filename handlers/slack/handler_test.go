@@ -313,9 +313,8 @@ func TestSendFiles(t *testing.T) {
 func TestVerification(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), []IncomingTestCase{
 		{Label: "Valid token", URL: receiveURL, ExpectedRespStatus: 200,
-			Data:                 `{"token":"one-long-verification-token","challenge":"challenge123","type":"url_verification"}`,
-			Headers:              map[string]string{"content-type": "text/plain"},
-			ExpectedBodyContains: "challenge123", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+			Data:    `{"token":"one-long-verification-token","challenge":"challenge123","type":"url_verification"}`,
+			Headers: map[string]string{"content-type": "text/plain"},
 		},
 		{Label: "Invalid token", URL: receiveURL, ExpectedRespStatus: 403,
 			Data:    `{"token":"abc321","challenge":"challenge123","type":"url_verification"}`,
@@ -386,13 +385,13 @@ func TestDescribeURN(t *testing.T) {
 	defer server.Close()
 
 	handler := newHandler()
-	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), test.NewMockBackend()))
+	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())))
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 	urn, _ := urns.New(urns.Slack, "U012345")
 
 	data := map[string]string{"name": "dummy user"}
 
-	describe, err := handler.(courier.URNDescriber).DescribeURN(context.Background(), testChannels[0], urn, clog)
+	describe, err := handler.(models.URNDescriber).DescribeURN(context.Background(), testChannels[0], urn, clog)
 	assert.Nil(t, err)
 	assert.Equal(t, data, describe)
 

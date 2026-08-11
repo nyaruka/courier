@@ -22,7 +22,6 @@ type BaseHandler struct {
 	channelType        models.ChannelType
 	name               string
 	rt                 *runtime.Runtime
-	backend            courier.Backend
 	uuidChannelRouting bool
 	redactConfigKeys   []string
 }
@@ -56,17 +55,11 @@ func WithRedactConfigKeys(keys ...string) func(*BaseHandler) {
 // SetServer can be used to change the server on a BaseHandler
 func (h *BaseHandler) SetServer(server *courier.Server) {
 	h.rt = server.Runtime()
-	h.backend = server.Backend()
 }
 
 // Runtime returns the runtime instance on the BaseHandler
 func (h *BaseHandler) Runtime() *runtime.Runtime {
 	return h.rt
-}
-
-// Backend returns the backend instance on the BaseHandler
-func (h *BaseHandler) Backend() courier.Backend {
-	return h.backend
 }
 
 // ChannelType returns the channel type that this handler deals with
@@ -113,7 +106,7 @@ func (h *BaseHandler) SendEvent(ctx context.Context, ch *models.Channel, event e
 // GetChannel returns the channel
 func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (*models.Channel, error) {
 	uuid := models.ChannelUUID(r.PathValue("uuid"))
-	return h.backend.GetChannel(ctx, h.ChannelType(), uuid)
+	return models.GetChannel(ctx, h.rt, h.ChannelType(), uuid)
 }
 
 // RequestHTTP does the given request, logging the trace, and returns the response
@@ -178,7 +171,7 @@ func (h *BaseHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWr
 
 // WithValkeyConn is a utility to execute some code with a valkey connection
 func (h *BaseHandler) WithValkeyConn(fn func(rc redis.Conn)) {
-	rc := h.Backend().RedisPool().Get()
+	rc := h.Runtime().VK.Get()
 	defer rc.Close()
 	fn(rc)
 }

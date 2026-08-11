@@ -4,8 +4,7 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
-	"io"
-	"log"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -19,6 +18,7 @@ import (
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
@@ -143,93 +143,108 @@ func addInvalidSignature(r *http.Request) {
 	r.URL.RawQuery = query.Encode()
 }
 
-var testCases = []IncomingTestCase{
-	{
-		Label:                "Receive Message",
-		URL:                  receiveURL,
-		Data:                 validMsg,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Simple Message"),
-		ExpectedURN:          "jiochat:1234",
-		ExpectedExternalID:   "123456",
-		ExpectedDate:         time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC),
-	},
-	{
-		Label:                "Invalid URN",
-		URL:                  receiveURL,
-		Data:                 invalidURN,
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "invalid jiochat id",
-	},
-	{
-		Label:                "Missing params",
-		URL:                  receiveURL,
-		Data:                 missingParamsRequired,
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "Error:Field validation",
-	},
-	{
-		Label:                "Missing params Event or MsgId",
-		URL:                  receiveURL,
-		Data:                 missingParams,
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "missing parameters, must have either 'MsgId' or 'Event'",
-	},
-	{
-		Label:                "Receive Image",
-		URL:                  receiveURL,
-		Data:                 imageMessage,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp(""),
-		ExpectedURN:          "jiochat:1234",
-		ExpectedExternalID:   "123456",
-		ExpectedAttachments:  []string{"https://channels.jiochat.com/media/download.action?media_id=12"},
-		ExpectedDate:         time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC),
-	},
-	{
-		Label:                "Subscribe Event",
-		URL:                  receiveURL,
-		Data:                 subscribeEvent,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Event Accepted",
-		ExpectedEvents: []ExpectedEvent{
-			{Type: models.EventTypeNewConversation, URN: "jiochat:1234"},
+// built as a function because the expected attachment URL depends on the API URL, which incoming tests
+// repoint at a mock server
+func incomingCases() []IncomingTestCase {
+	return []IncomingTestCase{
+		{
+			Label:                "Receive Message",
+			URL:                  receiveURL,
+			Data:                 validMsg,
+			ExpectedRespStatus:   200,
+			ExpectedBodyContains: "Accepted",
+			ExpectedMsgText:      Sp("Simple Message"),
+			ExpectedURN:          "jiochat:1234",
+			ExpectedExternalID:   "123456",
+			ExpectedDate:         time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC),
 		},
-	},
-	{
-		Label:                "Unsubscribe Event",
-		URL:                  receiveURL,
-		Data:                 unsubscribeEvent,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "unknown event",
-	},
-	{
-		Label:                "Verify URL",
-		URL:                  verifyURL,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "SUCCESS",
-		PrepRequest:          addValidSignature,
-	},
-	{
-		Label:                "Verify URL Invalid signature",
-		URL:                  verifyURL,
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "unknown request",
-		PrepRequest:          addInvalidSignature,
-	},
+		{
+			Label:                "Invalid URN",
+			URL:                  receiveURL,
+			Data:                 invalidURN,
+			ExpectedRespStatus:   400,
+			ExpectedBodyContains: "invalid jiochat id",
+		},
+		{
+			Label:                "Missing params",
+			URL:                  receiveURL,
+			Data:                 missingParamsRequired,
+			ExpectedRespStatus:   400,
+			ExpectedBodyContains: "Error:Field validation",
+		},
+		{
+			Label:                "Missing params Event or MsgId",
+			URL:                  receiveURL,
+			Data:                 missingParams,
+			ExpectedRespStatus:   400,
+			ExpectedBodyContains: "missing parameters, must have either 'MsgId' or 'Event'",
+		},
+		{
+			Label:                "Receive Image",
+			URL:                  receiveURL,
+			Data:                 imageMessage,
+			ExpectedRespStatus:   200,
+			ExpectedBodyContains: "Accepted",
+			ExpectedMsgText:      Sp(""),
+			ExpectedURN:          "jiochat:1234",
+			ExpectedExternalID:   "123456",
+			ExpectedAttachments:  []string{fmt.Sprintf("%s/media/download.action?media_id=12", sendURL)},
+			ExpectedDate:         time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC),
+		},
+		{
+			Label:                "Subscribe Event",
+			URL:                  receiveURL,
+			Data:                 subscribeEvent,
+			ExpectedRespStatus:   200,
+			ExpectedBodyContains: "Event Accepted",
+			ExpectedEvents: []ExpectedEvent{
+				{Type: models.EventTypeNewConversation, URN: "jiochat:1234"},
+			},
+		},
+		{
+			Label:                "Unsubscribe Event",
+			URL:                  receiveURL,
+			Data:                 unsubscribeEvent,
+			ExpectedRespStatus:   200,
+			ExpectedBodyContains: "unknown event",
+		},
+		{
+			Label:                "Verify URL",
+			URL:                  verifyURL,
+			ExpectedRespStatus:   200,
+			ExpectedBodyContains: "SUCCESS",
+			PrepRequest:          addValidSignature,
+		},
+		{
+			Label:                "Verify URL Invalid signature",
+			URL:                  verifyURL,
+			ExpectedRespStatus:   400,
+			ExpectedBodyContains: "unknown request",
+			PrepRequest:          addInvalidSignature,
+		},
+	}
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	// creating a contact for an incoming message looks up their name via the API, so point that at a mock
+	defer func(u string) { sendURL = u }(sendURL)
+	JCAPI := buildMockJCAPI()
+	defer JCAPI.Close()
+
+	RunIncomingTestCases(t, testChannels, newHandler(), incomingCases())
 }
 
 // mocks the call to the Jiochat API
-func buildMockJCAPI(testCases []IncomingTestCase) *httptest.Server {
+func buildMockJCAPI() *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorizationHeader := r.Header.Get("Authorization")
 		defer r.Body.Close()
+
+		// a request for an access token is the one request that doesn't carry one
+		if strings.HasSuffix(r.URL.Path, "auth/token.action") {
+			w.Write([]byte(`{"access_token": "ACCESS_TOKEN"}`))
+			return
+		}
 
 		if authorizationHeader != "Bearer ACCESS_TOKEN" {
 			http.Error(w, "invalid file", http.StatusForbidden)
@@ -256,27 +271,24 @@ func buildMockJCAPI(testCases []IncomingTestCase) *httptest.Server {
 	return server
 }
 
-func newServer(backend courier.Backend) *courier.Server {
-	// for benchmarks, log to null
-	log.SetOutput(io.Discard)
-	cfg := runtime.NewDefaultConfig()
-	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
-	cfg.Valkey = "valkey://valkey:6379/0"
-	return courier.NewServer(runtime.NewTestRuntime(cfg), backend)
-}
-
 func TestDescribeURN(t *testing.T) {
-	JCAPI := buildMockJCAPI(testCases)
+	defer func(u string) { sendURL = u }(sendURL)
+	JCAPI := buildMockJCAPI()
 	defer JCAPI.Close()
 
-	mb := test.NewMockBackend()
+	_, rt := testsuite.Runtime(t)
+	testsuite.ResetValkey(t, rt)
+
+	// use a plain client so the handler can reach the mock API on localhost
+	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
+	rt.HTTPProxied = rt.HTTP
 
 	// ensure there's a cached access token
-	rc := mb.RedisPool().Get()
+	rc := rt.VK.Get()
 	defer rc.Close()
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 
-	s := newServer(mb)
+	s := courier.NewServer(rt)
 	handler := newHandler().(*handler)
 	handler.Initialize(s)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
@@ -298,18 +310,19 @@ func TestDescribeURN(t *testing.T) {
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {
-	mb := test.NewMockBackend()
+	_, rt := testsuite.Runtime(t)
 
 	// reset send URL
 	sendURL = "https://channels.jiochat.com"
 
 	// ensure that we start with no cached token
-	rc := mb.RedisPool().Get()
-	defer rc.Close()
-	rc.Do("DEL", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab")
+	testsuite.ResetValkey(t, rt)
 
-	s := newServer(mb)
-	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
+	rt.HTTPProxied = rt.HTTP
+
+	s := courier.NewServer(rt)
+	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://channels.jiochat.com/auth/token.action": {
 			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"access_token": "SESAME"}`)),
 		},
@@ -429,9 +442,9 @@ var defaultSendTestCases = []OutgoingTestCase{
 	},
 }
 
-func setupBackend(mb *test.MockBackend) {
+func setupBackend(t *testing.T, rt *runtime.Runtime) {
 	// ensure there's a cached access token
-	rc := mb.RedisPool().Get()
+	rc := rt.VK.Get()
 	defer rc.Close()
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 }

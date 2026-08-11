@@ -357,11 +357,16 @@ var testCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
+	// creating a contact for an incoming message looks up their name via the API, so point that at a mock
+	defer func(u string) { apiBaseURL = u }(apiBaseURL)
+	server := buildMockVKService()
+	defer server.Close()
+
 	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
-func buildMockVKService(testCases []IncomingTestCase) *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func buildMockVKService() *httptest.Server {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, actionGetUser) {
 			userId := r.URL.Query()["user_ids"][0]
 
@@ -372,23 +377,24 @@ func buildMockVKService(testCases []IncomingTestCase) *httptest.Server {
 			_, _ = w.Write([]byte(`{"response": []}`))
 		}
 	}))
+
+	apiBaseURL = server.URL
+
+	return server
 }
 
 func TestDescribeURN(t *testing.T) {
-	server := buildMockVKService([]IncomingTestCase{})
+	defer func(u string) { apiBaseURL = u }(apiBaseURL)
+	server := buildMockVKService()
 	defer server.Close()
 
-	realAPIUrl := apiBaseURL
-	apiBaseURL = server.URL
-	defer func() { apiBaseURL = realAPIUrl }()
-
 	handler := newHandler()
-	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), test.NewMockBackend()))
+	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())))
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 	urn, _ := urns.New(urns.VK, "123456789")
 	data := map[string]string{"name": "John Doe"}
 
-	describe, err := handler.(courier.URNDescriber).DescribeURN(context.Background(), testChannels[0], urn, clog)
+	describe, err := handler.(models.URNDescriber).DescribeURN(context.Background(), testChannels[0], urn, clog)
 	assert.Nil(t, err)
 	assert.Equal(t, data, describe)
 
@@ -648,8 +654,7 @@ func TestOutgoing(t *testing.T) {
 func TestSendEvent(t *testing.T) {
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VK", "2020", "US", []string{urns.VK.Prefix}, map[string]any{models.ConfigAuthToken: "token123xyz"})
 
-	mb := test.NewMockBackend()
-	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
+	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 	h := newHandler().(*handler)
 	h.Initialize(s)
 

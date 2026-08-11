@@ -21,8 +21,7 @@ func init() {
 }
 
 type mockHandler struct {
-	rt      *runtime.Runtime
-	backend courier.Backend
+	rt *runtime.Runtime
 }
 
 // NewMockHandler returns a new mock handler
@@ -31,21 +30,18 @@ func NewMockHandler() courier.ChannelHandler {
 }
 
 func (h *mockHandler) Runtime() *runtime.Runtime             { return h.rt }
-func (h *mockHandler) Backend() courier.Backend              { return h.backend }
 func (h *mockHandler) ChannelName() string                   { return "Mock Handler" }
 func (h *mockHandler) ChannelType() models.ChannelType       { return models.ChannelType("MCK") }
 func (h *mockHandler) UseChannelRouteUUID() bool             { return true }
 func (h *mockHandler) RedactValues(*models.Channel) []string { return []string{"sesame"} }
 
 func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (*models.Channel, error) {
-	dmChannel := NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
-	return dmChannel, nil
+	return models.GetChannel(ctx, h.rt, "MCK", "e4bb1578-29da-4fa5-a214-9da19dd24230")
 }
 
 // Initialize is called by the engine once everything is loaded
 func (h *mockHandler) Initialize(s *courier.Server) error {
 	h.rt = s.Runtime()
-	h.backend = s.Backend()
 	s.AddHandlerRoute(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
 	return nil
 }
@@ -126,9 +122,9 @@ func (h *mockHandler) receiveMsg(ctx context.Context, channel *models.Channel, w
 		return nil, errors.New("missing from or text")
 	}
 
-	msg := h.backend.NewIncomingMsg(ctx, channel, urns.URN("tel:"+from), text, "", clog)
+	msg := models.NewIncomingMsg(channel, urns.URN("tel:"+from), text, "", clog)
 	w.WriteHeader(200)
 	w.Write([]byte("ok"))
-	h.backend.WriteMsg(ctx, msg, clog)
+	models.WriteMsg(ctx, h.rt, msg, clog)
 	return []courier.Event{msg}, nil
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -255,9 +256,12 @@ func TestOutgoing(t *testing.T) {
 	h := newHandler()
 	RunOutgoingTestCases(t, defaultChannel, h, sendTestCases, []string{"sesame"}, nil)
 
-	conn := h.(*handler).Backend().RedisPool().Get()
-	redis.String(conn.Do("DEL", fmt.Sprintf("hm_token_%s", defaultChannel.UUID())))
-	defer conn.Close()
+	// ensure the token cached by the previous cases is cleared so these cases fetch a new one
+	clearToken := func(t *testing.T, rt *runtime.Runtime) {
+		rc := rt.VK.Get()
+		defer rc.Close()
+		redis.String(rc.Do("DEL", fmt.Sprintf("hm_token_%s", defaultChannel.UUID())))
+	}
 
-	RunOutgoingTestCases(t, defaultChannel, h, tokenTestCases, []string{"sesame"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, h, tokenTestCases, []string{"sesame"}, clearToken)
 }

@@ -112,8 +112,8 @@ func (h *handler) receiveStopContact(ctx context.Context, channel *models.Channe
 	}
 
 	// create a stop channel event
-	channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
-	err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
+	channelEvent := models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
+	err = models.WriteChannelEvent(ctx, h.Runtime(), channelEvent, clog)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, "", clog).WithReceivedOn(date)
+	msg := models.NewIncomingMsg(channel, urn, text, "", clog).WithReceivedOn(date)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
@@ -280,7 +280,7 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdate(channel, models.MsgUUID(msgUUID), msgStatus, clog)
+	status := models.NewStatusUpdate(channel, models.MsgUUID(msgUUID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 

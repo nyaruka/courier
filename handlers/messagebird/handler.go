@@ -118,14 +118,16 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 		if !uuids.Is(receivedStatus.Reference) {
 			slog.Error("error converting Messagebird status reference to UUID", "error", err, "uuid", receivedStatus.Reference)
 		} else {
-			status = h.Backend().NewStatusUpdate(channel, models.MsgUUID(receivedStatus.Reference), msgStatus, clog)
+			status = models.NewStatusUpdate(channel, models.MsgUUID(receivedStatus.Reference), msgStatus, clog)
 		}
 	}
 
 	// if we have no status, then build it from the external (messagebird) id
 	if status == nil {
-		status = h.Backend().NewStatusUpdateByExternalID(channel, receivedStatus.ID, msgStatus, clog)
+		status = models.NewStatusUpdateByExternalID(channel, receivedStatus.ID, msgStatus, clog)
 	}
+
+	var stopEvent *models.ChannelEvent
 
 	if receivedStatus.StatusErrorCode == errorStopped {
 		urn, err := urns.ParsePhone(receivedStatus.Recipient, "", true, false)
@@ -133,15 +135,19 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 		// create a stop channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
-		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
+		stopEvent = models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
+		err = models.WriteChannelEvent(ctx, h.Runtime(), stopEvent, clog)
 		if err != nil {
 			return nil, err
 		}
 		clog.Error(models.ErrorExternal(fmt.Sprint(receivedStatus.StatusErrorCode), "Contact has sent 'stop'"))
 	}
 
-	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
+	events, err := handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
+	if stopEvent != nil {
+		events = append(events, stopEvent)
+	}
+	return events, err
 }
 
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
@@ -190,7 +196,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, messageID, clog).WithReceivedOn(date.UTC())
+	msg := models.NewIncomingMsg(channel, urn, text, messageID, clog).WithReceivedOn(date.UTC())
 
 	// process any attached media
 	if len(payload.MediaURLs) > 0 {

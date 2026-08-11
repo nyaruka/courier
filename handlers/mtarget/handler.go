@@ -84,7 +84,7 @@ func (h *handler) receiveMsg(ctx context.Context, c *models.Channel, w http.Resp
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("'msglong.msgref' needs to be between 1 and 'msglong.msgcount' inclusive"))
 		}
 
-		rc := h.Backend().RedisPool().Get()
+		rc := h.Runtime().VK.Get()
 		defer rc.Close()
 
 		// first things first, populate the new part we just received
@@ -136,8 +136,8 @@ func (h *handler) receiveMsg(ctx context.Context, c *models.Channel, w http.Resp
 
 	// if this a stop command, shortcut stopping that contact
 	if keyword == "Stop" {
-		stop := h.Backend().NewChannelEvent(c, models.EventTypeStopContact, urn, clog)
-		err := h.Backend().WriteChannelEvent(ctx, stop, clog)
+		stop := models.NewChannelEvent(c, models.EventTypeStopContact, urn, clog)
+		err := models.WriteChannelEvent(ctx, h.Runtime(), stop, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -145,7 +145,7 @@ func (h *handler) receiveMsg(ctx context.Context, c *models.Channel, w http.Resp
 	}
 
 	// otherwise, create and write the message
-	msg := h.Backend().NewIncomingMsg(ctx, c, urn, text, msgID, clog).WithReceivedOn(time.Now().UTC())
+	msg := models.NewIncomingMsg(c, urn, text, msgID, clog).WithReceivedOn(time.Now().UTC())
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 

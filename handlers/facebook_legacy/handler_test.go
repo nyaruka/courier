@@ -696,7 +696,7 @@ func TestDescribeURN(t *testing.T) {
 
 	channel := testChannels[0]
 	handler := newHandler()
-	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), test.NewMockBackend()))
+	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())))
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -708,7 +708,7 @@ func TestDescribeURN(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.(courier.URNDescriber).DescribeURN(context.Background(), channel, tc.urn, clog)
+		metadata, _ := handler.(models.URNDescriber).DescribeURN(context.Background(), channel, tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 

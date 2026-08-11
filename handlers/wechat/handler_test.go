@@ -4,8 +4,7 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
-	"io"
-	"log"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -19,6 +18,7 @@ import (
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/assets"
@@ -143,48 +143,63 @@ func addInvalidSignature(r *http.Request) {
 	r.URL.RawQuery = query.Encode()
 }
 
-var testCases = []IncomingTestCase{
-	{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "",
-		ExpectedMsgText: Sp("Simple Message"), ExpectedURN: "wechat:1234", ExpectedExternalID: "123456",
-		ExpectedDate: time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
+// built as a function because the expected attachment URL depends on the API URL, which incoming tests
+// repoint at a mock server
+func incomingCases() []IncomingTestCase {
+	return []IncomingTestCase{
+		{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "",
+			ExpectedMsgText: Sp("Simple Message"), ExpectedURN: "wechat:1234", ExpectedExternalID: "123456",
+			ExpectedDate: time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
 
-	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, ExpectedRespStatus: 400, ExpectedBodyContains: "Error:Field validation"},
-	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, ExpectedRespStatus: 400, ExpectedBodyContains: "missing parameters, must have either 'MsgId' or 'Event'"},
+		{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, ExpectedRespStatus: 400, ExpectedBodyContains: "Error:Field validation"},
+		{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, ExpectedRespStatus: 400, ExpectedBodyContains: "missing parameters, must have either 'MsgId' or 'Event'"},
 
-	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, ExpectedRespStatus: 200, ExpectedBodyContains: "",
-		ExpectedMsgText: Sp(""), ExpectedURN: "wechat:1234", ExpectedExternalID: "123456",
-		ExpectedAttachments: []string{"https://api.weixin.qq.com/cgi-bin/media/get?media_id=12"},
-		ExpectedDate:        time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
+		{Label: "Receive Image", URL: receiveURL, Data: imageMessage, ExpectedRespStatus: 200, ExpectedBodyContains: "",
+			ExpectedMsgText: Sp(""), ExpectedURN: "wechat:1234", ExpectedExternalID: "123456",
+			ExpectedAttachments: []string{fmt.Sprintf("%s/media/get?media_id=12", sendURL)},
+			ExpectedDate:        time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
 
-	{
-		Label:                "Subscribe Event",
-		URL:                  receiveURL,
-		Data:                 subscribeEvent,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Event Accepted",
-		ExpectedEvents: []ExpectedEvent{
-			{Type: models.EventTypeNewConversation, URN: "wechat:1234"},
+		{
+			Label:                "Subscribe Event",
+			URL:                  receiveURL,
+			Data:                 subscribeEvent,
+			ExpectedRespStatus:   200,
+			ExpectedBodyContains: "Event Accepted",
+			ExpectedEvents: []ExpectedEvent{
+				{Type: models.EventTypeNewConversation, URN: "wechat:1234"},
+			},
 		},
-	},
 
-	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, ExpectedRespStatus: 200, ExpectedBodyContains: "unknown event"},
+		{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, ExpectedRespStatus: 200, ExpectedBodyContains: "unknown event"},
 
-	{Label: "Verify URL", URL: receiveURL, ExpectedRespStatus: 200, ExpectedBodyContains: "SUCCESS",
-		PrepRequest: addValidSignature},
+		{Label: "Verify URL", URL: receiveURL, ExpectedRespStatus: 200, ExpectedBodyContains: "SUCCESS",
+			PrepRequest: addValidSignature},
 
-	{Label: "Verify URL Invalid signature", URL: receiveURL, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown request",
-		PrepRequest: addInvalidSignature},
+		{Label: "Verify URL Invalid signature", URL: receiveURL, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown request",
+			PrepRequest: addInvalidSignature},
+	}
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	// creating a contact for an incoming message looks up their name via the API, so point that at a mock
+	defer func(u string) { sendURL = u }(sendURL)
+	WCAPI := buildMockWCAPI()
+	defer WCAPI.Close()
+
+	RunIncomingTestCases(t, testChannels, newHandler(), incomingCases())
 }
 
 // mocks the call to the WeChat API
-func buildMockWCAPI(testCases []IncomingTestCase) *httptest.Server {
+func buildMockWCAPI() *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		accessToken := r.URL.Query().Get("access_token")
 		defer r.Body.Close()
+
+		// a request for an access token is the one request that doesn't carry one
+		if strings.HasSuffix(r.URL.Path, "/token") {
+			w.Write([]byte(`{"access_token": "ACCESS_TOKEN"}`))
+			return
+		}
 
 		if accessToken != "ACCESS_TOKEN" {
 			http.Error(w, "invalid file", http.StatusForbidden)
@@ -211,27 +226,24 @@ func buildMockWCAPI(testCases []IncomingTestCase) *httptest.Server {
 	return server
 }
 
-func newServer(backend courier.Backend) *courier.Server {
-	// for benchmarks, log to null
-	log.SetOutput(io.Discard)
-	cfg := runtime.NewDefaultConfig()
-	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
-	cfg.Valkey = "valkey://valkey:6379/0"
-	return courier.NewServer(runtime.NewTestRuntime(cfg), backend)
-}
-
 func TestDescribeURN(t *testing.T) {
-	WCAPI := buildMockWCAPI(testCases)
+	defer func(u string) { sendURL = u }(sendURL)
+	WCAPI := buildMockWCAPI()
 	defer WCAPI.Close()
 
-	mb := test.NewMockBackend()
+	_, rt := testsuite.Runtime(t)
+	testsuite.ResetValkey(t, rt)
+
+	// use a plain client so the handler can reach the mock API on localhost
+	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
+	rt.HTTPProxied = rt.HTTP
 
 	// ensure there's a cached access token
-	rc := mb.RedisPool().Get()
+	rc := rt.VK.Get()
 	defer rc.Close()
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 
-	s := newServer(mb)
+	s := courier.NewServer(rt)
 	handler := newHandler().(*handler)
 	handler.Initialize(s)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
@@ -253,18 +265,19 @@ func TestDescribeURN(t *testing.T) {
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {
-	mb := test.NewMockBackend()
+	_, rt := testsuite.Runtime(t)
 
 	// reset send URL
 	sendURL = "https://api.weixin.qq.com/cgi-bin"
 
 	// ensure that we start with no cached token
-	rc := mb.RedisPool().Get()
-	defer rc.Close()
-	rc.Do("DEL", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab")
+	testsuite.ResetValkey(t, rt)
 
-	s := newServer(mb)
-	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
+	rt.HTTPProxied = rt.HTTP
+
+	s := courier.NewServer(rt)
+	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://api.weixin.qq.com/cgi-bin/token?appid=app-id&grant_type=client_credential&secret=app-secret123": {
 			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"access_token": "SESAME"}`)),
 		},
@@ -290,18 +303,19 @@ func TestBuildAttachmentRequest(t *testing.T) {
 }
 
 func TestFetchAccessTokenThrottled(t *testing.T) {
-	mb := test.NewMockBackend()
+	_, rt := testsuite.Runtime(t)
 
 	// reset send URL
 	sendURL = "https://api.weixin.qq.com/cgi-bin"
 
 	// ensure that we start with no cached token
-	rc := mb.RedisPool().Get()
-	defer rc.Close()
-	rc.Do("DEL", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab")
+	testsuite.ResetValkey(t, rt)
 
-	s := newServer(mb)
-	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
+	rt.HTTPProxied = rt.HTTP
+
+	s := courier.NewServer(rt)
+	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://api.weixin.qq.com/cgi-bin/token?appid=app-id&grant_type=client_credential&secret=app-secret123": {
 			httpx.NewMockResponse(429, nil, []byte(`{"errcode": 45009, "errmsg": "reach max api daily quota limit"}`)),
 		},
@@ -412,9 +426,9 @@ var defaultSendTestCases = []OutgoingTestCase{
 	},
 }
 
-func setupBackend(mb *test.MockBackend) {
+func setupBackend(t *testing.T, rt *runtime.Runtime) {
 	// ensure there's a cached access token
-	rc := mb.RedisPool().Get()
+	rc := rt.VK.Get()
 	defer rc.Close()
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 }
@@ -432,18 +446,22 @@ func TestSendEvent(t *testing.T) {
 
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US", []string{urns.WeChat.Prefix}, map[string]any{configAppSecret: "secret123", configAppID: "app-id"})
 
-	mb := test.NewMockBackend()
+	_, rt := testsuite.Runtime(t)
+	testsuite.ResetValkey(t, rt)
+
+	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
+	rt.HTTPProxied = rt.HTTP
 
 	// ensure there's a cached access token
-	rc := mb.RedisPool().Get()
+	rc := rt.VK.Get()
 	defer rc.Close()
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 
-	s := newServer(mb)
+	s := courier.NewServer(rt)
 	h := newHandler().(*handler)
 	h.Initialize(s)
 
-	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://api.weixin.qq.com/cgi-bin/message/custom/typing*": {
 			httpx.NewMockResponse(200, nil, []byte(`{"errcode": 0, "errmsg": "ok"}`)),
 			httpx.NewMockResponse(200, nil, []byte(`{"errcode": 0, "errmsg": "ok"}`)),

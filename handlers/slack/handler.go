@@ -93,7 +93,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		}
 
 		text := payload.Event.Text
-		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, payload.EventID, clog).WithReceivedOn(date)
+		msg := models.NewIncomingMsg(channel, urn, text, payload.EventID, clog).WithReceivedOn(date)
 
 		for _, attURL := range attachmentURLs {
 			msg.WithAttachment(attURL)

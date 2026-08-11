@@ -159,7 +159,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 				}
 
 				// create our message
-				event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, waMsg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[waMsg.Identifier()])
+				event := models.NewIncomingMsg(channel, urn, text, waMsg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[waMsg.Identifier()])
 
 				if mediaURL != "" {
 					event.WithAttachment(mediaURL)
@@ -183,7 +183,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 					}
 				}
 
-				err = h.Backend().WriteMsg(ctx, event, clog)
+				err = models.WriteMsg(ctx, h.Runtime(), event, clog)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -209,8 +209,8 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 					clog.Error(models.ErrorExternal(strconv.Itoa(statusError.Code), statusError.Title))
 				}
 
-				event := h.Backend().NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
-				err := h.Backend().WriteStatusUpdate(ctx, event)
+				event := models.NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
+				err := models.WriteStatusUpdate(ctx, h.Runtime(), event)
 				if err != nil {
 					return nil, nil, err
 				}

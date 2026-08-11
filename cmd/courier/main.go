@@ -4,9 +4,6 @@ import (
 	"github.com/nyaruka/courier/v26/cmd"
 	"github.com/nyaruka/courier/v26/runtime"
 
-	// load available backends
-	_ "github.com/nyaruka/courier/v26/backends/rapidpro"
-
 	// load channel handler packages
 	_ "github.com/nyaruka/courier/v26/handlers/africastalking"
 	_ "github.com/nyaruka/courier/v26/handlers/arabiacell"

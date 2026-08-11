@@ -68,8 +68,8 @@ func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w 
 		}
 
 		// write our status
-		status := h.Backend().NewStatusUpdateByExternalID(channel, s.MessageID, msgStatus, clog)
-		err := h.Backend().WriteStatusUpdate(ctx, status)
+		status := models.NewStatusUpdateByExternalID(channel, s.MessageID, msgStatus, clog)
+		err := models.WriteStatusUpdate(ctx, h.Runtime(), status)
 		if err != nil {
 			return nil, err
 		}
@@ -173,7 +173,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		}
 
 		// build our message
-		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, messageID, clog).WithReceivedOn(date)
+		msg := models.NewIncomingMsg(channel, urn, text, messageID, clog).WithReceivedOn(date)
 		for _, attachment := range attachments {
 			msg = msg.WithAttachment(attachment)
 		}

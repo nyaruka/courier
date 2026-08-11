@@ -8,6 +8,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
 	"github.com/nyaruka/gocommon/centrifugo"
@@ -20,7 +21,26 @@ const (
 	dynamoTablesPath   = "./testsuite/testdata/dynamo.json"
 )
 
+// Runtime returns a runtime for the test environment with the runtime and models layer started - what most
+// tests want.
 func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
+	rt := NewRuntime(t)
+
+	// start the runtime's writers and the models layer's caches, spools and batched writers
+	require.NoError(t, rt.Start())
+	require.NoError(t, models.Start(rt))
+
+	t.Cleanup(func() {
+		models.Stop()
+		rt.Stop()
+	})
+
+	return t.Context(), rt
+}
+
+// NewRuntime returns a runtime for the test environment without starting the models layer - for tests of things
+// like the server which own that lifecycle themselves.
+func NewRuntime(t *testing.T) *runtime.Runtime {
 	cfg := runtime.NewDefaultConfig()
 	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
 	cfg.Valkey = "valkey://valkey:6379/0"
@@ -64,7 +84,7 @@ func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
 		rt.VK.Close()
 	})
 
-	return t.Context(), rt
+	return rt
 }
 
 func ResetDB(t *testing.T, rt *runtime.Runtime) {

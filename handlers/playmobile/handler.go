@@ -142,7 +142,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 		if pmMsg.Content.Text == "" {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("no text"))
 		}
-		msg := h.Backend().NewIncomingMsg(ctx, c, urn, pmMsg.Content.Text, pmMsg.ID, clog)
+		msg := models.NewIncomingMsg(c, urn, pmMsg.Content.Text, pmMsg.ID, clog)
 		msgs = append(msgs, msg)
 	}
 

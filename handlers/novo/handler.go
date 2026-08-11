@@ -75,7 +75,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 	}
 
 	// create and write the message
-	msg := h.Backend().NewIncomingMsg(ctx, c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
+	msg := models.NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 

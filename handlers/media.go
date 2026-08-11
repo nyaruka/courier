@@ -7,8 +7,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/runtime"
 )
 
 type MediaType string
@@ -36,7 +36,7 @@ type Attachment struct {
 }
 
 // ResolveAttachments resolves the given attachment strings (content-type:url) into attachment objects
-func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []string, support map[MediaType]MediaTypeSupport, allowURLOnly bool, clog *models.ChannelLog) ([]*Attachment, error) {
+func ResolveAttachments(ctx context.Context, rt *runtime.Runtime, attachments []string, support map[MediaType]MediaTypeSupport, allowURLOnly bool, clog *models.ChannelLog) ([]*Attachment, error) {
 	resolved := make([]*Attachment, 0, len(attachments))
 
 	for _, as := range attachments {
@@ -47,7 +47,7 @@ func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []st
 		}
 		contentType, mediaUrl := parts[0], parts[1]
 
-		att, err := resolveAttachment(ctx, b, contentType, mediaUrl, support, allowURLOnly)
+		att, err := resolveAttachment(ctx, rt, contentType, mediaUrl, support, allowURLOnly)
 		if err != nil {
 			return nil, err
 		}
@@ -61,8 +61,8 @@ func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []st
 	return resolved, nil
 }
 
-func resolveAttachment(ctx context.Context, b courier.Backend, contentType, mediaUrl string, support map[MediaType]MediaTypeSupport, allowURLOnly bool) (*Attachment, error) {
-	media, err := b.ResolveMedia(ctx, mediaUrl)
+func resolveAttachment(ctx context.Context, rt *runtime.Runtime, contentType, mediaUrl string, support map[MediaType]MediaTypeSupport, allowURLOnly bool) (*Attachment, error) {
+	media, err := models.ResolveMedia(ctx, rt, mediaUrl)
 	if err != nil {
 		return nil, err
 	}

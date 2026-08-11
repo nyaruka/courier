@@ -1247,8 +1247,7 @@ func TestSendEvent(t *testing.T) {
 	defer func(u string) { apiURL = u }(apiURL)
 	apiURL = "https://api.telegram.org"
 
-	mb := test.NewMockBackend()
-	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
+	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
 	h := newHandler().(*handler)
 	h.Initialize(s)

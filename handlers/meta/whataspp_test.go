@@ -19,7 +19,7 @@ import (
 )
 
 var whatsappTestChannels = []*models.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WAC", "12345", "", []string{urns.WhatsApp.Prefix}, map[string]any{models.ConfigAuthToken: "a123"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WAC", "1234567890", "", []string{urns.WhatsApp.Prefix}, map[string]any{models.ConfigAuthToken: "a123"}),
 }
 
 var whatappReceiveURL = "/c/wac/receive"
@@ -31,7 +31,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/hello.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Hello World"),
 		ExpectedURN:           "whatsapp:5678",
@@ -45,7 +44,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/hello_user_id.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Hello World"),
 		ExpectedURN:           "whatsapp:5678",
@@ -60,7 +58,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/hello_invalid_user_id.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Hello World"),
 		ExpectedURN:           "whatsapp:5678",
@@ -75,7 +72,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/hello_from_bsuid.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Hello World"),
 		ExpectedURN:           "whatsapp:US.1234",
@@ -90,7 +86,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/hello_bsuid_in_from.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Hello World"),
 		ExpectedURN:           "whatsapp:US.1234",
@@ -113,7 +108,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/duplicate.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Hello World"),
 		ExpectedURN:           "whatsapp:5678",
@@ -127,7 +121,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/voice.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp(""),
 		ExpectedURN:           "whatsapp:5678",
@@ -142,7 +135,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/button.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("No"),
 		ExpectedURN:           "whatsapp:5678",
@@ -156,7 +148,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/document.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("80skaraokesonglistartist"),
 		ExpectedURN:           "whatsapp:5678",
@@ -171,7 +162,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/image.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Check out my new phone!"),
 		ExpectedURN:           "whatsapp:5678",
@@ -186,7 +176,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/video.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Check out my new phone!"),
 		ExpectedURN:           "whatsapp:5678",
@@ -201,7 +190,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/audio.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Check out my new phone!"),
 		ExpectedURN:           "whatsapp:5678",
@@ -262,7 +250,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/hello.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "invalid request signature",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		PrepRequest:           addInvalidSignature,
 	},
@@ -333,7 +320,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/button_reply.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Yes"),
 		ExpectedURN:           "whatsapp:5678",
@@ -347,7 +333,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/list_reply.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Yes"),
 		ExpectedURN:           "whatsapp:5678",
@@ -361,7 +346,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/nfm_reply.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Sent"),
 		ExpectedPayload:       `{"flow_token": "fl0w+t0k3n", "first_name": "Bob", "age": "32"}`,
@@ -376,7 +360,6 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/wac/nfm_reply_non_object.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Sent"),
 		ExpectedURN:           "whatsapp:5678",
@@ -454,10 +437,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
-		ExpectedContactURNs: map[string]bool{
-			"whatsapp:250788123123": true,
-			"whatsapp:US.1234":      true,
-		},
+		ExpectedNewURN: "whatsapp:US.1234",
 	},
 	{
 		Label:               "Plain Send with user_id already on contact",
@@ -1180,7 +1160,7 @@ func TestWhatsAppOutgoing(t *testing.T) {
 func TestWhatsAppDescribeURN(t *testing.T) {
 	channel := whatsappTestChannels[0]
 	handler := newHandler("WAC", "Cloud API WhatsApp")
-	handler.Initialize(newServerWithWAC(nil))
+	handler.Initialize(newServerWithWAC())
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -1192,7 +1172,7 @@ func TestWhatsAppDescribeURN(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.(courier.URNDescriber).DescribeURN(context.Background(), whatsappTestChannels[0], tc.urn, clog)
+		metadata, _ := handler.(models.URNDescriber).DescribeURN(context.Background(), whatsappTestChannels[0], tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 
@@ -1200,8 +1180,7 @@ func TestWhatsAppDescribeURN(t *testing.T) {
 }
 
 func TestWhatsAppBuildAttachmentRequest(t *testing.T) {
-	mb := test.NewMockBackend()
-	s := newServerWithWAC(mb)
+	s := newServerWithWAC()
 	handler := &handler{NewBaseHandler(models.ChannelType("WAC"), "WhatsApp Cloud", DisableUUIDRouting())}
 	handler.Initialize(s)
 	req, _ := handler.BuildAttachmentRequest(context.Background(), whatsappTestChannels[0], "https://example.org/v1/media/41", nil)
@@ -1209,10 +1188,10 @@ func TestWhatsAppBuildAttachmentRequest(t *testing.T) {
 	assert.Equal(t, "Bearer wac_admin_system_user_token", req.Header.Get("Authorization"))
 }
 
-func newServerWithWAC(backend courier.Backend) *courier.Server {
+func newServerWithWAC() *courier.Server {
 	cfg := runtime.NewDefaultConfig()
 	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
-	return courier.NewServer(runtime.NewTestRuntime(cfg), backend)
+	return courier.NewServer(runtime.NewTestRuntime(cfg))
 }
 
 func TestWhatsAppSendEvent(t *testing.T) {
@@ -1222,11 +1201,9 @@ func TestWhatsAppSendEvent(t *testing.T) {
 
 	channel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WAC", "12345_ID", "", []string{urns.WhatsApp.Prefix}, map[string]any{models.ConfigAuthToken: "a123"})
 
-	mb := test.NewMockBackend()
-
 	cfg := runtime.NewDefaultConfig()
 	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
-	s := courier.NewServer(runtime.NewTestRuntime(cfg), mb)
+	s := courier.NewServer(runtime.NewTestRuntime(cfg))
 
 	h := newHandler("WAC", "WhatsApp Cloud").(*handler)
 	h.Initialize(s)

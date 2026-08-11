@@ -69,7 +69,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Text, "", clog).WithReceivedOn(date)
+	msg := models.NewIncomingMsg(channel, urn, form.Text, "", clog).WithReceivedOn(date)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
@@ -103,7 +103,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdate(channel, models.MsgUUID(form.UUID), msgStatus, clog)
+	status := models.NewStatusUpdate(channel, models.MsgUUID(form.UUID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 

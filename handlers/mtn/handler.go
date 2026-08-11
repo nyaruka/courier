@@ -87,7 +87,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		}
 
 		// create and write the message
-		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, payload.Message, "", clog).WithReceivedOn(date)
+		msg := models.NewIncomingMsg(channel, urn, payload.Message, "", clog).WithReceivedOn(date)
 		return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 
 	} else {
@@ -108,7 +108,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		}
 
 		// write our status
-		status := h.Backend().NewStatusUpdateByExternalID(channel, payload.TransactionID, msgStatus, clog)
+		status := models.NewStatusUpdateByExternalID(channel, payload.TransactionID, msgStatus, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 	}
 }
