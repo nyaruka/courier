@@ -23,7 +23,7 @@ type ChannelHandler interface {
 	// handlers.BaseHandler get it from there rather than implementing it themselves.
 	SetRuntime(*runtime.Runtime)
 
-	Initialize(*Registry) error
+	Initialize(*Routes) error
 	Runtime() *runtime.Runtime
 	ChannelType() models.ChannelType
 	ChannelName() string
@@ -87,7 +87,7 @@ func GetActiveHandler(ct models.ChannelType) ChannelHandler {
 var registeredHandlers = make(map[models.ChannelType]ChannelHandler)
 var activeHandlers = make(map[models.ChannelType]ChannelHandler)
 
-// Route is an HTTP route a channel handler serves, registered during its initialization
+// Route is an HTTP route a channel handler serves, added during its initialization
 type Route struct {
 	Handler ChannelHandler
 	Method  string
@@ -96,21 +96,21 @@ type Route struct {
 	Func    ChannelHandleFunc
 }
 
-// Registry is what a channel handler is initialized with. It collects the routes the handler registers so that the
-// web server can mount them, which is what keeps the handler contract free of any dependency on the server itself.
-type Registry struct {
+// Routes is what a channel handler is initialized with, and collects the routes it wants to serve so that the web
+// server can mount them - which is what keeps the handler contract free of any dependency on the server itself.
+type Routes struct {
 	routes []*Route
 }
 
-// NewRegistry creates a new registry for a handler to register its routes with
-func NewRegistry() *Registry {
-	return &Registry{}
+// NewRoutes creates an empty set of routes for a handler to add to
+func NewRoutes() *Routes {
+	return &Routes{}
 }
 
-// AddHandlerRoute records a route which the handler wants to serve
-func (r *Registry) AddHandlerRoute(handler ChannelHandler, method string, action string, logType clogs.Type, handlerFunc ChannelHandleFunc) {
+// Add adds a route which the handler wants to serve
+func (r *Routes) Add(handler ChannelHandler, method string, action string, logType clogs.Type, handlerFunc ChannelHandleFunc) {
 	r.routes = append(r.routes, &Route{Handler: handler, Method: method, Action: action, LogType: logType, Func: handlerFunc})
 }
 
-// Routes returns the routes registered so far
-func (r *Registry) Routes() []*Route { return r.routes }
+// All returns every route added so far
+func (r *Routes) All() []*Route { return r.routes }

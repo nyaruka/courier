@@ -41,8 +41,8 @@ func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (*models.
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *mockHandler) Initialize(s *courier.Registry) error {
-	s.AddHandlerRoute(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
+func (h *mockHandler) Initialize(r *courier.Routes) error {
+	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
 	return nil
 }
 

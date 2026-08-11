@@ -225,12 +225,12 @@ func (s *Server) mountChannelHandlers() error {
 func (s *Server) MountHandler(handler courier.ChannelHandler) error {
 	handler.SetRuntime(s.rt)
 
-	reg := courier.NewRegistry()
-	if err := handler.Initialize(reg); err != nil {
+	routes := courier.NewRoutes()
+	if err := handler.Initialize(routes); err != nil {
 		return fmt.Errorf("error initializing handler %s: %w", handler.ChannelType(), err)
 	}
 
-	for _, route := range reg.Routes() {
+	for _, route := range routes.All() {
 		s.addRoute(route)
 	}
 

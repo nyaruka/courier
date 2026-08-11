@@ -66,24 +66,24 @@ func newHandler() courier.ChannelHandler {
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(s *courier.Registry) error {
-	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+func (h *handler) Initialize(r *courier.Routes) error {
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 
 	sentHandler := h.buildStatusHandler("sent")
-	s.AddHandlerRoute(h, http.MethodGet, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
-	s.AddHandlerRoute(h, http.MethodPost, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
+	r.Add(h, http.MethodGet, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
+	r.Add(h, http.MethodPost, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
 
 	deliveredHandler := h.buildStatusHandler("delivered")
-	s.AddHandlerRoute(h, http.MethodGet, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
-	s.AddHandlerRoute(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
+	r.Add(h, http.MethodGet, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
+	r.Add(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
 
 	failedHandler := h.buildStatusHandler("failed")
-	s.AddHandlerRoute(h, http.MethodGet, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
-	s.AddHandlerRoute(h, http.MethodPost, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
+	r.Add(h, http.MethodGet, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
+	r.Add(h, http.MethodPost, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
 
-	s.AddHandlerRoute(h, http.MethodPost, "stopped", models.ChannelLogTypeEventReceive, h.receiveStopContact)
-	s.AddHandlerRoute(h, http.MethodGet, "stopped", models.ChannelLogTypeEventReceive, h.receiveStopContact)
+	r.Add(h, http.MethodPost, "stopped", models.ChannelLogTypeEventReceive, h.receiveStopContact)
+	r.Add(h, http.MethodGet, "stopped", models.ChannelLogTypeEventReceive, h.receiveStopContact)
 
 	return nil
 }

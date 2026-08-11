@@ -36,9 +36,9 @@ func init() {
 }
 
 // Initialize implements courier.ChannelHandler
-func (h *handler) Initialize(s *courier.Registry) error {
-	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
-	s.AddHandlerRoute(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.statusMessage))
+func (h *handler) Initialize(r *courier.Routes) error {
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.statusMessage))
 	return nil
 }
 

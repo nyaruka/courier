@@ -40,9 +40,9 @@ func newHandler() courier.ChannelHandler {
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(s *courier.Registry) error {
+func (h *handler) Initialize(r *courier.Routes) error {
 	receiveHandler := handlers.NewTelReceiveHandler(h, "mobile", "mo")
-	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, receiveHandler)
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, receiveHandler)
 	return nil
 }
 

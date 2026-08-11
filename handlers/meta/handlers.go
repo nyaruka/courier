@@ -77,9 +77,9 @@ type handler struct {
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(s *courier.Registry) error {
-	s.AddHandlerRoute(h, http.MethodGet, "receive", models.ChannelLogTypeWebhookVerify, h.receiveVerify)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvents))
+func (h *handler) Initialize(r *courier.Routes) error {
+	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeWebhookVerify, h.receiveVerify)
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvents))
 	return nil
 }
 
