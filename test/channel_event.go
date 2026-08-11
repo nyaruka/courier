@@ -11,7 +11,7 @@ import (
 
 type mockChannelEvent struct {
 	uuid       models.ChannelEventUUID
-	channel    courier.Channel
+	channel    *models.Channel
 	eventType  models.ChannelEventType
 	urn        urns.URN
 	occurredOn time.Time

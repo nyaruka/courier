@@ -58,7 +58,7 @@ type ibStatus struct {
 }
 
 // statusMessage is our HTTP handler function for status updates
-func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	data := make([]any, len(payload.Results))
 	statuses := make([]courier.Event, len(payload.Results))
 	for _, s := range payload.Results {
@@ -115,7 +115,7 @@ type v3InboundPrice struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages (both SMS and MMS)
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *v3InboundPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *v3InboundPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	if payload.MessageCount == 0 {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
@@ -398,7 +398,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	return nil
 }
 
-func (h *handler) RedactValues(ch courier.Channel) []string {
+func (h *handler) RedactValues(ch *models.Channel) []string {
 	redacted := []string{}
 	if apiKey := ch.StringConfigForKey(models.ConfigAPIKey, ""); apiKey != "" {
 		redacted = append(redacted, "App "+apiKey)

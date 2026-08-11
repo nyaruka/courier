@@ -3,13 +3,12 @@ package test
 import (
 	"time"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/gocommon/uuids"
 )
 
 type MockStatusUpdate struct {
-	channel            courier.Channel
+	channel            *models.Channel
 	msgUUID            models.MsgUUID
 	externalIdentifier string
 	status             models.MsgStatus

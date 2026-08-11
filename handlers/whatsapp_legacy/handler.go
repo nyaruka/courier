@@ -37,7 +37,7 @@ func (h *handler) Initialize(s *courier.Server) error {
 }
 
 // receiveEvents accepts webhooks but does nothing with them
-func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	return nil, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", []any{})
 }
 

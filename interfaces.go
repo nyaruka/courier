@@ -10,32 +10,6 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 )
 
-// Channel defines the general interface backend Channel implementations must adhere to
-type Channel interface {
-	UUID() models.ChannelUUID
-	OrgID() models.OrgID
-	Name() string
-	ChannelType() models.ChannelType
-	Schemes() []string
-	Country() i18n.Country
-	Address() string
-	ChannelAddress() models.ChannelAddress
-
-	Roles() []models.ChannelRole
-
-	// is this channel for the passed in scheme (and only that scheme)
-	IsScheme(*urns.Scheme) bool
-
-	// CallbackDomain returns the domain that should be used for any callbacks the channel registers
-	CallbackDomain(fallbackDomain string) string
-
-	ConfigForKey(key string, defaultValue any) any
-	StringConfigForKey(key string, defaultValue string) string
-	BoolConfigForKey(key string, defaultValue bool) bool
-	IntConfigForKey(key string, defaultValue int) int
-	OrgConfigForKey(key string, defaultValue any) any
-}
-
 // Contact defines the attributes on a contact, for our purposes that is just a contact UUID
 type Contact interface {
 	UUID() models.ContactUUID
@@ -52,7 +26,7 @@ type Msg interface {
 	Text() string
 	Attachments() []string
 	URN() urns.URN
-	Channel() Channel
+	Channel() *models.Channel
 }
 
 // MsgOut is our interface to represent an outgoing

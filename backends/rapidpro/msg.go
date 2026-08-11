@@ -36,7 +36,7 @@ type MsgIn struct {
 	duplicate bool
 }
 
-func (m *MsgIn) Channel() courier.Channel { return m.channel }
+func (m *MsgIn) Channel() *models.Channel { return m.channel }
 func (m *MsgIn) URN() urns.URN            { return m.URN_ }
 
 func (m *MsgIn) WithAttachment(url string) courier.MsgIn {
@@ -168,7 +168,7 @@ func (b *backend) flushMsg(ctx context.Context, m *MsgIn) error {
 	if err != nil {
 		return err
 	}
-	m.channel = channel.(*models.Channel)
+	m.channel = channel
 
 	// create log tho it won't be written
 	clog := courier.NewChannelLog(models.ChannelLogTypeMsgReceive, channel, nil)
@@ -266,4 +266,4 @@ type MsgOut struct {
 	workerToken queue.WorkerToken
 }
 
-func (m *MsgOut) Channel() courier.Channel { return m.channel }
+func (m *MsgOut) Channel() *models.Channel { return m.channel }

@@ -13,7 +13,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var testChannels = []courier.Channel{
+var testChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DM", "2020", "RW", []string{urns.Phone.Prefix}, nil),
 }
 

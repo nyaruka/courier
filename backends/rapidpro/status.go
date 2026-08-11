@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/syncx"
@@ -14,12 +13,10 @@ import (
 )
 
 // creates a new message status update
-func newStatusUpdate(channel courier.Channel, uuid models.MsgUUID, externalID string, status models.MsgStatus, clog *models.ChannelLog) *models.StatusUpdate {
-	dbChannel := channel.(*models.Channel)
-
+func newStatusUpdate(channel *models.Channel, uuid models.MsgUUID, externalID string, status models.MsgStatus, clog *models.ChannelLog) *models.StatusUpdate {
 	return &models.StatusUpdate{
 		ChannelUUID_:        channel.UUID(),
-		ChannelID_:          dbChannel.ID(),
+		ChannelID_:          channel.ID(),
 		MsgUUID_:            uuid,
 		ExternalIdentifier_: externalID,
 		Status_:             status,

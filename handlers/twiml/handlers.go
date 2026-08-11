@@ -124,7 +124,7 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -177,7 +177,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -450,14 +450,14 @@ var sendableEvents = map[models.ChannelType]map[string]time.Duration{
 }
 
 // SendableEvents declares support for typing indicators on WhatsApp channels
-func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
+func (h *handler) SendableEvents(*models.Channel) map[string]time.Duration {
 	return sendableEvents[h.ChannelType()]
 }
 
 // SendEvent sends a typing started event as a typing indicator, which Twilio implements as marking the
 // referenced incoming message as read and displaying an indicator until a reply is sent.
 // See https://www.twilio.com/docs/whatsapp/api/typing-indicators-resource
-func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
+func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event events.Event, clog *models.ChannelLog) error {
 	typing, ok := event.(*events.TypingStarted)
 	if !ok {
 		return fmt.Errorf("unsupported event type: %s", event.Type())
@@ -505,7 +505,7 @@ func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event event
 }
 
 // BuildAttachmentRequest to download media for message attachment with Basic auth set
-func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
+func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
 	accountSID := channel.StringConfigForKey(configAccountSID, "")
 	if accountSID == "" {
 		return nil, fmt.Errorf("missing account sid for %s channel", h.ChannelName())
@@ -525,13 +525,13 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Ch
 	return req, nil
 }
 
-func (h *handler) RedactValues(ch courier.Channel) []string {
+func (h *handler) RedactValues(ch *models.Channel) []string {
 	return []string{
 		httpx.BasicAuth(ch.StringConfigForKey(configAccountSID, ""), ch.StringConfigForKey(models.ConfigAuthToken, "")),
 	}
 }
 
-func (h *handler) parseURN(channel courier.Channel, text string, country i18n.Country) (urns.URN, error) {
+func (h *handler) parseURN(channel *models.Channel, text string, country i18n.Country) (urns.URN, error) {
 	if channel.IsScheme(urns.WhatsApp) {
 		// Twilio Whatsapp from is in the form: whatsapp:+12211414154 or +12211414154
 		var fromTel string
@@ -563,7 +563,7 @@ func whatsAppAddress(urn urns.URN) string {
 	return fmt.Sprintf("%s:+%s", urns.WhatsApp.Prefix, urn.Path())
 }
 
-func (h *handler) baseURL(c courier.Channel) string {
+func (h *handler) baseURL(c *models.Channel) string {
 	// Twilio channels use the Twili base URL
 	if c.ChannelType() == "T" || c.ChannelType() == "TMS" || c.ChannelType() == "TWA" {
 		return twilioBaseURL
@@ -573,7 +573,7 @@ func (h *handler) baseURL(c courier.Channel) string {
 }
 
 // see https://www.twilio.com/docs/api/security
-func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
+func (h *handler) validateSignature(c *models.Channel, r *http.Request) error {
 	if !h.validateSignatures {
 		return nil
 	}

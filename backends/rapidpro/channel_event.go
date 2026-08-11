@@ -25,13 +25,11 @@ type ChannelEvent struct {
 }
 
 // newChannelEvent creates a new channel event
-func newChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *models.ChannelLog) *ChannelEvent {
-	dbChannel := channel.(*models.Channel)
-
+func newChannelEvent(channel *models.Channel, eventType models.ChannelEventType, urn urns.URN, clog *models.ChannelLog) *ChannelEvent {
 	return &ChannelEvent{
-		ChannelEvent: models.NewChannelEvent(dbChannel, eventType, urn, clog.UUID),
-		ChannelUUID_: dbChannel.UUID_,
-		channel:      dbChannel,
+		ChannelEvent: models.NewChannelEvent(channel, eventType, urn, clog.UUID),
+		ChannelUUID_: channel.UUID_,
+		channel:      channel,
 	}
 }
 
@@ -124,7 +122,7 @@ func (b *backend) flushEvent(ctx context.Context, event *ChannelEvent) error {
 	if err != nil {
 		return err
 	}
-	event.channel = channel.(*models.Channel)
+	event.channel = channel
 
 	// create log tho it won't be written
 	clog := courier.NewChannelLog(models.ChannelLogTypeMsgReceive, channel, nil)

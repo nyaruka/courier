@@ -1,13 +1,12 @@
 package test
 
 import (
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/gocommon/urns"
 )
 
 type mockContact struct {
-	channel    courier.Channel
+	channel    *models.Channel
 	urn        urns.URN
 	authTokens map[string]string
 	id         models.ContactID

@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/nyaruka/courier/v26/core/models"
 )
 
 // LogMsgStatusReceived logs our that we received a new MsgStatus
@@ -50,7 +52,7 @@ func LogChannelEventReceived(r *http.Request, event ChannelEvent) {
 }
 
 // LogRequestIgnored logs that we ignored the passed in request
-func LogRequestIgnored(r *http.Request, channel Channel, details string) {
+func LogRequestIgnored(r *http.Request, channel *models.Channel, details string) {
 	if slog.Default().Enabled(r.Context(), slog.LevelDebug) {
 		slog.Debug("request ignored",
 			"channel_uuid", channel.UUID(),
@@ -62,7 +64,7 @@ func LogRequestIgnored(r *http.Request, channel Channel, details string) {
 }
 
 // LogRequestHandled logs that we handled the passed in request but didn't create any events
-func LogRequestHandled(r *http.Request, channel Channel, details string) {
+func LogRequestHandled(r *http.Request, channel *models.Channel, details string) {
 	if slog.Default().Enabled(r.Context(), slog.LevelDebug) {
 		slog.Debug("request handled",
 			"channel_uuid", channel.UUID(),
@@ -74,7 +76,7 @@ func LogRequestHandled(r *http.Request, channel Channel, details string) {
 }
 
 // LogRequestError logs that errored during parsing (this is logged as an info as it isn't an error on our side)
-func LogRequestError(r *http.Request, channel Channel, err error) {
+func LogRequestError(r *http.Request, channel *models.Channel, err error) {
 	log := slog.With(
 		"url", r.Context().Value(contextRequestURL),
 		"elapsed_ms", getElapsedMS(r),

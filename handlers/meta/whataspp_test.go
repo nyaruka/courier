@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var whatsappTestChannels = []courier.Channel{
+var whatsappTestChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WAC", "12345", "", []string{urns.WhatsApp.Prefix}, map[string]any{models.ConfigAuthToken: "a123"}),
 }
 

@@ -14,7 +14,7 @@ import (
 type MockMsg struct {
 	uuid                 models.MsgUUID
 	contact              *models.ContactReference
-	channel              courier.Channel
+	channel              *models.Channel
 	urn                  urns.URN
 	urnAuth              string
 	urnAuthTokens        map[string]string
@@ -40,7 +40,7 @@ type MockMsg struct {
 	payload    json.RawMessage
 }
 
-func NewMockMsg(uuid models.MsgUUID, channel courier.Channel, urn urns.URN, text string, attachments []string) *MockMsg {
+func NewMockMsg(uuid models.MsgUUID, channel *models.Channel, urn urns.URN, text string, attachments []string) *MockMsg {
 	return &MockMsg{
 		uuid:        uuid,
 		channel:     channel,
@@ -57,7 +57,7 @@ func (m *MockMsg) ExternalID() string                { return m.externalID }
 func (m *MockMsg) Text() string                      { return m.text }
 func (m *MockMsg) Attachments() []string             { return m.attachments }
 func (m *MockMsg) URN() urns.URN                     { return m.urn }
-func (m *MockMsg) Channel() courier.Channel          { return m.channel }
+func (m *MockMsg) Channel() *models.Channel          { return m.channel }
 
 // outgoing specific
 func (m *MockMsg) QuickReplies() []models.QuickReply { return m.quickReplies }

@@ -95,7 +95,7 @@ type moPayload struct {
 	} `json:"data"`
 }
 
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	if payload.Data.Type != "sms" || payload.Data.Direction != "I" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "Ignoring request, no message")
 	}
@@ -134,7 +134,7 @@ var statusMapping = map[string]models.MsgStatus{
 	"failed":      models.MsgStatusFailed,
 }
 
-func (h *handler) statusMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) statusMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	if payload.Data.Type != "sms" || payload.Data.Direction != "O" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "Ignoring request, no message")
 	}

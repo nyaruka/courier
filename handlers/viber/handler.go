@@ -117,7 +117,7 @@ type welcomeMessagePayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *eventPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *eventPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -274,7 +274,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return nil, courier.WriteError(w, http.StatusBadRequest, fmt.Errorf("not handled, unknown event: %s", event))
 }
 
-func writeWelcomeMessageResponse(w http.ResponseWriter, channel courier.Channel, event courier.Event) error {
+func writeWelcomeMessageResponse(w http.ResponseWriter, channel *models.Channel, event courier.Event) error {
 
 	authToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	msgText := channel.StringConfigForKey(configViberWelcomeMessage, "")
@@ -297,7 +297,7 @@ func writeWelcomeMessageResponse(w http.ResponseWriter, channel courier.Channel,
 }
 
 // see https://developers.viber.com/docs/api/rest-bot-api/#callbacks
-func (h *handler) validateSignature(channel courier.Channel, r *http.Request) error {
+func (h *handler) validateSignature(channel *models.Channel, r *http.Request) error {
 	actual := r.Header.Get(viberSignatureHeader)
 	if actual == "" {
 		return fmt.Errorf("missing request signature")

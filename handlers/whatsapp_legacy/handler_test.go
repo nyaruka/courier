@@ -10,7 +10,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var testChannels = []courier.Channel{
+var testChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WA", "250788383383", "RW", []string{urns.WhatsApp.Prefix}, nil),
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "D3", "250788383383", "RW", []string{urns.WhatsApp.Prefix}, nil),
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "TXW", "250788383383", "RW", []string{urns.WhatsApp.Prefix}, nil),

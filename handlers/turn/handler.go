@@ -167,7 +167,7 @@ type eventsPayload struct {
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *eventsPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *eventsPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	events := make([]courier.Event, 0, 2)
 
 	// the list of data we will return in our response
@@ -305,7 +305,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
-func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
+func resolveMediaURL(channel *models.Channel, mediaID string) (string, error) {
 	// sometimes WA will send an attachment with status=undownloaded and no ID
 	if mediaID == "" {
 		return "", nil
@@ -326,7 +326,7 @@ func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
 }
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set
-func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
+func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
 	token := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if token == "" {
 		return nil, fmt.Errorf("missing token for TRN channel")

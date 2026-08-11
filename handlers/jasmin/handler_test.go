@@ -18,7 +18,7 @@ const (
 	statusURL  = "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 )
 
-var testChannels = []courier.Channel{
+var testChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JS", "2020", "US", []string{urns.Phone.Prefix}, nil),
 }
 

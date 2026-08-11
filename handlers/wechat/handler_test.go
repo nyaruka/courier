@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testChannels = []courier.Channel{
+var testChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US",
 		[]string{urns.WeChat.Prefix},
 		map[string]any{models.ConfigSecret: "secret123", configAppSecret: "app-secret123", configAppID: "app-id"}),

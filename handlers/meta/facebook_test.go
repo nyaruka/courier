@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var facebookTestChannels = []courier.Channel{
+var facebookTestChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FBA", "12345", "", []string{urns.Facebook.Prefix}, map[string]any{models.ConfigAuthToken: "a123"}),
 }
 

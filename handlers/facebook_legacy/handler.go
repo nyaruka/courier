@@ -71,7 +71,7 @@ func (h *handler) Initialize(s *courier.Server) error {
 }
 
 // receiveVerify handles Facebook's webhook verification callback
-func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveVerify(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	mode := r.URL.Query().Get("hub.mode")
 
 	// this isn't a subscribe verification, that's an error
@@ -104,7 +104,7 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 	return nil, err
 }
 
-func (h *handler) subscribeToEvents(ctx context.Context, channel courier.Channel, authToken string) {
+func (h *handler) subscribeToEvents(ctx context.Context, channel *models.Channel, authToken string) {
 	clog := courier.NewChannelLog(models.ChannelLogTypePageSubscribe, channel, h.RedactValues(channel))
 
 	// subscribe to messaging events for this page
@@ -208,7 +208,7 @@ type moPayload struct {
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	// not a page object? ignore
 	if payload.Object != "page" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring non-page request")
@@ -537,7 +537,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 }
 
 // DescribeURN looks up URN metadata for new contacts
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *models.ChannelLog) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel *models.Channel, urn urns.URN, clog *models.ChannelLog) (map[string]string, error) {
 
 	accessToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if accessToken == "" {

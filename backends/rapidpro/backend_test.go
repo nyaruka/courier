@@ -74,7 +74,7 @@ func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *models.Chann
 	ts.Require().NoError(err, "error getting channel")
 	ts.Require().NotNil(channel)
 
-	return channel.(*models.Channel)
+	return channel
 }
 
 func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
@@ -634,7 +634,7 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	urn := urns.URN("tel:+12065551215")
 	urn2 := urns.URN("tel:+12065551277")
 
-	createAndWriteMsg := func(ch courier.Channel, u urns.URN, text, extID string) *MsgIn {
+	createAndWriteMsg := func(ch *models.Channel, u urns.URN, text, extID string) *MsgIn {
 		clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
 		m := ts.b.NewIncomingMsg(ctx, ch, u, text, extID, clog).(*MsgIn)
 		err := ts.b.WriteMsg(ctx, m, clog)

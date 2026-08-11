@@ -5,13 +5,14 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var testChannels = []courier.Channel{
+var testChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FC", "2020", "US", []string{urns.FreshChat.Prefix}, map[string]any{
 		"username":   "c8fddfaf-622a-4a0e-b060-4f3ccbeab606", //agent_id
 		"secret":     cert,                                   // public_key for sig

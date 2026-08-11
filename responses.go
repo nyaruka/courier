@@ -14,7 +14,7 @@ import (
 )
 
 // writeAndLogRequestError writes a JSON response for the passed in message and logs an info messages
-func writeAndLogRequestError(ctx context.Context, h ChannelHandler, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
+func writeAndLogRequestError(ctx context.Context, h ChannelHandler, w http.ResponseWriter, r *http.Request, c *models.Channel, err error) error {
 	LogRequestError(r, c, err)
 	return h.WriteRequestError(ctx, w, err)
 }
@@ -38,7 +38,7 @@ func WriteIgnored(w http.ResponseWriter, details string) error {
 }
 
 // WriteAndLogUnauthorized writes a JSON response for the passed in message and logs an info message
-func WriteAndLogUnauthorized(w http.ResponseWriter, r *http.Request, c Channel, err error) error {
+func WriteAndLogUnauthorized(w http.ResponseWriter, r *http.Request, c *models.Channel, err error) error {
 	LogRequestError(r, c, err)
 	return WriteDataResponse(w, http.StatusUnauthorized, "Unauthorized", []any{NewErrorData(err.Error())})
 }

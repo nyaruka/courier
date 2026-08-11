@@ -18,11 +18,11 @@ const (
 	receiveURL = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 )
 
-var testChannels = []courier.Channel{
+var testChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US", []string{urns.Phone.Prefix}, nil),
 }
 
-var gmChannels = []courier.Channel{
+var gmChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "GM", []string{urns.Phone.Prefix}, nil),
 }
 
@@ -197,7 +197,7 @@ var handleTestCases = []IncomingTestCase{
 	},
 }
 
-var testSOAPReceiveChannels = []courier.Channel{
+var testSOAPReceiveChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
@@ -240,7 +240,7 @@ var gmTestCases = []IncomingTestCase{
 	},
 }
 
-var customChannels = []courier.Channel{
+var customChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
@@ -271,7 +271,7 @@ var customTestCases = []IncomingTestCase{
 	},
 }
 
-var extChannels = []courier.Channel{
+var extChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "GM", []string{urns.External.Prefix}, nil),
 }
 

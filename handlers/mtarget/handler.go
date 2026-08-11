@@ -54,7 +54,7 @@ func (h *handler) Initialize(s *courier.Server) error {
 }
 
 // ReceiveMsg handles both MO messages and Stop commands
-func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMsg(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)

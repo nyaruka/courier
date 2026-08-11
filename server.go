@@ -200,7 +200,9 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-func (s *Server) GetHandler(ch Channel) ChannelHandler { return activeHandlers[ch.ChannelType()] }
+func (s *Server) GetHandler(ch *models.Channel) ChannelHandler {
+	return activeHandlers[ch.ChannelType()]
+}
 
 func (s *Server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
 func (s *Server) StopChan() chan bool        { return s.stopChan }

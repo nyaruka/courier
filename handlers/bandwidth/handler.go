@@ -62,7 +62,7 @@ type moMessageData struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	var payload []moMessageData
 
 	body, err := handlers.ReadBody(r, 1000000)
@@ -125,7 +125,7 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	var payload []moStatusData
 	body, err := handlers.ReadBody(r, 1000000)
 	if err != nil {
@@ -251,7 +251,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 }
 
 // BuildAttachmentRequest to download media for message attachment with Basic auth set
-func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
+func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
 	username := channel.StringConfigForKey(models.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for BW channel")
@@ -268,7 +268,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Ch
 	return req, nil
 }
 
-func (h *handler) RedactValues(ch courier.Channel) []string {
+func (h *handler) RedactValues(ch *models.Channel) []string {
 	return []string{
 		httpx.BasicAuth(ch.StringConfigForKey(models.ConfigUsername, ""), ch.StringConfigForKey(models.ConfigPassword, "")),
 	}

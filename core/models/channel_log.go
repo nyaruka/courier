@@ -67,14 +67,16 @@ type ChannelLog struct {
 	OrgID       OrgID
 }
 
-// NewChannelLog creates a channel log for the given channel identity, which is nil/zero for requests that aren't for
-// any particular channel. Pass a recorder for incoming requests so the request itself is included in the log.
-func NewChannelLog(t clogs.Type, channelUUID ChannelUUID, orgID OrgID, r *httpx.Recorder, redactVals []string) *ChannelLog {
-	return &ChannelLog{
-		Log:         clogs.New(t, r, redactVals),
-		ChannelUUID: channelUUID,
-		OrgID:       orgID,
+// NewChannelLog creates a channel log for the given channel, which can be nil for requests that aren't for any
+// particular channel (e.g. webhook verification). Pass a recorder for incoming requests so the request itself is
+// included in the log.
+func NewChannelLog(t clogs.Type, ch *Channel, r *httpx.Recorder, redactVals []string) *ChannelLog {
+	l := &ChannelLog{Log: clogs.New(t, r, redactVals)}
+	if ch != nil {
+		l.ChannelUUID = ch.UUID()
+		l.OrgID = ch.OrgID()
 	}
+	return l
 }
 
 // Deprecated: channel handlers should add user-facing error messages via .Error() instead
