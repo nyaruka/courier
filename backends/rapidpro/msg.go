@@ -61,7 +61,7 @@ func (m *MsgIn) hash() string {
 }
 
 // WriteMsg creates a message given the passed in arguments
-func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLog) error {
+func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *models.ChannelLog) error {
 	channel := m.Channel()
 
 	// check for data: attachment URLs which need to be fetched now - fetching of other URLs can be deferred until
@@ -70,7 +70,7 @@ func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLo
 		if strings.HasPrefix(attURL, "data:") {
 			attData, err := base64.StdEncoding.DecodeString(attURL[5:])
 			if err != nil {
-				clog.Error(courier.ErrorAttachmentNotDecodable())
+				clog.Error(models.ErrorAttachmentNotDecodable())
 				return fmt.Errorf("unable to decode attachment data: %w", err)
 			}
 
@@ -120,7 +120,7 @@ func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLo
 	return err
 }
 
-func writeMsgToDB(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLog) (*models.Contact, error) {
+func writeMsgToDB(ctx context.Context, b *backend, m *MsgIn, clog *models.ChannelLog) (*models.Contact, error) {
 	contact, err := contactForMsg(ctx, b, m, clog)
 
 	if err != nil {
@@ -171,7 +171,7 @@ func (b *backend) flushMsg(ctx context.Context, m *MsgIn) error {
 	m.channel = channel.(*models.Channel)
 
 	// create log tho it won't be written
-	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgReceive, channel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeMsgReceive, channel, nil)
 
 	// try to write it our db
 	contact, err := writeMsgToDB(ctx, b, m, clog)

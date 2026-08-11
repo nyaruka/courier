@@ -149,7 +149,7 @@ var testCases = []IncomingTestCase{
 		ExpectedEvents: []ExpectedEvent{
 			{Type: models.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
-		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
+		ExpectedErrors: []*clogs.Error{models.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
 	},
 	{
@@ -247,7 +247,7 @@ var tmsTestCases = []IncomingTestCase{
 		ExpectedEvents: []ExpectedEvent{
 			{Type: models.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
-		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
+		ExpectedErrors: []*clogs.Error{models.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
 	},
 	{
@@ -347,7 +347,7 @@ var twTestCases = []IncomingTestCase{
 		ExpectedEvents: []ExpectedEvent{
 			{Type: models.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
-		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
+		ExpectedErrors: []*clogs.Error{models.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
 	},
 	{Label: "Status No Params", URL: twStatusURL, Data: " ", ExpectedRespStatus: 200, ExpectedBodyContains: "no msg status, ignoring",
@@ -411,7 +411,7 @@ var swTestCases = []IncomingTestCase{
 		ExpectedEvents: []ExpectedEvent{
 			{Type: models.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
-		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
+		ExpectedErrors: []*clogs.Error{models.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
 	},
 	{Label: "Status No Params", URL: swStatusURL, Data: " ", ExpectedRespStatus: 200, ExpectedBodyContains: "no msg status, ignoring"},
@@ -510,7 +510,7 @@ var twaTestCases = []IncomingTestCase{
 			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: models.MsgStatusErrored},
 		},
 		PrepRequest:    addValidSignature,
-		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("63018", "Rate limit exceeded for Channel")},
+		ExpectedErrors: []*clogs.Error{models.ErrorExternal("63018", "Rate limit exceeded for Channel")},
 	},
 	{
 		Label:                "Status ID Invalid",
@@ -678,7 +678,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"No SID"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("sid")},
+		ExpectedLogErrors: []*clogs.Error{models.ErrorResponseValueMissing("sid")},
 	},
 	{
 		Label:          "Single attachment and text",
@@ -828,7 +828,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"No SID"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("sid")},
+		ExpectedLogErrors: []*clogs.Error{models.ErrorResponseValueMissing("sid")},
 	},
 	{
 		Label:          "Send Attachment",
@@ -965,7 +965,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"No SID"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("sid")},
+		ExpectedLogErrors: []*clogs.Error{models.ErrorResponseValueMissing("sid")},
 	},
 	{
 		Label:          "Send Attachment",
@@ -1081,7 +1081,7 @@ var swSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"No SID"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("sid")},
+		ExpectedLogErrors: []*clogs.Error{models.ErrorResponseValueMissing("sid")},
 	},
 	{
 		Label:          "Send Attachment",
@@ -1405,7 +1405,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
-		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("sid")},
+		ExpectedLogErrors: []*clogs.Error{models.ErrorResponseValueMissing("sid")},
 	},
 	{
 		Label:     "Error Sending",

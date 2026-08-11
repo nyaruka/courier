@@ -41,10 +41,10 @@ func newHandler() courier.ChannelHandler {
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
 	receiveHandler := handlers.NewTelReceiveHandler(h, "mobile", "response")
-	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, receiveHandler)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, receiveHandler)
 
 	statusHandler := handlers.NewExternalIDStatusHandler(h, statusMap, "message_id", "status")
-	s.AddHandlerRoute(h, http.MethodGet, "status", courier.ChannelLogTypeMsgStatus, statusHandler)
+	s.AddHandlerRoute(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, statusHandler)
 	return nil
 }
 
@@ -57,7 +57,7 @@ type mtResponse struct {
 	MessageID int64 `json:"message_id"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	if username == "" || password == "" {

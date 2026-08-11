@@ -106,7 +106,7 @@ func (h *BaseHandler) SendableEvents(courier.Channel) map[string]time.Duration {
 
 // SendEvent is a stub for handlers that can't send events and shouldn't be reachable because
 // SendableEvents declares no support
-func (h *BaseHandler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+func (h *BaseHandler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
 	return fmt.Errorf("event sending not supported by %s handler", h.channelType)
 }
 
@@ -117,18 +117,18 @@ func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.
 }
 
 // RequestHTTP does the given request, logging the trace, and returns the response
-func (h *BaseHandler) RequestHTTP(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
+func (h *BaseHandler) RequestHTTP(req *http.Request, clog *models.ChannelLog) (*http.Response, []byte, error) {
 	return h.requestHTTP(h.rt.HTTP, req, clog)
 }
 
 // RequestHTTPProxied is like RequestHTTP but routes through the configured outbound proxy
 // (SendProxyURL) when one is set. Use this for handlers that send to user-configured URLs.
-func (h *BaseHandler) RequestHTTPProxied(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
+func (h *BaseHandler) RequestHTTPProxied(req *http.Request, clog *models.ChannelLog) (*http.Response, []byte, error) {
 	return h.requestHTTP(h.rt.HTTPProxied, req, clog)
 }
 
 // requestHTTP does the given request using the given client, logging the trace, and returns the response
-func (h *BaseHandler) requestHTTP(client *http.Client, req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
+func (h *BaseHandler) requestHTTP(client *http.Client, req *http.Request, clog *models.ChannelLog) (*http.Response, []byte, error) {
 	req.Header.Set("User-Agent", userAgent(h.rt.Config.Version))
 
 	// trace via the client's transport, which already enforces access control (the SSRF blocklist)

@@ -237,7 +237,7 @@ func TestFetchAttachment(t *testing.T) {
 
 	assert.Len(t, mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
-	assert.Equal(t, courier.ChannelLogTypeAttachmentFetch, clog.Type)
+	assert.Equal(t, models.ChannelLogTypeAttachmentFetch, clog.Type)
 	assert.Len(t, clog.HttpLogs, 1)
 	assert.Greater(t, clog.Elapsed, time.Duration(0))
 

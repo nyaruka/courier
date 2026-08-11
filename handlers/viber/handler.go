@@ -74,7 +74,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
 	return nil
 }
 
@@ -117,7 +117,7 @@ type welcomeMessagePayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *eventPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *eventPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -126,12 +126,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	event := payload.Event
 	switch event {
 	case "webhook":
-		clog.Type = courier.ChannelLogTypeWebhookVerify
+		clog.Type = models.ChannelLogTypeWebhookVerify
 
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "webhook valid")
 
 	case "conversation_started":
-		clog.Type = courier.ChannelLogTypeEventReceive
+		clog.Type = models.ChannelLogTypeEventReceive
 
 		msgText := channel.StringConfigForKey(configViberWelcomeMessage, "")
 		if msgText == "" {
@@ -157,7 +157,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return []courier.Event{channelEvent}, writeWelcomeMessageResponse(w, channel, channelEvent)
 
 	case "subscribed":
-		clog.Type = courier.ChannelLogTypeEventReceive
+		clog.Type = models.ChannelLogTypeEventReceive
 
 		viberID := payload.User.ID
 		ContactName := payload.User.Name
@@ -179,7 +179,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, channelEvent)
 
 	case "unsubscribed":
-		clog.Type = courier.ChannelLogTypeEventReceive
+		clog.Type = models.ChannelLogTypeEventReceive
 
 		viberID := payload.UserID
 
@@ -199,19 +199,19 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, channelEvent)
 
 	case "failed":
-		clog.Type = courier.ChannelLogTypeMsgStatus
+		clog.Type = models.ChannelLogTypeMsgStatus
 
 		msgStatus := h.Backend().NewStatusUpdateByExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), models.MsgStatusFailed, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "delivered":
-		clog.Type = courier.ChannelLogTypeMsgStatus
+		clog.Type = models.ChannelLogTypeMsgStatus
 
 		// we ignore delivered events for viber as they send these for incoming messages too and its not worth the db hit to verify that
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring delivered status")
 
 	case "message":
-		clog.Type = courier.ChannelLogTypeMsgReceive
+		clog.Type = models.ChannelLogTypeMsgReceive
 
 		sender := payload.Sender.ID
 		if sender == "" {
@@ -349,7 +349,7 @@ type mtResponse struct {
 	StatusMessage string `json:"status_message"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
 		return courier.ErrChannelConfig
@@ -400,7 +400,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 				msgText = ""
 
 			default:
-				clog.Error(courier.ErrorMediaUnsupported(mediaType))
+				clog.Error(models.ErrorMediaUnsupported(mediaType))
 			}
 
 		} else {
@@ -459,7 +459,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	return nil
 }
 
-func (h *handler) getAttachmentSize(u string, clog *courier.ChannelLog) (int, error) {
+func (h *handler) getAttachmentSize(u string, clog *models.ChannelLog) (int, error) {
 	req, err := http.NewRequest(http.MethodHead, u, nil)
 	if err != nil {
 		return 0, err

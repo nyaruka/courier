@@ -279,7 +279,7 @@ func TestDescribeURN(t *testing.T) {
 	s := newServer(mb)
 	handler := newHandler().(*handler)
 	handler.Initialize(s)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 
 	tcs := []struct {
 		urn              urns.URN
@@ -316,7 +316,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	})
 	handler := newHandler().(*handler)
 	handler.Initialize(s)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 
 	// check that request has the fetched access token
 	req, err := handler.BuildAttachmentRequest(context.Background(), testChannels[0], "https://channels.jiochat.com/media/download.action?media_id=12", clog)

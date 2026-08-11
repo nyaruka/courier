@@ -62,7 +62,7 @@ func TestResolveAttachments(t *testing.T) {
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/png"}}}, // ignored
 			allowURLOnly: false,
 			resolved:     []*handlers.Attachment{},
-			errors:       []*clogs.Error{courier.ErrorMediaUnresolveable("image")},
+			errors:       []*clogs.Error{models.ErrorMediaUnresolveable("image")},
 		},
 		{ // 3: resolveable uploaded image URL
 			attachments:  []string{"image/jpeg:http://mock.com/1234/test.jpg"},
@@ -87,14 +87,14 @@ func TestResolveAttachments(t *testing.T) {
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/jpeg", "image/png"}}},
 			allowURLOnly: false,
 			resolved:     []*handlers.Attachment{},
-			errors:       []*clogs.Error{courier.ErrorMediaUnresolveable("image/jpeg")},
+			errors:       []*clogs.Error{models.ErrorMediaUnresolveable("image/jpeg")},
 		},
 		{ // 6: resolveable uploaded image URL, type not in supported types
 			attachments:  []string{"image/jpeg:http://mock.com/1234/test.jpg"},
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/png"}}},
 			allowURLOnly: true,
 			resolved:     []*handlers.Attachment{},
-			errors:       []*clogs.Error{courier.ErrorMediaUnresolveable("image/jpeg")},
+			errors:       []*clogs.Error{models.ErrorMediaUnresolveable("image/jpeg")},
 		},
 		{ // 7: resolveable uploaded audio URL, type in supported types
 			attachments:  []string{"audio/mp3:http://mock.com/3456/test.mp3"},
@@ -137,7 +137,7 @@ func TestResolveAttachments(t *testing.T) {
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeVideo: {Types: []string{"video/quicktime"}, MaxBytes: 10 * 1024 * 1024}},
 			allowURLOnly: true,
 			resolved:     []*handlers.Attachment{},
-			errors:       []*clogs.Error{courier.ErrorMediaUnresolveable("video/quicktime")},
+			errors:       []*clogs.Error{models.ErrorMediaUnresolveable("video/quicktime")},
 		},
 		{ // 12: invalid attachment format
 			attachments:  []string{"image"},
@@ -152,7 +152,7 @@ func TestResolveAttachments(t *testing.T) {
 	}
 
 	for i, tc := range tcs {
-		clog := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, nil, nil)
+		clog := courier.NewChannelLog(models.ChannelLogTypeMsgSend, nil, nil)
 
 		resolved, err := handlers.ResolveAttachments(ctx, mb, tc.attachments, tc.mediaSupport, tc.allowURLOnly, clog)
 		if tc.err != "" {

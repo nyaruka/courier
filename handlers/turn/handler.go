@@ -57,7 +57,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvents))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvents))
 
 	return nil
 }
@@ -167,7 +167,7 @@ type eventsPayload struct {
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *eventsPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *eventsPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	events := make([]courier.Event, 0, 2)
 
 	// the list of data we will return in our response
@@ -326,7 +326,7 @@ func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
 }
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set
-func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
+func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
 	token := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if token == "" {
 		return nil, fmt.Errorf("missing token for TRN channel")
@@ -486,7 +486,7 @@ type mtVideoPayload struct {
 	Video *mediaObject `json:"video"`
 }
 
-func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]any, error) {
+func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *models.ChannelLog) ([]any, error) {
 	var payloads []any
 	var err error
 
@@ -598,7 +598,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 				payload.Video = mediaPayload
 				payloads = append(payloads, payload)
 			} else {
-				clog.Error(courier.ErrorMediaUnsupported(mimeType))
+				clog.Error(models.ErrorMediaUnsupported(mimeType))
 				break
 			}
 		}
@@ -812,7 +812,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 }
 
 // fetchMediaID tries to fetch the id for the uploaded media, setting the result in redis.
-func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL string, clog *courier.ChannelLog) (string, error) {
+func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL string, clog *models.ChannelLog) (string, error) {
 	// check in cache first
 	cacheKey := fmt.Sprintf(mediaCacheKeyPattern, msg.Channel().UUID())
 	mediaCache := vkutil.NewIntervalHash(cacheKey, time.Hour*24, 2)
@@ -893,7 +893,7 @@ func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL
 	return mediaID, nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	accessToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	urlStr := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
@@ -940,7 +940,7 @@ type mtResponsePayload struct {
 	} `json:"error"`
 }
 
-func (h *handler) makeAPIRequest(payload any, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *courier.ChannelLog) error {
+func (h *handler) makeAPIRequest(payload any, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *models.ChannelLog) error {
 	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))

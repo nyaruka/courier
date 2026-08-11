@@ -13,6 +13,7 @@ import (
 // MockChannel implements the Channel interface and is used in our tests
 type MockChannel struct {
 	uuid        models.ChannelUUID
+	orgID       models.OrgID
 	channelType models.ChannelType
 	schemes     []string
 	address     models.ChannelAddress
@@ -24,6 +25,9 @@ type MockChannel struct {
 
 // UUID returns the uuid for this channel
 func (c *MockChannel) UUID() models.ChannelUUID { return c.uuid }
+
+// OrgID returns the id of the org which owns this channel
+func (c *MockChannel) OrgID() models.OrgID { return c.orgID }
 
 // Name returns the name of this channel, we just return our UUID for our mock instances
 func (c *MockChannel) Name() string { return fmt.Sprintf("Channel: %s", c.uuid) }
@@ -157,6 +161,7 @@ func (c *MockChannel) HasRole(role models.ChannelRole) bool {
 func NewMockChannel(uuid string, channelType string, address string, country i18n.Country, schemes []string, config map[string]any) *MockChannel {
 	return &MockChannel{
 		uuid:        models.ChannelUUID(uuid),
+		orgID:       1,
 		channelType: models.ChannelType(channelType),
 		schemes:     schemes,
 		address:     models.ChannelAddress(address),

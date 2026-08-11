@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -46,8 +45,8 @@ type WAError struct {
 	Title string `json:"title"`
 }
 
-func (e WAError) ErrorChannelLog(clog *courier.ChannelLog) {
-	clog.Error(courier.ErrorExternal(strconv.Itoa(e.Code), e.Title))
+func (e WAError) ErrorChannelLog(clog *models.ChannelLog) {
+	clog.Error(models.ErrorExternal(strconv.Itoa(e.Code), e.Title))
 }
 
 // note that we deliberately don't read the parent_user_id / from_parent_user_id fields that accompany the BSUID
@@ -122,7 +121,7 @@ func (m WAMessage) Identifier() string {
 	return m.FromUserID
 }
 
-func (m WAMessage) ExtractData(clog *courier.ChannelLog) (time.Time, urns.URN, string, string, string, error, error) {
+func (m WAMessage) ExtractData(clog *models.ChannelLog) (time.Time, urns.URN, string, string, string, error, error) {
 	var err error
 	var finalErr error
 	var date time.Time

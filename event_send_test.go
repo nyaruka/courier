@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/courier/v26/utils"
@@ -144,7 +145,7 @@ func TestSendEvent(t *testing.T) {
 
 	assert.Len(t, mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
-	assert.Equal(t, courier.ChannelLogTypeEventSend, clog.Type)
+	assert.Equal(t, models.ChannelLogTypeEventSend, clog.Type)
 	assert.Len(t, clog.HttpLogs, 1)
 	assert.Equal(t, "http://mock.com/action", clog.HttpLogs[0].URL)
 

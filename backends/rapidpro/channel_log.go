@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/aws/dynamo"
@@ -16,13 +15,13 @@ const (
 	dynamoChannelLogTTL = 7 * 24 * time.Hour // 1 week
 )
 
-// ChannelLog wraps a courier.ChannelLog to add DynamoDB support.
+// ChannelLog wraps a models.ChannelLog to add DynamoDB support.
 type ChannelLog struct {
-	*courier.ChannelLog
+	*models.ChannelLog
 }
 
 func (l *ChannelLog) DynamoKey() dynamo.Key {
-	pk := fmt.Sprintf("cha#%s#%s", l.Channel().UUID(), l.UUID[len(l.UUID)-1:]) // 16 buckets for each channel
+	pk := fmt.Sprintf("cha#%s#%s", l.ChannelUUID, l.UUID[len(l.UUID)-1:]) // 16 buckets for each channel
 	sk := fmt.Sprintf("log#%s", l.UUID)
 	return dynamo.Key{PK: pk, SK: sk}
 }
@@ -42,7 +41,7 @@ func (l *ChannelLog) MarshalDynamo() (*dynamo.Item, error) {
 
 	return &dynamo.Item{
 		Key:   l.DynamoKey(),
-		OrgID: int(l.Channel().(*models.Channel).OrgID()),
+		OrgID: int(l.OrgID),
 		TTL:   &ttl,
 		Data: map[string]any{
 			"type":       l.Type,
@@ -55,8 +54,8 @@ func (l *ChannelLog) MarshalDynamo() (*dynamo.Item, error) {
 }
 
 // queues the passed in channel log to a writer
-func queueChannelLog(b *backend, clog *courier.ChannelLog) {
-	log := slog.With("log_uuid", clog.UUID, "log_type", clog.Type, "channel_uuid", clog.Channel().UUID())
+func queueChannelLog(b *backend, clog *models.ChannelLog) {
+	log := slog.With("log_uuid", clog.UUID, "log_type", clog.Type, "channel_uuid", clog.ChannelUUID)
 
 	capacity, err := b.rt.Writers.Main.Queue(&ChannelLog{clog})
 	if err != nil {

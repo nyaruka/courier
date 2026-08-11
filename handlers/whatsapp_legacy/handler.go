@@ -32,17 +32,17 @@ func newWAHandler(channelType models.ChannelType, name string) courier.ChannelHa
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMultiReceive, h.receiveEvents)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, h.receiveEvents)
 	return nil
 }
 
 // receiveEvents accepts webhooks but does nothing with them
-func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	return nil, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", []any{})
 }
 
 // Send is a noop - this legacy handler is disabled
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	return courier.ErrFailedWithReason("disabled", "WhatsApp legacy handler is disabled")
 }
 

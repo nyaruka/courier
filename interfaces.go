@@ -13,6 +13,7 @@ import (
 // Channel defines the general interface backend Channel implementations must adhere to
 type Channel interface {
 	UUID() models.ChannelUUID
+	OrgID() models.OrgID
 	Name() string
 	ChannelType() models.ChannelType
 	Schemes() []string

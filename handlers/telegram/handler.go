@@ -49,12 +49,12 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	return nil
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	// no message? ignore this
 	if payload.Message.MessageID == 0 {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
@@ -184,7 +184,7 @@ type mtResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.Values, keyboard Markup, clog *courier.ChannelLog) (string, error) {
+func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.Values, keyboard Markup, clog *models.ChannelLog) (string, error) {
 	// either include or remove our keyboard
 	form.Add("parse_mode", "Markdown")
 	if keyboard == nil {
@@ -228,7 +228,7 @@ func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.V
 	return "", courier.ErrResponseContent
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
 		return courier.ErrChannelConfig
@@ -350,7 +350,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			res.AddExternalID(externalID)
 
 		default:
-			clog.Error(courier.ErrorMediaUnsupported(attachment.ContentType))
+			clog.Error(models.ErrorMediaUnsupported(attachment.ContentType))
 		}
 	}
 
@@ -359,7 +359,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 // SendEvent sends a typing started event to the contact as a typing chat action, see
 // https://core.telegram.org/bots/api#sendchataction
-func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
 	typing, ok := event.(*events.TypingStarted)
 	if !ok {
 		return fmt.Errorf("unsupported event type: %s", event.Type())
@@ -415,7 +415,7 @@ type fileResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fileID string, clog *courier.ChannelLog) (string, error) {
+func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fileID string, clog *models.ChannelLog) (string, error) {
 	confAuth := channel.ConfigForKey(models.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
@@ -439,12 +439,12 @@ func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fi
 	respPayload := &fileResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
-		clog.Error(courier.ErrorResponseUnparseable("JSON"))
+		clog.Error(models.ErrorResponseUnparseable("JSON"))
 		return "", errors.New("unable to resolve file")
 	}
 
 	if resp.StatusCode/100 != 2 || respPayload.ErrorCode != 0 {
-		clog.Error(courier.ErrorExternal(strconv.Itoa(respPayload.ErrorCode), respPayload.Description))
+		clog.Error(models.ErrorExternal(strconv.Itoa(respPayload.ErrorCode), respPayload.Description))
 		return "", errors.New("unable to resolve file")
 	}
 

@@ -80,7 +80,7 @@ func fetchAttachment(ctx context.Context, rt *runtime.Runtime, b Backend, r *htt
 	return &fetchAttachmentResponse{Attachment: attachment, LogUUID: clog.UUID}, nil
 }
 
-func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, b Backend, channel Channel, attURL string, clog *ChannelLog) (*Attachment, error) {
+func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, b Backend, channel Channel, attURL string, clog *models.ChannelLog) (*Attachment, error) {
 	parsedURL, err := url.Parse(attURL)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse attachment url '%s': %w", attURL, err)
