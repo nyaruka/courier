@@ -7,6 +7,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/null/v3"
 )
 
@@ -26,7 +27,7 @@ func NewMockChannel(uuid string, channelType string, address string, country i18
 		Name_:        sql.NullString{String: fmt.Sprintf("Channel: %s", uuid), Valid: true},
 		Address_:     sql.NullString{String: address, Valid: address != ""},
 		Country_:     sql.NullString{String: string(country), Valid: country != ""},
-		Config_:      null.Map[any](normalizeConfig(config)),
+		Config_:      null.Map[any](asDecodedJSON(config)),
 		Role_:        string(models.ChannelRoleSend) + string(models.ChannelRoleReceive),
 		OrgConfig_:   null.Map[any]{},
 	}
@@ -35,23 +36,15 @@ func NewMockChannel(uuid string, channelType string, address string, country i18
 // SetChannelConfig sets a config value on a test channel, for values which aren't known until the test is running
 // (e.g. the URL of a test server).
 func SetChannelConfig(ch *models.Channel, key string, value any) {
-	ch.Config_[key] = normalizeValue(value)
+	ch.Config_[key] = asDecodedJSON(value)
 }
 
-// Real channel config is JSON decoded out of Postgres, so whole numbers arrive as float64 and are read back with
-// IntConfigForKey. Test authors naturally write literal ints, so convert them to match production's shape rather
-// than making the production accessor tolerate a type it never actually sees.
-func normalizeConfig(config map[string]any) map[string]any {
-	normalized := make(map[string]any, len(config))
-	for k, v := range config {
-		normalized[k] = normalizeValue(v)
-	}
-	return normalized
-}
-
-func normalizeValue(v any) any {
-	if i, ok := v.(int); ok {
-		return float64(i)
-	}
-	return v
+// Real channel config is a JSON column decoded into null.Map[any], so whole numbers reach handlers as float64 rather
+// than int, and the accessors on Channel are written for that. Test authors naturally write Go literals, so round
+// their config through JSON to give it the same shape at any nesting depth, rather than making those accessors
+// tolerate types they never actually see.
+func asDecodedJSON[T any](v T) T {
+	var decoded T
+	jsonx.MustUnmarshal(jsonx.MustMarshal(v), &decoded)
+	return decoded
 }

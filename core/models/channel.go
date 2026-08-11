@@ -121,7 +121,7 @@ var ErrChannelNotFound = errors.New("channel not found")
 // ErrChannelWrongType is returned when we find a channel with the set UUID but with a different type
 var ErrChannelWrongType = errors.New("channel type wrong")
 
-// Channel is the RapidPro specific concrete type satisfying the *models.Channel interface
+// Channel is a channel as loaded from the database, along with the config of the org which owns it
 type Channel struct {
 	OrgID_       OrgID          `db:"org_id"`
 	UUID_        ChannelUUID    `db:"uuid"`

@@ -121,17 +121,20 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
-		// remove message prefix according to a list of possible prefixes, useful for free accounts
-		incomingPrefixes := c.ConfigForKey(configIncomingPrefixes, []string{})
-		if prefixes, ok := incomingPrefixes.([]string); ok {
-			for _, prefix := range prefixes {
-				text := pmMsg.Content.Text
+		// remove message prefix according to a list of possible prefixes, useful for free accounts. Channel config is
+		// JSON so the configured list arrives as []any of strings, not []string.
+		prefixes, _ := c.ConfigForKey(configIncomingPrefixes, []any{}).([]any)
+		for _, p := range prefixes {
+			prefix, ok := p.(string)
+			if !ok {
+				continue
+			}
 
-				if strings.HasPrefix(strings.ToLower(text), strings.ToLower(prefix)) {
-					text = strings.TrimSpace(text[len(prefix):])
-					pmMsg.Content.Text = text
-					break
-				}
+			text := pmMsg.Content.Text
+
+			if strings.HasPrefix(strings.ToLower(text), strings.ToLower(prefix)) {
+				pmMsg.Content.Text = strings.TrimSpace(text[len(prefix):])
+				break
 			}
 		}
 
