@@ -230,6 +230,20 @@ var outgoingCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.mtn.com/v2/messages/sms/outbound": {
+				httpx.NewMockResponse(429, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Error Message","clientCorrelator":"0191e180-7d60-7000-aded-7d8b151cbd5b"}`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 var cpAddressOutgoingCases = []OutgoingTestCase{

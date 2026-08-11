@@ -998,7 +998,7 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *courier.S
 	// Turn returns HTTP 429 with its own rate-limit payload (errors[].code=429) and
 	// Retry-After / X-Ratelimit-* headers. Treat that as throttled so the message is
 	// retried via the errored queue rather than permanently failed.
-	if resp.StatusCode == http.StatusTooManyRequests {
+	if handlers.IsThrottled(resp) {
 		return courier.ErrConnectionThrottled
 	}
 

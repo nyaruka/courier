@@ -101,6 +101,20 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Invalid Parameters",
+		MsgURN:  "tel:+18765422035",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://flow.messangi.me/mmc/rest/api/sendMT/*": {
+				httpx.NewMockResponse(429, nil, []byte(``)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/mmc/rest/api/sendMT/7/2020/2/18765422035/SW52YWxpZCBQYXJhbWV0ZXJz/my-public-key/f3d2ea825cf61226925dee2db3c14b7fc00f3183f11809d2183d1e2dbd230df6",
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Error Response",
 		MsgText: "Error Response",
 		MsgURN:  "tel:+18765422035",

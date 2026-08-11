@@ -640,6 +640,20 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedError: courier.ErrFailedWithReason("403", "Failed to send messages"),
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Sending",
+		MsgURN:  "line:uabcdefghij",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(429, nil, []byte(`{"message": "You have reached your monthly limit."}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 // setupMedia takes care of having the media files needed to our test server host

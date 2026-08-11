@@ -134,10 +134,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		req.Header.Set("Authorization", fmt.Sprintf("Token %s", auth))
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 == 5 {
-			return courier.ErrConnectionFailed
-		} else if resp.StatusCode/100 != 2 {
-			return courier.ErrResponseStatus
+		if err := handlers.ErrorFromResponse(resp, err); err != nil {
+			return err
 		}
 
 		// grab the external id

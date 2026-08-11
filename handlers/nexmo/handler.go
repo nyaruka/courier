@@ -222,10 +222,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			}
 		}
 
-		if requestErr != nil || resp.StatusCode/100 == 5 {
-			return courier.ErrConnectionFailed
-		} else if resp.StatusCode/100 != 2 {
-			return courier.ErrResponseStatus
+		if err := handlers.ErrorFromResponse(resp, requestErr); err != nil {
+			return err
 		}
 
 		nexmoStatus, err := jsonparser.GetString(respBody, "messages", "[0]", "status")

@@ -962,6 +962,23 @@ var defaultSendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error",
+		MsgURN:  "facebook:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://graph.facebook.com/v3.3/me/messages*": {
+				httpx.NewMockResponse(429, nil, []byte(`{ "is_error": true }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"access_token": {"access_token"},
+			},
+			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Error"}}`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 func TestSending(t *testing.T) {

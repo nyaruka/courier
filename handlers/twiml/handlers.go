@@ -313,6 +313,10 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		if err != nil || resp.StatusCode/100 == 5 {
 			return courier.ErrConnectionFailed
 		}
+		// Twilio rate limits with a 429 (error 20429) and those requests aren't processed, so retry
+		if handlers.IsThrottled(resp) {
+			return courier.ErrConnectionThrottled
+		}
 
 		// see if we can parse the error if we have one
 		if resp.StatusCode/100 != 2 && len(respBody) > 0 {
@@ -402,6 +406,10 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			if err != nil || resp.StatusCode/100 == 5 {
 				return courier.ErrConnectionFailed
 			}
+			// Twilio rate limits with a 429 (error 20429) and those requests aren't processed, so retry
+			if handlers.IsThrottled(resp) {
+				return courier.ErrConnectionThrottled
+			}
 
 			// see if we can parse the error if we have one
 			if resp.StatusCode/100 != 2 && len(respBody) > 0 {
@@ -480,6 +488,10 @@ func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event event
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
 		return courier.ErrConnectionFailed
+	}
+
+	if handlers.IsThrottled(resp) {
+		return courier.ErrConnectionThrottled
 	}
 
 	response := &struct {

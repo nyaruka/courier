@@ -416,6 +416,17 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "jiochat:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://channels.jiochat.com/custom/custom_send.action": {
+				httpx.NewMockResponse(429, nil, []byte(``)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 func setupBackend(mb *test.MockBackend) {

@@ -170,6 +170,20 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.africastalking.com/version1/messaging": {
+				httpx.NewMockResponse(429, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"message": {`Error Message`}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 var sharedOutgoingCases = []OutgoingTestCase{

@@ -332,6 +332,20 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.zenvia.com/v2/channels/whatsapp/messages": {
+				httpx.NewMockResponse(429, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Error Message"}]}`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Connection Error",
 		MsgText: "Error Message",
 		MsgURN:  "tel:+250788383383",

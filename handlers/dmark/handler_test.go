@@ -150,6 +150,26 @@ var defaultSendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://smsapi1.dmarkmobile.com/sms/": {
+				httpx.NewMockResponse(429, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "Token Authy"},
+			Form: url.Values{
+				"text":     {"Error Message"},
+				"receiver": {"250788383383"},
+				"sender":   {"2020"},
+				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%s"},
+			},
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

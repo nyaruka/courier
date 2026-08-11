@@ -201,6 +201,23 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error Sending",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.clicksend.com/v3/sms/send": {
+				httpx.NewMockResponse(429, nil, []byte(`[{"Response": "101"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
+				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"Error Sending","source":"courier"}]}`,
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Failure Response",
 		MsgText: "Error Sending",
 		MsgURN:  "tel:+250788383383",

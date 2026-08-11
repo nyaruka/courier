@@ -324,11 +324,8 @@ func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event event
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authToken))
 
 	resp, _, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 == 5 {
-		return courier.ErrConnectionFailed
-	}
-	if resp.StatusCode/100 != 2 {
-		return courier.ErrResponseStatus
+	if err := handlers.ErrorFromResponse(resp, err); err != nil {
+		return err
 	}
 
 	return nil
@@ -434,6 +431,11 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 				continue
 			}
 
+			// LINE rate limits per endpoint per channel with a 429, so retry rather than failing
+			if err == nil && handlers.IsThrottled(resp) {
+				return courier.ErrConnectionThrottled
+			}
+
 			respPayload := &mtResponse{}
 			err = json.Unmarshal(respBody, respPayload)
 			if err != nil {
@@ -448,6 +450,10 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 				}
 
 				resp, respBody, _ := h.RequestHTTP(req, clog)
+
+				if handlers.IsThrottled(resp) {
+					return courier.ErrConnectionThrottled
+				}
 
 				respPayload := &mtResponse{}
 				err = json.Unmarshal(respBody, respPayload)

@@ -220,10 +220,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		kwaResp, kwaRespBody, kwaErr = h.RequestHTTP(req, clog)
 	}
 
-	if kwaErr != nil || kwaResp.StatusCode/100 == 5 {
-		return courier.ErrConnectionFailed
-	} else if kwaResp.StatusCode/100 != 2 {
-		return courier.ErrResponseStatus
+	if err := handlers.ErrorFromResponse(kwaResp, kwaErr); err != nil {
+		return err
 	}
 
 	// record external id from the last sent msg request

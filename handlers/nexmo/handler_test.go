@@ -212,6 +212,20 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.nexmo.com/sms/json": {
+				httpx.NewMockResponse(429, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"text": {"Error Message"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Invalid Token",
 		MsgText: "Simple Message",
 		MsgURN:  "tel:+250788383383",

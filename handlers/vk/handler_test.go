@@ -608,6 +608,22 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrConnectionFailed,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Simple message",
+		MsgURN:  "vk:123456789",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.vk.com/method/messages.send.json?*": {
+				httpx.NewMockResponse(429, nil, []byte(`Bad Gateway`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Response unexpected",
 		MsgText: "Simple message",
 		MsgURN:  "vk:123456789",

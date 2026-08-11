@@ -442,6 +442,25 @@ var getSendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(429, nil, []byte(`1: Unknown channel`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+			Params: url.Values{
+				"text": {`Error Message`},
+				"to":   {"+250788383383"},
+				"from": {"2020"},
+			},
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:          "Send Attachment",
 		MsgText:        "My pic!",
 		MsgURN:         "tel:+250788383383",

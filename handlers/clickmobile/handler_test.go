@@ -190,6 +190,23 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send": {
+				httpx.NewMockResponse(429, nil, []byte(`{"code":"001","desc":"Database SQL Error"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-Type": "application/json"},
+				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Error Message"}`,
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:          "Send Attachment",
 		MsgText:        "My pic!",
 		MsgURN:         "tel:+250788383383",

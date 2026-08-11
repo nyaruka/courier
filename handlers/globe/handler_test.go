@@ -218,6 +218,20 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error Sending",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests": {
+				httpx.NewMockResponse(429, nil, []byte(`[{"Response": "101"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"address":"250788383383","message":"Error Sending","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Connection Error",
 		MsgText: "Error",
 		MsgURN:  "tel:+250788383383",

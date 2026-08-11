@@ -353,6 +353,27 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedError: courier.ErrFailedWithReason("request-validation", "Your request could not be accepted"),
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+12067791234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://messaging.bandwidth.com/api/v2/users/accound-id/messages": {
+				httpx.NewMockResponse(429, nil, []byte(`{ "type": "request-validation", "description": "Your request could not be accepted" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{
+					"Content-Type":  "application/json",
+					"Accept":        "application/json",
+					"Authorization": "Basic dXNlcjE6cGFzczE=",
+				},
+				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"Error Message"}`,
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

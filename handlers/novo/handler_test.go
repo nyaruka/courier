@@ -132,6 +132,20 @@ var defaultSendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Response",
+		MsgURN:  "tel:+18686846481",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://novosmstools.com/novo_te/my-merchant-id/sendSMS*": {
+				httpx.NewMockResponse(429, nil, []byte(`{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"Error Response"}, "signature": {"9fe49f073109de29f8c6d5108fd5719ee0b70c22cedb23fffdbabc8a99b9a0a9"}},
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

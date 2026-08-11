@@ -173,6 +173,20 @@ var outgoingTestCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://www.etracker.cc/bulksms/send": {
+				httpx.NewMockResponse(429, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"Error Message","from":"macro","servid":"service-id","type":"0"}`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

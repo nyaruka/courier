@@ -373,6 +373,17 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedError: courier.ErrConnectionFailed,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "wechat:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.weixin.qq.com/cgi-bin/message/custom/send*": {
+				httpx.NewMockResponse(429, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 func setupBackend(mb *test.MockBackend) {

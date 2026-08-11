@@ -139,6 +139,21 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error",
+		MsgURN:  "freshchat:0534f78-b6e9-4f79-8853-11cedfc1f35b/c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.freshchat.com/v2/conversations": {
+				httpx.NewMockResponse(429, nil, []byte(``)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="},
+			Body:    `{"messages":[{"message_parts":[{"text":{"content":"Error"}}],"actor_id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606","actor_type":"agent"}],"channel_id":"0534f78-b6e9-4f79-8853-11cedfc1f35b","users":[{"id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606"}]}`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Connection Error",
 		MsgText: "Error",
 		MsgURN:  "freshchat:0534f78-b6e9-4f79-8853-11cedfc1f35b/c8fddfaf-622a-4a0e-b060-4f3ccbeab606",

@@ -174,6 +174,17 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error Sending",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api-public.mtarget.fr/api-sms.json*": {
+				httpx.NewMockResponse(429, nil, []byte(`{"results":[{"code": "3", "reason": "FAILED", "ticket": "null"}]}`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Error Response",
 		MsgText: "Error Sending",
 		MsgURN:  "tel:+250788383383",

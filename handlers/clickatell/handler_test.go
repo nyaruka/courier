@@ -214,6 +214,20 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://platform.clickatell.com/messages/http/send*": {
+				httpx.NewMockResponse(429, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Params: url.Values{"content": {"Error Message"}, "to": {"250788383383"}, "from": {"2020"}, "apiKey": {"API-KEY"}}},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Error Response",
 		MsgText: "Error Message",
 		MsgURN:  "tel:+250788383383",

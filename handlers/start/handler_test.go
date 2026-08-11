@@ -257,6 +257,24 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://bulk.startmobile.ua/clients.php": {
+				httpx.NewMockResponse(429, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/xml; charset=utf8",
+				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+			},
+			Body: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">Error Message</body></message>`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Response Unexpected",
 		MsgText: "Simple Message ☺",
 		MsgURN:  "tel:+250788383383",

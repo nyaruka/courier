@@ -160,6 +160,25 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error Sending",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://smsapi.hormuud.com/api/SendSMS": {
+				httpx.NewMockResponse(429, nil, []byte(`[{"Response": "101"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Bearer ghK_Wt4lshZhN",
+			},
+			Body: `{"mobile":"250788383383","message":"Error Sending","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Connection Error",
 		MsgText: "Error",
 		MsgURN:  "tel:+250788383383",

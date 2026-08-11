@@ -319,6 +319,21 @@ var defaultSendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:188885551515",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.messagebird.com/messages": {
+				httpx.NewMockResponse(429, nil, []byte(validResponse)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+			Body:    `{"recipients":["188885551515"],"reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","originator":"18005551212","body":"Simple Message ☺"}`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

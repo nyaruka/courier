@@ -150,6 +150,20 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://202.43.169.11/APIhttpU/receive2waysms.php*": {
+				httpx.NewMockResponse(429, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Params: url.Values{"message": {"Error Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}}},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Authentication Error",
 		MsgText: "Simple Message",
 		MsgURN:  "tel:+250788383383",
