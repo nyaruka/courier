@@ -856,7 +856,7 @@ func TestIncoming(t *testing.T) {
 	telegramService := buildMockTelegramService(testCases)
 	defer telegramService.Close()
 
-	chs := []courier.Channel{
+	chs := []*models.Channel{
 		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "TG", "2020", "US", []string{urns.Telegram.Prefix}, map[string]any{"auth_token": "a123"}),
 	}
 

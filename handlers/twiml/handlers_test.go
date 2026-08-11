@@ -22,19 +22,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testChannels = []courier.Channel{
+var testChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{"auth_token": "6789"}),
 }
 
-var tmsTestChannels = []courier.Channel{
+var tmsTestChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TMS", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{"auth_token": "6789"}),
 }
 
-var twTestChannels = []courier.Channel{
+var twTestChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TW", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{"auth_token": "6789"}),
 }
 
-var swTestChannels = []courier.Channel{
+var swTestChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{"auth_token": "6789"}),
 }
 
@@ -555,7 +555,7 @@ func TestIncoming(t *testing.T) {
 			models.ConfigAuthToken: "6789",
 		},
 	)
-	RunIncomingTestCases(t, []courier.Channel{waChannel}, newTWIMLHandler("T", "TwilioWhatsApp", true), waTestCases)
+	RunIncomingTestCases(t, []*models.Channel{waChannel}, newTWIMLHandler("T", "TwilioWhatsApp", true), waTestCases)
 
 	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
 		[]string{urns.WhatsApp.Prefix},
@@ -564,7 +564,7 @@ func TestIncoming(t *testing.T) {
 			models.ConfigAuthToken: "6789",
 		},
 	)
-	RunIncomingTestCases(t, []courier.Channel{twaChannel}, newTWIMLHandler("TWA", "Twilio WhatsApp", true), twaTestCases)
+	RunIncomingTestCases(t, []*models.Channel{twaChannel}, newTWIMLHandler("TWA", "Twilio WhatsApp", true), twaTestCases)
 }
 
 var defaultSendTestCases = []OutgoingTestCase{

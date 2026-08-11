@@ -84,7 +84,7 @@ func (h *BaseHandler) UseChannelRouteUUID() bool {
 	return h.uuidChannelRouting
 }
 
-func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
+func (h *BaseHandler) RedactValues(ch *models.Channel) []string {
 	if ch == nil {
 		return nil
 	}
@@ -100,18 +100,18 @@ func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
 }
 
 // SendableEvents declares no support for sending any events - handlers that can send them should override
-func (h *BaseHandler) SendableEvents(courier.Channel) map[string]time.Duration {
+func (h *BaseHandler) SendableEvents(*models.Channel) map[string]time.Duration {
 	return nil
 }
 
 // SendEvent is a stub for handlers that can't send events and shouldn't be reachable because
 // SendableEvents declares no support
-func (h *BaseHandler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
+func (h *BaseHandler) SendEvent(ctx context.Context, ch *models.Channel, event events.Event, clog *models.ChannelLog) error {
 	return fmt.Errorf("event sending not supported by %s handler", h.channelType)
 }
 
 // GetChannel returns the channel
-func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
+func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (*models.Channel, error) {
 	uuid := models.ChannelUUID(r.PathValue("uuid"))
 	return h.backend.GetChannel(ctx, h.ChannelType(), uuid)
 }

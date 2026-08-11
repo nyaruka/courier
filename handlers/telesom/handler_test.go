@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/utils/clogs"
@@ -14,7 +15,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var testChannels = []courier.Channel{
+var testChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TS", "2020", "SO", []string{urns.Phone.Prefix}, nil),
 }
 

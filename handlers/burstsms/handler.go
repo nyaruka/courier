@@ -100,7 +100,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	return nil
 }
 
-func (h *handler) RedactValues(ch courier.Channel) []string {
+func (h *handler) RedactValues(ch *models.Channel) []string {
 	return []string{
 		httpx.BasicAuth(ch.StringConfigForKey(models.ConfigUsername, ""), ch.StringConfigForKey(models.ConfigPassword, "")),
 	}

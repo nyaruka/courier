@@ -54,7 +54,7 @@ func (h *handler) Initialize(s *courier.Server) error {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	// no message? ignore this
 	if payload.Message.MessageID == 0 {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
@@ -359,7 +359,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 // SendEvent sends a typing started event to the contact as a typing chat action, see
 // https://core.telegram.org/bots/api#sendchataction
-func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
+func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event events.Event, clog *models.ChannelLog) error {
 	typing, ok := event.(*events.TypingStarted)
 	if !ok {
 		return fmt.Errorf("unsupported event type: %s", event.Type())
@@ -402,7 +402,7 @@ func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event event
 var sendableEvents = map[string]time.Duration{events.TypeTypingStarted: 4 * time.Second}
 
 // SendableEvents declares support for typing indicators
-func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
+func (h *handler) SendableEvents(*models.Channel) map[string]time.Duration {
 	return sendableEvents
 }
 
@@ -415,7 +415,7 @@ type fileResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fileID string, clog *models.ChannelLog) (string, error) {
+func (h *handler) resolveFileID(ctx context.Context, channel *models.Channel, fileID string, clog *models.ChannelLog) (string, error) {
 	confAuth := channel.ConfigForKey(models.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {

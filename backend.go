@@ -17,34 +17,34 @@ type Backend interface {
 	Stop() error
 
 	// GetChannel returns the channel with the passed in type and UUID
-	GetChannel(context.Context, models.ChannelType, models.ChannelUUID) (Channel, error)
+	GetChannel(context.Context, models.ChannelType, models.ChannelUUID) (*models.Channel, error)
 
 	// GetChannelByAddress returns the channel with the passed in type and address
-	GetChannelByAddress(context.Context, models.ChannelType, models.ChannelAddress) (Channel, error)
+	GetChannelByAddress(context.Context, models.ChannelType, models.ChannelAddress) (*models.Channel, error)
 
 	// GetContact returns (or creates) the contact for the passed in channel and URN
-	GetContact(context.Context, Channel, urns.URN, map[string]string, string, bool, *models.ChannelLog) (Contact, error)
+	GetContact(context.Context, *models.Channel, urns.URN, map[string]string, string, bool, *models.ChannelLog) (Contact, error)
 
 	// DeleteMsgByExternalID deletes a message that has been deleted on the channel side
-	DeleteMsgByExternalID(ctx context.Context, channel Channel, externalID string) error
+	DeleteMsgByExternalID(ctx context.Context, channel *models.Channel, externalID string) error
 
 	// NewIncomingMsg creates a new message from the given params
-	NewIncomingMsg(context.Context, Channel, urns.URN, string, string, *models.ChannelLog) MsgIn
+	NewIncomingMsg(context.Context, *models.Channel, urns.URN, string, string, *models.ChannelLog) MsgIn
 
 	// WriteMsg writes the passed in message to our backend
 	WriteMsg(context.Context, MsgIn, *models.ChannelLog) error
 
 	// NewStatusUpdate creates a new status update for the given message id
-	NewStatusUpdate(Channel, models.MsgUUID, models.MsgStatus, *models.ChannelLog) StatusUpdate
+	NewStatusUpdate(*models.Channel, models.MsgUUID, models.MsgStatus, *models.ChannelLog) StatusUpdate
 
 	// NewStatusUpdateByExternalID creates a new status update for the given external id
-	NewStatusUpdateByExternalID(Channel, string, models.MsgStatus, *models.ChannelLog) StatusUpdate
+	NewStatusUpdateByExternalID(*models.Channel, string, models.MsgStatus, *models.ChannelLog) StatusUpdate
 
 	// WriteStatusUpdate writes the passed in status update to our backend
 	WriteStatusUpdate(context.Context, StatusUpdate) error
 
 	// NewChannelEvent creates a new channel event for the given channel and event type
-	NewChannelEvent(Channel, models.ChannelEventType, urns.URN, *models.ChannelLog) ChannelEvent
+	NewChannelEvent(*models.Channel, models.ChannelEventType, urns.URN, *models.ChannelLog) ChannelEvent
 
 	// WriteChannelEvent writes the passed in channel event returning any error
 	WriteChannelEvent(context.Context, ChannelEvent, *models.ChannelLog) error
@@ -68,10 +68,10 @@ type Backend interface {
 	OnSendComplete(context.Context, MsgOut, StatusUpdate, *SendResult, *models.ChannelLog)
 
 	// OnReceiveComplete is called when the server has finished handling an incoming request
-	OnReceiveComplete(context.Context, Channel, []Event, *models.ChannelLog)
+	OnReceiveComplete(context.Context, *models.Channel, []Event, *models.ChannelLog)
 
 	// SaveAttachment saves an attachment to backend storage
-	SaveAttachment(context.Context, Channel, string, []byte, string) (string, error)
+	SaveAttachment(context.Context, *models.Channel, string, []byte, string) (string, error)
 
 	// ResolveMedia resolves an outgoing attachment URL to a media object
 	ResolveMedia(context.Context, string) (*models.Media, error)

@@ -35,9 +35,9 @@ func (h *mockHandler) Backend() courier.Backend              { return h.backend 
 func (h *mockHandler) ChannelName() string                   { return "Mock Handler" }
 func (h *mockHandler) ChannelType() models.ChannelType       { return models.ChannelType("MCK") }
 func (h *mockHandler) UseChannelRouteUUID() bool             { return true }
-func (h *mockHandler) RedactValues(courier.Channel) []string { return []string{"sesame"} }
+func (h *mockHandler) RedactValues(*models.Channel) []string { return []string{"sesame"} }
 
-func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
+func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (*models.Channel, error) {
 	dmChannel := NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 	return dmChannel, nil
 }
@@ -79,7 +79,7 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier
 }
 
 // SendEvent sends the given event, logging any HTTP calls or errors
-func (h *mockHandler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
+func (h *mockHandler) SendEvent(ctx context.Context, ch *models.Channel, event events.Event, clog *models.ChannelLog) error {
 	req, _ := httpx.NewRequest(ctx, "POST", "http://mock.com/action", nil, nil)
 	trace, resp, err := utils.TraceHTTP(h.rt.HTTP, req, 1024)
 	if trace != nil {
@@ -94,7 +94,7 @@ func (h *mockHandler) SendEvent(ctx context.Context, ch courier.Channel, event e
 
 // SendableEvents declares support for typing started with a 10 second resend interval, plus typing
 // stopped for channels configured with supports_stop - so tests can cover both capability cases
-func (h *mockHandler) SendableEvents(ch courier.Channel) map[string]time.Duration {
+func (h *mockHandler) SendableEvents(ch *models.Channel) map[string]time.Duration {
 	if ch.BoolConfigForKey("supports_stop", false) {
 		return map[string]time.Duration{events.TypeTypingStarted: 10 * time.Second, events.TypeTypingStopped: 0}
 	}
@@ -118,7 +118,7 @@ func (h *mockHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWr
 }
 
 // ReceiveMsg sends the passed in message, returning any error
-func (h *mockHandler) receiveMsg(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *mockHandler) receiveMsg(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	r.ParseForm()
 	from := r.Form.Get("from")
 	text := r.Form.Get("text")

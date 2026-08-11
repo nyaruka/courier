@@ -64,7 +64,7 @@ type moStatusForm struct {
 }
 
 // receiveMsg is our HTTP handler function for incoming messages
-func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMsg(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	form := &moMsgForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -112,7 +112,7 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for outgoing messages statuses
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	form := &moStatusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -235,7 +235,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	return nil
 }
 
-func (h *handler) newSendForm(channel courier.Channel, msgType, toContact string) map[string]string {
+func (h *handler) newSendForm(channel *models.Channel, msgType, toContact string) map[string]string {
 	callbackDomain := channel.CallbackDomain(h.Runtime().Config.Domain)
 	statusURL := fmt.Sprintf("https://%s/c/kwa/%s/status", callbackDomain, channel.UUID())
 

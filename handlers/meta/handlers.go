@@ -113,7 +113,7 @@ type Notifications struct {
 	} `json:"entry"`
 }
 
-func (h *handler) RedactValues(ch courier.Channel) []string {
+func (h *handler) RedactValues(ch *models.Channel) []string {
 	vals := h.BaseHandler.RedactValues(ch)
 	vals = append(vals, h.Runtime().Config.FacebookApplicationSecret, h.Runtime().Config.FacebookWebhookSecret, h.Runtime().Config.WhatsappAdminSystemUserToken)
 	return vals
@@ -125,7 +125,7 @@ func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, 
 }
 
 // GetChannel returns the channel
-func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
+func (h *handler) GetChannel(ctx context.Context, r *http.Request) (*models.Channel, error) {
 	if r.Method == http.MethodGet {
 		return nil, nil
 	}
@@ -169,7 +169,7 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 }
 
 // receiveVerify handles Facebook's webhook verification callback
-func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveVerify(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	mode := r.URL.Query().Get("hub.mode")
 
 	// this isn't a subscribe verification, that's an error
@@ -211,7 +211,7 @@ func (h *handler) resolveMediaURL(mediaID string, token string, clog *models.Cha
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *Notifications, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *Notifications, clog *models.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -244,7 +244,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
-func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, []any, error) {
+func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, []any, error) {
 	// the list of events we deal with
 	events := make([]courier.Event, 0, 2)
 
@@ -375,7 +375,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 	return events, data, nil
 }
 
-func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel courier.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, []any, error) {
+func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *models.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, []any, error) {
 	var err error
 
 	// the list of events we deal with
@@ -740,11 +740,11 @@ var sendableEvents = map[models.ChannelType]map[string]time.Duration{
 }
 
 // SendableEvents declares support for typing indicators
-func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
+func (h *handler) SendableEvents(*models.Channel) map[string]time.Duration {
 	return sendableEvents[h.ChannelType()]
 }
 
-func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
+func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event events.Event, clog *models.ChannelLog) error {
 	if h.ChannelType() == "FBA" || h.ChannelType() == "IG" {
 		return h.sendFacebookInstagramEvent(ctx, ch, event, clog)
 	} else if h.ChannelType() == "WAC" {
@@ -756,7 +756,7 @@ func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event event
 
 // Sends typing started/stopped events as typing_on/typing_off sender actions.
 // See https://developers.facebook.com/docs/messenger-platform/send-messages/sender-actions
-func (h *handler) sendFacebookInstagramEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
+func (h *handler) sendFacebookInstagramEvent(ctx context.Context, ch *models.Channel, event events.Event, clog *models.ChannelLog) error {
 	var urn urns.URN
 	var action string
 	switch typed := event.(type) {
@@ -815,7 +815,7 @@ func (h *handler) sendFacebookInstagramEvent(ctx context.Context, ch courier.Cha
 // the referenced incoming message as read with a typing_indicator field - so it also marks messages as
 // read, which is acceptable because we only send one when a reply is being composed.
 // See https://developers.facebook.com/docs/whatsapp/cloud-api/typing-indicators
-func (h *handler) sendWhatsAppEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
+func (h *handler) sendWhatsAppEvent(ctx context.Context, ch *models.Channel, event events.Event, clog *models.ChannelLog) error {
 	typing, ok := event.(*events.TypingStarted)
 	if !ok {
 		return fmt.Errorf("unsupported event type: %s", event.Type())
@@ -902,7 +902,7 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 }
 
 // DescribeURN looks up URN metadata for new contacts
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *models.ChannelLog) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel *models.Channel, urn urns.URN, clog *models.ChannelLog) (map[string]string, error) {
 	if channel.ChannelType() == "WAC" {
 		return map[string]string{}, nil
 	}
@@ -988,7 +988,7 @@ func fbCalculateSignature(appSecret string, body []byte) (string, error) {
 }
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set
-func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
+func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
 	token := h.Runtime().Config.WhatsappAdminSystemUserToken
 	if token == "" {
 		return nil, fmt.Errorf("missing token for WAC channel")

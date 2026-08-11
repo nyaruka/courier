@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testChannels = []courier.Channel{
+var testChannels = []*models.Channel{
 	test.NewMockChannel(
 		"8eb23e93-5ecb-45ba-b726-3b064e0c568c",
 		"D3C",
@@ -343,7 +343,7 @@ var testCasesD3C = []IncomingTestCase{
 	},
 }
 
-func buildMockD3MediaService(testChannels []courier.Channel, testCases []IncomingTestCase) *httptest.Server {
+func buildMockD3MediaService(testChannels []*models.Channel, testCases []IncomingTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fileURL := ""
 
@@ -366,7 +366,7 @@ func buildMockD3MediaService(testChannels []courier.Channel, testCases []Incomin
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(fmt.Sprintf(`{ "url": "%s" }`, fileURL)))
 	}))
-	testChannels[0].(*test.MockChannel).SetConfig("base_url", server.URL)
+	test.SetChannelConfig(testChannels[0], "base_url", server.URL)
 
 	// update our tests media urls
 	for _, tc := range testCases {

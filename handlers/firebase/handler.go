@@ -65,7 +65,7 @@ type receiveForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	form := &receiveForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -106,7 +106,7 @@ type registerForm struct {
 }
 
 // registerContact is our HTTP handler function for when a contact is registered (or renewed)
-func (h *handler) registerContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) registerContact(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	form := &registerForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -258,7 +258,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	return nil
 }
 
-func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
+func (h *handler) getAccessToken(channel *models.Channel) (string, error) {
 	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID())
 
 	h.fetchTokenMutex.Lock()
@@ -295,7 +295,7 @@ func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 }
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in valkey
-func (h *handler) fetchAccessToken(channel courier.Channel) (string, time.Duration, error) {
+func (h *handler) fetchAccessToken(channel *models.Channel) (string, time.Duration, error) {
 	credentialsJSONRaw := channel.ConfigForKey(configCredentialsFile, nil)
 	credentialsJSON, _ := credentialsJSONRaw.(map[string]any)
 	if credentialsJSON == nil {

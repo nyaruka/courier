@@ -78,7 +78,7 @@ type Notifications struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *Notifications, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *Notifications, clog *models.ChannelLog) ([]courier.Event, error) {
 
 	// is not a 'whatsapp_business_account' object? ignore it
 	if payload.Object != "whatsapp_business_account" {
@@ -101,7 +101,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
-func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, []any, error) {
+func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, []any, error) {
 	// the list of events we deal with
 	events := make([]courier.Event, 0, 2)
 
@@ -231,7 +231,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 }
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set
-func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
+func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
 	token := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if token == "" {
 		return nil, fmt.Errorf("missing token for D3C channel")
@@ -245,7 +245,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Ch
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
-func (h *handler) resolveMediaURL(channel courier.Channel, mediaID string, clog *models.ChannelLog) (string, error) {
+func (h *handler) resolveMediaURL(channel *models.Channel, mediaID string, clog *models.ChannelLog) (string, error) {
 	// sometimes WA will send an attachment with status=undownloaded and no ID
 	if mediaID == "" {
 		return "", nil
@@ -326,7 +326,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 var sendableEvents = map[string]time.Duration{events.TypeTypingStarted: 20 * time.Second}
 
 // SendableEvents declares support for typing indicators
-func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
+func (h *handler) SendableEvents(*models.Channel) map[string]time.Duration {
 	return sendableEvents
 }
 
@@ -334,7 +334,7 @@ func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
 // the referenced incoming message as read with a typing_indicator field - so it also marks messages as
 // read, which is acceptable because we only send one when a reply is being composed.
 // See https://developers.facebook.com/docs/whatsapp/cloud-api/typing-indicators
-func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
+func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event events.Event, clog *models.ChannelLog) error {
 	typing, ok := event.(*events.TypingStarted)
 	if !ok {
 		return fmt.Errorf("unsupported event type: %s", event.Type())

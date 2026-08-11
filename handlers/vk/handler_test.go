@@ -28,7 +28,7 @@ const (
 	receiveURL  = "/c/vk/" + channelUUID + "/receive"
 )
 
-var testChannels = []courier.Channel{
+var testChannels = []*models.Channel{
 	test.NewMockChannel(
 		channelUUID,
 		"VK",

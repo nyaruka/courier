@@ -58,7 +58,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	// check authorization
 	secret := channel.StringConfigForKey(configSecret, "")
 	if fmt.Sprintf("Token %s", secret) != r.Header.Get("Authorization") {
@@ -84,7 +84,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // BuildAttachmentRequest download media for message attachment with RC auth_token/user_id set
-func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
+func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
 	adminAuthToken := channel.StringConfigForKey(configAdminAuthToken, "")
 	adminUserID := channel.StringConfigForKey(configAdminUserID, "")
 	if adminAuthToken == "" || adminUserID == "" {

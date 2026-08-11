@@ -274,13 +274,13 @@ func (b *backend) Stop() error {
 }
 
 // GetChannel returns the channel for the passed in type and UUID
-func (b *backend) GetChannel(ctx context.Context, typ models.ChannelType, uuid models.ChannelUUID) (courier.Channel, error) {
+func (b *backend) GetChannel(ctx context.Context, typ models.ChannelType, uuid models.ChannelUUID) (*models.Channel, error) {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
 	ch, err := b.channelsByUUID.GetOrFetch(timeout, uuid)
 	if err != nil {
-		return nil, err // so we don't return a non-nil interface and nil ptr
+		return nil, err
 	}
 
 	if typ != models.AnyChannelType && ch.ChannelType() != typ {
@@ -291,13 +291,13 @@ func (b *backend) GetChannel(ctx context.Context, typ models.ChannelType, uuid m
 }
 
 // GetChannelByAddress returns the channel with the passed in type and address
-func (b *backend) GetChannelByAddress(ctx context.Context, typ models.ChannelType, address models.ChannelAddress) (courier.Channel, error) {
+func (b *backend) GetChannelByAddress(ctx context.Context, typ models.ChannelType, address models.ChannelAddress) (*models.Channel, error) {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
 	ch, err := b.channelsByAddr.GetOrFetch(timeout, address)
 	if err != nil {
-		return nil, err // so we don't return a non-nil interface and nil ptr
+		return nil, err
 	}
 
 	if typ != models.AnyChannelType && ch.ChannelType() != typ {
@@ -308,15 +308,13 @@ func (b *backend) GetChannelByAddress(ctx context.Context, typ models.ChannelTyp
 }
 
 // GetContact returns the contact for the passed in channel and URN
-func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *models.ChannelLog) (courier.Contact, error) {
-	dbChannel := c.(*models.Channel)
-	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, authTokens, name, allowCreate, clog)
+func (b *backend) GetContact(ctx context.Context, c *models.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *models.ChannelLog) (courier.Contact, error) {
+	return contactForURN(ctx, b, c.OrgID_, c, urn, authTokens, name, allowCreate, clog)
 }
 
 // DeleteMsgByExternalID resolves a message external id and queues a task to mailroom to delete it
-func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
-	ch := channel.(*models.Channel)
-	row := b.rt.DB.QueryRowContext(ctx, `SELECT uuid, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_identifier = $2 AND direction = 'I'`, ch.ID(), externalID)
+func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel *models.Channel, externalID string) error {
+	row := b.rt.DB.QueryRowContext(ctx, `SELECT uuid, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_identifier = $2 AND direction = 'I'`, channel.ID(), externalID)
 
 	var msgUUID models.MsgUUID
 	var contactID models.ContactID
@@ -328,7 +326,7 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Cha
 		rc := b.rt.VK.Get()
 		defer rc.Close()
 
-		if err := queueMsgDeleted(ctx, rc, ch, msgUUID, contactID); err != nil {
+		if err := queueMsgDeleted(ctx, rc, channel, msgUUID, contactID); err != nil {
 			return fmt.Errorf("error queuing message deleted task: %w", err)
 		}
 	}
@@ -337,17 +335,15 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Cha
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, urn urns.URN, text string, extID string, clog *models.ChannelLog) courier.MsgIn {
+func (b *backend) NewIncomingMsg(ctx context.Context, channel *models.Channel, urn urns.URN, text string, extID string, clog *models.ChannelLog) courier.MsgIn {
 	// strip out invalid UTF8 and NULL chars
 	urn = urns.URN(dbutil.ToValidUTF8(string(urn)))
 	text = dbutil.ToValidUTF8(text)
 	extID = dbutil.ToValidUTF8(extID)
 
-	ch := channel.(*models.Channel)
+	msg := models.NewIncomingMsg(channel, urn, text, extID, clog.UUID)
 
-	msg := models.NewIncomingMsg(ch, urn, text, extID, clog.UUID)
-
-	return &MsgIn{MsgIn: msg, ChannelUUID_: channel.UUID(), URN_: urn, channel: ch}
+	return &MsgIn{MsgIn: msg, ChannelUUID_: channel.UUID(), URN_: urn, channel: channel}
 }
 
 // PopNextOutgoingMsg pops the next message that needs to be sent
@@ -397,7 +393,7 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 	}
 
 	// add some extra info to the popped message
-	msg.channel = channel.(*models.Channel)
+	msg.channel = channel
 	msg.workerToken = token
 
 	// clear out our seen incoming messages
@@ -451,9 +447,9 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 
 	// if send result includes a new URN to add to the contact, queue a contact_changed task
 	if wasSuccess && res != nil && res.NewURN() != urns.NilURN && !msg.Contact().HasOtherURN(res.NewURN()) {
-		dbChannel := msg.Channel().(*models.Channel)
-		err := queueMailroomTask(ctx, rc, "contact_changed", dbChannel.OrgID_, msg.Contact().ID, map[string]any{
-			"channel_id": dbChannel.ID_,
+		ch := msg.Channel()
+		err := queueMailroomTask(ctx, rc, "contact_changed", ch.OrgID_, msg.Contact().ID, map[string]any{
+			"channel_id": ch.ID_,
 			"new_urn": map[string]string{
 				"value":  res.NewURN().String(),
 				"action": "append",
@@ -468,7 +464,7 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 }
 
 // OnReceiveComplete is called when the server has finished handling an incoming request
-func (b *backend) OnReceiveComplete(ctx context.Context, ch courier.Channel, events []courier.Event, clog *models.ChannelLog) {
+func (b *backend) OnReceiveComplete(ctx context.Context, ch *models.Channel, events []courier.Event, clog *models.ChannelLog) {
 	b.stats.RecordIncoming(ch.ChannelType(), events, clog.Elapsed)
 }
 
@@ -496,12 +492,12 @@ func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *models.
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdate(channel courier.Channel, uuid models.MsgUUID, status models.MsgStatus, clog *models.ChannelLog) courier.StatusUpdate {
+func (b *backend) NewStatusUpdate(channel *models.Channel, uuid models.MsgUUID, status models.MsgStatus, clog *models.ChannelLog) courier.StatusUpdate {
 	return newStatusUpdate(channel, uuid, "", status, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status models.MsgStatus, clog *models.ChannelLog) courier.StatusUpdate {
+func (b *backend) NewStatusUpdateByExternalID(channel *models.Channel, externalID string, status models.MsgStatus, clog *models.ChannelLog) courier.StatusUpdate {
 	return newStatusUpdate(channel, "", externalID, status, clog)
 }
 
@@ -543,7 +539,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (b *backend) NewChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *models.ChannelLog) courier.ChannelEvent {
+func (b *backend) NewChannelEvent(channel *models.Channel, eventType models.ChannelEventType, urn urns.URN, clog *models.ChannelLog) courier.ChannelEvent {
 	return newChannelEvent(channel, eventType, urn, clog)
 }
 
@@ -562,14 +558,14 @@ func (b *backend) WriteChannelLog(ctx context.Context, clog *models.ChannelLog) 
 }
 
 // SaveAttachment saves an attachment to backend storage
-func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, contentType string, data []byte, extension string) (string, error) {
+func (b *backend) SaveAttachment(ctx context.Context, ch *models.Channel, contentType string, data []byte, extension string) (string, error) {
 	// create our filename
 	filename := string(uuids.NewV4())
 	if extension != "" {
 		filename = fmt.Sprintf("%s.%s", filename, extension)
 	}
 
-	orgID := ch.(*models.Channel).OrgID()
+	orgID := ch.OrgID()
 
 	path := filepath.Join("attachments", strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 

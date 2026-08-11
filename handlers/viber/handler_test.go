@@ -418,13 +418,13 @@ func TestOutgoing(t *testing.T) {
 	RunOutgoingTestCases(t, buttonLayoutChannel, newHandler(), buttonLayoutSendTestCases, []string{"Token"}, nil)
 }
 
-var testChannels = []courier.Channel{
+var testChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", []string{urns.Viber.Prefix}, map[string]any{
 		models.ConfigAuthToken: "Token",
 	}),
 }
 
-var testChannelsWithWelcomeMessage = []courier.Channel{
+var testChannelsWithWelcomeMessage = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", []string{urns.Viber.Prefix}, map[string]any{
 		models.ConfigAuthToken:    "Token",
 		configViberWelcomeMessage: "Welcome to VP, Please subscribe here for more.",

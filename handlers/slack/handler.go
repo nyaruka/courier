@@ -52,7 +52,7 @@ func (h *handler) Initialize(s *courier.Server) error {
 	return nil
 }
 
-func handleURLVerification(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload) ([]courier.Event, error) {
+func handleURLVerification(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload) ([]courier.Event, error) {
 	validationToken := channel.StringConfigForKey(configValidationToken, "")
 	if !utils.SecretEqual(payload.Token, validationToken) {
 		w.WriteHeader(http.StatusForbidden)
@@ -64,7 +64,7 @@ func handleURLVerification(ctx context.Context, channel courier.Channel, w http.
 	return nil, nil
 }
 
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	if payload.Type == "url_verification" {
 		clog.Type = models.ChannelLogTypeWebhookVerify
 
@@ -104,7 +104,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 }
 
-func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file File, clog *models.ChannelLog) (string, error) {
+func (h *handler) resolveFile(ctx context.Context, channel *models.Channel, file File, clog *models.ChannelLog) (string, error) {
 	userToken := channel.StringConfigForKey(configUserToken, "")
 
 	fileApiURL := apiURL + "/files.sharedPublicURL"
@@ -288,7 +288,7 @@ func (h *handler) sendFilePart(msg courier.MsgOut, token string, fileParams *Fil
 }
 
 // DescribeURN handles Slack user details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *models.ChannelLog) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel *models.Channel, urn urns.URN, clog *models.ChannelLog) (map[string]string, error) {
 	resource := "/users.info"
 	urlStr := apiURL + resource
 

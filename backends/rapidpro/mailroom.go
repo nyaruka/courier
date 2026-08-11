@@ -14,7 +14,7 @@ import (
 var mrQueue = queues.NewFairV2("tasks:realtime", 100)
 
 func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *MsgIn) error {
-	channel := m.Channel().(*models.Channel)
+	channel := m.Channel()
 
 	body := map[string]any{
 		"channel_id":      channel.ID_,

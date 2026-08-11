@@ -31,7 +31,7 @@ Proin vulputate id justo non aliquet.
 Duis eu arcu pharetra, laoreet nunc at, pharetra sapien. Nulla eu libero diam.
 Donec euismod dapibus ligula, sit amet hendrerit neque vulputate ac.`
 
-var testChannels = []courier.Channel{
+var testChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
 		[]string{urns.Firebase.Prefix},
 		map[string]any{

@@ -26,7 +26,7 @@ const (
 	receiveURL  = "/c/sl/" + channelUUID + "/receive/"
 )
 
-var testChannels = []courier.Channel{
+var testChannels = []*models.Channel{
 	test.NewMockChannel(channelUUID, "SL", "2022", "US", []string{urns.Slack.Prefix}, map[string]any{"bot_token": "xoxb-abc123", "verification_token": "one-long-verification-token"}),
 }
 

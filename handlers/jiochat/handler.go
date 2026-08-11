@@ -70,7 +70,7 @@ type verifyForm struct {
 }
 
 // VerifyURL is our HTTP handler function for Jiochat config URL verification callbacks
-func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) VerifyURL(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -111,7 +111,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	if payload.MsgID == "" && payload.Event == "" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'"))
 	}
@@ -197,7 +197,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 }
 
 // DescribeURN handles Jiochat contact details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *models.ChannelLog) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel *models.Channel, urn urns.URN, clog *models.ChannelLog) (map[string]string, error) {
 	accessToken, err := h.getAccessToken(channel, clog)
 	if err != nil {
 		return nil, err
@@ -224,14 +224,14 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	return map[string]string{"name": nickname}, nil
 }
 
-func (h *handler) RedactValues(ch courier.Channel) []string {
+func (h *handler) RedactValues(ch *models.Channel) []string {
 	return []string{
 		ch.StringConfigForKey(configAppSecret, ""),
 	}
 }
 
 // BuildAttachmentRequest download media for message attachment
-func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
+func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
 	parsedURL, err := url.Parse(attachmentURL)
 	if err != nil {
 		return nil, err
@@ -250,7 +250,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Ch
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
-func (h *handler) getAccessToken(channel courier.Channel, clog *models.ChannelLog) (string, error) {
+func (h *handler) getAccessToken(channel *models.Channel, clog *models.ChannelLog) (string, error) {
 	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID())
 
 	h.fetchTokenMutex.Lock()
@@ -293,7 +293,7 @@ type fetchPayload struct {
 }
 
 // fetchAccessToken tries to fetch a new token for our channel
-func (h *handler) fetchAccessToken(channel courier.Channel, clog *models.ChannelLog) (string, time.Duration, error) {
+func (h *handler) fetchAccessToken(channel *models.Channel, clog *models.ChannelLog) (string, time.Duration, error) {
 	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "auth/token.action"))
 	payload := &fetchPayload{
 		GrantType:    "client_credentials",

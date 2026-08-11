@@ -76,7 +76,7 @@ type moPayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	if payload.Message != "" {
 		clog.Type = models.ChannelLogTypeMsgReceive
 
@@ -167,14 +167,14 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	return nil
 }
 
-func (h *handler) RedactValues(ch courier.Channel) []string {
+func (h *handler) RedactValues(ch *models.Channel) []string {
 	return []string{
 		ch.StringConfigForKey(models.ConfigAPIKey, ""),
 		ch.StringConfigForKey(models.ConfigAuthToken, ""),
 	}
 }
 
-func (h *handler) getAccessToken(channel courier.Channel, clog *models.ChannelLog) (string, error) {
+func (h *handler) getAccessToken(channel *models.Channel, clog *models.ChannelLog) (string, error) {
 	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID())
 
 	h.fetchTokenMutex.Lock()
@@ -211,7 +211,7 @@ func (h *handler) getAccessToken(channel courier.Channel, clog *models.ChannelLo
 }
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
-func (h *handler) fetchAccessToken(channel courier.Channel, clog *models.ChannelLog) (string, time.Duration, error) {
+func (h *handler) fetchAccessToken(channel *models.Channel, clog *models.ChannelLog) (string, time.Duration, error) {
 	form := url.Values{
 		"client_id":     []string{channel.StringConfigForKey(models.ConfigAPIKey, "")},
 		"client_secret": []string{channel.StringConfigForKey(models.ConfigAuthToken, "")},

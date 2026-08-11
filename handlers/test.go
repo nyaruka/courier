@@ -151,7 +151,7 @@ func newServer(backend courier.Backend) *courier.Server {
 }
 
 // RunIncomingTestCases runs all the passed in tests cases for the passed in channel configurations
-func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler courier.ChannelHandler, testCases []IncomingTestCase) {
+func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler courier.ChannelHandler, testCases []IncomingTestCase) {
 	mb := test.NewMockBackend()
 	s := newServer(mb)
 
@@ -278,7 +278,7 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 }
 
 // SendPrepFunc allows test cases to modify the channel, msg or server before a message is sent
-type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel, courier.MsgOut)
+type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, *models.Channel, courier.MsgOut)
 
 type ExpectedRequest struct {
 	Headers      map[string]string
@@ -344,7 +344,7 @@ type OutgoingTestCase struct {
 }
 
 // Msg creates the test message for this test case
-func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch courier.Channel) courier.MsgOut {
+func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch *models.Channel) courier.MsgOut {
 	msgOrigin := models.MsgOriginFlow
 	if tc.MsgOrigin != "" {
 		msgOrigin = tc.MsgOrigin
@@ -373,7 +373,7 @@ func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch courier.Channel) courie
 }
 
 // RunOutgoingTestCases runs all the passed in test cases against the channel
-func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier.ChannelHandler, testCases []OutgoingTestCase, checkRedacted []string, setupBackend func(*test.MockBackend)) {
+func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler courier.ChannelHandler, testCases []OutgoingTestCase, checkRedacted []string, setupBackend func(*test.MockBackend)) {
 	mb := test.NewMockBackend()
 	if setupBackend != nil {
 		setupBackend(mb)

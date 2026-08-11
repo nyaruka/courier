@@ -52,7 +52,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateForm(payload, r)
 	if err != nil {
@@ -127,7 +127,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 }
 
 // FetchToken gets the current token for this channel, either from Redis if cached or by requesting it
-func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg courier.MsgOut, username, password string, clog *models.ChannelLog) (string, error) {
+func (h *handler) FetchToken(ctx context.Context, channel *models.Channel, msg courier.MsgOut, username, password string, clog *models.ChannelLog) (string, error) {
 	// first check whether we have it in redis
 	var token string
 	h.WithValkeyConn(func(rc redis.Conn) {

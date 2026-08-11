@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var instgramTestChannels = []courier.Channel{
+var instgramTestChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "IG", "12345", "", []string{urns.Instagram.Prefix}, map[string]any{models.ConfigAuthToken: "a123"}),
 }
 

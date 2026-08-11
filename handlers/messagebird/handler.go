@@ -98,7 +98,7 @@ func (h *handler) Initialize(s *courier.Server) error {
 	return nil
 }
 
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 
 	// get our params
 	receivedStatus := &ReceivedStatus{}
@@ -144,7 +144,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -288,7 +288,7 @@ func calculateSignature(body []byte) string {
 	return hex.EncodeToString(preHashSignature[:])
 }
 
-func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
+func (h *handler) validateSignature(c *models.Channel, r *http.Request) error {
 	if !h.validateSignatures {
 		return nil
 	}

@@ -12,12 +12,12 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var testWhatsappChannels = []courier.Channel{
+var testWhatsappChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVW", "2020", "BR", []string{urns.WhatsApp.Prefix}, map[string]any{"api_key": "zv-api-token"}),
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", []string{urns.WhatsApp.Prefix}, map[string]any{"api_key": "zv-api-token"}),
 }
 
-var testSMSChannels = []courier.Channel{
+var testSMSChannels = []*models.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", []string{urns.Phone.Prefix}, map[string]any{"api_key": "zv-api-token"}),
 }
 
