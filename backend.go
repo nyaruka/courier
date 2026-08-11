@@ -29,10 +29,10 @@ type Backend interface {
 	DeleteMsgByExternalID(ctx context.Context, channel *models.Channel, externalID string) error
 
 	// NewIncomingMsg creates a new message from the given params
-	NewIncomingMsg(context.Context, *models.Channel, urns.URN, string, string, *models.ChannelLog) MsgIn
+	NewIncomingMsg(context.Context, *models.Channel, urns.URN, string, string, *models.ChannelLog) *models.MsgIn
 
 	// WriteMsg writes the passed in message to our backend
-	WriteMsg(context.Context, MsgIn, *models.ChannelLog) error
+	WriteMsg(context.Context, *models.MsgIn, *models.ChannelLog) error
 
 	// NewStatusUpdate creates a new status update for the given message id
 	NewStatusUpdate(*models.Channel, models.MsgUUID, models.MsgStatus, *models.ChannelLog) *models.StatusUpdate
@@ -44,17 +44,17 @@ type Backend interface {
 	WriteStatusUpdate(context.Context, *models.StatusUpdate) error
 
 	// NewChannelEvent creates a new channel event for the given channel and event type
-	NewChannelEvent(*models.Channel, models.ChannelEventType, urns.URN, *models.ChannelLog) ChannelEvent
+	NewChannelEvent(*models.Channel, models.ChannelEventType, urns.URN, *models.ChannelLog) *models.ChannelEvent
 
 	// WriteChannelEvent writes the passed in channel event returning any error
-	WriteChannelEvent(context.Context, ChannelEvent, *models.ChannelLog) error
+	WriteChannelEvent(context.Context, *models.ChannelEvent, *models.ChannelLog) error
 
 	// WriteChannelLog writes the passed in channel log to our backend
 	WriteChannelLog(context.Context, *models.ChannelLog) error
 
 	// PopNextOutgoingMsg returns the next message that needs to be sent, callers should call OnSendComplete with the
 	// returned message when they have dealt with the message (regardless of whether it was sent or not)
-	PopNextOutgoingMsg(context.Context) (MsgOut, error)
+	PopNextOutgoingMsg(context.Context) (*models.MsgOut, error)
 
 	// WasMsgSent returns whether the backend thinks the passed in message was already sent. This can be used in cases where
 	// a backend wants to implement a failsafe against double sending messages (say if they were double queued)
@@ -65,7 +65,7 @@ type Backend interface {
 	ClearMsgSent(context.Context, models.MsgUUID) error
 
 	// OnSendComplete is called when the sender has finished trying to send a message
-	OnSendComplete(context.Context, MsgOut, *models.StatusUpdate, *SendResult, *models.ChannelLog)
+	OnSendComplete(context.Context, *models.MsgOut, *models.StatusUpdate, *SendResult, *models.ChannelLog)
 
 	// OnReceiveComplete is called when the server has finished handling an incoming request
 	OnReceiveComplete(context.Context, *models.Channel, []Event, *models.ChannelLog)

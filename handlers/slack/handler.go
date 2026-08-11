@@ -99,7 +99,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 			msg.WithAttachment(attURL)
 		}
 
-		return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+		return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 	}
 	return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 }
@@ -147,7 +147,7 @@ func (h *handler) resolveFile(ctx context.Context, channel *models.Channel, file
 	return filePath, nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	botToken := msg.Channel().StringConfigForKey(configBotToken, "")
 	if botToken == "" {
 		return courier.ErrChannelConfig
@@ -177,7 +177,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	return nil
 }
 
-func (h *handler) sendTextMsgPart(msg courier.MsgOut, token string, clog *models.ChannelLog) error {
+func (h *handler) sendTextMsgPart(msg *models.MsgOut, token string, clog *models.ChannelLog) error {
 	sendURL := apiURL + "/chat.postMessage"
 
 	msgPayload := &mtPayload{
@@ -218,7 +218,7 @@ func (h *handler) sendTextMsgPart(msg courier.MsgOut, token string, clog *models
 	return nil
 }
 
-func (h *handler) parseAttachmentToFileParams(msg courier.MsgOut, attachment string, clog *models.ChannelLog) (*FileParams, error) {
+func (h *handler) parseAttachmentToFileParams(msg *models.MsgOut, attachment string, clog *models.ChannelLog) (*FileParams, error) {
 	_, attURL := handlers.SplitAttachment(attachment)
 
 	req, err := http.NewRequest(http.MethodGet, attURL, nil)
@@ -238,7 +238,7 @@ func (h *handler) parseAttachmentToFileParams(msg courier.MsgOut, attachment str
 	return &FileParams{File: respBody, FileName: filename, Channels: msg.URN().Path()}, nil
 }
 
-func (h *handler) sendFilePart(msg courier.MsgOut, token string, fileParams *FileParams, clog *models.ChannelLog) error {
+func (h *handler) sendFilePart(msg *models.MsgOut, token string, fileParams *FileParams, clog *models.ChannelLog) error {
 	uploadURL := apiURL + "/files.upload"
 
 	body := &bytes.Buffer{}

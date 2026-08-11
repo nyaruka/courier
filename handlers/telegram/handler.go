@@ -152,7 +152,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
 // isValidButtonURL approximates Telegram's validation of inline keyboard button URLs, which accepts HTTP(S) and
@@ -184,7 +184,7 @@ type mtResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.Values, keyboard Markup, clog *models.ChannelLog) (string, error) {
+func (h *handler) sendMsgPart(msg *models.MsgOut, token, path string, form url.Values, keyboard Markup, clog *models.ChannelLog) (string, error) {
 	// either include or remove our keyboard
 	form.Add("parse_mode", "Markdown")
 	if keyboard == nil {
@@ -228,7 +228,7 @@ func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.V
 	return "", courier.ErrResponseContent
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
 		return courier.ErrChannelConfig

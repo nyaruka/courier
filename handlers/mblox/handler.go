@@ -101,7 +101,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, payload.Body, payload.ID, clog).WithReceivedOn(date.UTC())
 
 		// and finally write our message
-		return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+		return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 	}
 
 	return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("not handled, unknown type: %s", payload.Type))
@@ -114,7 +114,7 @@ type mtPayload struct {
 	DeliveryReport string   `json:"delivery_report"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")

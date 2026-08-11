@@ -80,7 +80,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		msg.WithAttachment(attachment.URL)
 	}
 
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
 // BuildAttachmentRequest download media for message attachment with RC auth_token/user_id set
@@ -106,7 +106,7 @@ type mtPayload struct {
 	Attachments []RCAttachment `json:"attachments,omitempty"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	baseURL := msg.Channel().StringConfigForKey(configBaseURL, "")
 	secret := msg.Channel().StringConfigForKey(configSecret, "")
 	botUsername := msg.Channel().StringConfigForKey(configBotUsername, "")

@@ -85,7 +85,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, msgID, clog).WithReceivedOn(date.UTC())
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
 type statusForm struct {
@@ -123,7 +123,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	if username == "" || password == "" {

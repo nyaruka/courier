@@ -423,7 +423,7 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 	return nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	params := buildApiBaseParams(msg.Channel())
 	params.Set(paramUserId, msg.URN().Path())
 	params.Set(paramRandomId, string(msg.UUID()))
@@ -462,7 +462,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 }
 
 // builds msg text with attachment links (if needed) and attachments list param, also returns the errors that occurred
-func (h *handler) buildTextAndAttachmentParams(msg courier.MsgOut, clog *models.ChannelLog) (string, string) {
+func (h *handler) buildTextAndAttachmentParams(msg *models.MsgOut, clog *models.ChannelLog) (string, string) {
 	var msgAttachments []string
 
 	textBuf := bytes.Buffer{}

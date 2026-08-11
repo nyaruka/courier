@@ -289,7 +289,7 @@ func (s *Server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			}
 		}()
 
-		clog := NewChannelLogForIncoming(logType, channel, recorder, handler.RedactValues(channel))
+		clog := models.NewChannelLogForIncoming(logType, channel, recorder, handler.RedactValues(channel))
 
 		events, hErr := handlerFunc(ctx, channel, recorder.ResponseWriter, r, clog)
 
@@ -308,11 +308,11 @@ func (s *Server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		if channel != nil {
 			for _, event := range events {
 				switch e := event.(type) {
-				case MsgIn:
+				case *models.MsgIn:
 					LogMsgReceived(r, e)
 				case *models.StatusUpdate:
 					LogMsgStatusReceived(r, e)
-				case ChannelEvent:
+				case *models.ChannelEvent:
 					LogChannelEventReceived(r, e)
 				}
 			}

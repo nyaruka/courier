@@ -79,6 +79,27 @@ func NewChannelLog(t clogs.Type, ch *Channel, r *httpx.Recorder, redactVals []st
 	return l
 }
 
+// NewChannelLogForIncoming creates a new channel log for an incoming request, the type of which won't be known
+// until the handler completes.
+func NewChannelLogForIncoming(logType clogs.Type, ch *Channel, r *httpx.Recorder, redactVals []string) *ChannelLog {
+	return NewChannelLog(logType, ch, r, redactVals)
+}
+
+// NewChannelLogForSend creates a new channel log for a message send
+func NewChannelLogForSend(msg *MsgOut, redactVals []string) *ChannelLog {
+	return NewChannelLog(ChannelLogTypeMsgSend, msg.Channel(), nil, redactVals)
+}
+
+// NewChannelLogForAttachmentFetch creates a new channel log for an attachment fetch
+func NewChannelLogForAttachmentFetch(ch *Channel, redactVals []string) *ChannelLog {
+	return NewChannelLog(ChannelLogTypeAttachmentFetch, ch, nil, redactVals)
+}
+
+// NewChannelLogForEventSend creates a new channel log for an event send
+func NewChannelLogForEventSend(ch *Channel, redactVals []string) *ChannelLog {
+	return NewChannelLog(ChannelLogTypeEventSend, ch, nil, redactVals)
+}
+
 // Deprecated: channel handlers should add user-facing error messages via .Error() instead
 func (l *ChannelLog) RawError(err error) {
 	l.Error(&clogs.Error{Message: err.Error()})

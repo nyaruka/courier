@@ -124,7 +124,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 	}
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
 var statusMapping = map[string]models.MsgStatus{
@@ -155,7 +155,7 @@ type mtPayload struct {
 	MediaURL string `json:"media_url,omitempty"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	apiKey := msg.Channel().StringConfigForKey(models.ConfigAPIKey, "")
 	apiSecret := msg.Channel().StringConfigForKey(models.ConfigSecret, "")
 	if apiKey == "" || apiSecret == "" {

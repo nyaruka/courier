@@ -133,7 +133,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, payload.MessageID, clog).WithReceivedOn(date.UTC())
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
 // utility method to decode crazy clickatell 16 bit format
@@ -155,7 +155,7 @@ func decodeUTF16BE(b []byte) (string, error) {
 	return ret.String(), nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	apiKey := msg.Channel().StringConfigForKey(models.ConfigAPIKey, "")
 	if apiKey == "" {
 		return courier.ErrChannelConfig

@@ -76,10 +76,10 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 
 	// create and write the message
 	msg := h.Backend().NewIncomingMsg(ctx, c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	merchantID := msg.Channel().StringConfigForKey(configMerchantId, "")
 	merchantSecret := msg.Channel().StringConfigForKey(configMerchantSecret, "")
 	if merchantID == "" || merchantSecret == "" {

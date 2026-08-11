@@ -42,7 +42,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 }
 
 // Send is a noop - this legacy handler is disabled
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	return courier.ErrFailedWithReason("disabled", "WhatsApp legacy handler is disabled")
 }
 

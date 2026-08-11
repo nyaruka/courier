@@ -101,7 +101,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 	contactName := payload.Visitor.Name
 
-	msgs := []courier.MsgIn{}
+	msgs := []*models.MsgIn{}
 
 	for _, content := range payload.Message.Contents {
 
@@ -180,7 +180,7 @@ type mtPayload struct {
 	Contents []mtContent `json:"contents"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	channel := msg.Channel()
 	token := channel.StringConfigForKey(models.ConfigAPIKey, "")
 	if token == "" {

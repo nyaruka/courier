@@ -123,7 +123,7 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 		rc.Close()
 	}
 
-	clog := NewChannelLogForEventSend(ch, handler.RedactValues(ch))
+	clog := models.NewChannelLogForEventSend(ch, handler.RedactValues(ch))
 
 	err = handler.SendEvent(ctx, ch, event, clog)
 

@@ -2,11 +2,13 @@ package models
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 	"unicode/utf8"
 
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -78,6 +80,17 @@ type MsgIn struct {
 	ModifiedOn_         time.Time      `db:"modified_on"            json:"modified_on"`
 	SentOn_             *time.Time     `db:"sent_on"                json:"sent_on"`
 	LogUUIDs            pq.StringArray `db:"log_uuids"              json:"log_uuids"`
+
+	// not stored on the msg itself but included in spool files and needed for queueing to mailroom
+	ChannelUUID_   ChannelUUID       `db:"-" json:"channel_uuid"`
+	URN_           urns.URN          `db:"-" json:"urn"`
+	ContactName_   string            `db:"-" json:"contact_name"`
+	URNAuthTokens_ map[string]string `db:"-" json:"auth_tokens"`
+	NewURN_        *NewURNSpec       `db:"-" json:"new_urn,omitempty"`
+	Payload_       json.RawMessage   `db:"-" json:"payload,omitempty"`
+
+	Channel_   *Channel `db:"-" json:"-"`
+	Duplicate_ bool     `db:"-" json:"-"`
 }
 
 // NewIncomingMsg creates a new incoming message
@@ -94,6 +107,10 @@ func NewIncomingMsg(channel *Channel, urn urns.URN, text string, extID string, c
 		ModifiedOn_:         now,
 		SentOn_:             &now,
 		LogUUIDs:            pq.StringArray{string(clogUUID)},
+
+		ChannelUUID_: channel.UUID(),
+		URN_:         urn,
+		Channel_:     channel,
 	}
 }
 
@@ -103,6 +120,24 @@ func (m *MsgIn) ExternalID() string     { return string(m.ExternalIdentifier_) }
 func (m *MsgIn) Text() string           { return m.Text_ }
 func (m *MsgIn) Attachments() []string  { return []string(m.Attachments_) }
 func (m *MsgIn) ReceivedOn() *time.Time { return m.SentOn_ }
+func (m *MsgIn) URN() urns.URN          { return m.URN_ }
+func (m *MsgIn) Channel() *Channel      { return m.Channel_ }
+
+func (m *MsgIn) WithAttachment(url string) *MsgIn {
+	m.Attachments_ = append(m.Attachments_, url)
+	return m
+}
+func (m *MsgIn) WithContactName(name string) *MsgIn { m.ContactName_ = name; return m }
+func (m *MsgIn) WithURNAuthTokens(tokens map[string]string) *MsgIn {
+	m.URNAuthTokens_ = tokens
+	return m
+}
+func (m *MsgIn) WithReceivedOn(date time.Time) *MsgIn { m.SentOn_ = &date; return m }
+func (m *MsgIn) WithNewURN(urn urns.URN, action NewURNAction) *MsgIn {
+	m.NewURN_ = &NewURNSpec{Value: urn, Action: action}
+	return m
+}
+func (m *MsgIn) WithPayload(payload json.RawMessage) *MsgIn { m.Payload_ = payload; return m }
 
 const sqlInsertIncomingMsg = `
 INSERT INTO
@@ -229,9 +264,14 @@ type MsgOut struct {
 	UserID_               UserID            `json:"user_id"`
 	Origin_               MsgOrigin         `json:"origin"         validate:"required"`
 	Session_              *Session          `json:"session"`
+
+	// set when popped from the queue rather than unmarshaled
+	Channel_     *Channel          `json:"-"`
+	WorkerToken_ queue.WorkerToken `json:"-"`
 }
 
 func (m *MsgOut) UUID() MsgUUID                { return m.UUID_ }
+func (m *MsgOut) Channel() *Channel            { return m.Channel_ }
 func (m *MsgOut) Contact() *ContactReference   { return m.Contact_ }
 func (m *MsgOut) Text() string                 { return m.Text_ }
 func (m *MsgOut) Attachments() []string        { return m.Attachments_ }

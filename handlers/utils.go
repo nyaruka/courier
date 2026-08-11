@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/courier/v26/utils/clogs"
@@ -19,7 +18,7 @@ var (
 )
 
 // GetTextAndAttachments returns both the text of our message as well as any attachments, newline delimited
-func GetTextAndAttachments(m courier.MsgOut) string {
+func GetTextAndAttachments(m *models.MsgOut) string {
 	buf := bytes.NewBuffer([]byte(m.Text()))
 	for _, a := range m.Attachments() {
 		_, url := SplitAttachment(a)

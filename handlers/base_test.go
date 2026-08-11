@@ -19,7 +19,7 @@ func TestRequestHTTP(t *testing.T) {
 	mc := test.NewMockChannel("7a8ff1d4-f211-4492-9d05-e1905f6da8c8", "NX", "1234", "EC", []string{urns.Phone.Prefix}, nil)
 	cf := &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc"}
 	mm := mb.NewOutgoingMsg(mc, "019a06fa-467d-7fc8-a11e-3ad2d019fd20", cf, urns.URN("tel:+1234"), "Hello World", false, nil, "", models.MsgOriginChat)
-	clog := courier.NewChannelLogForSend(mm, nil)
+	clog := models.NewChannelLogForSend(mm, nil)
 
 	server := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
 	server.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{

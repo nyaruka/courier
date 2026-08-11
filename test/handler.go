@@ -51,7 +51,7 @@ func (h *mockHandler) Initialize(s *courier.Server) error {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *mockHandler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	// log a request that contains a header value that should be redacted; goes through the runtime's
 	// HTTP client so tests can intercept it with a mocking transport
 	req, _ := httpx.NewRequest(ctx, "GET", "http://mock.com/send", nil, map[string]string{"Authorization": "Token sesame"})
@@ -105,7 +105,7 @@ func (h *mockHandler) WriteStatusSuccessResponse(ctx context.Context, w http.Res
 	return courier.WriteStatusSuccess(w, statuses)
 }
 
-func (h *mockHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.MsgIn) error {
+func (h *mockHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	return courier.WriteMsgSuccess(w, msgs)
 }
 

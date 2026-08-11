@@ -13,7 +13,7 @@ import (
 
 var mrQueue = queues.NewFairV2("tasks:realtime", 100)
 
-func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *MsgIn) error {
+func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *models.MsgIn) error {
 	channel := m.Channel()
 
 	body := map[string]any{
@@ -36,7 +36,7 @@ func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *
 	return queueMailroomTask(ctx, rc, "msg_received", m.OrgID_, m.ContactID_, body)
 }
 
-func queueEventHandling(ctx context.Context, rc redis.Conn, c *models.Contact, e *ChannelEvent) error {
+func queueEventHandling(ctx context.Context, rc redis.Conn, c *models.Contact, e *models.ChannelEvent) error {
 	body := map[string]any{
 		"event_uuid":  e.UUID(),
 		"event_type":  e.EventType_,

@@ -80,7 +80,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "no messages, ignored")
 	}
 
-	msgs := make([]courier.MsgIn, 0, 1)
+	msgs := make([]*models.MsgIn, 0, 1)
 
 	// parse each inbound message
 	for _, glMsg := range payload.InboundSMSMessageList.InboundSMSMessage {
@@ -121,7 +121,7 @@ type mtPayload struct {
 	AppSecret  string `json:"app_secret"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	appID := msg.Channel().StringConfigForKey(configAppID, "")
 	appSecret := msg.Channel().StringConfigForKey(configAppSecret, "")
 	passphrase := msg.Channel().StringConfigForKey(configPassphrase, "")

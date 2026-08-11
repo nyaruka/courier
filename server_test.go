@@ -311,7 +311,7 @@ func TestListeners(t *testing.T) {
 }
 
 // utility to send a message on a mocked backend and block until it's marked as sent
-func sendAndWait(mb *test.MockBackend, m courier.MsgOut) {
+func sendAndWait(mb *test.MockBackend, m *models.MsgOut) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 

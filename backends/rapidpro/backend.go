@@ -55,9 +55,9 @@ type backend struct {
 	writerWG     *sync.WaitGroup
 
 	// spools of items which couldn't be written to the database and will be retried later
-	msgSpool    *spools.Spool[*MsgIn]
+	msgSpool    *spools.Spool[*models.MsgIn]
 	statusSpool *spools.Spool[*models.StatusUpdate]
-	eventSpool  *spools.Spool[*ChannelEvent]
+	eventSpool  *spools.Spool[*models.ChannelEvent]
 
 	channelsByUUID *cache.Local[models.ChannelUUID, *models.Channel]
 	channelsByAddr *cache.Local[models.ChannelAddress, *models.Channel]
@@ -335,19 +335,17 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel *models.Cha
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (b *backend) NewIncomingMsg(ctx context.Context, channel *models.Channel, urn urns.URN, text string, extID string, clog *models.ChannelLog) courier.MsgIn {
+func (b *backend) NewIncomingMsg(ctx context.Context, channel *models.Channel, urn urns.URN, text string, extID string, clog *models.ChannelLog) *models.MsgIn {
 	// strip out invalid UTF8 and NULL chars
 	urn = urns.URN(dbutil.ToValidUTF8(string(urn)))
 	text = dbutil.ToValidUTF8(text)
 	extID = dbutil.ToValidUTF8(extID)
 
-	msg := models.NewIncomingMsg(channel, urn, text, extID, clog.UUID)
-
-	return &MsgIn{MsgIn: msg, ChannelUUID_: channel.UUID(), URN_: urn, channel: channel}
+	return models.NewIncomingMsg(channel, urn, text, extID, clog.UUID)
 }
 
 // PopNextOutgoingMsg pops the next message that needs to be sent
-func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error) {
+func (b *backend) PopNextOutgoingMsg(ctx context.Context) (*models.MsgOut, error) {
 	vc := b.rt.VK.Get()
 	defer vc.Close()
 
@@ -374,7 +372,7 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 		return nil, nil
 	}
 
-	msg := &MsgOut{}
+	msg := &models.MsgOut{}
 	if err := json.Unmarshal([]byte(msgJSON), msg); err != nil {
 		markComplete(token)
 		return nil, fmt.Errorf("unable to unmarshal message: %s: %w", string(msgJSON), err)
@@ -393,8 +391,8 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 	}
 
 	// add some extra info to the popped message
-	msg.channel = channel
-	msg.workerToken = token
+	msg.Channel_ = channel
+	msg.WorkerToken_ = token
 
 	// clear out our seen incoming messages
 	b.clearMsgSeen(ctx, vc, msg)
@@ -418,15 +416,13 @@ func (b *backend) ClearMsgSent(ctx context.Context, uuid models.MsgUUID) error {
 }
 
 // OnSendComplete is called when the sender has finished trying to send a message
-func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status *models.StatusUpdate, res *courier.SendResult, clog *models.ChannelLog) {
+func (b *backend) OnSendComplete(ctx context.Context, msg *models.MsgOut, status *models.StatusUpdate, res *courier.SendResult, clog *models.ChannelLog) {
 	log := slog.With("channel", msg.Channel().UUID(), "msg", msg.UUID(), "clog", clog.UUID, "status", status)
 
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
-	m := msg.(*MsgOut)
-
-	if err := queue.MarkComplete(rc, msgQueueName, m.workerToken); err != nil {
+	if err := queue.MarkComplete(rc, msgQueueName, msg.WorkerToken_); err != nil {
 		log.Error("unable to mark queue task complete", "error", err)
 	}
 
@@ -439,9 +435,9 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 
 	// if message was successfully sent, and we have a session timeout, update it
 	wasSuccess := status.Status() == models.MsgStatusWired || status.Status() == models.MsgStatusSent || status.Status() == models.MsgStatusDelivered || status.Status() == models.MsgStatusRead
-	if wasSuccess && m.Session_ != nil && m.Session_.Timeout > 0 {
-		if err := b.insertTimeoutFire(ctx, m); err != nil {
-			log.Error("unable to update session timeout", "error", err, "session_uuid", m.Session_.UUID)
+	if wasSuccess && msg.Session_ != nil && msg.Session_.Timeout > 0 {
+		if err := b.insertTimeoutFire(ctx, msg); err != nil {
+			log.Error("unable to update session timeout", "error", err, "session_uuid", msg.Session_.UUID)
 		}
 	}
 
@@ -469,24 +465,22 @@ func (b *backend) OnReceiveComplete(ctx context.Context, ch *models.Channel, eve
 }
 
 // WriteMsg writes the passed in message to our store
-func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *models.ChannelLog) error {
-	m := msg.(*MsgIn)
-
+func (b *backend) WriteMsg(ctx context.Context, msg *models.MsgIn, clog *models.ChannelLog) error {
 	// check if this message could be a duplicate and if so steal the original's UUID
-	if prevUUID := b.checkMsgAlreadyReceived(ctx, m); prevUUID != "" {
-		m.UUID_ = prevUUID
-		m.duplicate = true
+	if prevUUID := b.checkMsgAlreadyReceived(ctx, msg); prevUUID != "" {
+		msg.UUID_ = prevUUID
+		msg.Duplicate_ = true
 		return nil
 	}
 
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	if err := writeMsg(timeout, b, m, clog); err != nil {
+	if err := writeMsg(timeout, b, msg, clog); err != nil {
 		return err
 	}
 
-	b.recordMsgReceived(ctx, m)
+	b.recordMsgReceived(ctx, msg)
 
 	return nil
 }
@@ -538,12 +532,12 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status *models.StatusUp
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (b *backend) NewChannelEvent(channel *models.Channel, eventType models.ChannelEventType, urn urns.URN, clog *models.ChannelLog) courier.ChannelEvent {
-	return newChannelEvent(channel, eventType, urn, clog)
+func (b *backend) NewChannelEvent(channel *models.Channel, eventType models.ChannelEventType, urn urns.URN, clog *models.ChannelLog) *models.ChannelEvent {
+	return models.NewChannelEvent(channel, eventType, urn, clog.UUID)
 }
 
 // WriteChannelEvent writes the passed in channel even returning any error
-func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent, clog *models.ChannelLog) error {
+func (b *backend) WriteChannelEvent(ctx context.Context, event *models.ChannelEvent, clog *models.ChannelLog) error {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 

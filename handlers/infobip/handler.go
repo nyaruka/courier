@@ -120,7 +120,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
 
-	msgs := []courier.MsgIn{}
+	msgs := []*models.MsgIn{}
 	for _, infobipMessage := range payload.Results {
 		messageID := infobipMessage.MessageID
 		dateString := infobipMessage.ReceivedAt
@@ -248,7 +248,7 @@ type v2MMSMessageSegment struct {
 	ContentType string `json:"contentType,omitempty"` // Required for LINK type (e.g., image/jpeg)
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	apiKey := msg.Channel().StringConfigForKey(models.ConfigAPIKey, "")
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")

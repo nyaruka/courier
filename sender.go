@@ -246,7 +246,7 @@ func (f *Foreman) Assign() {
 type Sender struct {
 	id      int
 	foreman *Foreman
-	job     chan MsgOut
+	job     chan *models.MsgOut
 }
 
 // NewSender creates a new sender responsible for sending messages
@@ -254,7 +254,7 @@ func NewSender(foreman *Foreman, id int) *Sender {
 	sender := &Sender{
 		id:      id,
 		foreman: foreman,
-		job:     make(chan MsgOut, 1),
+		job:     make(chan *models.MsgOut, 1),
 	}
 	return sender
 }
@@ -289,7 +289,7 @@ func (w *Sender) Stop() {
 	close(w.job)
 }
 
-func (w *Sender) sendMessage(msg MsgOut) {
+func (w *Sender) sendMessage(msg *models.MsgOut) {
 	log := slog.With("comp", "sender", "sender_id", w.id, "channel_uuid", msg.Channel().UUID())
 
 	server := w.foreman.server
@@ -331,7 +331,7 @@ func (w *Sender) sendMessage(msg MsgOut) {
 		redactValues = handler.RedactValues(msg.Channel())
 	}
 
-	clog := NewChannelLogForSend(msg, redactValues)
+	clog := models.NewChannelLogForSend(msg, redactValues)
 
 	if handler == nil {
 		// if there's no handler, create a FAILED status for it
@@ -366,7 +366,7 @@ func (w *Sender) sendMessage(msg MsgOut) {
 	backend.OnSendComplete(writeCTX, msg, status, res, clog)
 }
 
-func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, clog *models.ChannelLog, log *slog.Logger) (*models.StatusUpdate, *SendResult) {
+func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m *models.MsgOut, clog *models.ChannelLog, log *slog.Logger) (*models.StatusUpdate, *SendResult) {
 	backend := w.foreman.server.Backend()
 	res := &SendResult{}
 	err := h.Send(ctx, m, res, clog)

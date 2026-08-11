@@ -65,7 +65,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 	}
 
 	msg := h.Backend().NewIncomingMsg(ctx, c, urn, payload.MessageText, "", clog)
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
 type mtPayload struct {
@@ -77,7 +77,7 @@ type mtPayload struct {
 	UDH      string `json:"UDH"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	if username == "" || password == "" {
@@ -127,7 +127,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 }
 
 // FetchToken gets the current token for this channel, either from Redis if cached or by requesting it
-func (h *handler) FetchToken(ctx context.Context, channel *models.Channel, msg courier.MsgOut, username, password string, clog *models.ChannelLog) (string, error) {
+func (h *handler) FetchToken(ctx context.Context, channel *models.Channel, msg *models.MsgOut, username, password string, clog *models.ChannelLog) (string, error) {
 	// first check whether we have it in redis
 	var token string
 	h.WithValkeyConn(func(rc redis.Conn) {

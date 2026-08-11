@@ -383,7 +383,7 @@ type recipient struct {
 }
 
 // newRecipient builds the recipient fields from the message URN.
-func newRecipient(msg courier.MsgOut) recipient {
+func newRecipient(msg *models.MsgOut) recipient {
 	to, rcpt := whatsapp.RecipientFields(msg.URN())
 	return recipient{To: to, Recipient: rcpt}
 }
@@ -486,7 +486,7 @@ type mtVideoPayload struct {
 	Video *mediaObject `json:"video"`
 }
 
-func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *models.ChannelLog) ([]any, error) {
+func buildPayloads(ctx context.Context, msg *models.MsgOut, h *handler, clog *models.ChannelLog) ([]any, error) {
 	var payloads []any
 	var err error
 
@@ -815,7 +815,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *mo
 }
 
 // fetchMediaID tries to fetch the id for the uploaded media, setting the result in redis.
-func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL string, clog *models.ChannelLog) (string, error) {
+func (h *handler) fetchMediaID(ctx context.Context, msg *models.MsgOut, mediaURL string, clog *models.ChannelLog) (string, error) {
 	// check in cache first
 	cacheKey := fmt.Sprintf(mediaCacheKeyPattern, msg.Channel().UUID())
 	mediaCache := vkutil.NewIntervalHash(cacheKey, time.Hour*24, 2)
@@ -896,7 +896,7 @@ func (h *handler) fetchMediaID(ctx context.Context, msg courier.MsgOut, mediaURL
 	return mediaID, nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	accessToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	urlStr := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)

@@ -44,12 +44,12 @@ func WriteAndLogUnauthorized(w http.ResponseWriter, r *http.Request, c *models.C
 }
 
 // WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it
-func WriteChannelEventSuccess(w http.ResponseWriter, event ChannelEvent) error {
+func WriteChannelEventSuccess(w http.ResponseWriter, event *models.ChannelEvent) error {
 	return WriteDataResponse(w, http.StatusOK, "Event Accepted", []any{NewEventReceiveData(event)})
 }
 
 // WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it
-func WriteMsgSuccess(w http.ResponseWriter, msgs []MsgIn) error {
+func WriteMsgSuccess(w http.ResponseWriter, msgs []*models.MsgIn) error {
 	data := []any{}
 	for _, msg := range msgs {
 		data = append(data, NewMsgReceiveData(msg))
@@ -86,7 +86,7 @@ type MsgReceiveData struct {
 }
 
 // NewMsgReceiveData creates a new data response for the passed in msg parameters
-func NewMsgReceiveData(msg MsgIn) MsgReceiveData {
+func NewMsgReceiveData(msg *models.MsgIn) MsgReceiveData {
 	return MsgReceiveData{
 		"msg",
 		msg.Channel().UUID(),
@@ -110,7 +110,7 @@ type EventReceiveData struct {
 }
 
 // NewEventReceiveData creates a new receive data for the passed in event
-func NewEventReceiveData(event ChannelEvent) EventReceiveData {
+func NewEventReceiveData(event *models.ChannelEvent) EventReceiveData {
 	return EventReceiveData{
 		"event",
 		event.ChannelUUID(),

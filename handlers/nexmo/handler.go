@@ -167,10 +167,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 	// create and write the message
 	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Text, form.MessageID, clog)
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 
 	nexmoAPIKey := msg.Channel().StringConfigForKey(configNexmoAPIKey, "")
 	nexmoAPISecret := msg.Channel().StringConfigForKey(configNexmoAPISecret, "")

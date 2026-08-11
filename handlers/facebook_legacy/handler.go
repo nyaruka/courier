@@ -105,7 +105,7 @@ func (h *handler) receiveVerify(ctx context.Context, channel *models.Channel, w 
 }
 
 func (h *handler) subscribeToEvents(ctx context.Context, channel *models.Channel, authToken string) {
-	clog := courier.NewChannelLog(models.ChannelLogTypePageSubscribe, channel, h.RedactValues(channel))
+	clog := models.NewChannelLog(models.ChannelLogTypePageSubscribe, channel, nil, h.RedactValues(channel))
 
 	// subscribe to messaging events for this page
 	form := url.Values{}
@@ -452,7 +452,7 @@ type mtQuickReply struct {
 	ContentType string `json:"content_type"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	accessToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if accessToken == "" {
 		return courier.ErrChannelConfig

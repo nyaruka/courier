@@ -280,7 +280,7 @@ func TestFacebookDescribeURN(t *testing.T) {
 	channel := facebookTestChannels[0]
 	handler := newHandler("FBA", "Facebook")
 	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), test.NewMockBackend()))
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, channel, handler.RedactValues(channel))
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, handler.RedactValues(channel))
 
 	tcs := []struct {
 		urn              urns.URN
@@ -627,7 +627,7 @@ func TestFacebookSendEvent(t *testing.T) {
 	channelRef := assets.NewChannelReference("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "Facebook")
 
 	// a typing started event is sent as a typing_on sender action
-	clog := courier.NewChannelLogForEventSend(channel, nil)
+	clog := models.NewChannelLogForEventSend(channel, nil)
 	err := h.SendEvent(context.Background(), channel, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "facebook:5678", ""), clog)
 	assert.NoError(t, err)
 	assert.Len(t, clog.HttpLogs, 1)

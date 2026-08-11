@@ -23,7 +23,7 @@ func LogMsgStatusReceived(r *http.Request, status *models.StatusUpdate) {
 }
 
 // LogMsgReceived logs that we received the passed in message
-func LogMsgReceived(r *http.Request, msg MsgIn) {
+func LogMsgReceived(r *http.Request, msg *models.MsgIn) {
 	if slog.Default().Enabled(r.Context(), slog.LevelDebug) {
 		slog.Debug("msg received",
 			"channel_uuid", msg.Channel().UUID(),
@@ -39,7 +39,7 @@ func LogMsgReceived(r *http.Request, msg MsgIn) {
 }
 
 // LogChannelEventReceived logs that we received the passed in channel event
-func LogChannelEventReceived(r *http.Request, event ChannelEvent) {
+func LogChannelEventReceived(r *http.Request, event *models.ChannelEvent) {
 	if slog.Default().Enabled(r.Context(), slog.LevelDebug) {
 		slog.Debug("event received",
 			"channel_uuid", event.ChannelUUID(),

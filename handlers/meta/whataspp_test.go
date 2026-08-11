@@ -1181,7 +1181,7 @@ func TestWhatsAppDescribeURN(t *testing.T) {
 	channel := whatsappTestChannels[0]
 	handler := newHandler("WAC", "Cloud API WhatsApp")
 	handler.Initialize(newServerWithWAC(nil))
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, channel, handler.RedactValues(channel))
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, handler.RedactValues(channel))
 
 	tcs := []struct {
 		urn              urns.URN
@@ -1246,7 +1246,7 @@ func TestWhatsAppSendEvent(t *testing.T) {
 	typing := events.NewTypingStarted(events.DirectionOutgoing, channelRef, "whatsapp:5511987654321", "wamid.HBgMNTU3")
 
 	// a typing indicator is sent as a mark-as-read call with a typing_indicator field
-	clog := courier.NewChannelLogForEventSend(channel, nil)
+	clog := models.NewChannelLogForEventSend(channel, nil)
 	err := h.SendEvent(context.Background(), channel, typing, clog)
 	assert.NoError(t, err)
 	assert.Len(t, clog.HttpLogs, 1)

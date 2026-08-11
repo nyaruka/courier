@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -152,7 +151,7 @@ func TestResolveAttachments(t *testing.T) {
 	}
 
 	for i, tc := range tcs {
-		clog := courier.NewChannelLog(models.ChannelLogTypeMsgSend, nil, nil)
+		clog := models.NewChannelLog(models.ChannelLogTypeMsgSend, nil, nil, nil)
 
 		resolved, err := handlers.ResolveAttachments(ctx, mb, tc.attachments, tc.mediaSupport, tc.allowURLOnly, clog)
 		if tc.err != "" {

@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 )
 
@@ -33,7 +32,7 @@ type SplitOptions struct {
 }
 
 // SplitMsg splits an outgoing message into separate text and attachment parts, with attachment parts first.
-func SplitMsg(m courier.MsgOut, opts SplitOptions) []MsgPart {
+func SplitMsg(m *models.MsgOut, opts SplitOptions) []MsgPart {
 	text := m.Text()
 	attachments := m.Attachments()
 

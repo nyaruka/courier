@@ -101,7 +101,7 @@ func (h *handler) receiveMsg(ctx context.Context, channel *models.Channel, w htt
 	}
 
 	// write msg
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
 var statusMapping = map[string]models.MsgStatus{
@@ -135,7 +135,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	apiKey := msg.Channel().StringConfigForKey(configApiKey, "")
 

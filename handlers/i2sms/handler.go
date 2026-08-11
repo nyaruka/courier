@@ -65,7 +65,7 @@ func (h *handler) receive(ctx context.Context, c *models.Channel, w http.Respons
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(ctx, c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
 //	{
@@ -86,7 +86,7 @@ type mtResponse struct {
 	ErrorDesc string `json:"error_desc"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	channelHash := msg.Channel().StringConfigForKey(configChannelHash, "")
@@ -141,7 +141,7 @@ func (h *handler) RedactValues(ch *models.Channel) []string {
 }
 
 // WriteMsgSuccessResponse writes a success response for the messages, i2SMS expects an empty body in our response
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.MsgIn) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	w.Header().Add("Content-type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte{})
