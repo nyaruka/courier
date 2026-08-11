@@ -397,7 +397,7 @@ func (h *handler) fetchAccessToken(channel courier.Channel, clog *courier.Channe
 	req.Header.Set("Accept", "application/json")
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
+	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return "", 0, err
 	}
 

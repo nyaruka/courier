@@ -641,6 +641,20 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrFailedWithReason("403", "Failed to send messages"),
 	},
 	{
+		Label:   "Connection Error",
+		MsgText: "Error Sending",
+		MsgURN:  "line:uabcdefghij",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(503, nil, []byte(`{"message": "Service unavailable"}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
+			},
+		},
+		ExpectedError: courier.ErrConnectionFailed,
+	},
+	{
 		Label:   "Throttled",
 		MsgText: "Error Sending",
 		MsgURN:  "line:uabcdefghij",

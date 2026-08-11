@@ -431,8 +431,11 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 				continue
 			}
 
+			if err != nil || resp.StatusCode/100 == 5 {
+				return courier.ErrConnectionFailed
+			}
 			// LINE rate limits per endpoint per channel with a 429, so retry rather than failing
-			if err == nil && handlers.IsThrottled(resp) {
+			if handlers.IsThrottled(resp) {
 				return courier.ErrConnectionThrottled
 			}
 
