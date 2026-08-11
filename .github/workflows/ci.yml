@@ -31,9 +31,13 @@ jobs:
       localstack:
         image: localstack/localstack:4.14
         env:
-          SERVICES: s3,dynamodb,cloudwatch
+          SERVICES: s3,cloudwatch
         ports:
           - 4566:4566
+      dynamodb:
+        image: amazon/dynamodb-local:3.3.1
+        ports:
+          - 8000:8000
 
     steps:
       - name: Checkout code
