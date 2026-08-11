@@ -22,8 +22,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// note that the address here can't be a channel address in the test database seed data because these channels are
+// routed to by address rather than UUID
 var facebookTestChannels = []*models.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FBA", "12345", "", []string{urns.Facebook.Prefix}, map[string]any{models.ConfigAuthToken: "a123"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FBA", "1234567890", "", []string{urns.Facebook.Prefix}, map[string]any{models.ConfigAuthToken: "a123"}),
 }
 
 var facebookIncomingTests = []IncomingTestCase{
@@ -33,7 +35,6 @@ var facebookIncomingTests = []IncomingTestCase{
 		Data:                  string(test.ReadFile("./testdata/fba/hello_msg.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		ExpectedMsgText:       Sp("Hello World"),
 		ExpectedURN:           "facebook:5678",
@@ -279,7 +280,7 @@ func TestFacebookDescribeURN(t *testing.T) {
 
 	channel := facebookTestChannels[0]
 	handler := newHandler("FBA", "Facebook")
-	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), test.NewMockBackend()))
+	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())))
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -291,7 +292,7 @@ func TestFacebookDescribeURN(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.(courier.URNDescriber).DescribeURN(context.Background(), channel, tc.urn, clog)
+		metadata, _ := handler.(models.URNDescriber).DescribeURN(context.Background(), channel, tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 
@@ -306,7 +307,6 @@ func TestFacebookVerify(t *testing.T) {
 			ExpectedRespStatus:    200,
 			ExpectedBodyContains:  "yarchallenge",
 			NoLogsExpected:        true,
-			NoQueueErrorCheck:     true,
 			NoInvalidChannelCheck: true,
 		},
 		{
@@ -604,8 +604,7 @@ func TestFacebookOutgoing(t *testing.T) {
 func TestFacebookSendEvent(t *testing.T) {
 	channel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", []string{urns.Facebook.Prefix}, map[string]any{models.ConfigAuthToken: "a123"})
 
-	mb := test.NewMockBackend()
-	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
+	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
 	h := newHandler("FBA", "Facebook").(*handler)
 	h.Initialize(s)
@@ -681,8 +680,7 @@ func TestSigning(t *testing.T) {
 }
 
 func TestFacebookBuildAttachmentRequest(t *testing.T) {
-	mb := test.NewMockBackend()
-	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
+	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
 	handler := &handler{NewBaseHandler(models.ChannelType("FBA"), "Facebook", DisableUUIDRouting())}
 	handler.Initialize(s)

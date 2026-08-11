@@ -99,7 +99,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, messagePayload.Message.Text, messagePayload.Message.ID, clog).WithReceivedOn(date)
+	msg := models.NewIncomingMsg(channel, urn, messagePayload.Message.Text, messagePayload.Message.ID, clog).WithReceivedOn(date)
 
 	for _, attURL := range messagePayload.Message.Media {
 		msg.WithAttachment(attURL)
@@ -158,7 +158,7 @@ func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdateByExternalID(channel, statusPayload.Message.ID, msgStatus, clog)
+	status := models.NewStatusUpdateByExternalID(channel, statusPayload.Message.ID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 

@@ -9,7 +9,6 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	"github.com/nyaruka/courier/v26"
-	"github.com/nyaruka/courier/v26/backends/rapidpro"
 	"github.com/nyaruka/courier/v26/runtime"
 	slogmulti "github.com/samber/slog-multi"
 	slogsentry "github.com/samber/slog-sentry/v2"
@@ -60,9 +59,7 @@ func Service(defaults *runtime.Config, version, date string) error {
 		return err
 	}
 
-	backend := rapidpro.NewBackend(rt)
-
-	server := courier.NewServer(rt, backend)
+	server := courier.NewServer(rt)
 	if err := server.Start(); err != nil {
 		return err
 	}

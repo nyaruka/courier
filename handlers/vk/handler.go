@@ -247,7 +247,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	date := time.Unix(payload.Object.Message.Date, 0).UTC()
 	text := payload.Object.Message.Text
 	externalId := strconv.FormatInt(payload.Object.Message.Id, 10)
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, externalId, clog).WithReceivedOn(date)
+	msg := models.NewIncomingMsg(channel, urn, text, externalId, clog).WithReceivedOn(date)
 
 	if attachment := takeFirstAttachmentUrl(*payload); attachment != "" {
 		msg.WithAttachment(attachment)
@@ -257,7 +257,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or attachment"))
 	}
 	// save message to our backend
-	if err := h.Backend().WriteMsg(ctx, msg, clog); err != nil {
+	if err := models.WriteMsg(ctx, h.Runtime(), msg, clog); err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// write required response

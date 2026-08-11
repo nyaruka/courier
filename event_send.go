@@ -77,7 +77,7 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 		return nil, fmt.Errorf("event requires channel and urn to be sent")
 	}
 
-	ch, err := s.backend.GetChannel(ctx, req.ChannelType, models.ChannelUUID(channelRef.UUID))
+	ch, err := models.GetChannel(ctx, req.ChannelType, models.ChannelUUID(channelRef.UUID))
 	if err != nil {
 		return nil, fmt.Errorf("error getting channel: %w", err)
 	}
@@ -130,9 +130,7 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 	// event sends are frequent and boring when they succeed so we only write logs for errors
 	clog.End()
 	if clog.IsError() {
-		if logErr := s.backend.WriteChannelLog(ctx, clog); logErr != nil {
-			slog.Error("error writing log", "error", logErr)
-		}
+		models.WriteChannelLog(s.rt, clog)
 	}
 
 	if err != nil {

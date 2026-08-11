@@ -403,7 +403,6 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedURN:           "whatsapp:250788123123",
 		ExpectedExternalID:    "41",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 	},
 	{
@@ -418,7 +417,6 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedExternalID:    "41",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		ExpectedNewURN:        &models.NewURNSpec{Value: "whatsapp:US.1234", Action: models.NewURNAppend},
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 	},
 	{
@@ -432,7 +430,6 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedURN:           "whatsapp:US.1234",
 		ExpectedExternalID:    "41",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 	},
 	{
@@ -446,7 +443,6 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedURN:           "whatsapp:US.1234",
 		ExpectedExternalID:    "41",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 	},
 	{
@@ -468,7 +464,6 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedExternalID:    "41",
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		ExpectedNewURN:        nil,
-		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 	},
 	{

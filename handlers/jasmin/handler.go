@@ -78,7 +78,7 @@ func (h *handler) receiveStatus(ctx context.Context, c *models.Channel, w http.R
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("must have a known message_status or either dlvrd or err set to 1"))
 	}
 
-	status := h.Backend().NewStatusUpdateByExternalID(c, form.ID, reqStatus, clog)
+	status := models.NewStatusUpdateByExternalID(c, form.ID, reqStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 }
 
@@ -112,7 +112,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(ctx, c, urn, text, form.ID, clog).WithReceivedOn(time.Now().UTC())
+	msg := models.NewIncomingMsg(c, urn, text, form.ID, clog).WithReceivedOn(time.Now().UTC())
 
 	// and finally queue our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)

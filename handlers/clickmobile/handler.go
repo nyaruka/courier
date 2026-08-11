@@ -79,7 +79,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, payload.Text, payload.ReferenceID, clog)
+	msg := models.NewIncomingMsg(channel, urn, payload.Text, payload.ReferenceID, clog)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)

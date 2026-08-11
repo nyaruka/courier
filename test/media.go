@@ -5,9 +5,9 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 )
 
-func NewMockMedia(path, contentType, url string, size, width, height, duration int, alternates []*models.Media) *models.Media {
+func NewMockMedia(uuid uuids.UUID, path, contentType, url string, size, width, height, duration int, alternates []*models.Media) *models.Media {
 	return &models.Media{
-		UUID_:        uuids.NewV4(),
+		UUID_:        uuid,
 		Path_:        path,
 		ContentType_: contentType,
 		URL_:         url,

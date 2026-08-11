@@ -75,7 +75,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("ignoring unknown status '%s'", form.Status))
 	}
 	// write our status
-	status := h.Backend().NewStatusUpdateByExternalID(channel, form.MsgID, msgStatus, clog)
+	status := models.NewStatusUpdateByExternalID(channel, form.MsgID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 }
@@ -130,7 +130,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// create and write the message
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Text, form.MsgID, clog).WithReceivedOn(date.UTC())
+	msg := models.NewIncomingMsg(channel, urn, form.Text, form.MsgID, clog).WithReceivedOn(date.UTC())
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 

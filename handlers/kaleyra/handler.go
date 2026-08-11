@@ -94,7 +94,7 @@ func (h *handler) receiveMsg(ctx context.Context, channel *models.Channel, w htt
 
 	// build msg
 	date := time.Unix(ts, 0).UTC()
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Body, "", clog).WithReceivedOn(date).WithContactName(form.Name)
+	msg := models.NewIncomingMsg(channel, urn, form.Body, "", clog).WithReceivedOn(date).WithContactName(form.Name)
 
 	if form.MediaURL != "" {
 		msg.WithAttachment(form.MediaURL)
@@ -126,7 +126,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	}
 
 	// msg not found? ignore this
-	status := h.Backend().NewStatusUpdateByExternalID(channel, form.ID, msgStatus, clog)
+	status := models.NewStatusUpdateByExternalID(channel, form.ID, msgStatus, clog)
 	if status == nil {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("ignoring request, message %s not found", form.ID))
 	}

@@ -117,7 +117,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(ctx, c, urn, payload.Data.Content, fmt.Sprint(payload.Data.MessageID), clog).WithReceivedOn(date)
+	msg := models.NewIncomingMsg(c, urn, payload.Data.Content, fmt.Sprint(payload.Data.MessageID), clog).WithReceivedOn(date)
 
 	if len(payload.Data.MMS) > 0 {
 		msg.WithAttachment(payload.Data.MMS[0].MediaURL)
@@ -144,7 +144,7 @@ func (h *handler) statusMessage(ctx context.Context, c *models.Channel, w http.R
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("unknown status '%s', must be one of send, delivered, undelivered, failed", payload.Data.Status))
 	}
 	// write our status
-	status := h.Backend().NewStatusUpdateByExternalID(c, fmt.Sprint(payload.Data.MessageID), msgStatus, clog)
+	status := models.NewStatusUpdateByExternalID(c, fmt.Sprint(payload.Data.MessageID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 }
 

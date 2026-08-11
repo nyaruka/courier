@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"mime"
 	"net/http"
 	"net/url"
@@ -44,7 +43,7 @@ type fetchAttachmentResponse struct {
 	LogUUID    clogs.UUID  `json:"log_uuid"`
 }
 
-func fetchAttachment(ctx context.Context, rt *runtime.Runtime, b Backend, r *http.Request) (*fetchAttachmentResponse, error) {
+func fetchAttachment(ctx context.Context, rt *runtime.Runtime, r *http.Request) (*fetchAttachmentResponse, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading request body: %w", err)
@@ -58,20 +57,18 @@ func fetchAttachment(ctx context.Context, rt *runtime.Runtime, b Backend, r *htt
 		return nil, err
 	}
 
-	ch, err := b.GetChannel(ctx, fa.ChannelType, fa.ChannelUUID)
+	ch, err := models.GetChannel(ctx, fa.ChannelType, fa.ChannelUUID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting channel: %w", err)
 	}
 
 	clog := models.NewChannelLogForAttachmentFetch(ch, GetHandler(ch.ChannelType()).RedactValues(ch))
 
-	attachment, err := FetchAndStoreAttachment(ctx, rt, b, ch, fa.URL, clog)
+	attachment, err := FetchAndStoreAttachment(ctx, rt, ch, fa.URL, clog)
 
 	// try to write channel log even if we have an error
 	clog.End()
-	if err := b.WriteChannelLog(ctx, clog); err != nil {
-		slog.Error("error writing log", "error", err)
-	}
+	models.WriteChannelLog(rt, clog)
 
 	if err != nil {
 		return nil, fmt.Errorf("error fetching attachment for msg %s: %w", fa.MsgUUID, err)
@@ -80,7 +77,7 @@ func fetchAttachment(ctx context.Context, rt *runtime.Runtime, b Backend, r *htt
 	return &fetchAttachmentResponse{Attachment: attachment, LogUUID: clog.UUID}, nil
 }
 
-func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, b Backend, channel *models.Channel, attURL string, clog *models.ChannelLog) (*Attachment, error) {
+func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, channel *models.Channel, attURL string, clog *models.ChannelLog) (*Attachment, error) {
 	parsedURL, err := url.Parse(attURL)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse attachment url '%s': %w", attURL, err)
@@ -119,7 +116,7 @@ func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, b Backend
 
 	mimeType, extension := getAttachmentType(trace)
 
-	storageURL, err := b.SaveAttachment(ctx, channel, mimeType, trace.ResponseBody, extension)
+	storageURL, err := models.SaveAttachment(ctx, rt, channel, mimeType, trace.ResponseBody, extension)
 	if err != nil {
 		return nil, err
 	}

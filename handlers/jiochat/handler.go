@@ -124,9 +124,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 	// subscribe event, trigger a new conversation
 	if payload.MsgType == "event" && payload.Event == "subscribe" {
-		channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog)
+		channelEvent := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog)
 
-		err := h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
+		err := models.WriteChannelEvent(ctx, h.Runtime(), channelEvent, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -140,7 +140,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// create our message
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, payload.Content, payload.MsgID, clog).WithReceivedOn(date)
+	msg := models.NewIncomingMsg(channel, urn, payload.Content, payload.MsgID, clog).WithReceivedOn(date)
 	if payload.MsgType == "image" || payload.MsgType == "video" || payload.MsgType == "voice" {
 		mediaURL := buildMediaURL(payload.MediaID)
 		msg.WithAttachment(mediaURL)

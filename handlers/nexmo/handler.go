@@ -138,7 +138,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 		clog.Error(models.ErrorExternal("dlr:"+strconv.Itoa(form.ErrCode), dlrErrorCodes[form.ErrCode]))
 	}
 
-	status := h.Backend().NewStatusUpdateByExternalID(channel, form.MessageID, msgStatus, clog)
+	status := models.NewStatusUpdateByExternalID(channel, form.MessageID, msgStatus, clog)
 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
@@ -166,7 +166,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// create and write the message
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Text, form.MessageID, clog)
+	msg := models.NewIncomingMsg(channel, urn, form.Text, form.MessageID, clog)
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 

@@ -70,7 +70,7 @@ func (h *handler) sentStatusMessage(ctx context.Context, channel *models.Channel
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdateByExternalID(channel, payload.CollerationID, msgStatus, clog)
+	status := models.NewStatusUpdateByExternalID(channel, payload.CollerationID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -87,7 +87,7 @@ func (h *handler) deliveredStatusMessage(ctx context.Context, channel *models.Ch
 	}
 
 	// write our status
-	status := h.Backend().NewStatusUpdateByExternalID(channel, payload.CollerationID, msgStatus, clog)
+	status := models.NewStatusUpdateByExternalID(channel, payload.CollerationID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -109,7 +109,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, payload.Message, payload.ID, clog).WithReceivedOn(date.UTC())
+	msg := models.NewIncomingMsg(channel, urn, payload.Message, payload.ID, clog).WithReceivedOn(date.UTC())
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)

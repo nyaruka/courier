@@ -1,7 +1,6 @@
 package courier_test
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -46,8 +45,13 @@ func TestWriteAndLogUnauthorized(t *testing.T) {
 
 func TestWriteMsgSuccess(t *testing.T) {
 	ch := test.NewMockChannel("5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec", "NX", "+1234567890", "US", []string{urns.Phone.Prefix}, nil)
-	msg := test.NewMockBackend().NewIncomingMsg(context.Background(), ch, "tel:+0987654321", "hi there", "", nil)
-	msg.UUID_ = "588aafc4-ab5c-48ce-89e8-05c9fdeeafb7"
+	msg := &models.MsgIn{
+		UUID_:        "588aafc4-ab5c-48ce-89e8-05c9fdeeafb7",
+		ChannelUUID_: ch.UUID(),
+		URN_:         "tel:+0987654321",
+		Text_:        "hi there",
+		Channel_:     ch,
+	}
 	w := httptest.NewRecorder()
 
 	err := courier.WriteMsgSuccess(w, []*models.MsgIn{msg})
@@ -58,7 +62,14 @@ func TestWriteMsgSuccess(t *testing.T) {
 
 func TestWriteChannelEventSuccess(t *testing.T) {
 	ch := test.NewMockChannel("5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec", "NX", "+1234567890", "US", []string{urns.Phone.Prefix}, nil)
-	evt := test.NewMockBackend().NewChannelEvent(ch, models.EventTypeStopContact, "tel:+0987654321", nil).WithOccurredOn(time.Date(2022, 9, 15, 12, 7, 30, 0, time.UTC))
+	evt := &models.ChannelEvent{
+		UUID_:        "0199df03-621a-7e52-a6b0-7086c8b1a86a",
+		ChannelUUID_: ch.UUID(),
+		EventType_:   models.EventTypeStopContact,
+		URN_:         "tel:+0987654321",
+		OccurredOn_:  time.Date(2022, 9, 15, 12, 7, 30, 0, time.UTC),
+		Channel_:     ch,
+	}
 	w := httptest.NewRecorder()
 
 	err := courier.WriteChannelEventSuccess(w, evt)

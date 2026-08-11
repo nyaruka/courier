@@ -7,7 +7,6 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/core/events"
 )
 
@@ -21,7 +20,6 @@ type ChannelHandleFunc func(context.Context, *models.Channel, http.ResponseWrite
 type ChannelHandler interface {
 	Initialize(*Server) error
 	Runtime() *runtime.Runtime
-	Backend() Backend
 	ChannelType() models.ChannelType
 	ChannelName() string
 	UseChannelRouteUUID() bool
@@ -41,11 +39,6 @@ type ChannelHandler interface {
 	WriteRequestIgnored(context.Context, http.ResponseWriter, string) error
 }
 
-// URNDescriber is the interface handlers which can look up URN metadata for new contacts should satisfy.
-type URNDescriber interface {
-	DescribeURN(context.Context, *models.Channel, urns.URN, *models.ChannelLog) (map[string]string, error)
-}
-
 // AttachmentRequestBuilder is the interface handlers which can allow a custom way to download attachment media for messages should satisfy
 type AttachmentRequestBuilder interface {
 	BuildAttachmentRequest(context.Context, *models.Channel, string, *models.ChannelLog) (*http.Request, error)
@@ -54,6 +47,11 @@ type AttachmentRequestBuilder interface {
 // RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized
 func RegisterHandler(handler ChannelHandler) {
 	registeredHandlers[handler.ChannelType()] = handler
+
+	// handlers which can describe URNs are registered with the models package so contact creation can use them
+	if describer, ok := handler.(models.URNDescriber); ok {
+		models.RegisterURNDescriber(handler.ChannelType(), describer)
+	}
 }
 
 // GetHandler returns the handler for the passed in channel type, or nil if not found

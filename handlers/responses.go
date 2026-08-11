@@ -12,7 +12,7 @@ import (
 func WriteMsgsAndResponse(ctx context.Context, h courier.ChannelHandler, msgs []*models.MsgIn, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	events := make([]courier.Event, len(msgs))
 	for i, m := range msgs {
-		err := h.Backend().WriteMsg(ctx, m, clog)
+		err := models.WriteMsg(ctx, h.Runtime(), m, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -24,7 +24,7 @@ func WriteMsgsAndResponse(ctx context.Context, h courier.ChannelHandler, msgs []
 
 // WriteMsgStatusAndResponse write the passed in status to our backend
 func WriteMsgStatusAndResponse(ctx context.Context, h courier.ChannelHandler, channel *models.Channel, status *models.StatusUpdate, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	err := h.Backend().WriteStatusUpdate(ctx, status)
+	err := models.WriteStatusUpdate(ctx, h.Runtime(), status)
 	if err != nil {
 		return nil, err
 	}

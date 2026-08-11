@@ -2,9 +2,11 @@ package models
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/lib/pq"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -45,14 +47,14 @@ type ChannelEvent struct {
 }
 
 // NewChannelEvent creates a new channel event for the given channel and event type
-func NewChannelEvent(channel *Channel, eventType ChannelEventType, urn urns.URN, clogUUID clogs.UUID) *ChannelEvent {
+func NewChannelEvent(channel *Channel, eventType ChannelEventType, urn urns.URN, clog *ChannelLog) *ChannelEvent {
 	return &ChannelEvent{
 		UUID_:        ChannelEventUUID(uuids.NewV7()),
 		ChannelUUID_: channel.UUID(),
 		URN_:         urn,
 		EventType_:   eventType,
 		OccurredOn_:  time.Now().In(time.UTC),
-		LogUUIDs:     []clogs.UUID{clogUUID},
+		LogUUIDs:     []clogs.UUID{clog.UUID},
 
 		Channel_: channel,
 	}
@@ -92,6 +94,81 @@ const sqlInsertChannelEvent = `
 INSERT INTO
 	channels_channelevent( org_id,  uuid,  channel_id,  contact_id,  contact_urn_id,  event_type,  extra,  occurred_on,  created_on, status,  log_uuids)
 				   VALUES(:org_id, :uuid, :channel_id, :contact_id, :contact_urn_id, :event_type, :extra, :occurred_on,       NOW(),    'P', :log_uuids)`
+
+// WriteChannelEvent writes the passed in event to the database, or spools it if the database is unavailable
+func WriteChannelEvent(ctx context.Context, rt *runtime.Runtime, event *ChannelEvent, clog *ChannelLog) error {
+	timeout, cancel := context.WithTimeout(ctx, fetchTimeout)
+	defer cancel()
+
+	err := writeChannelEventToDB(timeout, rt, event, clog)
+
+	// failed writing, write to our spool instead
+	if err != nil {
+		slog.Error("error writing channel event to db", "error", err, "channel", event.ChannelUUID_, "event_type", event.EventType_)
+
+		err = eventSpool.Add([]*ChannelEvent{event})
+	}
+
+	return err
+}
+
+// writeChannelEventToDB writes the passed in channel event to our db
+func writeChannelEventToDB(ctx context.Context, rt *runtime.Runtime, e *ChannelEvent, clog *ChannelLog) error {
+	// grab the contact for this event
+	contact, err := contactForURN(ctx, rt, e.Channel_.OrgID(), e.Channel_, e.URN_, nil, e.ContactName_, true, clog)
+	if err != nil {
+		return err
+	}
+
+	if err := InsertChannelEvent(ctx, rt.DB, e, contact); err != nil {
+		return err
+	}
+
+	// queue it up for handling by mailroom
+	rc := rt.VK.Get()
+	defer rc.Close()
+
+	// if we had a problem queueing the event, log it
+	if err := queueEventHandling(ctx, rc, contact, e); err != nil {
+		slog.Error("error queueing channel event", "error", err, "event", e.UUID_)
+	}
+
+	return nil
+}
+
+// flushEvents is the flush function for the event spool - it retries writing spooled channel events to the database,
+// returning those that fail again so they're respooled
+func flushEvents(ctx context.Context, rt *runtime.Runtime, batch []*ChannelEvent) ([]*ChannelEvent, error) {
+	var failed []*ChannelEvent
+
+	for _, event := range batch {
+		ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+		err := flushEvent(ctx, rt, event)
+		cancel()
+
+		if err != nil {
+			slog.Error("error flushing spooled channel event", "error", err, "event", event.UUID_)
+			failed = append(failed, event)
+		}
+	}
+
+	return failed, nil
+}
+
+func flushEvent(ctx context.Context, rt *runtime.Runtime, event *ChannelEvent) error {
+	// look up our channel
+	channel, err := GetChannel(ctx, AnyChannelType, event.ChannelUUID_)
+	if err != nil {
+		return err
+	}
+	event.Channel_ = channel
+
+	// create log tho it won't be written
+	clog := NewChannelLog(ChannelLogTypeMsgReceive, channel, nil, nil)
+
+	// try to flush to our database
+	return writeChannelEventToDB(ctx, rt, event, clog)
+}
 
 // InsertChannelEvent inserts the passed in channel event into the database
 func InsertChannelEvent(ctx context.Context, db *sqlx.DB, e *ChannelEvent, contact *Contact) error {

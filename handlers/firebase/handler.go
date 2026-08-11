@@ -93,7 +93,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// build our msg
-	dbMsg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Msg, "", clog).WithReceivedOn(date).WithContactName(form.Name).WithURNAuthTokens(authTokens)
+	dbMsg := models.NewIncomingMsg(channel, urn, form.Msg, "", clog).WithReceivedOn(date).WithContactName(form.Name).WithURNAuthTokens(authTokens)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{dbMsg}, w, r, clog)
@@ -120,7 +120,7 @@ func (h *handler) registerContact(ctx context.Context, channel *models.Channel, 
 	}
 
 	// create our contact
-	contact, err := h.Backend().GetContact(ctx, channel, urn, map[string]string{"default": form.FCMToken}, form.Name, true, clog)
+	contact, err := models.GetContact(ctx, h.Runtime(), channel, urn, map[string]string{"default": form.FCMToken}, form.Name, true, clog)
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-package rapidpro
+package models
 
 import (
 	"context"
@@ -6,14 +6,13 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/queues"
 )
 
 var mrQueue = queues.NewFairV2("tasks:realtime", 100)
 
-func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *models.MsgIn) error {
+func queueMsgHandling(ctx context.Context, rc redis.Conn, c *Contact, m *MsgIn) error {
 	channel := m.Channel()
 
 	body := map[string]any{
@@ -36,7 +35,7 @@ func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *
 	return queueMailroomTask(ctx, rc, "msg_received", channel.OrgID_, c.ID_, body)
 }
 
-func queueEventHandling(ctx context.Context, rc redis.Conn, c *models.Contact, e *models.ChannelEvent) error {
+func queueEventHandling(ctx context.Context, rc redis.Conn, c *Contact, e *ChannelEvent) error {
 	channel := e.Channel()
 
 	body := map[string]any{
@@ -52,13 +51,13 @@ func queueEventHandling(ctx context.Context, rc redis.Conn, c *models.Contact, e
 	return queueMailroomTask(ctx, rc, "event_received", channel.OrgID_, c.ID_, body)
 }
 
-func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *models.Channel, msgUUID models.MsgUUID, contactID models.ContactID) error {
+func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *Channel, msgUUID MsgUUID, contactID ContactID) error {
 	return queueMailroomTask(ctx, rc, "msg_deleted", ch.OrgID_, contactID, map[string]any{"msg_uuid": msgUUID})
 }
 
 // queueMailroomTask queues the passed in task to mailroom. Mailroom processes both messages and
 // channel event tasks through the same ordered queue.
-func queueMailroomTask(ctx context.Context, rc redis.Conn, taskType string, orgID models.OrgID, contactID models.ContactID, body map[string]any) (err error) {
+func queueMailroomTask(ctx context.Context, rc redis.Conn, taskType string, orgID OrgID, contactID ContactID, body map[string]any) (err error) {
 	eventJSON := jsonx.MustMarshal(mrTask{
 		Type:     taskType,
 		Task:     body,
@@ -86,7 +85,7 @@ func queueMailroomTask(ctx context.Context, rc redis.Conn, taskType string, orgI
 }
 
 type mrContactTask struct {
-	ContactID models.ContactID `json:"contact_id"`
+	ContactID ContactID `json:"contact_id"`
 }
 
 type mrTask struct {

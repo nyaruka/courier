@@ -47,7 +47,6 @@ var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Receive Invalid CreatedAt",
 		URL:                  receiveMsgURL + "?created_at=nottimestamp&type=text&from=14133881111&name=John%20Cruz&body=Hi",
-		ExpectedContactName:  Sp("John Cruz"),
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "invalid created_at",
 	},
@@ -60,7 +59,6 @@ var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Receive Invalid From",
 		URL:                  receiveMsgURL + "?created_at=1603914166&type=text&from=notnumber&name=John%20Cruz&body=Hi",
-		ExpectedContactName:  Sp("John Cruz"),
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "invalid whatsapp id",
 	},

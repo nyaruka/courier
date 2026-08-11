@@ -77,8 +77,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 	// this is a start command, trigger a new conversation
 	if text == "/start" {
-		event := h.Backend().NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog).WithContactName(name).WithOccurredOn(date)
-		err = h.Backend().WriteChannelEvent(ctx, event, clog)
+		event := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog).WithContactName(name).WithOccurredOn(date)
+		err = models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -142,7 +142,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, text, fmt.Sprintf("%d", payload.Message.MessageID), clog).WithReceivedOn(date).WithContactName(name)
+	msg := models.NewIncomingMsg(channel, urn, text, fmt.Sprintf("%d", payload.Message.MessageID), clog).WithReceivedOn(date).WithContactName(name)
 
 	if mediaURL != "" {
 		msg.WithAttachment(mediaURL)
@@ -234,7 +234,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 		return courier.ErrChannelConfig
 	}
 
-	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, true, clog)
+	attachments, err := handlers.ResolveAttachments(ctx, h.Runtime(), msg.Attachments(), mediaSupport, true, clog)
 	if err != nil {
 		return fmt.Errorf("error resolving attachments: %w", err)
 	}

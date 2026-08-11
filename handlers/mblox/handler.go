@@ -76,7 +76,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		}
 
 		// write our status
-		status := h.Backend().NewStatusUpdateByExternalID(channel, payload.BatchID, msgStatus, clog)
+		status := models.NewStatusUpdateByExternalID(channel, payload.BatchID, msgStatus, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 	} else if payload.Type == "mo_text" {
@@ -98,7 +98,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		}
 
 		// build our Message
-		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, payload.Body, payload.ID, clog).WithReceivedOn(date.UTC())
+		msg := models.NewIncomingMsg(channel, urn, payload.Body, payload.ID, clog).WithReceivedOn(date.UTC())
 
 		// and finally write our message
 		return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)

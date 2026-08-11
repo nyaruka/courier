@@ -84,7 +84,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	date := time.Unix(ts, 0).UTC()
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, payload.Body.Text, payload.Service.RequestID, clog).WithReceivedOn(date)
+	msg := models.NewIncomingMsg(channel, urn, payload.Body.Text, payload.Service.RequestID, clog).WithReceivedOn(date)
 
 	// and write it
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)

@@ -247,7 +247,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		}
 
 		// create our message
-		event := h.Backend().NewIncomingMsg(ctx, channel, urn, text, msg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[sender])
+		event := models.NewIncomingMsg(channel, urn, text, msg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[sender])
 
 		// we had an error downloading media
 		if err != nil {
@@ -270,7 +270,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			}
 		}
 
-		err = h.Backend().WriteMsg(ctx, event, clog)
+		err = models.WriteMsg(ctx, h.Runtime(), event, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -292,8 +292,8 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			continue
 		}
 
-		event := h.Backend().NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
-		err := h.Backend().WriteStatusUpdate(ctx, event)
+		event := models.NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
+		err := models.WriteStatusUpdate(ctx, h.Runtime(), event)
 		if err != nil {
 			return nil, err
 		}

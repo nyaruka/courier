@@ -548,7 +548,7 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, twTestChannels, newTWIMLHandler("TW", "TwiML API", true), twTestCases)
 	RunIncomingTestCases(t, swTestChannels, newTWIMLHandler("SW", "SignalWire", false), swTestCases)
 
-	waChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
+	waChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "+12065551212", "US",
 		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
 			configAccountSID:       "accountSID",
@@ -1539,8 +1539,7 @@ func TestSendEvent(t *testing.T) {
 		},
 	)
 
-	mb := test.NewMockBackend()
-	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), mb)
+	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
 	h := newTWIMLHandler("TWA", "Twilio Whatsapp", true).(*handler)
 	h.Initialize(s)
