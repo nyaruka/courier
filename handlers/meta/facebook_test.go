@@ -15,6 +15,7 @@ import (
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/assets"
@@ -280,7 +281,7 @@ func TestFacebookDescribeURN(t *testing.T) {
 
 	channel := facebookTestChannels[0]
 	handler := newHandler("FBA", "Facebook")
-	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())))
+	web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(handler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -604,10 +605,10 @@ func TestFacebookOutgoing(t *testing.T) {
 func TestFacebookSendEvent(t *testing.T) {
 	channel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", []string{urns.Facebook.Prefix}, map[string]any{models.ConfigAuthToken: "a123"})
 
-	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
+	s := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
 	h := newHandler("FBA", "Facebook").(*handler)
-	h.Initialize(s)
+	s.MountHandler(h)
 
 	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://graph.facebook.com/v25.0/me/messages*": {
@@ -680,10 +681,10 @@ func TestSigning(t *testing.T) {
 }
 
 func TestFacebookBuildAttachmentRequest(t *testing.T) {
-	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
+	s := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
 	handler := &handler{NewBaseHandler(models.ChannelType("FBA"), "Facebook", DisableUUIDRouting())}
-	handler.Initialize(s)
+	s.MountHandler(handler)
 	req, _ := handler.BuildAttachmentRequest(context.Background(), facebookTestChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, http.Header{}, req.Header)

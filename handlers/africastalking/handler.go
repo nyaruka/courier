@@ -41,12 +41,11 @@ type moForm struct {
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(s *courier.Server) error {
-	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "callback", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "delivery", models.ChannelLogTypeMsgStatus, h.receiveStatus)
-	s.AddHandlerRoute(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+func (h *handler) Initialize(r *courier.Routes) error {
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.Add(h, http.MethodPost, "callback", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.Add(h, http.MethodPost, "delivery", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
 }
 

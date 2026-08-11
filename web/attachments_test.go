@@ -1,4 +1,4 @@
-package courier_test
+package web_test
 
 import (
 	"context"
@@ -9,10 +9,10 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
+	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -20,7 +20,7 @@ import (
 )
 
 func TestFetchAndStoreAttachment(t *testing.T) {
-	testJPG := test.ReadFile("test/testdata/test.jpg")
+	testJPG := test.ReadFile("../test/testdata/test.jpg")
 
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 	uuids.SetGenerator(uuids.NewSeededGenerator(1234, time.Now))
@@ -57,7 +57,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 
 	clog := models.NewChannelLogForAttachmentFetch(mockChannel, []string{"sesame"})
 
-	att, err := courier.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello.jpg", clog)
+	att, err := web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello.jpg", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "image/jpeg", att.ContentType)
 	assert.Equal(t, "http://localstack:4566/test-attachments/attachments/1/f884/4b62/f8844b62-b014-4975-9a98-cfcce3019710.jpg", att.URL)
@@ -66,7 +66,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	assert.Len(t, clog.HttpLogs, 1)
 	assert.Equal(t, "http://mock.com/media/hello.jpg", clog.HttpLogs[0].URL)
 
-	att, err = courier.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello2", clog)
+	att, err = web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello2", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "image/jpeg", att.ContentType)
 	assert.Equal(t, "http://localstack:4566/test-attachments/attachments/1/d4bb/9822/d4bb9822-7160-4af3-b92b-40dae35f038b.jpg", att.URL)
@@ -76,26 +76,26 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	assert.Equal(t, "http://mock.com/media/hello2", clog.HttpLogs[1].URL)
 
 	// a non-200 response should return an unavailable attachment
-	att, err = courier.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello.mp3", clog)
+	att, err = web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello.mp3", clog)
 	assert.NoError(t, err)
-	assert.Equal(t, &courier.Attachment{ContentType: "unavailable", URL: "http://mock.com/media/hello.mp3"}, att)
+	assert.Equal(t, &web.Attachment{ContentType: "unavailable", URL: "http://mock.com/media/hello.mp3"}, att)
 
 	// should have a logged HTTP request but no attachments will have been saved to storage
 	assert.Len(t, clog.HttpLogs, 3)
 	assert.Equal(t, "http://mock.com/media/hello.mp3", clog.HttpLogs[2].URL)
 
 	// same for a connection error
-	att, err = courier.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello.pdf", clog)
+	att, err = web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello.pdf", clog)
 	assert.NoError(t, err)
-	assert.Equal(t, &courier.Attachment{ContentType: "unavailable", URL: "http://mock.com/media/hello.pdf"}, att)
+	assert.Equal(t, &web.Attachment{ContentType: "unavailable", URL: "http://mock.com/media/hello.pdf"}, att)
 
-	att, err = courier.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello3", clog)
+	att, err = web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello3", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "image/jpeg", att.ContentType)
 	assert.Equal(t, "http://localstack:4566/test-attachments/attachments/1/e527/3bef/e5273bef-6a8d-421f-8920-17713634b9f5.jpg", att.URL)
 	assert.Equal(t, 17301, att.Size)
 
-	att, err = courier.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello7", clog)
+	att, err = web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello7", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "application/octet-stream", att.ContentType)
 	assert.Equal(t, "http://localstack:4566/test-attachments/attachments/1/f879/21a1/f87921a1-0484-4660-9955-f9b28b006b78", att.URL)
@@ -104,7 +104,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	// an actual error on our part (e.g. storage unavailable) should be returned as an error
 	rt.Config.S3AttachmentsBucket = "does-not-exist"
 
-	att, err = courier.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello.txt", clog)
+	att, err = web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello.txt", clog)
 	assert.Error(t, err)
 	assert.Nil(t, att)
 }
@@ -128,9 +128,9 @@ func TestFetchAndStoreAttachmentAccessDenied(t *testing.T) {
 	clog := models.NewChannelLogForAttachmentFetch(mockChannel, nil)
 
 	// a request denied by the SSRF blocklist should yield an "unavailable" attachment rather than an error
-	att, err := courier.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://127.0.0.1/media/blocked.jpg", clog)
+	att, err := web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://127.0.0.1/media/blocked.jpg", clog)
 	assert.NoError(t, err)
-	assert.Equal(t, &courier.Attachment{ContentType: "unavailable", URL: "http://127.0.0.1/media/blocked.jpg"}, att)
+	assert.Equal(t, &web.Attachment{ContentType: "unavailable", URL: "http://127.0.0.1/media/blocked.jpg"}, att)
 
 	// nothing is saved to storage, but the denied request is still logged
 	assert.Len(t, clog.HttpLogs, 1)

@@ -23,6 +23,7 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
@@ -80,7 +81,7 @@ type IncomingTestCase struct {
 }
 
 // utility method to make a request to a handler URL
-func testHandlerRequest(tb testing.TB, s *courier.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBodyContains string, requestPrepFunc RequestPrepFunc) string {
+func testHandlerRequest(tb testing.TB, s *web.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBodyContains string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
 	var err error
 	url := fmt.Sprintf("https://%s%s", s.Runtime().Config.Domain, path)
@@ -152,7 +153,7 @@ func (t localOnlyTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	return t.RoundTripper.RoundTrip(r)
 }
 
-func newServer(rt *runtime.Runtime) *courier.Server {
+func newServer(rt *runtime.Runtime) *web.Server {
 	// for benchmarks, log to null
 	log.SetOutput(io.Discard)
 
@@ -160,7 +161,7 @@ func newServer(rt *runtime.Runtime) *courier.Server {
 	rt.Config.FacebookApplicationSecret = "fb_app_secret"
 	rt.Config.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
 
-	return courier.NewServer(rt)
+	return web.NewServer(rt)
 }
 
 // RunIncomingTestCases runs all the passed in tests cases for the passed in channel configurations
@@ -192,7 +193,7 @@ func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler cour
 	// re-register the handler under test so that lookups by channel type - e.g. the URN describer used when
 	// creating a contact - resolve to this instance rather than the uninitialized one from its init()
 	courier.RegisterHandler(handler)
-	handler.Initialize(s)
+	require.NoError(t, s.MountHandler(handler))
 
 	// capture the events and channel logs of each handled request
 	var handledEvents []courier.Event
@@ -465,7 +466,7 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler courier
 
 	s := newServer(rt)
 	testsuite.InsertChannel(t, rt, channel)
-	handler.Initialize(s)
+	require.NoError(t, s.MountHandler(handler))
 
 	for _, tc := range testCases {
 		t.Run(tc.Label, func(t *testing.T) {

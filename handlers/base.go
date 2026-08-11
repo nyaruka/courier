@@ -52,9 +52,9 @@ func WithRedactConfigKeys(keys ...string) func(*BaseHandler) {
 	}
 }
 
-// SetServer can be used to change the server on a BaseHandler
-func (h *BaseHandler) SetServer(server *courier.Server) {
-	h.rt = server.Runtime()
+// SetRuntime gives the handler the runtime it should use, and is called before Initialize
+func (h *BaseHandler) SetRuntime(rt *runtime.Runtime) {
+	h.rt = rt
 }
 
 // Runtime returns the runtime instance on the BaseHandler

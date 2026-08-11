@@ -21,6 +21,7 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/courier/v26/web"
 )
 
 const (
@@ -389,7 +390,7 @@ func TestDescribeURN(t *testing.T) {
 	defer server.Close()
 
 	handler := newHandler()
-	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())))
+	web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(handler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 	urn, _ := urns.New(urns.VK, "123456789")
 	data := map[string]string{"name": "John Doe"}
@@ -654,9 +655,9 @@ func TestOutgoing(t *testing.T) {
 func TestSendEvent(t *testing.T) {
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VK", "2020", "US", []string{urns.VK.Prefix}, map[string]any{models.ConfigAuthToken: "token123xyz"})
 
-	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
+	s := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 	h := newHandler().(*handler)
-	h.Initialize(s)
+	s.MountHandler(h)
 
 	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://api.vk.com/method/messages.setActivity.json*": {

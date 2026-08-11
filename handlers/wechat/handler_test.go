@@ -19,6 +19,7 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
+	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/assets"
@@ -243,9 +244,9 @@ func TestDescribeURN(t *testing.T) {
 	defer rc.Close()
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 
-	s := courier.NewServer(rt)
+	s := web.NewServer(rt)
 	handler := newHandler().(*handler)
-	handler.Initialize(s)
+	s.MountHandler(handler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 
 	tcs := []struct {
@@ -276,14 +277,14 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
 	rt.HTTPProxied = rt.HTTP
 
-	s := courier.NewServer(rt)
+	s := web.NewServer(rt)
 	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://api.weixin.qq.com/cgi-bin/token?appid=app-id&grant_type=client_credential&secret=app-secret123": {
 			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"access_token": "SESAME"}`)),
 		},
 	})
 	handler := newHandler().(*handler)
-	handler.Initialize(s)
+	s.MountHandler(handler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 
 	// check that request has the fetched access token
@@ -314,14 +315,14 @@ func TestFetchAccessTokenThrottled(t *testing.T) {
 	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
 	rt.HTTPProxied = rt.HTTP
 
-	s := courier.NewServer(rt)
+	s := web.NewServer(rt)
 	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://api.weixin.qq.com/cgi-bin/token?appid=app-id&grant_type=client_credential&secret=app-secret123": {
 			httpx.NewMockResponse(429, nil, []byte(`{"errcode": 45009, "errmsg": "reach max api daily quota limit"}`)),
 		},
 	})
 	handler := newHandler().(*handler)
-	handler.Initialize(s)
+	s.MountHandler(handler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 
 	// a rate limited token fetch is throttling rather than an empty token
@@ -457,9 +458,9 @@ func TestSendEvent(t *testing.T) {
 	defer rc.Close()
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 
-	s := courier.NewServer(rt)
+	s := web.NewServer(rt)
 	h := newHandler().(*handler)
-	h.Initialize(s)
+	s.MountHandler(h)
 
 	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://api.weixin.qq.com/cgi-bin/message/custom/typing*": {

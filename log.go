@@ -1,12 +1,28 @@
 package courier
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/nyaruka/courier/v26/core/models"
 )
+
+// for use in request.Context
+type contextKey int
+
+const (
+	contextRequestURL contextKey = iota
+	contextRequestStart
+)
+
+// WithRequestContext returns a context carrying the request details that the logging below reports. The web server
+// puts them there before invoking a handler, so that handlers can log without being passed them explicitly.
+func WithRequestContext(ctx context.Context, url string, start time.Time) context.Context {
+	ctx = context.WithValue(ctx, contextRequestURL, url)
+	return context.WithValue(ctx, contextRequestStart, start)
+}
 
 // LogMsgStatusReceived logs our that we received a new MsgStatus
 func LogMsgStatusReceived(r *http.Request, status *models.StatusUpdate) {

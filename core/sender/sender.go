@@ -1,171 +1,37 @@
-package courier
+package sender
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
+	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
-type SendResult struct {
-	externalIDs []string
-	newURN      urns.URN
-}
-
-func (r *SendResult) AddExternalID(id string) {
-	r.externalIDs = append(r.externalIDs, id)
-}
-
-func (r *SendResult) ExternalIDs() []string {
-	return r.externalIDs
-}
-
-func (r *SendResult) SetNewURN(urn urns.URN) {
-	r.newURN = urn
-}
-
-func (r *SendResult) NewURN() urns.URN {
-	return r.newURN
-}
-
-type SendError struct {
-	msg       string
-	retryable bool
-	loggable  bool
-
-	clogCode    string
-	clogMsg     string
-	clogExtCode string
-}
-
-func (e *SendError) Error() string {
-	return e.msg
-}
-
-// ErrChannelConfig should be returned by a handler send method when channel config is invalid
-var ErrChannelConfig error = &SendError{
-	msg:       "channel config invalid",
-	retryable: false,
-	loggable:  true,
-	clogCode:  "channel_config",
-	clogMsg:   "Channel configuration is missing required values.",
-}
-
-// ErrMessageInvalid should be returned by a handler send method when the message it has received is invalid
-var ErrMessageInvalid error = &SendError{
-	msg:       "message invalid",
-	retryable: false,
-	loggable:  true,
-	clogCode:  "message_invalid",
-	clogMsg:   "Message is missing required values.",
-}
-
-// ErrConnectionFailed should be returned when connection to the channel fails (timeout or 5XX response)
-var ErrConnectionFailed error = &SendError{
-	msg:       "channel connection failed",
-	retryable: true,
-	loggable:  false,
-	clogCode:  "connection_failed",
-	clogMsg:   "Connection to server failed.",
-}
-
-// ErrConnectionThrottled should be returned when channel tells us we're rate limited
-var ErrConnectionThrottled error = &SendError{
-	msg:       "channel rate limited",
-	retryable: true,
-	loggable:  false,
-	clogCode:  "connection_throttled",
-	clogMsg:   "Connection to server has been rate limited.",
-}
-
-// ErrResponseStatus should be returned when the response from the channel has a non-success status code
-var ErrResponseStatus error = &SendError{
-	msg:       "response status code",
-	retryable: false,
-	loggable:  false,
-	clogCode:  "response_status",
-	clogMsg:   "Response has non-success status code.",
-}
-
-// ErrResponseContent should be returned when the response content from the channel indicates non-succeess
-var ErrResponseContent error = &SendError{
-	msg:       "response content",
-	retryable: false,
-	loggable:  false,
-	clogCode:  "response_content",
-	clogMsg:   "Response content indicates non-success.",
-}
-
-// ErrResponseUnparseable should be returned when channel response can't be parsed in expected format
-var ErrResponseUnparseable error = &SendError{
-	msg:       "response couldn't be parsed",
-	retryable: false,
-	loggable:  true,
-	clogCode:  "response_unparseable",
-	clogMsg:   "Response could not be parsed in the expected format.",
-}
-
-// ErrResponseUnexpected should be returned when channel response doesn't match what we expect
-var ErrResponseUnexpected error = &SendError{
-	msg:       "response not expected values",
-	retryable: false,
-	loggable:  true,
-	clogCode:  "response_unexpected",
-	clogMsg:   "Response doesn't match expected values.",
-}
-
-// ErrContactStopped should be returned when channel tells us explicitly that the contact has opted-out
-var ErrContactStopped error = &SendError{
-	msg:       "contact opted out",
-	retryable: false,
-	loggable:  false,
-	clogCode:  "contact_stopped",
-	clogMsg:   "Contact has opted-out of messages from this channel.",
-}
-
-func ErrFailedWithReason(code, desc string) *SendError {
-	return &SendError{
-		msg:         "channel rejected send with reason",
-		retryable:   false,
-		loggable:    false,
-		clogCode:    "rejected_with_reason",
-		clogMsg:     desc,
-		clogExtCode: code,
-	}
-}
-
-// ErrRetryableWithReason is like ErrFailedWithReason but for failures that may be transient and so should be retried
-func ErrRetryableWithReason(code, desc string) *SendError {
-	return &SendError{
-		msg:         "channel rejected send with retryable reason",
-		retryable:   true,
-		loggable:    false,
-		clogCode:    "rejected_with_reason",
-		clogMsg:     desc,
-		clogExtCode: code,
-	}
-}
-
 // Foreman takes care of managing our set of sending workers and assigns msgs for each to send
 type Foreman struct {
-	server           *Server
+	rt               *runtime.Runtime
 	senders          []*Sender
 	availableSenders chan *Sender
 	quit             chan bool
+	waitGroup        *sync.WaitGroup
 }
 
 // NewForeman creates a new Foreman for the passed in server with the number of max senders
-func NewForeman(server *Server, maxSenders int) *Foreman {
+func NewForeman(rt *runtime.Runtime, maxSenders int) *Foreman {
 	foreman := &Foreman{
-		server:           server,
+		rt:               rt,
 		senders:          make([]*Sender, maxSenders),
 		availableSenders: make(chan *Sender, maxSenders),
 		quit:             make(chan bool),
+		waitGroup:        &sync.WaitGroup{},
 	}
 
 	for i := 0; i < maxSenders; i++ {
@@ -190,13 +56,16 @@ func (f *Foreman) Stop() {
 	}
 	close(f.quit)
 	slog.Info("foreman stopping", "comp", "foreman", "state", "stopping")
+
+	// wait for the assign loop and all senders to finish what they're doing
+	f.waitGroup.Wait()
 }
 
 // Assign is our main loop for the Foreman, it takes care of popping the next outgoing messages from our
 // backend and assigning them to workers
 func (f *Foreman) Assign() {
-	f.server.WaitGroup().Add(1)
-	defer f.server.WaitGroup().Done()
+	f.waitGroup.Add(1)
+	defer f.waitGroup.Done()
 	log := slog.With("comp", "foreman")
 
 	log.Info("senders started and waiting",
@@ -216,7 +85,7 @@ func (f *Foreman) Assign() {
 		case sender := <-f.availableSenders:
 			// see if we have a message to work on
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-			msg, err := models.PopNextOutgoingMsg(ctx, f.server.rt)
+			msg, err := models.PopNextOutgoingMsg(ctx, f.rt)
 			cancel()
 
 			if err == nil && msg != nil {
@@ -260,10 +129,10 @@ func NewSender(foreman *Foreman, id int) *Sender {
 
 // Start starts our Sender's goroutine and has it start waiting for tasks from the foreman
 func (w *Sender) Start() {
-	w.foreman.server.WaitGroup().Add(1)
+	w.foreman.waitGroup.Add(1)
 
 	go func() {
-		defer w.foreman.server.WaitGroup().Done()
+		defer w.foreman.waitGroup.Done()
 		slog.Debug("started", "comp", "sender", "sender_id", w.id)
 		for {
 			// list ourselves as available for work
@@ -291,8 +160,7 @@ func (w *Sender) Stop() {
 func (w *Sender) sendMessage(msg *models.MsgOut) {
 	log := slog.With("comp", "sender", "sender_id", w.id, "channel_uuid", msg.Channel().UUID())
 
-	server := w.foreman.server
-	rt := server.rt
+	rt := w.foreman.rt
 
 	// we don't want any individual send taking more than 35s
 	sendCTX, cancel := context.WithTimeout(context.Background(), time.Second*35)
@@ -323,9 +191,9 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 	}
 
 	var status *models.StatusUpdate
-	var res *SendResult
+	var res *courier.SendResult
 	var redactValues []string
-	handler := server.GetHandler(msg.Channel())
+	handler := courier.GetActiveHandler(msg.Channel().ChannelType())
 	if handler != nil {
 		redactValues = handler.RedactValues(msg.Channel())
 	}
@@ -367,9 +235,9 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 	models.OnSendComplete(writeCTX, rt, msg, status, newURN, clog)
 }
 
-func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m *models.MsgOut, clog *models.ChannelLog, log *slog.Logger) (*models.StatusUpdate, *SendResult) {
-	rt := w.foreman.server.rt
-	res := &SendResult{}
+func (w *Sender) sendByHandler(ctx context.Context, h courier.ChannelHandler, m *models.MsgOut, clog *models.ChannelLog, log *slog.Logger) (*models.StatusUpdate, *courier.SendResult) {
+	rt := w.foreman.rt
+	res := &courier.SendResult{}
 	err := h.Send(ctx, m, res, clog)
 
 	status := models.NewStatusUpdate(m.Channel(), m.UUID(), models.MsgStatusWired, clog)
@@ -379,21 +247,21 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m *models.
 		status.SetExternalIdentifier(res.ExternalIDs()[0])
 	}
 
-	var serr *SendError
+	var serr *courier.SendError
 	if errors.As(err, &serr) {
-		if serr.loggable {
+		if serr.Loggable() {
 			log.Error("error sending message", "error", err)
 		}
-		if serr.retryable {
+		if serr.Retryable() {
 			status.SetStatus(models.MsgStatusErrored)
 		} else {
 			status.SetStatus(models.MsgStatusFailed)
 		}
 
-		clog.Error(&clogs.Error{Code: serr.clogCode, ExtCode: serr.clogExtCode, Message: serr.clogMsg})
+		clog.Error(serr.ClogError())
 
 		// if handler returned ErrContactStopped need to write a stop event
-		if serr == ErrContactStopped {
+		if serr == courier.ErrContactStopped {
 			channelEvent := models.NewChannelEvent(m.Channel(), models.EventTypeStopContact, m.URN(), clog)
 			if err = models.WriteChannelEvent(ctx, rt, channelEvent, clog); err != nil {
 				log.Error("error writing stop event", "error", err)

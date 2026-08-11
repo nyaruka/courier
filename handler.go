@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/goflow/core/events"
 )
 
@@ -18,7 +19,11 @@ type ChannelHandleFunc func(context.Context, *models.Channel, http.ResponseWrite
 
 // ChannelHandler is the interface all handlers must satisfy
 type ChannelHandler interface {
-	Initialize(*Server) error
+	// SetRuntime is called before Initialize to give the handler the runtime it should use. Handlers embedding
+	// handlers.BaseHandler get it from there rather than implementing it themselves.
+	SetRuntime(*runtime.Runtime)
+
+	Initialize(*Routes) error
 	Runtime() *runtime.Runtime
 	ChannelType() models.ChannelType
 	ChannelName() string
@@ -59,5 +64,53 @@ func GetHandler(ct models.ChannelType) ChannelHandler {
 	return registeredHandlers[ct]
 }
 
+// RegisteredHandlers returns all the handlers compiled into this build, for the server to initialize
+func RegisteredHandlers() []ChannelHandler {
+	hs := make([]ChannelHandler, 0, len(registeredHandlers))
+	for _, h := range registeredHandlers {
+		hs = append(hs, h)
+	}
+	return hs
+}
+
+// ActivateHandler marks a handler as one this instance is serving, i.e. it was included by config and initialized
+func ActivateHandler(handler ChannelHandler) {
+	activeHandlers[handler.ChannelType()] = handler
+}
+
+// GetActiveHandler returns the handler this instance is serving for the given channel type, or nil if that channel
+// type isn't being served - which is how sending fails fast for a channel this instance doesn't handle.
+func GetActiveHandler(ct models.ChannelType) ChannelHandler {
+	return activeHandlers[ct]
+}
+
 var registeredHandlers = make(map[models.ChannelType]ChannelHandler)
 var activeHandlers = make(map[models.ChannelType]ChannelHandler)
+
+// Route is an HTTP route a channel handler serves, added during its initialization
+type Route struct {
+	Handler ChannelHandler
+	Method  string
+	Action  string
+	LogType clogs.Type
+	Func    ChannelHandleFunc
+}
+
+// Routes is what a channel handler is initialized with, and collects the routes it wants to serve so that the web
+// server can mount them - which is what keeps the handler contract free of any dependency on the server itself.
+type Routes struct {
+	routes []*Route
+}
+
+// NewRoutes creates an empty set of routes for a handler to add to
+func NewRoutes() *Routes {
+	return &Routes{}
+}
+
+// Add adds a route which the handler wants to serve
+func (r *Routes) Add(handler ChannelHandler, method string, action string, logType clogs.Type, handlerFunc ChannelHandleFunc) {
+	r.routes = append(r.routes, &Route{Handler: handler, Method: method, Action: action, LogType: logType, Func: handlerFunc})
+}
+
+// All returns every route added so far
+func (r *Routes) All() []*Route { return r.routes }
