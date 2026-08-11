@@ -134,7 +134,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 }
 
 // DartMedia expects "000" from a message receive request
-func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.StatusUpdate) error {
+func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")
 	return err

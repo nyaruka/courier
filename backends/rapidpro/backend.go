@@ -308,7 +308,7 @@ func (b *backend) GetChannelByAddress(ctx context.Context, typ models.ChannelTyp
 }
 
 // GetContact returns the contact for the passed in channel and URN
-func (b *backend) GetContact(ctx context.Context, c *models.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *models.ChannelLog) (courier.Contact, error) {
+func (b *backend) GetContact(ctx context.Context, c *models.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *models.ChannelLog) (*models.Contact, error) {
 	return contactForURN(ctx, b, c.OrgID_, c, urn, authTokens, name, allowCreate, clog)
 }
 
@@ -418,7 +418,7 @@ func (b *backend) ClearMsgSent(ctx context.Context, uuid models.MsgUUID) error {
 }
 
 // OnSendComplete is called when the sender has finished trying to send a message
-func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate, res *courier.SendResult, clog *models.ChannelLog) {
+func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status *models.StatusUpdate, res *courier.SendResult, clog *models.ChannelLog) {
 	log := slog.With("channel", msg.Channel().UUID(), "msg", msg.UUID(), "clog", clog.UUID, "status", status)
 
 	rc := b.rt.VK.Get()
@@ -492,19 +492,18 @@ func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *models.
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdate(channel *models.Channel, uuid models.MsgUUID, status models.MsgStatus, clog *models.ChannelLog) courier.StatusUpdate {
+func (b *backend) NewStatusUpdate(channel *models.Channel, uuid models.MsgUUID, status models.MsgStatus, clog *models.ChannelLog) *models.StatusUpdate {
 	return newStatusUpdate(channel, uuid, "", status, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdateByExternalID(channel *models.Channel, externalID string, status models.MsgStatus, clog *models.ChannelLog) courier.StatusUpdate {
+func (b *backend) NewStatusUpdateByExternalID(channel *models.Channel, externalID string, status models.MsgStatus, clog *models.ChannelLog) *models.StatusUpdate {
 	return newStatusUpdate(channel, "", externalID, status, clog)
 }
 
 // WriteStatusUpdate writes the passed in MsgStatus to our store
-func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUpdate) error {
+func (b *backend) WriteStatusUpdate(ctx context.Context, status *models.StatusUpdate) error {
 	log := slog.With("msg_uuid", status.MsgUUID(), "msg_external_id", status.ExternalIdentifier(), "status", status.Status())
-	su := status.(*models.StatusUpdate)
 
 	if status.MsgUUID() == "" && status.ExternalIdentifier() == "" {
 		return errors.New("message status with no UUID or external id")
@@ -516,7 +515,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 			rc := b.rt.VK.Get()
 			defer rc.Close()
 
-			err := b.sentExternalIDs.Set(ctx, rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalIdentifier_), string(status.MsgUUID()))
+			err := b.sentExternalIDs.Set(ctx, rc, fmt.Sprintf("%d|%s", status.ChannelID_, status.ExternalIdentifier_), string(status.MsgUUID()))
 			if err != nil {
 				log.Error("error recording external id", "error", err)
 			}
@@ -532,7 +531,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 	}
 
 	// queue the status to written by the batch writer
-	b.statusWriter.Queue(status.(*models.StatusUpdate))
+	b.statusWriter.Queue(status)
 	log.Debug("status update queued")
 
 	return nil

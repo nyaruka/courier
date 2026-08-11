@@ -323,7 +323,7 @@ func (w *Sender) sendMessage(msg MsgOut) {
 		log.Error("error looking up msg was sent", "error", err)
 	}
 
-	var status StatusUpdate
+	var status *models.StatusUpdate
 	var res *SendResult
 	var redactValues []string
 	handler := server.GetHandler(msg.Channel())
@@ -366,7 +366,7 @@ func (w *Sender) sendMessage(msg MsgOut) {
 	backend.OnSendComplete(writeCTX, msg, status, res, clog)
 }
 
-func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, clog *models.ChannelLog, log *slog.Logger) (StatusUpdate, *SendResult) {
+func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, clog *models.ChannelLog, log *slog.Logger) (*models.StatusUpdate, *SendResult) {
 	backend := w.foreman.server.Backend()
 	res := &SendResult{}
 	err := h.Send(ctx, m, res, clog)

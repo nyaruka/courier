@@ -101,7 +101,7 @@ func (h *mockHandler) SendableEvents(ch *models.Channel) map[string]time.Duratio
 	return map[string]time.Duration{events.TypeTypingStarted: 10 * time.Second}
 }
 
-func (h *mockHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.StatusUpdate) error {
+func (h *mockHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
 	return courier.WriteStatusSuccess(w, statuses)
 }
 

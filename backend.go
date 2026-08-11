@@ -23,7 +23,7 @@ type Backend interface {
 	GetChannelByAddress(context.Context, models.ChannelType, models.ChannelAddress) (*models.Channel, error)
 
 	// GetContact returns (or creates) the contact for the passed in channel and URN
-	GetContact(context.Context, *models.Channel, urns.URN, map[string]string, string, bool, *models.ChannelLog) (Contact, error)
+	GetContact(context.Context, *models.Channel, urns.URN, map[string]string, string, bool, *models.ChannelLog) (*models.Contact, error)
 
 	// DeleteMsgByExternalID deletes a message that has been deleted on the channel side
 	DeleteMsgByExternalID(ctx context.Context, channel *models.Channel, externalID string) error
@@ -35,13 +35,13 @@ type Backend interface {
 	WriteMsg(context.Context, MsgIn, *models.ChannelLog) error
 
 	// NewStatusUpdate creates a new status update for the given message id
-	NewStatusUpdate(*models.Channel, models.MsgUUID, models.MsgStatus, *models.ChannelLog) StatusUpdate
+	NewStatusUpdate(*models.Channel, models.MsgUUID, models.MsgStatus, *models.ChannelLog) *models.StatusUpdate
 
 	// NewStatusUpdateByExternalID creates a new status update for the given external id
-	NewStatusUpdateByExternalID(*models.Channel, string, models.MsgStatus, *models.ChannelLog) StatusUpdate
+	NewStatusUpdateByExternalID(*models.Channel, string, models.MsgStatus, *models.ChannelLog) *models.StatusUpdate
 
 	// WriteStatusUpdate writes the passed in status update to our backend
-	WriteStatusUpdate(context.Context, StatusUpdate) error
+	WriteStatusUpdate(context.Context, *models.StatusUpdate) error
 
 	// NewChannelEvent creates a new channel event for the given channel and event type
 	NewChannelEvent(*models.Channel, models.ChannelEventType, urns.URN, *models.ChannelLog) ChannelEvent
@@ -65,7 +65,7 @@ type Backend interface {
 	ClearMsgSent(context.Context, models.MsgUUID) error
 
 	// OnSendComplete is called when the sender has finished trying to send a message
-	OnSendComplete(context.Context, MsgOut, StatusUpdate, *SendResult, *models.ChannelLog)
+	OnSendComplete(context.Context, MsgOut, *models.StatusUpdate, *SendResult, *models.ChannelLog)
 
 	// OnReceiveComplete is called when the server has finished handling an incoming request
 	OnReceiveComplete(context.Context, *models.Channel, []Event, *models.ChannelLog)

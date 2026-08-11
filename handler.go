@@ -35,7 +35,7 @@ type ChannelHandler interface {
 	SendableEvents(*models.Channel) map[string]time.Duration
 	SendEvent(context.Context, *models.Channel, events.Event, *models.ChannelLog) error
 
-	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []StatusUpdate) error
+	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []*models.StatusUpdate) error
 	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []MsgIn) error
 	WriteRequestError(context.Context, http.ResponseWriter, error) error
 	WriteRequestIgnored(context.Context, http.ResponseWriter, string) error

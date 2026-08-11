@@ -10,11 +10,6 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 )
 
-// Contact defines the attributes on a contact, for our purposes that is just a contact UUID
-type Contact interface {
-	UUID() models.ContactUUID
-}
-
 // Event is our interface for the types of things a ChannelHandleFunc can return.
 type Event interface {
 	EventUUID() uuids.UUID
@@ -60,20 +55,6 @@ type MsgIn interface {
 	WithReceivedOn(date time.Time) MsgIn
 	WithNewURN(urn urns.URN, action models.NewURNAction) MsgIn
 	WithPayload(payload json.RawMessage) MsgIn
-}
-
-// StatusUpdate represents a status update on a message
-type StatusUpdate interface {
-	Event
-
-	ChannelUUID() models.ChannelUUID
-	MsgUUID() models.MsgUUID
-
-	ExternalIdentifier() string
-	SetExternalIdentifier(string)
-
-	Status() models.MsgStatus
-	SetStatus(models.MsgStatus)
 }
 
 // ChannelEvent represents an event on a channel, such as a follow, new conversation or referral

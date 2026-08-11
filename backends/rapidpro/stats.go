@@ -106,7 +106,7 @@ func (c *StatsCollector) RecordIncoming(typ models.ChannelType, evts []courier.E
 				continue
 			}
 			c.stats.IncomingMessages[typ]++
-		case courier.StatusUpdate:
+		case *models.StatusUpdate:
 			c.stats.IncomingStatuses[typ]++
 		case courier.ChannelEvent:
 			c.stats.IncomingEvents[typ]++

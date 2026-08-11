@@ -1549,7 +1549,7 @@ func (ts *BackendTestSuite) TestSpools() {
 
 	// spool a status update for an existing message
 	ts.b.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q' WHERE id = $1`, 10001)
-	status := ts.b.NewStatusUpdate(channel, "0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusSent, clog).(*models.StatusUpdate)
+	status := ts.b.NewStatusUpdate(channel, "0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusSent, clog)
 	ts.NoError(ts.b.statusSpool.Add([]*models.StatusUpdate{status}))
 	ts.Equal(1, ts.b.statusSpool.Size())
 
@@ -1558,7 +1558,7 @@ func (ts *BackendTestSuite) TestSpools() {
 	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT status FROM msgs_msg WHERE id = 10001`).Returns("S")
 
 	// a status that can't be resolved to a message flushes without error (logged and dropped)
-	unresolved := ts.b.NewStatusUpdateByExternalID(channel, "no-such-ext-id", models.MsgStatusDelivered, clog).(*models.StatusUpdate)
+	unresolved := ts.b.NewStatusUpdateByExternalID(channel, "no-such-ext-id", models.MsgStatusDelivered, clog)
 	ts.NoError(ts.b.statusSpool.Add([]*models.StatusUpdate{unresolved}))
 	ts.NoError(ts.b.statusSpool.Flush())
 	ts.Equal(0, ts.b.statusSpool.Size())

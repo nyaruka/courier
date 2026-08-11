@@ -122,7 +122,7 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 	return writeJasminACK(w)
 }
 
-func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.StatusUpdate) error {
+func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
 	return writeJasminACK(w)
 }
 
