@@ -14,7 +14,6 @@ import (
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
-	"github.com/nyaruka/null/v3"
 )
 
 type SavedAttachment struct {
@@ -92,11 +91,11 @@ func (mb *MockBackend) DeleteMsgByExternalID(ctx context.Context, channel *model
 // NewIncomingMsg creates a new message from the given params
 func (mb *MockBackend) NewIncomingMsg(ctx context.Context, channel *models.Channel, urn urns.URN, text string, extID string, clog *models.ChannelLog) *models.MsgIn {
 	m := &models.MsgIn{
-		Text_:               text,
-		ExternalIdentifier_: null.String(extID),
-		ChannelUUID_:        channel.UUID(),
-		URN_:                urn,
-		Channel_:            channel,
+		Text_:        text,
+		ExternalID_:  extID,
+		ChannelUUID_: channel.UUID(),
+		URN_:         urn,
+		Channel_:     channel,
 	}
 
 	uuid := mb.seenExternalIDs[fmt.Sprintf("%s|%s", m.Channel().UUID(), m.ExternalID())]

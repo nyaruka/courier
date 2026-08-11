@@ -172,17 +172,17 @@ func contactForMsg(ctx context.Context, b *backend, m *models.MsgIn, clog *model
 
 	// simple case: no alternative URN to consider, look up or create by the primary URN
 	if altURN == urns.NilURN {
-		return contactForURN(ctx, b, m.OrgID_, m.Channel_, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
+		return contactForURN(ctx, b, m.Channel_.OrgID(), m.Channel_, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 	}
 
 	// try the primary URN first, without creating a contact
-	contact, err := contactForURN(ctx, b, m.OrgID_, m.Channel_, m.URN_, m.URNAuthTokens_, m.ContactName_, false, clog)
+	contact, err := contactForURN(ctx, b, m.Channel_.OrgID(), m.Channel_, m.URN_, m.URNAuthTokens_, m.ContactName_, false, clog)
 	if err != nil || contact != nil {
 		return contact, err
 	}
 
 	// the primary URN didn't match an existing contact, try the alternative
-	contact, err = contactForURN(ctx, b, m.OrgID_, m.Channel_, altURN, nil, "", false, clog)
+	contact, err = contactForURN(ctx, b, m.Channel_.OrgID(), m.Channel_, altURN, nil, "", false, clog)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func contactForMsg(ctx context.Context, b *backend, m *models.MsgIn, clog *model
 	}
 
 	// no existing contact matched either URN, create one from the primary URN
-	return contactForURN(ctx, b, m.OrgID_, m.Channel_, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
+	return contactForURN(ctx, b, m.Channel_.OrgID(), m.Channel_, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 }
 
 // altLookupURN returns an alternative URN to look up an existing contact by when the message's primary URN doesn't

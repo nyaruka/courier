@@ -1113,12 +1113,12 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	err = ts.b.WriteMsg(ctx, msg6, clog)
 	ts.NoError(err)
 
-	ts.assertQueuedContactTask(msg6.ContactID_, "msg_received", map[string]any{
+	ts.assertQueuedContactTask(contact.ID_, "msg_received", map[string]any{
 		"channel_id":      float64(10),
 		"msg_uuid":        string(msg6.UUID()),
 		"msg_external_id": msg6.ExternalID(),
 		"urn":             msg6.URN().String(),
-		"urn_id":          float64(msg6.ContactURNID_),
+		"urn_id":          float64(contact.URNID_),
 		"text":            msg6.Text(),
 		"attachments":     nil,
 		"new_contact":     contact.IsNew_,
@@ -1132,12 +1132,12 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	err = ts.b.WriteMsg(ctx, msg7, clog)
 	ts.NoError(err)
 
-	ts.assertQueuedContactTask(msg7.ContactID_, "msg_received", map[string]any{
+	ts.assertQueuedContactTask(contact.ID_, "msg_received", map[string]any{
 		"channel_id":      float64(10),
 		"msg_uuid":        string(msg7.UUID()),
 		"msg_external_id": msg7.ExternalID(),
 		"urn":             msg7.URN().String(),
-		"urn_id":          float64(msg7.ContactURNID_),
+		"urn_id":          float64(contact.URNID_),
 		"text":            msg7.Text(),
 		"attachments":     nil,
 		"new_contact":     contact.IsNew_,
@@ -1152,12 +1152,12 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	err = ts.b.WriteMsg(ctx, msg8, clog)
 	ts.NoError(err)
 
-	ts.assertQueuedContactTask(msg8.ContactID_, "msg_received", map[string]any{
+	ts.assertQueuedContactTask(contact.ID_, "msg_received", map[string]any{
 		"channel_id":      float64(10),
 		"msg_uuid":        string(msg8.UUID()),
 		"msg_external_id": msg8.ExternalID(),
 		"urn":             msg8.URN().String(),
-		"urn_id":          float64(msg8.ContactURNID_),
+		"urn_id":          float64(contact.URNID_),
 		"text":            msg8.Text(),
 		"attachments":     nil,
 		"new_contact":     contact.IsNew_,

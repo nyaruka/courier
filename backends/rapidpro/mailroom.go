@@ -21,7 +21,7 @@ func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *
 		"msg_uuid":        m.UUID(),
 		"msg_external_id": m.ExternalID(),
 		"urn":             m.URN().String(),
-		"urn_id":          m.ContactURNID_,
+		"urn_id":          c.URNID_,
 		"text":            m.Text(),
 		"attachments":     m.Attachments(),
 		"new_contact":     c.IsNew_,
@@ -33,21 +33,23 @@ func queueMsgHandling(ctx context.Context, rc redis.Conn, c *models.Contact, m *
 		body["payload"] = m.Payload_
 	}
 
-	return queueMailroomTask(ctx, rc, "msg_received", m.OrgID_, m.ContactID_, body)
+	return queueMailroomTask(ctx, rc, "msg_received", channel.OrgID_, c.ID_, body)
 }
 
 func queueEventHandling(ctx context.Context, rc redis.Conn, c *models.Contact, e *models.ChannelEvent) error {
+	channel := e.Channel()
+
 	body := map[string]any{
 		"event_uuid":  e.UUID(),
 		"event_type":  e.EventType_,
-		"urn_id":      e.ContactURNID_,
-		"channel_id":  e.ChannelID_,
+		"urn_id":      c.URNID_,
+		"channel_id":  channel.ID_,
 		"extra":       e.Extra(),
 		"new_contact": c.IsNew_,
 		"occurred_on": e.OccurredOn_,
 	}
 
-	return queueMailroomTask(ctx, rc, "event_received", e.OrgID_, e.ContactID_, body)
+	return queueMailroomTask(ctx, rc, "event_received", channel.OrgID_, c.ID_, body)
 }
 
 func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *models.Channel, msgUUID models.MsgUUID, contactID models.ContactID) error {

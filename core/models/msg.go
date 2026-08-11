@@ -66,31 +66,27 @@ const (
 	MsgArchived MsgVisibility = "A"
 )
 
-// MsgIn is an incoming message which can be written to the database or marshaled to a spool file
+// MsgIn is an incoming message as created by a handler, and is also what we marshal to spool files when the
+// database is down. It doesn't carry any database ids - those are resolved when it's written.
 type MsgIn struct {
-	OrgID_              OrgID          `db:"org_id"                 json:"org_id"`
-	UUID_               MsgUUID        `db:"uuid"                   json:"uuid"`
-	Text_               string         `db:"text"                   json:"text"`
-	Attachments_        pq.StringArray `db:"attachments"            json:"attachments"`
-	ExternalIdentifier_ null.String    `db:"external_identifier"    json:"external_identifier"`
-	ChannelID_          ChannelID      `db:"channel_id"             json:"channel_id"`
-	ContactID_          ContactID      `db:"contact_id"             json:"contact_id"`
-	ContactURNID_       ContactURNID   `db:"contact_urn_id"         json:"contact_urn_id"`
-	CreatedOn_          time.Time      `db:"created_on"             json:"created_on"`
-	ModifiedOn_         time.Time      `db:"modified_on"            json:"modified_on"`
-	SentOn_             *time.Time     `db:"sent_on"                json:"sent_on"`
-	LogUUIDs            pq.StringArray `db:"log_uuids"              json:"log_uuids"`
+	UUID_        MsgUUID      `json:"uuid"`
+	ChannelUUID_ ChannelUUID  `json:"channel_uuid"`
+	URN_         urns.URN     `json:"urn"`
+	Text_        string       `json:"text"`
+	Attachments_ []string     `json:"attachments,omitempty"`
+	ExternalID_  string       `json:"external_id,omitempty"`
+	CreatedOn_   time.Time    `json:"created_on"`
+	ReceivedOn_  *time.Time   `json:"received_on,omitempty"`
+	LogUUIDs     []clogs.UUID `json:"log_uuids"`
 
-	// not stored on the msg itself but included in spool files and needed for queueing to mailroom
-	ChannelUUID_   ChannelUUID       `db:"-" json:"channel_uuid"`
-	URN_           urns.URN          `db:"-" json:"urn"`
-	ContactName_   string            `db:"-" json:"contact_name"`
-	URNAuthTokens_ map[string]string `db:"-" json:"auth_tokens"`
-	NewURN_        *NewURNSpec       `db:"-" json:"new_urn,omitempty"`
-	Payload_       json.RawMessage   `db:"-" json:"payload,omitempty"`
+	// optional extras set by handlers, used to update the contact or passed to mailroom for handling
+	ContactName_   string            `json:"contact_name,omitempty"`
+	URNAuthTokens_ map[string]string `json:"auth_tokens,omitempty"`
+	NewURN_        *NewURNSpec       `json:"new_urn,omitempty"`
+	Payload_       json.RawMessage   `json:"payload,omitempty"`
 
-	Channel_   *Channel `db:"-" json:"-"`
-	Duplicate_ bool     `db:"-" json:"-"`
+	Channel_   *Channel `json:"-"`
+	Duplicate_ bool     `json:"-"`
 }
 
 // NewIncomingMsg creates a new incoming message
@@ -98,28 +94,25 @@ func NewIncomingMsg(channel *Channel, urn urns.URN, text string, extID string, c
 	now := time.Now()
 
 	return &MsgIn{
-		OrgID_:              channel.OrgID(),
-		UUID_:               MsgUUID(uuids.NewV7()),
-		Text_:               text,
-		ExternalIdentifier_: null.String(extID),
-		ChannelID_:          channel.ID(),
-		CreatedOn_:          now,
-		ModifiedOn_:         now,
-		SentOn_:             &now,
-		LogUUIDs:            pq.StringArray{string(clogUUID)},
-
+		UUID_:        MsgUUID(uuids.NewV7()),
 		ChannelUUID_: channel.UUID(),
 		URN_:         urn,
-		Channel_:     channel,
+		Text_:        text,
+		ExternalID_:  extID,
+		CreatedOn_:   now,
+		ReceivedOn_:  &now,
+		LogUUIDs:     []clogs.UUID{clogUUID},
+
+		Channel_: channel,
 	}
 }
 
 func (m *MsgIn) EventUUID() uuids.UUID  { return uuids.UUID(m.UUID_) }
 func (m *MsgIn) UUID() MsgUUID          { return m.UUID_ }
-func (m *MsgIn) ExternalID() string     { return string(m.ExternalIdentifier_) }
+func (m *MsgIn) ExternalID() string     { return m.ExternalID_ }
 func (m *MsgIn) Text() string           { return m.Text_ }
-func (m *MsgIn) Attachments() []string  { return []string(m.Attachments_) }
-func (m *MsgIn) ReceivedOn() *time.Time { return m.SentOn_ }
+func (m *MsgIn) Attachments() []string  { return m.Attachments_ }
+func (m *MsgIn) ReceivedOn() *time.Time { return m.ReceivedOn_ }
 func (m *MsgIn) URN() urns.URN          { return m.URN_ }
 func (m *MsgIn) Channel() *Channel      { return m.Channel_ }
 
@@ -132,23 +125,57 @@ func (m *MsgIn) WithURNAuthTokens(tokens map[string]string) *MsgIn {
 	m.URNAuthTokens_ = tokens
 	return m
 }
-func (m *MsgIn) WithReceivedOn(date time.Time) *MsgIn { m.SentOn_ = &date; return m }
+func (m *MsgIn) WithReceivedOn(date time.Time) *MsgIn { m.ReceivedOn_ = &date; return m }
 func (m *MsgIn) WithNewURN(urn urns.URN, action NewURNAction) *MsgIn {
 	m.NewURN_ = &NewURNSpec{Value: urn, Action: action}
 	return m
 }
 func (m *MsgIn) WithPayload(payload json.RawMessage) *MsgIn { m.Payload_ = payload; return m }
 
+// msgInRow is the database representation of an incoming message
+type msgInRow struct {
+	OrgID              OrgID          `db:"org_id"`
+	UUID               MsgUUID        `db:"uuid"`
+	Text               string         `db:"text"`
+	Attachments        pq.StringArray `db:"attachments"`
+	ExternalIdentifier null.String    `db:"external_identifier"`
+	ChannelID          ChannelID      `db:"channel_id"`
+	ContactID          ContactID      `db:"contact_id"`
+	ContactURNID       ContactURNID   `db:"contact_urn_id"`
+	CreatedOn          time.Time      `db:"created_on"`
+	SentOn             *time.Time     `db:"sent_on"`
+	LogUUIDs           pq.StringArray `db:"log_uuids"`
+}
+
 const sqlInsertIncomingMsg = `
 INSERT INTO
 	msgs_msg(org_id, uuid, direction, text, attachments, msg_type, msg_count, error_count, high_priority, status, is_android,
              visibility, external_identifier, channel_id, contact_id, contact_urn_id, created_on, modified_on, sent_on, log_uuids)
     VALUES(:org_id, :uuid, 'I', :text, :attachments, 'T', 1, 0, FALSE, 'P', FALSE,
-             'V', :external_identifier, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :sent_on, :log_uuids)`
+             'V', :external_identifier, :channel_id, :contact_id, :contact_urn_id, :created_on, :created_on, :sent_on, :log_uuids)`
 
 // InsertIncomingMsg inserts the passed in incoming message into the database
-func InsertIncomingMsg(ctx context.Context, db *sqlx.DB, m *MsgIn) error {
-	_, err := db.NamedExecContext(ctx, sqlInsertIncomingMsg, m)
+func InsertIncomingMsg(ctx context.Context, db *sqlx.DB, m *MsgIn, contact *Contact) error {
+	logUUIDs := make(pq.StringArray, len(m.LogUUIDs))
+	for i := range m.LogUUIDs {
+		logUUIDs[i] = string(m.LogUUIDs[i])
+	}
+
+	row := &msgInRow{
+		OrgID:              m.Channel_.OrgID(),
+		UUID:               m.UUID_,
+		Text:               m.Text_,
+		Attachments:        pq.StringArray(m.Attachments_),
+		ExternalIdentifier: null.String(m.ExternalID_),
+		ChannelID:          m.Channel_.ID(),
+		ContactID:          contact.ID_,
+		ContactURNID:       contact.URNID_,
+		CreatedOn:          m.CreatedOn_,
+		SentOn:             m.ReceivedOn_,
+		LogUUIDs:           logUUIDs,
+	}
+
+	_, err := db.NamedExecContext(ctx, sqlInsertIncomingMsg, row)
 	return err
 }
 
