@@ -233,6 +233,17 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Sending",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://highpushfastapi-v2.hcnx.eu/api*": {
+				httpx.NewMockResponse(429, nil, []byte(``)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

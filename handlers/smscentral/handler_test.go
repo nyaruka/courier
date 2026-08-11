@@ -114,6 +114,18 @@ var defaultSendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{Label: "Throttled",
+		MsgText: "Error Message", MsgURN: "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smail.smscentral.com.np/bp/ApiSms.php": {
+				httpx.NewMockResponse(429, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"content": {`Error Message`}, "mobile": {"250788383383"}, "pass": {"Password"}, "user": {"Username"}},
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 	{Label: "Connection Error",
 		MsgText: "Error Message", MsgURN: "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{

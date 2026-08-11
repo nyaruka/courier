@@ -244,6 +244,22 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrConnectionFailed,
 	},
 	{
+		Label:      "Throttled",
+		MsgText:    "Error",
+		MsgURN:     "fcm:250788123123",
+		MsgURNAuth: "auth1",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
+				httpx.NewMockResponse(429, nil, []byte(`{ "error": "error" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":"0191e180-7d60-7000-aded-7d8b151cbd5b","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:      "Response Unexpected",
 		MsgText:    "Simple Message",
 		MsgURN:     "fcm:250788123123",

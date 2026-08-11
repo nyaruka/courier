@@ -198,6 +198,20 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error Response",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api-messaging.movile.com/v1/send-sms": {
+				httpx.NewMockResponse(429, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"destination":"250788383383","messageText":"Error Response"}`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Error Sending",
 		MsgText: "Error Message",
 		MsgURN:  "tel:+250788383383",

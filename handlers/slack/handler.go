@@ -198,10 +198,8 @@ func (h *handler) sendTextMsgPart(msg courier.MsgOut, token string, clog *courie
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		return courier.ErrConnectionFailed
-	} else if resp.StatusCode/100 != 2 {
-		return courier.ErrResponseStatus
+	if err := handlers.ErrorFromResponse(resp, err); err != nil {
+		return err
 	}
 
 	ok, err := jsonparser.GetBoolean(respBody, "ok")
@@ -273,10 +271,8 @@ func (h *handler) sendFilePart(msg courier.MsgOut, token string, fileParams *Fil
 	req.Header.Add("Content-Type", writer.FormDataContentType())
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		return courier.ErrConnectionFailed
-	} else if resp.StatusCode/100 != 2 {
-		return courier.ErrResponseStatus
+	if err := handlers.ErrorFromResponse(resp, err); err != nil {
+		return err
 	}
 
 	var fr FileResponse

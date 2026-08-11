@@ -129,6 +129,27 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedError: courier.ErrConnectionFailed,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://mx2.i2sms.net/mxapi.php": {
+				httpx.NewMockResponse(429, nil, []byte(`Bad Gateway`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Form: url.Values{
+					"action":  {"send_single"},
+					"mobile":  {"250788383383"},
+					"message": {"Error Message"},
+					"channel": {"hash123"},
+				},
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

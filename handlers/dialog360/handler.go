@@ -365,6 +365,10 @@ func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event event
 		return courier.ErrConnectionFailed
 	}
 
+	if handlers.IsThrottled(resp) {
+		return courier.ErrConnectionThrottled
+	}
+
 	response := &struct {
 		Success bool `json:"success"`
 	}{}
@@ -391,6 +395,10 @@ func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, r
 	if err != nil || resp.StatusCode/100 == 5 {
 		return "", courier.ErrConnectionFailed
 	}
+	if handlers.IsThrottled(resp) {
+		return "", courier.ErrConnectionThrottled
+	}
+
 	respPayload := &whatsapp.SendResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {

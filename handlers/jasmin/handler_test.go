@@ -228,6 +228,32 @@ var defaultSendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{
+		Label:           "Throttled",
+		MsgText:         "Error Message",
+		MsgURN:          "tel:+250788383383",
+		MsgHighPriority: false,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(429, nil, []byte(`Failed Sending`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"content":    {"Error Message"},
+				"to":         {"250788383383"},
+				"from":       {"2020"},
+				"coding":     {"0"},
+				"dlr-level":  {"2"},
+				"dlr":        {"yes"},
+				"dlr-method": {http.MethodPost},
+				"username":   {"Username"},
+				"password":   {"Password"},
+				"dlr-url":    {"https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
+			},
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

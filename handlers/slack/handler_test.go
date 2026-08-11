@@ -217,6 +217,20 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "invalid_auth"}},
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Hello",
+		MsgURN:  "slack:U0123ABCDEF",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/chat.postMessage": {
+				httpx.NewMockResponse(429, nil, []byte(`{"ok":false,"error":"ratelimited"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"channel":"U0123ABCDEF","text":"Hello"}`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Response Unexpected",
 		MsgText: "Simple Message",
 		MsgURN:  "slack:U0123ABCDEF",

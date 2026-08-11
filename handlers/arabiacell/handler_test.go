@@ -102,6 +102,17 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedError: courier.ErrConnectionFailed,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://acsdp.arabiacell.net": {
+				httpx.NewMockResponse(429, nil, []byte(`Bad Gateway`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

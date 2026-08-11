@@ -229,6 +229,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		if err != nil || resp.StatusCode/100 == 5 {
 			return courier.ErrConnectionFailed
 		}
+		if handlers.IsThrottled(resp) {
+			return courier.ErrConnectionThrottled
+		}
 
 		response := &mtResponse{}
 		if err = json.Unmarshal(respBody, response); err != nil {

@@ -161,6 +161,20 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Simple Message",
+		MsgURN:  "rocketchat:direct:john.doe#john.doe",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": {
+				httpx.NewMockResponse(429, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message"}`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Connection Error",
 		MsgText: "Simple Message",
 		MsgURN:  "rocketchat:direct:john.doe#john.doe",

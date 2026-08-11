@@ -120,6 +120,21 @@ var getSendTestCases = []OutgoingTestCase{
 		}}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{Label: "Throttled",
+		MsgText: "Error Message", MsgURN: "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smgw1.yo.co.ug:9100/sendsms*": {
+				httpx.NewMockResponse(429, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{Params: url.Values{"sms_content": {"Error Message"},
+			"destinations": {"250788383383"},
+			"ybsacctno":    {"yo-username"},
+			"password":     {"yo-password"},
+			"origin":       {"2020"},
+		}}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 	{Label: "Connection error",
 		MsgText: "Error Message", MsgURN: "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{

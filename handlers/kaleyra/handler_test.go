@@ -149,6 +149,21 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error",
+		MsgURN:  "whatsapp:14133881112",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.kaleyra.io/v1/SID/messages": {httpx.NewMockResponse(429, nil, []byte(`{"error":{"to":"invalid number"}}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-type": "application/x-www-form-urlencoded"},
+				Body:    "api-key=123456&body=Error&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&to=14133881112&type=text",
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:          "Medias Send",
 		MsgText:        "Medias",
 		MsgAttachments: []string{"image/jpg:https://foo.bar/image.jpg", "image/png:https://foo.bar/video.mp4"},

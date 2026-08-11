@@ -1110,6 +1110,17 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedError: courier.ErrConnectionThrottled,
 	},
 	{
+		Label:   "Error HTTP 429",
+		MsgText: "Error",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/12345_ID/messages": {
+				httpx.NewMockResponse(429, nil, []byte(`{ "error": {"message": "Calls to this api have exceeded the rate limit","code": 613 }}`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Error Retryable",
 		MsgText: "Error",
 		MsgURN:  "whatsapp:250788123123",

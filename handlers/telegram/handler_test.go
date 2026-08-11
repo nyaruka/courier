@@ -1123,6 +1123,20 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrFailedWithReason("400", "Bot domain invalid."),
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error",
+		MsgURN:  "telegram:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/botauth_token/sendMessage": {
+				httpx.NewMockResponse(429, nil, []byte(`{ "ok": false, "error_code":429, "description":"Too Many Requests: retry after 30", "parameters": {"retry_after": 30} }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Error"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Stopped Contact Code",
 		MsgText: "Stopped Contact",
 		MsgURN:  "telegram:12345",

@@ -137,6 +137,26 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedError: courier.ErrConnectionFailed,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.transmitsms.com/send-sms.json": {
+				httpx.NewMockResponse(429, nil, []byte(`Bad Gateway`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Form: url.Values{
+					"to":      {"250788383383"},
+					"message": {"Error Message"},
+					"from":    {"2020"},
+				},
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

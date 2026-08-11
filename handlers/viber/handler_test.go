@@ -351,6 +351,21 @@ var defaultSendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedError: courier.ErrResponseStatus,
 	},
+	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(429, nil, []byte(`{"status":"5"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Error Message","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b"}`,
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
 }
 
 var invalidTokenSendTestCases = []OutgoingTestCase{

@@ -126,6 +126,21 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+252788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://telesom.com/sendsms_other*": {
+				httpx.NewMockResponse(429, nil, []byte(`<return>error</return>`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form:    url.Values{"msg": {`Error Message`}, "to": {"0788383383"}, "from": {"2020"}, "key": {"3F1E492B2186551570F24C2F07D5D7E2"}},
+			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		}},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:          "Send Attachment",
 		MsgText:        "My pic!",
 		MsgURN:         "tel:+252788383383",

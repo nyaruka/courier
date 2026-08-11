@@ -411,11 +411,8 @@ func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event event
 	req.URL.RawQuery = params.Encode()
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 == 5 {
-		return courier.ErrConnectionFailed
-	}
-	if resp.StatusCode/100 != 2 {
-		return courier.ErrResponseStatus
+	if err := handlers.ErrorFromResponse(resp, err); err != nil {
+		return err
 	}
 
 	// VK reports errors in a 200 response, success is {"response": 1}
@@ -450,10 +447,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	req.URL.RawQuery = params.Encode()
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 == 5 {
-		return courier.ErrConnectionFailed
-	} else if resp.StatusCode/100 != 2 {
-		return courier.ErrResponseStatus
+	if err := handlers.ErrorFromResponse(resp, err); err != nil {
+		return err
 	}
 
 	externalMsgId, err := jsonparser.GetInt(respBody, responseOutgoingMessageKey)

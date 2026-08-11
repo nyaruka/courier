@@ -556,6 +556,17 @@ var facebookOutgoingTests = []OutgoingTestCase{
 		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
+		Label:   "Throttled",
+		MsgText: "Error",
+		MsgURN:  "facebook:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://graph.facebook.com/v25.0/me/messages*": {
+				httpx.NewMockResponse(429, nil, []byte(`{ "is_error": true }`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
+	},
+	{
 		Label:   "Response is invalid JSON",
 		MsgText: "Error",
 		MsgURN:  "facebook:12345",

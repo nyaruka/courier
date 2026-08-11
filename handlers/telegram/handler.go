@@ -204,6 +204,10 @@ func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.V
 	if err != nil || resp.StatusCode/100 == 5 {
 		return "", courier.ErrConnectionFailed
 	}
+	// Telegram rate limits with a 429 and a retry_after parameter, so retry rather than failing
+	if handlers.IsThrottled(resp) {
+		return "", courier.ErrConnectionThrottled
+	}
 
 	response := &mtResponse{}
 	err = json.Unmarshal(respBody, response)
@@ -378,6 +382,9 @@ func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event event
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
 		return courier.ErrConnectionFailed
+	}
+	if handlers.IsThrottled(resp) {
+		return courier.ErrConnectionThrottled
 	}
 
 	response := &struct {

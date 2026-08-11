@@ -669,10 +669,8 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 == 5 {
-			return courier.ErrConnectionFailed
-		} else if resp.StatusCode/100 != 2 {
-			return courier.ErrResponseStatus
+		if err := handlers.ErrorFromResponse(resp, err); err != nil {
+			return err
 		}
 
 		respPayload := &messenger.SendResponse{}
@@ -801,6 +799,10 @@ func (h *handler) sendFacebookInstagramEvent(ctx context.Context, ch courier.Cha
 		return courier.ErrConnectionFailed
 	}
 
+	if handlers.IsThrottled(resp) {
+		return courier.ErrConnectionThrottled
+	}
+
 	respPayload := &messenger.SendResponse{}
 	if err := json.Unmarshal(respBody, respPayload); err != nil || resp.StatusCode/100 != 2 || respPayload.Error.Code != 0 {
 		return courier.ErrResponseStatus
@@ -840,6 +842,10 @@ func (h *handler) sendWhatsAppEvent(ctx context.Context, ch courier.Channel, eve
 		return courier.ErrConnectionFailed
 	}
 
+	if handlers.IsThrottled(resp) {
+		return courier.ErrConnectionThrottled
+	}
+
 	response := &struct {
 		Success bool `json:"success"`
 	}{}
@@ -865,6 +871,10 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
 		return "", courier.ErrConnectionFailed
+	}
+	// Graph API rate limiting is reported as a 429, sometimes with an error code we don't know about
+	if handlers.IsThrottled(resp) {
+		return "", courier.ErrConnectionThrottled
 	}
 
 	respPayload := &whatsapp.SendResponse{}

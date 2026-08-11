@@ -212,6 +212,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		if err != nil || resp.StatusCode/100 == 5 {
 			return courier.ErrConnectionFailed
 		}
+		if handlers.IsThrottled(resp) {
+			return courier.ErrConnectionThrottled
+		}
 	}
 
 	return nil
@@ -270,11 +273,8 @@ func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event event
 	req.Header.Set("Accept", "application/json")
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 == 5 {
-		return courier.ErrConnectionFailed
-	}
-	if resp.StatusCode/100 != 2 {
-		return courier.ErrResponseStatus
+	if err := handlers.ErrorFromResponse(resp, err); err != nil {
+		return err
 	}
 
 	// WeChat reports errors in a 200 response, success is errcode 0
@@ -397,7 +397,7 @@ func (h *handler) fetchAccessToken(channel courier.Channel, clog *courier.Channe
 	req.Header.Set("Accept", "application/json")
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
+	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return "", 0, err
 	}
 
