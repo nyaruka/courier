@@ -13,7 +13,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, clog *courier.ChannelLog) ([]SendRequest, error) {
+func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, clog *models.ChannelLog) ([]SendRequest, error) {
 	if msg.Templating() != nil {
 		return []SendRequest{newBasePayload(msg).withTemplate(msg.Templating())}, nil
 	}
@@ -48,7 +48,7 @@ func (p SendRequest) withTemplate(templating *models.Templating) SendRequest {
 const maxCaptionAndBodyLength = 1024
 
 // buildContentPayloads constructs payloads for a non-template message with text, attachments, and quick replies.
-func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *courier.ChannelLog) ([]SendRequest, error) {
+func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *models.ChannelLog) ([]SendRequest, error) {
 	sqrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm, models.QuickReplyTypeURL)
 	qrs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeText)
 	locationQRs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeLocation)

@@ -46,10 +46,10 @@ func newHandler(channelType models.ChannelType, name string, validateSignatures 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	return nil
 }
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -97,7 +97,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 
 	agentID := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
@@ -141,7 +141,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			msgimage.Image = &Image{URL: mediaURL}
 			payload.Messages[0].MessageParts = append(payload.Messages[0].MessageParts, *msgimage)
 		default:
-			clog.Error(courier.ErrorMediaUnsupported(mediaType))
+			clog.Error(models.ErrorMediaUnsupported(mediaType))
 		}
 	}
 

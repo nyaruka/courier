@@ -37,7 +37,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
 	return nil
 }
 
@@ -62,9 +62,9 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *eventPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *eventPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	if payload.Type == "recipient_delivery_report_sms" {
-		clog.Type = courier.ChannelLogTypeMsgStatus
+		clog.Type = models.ChannelLogTypeMsgStatus
 
 		if payload.BatchID == "" || payload.Status == "" {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing one of 'batch_id' or 'status' in request body"))
@@ -80,7 +80,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 	} else if payload.Type == "mo_text" {
-		clog.Type = courier.ChannelLogTypeMsgReceive
+		clog.Type = models.ChannelLogTypeMsgReceive
 
 		if payload.ID == "" || payload.From == "" || payload.To == "" || payload.Body == "" || payload.ReceivedAt == "" {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"))
@@ -114,7 +114,7 @@ type mtPayload struct {
 	DeliveryReport string   `json:"delivery_report"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
@@ -148,7 +148,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		externalID, err := jsonparser.GetString(respBody, "id")
 		if err != nil {
-			clog.Error(courier.ErrorResponseValueMissing("id"))
+			clog.Error(models.ErrorResponseValueMissing("id"))
 		} else {
 			res.AddExternalID(externalID)
 		}

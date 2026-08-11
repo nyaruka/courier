@@ -38,7 +38,7 @@ type MockBackend struct {
 	writtenMsgs          []courier.MsgIn
 	writtenMsgStatuses   []courier.StatusUpdate
 	writtenChannelEvents []courier.ChannelEvent
-	writtenChannelLogs   []*courier.ChannelLog
+	writtenChannelLogs   []*models.ChannelLog
 	savedAttachments     []*SavedAttachment
 	storageError         error
 
@@ -89,7 +89,7 @@ func (mb *MockBackend) DeleteMsgByExternalID(ctx context.Context, channel courie
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (mb *MockBackend) NewIncomingMsg(ctx context.Context, channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.MsgIn {
+func (mb *MockBackend) NewIncomingMsg(ctx context.Context, channel courier.Channel, urn urns.URN, text string, extID string, clog *models.ChannelLog) courier.MsgIn {
 	m := &MockMsg{
 		channel: channel, urn: urn, text: text, externalID: extID,
 	}
@@ -163,7 +163,7 @@ func (mb *MockBackend) ClearMsgSent(ctx context.Context, uuid models.MsgUUID) er
 }
 
 // OnSendComplete marks the passed msg as having been dealt with
-func (mb *MockBackend) OnSendComplete(ctx context.Context, msg courier.MsgOut, s courier.StatusUpdate, res *courier.SendResult, clog *courier.ChannelLog) {
+func (mb *MockBackend) OnSendComplete(ctx context.Context, msg courier.MsgOut, s courier.StatusUpdate, res *courier.SendResult, clog *models.ChannelLog) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -181,11 +181,11 @@ func (mb *MockBackend) OnSendComplete(ctx context.Context, msg courier.MsgOut, s
 	}
 }
 
-func (mb *MockBackend) OnReceiveComplete(ctx context.Context, ch courier.Channel, events []courier.Event, clog *courier.ChannelLog) {
+func (mb *MockBackend) OnReceiveComplete(ctx context.Context, ch courier.Channel, events []courier.Event, clog *models.ChannelLog) {
 }
 
 // WriteChannelLog writes the passed in channel log to the DB
-func (mb *MockBackend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLog) error {
+func (mb *MockBackend) WriteChannelLog(ctx context.Context, clog *models.ChannelLog) error {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -199,7 +199,7 @@ func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 }
 
 // WriteMsg queues the passed in message internally
-func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *courier.ChannelLog) error {
+func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *models.ChannelLog) error {
 	mm := m.(*MockMsg)
 
 	if mb.errorOnQueue {
@@ -221,7 +221,7 @@ func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *cour
 }
 
 // NewStatusUpdate creates a new Status object for the given message id
-func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, uuid models.MsgUUID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, uuid models.MsgUUID, status models.MsgStatus, clog *models.ChannelLog) courier.StatusUpdate {
 	return &MockStatusUpdate{
 		channel:   channel,
 		msgUUID:   uuid,
@@ -231,7 +231,7 @@ func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, uuid models.MsgU
 }
 
 // NewStatusUpdateByExternalID creates a new Status object for the given external id
-func (mb *MockBackend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (mb *MockBackend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status models.MsgStatus, clog *models.ChannelLog) courier.StatusUpdate {
 	return &MockStatusUpdate{
 		channel:            channel,
 		externalIdentifier: externalID,
@@ -250,7 +250,7 @@ func (mb *MockBackend) WriteStatusUpdate(ctx context.Context, status courier.Sta
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (mb *MockBackend) NewChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
+func (mb *MockBackend) NewChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *models.ChannelLog) courier.ChannelEvent {
 	return &mockChannelEvent{
 		uuid:      models.ChannelEventUUID(uuids.NewV7()),
 		channel:   channel,
@@ -260,7 +260,7 @@ func (mb *MockBackend) NewChannelEvent(channel courier.Channel, eventType models
 }
 
 // WriteChannelEvent writes the channel event passed in
-func (mb *MockBackend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent, clog *courier.ChannelLog) error {
+func (mb *MockBackend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent, clog *models.ChannelLog) error {
 	evt := event.(*mockChannelEvent)
 
 	mb.mutex.Lock()
@@ -291,7 +291,7 @@ func (mb *MockBackend) GetChannelByAddress(ctx context.Context, cType models.Cha
 }
 
 // GetContact creates a new contact with the passed in channel and URN
-func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *courier.ChannelLog) (courier.Contact, error) {
+func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *models.ChannelLog) (courier.Contact, error) {
 	contact, found := mb.contacts[urn]
 	if !found {
 		if !allowCreate {
@@ -347,7 +347,7 @@ func (mb *MockBackend) RedisPool() *redis.Pool {
 func (mb *MockBackend) WrittenMsgs() []courier.MsgIn                  { return mb.writtenMsgs }
 func (mb *MockBackend) WrittenMsgStatuses() []courier.StatusUpdate    { return mb.writtenMsgStatuses }
 func (mb *MockBackend) WrittenChannelEvents() []courier.ChannelEvent  { return mb.writtenChannelEvents }
-func (mb *MockBackend) WrittenChannelLogs() []*courier.ChannelLog     { return mb.writtenChannelLogs }
+func (mb *MockBackend) WrittenChannelLogs() []*models.ChannelLog      { return mb.writtenChannelLogs }
 func (mb *MockBackend) SavedAttachments() []*SavedAttachment          { return mb.savedAttachments }
 func (mb *MockBackend) URNAuthTokens() map[urns.URN]map[string]string { return mb.urnAuthTokens }
 

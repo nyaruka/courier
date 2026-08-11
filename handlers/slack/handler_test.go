@@ -11,6 +11,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
@@ -386,7 +387,7 @@ func TestDescribeURN(t *testing.T) {
 
 	handler := newHandler()
 	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), test.NewMockBackend()))
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 	urn, _ := urns.New(urns.Slack, "U012345")
 
 	data := map[string]string{"name": "dummy user"}

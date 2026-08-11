@@ -62,7 +62,7 @@ func FilterQuickRepliesByType(qrs []models.QuickReply, types ...string) []models
 
 // FilterSupportedQuickReplies returns quick replies of the given types only, logging a channel error for each one
 // dropped - either because the channel can't render its type, or because it's missing the extra value its type needs.
-func FilterSupportedQuickReplies(qrs []models.QuickReply, clog *courier.ChannelLog, types ...string) []models.QuickReply {
+func FilterSupportedQuickReplies(qrs []models.QuickReply, clog *models.ChannelLog, types ...string) []models.QuickReply {
 	t := make([]models.QuickReply, 0, len(qrs))
 	for _, qr := range qrs {
 		if !slices.Contains(types, qr.Type) {

@@ -113,7 +113,7 @@ func (ts *BackendTestSuite) TestContact() {
 	testsuite.ResetDB(ts.T(), ts.b.rt)
 
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
 	urn := urns.URN("tel:+12065551518")
 
 	ctx := context.Background()
@@ -165,7 +165,7 @@ func (ts *BackendTestSuite) TestContact() {
 
 func (ts *BackendTestSuite) TestContactRace() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
 	urn := urns.URN("tel:+12065551518")
 
 	urnSleep = true
@@ -194,7 +194,7 @@ func (ts *BackendTestSuite) TestContactRace() {
 func (ts *BackendTestSuite) TestContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	fbChannel := ts.getChannel("FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
 	urn := urns.URN("tel:+12065551515")
 
 	ctx := context.Background()
@@ -306,7 +306,7 @@ func (ts *BackendTestSuite) TestContactURNMetadata() {
 	fbChannel := ts.getChannel("FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
 	knURN := urns.URN("tel:+12065551111")
 	fbURN := urns.URN("tel:+12065552222")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
 
 	ctx := context.Background()
 
@@ -350,8 +350,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	now := time.Now().In(time.UTC)
 
-	updateStatusByUUID := func(uuid models.MsgUUID, status models.MsgStatus, newExtID string) *courier.ChannelLog {
-		clog := courier.NewChannelLog(courier.ChannelLogTypeMsgStatus, channel, nil)
+	updateStatusByUUID := func(uuid models.MsgUUID, status models.MsgStatus, newExtID string) *models.ChannelLog {
+		clog := courier.NewChannelLog(models.ChannelLogTypeMsgStatus, channel, nil)
 		statusObj := ts.b.NewStatusUpdate(channel, uuid, status, clog)
 		if newExtID != "" {
 			statusObj.SetExternalIdentifier(newExtID)
@@ -362,8 +362,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 		return clog
 	}
 
-	updateStatusByExtID := func(extID string, status models.MsgStatus) *courier.ChannelLog {
-		clog := courier.NewChannelLog(courier.ChannelLogTypeMsgStatus, channel, nil)
+	updateStatusByExtID := func(extID string, status models.MsgStatus) *models.ChannelLog {
+		clog := courier.NewChannelLog(models.ChannelLogTypeMsgStatus, channel, nil)
 		statusObj := ts.b.NewStatusUpdateByExternalID(channel, extID, status, clog)
 		err := ts.b.WriteStatusUpdate(ctx, statusObj)
 		ts.NoError(err)
@@ -546,7 +546,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 func (ts *BackendTestSuite) TestMsgStatusSocketPublish() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgStatus, channel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeMsgStatus, channel, nil)
 
 	ts.b.rt.Centrifugo.Client.(*centrifugo.MockClient).Clear()
 
@@ -590,7 +590,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeMsgSend, channel, nil)
 
 	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
@@ -635,7 +635,7 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	urn2 := urns.URN("tel:+12065551277")
 
 	createAndWriteMsg := func(ch courier.Channel, u urns.URN, text, extID string) *MsgIn {
-		clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
+		clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
 		m := ts.b.NewIncomingMsg(ctx, ch, u, text, extID, clog).(*MsgIn)
 		err := ts.b.WriteMsg(ctx, m, clog)
 		ts.NoError(err)
@@ -729,7 +729,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.NoError(err)
 	ts.NotNil(msg)
 
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, msg.Channel(), nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, msg.Channel(), nil)
 
 	// make sure it is the message we just added
 	ts.Equal(models.MsgUUID("0199df0f-9f82-7689-b02d-f34105991321"), msg.UUID())
@@ -863,7 +863,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
-	getClogFromDynamo := func(clog *courier.ChannelLog) (*dynamo.Item, error) {
+	getClogFromDynamo := func(clog *models.ChannelLog) (*dynamo.Item, error) {
 		return dynamo.GetItem(ctx, ts.b.rt.Dynamo, ts.b.rt.Writers.Main.Table(), (&ChannelLog{clog}).DynamoKey())
 	}
 
@@ -878,9 +878,9 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	trace, _, err := utils.TraceHTTP(httpClient, req, 0)
 	ts.NoError(err)
 
-	clog1 := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, nil)
+	clog1 := courier.NewChannelLog(models.ChannelLogTypeTokenRefresh, channel, nil)
 	clog1.HTTP(trace)
-	clog1.Error(courier.ErrorResponseStatusCode())
+	clog1.Error(models.ErrorResponseStatusCode())
 
 	err = ts.b.WriteChannelLog(ctx, clog1)
 	ts.NoError(err)
@@ -900,7 +900,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.NotNil(dataGZ["http_logs"])
 	ts.Equal("https://api.messages.com/send.json", dataGZ["http_logs"].([]any)[0].(map[string]any)["url"])
 
-	clog2 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
+	clog2 := courier.NewChannelLog(models.ChannelLogTypeMsgSend, channel, nil)
 	clog2.HTTP(trace)
 
 	err = ts.b.WriteChannelLog(ctx, clog2)
@@ -919,7 +919,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 func (ts *BackendTestSuite) TestContactForMsg() {
 	ctx := context.Background()
 	waChannel := ts.getChannel("WAC", "dbc126ed-66bc-4e28-b67b-81dc33277a17")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, waChannel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, waChannel, nil)
 
 	// sender is the primary URN - a phone number, or a BSUID for a webhook with no phone number, in which case
 	// handlers attach no new URN
@@ -1035,7 +1035,7 @@ func (ts *BackendTestSuite) TestSaveAttachment() {
 func (ts *BackendTestSuite) TestWriteMsg() {
 	ctx := context.Background()
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
 
 	// have to round to microseconds because postgres can't store nanos
 	now := time.Now().Round(time.Microsecond).In(time.UTC)
@@ -1173,7 +1173,7 @@ func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
 	uuids.SetGenerator(uuids.NewSeededGenerator(1234, time.Now))
 
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
 	urn := urns.URN("tel:+12065551218")
 
 	msg1 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "two regular attachments", "", clog).(*MsgIn)
@@ -1213,7 +1213,7 @@ func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
 
 func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 	exChannel := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327100a")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, exChannel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, exChannel, nil)
 	ctx := context.Background()
 
 	// have to round to microseconds because postgres can't store nanos
@@ -1247,7 +1247,7 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 func (ts *BackendTestSuite) TestChannelEvent() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil)
 	urn := urns.URN("tel:+12065551616")
 
 	event := ts.b.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithExtra(map[string]string{"ref_id": "12345"}).WithContactName("kermit frog")
@@ -1332,7 +1332,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil)
 	urn := urns.URN("tel:+12065551616")
 
 	// ensure contact exists before event write so new_contact is false
@@ -1520,7 +1520,7 @@ func (ts *BackendTestSuite) assertQueuedContactTask(contactID models.ContactID, 
 func (ts *BackendTestSuite) TestSpools() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil)
 	urn := urns.URN("tel:+12065552222")
 
 	// drain anything left over from previous runs so we can assert absolute sizes, and delete whatever those

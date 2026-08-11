@@ -95,7 +95,7 @@ func newHandler() courier.ChannelHandler {
 
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
 	return nil
 }
 
@@ -198,7 +198,7 @@ type mediaUploadInfoPayload struct {
 }
 
 // receiveEvent handles request event type
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	// check shared secret key before proceeding
 	secret := channel.StringConfigForKey(models.ConfigSecret, "")
 
@@ -208,12 +208,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	// check event type and decode body to correspondent struct
 	switch payload.Type {
 	case eventTypeServerVerification:
-		clog.Type = courier.ChannelLogTypeWebhookVerify
+		clog.Type = models.ChannelLogTypeWebhookVerify
 
 		return h.verifyServer(channel, w)
 
 	case eventTypeNewMessage:
-		clog.Type = courier.ChannelLogTypeMsgReceive
+		clog.Type = models.ChannelLogTypeMsgReceive
 
 		newMessage := &moNewMessagePayload{}
 
@@ -237,7 +237,7 @@ func (h *handler) verifyServer(channel courier.Channel, w http.ResponseWriter) (
 }
 
 // receiveMessage handles new message event
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moNewMessagePayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moNewMessagePayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	userId := payload.Object.Message.UserId
 	urn, err := urns.New(urns.VK, strconv.FormatInt(userId, 10))
 
@@ -267,7 +267,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // DescribeURN handles VK contact details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLog) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *models.ChannelLog) (map[string]string, error) {
 	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionGetUser, nil)
 	if err != nil {
 		return nil, err
@@ -390,7 +390,7 @@ func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
 
 // SendEvent sends a typing started event to the contact as a typing activity, see
 // https://dev.vk.com/en/method/messages.setActivity
-func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
 	typing, ok := event.(*events.TypingStarted)
 	if !ok {
 		return fmt.Errorf("unsupported event type: %s", event.Type())
@@ -423,7 +423,7 @@ func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event event
 	return nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	params := buildApiBaseParams(msg.Channel())
 	params.Set(paramUserId, msg.URN().Path())
 	params.Set(paramRandomId, string(msg.UUID()))
@@ -462,7 +462,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 }
 
 // builds msg text with attachment links (if needed) and attachments list param, also returns the errors that occurred
-func (h *handler) buildTextAndAttachmentParams(msg courier.MsgOut, clog *courier.ChannelLog) (string, string) {
+func (h *handler) buildTextAndAttachmentParams(msg courier.MsgOut, clog *models.ChannelLog) (string, string) {
 	var msgAttachments []string
 
 	textBuf := bytes.Buffer{}
@@ -495,7 +495,7 @@ func (h *handler) buildTextAndAttachmentParams(msg courier.MsgOut, clog *courier
 }
 
 // handles media downloading, uploading, saving information and returns the attachment string
-func (h *handler) handleMediaUploadAndGetAttachment(channel courier.Channel, mediaType, mediaExt, mediaURL string, clog *courier.ChannelLog) (string, error) {
+func (h *handler) handleMediaUploadAndGetAttachment(channel courier.Channel, mediaType, mediaExt, mediaURL string, clog *models.ChannelLog) (string, error) {
 	switch mediaType {
 	case mediaTypeImage:
 		uploadKey := "photo"
@@ -537,7 +537,7 @@ func (h *handler) handleMediaUploadAndGetAttachment(channel courier.Channel, med
 }
 
 // getUploadServerURL gets VK's media upload server
-func (h *handler) getUploadServerURL(channel courier.Channel, sendURL string, clog *courier.ChannelLog) (string, error) {
+func (h *handler) getUploadServerURL(channel courier.Channel, sendURL string, clog *models.ChannelLog) (string, error) {
 	req, err := http.NewRequest(http.MethodPost, sendURL, nil)
 
 	if err != nil {
@@ -576,7 +576,7 @@ func (h *handler) downloadMedia(mediaURL string) (io.Reader, error) {
 }
 
 // uploadMedia multiform request that passes file key as uploadKey and file value as media to upload server
-func (h *handler) uploadMedia(serverURL, uploadKey, mediaExt string, media io.Reader, clog *courier.ChannelLog) ([]byte, error) {
+func (h *handler) uploadMedia(serverURL, uploadKey, mediaExt string, media io.Reader, clog *models.ChannelLog) ([]byte, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	fileName := fmt.Sprintf("%s.%s", uploadKey, mediaExt)
@@ -611,7 +611,7 @@ func (h *handler) uploadMedia(serverURL, uploadKey, mediaExt string, media io.Re
 }
 
 // saveUploadedMediaInfo saves uploaded media info and returns an object containing media/owner id
-func (h *handler) saveUploadedMediaInfo(channel courier.Channel, sendURL, serverId, hash, mediaKey, mediaValue string, clog *courier.ChannelLog) (*mediaUploadInfoPayload, error) {
+func (h *handler) saveUploadedMediaInfo(channel courier.Channel, sendURL, serverId, hash, mediaKey, mediaValue string, clog *models.ChannelLog) (*mediaUploadInfoPayload, error) {
 	params := buildApiBaseParams(channel)
 	params.Set(paramServerId, serverId)
 	params.Set(paramHash, hash)

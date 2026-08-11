@@ -43,15 +43,15 @@ type moForm struct {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "callback", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "delivery", courier.ChannelLogTypeMsgStatus, h.receiveStatus)
-	s.AddHandlerRoute(h, http.MethodPost, "status", courier.ChannelLogTypeMsgStatus, h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "callback", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "delivery", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	// get our params
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -97,7 +97,7 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	// get our params
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -117,7 +117,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	isSharedStr := msg.Channel().ConfigForKey(configIsShared, false)
 	isShared, _ := isSharedStr.(bool)
 

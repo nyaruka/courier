@@ -47,7 +47,7 @@ func newWAHandler(channelType models.ChannelType, name string) courier.ChannelHa
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvent))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvent))
 	return nil
 }
 
@@ -78,7 +78,7 @@ type Notifications struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *Notifications, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *Notifications, clog *models.ChannelLog) ([]courier.Event, error) {
 
 	// is not a 'whatsapp_business_account' object? ignore it
 	if payload.Object != "whatsapp_business_account" {
@@ -101,7 +101,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
-func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
+func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, []any, error) {
 	// the list of events we deal with
 	events := make([]courier.Event, 0, 2)
 
@@ -206,7 +206,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 				}
 
 				for _, statusError := range status.Errors {
-					clog.Error(courier.ErrorExternal(strconv.Itoa(statusError.Code), statusError.Title))
+					clog.Error(models.ErrorExternal(strconv.Itoa(statusError.Code), statusError.Title))
 				}
 
 				event := h.Backend().NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
@@ -221,7 +221,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 			}
 
 			for _, chError := range change.Value.Errors {
-				clog.Error(courier.ErrorExternal(strconv.Itoa(chError.Code), chError.Title))
+				clog.Error(models.ErrorExternal(strconv.Itoa(chError.Code), chError.Title))
 			}
 
 		}
@@ -231,7 +231,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 }
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set
-func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
+func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
 	token := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if token == "" {
 		return nil, fmt.Errorf("missing token for D3C channel")
@@ -245,7 +245,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Ch
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
-func (h *handler) resolveMediaURL(channel courier.Channel, mediaID string, clog *courier.ChannelLog) (string, error) {
+func (h *handler) resolveMediaURL(channel courier.Channel, mediaID string, clog *models.ChannelLog) (string, error) {
 	// sometimes WA will send an attachment with status=undownloaded and no ID
 	if mediaID == "" {
 		return "", nil
@@ -283,7 +283,7 @@ func (h *handler) resolveMediaURL(channel courier.Channel, mediaID string, clog 
 	return fileURL, nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	accessToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	urlStr := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
@@ -334,7 +334,7 @@ func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
 // the referenced incoming message as read with a typing_indicator field - so it also marks messages as
 // read, which is acceptable because we only send one when a reply is being composed.
 // See https://developers.facebook.com/docs/whatsapp/cloud-api/typing-indicators
-func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
 	typing, ok := event.(*events.TypingStarted)
 	if !ok {
 		return fmt.Errorf("unsupported event type: %s", event.Type())
@@ -379,7 +379,7 @@ func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event event
 	return nil
 }
 
-func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *courier.ChannelLog) (string, error) {
+func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *models.ChannelLog) (string, error) {
 	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))

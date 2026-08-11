@@ -44,8 +44,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMsg)
-	s.AddHandlerRoute(h, http.MethodGet, "status", courier.ChannelLogTypeMsgStatus, h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
+	s.AddHandlerRoute(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
 }
 
@@ -64,7 +64,7 @@ type moStatusForm struct {
 }
 
 // receiveMsg is our HTTP handler function for incoming messages
-func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	form := &moMsgForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -112,7 +112,7 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for outgoing messages statuses
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	form := &moStatusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -135,7 +135,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	apiKey := msg.Channel().StringConfigForKey(configApiKey, "")
 
@@ -227,7 +227,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	// record external id from the last sent msg request
 	externalID, err := jsonparser.GetString(kwaRespBody, "id")
 	if err != nil {
-		clog.Error(courier.ErrorResponseValueMissing("id"))
+		clog.Error(models.ErrorResponseValueMissing("id"))
 	} else {
 		res.AddExternalID(externalID)
 	}

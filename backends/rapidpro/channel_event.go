@@ -25,7 +25,7 @@ type ChannelEvent struct {
 }
 
 // newChannelEvent creates a new channel event
-func newChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) *ChannelEvent {
+func newChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *models.ChannelLog) *ChannelEvent {
 	dbChannel := channel.(*models.Channel)
 
 	return &ChannelEvent{
@@ -54,7 +54,7 @@ func (e *ChannelEvent) WithOccurredOn(time time.Time) courier.ChannelEvent {
 }
 
 // writeChannelEvent writes the passed in event to the database, queueing it to our spool in case the database is down
-func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEvent, clog *courier.ChannelLog) error {
+func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEvent, clog *models.ChannelLog) error {
 	dbEvent := event.(*ChannelEvent)
 
 	err := writeChannelEventToDB(ctx, b, dbEvent, clog)
@@ -72,7 +72,7 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 }
 
 // writeChannelEventToDB writes the passed in channel event to our db
-func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clog *courier.ChannelLog) error {
+func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clog *models.ChannelLog) error {
 	// grab the contact for this event
 	contact, err := contactForURN(ctx, b, e.OrgID_, e.channel, e.URN_, nil, e.ContactName_, true, clog)
 	if err != nil {
@@ -127,7 +127,7 @@ func (b *backend) flushEvent(ctx context.Context, event *ChannelEvent) error {
 	event.channel = channel.(*models.Channel)
 
 	// create log tho it won't be written
-	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgReceive, channel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeMsgReceive, channel, nil)
 
 	// try to flush to our database
 	return writeChannelEventToDB(ctx, b, event, clog)

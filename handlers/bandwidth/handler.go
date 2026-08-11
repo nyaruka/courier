@@ -45,8 +45,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "status", courier.ChannelLogTypeMsgStatus, h.statusMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.statusMessage)
 	return nil
 }
 
@@ -62,7 +62,7 @@ type moMessageData struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	var payload []moMessageData
 
 	body, err := handlers.ReadBody(r, 1000000)
@@ -125,7 +125,7 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	var payload []moStatusData
 	body, err := handlers.ReadBody(r, 1000000)
 	if err != nil {
@@ -154,7 +154,7 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 	}
 
 	if statusPayload.ErrorCode != 0 {
-		clog.Error(courier.ErrorExternal(strconv.Itoa(statusPayload.ErrorCode), statusPayload.Description))
+		clog.Error(models.ErrorExternal(strconv.Itoa(statusPayload.ErrorCode), statusPayload.Description))
 	}
 
 	// write our status
@@ -176,7 +176,7 @@ type mtResponse struct {
 	Description string `json:"description"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
@@ -251,7 +251,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 }
 
 // BuildAttachmentRequest to download media for message attachment with Basic auth set
-func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
+func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
 	username := channel.StringConfigForKey(models.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for BW channel")

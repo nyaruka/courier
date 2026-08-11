@@ -23,34 +23,34 @@ type Backend interface {
 	GetChannelByAddress(context.Context, models.ChannelType, models.ChannelAddress) (Channel, error)
 
 	// GetContact returns (or creates) the contact for the passed in channel and URN
-	GetContact(context.Context, Channel, urns.URN, map[string]string, string, bool, *ChannelLog) (Contact, error)
+	GetContact(context.Context, Channel, urns.URN, map[string]string, string, bool, *models.ChannelLog) (Contact, error)
 
 	// DeleteMsgByExternalID deletes a message that has been deleted on the channel side
 	DeleteMsgByExternalID(ctx context.Context, channel Channel, externalID string) error
 
 	// NewIncomingMsg creates a new message from the given params
-	NewIncomingMsg(context.Context, Channel, urns.URN, string, string, *ChannelLog) MsgIn
+	NewIncomingMsg(context.Context, Channel, urns.URN, string, string, *models.ChannelLog) MsgIn
 
 	// WriteMsg writes the passed in message to our backend
-	WriteMsg(context.Context, MsgIn, *ChannelLog) error
+	WriteMsg(context.Context, MsgIn, *models.ChannelLog) error
 
 	// NewStatusUpdate creates a new status update for the given message id
-	NewStatusUpdate(Channel, models.MsgUUID, models.MsgStatus, *ChannelLog) StatusUpdate
+	NewStatusUpdate(Channel, models.MsgUUID, models.MsgStatus, *models.ChannelLog) StatusUpdate
 
 	// NewStatusUpdateByExternalID creates a new status update for the given external id
-	NewStatusUpdateByExternalID(Channel, string, models.MsgStatus, *ChannelLog) StatusUpdate
+	NewStatusUpdateByExternalID(Channel, string, models.MsgStatus, *models.ChannelLog) StatusUpdate
 
 	// WriteStatusUpdate writes the passed in status update to our backend
 	WriteStatusUpdate(context.Context, StatusUpdate) error
 
 	// NewChannelEvent creates a new channel event for the given channel and event type
-	NewChannelEvent(Channel, models.ChannelEventType, urns.URN, *ChannelLog) ChannelEvent
+	NewChannelEvent(Channel, models.ChannelEventType, urns.URN, *models.ChannelLog) ChannelEvent
 
 	// WriteChannelEvent writes the passed in channel event returning any error
-	WriteChannelEvent(context.Context, ChannelEvent, *ChannelLog) error
+	WriteChannelEvent(context.Context, ChannelEvent, *models.ChannelLog) error
 
 	// WriteChannelLog writes the passed in channel log to our backend
-	WriteChannelLog(context.Context, *ChannelLog) error
+	WriteChannelLog(context.Context, *models.ChannelLog) error
 
 	// PopNextOutgoingMsg returns the next message that needs to be sent, callers should call OnSendComplete with the
 	// returned message when they have dealt with the message (regardless of whether it was sent or not)
@@ -65,10 +65,10 @@ type Backend interface {
 	ClearMsgSent(context.Context, models.MsgUUID) error
 
 	// OnSendComplete is called when the sender has finished trying to send a message
-	OnSendComplete(context.Context, MsgOut, StatusUpdate, *SendResult, *ChannelLog)
+	OnSendComplete(context.Context, MsgOut, StatusUpdate, *SendResult, *models.ChannelLog)
 
 	// OnReceiveComplete is called when the server has finished handling an incoming request
-	OnReceiveComplete(context.Context, Channel, []Event, *ChannelLog)
+	OnReceiveComplete(context.Context, Channel, []Event, *models.ChannelLog)
 
 	// SaveAttachment saves an attachment to backend storage
 	SaveAttachment(context.Context, Channel, string, []byte, string) (string, error)

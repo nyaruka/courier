@@ -14,7 +14,7 @@ import (
 )
 
 // creates a new message status update
-func newStatusUpdate(channel courier.Channel, uuid models.MsgUUID, externalID string, status models.MsgStatus, clog *courier.ChannelLog) *models.StatusUpdate {
+func newStatusUpdate(channel courier.Channel, uuid models.MsgUUID, externalID string, status models.MsgStatus, clog *models.ChannelLog) *models.StatusUpdate {
 	dbChannel := channel.(*models.Channel)
 
 	return &models.StatusUpdate{

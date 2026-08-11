@@ -46,7 +46,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize implements courier.ChannelHandler
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
 	return nil
 }
 
@@ -76,9 +76,9 @@ type moPayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	if payload.Message != "" {
-		clog.Type = courier.ChannelLogTypeMsgReceive
+		clog.Type = models.ChannelLogTypeMsgReceive
 
 		date := time.Unix(payload.Created/1000, payload.Created%1000*1000000).UTC()
 		urn, err := urns.ParsePhone(payload.From, channel.Country(), true, false)
@@ -91,7 +91,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 
 	} else {
-		clog.Type = courier.ChannelLogTypeMsgStatus
+		clog.Type = models.ChannelLogTypeMsgStatus
 
 		if payload.TransactionID == "" {
 			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "missing transactionId, ignored")
@@ -121,7 +121,7 @@ type mtPayload struct {
 	CPAddress        string   `json:"cpAddress,omitempty"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	accessToken, err := h.getAccessToken(msg.Channel(), clog)
 	if err != nil {
 		return courier.ErrChannelConfig
@@ -159,7 +159,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	externalID, err := jsonparser.GetString(respBody, "transactionId")
 	if err != nil {
-		clog.Error(courier.ErrorResponseValueMissing("transactionId"))
+		clog.Error(models.ErrorResponseValueMissing("transactionId"))
 	} else {
 		res.AddExternalID(externalID)
 	}
@@ -174,7 +174,7 @@ func (h *handler) RedactValues(ch courier.Channel) []string {
 	}
 }
 
-func (h *handler) getAccessToken(channel courier.Channel, clog *courier.ChannelLog) (string, error) {
+func (h *handler) getAccessToken(channel courier.Channel, clog *models.ChannelLog) (string, error) {
 	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID())
 
 	h.fetchTokenMutex.Lock()
@@ -211,7 +211,7 @@ func (h *handler) getAccessToken(channel courier.Channel, clog *courier.ChannelL
 }
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
-func (h *handler) fetchAccessToken(channel courier.Channel, clog *courier.ChannelLog) (string, time.Duration, error) {
+func (h *handler) fetchAccessToken(channel courier.Channel, clog *models.ChannelLog) (string, time.Duration, error) {
 	form := url.Values{
 		"client_id":     []string{channel.StringConfigForKey(models.ConfigAPIKey, "")},
 		"client_secret": []string{channel.StringConfigForKey(models.ConfigAuthToken, "")},
@@ -231,7 +231,7 @@ func (h *handler) fetchAccessToken(channel courier.Channel, clog *courier.Channe
 
 	token, err := jsonparser.GetString(respBody, "access_token")
 	if err != nil {
-		clog.Error(courier.ErrorResponseValueMissing("access_token"))
+		clog.Error(models.ErrorResponseValueMissing("access_token"))
 		return "", 0, err
 	}
 

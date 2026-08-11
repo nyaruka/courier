@@ -258,7 +258,7 @@ var testCasesD3C = []IncomingTestCase{
 		Data:                  string(test.ReadFile("../meta/testdata/wac/error_msg.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		ExpectedErrors:        []*clogs.Error{courier.ErrorExternal("131051", "Unsupported message type")},
+		ExpectedErrors:        []*clogs.Error{models.ErrorExternal("131051", "Unsupported message type")},
 		NoInvalidChannelCheck: true,
 	},
 	{
@@ -267,7 +267,7 @@ var testCasesD3C = []IncomingTestCase{
 		Data:                  string(test.ReadFile("../meta/testdata/wac/error_errors.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		ExpectedErrors:        []*clogs.Error{courier.ErrorExternal("0", "We were unable to authenticate the app user")},
+		ExpectedErrors:        []*clogs.Error{models.ErrorExternal("0", "We were unable to authenticate the app user")},
 		NoInvalidChannelCheck: true,
 	},
 	{
@@ -285,7 +285,7 @@ var testCasesD3C = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
 		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external_id", Status: models.MsgStatusFailed}},
-		ExpectedErrors:       []*clogs.Error{courier.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)")},
+		ExpectedErrors:       []*clogs.Error{models.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)")},
 	},
 	{
 		Label:                "Receive Invalid Status",

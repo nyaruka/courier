@@ -36,7 +36,7 @@ type Attachment struct {
 }
 
 // ResolveAttachments resolves the given attachment strings (content-type:url) into attachment objects
-func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []string, support map[MediaType]MediaTypeSupport, allowURLOnly bool, clog *courier.ChannelLog) ([]*Attachment, error) {
+func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []string, support map[MediaType]MediaTypeSupport, allowURLOnly bool, clog *models.ChannelLog) ([]*Attachment, error) {
 	resolved := make([]*Attachment, 0, len(attachments))
 
 	for _, as := range attachments {
@@ -54,7 +54,7 @@ func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []st
 		if att != nil {
 			resolved = append(resolved, att)
 		} else {
-			clog.Error(courier.ErrorMediaUnresolveable(contentType))
+			clog.Error(models.ErrorMediaUnresolveable(contentType))
 		}
 	}
 

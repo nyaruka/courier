@@ -36,8 +36,8 @@ func newHandler() courier.ChannelHandler {
 
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
@@ -47,7 +47,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -67,7 +67,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	privateKey := msg.Channel().StringConfigForKey(models.ConfigSecret, "")

@@ -366,7 +366,7 @@ func (w *Sender) sendMessage(msg MsgOut) {
 	backend.OnSendComplete(writeCTX, msg, status, res, clog)
 }
 
-func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, clog *ChannelLog, log *slog.Logger) (StatusUpdate, *SendResult) {
+func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, clog *models.ChannelLog, log *slog.Logger) (StatusUpdate, *SendResult) {
 	backend := w.foreman.server.Backend()
 	res := &SendResult{}
 	err := h.Send(ctx, m, res, clog)

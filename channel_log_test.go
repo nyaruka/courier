@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/courier/v26/utils/clogs"
@@ -29,7 +30,7 @@ func TestChannelLog(t *testing.T) {
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 
 	channel := test.NewMockChannel("fef91e9b-a6ed-44fb-b6ce-feed8af585a8", "NX", "1234", "US", []string{urns.Phone.Prefix}, nil)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, nil)
+	clog := courier.NewChannelLog(models.ChannelLogTypeTokenRefresh, channel, nil)
 
 	// make a request that will have a response
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
@@ -49,8 +50,9 @@ func TestChannelLog(t *testing.T) {
 	clog.End()
 
 	assert.Equal(t, clogs.UUID("0191e180-7d60-7000-8e0f-6b2abe4360d8"), clog.UUID)
-	assert.Equal(t, courier.ChannelLogTypeTokenRefresh, clog.Type)
-	assert.Equal(t, channel, clog.Channel())
+	assert.Equal(t, models.ChannelLogTypeTokenRefresh, clog.Type)
+	assert.Equal(t, channel.UUID(), clog.ChannelUUID)
+	assert.Equal(t, channel.OrgID(), clog.OrgID)
 	assert.Equal(t, 2, len(clog.HttpLogs))
 	assert.Equal(t, 2, len(clog.Errors))
 	assert.False(t, clog.CreatedOn.IsZero())
@@ -85,48 +87,48 @@ func TestChannelErrors(t *testing.T) {
 		expectedMessage string
 	}{
 		{
-			err:             courier.ErrorResponseStatusCode(),
+			err:             models.ErrorResponseStatusCode(),
 			expectedCode:    "response_status_code",
 			expectedMessage: "Unexpected response status code.",
 		},
 		{
-			err:             courier.ErrorResponseUnparseable("FOO"),
+			err:             models.ErrorResponseUnparseable("FOO"),
 			expectedCode:    "response_unparseable",
 			expectedMessage: "Unable to parse response as FOO.",
 		},
 		{
-			err:             courier.ErrorResponseUnexpected("all good!"),
+			err:             models.ErrorResponseUnexpected("all good!"),
 			expectedCode:    "response_unexpected",
 			expectedMessage: "Expected response to be 'all good!'.",
 		},
 		{
-			err:             courier.ErrorResponseValueMissing("id"),
+			err:             models.ErrorResponseValueMissing("id"),
 			expectedCode:    "response_value_missing",
 			expectedMessage: "Unable to find 'id' response.",
 		},
 		{
-			err:             courier.ErrorMediaUnsupported("image/tiff"),
+			err:             models.ErrorMediaUnsupported("image/tiff"),
 			expectedCode:    "media_unsupported",
 			expectedMessage: "Unsupported attachment media type: image/tiff.",
 		},
 		{
-			err:             courier.ErrorMediaUnresolveable("image/jpeg"),
+			err:             models.ErrorMediaUnresolveable("image/jpeg"),
 			expectedCode:    "media_unresolveable",
 			expectedMessage: "Unable to find version of image/jpeg attachment compatible with channel.",
 		},
 		{
-			err:             courier.ErrorAttachmentNotDecodable(),
+			err:             models.ErrorAttachmentNotDecodable(),
 			expectedCode:    "attachment_not_decodable",
 			expectedMessage: "Unable to decode embedded attachment data.",
 		},
 		{
-			err:             courier.ErrorExternal("20002", "Invalid FriendlyName."),
+			err:             models.ErrorExternal("20002", "Invalid FriendlyName."),
 			expectedCode:    "external",
 			expectedExtCode: "20002",
 			expectedMessage: "Invalid FriendlyName.",
 		},
 		{
-			err:             courier.ErrorExternal("20003", ""),
+			err:             models.ErrorExternal("20003", ""),
 			expectedCode:    "external",
 			expectedExtCode: "20003",
 			expectedMessage: "Service specific error: 20003.",

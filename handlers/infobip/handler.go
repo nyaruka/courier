@@ -34,8 +34,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
-	s.AddHandlerRoute(h, http.MethodPost, "delivered", courier.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.statusMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.statusMessage))
 	return nil
 }
 
@@ -58,7 +58,7 @@ type ibStatus struct {
 }
 
 // statusMessage is our HTTP handler function for status updates
-func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	data := make([]any, len(payload.Results))
 	statuses := make([]courier.Event, len(payload.Results))
 	for _, s := range payload.Results {
@@ -115,7 +115,7 @@ type v3InboundPrice struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages (both SMS and MMS)
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *v3InboundPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *v3InboundPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	if payload.MessageCount == 0 {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
@@ -248,7 +248,7 @@ type v2MMSMessageSegment struct {
 	ContentType string `json:"contentType,omitempty"` // Required for LINK type (e.g., image/jpeg)
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	apiKey := msg.Channel().StringConfigForKey(models.ConfigAPIKey, "")
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
@@ -390,7 +390,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "messageId")
 	if err != nil {
-		clog.Error(courier.ErrorResponseValueMissing("messageId"))
+		clog.Error(models.ErrorResponseValueMissing("messageId"))
 	} else {
 		res.AddExternalID(externalID)
 	}
