@@ -14,7 +14,7 @@ func writeChannelEvent(ctx context.Context, b *backend, event *models.ChannelEve
 
 	// failed writing, write to our spool instead
 	if err != nil {
-		slog.Error("error writing channel event to db", "error", err, "channel_id", event.ChannelID_, "event_type", event.EventType_)
+		slog.Error("error writing channel event to db", "error", err, "channel", event.ChannelUUID_, "event_type", event.EventType_)
 	}
 
 	if err != nil {
@@ -27,16 +27,12 @@ func writeChannelEvent(ctx context.Context, b *backend, event *models.ChannelEve
 // writeChannelEventToDB writes the passed in channel event to our db
 func writeChannelEventToDB(ctx context.Context, b *backend, e *models.ChannelEvent, clog *models.ChannelLog) error {
 	// grab the contact for this event
-	contact, err := contactForURN(ctx, b, e.OrgID_, e.Channel_, e.URN_, nil, e.ContactName_, true, clog)
+	contact, err := contactForURN(ctx, b, e.Channel_.OrgID(), e.Channel_, e.URN_, nil, e.ContactName_, true, clog)
 	if err != nil {
 		return err
 	}
 
-	// set our contact and urn id
-	e.ContactID_ = contact.ID_
-	e.ContactURNID_ = contact.URNID_
-
-	if err := models.InsertChannelEvent(ctx, b.rt.DB, e); err != nil {
+	if err := models.InsertChannelEvent(ctx, b.rt.DB, e, contact); err != nil {
 		return err
 	}
 

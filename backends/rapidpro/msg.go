@@ -89,11 +89,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *models.MsgIn, clog *models
 		return nil, fmt.Errorf("error getting contact for message: %w", err)
 	}
 
-	// set our contact and urn id
-	m.ContactID_ = contact.ID_
-	m.ContactURNID_ = contact.URNID_
-
-	if err := models.InsertIncomingMsg(ctx, b.rt.DB, m); err != nil {
+	if err := models.InsertIncomingMsg(ctx, b.rt.DB, m, contact); err != nil {
 		return nil, fmt.Errorf("error inserting message: %w", err)
 	}
 
@@ -165,7 +161,7 @@ func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *models.MsgIn) 
 	defer rc.Close()
 
 	// if we have an external id use that
-	if m.ExternalIdentifier_ != "" {
+	if m.ExternalID_ != "" {
 		fingerprint := fmt.Sprintf("%s|%s|%s", m.Channel().UUID(), m.URN().Identity(), m.ExternalID())
 
 		if uuid, _ := b.receivedExternalIDs.Get(ctx, rc, fingerprint); uuid != "" {
@@ -194,7 +190,7 @@ func (b *backend) recordMsgReceived(ctx context.Context, m *models.MsgIn) {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
-	if m.ExternalIdentifier_ != "" {
+	if m.ExternalID_ != "" {
 		fingerprint := fmt.Sprintf("%s|%s|%s", m.Channel().UUID(), m.URN().Identity(), m.ExternalID())
 
 		if err := b.receivedExternalIDs.Set(ctx, rc, fingerprint, string(m.UUID())); err != nil {
