@@ -788,6 +788,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrRetryableWithReason("131053", "Media upload error"),
 	},
 	{
+		// media messages can't carry a link, so a failed upload has to error rather than fall back
 		Label:          "Audio attachment but upload fails",
 		MsgText:        "audio has no caption, sent as text",
 		MsgURN:         "whatsapp:250788123123",
@@ -799,30 +800,24 @@ var defaultSendTestCases = []OutgoingTestCase{
 			"*/v1/media": {
 				httpx.NewMockResponse(200, nil, []byte(``)),
 			},
-			"*/v1/messages": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
-			},
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{},
 			{},
-			{Body: `{"to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`},
-			{Body: `{"to":"250788123123","type":"text","text":{"body":"audio has no caption, sent as text"}}`},
 		},
-		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
+		ExpectedError: courier.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp"),
 	},
 	{
 		Label:          "Audio Send with link in text",
 		MsgText:        "audio has no caption, sent as text with a https://example.com",
 		MsgURN:         "whatsapp:250788123123",
-		MsgAttachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
+		MsgAttachments: []string{"audio/mpeg:https://foo.bar/audio2.mp3"},
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://foo.bar/audio.mp3": {
+			"https://foo.bar/audio2.mp3": {
 				httpx.NewMockResponse(200, nil, []byte(`data`)),
 			},
 			"*/v1/media": {
-				httpx.NewMockResponse(200, nil, []byte(``)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "media" : [{"id": "8a1b0c3d-1283-4b94-988d-7276bdec4de2"}] }`)),
 			},
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -832,7 +827,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{},
 			{},
-			{Body: `{"to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`},
+			{Body: `{"to":"250788123123","type":"audio","audio":{"id":"8a1b0c3d-1283-4b94-988d-7276bdec4de2"}}`},
 			{Body: `{"to":"250788123123","type":"text","preview_url":true,"text":{"body":"audio has no caption, sent as text with a https://example.com"}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
@@ -847,7 +842,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`data`)),
 			},
 			"*/v1/media": {
-				httpx.NewMockResponse(400, nil, []byte(`{}`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "media" : [{"id": "1b2c3d4e-1283-4b94-988d-7276bdec4de2"}] }`)),
 			},
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -856,22 +851,31 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{},
 			{},
-			{Body: `{"to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`},
+			{Body: `{"to":"250788123123","type":"document","document":{"id":"1b2c3d4e-1283-4b94-988d-7276bdec4de2","caption":"document caption","filename":"document.pdf"}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
+		// the filename still comes from the attachment URL even though the payload references media by id
 		Label:          "Document Send, document link",
 		MsgText:        "document caption",
 		MsgURN:         "whatsapp:250788123123",
-		MsgAttachments: []string{"document:https://foo.bar/document.pdf"},
+		MsgAttachments: []string{"document:https://foo.bar/document3.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
+			"https://foo.bar/document3.pdf": {
+				httpx.NewMockResponse(200, nil, []byte(`data`)),
+			},
+			"*/v1/media": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "media" : [{"id": "2c3d4e5f-1283-4b94-988d-7276bdec4de2"}] }`)),
+			},
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`},
+			{},
+			{},
+			{Body: `{"to":"250788123123","type":"document","document":{"id":"2c3d4e5f-1283-4b94-988d-7276bdec4de2","caption":"document caption","filename":"document3.pdf"}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -885,7 +889,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`data`)),
 			},
 			"*/v1/media": {
-				httpx.NewMockResponse(400, nil, []byte(`{}`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "media" : [{"id": "3d4e5f6a-1283-4b94-988d-7276bdec4de2"}] }`)),
 			},
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -894,7 +898,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{},
 			{},
-			{Body: `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg","caption":"image caption"}}`},
+			{Body: `{"to":"250788123123","type":"image","image":{"id":"3d4e5f6a-1283-4b94-988d-7276bdec4de2","caption":"image caption"}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -908,7 +912,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`data`)),
 			},
 			"*/v1/media": {
-				httpx.NewMockResponse(400, nil, []byte(`{}`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "media" : [{"id": "4e5f6a7b-1283-4b94-988d-7276bdec4de2"}] }`)),
 			},
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -917,7 +921,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{},
 			{},
-			{Body: `{"to":"250788123123","type":"video","video":{"link":"https://foo.bar/video.mp4","caption":"video caption"}}`},
+			{Body: `{"to":"250788123123","type":"video","video":{"id":"4e5f6a7b-1283-4b94-988d-7276bdec4de2","caption":"video caption"}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -1139,6 +1143,34 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
+		// a component with no variables of its own serializes as "parameters":null
+		Label:     "Template Send with static body",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788123123",
+		MsgLocale: "eng",
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
+			"components": [
+				{"type": "header/media", "name": "header", "variables": {"1": 0}},
+				{"type": "body/text", "name": "body", "variables": {}}
+			],
+			"variables": [
+				{"type": "image", "value": "image/jpeg:https://foo.bar/image.jpg"}
+			],
+			"language": "en_US"
+		}`,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]},{"type":"body","parameters":null}]}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
 		Label:     "Template Send with text header",
 		MsgText:   "templated message",
 		MsgURN:    "whatsapp:250788123123",
@@ -1298,15 +1330,23 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",
 		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "BUTTON1"}},
-		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image2.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
+			"https://foo.bar/image2.jpg": {
+				httpx.NewMockResponse(200, nil, []byte(`data`)),
+			},
+			"*/v1/media": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "media" : [{"id": "5f6a7b8c-1283-4b94-988d-7276bdec4de2"}] }`)),
+			},
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`},
+			{},
+			{},
+			{Body: `{"to":"250788123123","type":"image","image":{"id":"5f6a7b8c-1283-4b94-988d-7276bdec4de2"}}`},
 			{Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
@@ -1316,15 +1356,23 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:         "Interactive List Msg",
 		MsgURN:          "whatsapp:250788123123",
 		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "ROW1"}, {Type: "text", Text: "ROW2"}, {Type: "text", Text: "ROW3"}, {Type: "text", Text: "ROW4"}},
-		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image3.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
+			"https://foo.bar/image3.jpg": {
+				httpx.NewMockResponse(200, nil, []byte(`data`)),
+			},
+			"*/v1/media": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "media" : [{"id": "6a7b8c9d-1283-4b94-988d-7276bdec4de2"}] }`)),
+			},
 			"*/v1/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`},
+			{},
+			{},
+			{Body: `{"to":"250788123123","type":"image","image":{"id":"6a7b8c9d-1283-4b94-988d-7276bdec4de2"}}`},
 			{Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`},
 		},
 		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
@@ -1535,31 +1583,21 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 			"*/v1/media": {
 				httpx.NewMockResponse(401, nil, []byte(`{ "errors": [{"code":1005,"title":"Access denied","details":"Invalid credentials."}] }`)),
 			},
-			"*/v1/messages": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
-			},
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{},
 			{Body: "media bytes"},
-			{BodyContains: `/document.pdf`},
 		},
-		ExpectedExtIDs: []string{"157b5e14568e8"},
+		ExpectedError: courier.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp"),
 	},
 	{
+		// the failed upload above is cached, so this one errors without re-attempting the download
 		Label:          "Previous Media Upload Error",
 		MsgText:        "document caption",
 		MsgURN:         "whatsapp:250788123123",
 		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"*/v1/messages": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{
-			{BodyContains: `/document.pdf`},
-		},
-		ExpectedExtIDs: []string{"157b5e14568e8"},
+		MockResponses:  map[string][]*httpx.MockResponse{},
+		ExpectedError:  courier.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp"),
 	},
 	{
 		Label:          "Media Upload OK",

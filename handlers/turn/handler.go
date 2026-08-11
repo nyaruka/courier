@@ -444,9 +444,9 @@ type mtButton struct {
 	} `json:"reply" validate:"required"`
 }
 
+// media messages reference media by the id returned from /v1/media - they can't carry a link
 type mediaObject struct {
 	ID       string `json:"id,omitempty"`
-	Link     string `json:"link,omitempty"`
 	Caption  string `json:"caption,omitempty"`
 	Filename string `json:"filename,omitempty"`
 }
@@ -546,11 +546,14 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *mo
 			if err != nil {
 				slog.Error("error while uploading media to whatsapp", "error", err, "channel_uuid", msg.Channel().UUID())
 			}
-			fileURL := mediaURL
-			if err == nil && mediaID != "" {
-				mediaURL = ""
+
+			// media messages must reference media uploaded to /v1/media by id - unlike template headers and
+			// interactive headers, they can't carry a link, so without an id there's no request worth making
+			if mediaID == "" {
+				return nil, courier.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp")
 			}
-			mediaPayload := &mediaObject{ID: mediaID, Link: mediaURL}
+
+			mediaPayload := &mediaObject{ID: mediaID}
 			if strings.HasPrefix(mimeType, "audio") {
 				payload := mtAudioPayload{
 					recipient: rcpt,
@@ -567,7 +570,7 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *mo
 					mediaPayload.Caption = msg.Text()
 					textAsCaption = true
 				}
-				mediaPayload.Filename, err = utils.BasePathForURL(fileURL)
+				mediaPayload.Filename, err = utils.BasePathForURL(mediaURL)
 
 				// Logging error
 				if err != nil {
@@ -903,8 +906,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	sendURL, _ := url.Parse("/v1/messages")
 
 	requestPayloads, err := buildPayloads(ctx, msg, h, clog)
-
-	//requestPayloads, err := whatsapp.GetMsgPayloads(ctx, msg, maxMsgLength, clog)
 	if err != nil {
 		return err
 	}
