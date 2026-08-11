@@ -36,7 +36,7 @@ func (h *mockHandler) UseChannelRouteUUID() bool             { return true }
 func (h *mockHandler) RedactValues(*models.Channel) []string { return []string{"sesame"} }
 
 func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (*models.Channel, error) {
-	return models.GetChannel(ctx, h.rt, "MCK", "e4bb1578-29da-4fa5-a214-9da19dd24230")
+	return models.GetChannel(ctx, "MCK", "e4bb1578-29da-4fa5-a214-9da19dd24230")
 }
 
 // Initialize is called by the engine once everything is loaded

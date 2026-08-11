@@ -302,8 +302,9 @@ func loadChannelByAddress(ctx context.Context, rt *runtime.Runtime, addr Channel
 	return channel, err
 }
 
-// GetChannel returns the channel with the passed in type and UUID, from the cache if possible
-func GetChannel(ctx context.Context, rt *runtime.Runtime, typ ChannelType, uuid ChannelUUID) (*Channel, error) {
+// GetChannel returns the channel with the passed in type and UUID. It reads through the channel cache created by
+// Start, which is why - unlike the rest of this package - it doesn't take a runtime.
+func GetChannel(ctx context.Context, typ ChannelType, uuid ChannelUUID) (*Channel, error) {
 	timeout, cancel := context.WithTimeout(ctx, fetchTimeout)
 	defer cancel()
 
@@ -319,8 +320,9 @@ func GetChannel(ctx context.Context, rt *runtime.Runtime, typ ChannelType, uuid 
 	return ch, nil
 }
 
-// GetChannelByAddress returns the channel with the passed in type and address, from the cache if possible
-func GetChannelByAddress(ctx context.Context, rt *runtime.Runtime, typ ChannelType, address ChannelAddress) (*Channel, error) {
+// GetChannelByAddress returns the channel with the passed in type and address. Like GetChannel it reads through the
+// cache created by Start rather than taking a runtime.
+func GetChannelByAddress(ctx context.Context, typ ChannelType, address ChannelAddress) (*Channel, error) {
 	timeout, cancel := context.WithTimeout(ctx, fetchTimeout)
 	defer cancel()
 

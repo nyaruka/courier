@@ -69,7 +69,7 @@ func (ts *BackendTestSuite) TearDownSuite() {
 func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *models.Channel {
 	channelUUID := models.ChannelUUID(cUUID)
 
-	channel, err := models.GetChannel(context.Background(), ts.rt, models.ChannelType(cType), channelUUID)
+	channel, err := models.GetChannel(context.Background(), models.ChannelType(cType), channelUUID)
 	ts.Require().NoError(err, "error getting channel")
 	ts.Require().NotNil(channel)
 
@@ -837,22 +837,22 @@ func (ts *BackendTestSuite) TestGetChannel() {
 	knUUID := models.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	xxUUID := models.ChannelUUID("0a1256fe-c6e4-494d-99d3-576286f31d3b") // doesn't exist
 
-	ch, err := models.GetChannel(ctx, ts.rt, models.ChannelType("KN"), knUUID)
+	ch, err := models.GetChannel(ctx, models.ChannelType("KN"), knUUID)
 	ts.Assert().NoError(err)
 	ts.Assert().NotNil(ch)
 	ts.Assert().Equal(knUUID, ch.UUID())
 
-	ch, err = models.GetChannel(ctx, ts.rt, models.ChannelType("KN"), knUUID) // from cache
+	ch, err = models.GetChannel(ctx, models.ChannelType("KN"), knUUID) // from cache
 	ts.Assert().NoError(err)
 	ts.Assert().NotNil(ch)
 	ts.Assert().Equal(knUUID, ch.UUID())
 
-	ch, err = models.GetChannel(ctx, ts.rt, models.ChannelType("KN"), xxUUID)
+	ch, err = models.GetChannel(ctx, models.ChannelType("KN"), xxUUID)
 	ts.Assert().Error(err)
 	ts.Assert().Nil(ch)
 	ts.Assert().True(ch == nil) // https://github.com/stretchr/testify/issues/503
 
-	ch, err = models.GetChannel(ctx, ts.rt, models.ChannelType("KN"), xxUUID) // from cache
+	ch, err = models.GetChannel(ctx, models.ChannelType("KN"), xxUUID) // from cache
 	ts.Assert().Error(err)
 	ts.Assert().Nil(ch)
 	ts.Assert().True(ch == nil) // https://github.com/stretchr/testify/issues/503

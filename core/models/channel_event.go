@@ -157,7 +157,7 @@ func flushEvents(ctx context.Context, rt *runtime.Runtime, batch []*ChannelEvent
 
 func flushEvent(ctx context.Context, rt *runtime.Runtime, event *ChannelEvent) error {
 	// look up our channel
-	channel, err := GetChannel(ctx, rt, AnyChannelType, event.ChannelUUID_)
+	channel, err := GetChannel(ctx, AnyChannelType, event.ChannelUUID_)
 	if err != nil {
 		return err
 	}

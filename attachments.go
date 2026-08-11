@@ -57,7 +57,7 @@ func fetchAttachment(ctx context.Context, rt *runtime.Runtime, r *http.Request) 
 		return nil, err
 	}
 
-	ch, err := models.GetChannel(ctx, rt, fa.ChannelType, fa.ChannelUUID)
+	ch, err := models.GetChannel(ctx, fa.ChannelType, fa.ChannelUUID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting channel: %w", err)
 	}

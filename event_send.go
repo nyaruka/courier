@@ -77,7 +77,7 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 		return nil, fmt.Errorf("event requires channel and urn to be sent")
 	}
 
-	ch, err := models.GetChannel(ctx, s.rt, req.ChannelType, models.ChannelUUID(channelRef.UUID))
+	ch, err := models.GetChannel(ctx, req.ChannelType, models.ChannelUUID(channelRef.UUID))
 	if err != nil {
 		return nil, fmt.Errorf("error getting channel: %w", err)
 	}

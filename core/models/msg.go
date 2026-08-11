@@ -309,7 +309,7 @@ func flushMsgs(ctx context.Context, rt *runtime.Runtime, batch []*MsgIn) ([]*Msg
 
 func flushMsg(ctx context.Context, rt *runtime.Runtime, m *MsgIn) error {
 	// look up our channel
-	channel, err := GetChannel(ctx, rt, AnyChannelType, m.ChannelUUID_)
+	channel, err := GetChannel(ctx, AnyChannelType, m.ChannelUUID_)
 	if err != nil {
 		return err
 	}
@@ -602,7 +602,7 @@ func PopNextOutgoingMsg(ctx context.Context, rt *runtime.Runtime) (*MsgOut, erro
 	}
 
 	// populate the channel on our msg object
-	channel, err := GetChannel(ctx, rt, AnyChannelType, msg.ChannelUUID_)
+	channel, err := GetChannel(ctx, AnyChannelType, msg.ChannelUUID_)
 	if err != nil {
 		markComplete(token)
 		return nil, err

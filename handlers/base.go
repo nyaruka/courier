@@ -106,7 +106,7 @@ func (h *BaseHandler) SendEvent(ctx context.Context, ch *models.Channel, event e
 // GetChannel returns the channel
 func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (*models.Channel, error) {
 	uuid := models.ChannelUUID(r.PathValue("uuid"))
-	return models.GetChannel(ctx, h.rt, h.ChannelType(), uuid)
+	return models.GetChannel(ctx, h.ChannelType(), uuid)
 }
 
 // RequestHTTP does the given request, logging the trace, and returns the response
