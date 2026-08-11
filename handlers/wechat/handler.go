@@ -55,8 +55,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodGet, "", courier.ChannelLogTypeWebhookVerify, h.VerifyURL)
-	s.AddHandlerRoute(h, http.MethodPost, "", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
+	s.AddHandlerRoute(h, http.MethodPost, "", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
@@ -68,7 +68,7 @@ type verifyForm struct {
 }
 
 // VerifyURL is our HTTP handler function for WeChat config URL verification callbacks
-func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -109,7 +109,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateXML(payload, r)
 	if err != nil {
@@ -128,7 +128,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// subscribe event, trigger a new conversation
 	if payload.MsgType == "event" && payload.Event == "subscribe" {
-		clog.Type = courier.ChannelLogTypeEventReceive
+		clog.Type = models.ChannelLogTypeEventReceive
 
 		channelEvent := h.Backend().NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog)
 
@@ -142,7 +142,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// unknown event type (we only deal with subscribe)
 	if payload.MsgType == "event" {
-		clog.Type = courier.ChannelLogTypeEventReceive
+		clog.Type = models.ChannelLogTypeEventReceive
 
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "unknown event type")
 	}
@@ -179,7 +179,7 @@ type mtPayload struct {
 	} `json:"text"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	accessToken, err := h.getAccessToken(msg.Channel(), clog)
 	if err != nil {
 		return err
@@ -234,7 +234,7 @@ func (h *handler) SendableEvents(courier.Channel) map[string]time.Duration {
 
 // SendEvent sends typing started/stopped events as Typing/CancelTyping customer service commands, see
 // https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Service_Center_messages.html
-func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
 	var urn urns.URN
 	var command string
 	switch typed := event.(type) {
@@ -286,7 +286,7 @@ func (h *handler) SendEvent(ctx context.Context, ch courier.Channel, event event
 }
 
 // DescribeURN handles WeChat contact details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLog) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *models.ChannelLog) (map[string]string, error) {
 	accessToken, err := h.getAccessToken(channel, clog)
 	if err != nil {
 		return nil, err
@@ -325,7 +325,7 @@ func (h *handler) RedactValues(ch courier.Channel) []string {
 }
 
 // BuildAttachmentRequest download media for message attachment
-func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
+func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
 	accessToken, err := h.getAccessToken(channel, clog)
 	if err != nil {
 		return nil, err
@@ -346,7 +346,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel courier.Ch
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
-func (h *handler) getAccessToken(channel courier.Channel, clog *courier.ChannelLog) (string, error) {
+func (h *handler) getAccessToken(channel courier.Channel, clog *models.ChannelLog) (string, error) {
 	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID())
 
 	h.fetchTokenMutex.Lock()
@@ -383,7 +383,7 @@ func (h *handler) getAccessToken(channel courier.Channel, clog *courier.ChannelL
 }
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
-func (h *handler) fetchAccessToken(channel courier.Channel, clog *courier.ChannelLog) (string, time.Duration, error) {
+func (h *handler) fetchAccessToken(channel courier.Channel, clog *models.ChannelLog) (string, time.Duration, error) {
 	form := url.Values{
 		"grant_type": []string{"client_credential"},
 		"appid":      []string{channel.StringConfigForKey(configAppID, "")},
@@ -403,7 +403,7 @@ func (h *handler) fetchAccessToken(channel courier.Channel, clog *courier.Channe
 
 	token, err := jsonparser.GetString(respBody, "access_token")
 	if err != nil {
-		clog.Error(courier.ErrorResponseValueMissing("access_token"))
+		clog.Error(models.ErrorResponseValueMissing("access_token"))
 		return "", 0, err
 	}
 

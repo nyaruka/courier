@@ -46,12 +46,12 @@ func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (courier.
 func (h *mockHandler) Initialize(s *courier.Server) error {
 	h.rt = s.Runtime()
 	h.backend = s.Backend()
-	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMsg)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
 	return nil
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	// log a request that contains a header value that should be redacted; goes through the runtime's
 	// HTTP client so tests can intercept it with a mocking transport
 	req, _ := httpx.NewRequest(ctx, "GET", "http://mock.com/send", nil, map[string]string{"Authorization": "Token sesame"})
@@ -79,7 +79,7 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier
 }
 
 // SendEvent sends the given event, logging any HTTP calls or errors
-func (h *mockHandler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *courier.ChannelLog) error {
+func (h *mockHandler) SendEvent(ctx context.Context, ch courier.Channel, event events.Event, clog *models.ChannelLog) error {
 	req, _ := httpx.NewRequest(ctx, "POST", "http://mock.com/action", nil, nil)
 	trace, resp, err := utils.TraceHTTP(h.rt.HTTP, req, 1024)
 	if trace != nil {
@@ -118,7 +118,7 @@ func (h *mockHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWr
 }
 
 // ReceiveMsg sends the passed in message, returning any error
-func (h *mockHandler) receiveMsg(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *mockHandler) receiveMsg(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
 	r.ParseForm()
 	from := r.Form.Get("from")
 	text := r.Form.Get("text")

@@ -308,7 +308,7 @@ func (b *backend) GetChannelByAddress(ctx context.Context, typ models.ChannelTyp
 }
 
 // GetContact returns the contact for the passed in channel and URN
-func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *courier.ChannelLog) (courier.Contact, error) {
+func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *models.ChannelLog) (courier.Contact, error) {
 	dbChannel := c.(*models.Channel)
 	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, authTokens, name, allowCreate, clog)
 }
@@ -337,7 +337,7 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Cha
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.MsgIn {
+func (b *backend) NewIncomingMsg(ctx context.Context, channel courier.Channel, urn urns.URN, text string, extID string, clog *models.ChannelLog) courier.MsgIn {
 	// strip out invalid UTF8 and NULL chars
 	urn = urns.URN(dbutil.ToValidUTF8(string(urn)))
 	text = dbutil.ToValidUTF8(text)
@@ -422,7 +422,7 @@ func (b *backend) ClearMsgSent(ctx context.Context, uuid models.MsgUUID) error {
 }
 
 // OnSendComplete is called when the sender has finished trying to send a message
-func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate, res *courier.SendResult, clog *courier.ChannelLog) {
+func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate, res *courier.SendResult, clog *models.ChannelLog) {
 	log := slog.With("channel", msg.Channel().UUID(), "msg", msg.UUID(), "clog", clog.UUID, "status", status)
 
 	rc := b.rt.VK.Get()
@@ -468,12 +468,12 @@ func (b *backend) OnSendComplete(ctx context.Context, msg courier.MsgOut, status
 }
 
 // OnReceiveComplete is called when the server has finished handling an incoming request
-func (b *backend) OnReceiveComplete(ctx context.Context, ch courier.Channel, events []courier.Event, clog *courier.ChannelLog) {
+func (b *backend) OnReceiveComplete(ctx context.Context, ch courier.Channel, events []courier.Event, clog *models.ChannelLog) {
 	b.stats.RecordIncoming(ch.ChannelType(), events, clog.Elapsed)
 }
 
 // WriteMsg writes the passed in message to our store
-func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier.ChannelLog) error {
+func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *models.ChannelLog) error {
 	m := msg.(*MsgIn)
 
 	// check if this message could be a duplicate and if so steal the original's UUID
@@ -496,12 +496,12 @@ func (b *backend) WriteMsg(ctx context.Context, msg courier.MsgIn, clog *courier
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdate(channel courier.Channel, uuid models.MsgUUID, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (b *backend) NewStatusUpdate(channel courier.Channel, uuid models.MsgUUID, status models.MsgStatus, clog *models.ChannelLog) courier.StatusUpdate {
 	return newStatusUpdate(channel, uuid, "", status, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status models.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status models.MsgStatus, clog *models.ChannelLog) courier.StatusUpdate {
 	return newStatusUpdate(channel, "", externalID, status, clog)
 }
 
@@ -543,12 +543,12 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (b *backend) NewChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
+func (b *backend) NewChannelEvent(channel courier.Channel, eventType models.ChannelEventType, urn urns.URN, clog *models.ChannelLog) courier.ChannelEvent {
 	return newChannelEvent(channel, eventType, urn, clog)
 }
 
 // WriteChannelEvent writes the passed in channel even returning any error
-func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent, clog *courier.ChannelLog) error {
+func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent, clog *models.ChannelLog) error {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
@@ -556,7 +556,7 @@ func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEv
 }
 
 // WriteChannelLog persists the passed in log to our database, for rapidpro we swallow all errors, logging isn't critical
-func (b *backend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLog) error {
+func (b *backend) WriteChannelLog(ctx context.Context, clog *models.ChannelLog) error {
 	queueChannelLog(b, clog)
 	return nil
 }

@@ -39,7 +39,7 @@ WHERE
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
-func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *models.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *courier.ChannelLog) (*models.Contact, error) {
+func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *models.Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *models.ChannelLog) (*models.Contact, error) {
 	log := slog.With("org_id", org, "urn", urn.Identity(), "channel_uuid", channel.UUID(), "log_uuid", clog.UUID)
 
 	// try to look up our contact by URN
@@ -167,7 +167,7 @@ func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *m
 // (see https://developers.facebook.com/documentation/business-messaging/whatsapp/business-scoped-user-ids/) is
 // reused rather than duplicated. In that case the phone number is added to the matched contact so the message is
 // still attributed to it as the primary URN.
-func contactForMsg(ctx context.Context, b *backend, m *MsgIn, clog *courier.ChannelLog) (*models.Contact, error) {
+func contactForMsg(ctx context.Context, b *backend, m *MsgIn, clog *models.ChannelLog) (*models.Contact, error) {
 	altURN := altLookupURN(m)
 
 	// simple case: no alternative URN to consider, look up or create by the primary URN

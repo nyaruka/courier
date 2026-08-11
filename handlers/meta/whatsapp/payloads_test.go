@@ -50,7 +50,7 @@ func TestGetMsgPayloads(t *testing.T) {
 		urn                   urns.URN
 		expectedPayloadsCount int
 		expectedType          string // type of first payload
-		checkFunc             func(*testing.T, []whatsapp.SendRequest, *courier.ChannelLog)
+		checkFunc             func(*testing.T, []whatsapp.SendRequest, *models.ChannelLog)
 	}{
 		// Test case (a): ≤3 QRs with Extra + attachment
 		{
@@ -61,7 +61,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 2,
 			expectedType:          "image",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 2, len(payloads))
 				// First should be image attachment
 				assert.Equal(t, "image", payloads[0].Type)
@@ -86,7 +86,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 2,
 			expectedType:          "video",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 2, len(payloads))
 				// First should be video attachment
 				assert.Equal(t, "video", payloads[0].Type)
@@ -106,7 +106,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				// Should be interactive button with image header
 				assert.Equal(t, "interactive", payloads[0].Type)
@@ -130,7 +130,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				// Should be interactive button with video header
 				assert.Equal(t, "interactive", payloads[0].Type)
@@ -153,7 +153,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				// Should be interactive button with document header
 				assert.Equal(t, "interactive", payloads[0].Type)
@@ -175,7 +175,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 2,
 			expectedType:          "audio",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 2, len(payloads))
 				// First should be audio (not used as header)
 				assert.Equal(t, "audio", payloads[0].Type)
@@ -200,7 +200,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				// Should be interactive list with exactly 10 rows
 				assert.Equal(t, "interactive", payloads[0].Type)
@@ -231,7 +231,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "interactive", payloads[0].Type)
 				assert.Equal(t, "250788123123", payloads[0].To)
@@ -252,7 +252,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "interactive", payloads[0].Type)
 				assert.Equal(t, "250788123123", payloads[0].To)
@@ -267,7 +267,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "interactive", payloads[0].Type)
 				assert.Equal(t, "250788123123", payloads[0].To)
@@ -283,7 +283,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "image",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "image", payloads[0].Type)
 				assert.Equal(t, "250788123123", payloads[0].To)
@@ -299,7 +299,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 2,
 			expectedType:          "image",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 2, len(payloads))
 				// Second attachment sent first as standalone
 				assert.Equal(t, "image", payloads[0].Type)
@@ -319,7 +319,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "bsuid:US.1234",
 			expectedPayloadsCount: 1,
 			expectedType:          "text",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "text", payloads[0].Type)
 				assert.Equal(t, "US.1234", payloads[0].Recipient)
@@ -334,7 +334,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "bsuid:US.1234",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				// every payload builder routes through newBasePayload, so the recipient field must be
 				// populated (and to left empty) for media/interactive flows too, not just plain text
 				assert.Equal(t, 1, len(payloads))
@@ -350,7 +350,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "interactive", payloads[0].Type)
 				assert.Equal(t, "flow", payloads[0].Interactive.Type)
@@ -366,7 +366,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "text",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "text", payloads[0].Type)
 				assert.Len(t, clog.Errors, 1)
@@ -380,7 +380,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "interactive",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "interactive", payloads[0].Type)
 				assert.Equal(t, "cta_url", payloads[0].Interactive.Type)
@@ -396,7 +396,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "text",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "text", payloads[0].Type)
 				assert.Len(t, clog.Errors, 1)
@@ -409,7 +409,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
 			expectedType:          "text",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, 2000, len(payloads[0].Text.Body))
 			},
@@ -421,7 +421,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 2,
 			expectedType:          "text",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 2, len(payloads))
 				assert.Equal(t, "text", payloads[0].Type)
 				assert.Equal(t, "interactive", payloads[1].Type)
@@ -435,7 +435,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 3,
 			expectedType:          "image",
-			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *courier.ChannelLog) {
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, 3, len(payloads))
 				assert.Equal(t, "image", payloads[0].Type)
 				assert.Equal(t, "", payloads[0].Image.Caption)

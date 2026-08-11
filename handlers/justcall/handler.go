@@ -38,8 +38,8 @@ func init() {
 // Initialize implements courier.ChannelHandler
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
-	s.AddHandlerRoute(h, http.MethodPost, "status", courier.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.statusMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.statusMessage))
 	return nil
 }
 
@@ -95,7 +95,7 @@ type moPayload struct {
 	} `json:"data"`
 }
 
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	if payload.Data.Type != "sms" || payload.Data.Direction != "I" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "Ignoring request, no message")
 	}
@@ -134,7 +134,7 @@ var statusMapping = map[string]models.MsgStatus{
 	"failed":      models.MsgStatusFailed,
 }
 
-func (h *handler) statusMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) statusMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
 	if payload.Data.Type != "sms" || payload.Data.Direction != "O" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "Ignoring request, no message")
 	}
@@ -155,7 +155,7 @@ type mtPayload struct {
 	MediaURL string `json:"media_url,omitempty"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	apiKey := msg.Channel().StringConfigForKey(models.ConfigAPIKey, "")
 	apiSecret := msg.Channel().StringConfigForKey(models.ConfigSecret, "")
 	if apiKey == "" || apiSecret == "" {
@@ -195,7 +195,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	respStatus, err := jsonparser.GetString(respBody, "status")
 	if err != nil {
-		clog.Error(courier.ErrorResponseValueMissing("status"))
+		clog.Error(models.ErrorResponseValueMissing("status"))
 	}
 	if respStatus != "success" {
 		return courier.ErrResponseContent
@@ -204,7 +204,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	externalID, err := jsonparser.GetInt(respBody, "id")
 	if err != nil {
-		clog.Error(courier.ErrorResponseValueMissing("id"))
+		clog.Error(models.ErrorResponseValueMissing("id"))
 	} else {
 		res.AddExternalID(strconv.Itoa(int(externalID)))
 	}

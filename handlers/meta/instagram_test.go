@@ -461,7 +461,7 @@ func TestInstagramDescribeURN(t *testing.T) {
 	channel := instgramTestChannels[0]
 	handler := newHandler("IG", "Instagram")
 	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), test.NewMockBackend()))
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, handler.RedactValues(channel))
+	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, channel, handler.RedactValues(channel))
 
 	tcs := []struct {
 		urn              urns.URN

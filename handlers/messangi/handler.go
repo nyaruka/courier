@@ -43,7 +43,7 @@ func newHandler() courier.ChannelHandler {
 func (h *handler) Initialize(s *courier.Server) error {
 	h.SetServer(s)
 	receiveHandler := handlers.NewTelReceiveHandler(h, "mobile", "mo")
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, receiveHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, receiveHandler)
 	return nil
 }
 
@@ -60,7 +60,7 @@ type mtResponse struct {
 	Description string `xml:"description"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	publicKey := msg.Channel().StringConfigForKey(configPublicKey, "")
 	privateKey := msg.Channel().StringConfigForKey(configPrivateKey, "")
 	instanceId := msg.Channel().IntConfigForKey(configInstanceId, -1)

@@ -183,7 +183,7 @@ var defaultReceiveTestCases = []IncomingTestCase{
 		ExpectedEvents: []ExpectedEvent{
 			{Type: models.EventTypeStopContact, URN: "tel:+18885551515"},
 		},
-		ExpectedErrors: []*clogs.Error{courier.ErrorExternal("103", "Contact has sent 'stop'")},
+		ExpectedErrors: []*clogs.Error{models.ErrorExternal("103", "Contact has sent 'stop'")},
 	},
 	{
 		Label:                "Receive Invalid Status",

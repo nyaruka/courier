@@ -464,7 +464,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 }
 
 // asserts that the given channel log doesn't contain any of the given values
-func AssertChannelLogRedaction(t *testing.T, clog *courier.ChannelLog, vals []string) {
+func AssertChannelLogRedaction(t *testing.T, clog *models.ChannelLog, vals []string) {
 	assertRedacted := func(s string) {
 		for _, v := range vals {
 			assert.NotContains(t, s, v, "expected '%s' to not contain redacted value '%s'", s, v)

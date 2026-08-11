@@ -156,7 +156,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from_did":"2065551212","to_did":"2067791234","message":"No External ID"}`,
 		}},
-		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("guid")},
+		ExpectedLogErrors: []*clogs.Error{models.ErrorResponseValueMissing("guid")},
 		ExpectedError:     courier.ErrResponseContent,
 	},
 	{
@@ -214,7 +214,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Basic dXNlcjE6c2VzYW1l"},
 			Body:    `{"from_did":"2065551212","to_did":"2067791234","message":"Simple Message ☺"}`,
 		}},
-		ExpectedLogErrors: []*clogs.Error{courier.ErrorResponseValueMissing("guid")},
+		ExpectedLogErrors: []*clogs.Error{models.ErrorResponseValueMissing("guid")},
 		ExpectedError:     courier.ErrResponseContent,
 	},
 }
