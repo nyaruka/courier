@@ -1052,6 +1052,183 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
+		Label:     "Template Send with image header",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788123123",
+		MsgLocale: "eng",
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
+			"components": [
+				{"type": "header/media", "name": "header", "variables": {"1": 0}},
+				{"type": "body/text", "name": "body", "variables": {"1": 1, "2": 2}}
+			],
+			"variables": [
+				{"type": "image", "value": "image/jpeg:https://foo.bar/image.jpg"},
+				{"type": "text", "value": "Chef"},
+				{"type": "text", "value": "tomorrow"}
+			],
+			"language": "en_US"
+		}`,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:     "Template Send with video header",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788123123",
+		MsgLocale: "eng",
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
+			"components": [
+				{"type": "header/media", "name": "header", "variables": {"1": 0}},
+				{"type": "body/text", "name": "body", "variables": {"1": 1, "2": 2}}
+			],
+			"variables": [
+				{"type": "video", "value": "video/mp4:https://foo.bar/video.mp4"},
+				{"type": "text", "value": "Chef"},
+				{"type": "text", "value": "tomorrow"}
+			],
+			"language": "en_US"
+		}`,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"header","parameters":[{"type":"video","video":{"link":"https://foo.bar/video.mp4"}}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:     "Template Send with document header",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788123123",
+		MsgLocale: "eng",
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
+			"components": [
+				{"type": "header/media", "name": "header", "variables": {"1": 0}},
+				{"type": "body/text", "name": "body", "variables": {"1": 1, "2": 2}}
+			],
+			"variables": [
+				{"type": "document", "value": "application/pdf:https://foo.bar/doc.pdf"},
+				{"type": "text", "value": "Chef"},
+				{"type": "text", "value": "tomorrow"}
+			],
+			"language": "en_US"
+		}`,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"header","parameters":[{"type":"document","document":{"link":"https://foo.bar/doc.pdf","filename":"doc.pdf"}}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:     "Template Send with text header",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788123123",
+		MsgLocale: "eng",
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
+			"components": [
+				{"type": "header/text", "name": "header", "variables": {"1": 0}},
+				{"type": "body/text", "name": "body", "variables": {"1": 1, "2": 2}}
+			],
+			"variables": [
+				{"type": "text", "value": "Welcome"},
+				{"type": "text", "value": "Chef"},
+				{"type": "text", "value": "tomorrow"}
+			],
+			"language": "en_US"
+		}`,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"header","parameters":[{"type":"text","text":"Welcome"}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:     "Template Send with button params",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788123123",
+		MsgLocale: "eng",
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
+			"components": [
+				{"name": "header", "type": "header/media", "variables": {"1": 0}},
+				{"name": "body", "type": "body/text", "variables": {"1": 1, "2": 2}},
+				{"name": "button.0", "type": "button/quick_reply", "variables": {"1": 3}},
+				{"name": "button.1", "type": "button/url", "variables": {"1": 4}}
+			],
+			"variables": [
+				{"type": "image", "value": "image/jpeg:https://foo.bar/image.jpg"},
+				{"type": "text", "value": "Ryan Lewis"},
+				{"type": "text", "value": "niño"},
+				{"type": "text", "value": "Sip"},
+				{"type": "text", "value": "id00231"}
+			],
+			"language": "en_US"
+		}`,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]},{"type":"body","parameters":[{"type":"text","text":"Ryan Lewis"},{"type":"text","text":"niño"}]},{"type":"button","sub_type":"quick_reply","index":"0","parameters":[{"type":"payload","payload":"Sip"}]},{"type":"button","sub_type":"url","index":"1","parameters":[{"type":"text","text":"id00231"}]}]}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:           "Template Send ignores preview attachments and quick replies",
+		MsgText:         "This is a test image template message to check if Rapidpro",
+		MsgURN:          "whatsapp:250788123123",
+		MsgLocale:       "eng",
+		MsgAttachments:  []string{"image:https://foo.bar/image.jpg"},
+		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "Test"}, {Type: "text", Text: "Another test"}},
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "test_image_rapidpro"},
+			"components": [
+				{"name": "header", "type": "header/media", "variables": {"1": 0}}
+			],
+			"variables": [
+				{"type": "image", "value": "image:https://foo.bar/image.jpg"}
+			],
+			"language": "en"
+		}`,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"test_image_rapidpro","language":{"policy":"deterministic","code":"en"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]}]}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
 		Label:           "Interactive Button Message Send",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",

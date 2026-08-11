@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"maps"
 	"net/http"
 	"net/url"
 	"slices"
@@ -452,31 +451,14 @@ type mediaObject struct {
 	Filename string `json:"filename,omitempty"`
 }
 
-type LocalizableParam struct {
-	Default string `json:"default"`
-}
-
-type Param struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
-}
-
-type Component struct {
-	Type       string  `json:"type"`
-	Parameters []Param `json:"parameters,omitempty"`
-}
-
 type templatePayload struct {
 	recipient
 	Type     string `json:"type"`
 	Template struct {
-		Namespace string `json:"namespace"`
-		Name      string `json:"name"`
-		Language  struct {
-			Policy string `json:"policy"`
-			Code   string `json:"code"`
-		} `json:"language"`
-		Components []Component `json:"components,omitempty"`
+		Namespace  string                `json:"namespace"`
+		Name       string                `json:"name"`
+		Language   whatsapp.Language     `json:"language"`
+		Components []*whatsapp.Component `json:"components,omitempty"`
 	} `json:"template"`
 }
 
@@ -509,6 +491,33 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 	var err error
 
 	rcpt := newRecipient(msg)
+
+	// Template messages must be sent as a single template payload. Mailroom/goflow may also
+	// attach preview media and button quick-replies on the same message; those must not be
+	// turned into separate image/interactive sends.
+	if msg.Templating() != nil {
+		langCode := getSupportedLanguage(msg.Locale())
+		namespace := msg.Templating().Namespace
+		if namespace == "" {
+			namespace = msg.Channel().StringConfigForKey(configNamespace, "")
+		}
+		if namespace == "" {
+			return nil, fmt.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
+		}
+
+		waTpl := whatsapp.GetTemplatePayload(msg.Templating())
+
+		payload := templatePayload{
+			recipient: rcpt,
+			Type:      "template",
+		}
+		payload.Template.Namespace = namespace
+		payload.Template.Name = waTpl.Name
+		payload.Template.Language = whatsapp.Language{Policy: "deterministic", Code: langCode}
+		payload.Template.Components = waTpl.Components
+
+		return []any{payload}, nil
+	}
 
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 
@@ -698,152 +707,104 @@ func buildPayloads(ctx context.Context, msg courier.MsgOut, h *handler, clog *co
 		}
 
 	} else {
-		// do we have a template?
-		if msg.Templating() != nil {
-			langCode := getSupportedLanguage(msg.Locale())
-			namespace := msg.Templating().Namespace
-			if namespace == "" {
-				namespace = msg.Channel().StringConfigForKey(configNamespace, "")
-			}
-			if namespace == "" {
-				return nil, fmt.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
-			}
-
-			payload := templatePayload{
-				recipient: rcpt,
-				Type:      "template",
-			}
-			payload.Template.Namespace = namespace
-			payload.Template.Name = msg.Templating().Template.Name
-			payload.Template.Language.Policy = "deterministic"
-			payload.Template.Language.Code = langCode
-
-			for _, comp := range msg.Templating().Components {
-				// get the variables used by this component in order of their names 1, 2 etc
-				compParams := make([]models.TemplatingVariable, 0, len(comp.Variables))
-
-				for _, varName := range slices.SortedFunc(maps.Keys(comp.Variables), func(a, b string) int {
-					ai, _ := strconv.Atoi(a)
-					bi, _ := strconv.Atoi(b)
-					return cmp.Compare(ai, bi)
-				}) {
-					compParams = append(compParams, msg.Templating().Variables[comp.Variables[varName]])
-				}
-
-				if comp.Type == "body" || strings.HasPrefix(comp.Type, "body/") {
-					component := &Component{Type: "body"}
-					for _, p := range compParams {
-						component.Parameters = append(component.Parameters, Param{Type: p.Type, Text: p.Value})
-					}
-					payload.Template.Components = append(payload.Template.Components, *component)
-
-				}
-
-			}
-
-			payloads = append(payloads, payload)
-
-		} else {
-
-			if isInteractiveMsg {
-				for i, part := range parts {
-					if i < (len(parts) - 1) { //if split into more than one message, the first parts will be text and the last interactive
-						payload := mtTextPayload{
-							recipient: rcpt,
-							Type:      "text",
-						}
-						payload.Text.Body = part
-						payloads = append(payloads, payload)
-
-					} else {
-						payload := mtInteractivePayload{
-							recipient: rcpt,
-							Type:      "interactive",
-						}
-
-						if len(locationQRs) > 0 {
-							payload.Interactive.Type = "location_request_message"
-							payload.Interactive.Body.Text = part
-							payload.Interactive.Action.Name = "send_location"
-							payloads = append(payloads, payload)
-
-						} else if len(formQRs) > 0 {
-							qr := formQRs[0]
-							payload.Interactive.Type = "flow"
-							payload.Interactive.Body.Text = part
-							payload.Interactive.Action.Name = "flow"
-							payload.Interactive.Action.Parameters = &whatsapp.ActionParameters{
-								FlowMessageVersion: "3",
-								FlowID:             qr.Extra,
-								FlowCTA:            qr.GetText(),
-							}
-							payloads = append(payloads, payload)
-
-						} else if len(urlQRs) > 0 {
-							qr := urlQRs[0]
-							payload.Interactive.Type = "cta_url"
-							payload.Interactive.Body.Text = part
-							payload.Interactive.Action.Name = "cta_url"
-							payload.Interactive.Action.Parameters = &whatsapp.ActionParameters{
-								DisplayText: qr.GetText(),
-								URL:         qr.Extra,
-							}
-							payloads = append(payloads, payload)
-
-						} else if !qrsAsList { // we show buttons
-							payload.Interactive.Type = "button"
-							payload.Interactive.Body.Text = part
-							btns := make([]mtButton, len(qrs))
-							for i, qr := range qrs {
-								btns[i] = mtButton{
-									Type: "reply",
-								}
-								btns[i].Reply.ID = fmt.Sprint(i)
-								btns[i].Reply.Title = qr.Text
-							}
-							payload.Interactive.Action.Buttons = btns
-							payloads = append(payloads, payload)
-						} else {
-							payload.Interactive.Type = "list"
-							payload.Interactive.Body.Text = part
-							payload.Interactive.Action.Button = "Menu"
-							section := mtSection{
-								Rows: make([]mtSectionRow, len(qrs)),
-							}
-							for i, qr := range qrs {
-								section.Rows[i] = mtSectionRow{
-									ID:          fmt.Sprint(i),
-									Title:       qr.Text,
-									Description: qr.Extra,
-								}
-							}
-							payload.Interactive.Action.Sections = []mtSection{
-								section,
-							}
-							payloads = append(payloads, payload)
-						}
-					}
-				}
-			} else {
-				for _, part := range parts {
-
-					// check if you have a link
-					var payload mtTextPayload
-					if strings.Contains(part, "https://") || strings.Contains(part, "http://") {
-						payload = mtTextPayload{
-							recipient:  rcpt,
-							Type:       "text",
-							PreviewURL: true,
-						}
-					} else {
-						payload = mtTextPayload{
-							recipient: rcpt,
-							Type:      "text",
-						}
+		if isInteractiveMsg {
+			for i, part := range parts {
+				if i < (len(parts) - 1) { //if split into more than one message, the first parts will be text and the last interactive
+					payload := mtTextPayload{
+						recipient: rcpt,
+						Type:      "text",
 					}
 					payload.Text.Body = part
 					payloads = append(payloads, payload)
+
+				} else {
+					payload := mtInteractivePayload{
+						recipient: rcpt,
+						Type:      "interactive",
+					}
+
+					if len(locationQRs) > 0 {
+						payload.Interactive.Type = "location_request_message"
+						payload.Interactive.Body.Text = part
+						payload.Interactive.Action.Name = "send_location"
+						payloads = append(payloads, payload)
+
+					} else if len(formQRs) > 0 {
+						qr := formQRs[0]
+						payload.Interactive.Type = "flow"
+						payload.Interactive.Body.Text = part
+						payload.Interactive.Action.Name = "flow"
+						payload.Interactive.Action.Parameters = &whatsapp.ActionParameters{
+							FlowMessageVersion: "3",
+							FlowID:             qr.Extra,
+							FlowCTA:            qr.GetText(),
+						}
+						payloads = append(payloads, payload)
+
+					} else if len(urlQRs) > 0 {
+						qr := urlQRs[0]
+						payload.Interactive.Type = "cta_url"
+						payload.Interactive.Body.Text = part
+						payload.Interactive.Action.Name = "cta_url"
+						payload.Interactive.Action.Parameters = &whatsapp.ActionParameters{
+							DisplayText: qr.GetText(),
+							URL:         qr.Extra,
+						}
+						payloads = append(payloads, payload)
+
+					} else if !qrsAsList { // we show buttons
+						payload.Interactive.Type = "button"
+						payload.Interactive.Body.Text = part
+						btns := make([]mtButton, len(qrs))
+						for i, qr := range qrs {
+							btns[i] = mtButton{
+								Type: "reply",
+							}
+							btns[i].Reply.ID = fmt.Sprint(i)
+							btns[i].Reply.Title = qr.Text
+						}
+						payload.Interactive.Action.Buttons = btns
+						payloads = append(payloads, payload)
+					} else {
+						payload.Interactive.Type = "list"
+						payload.Interactive.Body.Text = part
+						payload.Interactive.Action.Button = "Menu"
+						section := mtSection{
+							Rows: make([]mtSectionRow, len(qrs)),
+						}
+						for i, qr := range qrs {
+							section.Rows[i] = mtSectionRow{
+								ID:          fmt.Sprint(i),
+								Title:       qr.Text,
+								Description: qr.Extra,
+							}
+						}
+						payload.Interactive.Action.Sections = []mtSection{
+							section,
+						}
+						payloads = append(payloads, payload)
+					}
 				}
+			}
+		} else {
+			for _, part := range parts {
+
+				// check if you have a link
+				var payload mtTextPayload
+				if strings.Contains(part, "https://") || strings.Contains(part, "http://") {
+					payload = mtTextPayload{
+						recipient:  rcpt,
+						Type:       "text",
+						PreviewURL: true,
+					}
+				} else {
+					payload = mtTextPayload{
+						recipient: rcpt,
+						Type:      "text",
+					}
+				}
+				payload.Text.Body = part
+				payloads = append(payloads, payload)
 			}
 		}
 	}
