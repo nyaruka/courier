@@ -52,9 +52,9 @@ func WithRedactConfigKeys(keys ...string) func(*BaseHandler) {
 	}
 }
 
-// SetServer can be used to change the server on a BaseHandler
-func (h *BaseHandler) SetServer(server *courier.Server) {
-	h.rt = server.Runtime()
+// SetRegistry is called during initialization to give the handler the runtime it should use
+func (h *BaseHandler) SetRegistry(reg *courier.Registry) {
+	h.rt = reg.Runtime()
 }
 
 // Runtime returns the runtime instance on the BaseHandler

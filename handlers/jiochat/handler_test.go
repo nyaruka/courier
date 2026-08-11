@@ -19,6 +19,7 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
+	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
@@ -288,9 +289,9 @@ func TestDescribeURN(t *testing.T) {
 	defer rc.Close()
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 
-	s := courier.NewServer(rt)
+	s := web.NewServer(rt)
 	handler := newHandler().(*handler)
-	handler.Initialize(s)
+	s.MountHandler(handler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 
 	tcs := []struct {
@@ -321,14 +322,14 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
 	rt.HTTPProxied = rt.HTTP
 
-	s := courier.NewServer(rt)
+	s := web.NewServer(rt)
 	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://channels.jiochat.com/auth/token.action": {
 			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"access_token": "SESAME"}`)),
 		},
 	})
 	handler := newHandler().(*handler)
-	handler.Initialize(s)
+	s.MountHandler(handler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 
 	// check that request has the fetched access token

@@ -1,4 +1,4 @@
-package courier_test
+package web_test
 
 import (
 	"io"
@@ -11,11 +11,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/core/sender"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/courier/v26/utils/queue"
+	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
 	"github.com/nyaruka/gocommon/dates"
@@ -27,8 +29,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// the server no longer owns the models layer's lifecycle - that moved to the service wiring - so tests start it
+// themselves via testsuite.Runtime
 func serverRuntime(t *testing.T) *runtime.Runtime {
-	rt := testsuite.NewRuntime(t)
+	_, rt := testsuite.Runtime(t)
 	testsuite.ResetDB(t, rt)
 	testsuite.ResetValkey(t, rt)
 
@@ -40,7 +44,7 @@ func serverRuntime(t *testing.T) *runtime.Runtime {
 func TestIncoming(t *testing.T) {
 	rt := serverRuntime(t)
 
-	s := courier.NewServer(rt)
+	s := web.NewServer(rt)
 
 	// capture the channel logs of handled requests
 	var clogs []*models.ChannelLog
@@ -81,7 +85,7 @@ func TestOutgoing(t *testing.T) {
 	rt := serverRuntime(t)
 	dyntest.Truncate(t, rt.Dynamo, "TestMain")
 
-	s := courier.NewServer(rt)
+	s := web.NewServer(rt)
 	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/send": {
 			httpx.NewMockResponse(200, nil, []byte(`SENT`)),
@@ -94,6 +98,11 @@ func TestOutgoing(t *testing.T) {
 
 	require.NoError(t, s.Start())
 	defer s.Stop()
+
+	// sending is its own component now, so the test drives one alongside the server
+	foreman := sender.NewForeman(rt, 32)
+	foreman.Start()
+	defer foreman.Stop()
 
 	// create two channels but only one of them has a handler (MCK)
 	brokenChannel := test.NewMockChannel("53e5aafa-8155-449d-9009-fcb30d54bd26", "XX", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
@@ -214,13 +223,13 @@ func TestOutgoing(t *testing.T) {
 }
 
 func TestFetchAttachment(t *testing.T) {
-	testJPG := test.ReadFile("test/testdata/test.jpg")
+	testJPG := test.ReadFile("../test/testdata/test.jpg")
 
 	rt := serverRuntime(t)
 	rt.Config.AuthToken = "sesame"
 	rt.S3.Client.CreateBucket(t.Context(), &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
 
-	server := courier.NewServer(rt)
+	server := web.NewServer(rt)
 	server.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/media/hello.jpg": {
 			httpx.NewMockResponse(200, nil, testJPG),
@@ -302,7 +311,7 @@ func TestListeners(t *testing.T) {
 	rt := serverRuntime(t)
 	rt.Config.AuthToken = "sesame"
 
-	server := courier.NewServer(rt)
+	server := web.NewServer(rt)
 	require.NoError(t, server.Start())
 	defer server.Stop()
 

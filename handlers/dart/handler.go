@@ -50,8 +50,8 @@ func init() {
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(s *courier.Server) error {
-	h.SetServer(s)
+func (h *handler) Initialize(s *courier.Registry) error {
+	h.SetRegistry(s)
 	s.AddHandlerRoute(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	s.AddHandlerRoute(h, http.MethodGet, "delivered", models.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil

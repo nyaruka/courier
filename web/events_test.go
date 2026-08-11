@@ -1,4 +1,4 @@
-package courier_test
+package web_test
 
 import (
 	"net/http"
@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
 	"github.com/nyaruka/gocommon/httpx"
@@ -41,7 +41,7 @@ func assertChannelLogCount(t *testing.T, rt *runtime.Runtime, expected int) {
 }
 
 func TestSendEvent(t *testing.T) {
-	rt := testsuite.NewRuntime(t)
+	_, rt := testsuite.Runtime(t)
 	testsuite.ResetDB(t, rt)
 	testsuite.ResetValkey(t, rt)
 	dyntest.Truncate(t, rt.Dynamo, "TestMain")
@@ -50,7 +50,7 @@ func TestSendEvent(t *testing.T) {
 	rt.Config.InternetPort = 8180
 	rt.Config.InternalPort = 8181
 
-	server := courier.NewServer(rt)
+	server := web.NewServer(rt)
 	server.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/action": {
 			httpx.NewMockResponse(200, nil, []byte(`OK`)),

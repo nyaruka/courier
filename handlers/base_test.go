@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
+	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
@@ -42,10 +43,10 @@ func TestRequestHTTP(t *testing.T) {
 		},
 	})
 
-	server := courier.NewServer(rt)
+	server := web.NewServer(rt)
 
 	h := handlers.NewBaseHandler("NX", "Test")
-	h.SetServer(server)
+	h.SetRegistry(courier.NewRegistry(server.Runtime()))
 
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
 	resp, respBody, err := h.RequestHTTP(req, clog)

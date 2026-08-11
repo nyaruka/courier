@@ -1,19 +1,22 @@
-package courier
+package cmd
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 )
 
-func (s *Server) startMetricsReporter(interval time.Duration) {
-	s.waitGroup.Add(1)
+// startMetricsReporter reports our metrics to cloudwatch on the given interval until stopped
+func startMetricsReporter(rt *runtime.Runtime, interval time.Duration, stop chan bool, wg *sync.WaitGroup) {
+	wg.Add(1)
 
 	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments by
 	// tracking their previous values
@@ -21,7 +24,7 @@ func (s *Server) startMetricsReporter(interval time.Duration) {
 
 	report := func() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-		count, err := s.reportMetrics(ctx, &dbWaitDuration, &redisWaitDuration)
+		count, err := reportMetrics(ctx, rt, &dbWaitDuration, &redisWaitDuration)
 		cancel()
 		if err != nil {
 			slog.Error("error reporting metrics", "error", err)
@@ -33,12 +36,12 @@ func (s *Server) startMetricsReporter(interval time.Duration) {
 	go func() {
 		defer func() {
 			slog.Info("metrics reporter exiting")
-			s.waitGroup.Done()
+			wg.Done()
 		}()
 
 		for {
 			select {
-			case <-s.stopChan:
+			case <-stop:
 				report()
 				return
 			case <-time.After(interval):
@@ -48,15 +51,15 @@ func (s *Server) startMetricsReporter(interval time.Duration) {
 	}()
 }
 
-func (s *Server) reportMetrics(ctx context.Context, dbWaitDuration, redisWaitDuration *time.Duration) (int, error) {
-	if s.rt.Config.MetricsReporting == "off" {
+func reportMetrics(ctx context.Context, rt *runtime.Runtime, dbWaitDuration, redisWaitDuration *time.Duration) (int, error) {
+	if rt.Config.MetricsReporting == "off" {
 		return 0, nil
 	}
 
-	metrics := s.rt.Stats.Extract().ToMetrics(s.rt.Config.MetricsReporting == "advanced")
+	metrics := rt.Stats.Extract().ToMetrics(rt.Config.MetricsReporting == "advanced")
 
 	// get queue sizes
-	rc := s.rt.VK.Get()
+	rc := rt.VK.Get()
 	defer rc.Close()
 	active, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("%s:active", models.MsgQueueName), "0", "-1"))
 	if err != nil {
@@ -87,8 +90,8 @@ func (s *Server) reportMetrics(ctx context.Context, dbWaitDuration, redisWaitDur
 	}
 
 	// calculate DB and redis pool metrics
-	dbStats := s.rt.DB.Stats()
-	redisStats := s.rt.VK.Stats()
+	dbStats := rt.DB.Stats()
+	redisStats := rt.VK.Stats()
 	dbWaitDurationInPeriod := dbStats.WaitDuration - *dbWaitDuration
 	redisWaitDurationInPeriod := redisStats.WaitDuration - *redisWaitDuration
 	*dbWaitDuration = dbStats.WaitDuration
@@ -105,13 +108,13 @@ func (s *Server) reportMetrics(ctx context.Context, dbWaitDuration, redisWaitDur
 		cwatch.Datum("ValkeyConnectionsWaitDuration", float64(redisWaitDurationInPeriod)/float64(time.Second), cwtypes.StandardUnitSeconds),
 		cwatch.Datum("QueuedMsgs", float64(bulkSize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "bulk")),
 		cwatch.Datum("QueuedMsgs", float64(prioritySize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "priority")),
-		cwatch.Datum("DynamoSpooledItems", float64(s.rt.Spool.Size()), cwtypes.StandardUnitCount),
+		cwatch.Datum("DynamoSpooledItems", float64(rt.Spool.Size()), cwtypes.StandardUnitCount),
 		cwatch.Datum("PostgresSpooledItems", float64(msgSpoolSize), cwtypes.StandardUnitCount, cwatch.Dimension("SpoolName", "msgs")),
 		cwatch.Datum("PostgresSpooledItems", float64(statusSpoolSize), cwtypes.StandardUnitCount, cwatch.Dimension("SpoolName", "statuses")),
 		cwatch.Datum("PostgresSpooledItems", float64(eventSpoolSize), cwtypes.StandardUnitCount, cwatch.Dimension("SpoolName", "events")),
 	)
 
-	if err := s.rt.CW.Send(ctx, metrics...); err != nil {
+	if err := rt.CW.Send(ctx, metrics...); err != nil {
 		return 0, fmt.Errorf("error sending metrics: %w", err)
 	}
 

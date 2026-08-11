@@ -16,6 +16,7 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
@@ -385,7 +386,7 @@ func TestDescribeURN(t *testing.T) {
 	defer server.Close()
 
 	handler := newHandler()
-	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())))
+	web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(handler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 	urn, _ := urns.New(urns.Slack, "U012345")
 

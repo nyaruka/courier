@@ -1,15 +1,20 @@
 package cmd
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/core/sender"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/courier/v26/utils/queue"
+	"github.com/nyaruka/courier/v26/web"
 	slogmulti "github.com/samber/slog-multi"
 	slogsentry "github.com/samber/slog-sentry/v2"
 )
@@ -59,10 +64,35 @@ func Service(defaults *runtime.Config, version, date string) error {
 		return err
 	}
 
-	server := courier.NewServer(rt)
+	// log what we can and can't reach before we start doing anything with it
+	testConnections(rt)
+
+	if err := rt.Start(); err != nil {
+		return fmt.Errorf("error starting runtime: %w", err)
+	}
+
+	// start the caches, spools and batched writers used by the read and write paths
+	if err := models.Start(rt); err != nil {
+		return err
+	}
+
+	stop := make(chan bool)
+	wg := &sync.WaitGroup{}
+
+	// start our dethrottler if we are going to be doing some sending
+	if cfg.MaxWorkers > 0 {
+		queue.StartDethrottler(rt.VK, stop, wg, models.MsgQueueName)
+	}
+
+	startMetricsReporter(rt, time.Minute, stop, wg)
+
+	server := web.NewServer(rt)
 	if err := server.Start(); err != nil {
 		return err
 	}
+
+	foreman := sender.NewForeman(rt, cfg.MaxWorkers)
+	foreman.Start()
 
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
@@ -75,5 +105,20 @@ func Service(defaults *runtime.Config, version, date string) error {
 	})
 	defer watchdog.Stop()
 
-	return server.Stop()
+	// stop sending first so in-flight sends finish before the writers they depend on go away
+	foreman.Stop()
+
+	if err := server.Stop(); err != nil {
+		return err
+	}
+
+	// stop the dethrottler and metrics reporter
+	close(stop)
+	wg.Wait()
+
+	// stop the caches, spools and batched writers, then the runtime itself
+	models.Stop()
+	rt.Stop()
+
+	return nil
 }

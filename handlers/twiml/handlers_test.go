@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/assets"
@@ -1539,10 +1540,10 @@ func TestSendEvent(t *testing.T) {
 		},
 	)
 
-	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
+	s := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
 	h := newTWIMLHandler("TWA", "Twilio Whatsapp", true).(*handler)
-	h.Initialize(s)
+	s.MountHandler(h)
 
 	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://messaging.twilio.com/v3/Indicators/Typing.json": {

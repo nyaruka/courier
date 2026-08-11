@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/assets"
@@ -1046,10 +1047,10 @@ func TestSendEvent(t *testing.T) {
 		"base_url":   "https://waba-v2.360dialog.io",
 	})
 
-	s := courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
+	s := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
 	h := newWAHandler(models.ChannelType("D3C"), "360Dialog").(*handler)
-	h.Initialize(s)
+	s.MountHandler(h)
 
 	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://waba-v2.360dialog.io/messages": {
