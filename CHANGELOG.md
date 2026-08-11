@@ -1,3 +1,9 @@
+v26.3.32 (2026-08-11)
+-------------------------
+ * Stop using the same structs for incoming msg and channel event database rows and spool files
+ * Replace the Msg and ChannelEvent interfaces with their concrete types
+ * Replace the StatusUpdate and Contact interfaces with their concrete types
+
 v26.3.31 (2026-08-11)
 -------------------------
  * Fix Play Mobile incoming prefix stripping never being applied for channels loaded from the database
