@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -13,55 +12,17 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	filetype "github.com/h2non/filetype"
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
-	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/gocommon/dbutil"
-	"github.com/nyaruka/gocommon/urns"
 )
 
-// MsgIn is an incoming message which can be written to the database or marshaled to a spool file
-type MsgIn struct {
-	*models.MsgIn
-
-	// needed for queueing to mailroom
-	ChannelUUID_   models.ChannelUUID `json:"channel_uuid"`
-	URN_           urns.URN           `json:"urn"`
-	ContactName_   string             `json:"contact_name"`
-	URNAuthTokens_ map[string]string  `json:"auth_tokens"`
-	NewURN_        *models.NewURNSpec `json:"new_urn,omitempty"`
-	Payload_       json.RawMessage    `json:"payload,omitempty"`
-
-	channel   *models.Channel
-	duplicate bool
-}
-
-func (m *MsgIn) Channel() *models.Channel { return m.channel }
-func (m *MsgIn) URN() urns.URN            { return m.URN_ }
-
-func (m *MsgIn) WithAttachment(url string) courier.MsgIn {
-	m.Attachments_ = append(m.Attachments_, url)
-	return m
-}
-func (m *MsgIn) WithContactName(name string) courier.MsgIn { m.ContactName_ = name; return m }
-func (m *MsgIn) WithURNAuthTokens(tokens map[string]string) courier.MsgIn {
-	m.URNAuthTokens_ = tokens
-	return m
-}
-func (m *MsgIn) WithReceivedOn(date time.Time) courier.MsgIn { m.SentOn_ = &date; return m }
-func (m *MsgIn) WithNewURN(urn urns.URN, action models.NewURNAction) courier.MsgIn {
-	m.NewURN_ = &models.NewURNSpec{Value: urn, Action: action}
-	return m
-}
-func (m *MsgIn) WithPayload(payload json.RawMessage) courier.MsgIn { m.Payload_ = payload; return m }
-
-func (m *MsgIn) hash() string {
+func msgHash(m *models.MsgIn) string {
 	hash := sha1.Sum([]byte(m.Text_ + "|" + strings.Join(m.Attachments_, "|")))
 	return hex.EncodeToString(hash[:])
 }
 
 // WriteMsg creates a message given the passed in arguments
-func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *models.ChannelLog) error {
+func writeMsg(ctx context.Context, b *backend, m *models.MsgIn, clog *models.ChannelLog) error {
 	channel := m.Channel()
 
 	// check for data: attachment URLs which need to be fetched now - fetching of other URLs can be deferred until
@@ -103,7 +64,7 @@ func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *models.ChannelLog
 		// if we failed, log and write to spool
 		slog.Error("error writing to db", "error", err, "msg", m.UUID())
 
-		if err := b.msgSpool.Add([]*MsgIn{m}); err != nil {
+		if err := b.msgSpool.Add([]*models.MsgIn{m}); err != nil {
 			return fmt.Errorf("error writing msg to spool: %w", err)
 		}
 		return nil
@@ -120,7 +81,7 @@ func writeMsg(ctx context.Context, b *backend, m *MsgIn, clog *models.ChannelLog
 	return err
 }
 
-func writeMsgToDB(ctx context.Context, b *backend, m *MsgIn, clog *models.ChannelLog) (*models.Contact, error) {
+func writeMsgToDB(ctx context.Context, b *backend, m *models.MsgIn, clog *models.ChannelLog) (*models.Contact, error) {
 	contact, err := contactForMsg(ctx, b, m, clog)
 
 	if err != nil {
@@ -132,7 +93,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *MsgIn, clog *models.Channe
 	m.ContactID_ = contact.ID_
 	m.ContactURNID_ = contact.URNID_
 
-	if err := models.InsertIncomingMsg(ctx, b.rt.DB, m.MsgIn); err != nil {
+	if err := models.InsertIncomingMsg(ctx, b.rt.DB, m); err != nil {
 		return nil, fmt.Errorf("error inserting message: %w", err)
 	}
 
@@ -145,8 +106,8 @@ func writeMsgToDB(ctx context.Context, b *backend, m *MsgIn, clog *models.Channe
 
 // flushMsgs is the flush function for the msg spool - it retries writing spooled msgs to the database, returning
 // those that fail again so they're respooled
-func (b *backend) flushMsgs(ctx context.Context, batch []*MsgIn) ([]*MsgIn, error) {
-	var failed []*MsgIn
+func (b *backend) flushMsgs(ctx context.Context, batch []*models.MsgIn) ([]*models.MsgIn, error) {
+	var failed []*models.MsgIn
 
 	for _, m := range batch {
 		ctx, cancel := context.WithTimeout(ctx, time.Second*30)
@@ -162,16 +123,16 @@ func (b *backend) flushMsgs(ctx context.Context, batch []*MsgIn) ([]*MsgIn, erro
 	return failed, nil
 }
 
-func (b *backend) flushMsg(ctx context.Context, m *MsgIn) error {
+func (b *backend) flushMsg(ctx context.Context, m *models.MsgIn) error {
 	// look up our channel
 	channel, err := b.GetChannel(ctx, models.AnyChannelType, m.ChannelUUID_)
 	if err != nil {
 		return err
 	}
-	m.channel = channel
+	m.Channel_ = channel
 
 	// create log tho it won't be written
-	clog := courier.NewChannelLog(models.ChannelLogTypeMsgReceive, channel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeMsgReceive, channel, nil, nil)
 
 	// try to write it our db
 	contact, err := writeMsgToDB(ctx, b, m, clog)
@@ -199,7 +160,7 @@ func (b *backend) flushMsg(ctx context.Context, m *MsgIn) error {
 //-----------------------------------------------------------------------------
 
 // checks to see if this message has already been received and if so returns its UUID
-func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *MsgIn) models.MsgUUID {
+func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *models.MsgIn) models.MsgUUID {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
@@ -219,7 +180,7 @@ func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *MsgIn) models.
 			prevHash := uuidAndHash[37:]
 
 			// if it is the same hash, return the UUID
-			if prevHash == m.hash() {
+			if prevHash == msgHash(m) {
 				return models.MsgUUID(prevUUID)
 			}
 		}
@@ -229,7 +190,7 @@ func (b *backend) checkMsgAlreadyReceived(ctx context.Context, m *MsgIn) models.
 }
 
 // records that the given message has been received and written to the database
-func (b *backend) recordMsgReceived(ctx context.Context, m *MsgIn) {
+func (b *backend) recordMsgReceived(ctx context.Context, m *models.MsgIn) {
 	rc := b.rt.VK.Get()
 	defer rc.Close()
 
@@ -242,28 +203,17 @@ func (b *backend) recordMsgReceived(ctx context.Context, m *MsgIn) {
 	} else {
 		fingerprint := fmt.Sprintf("%s|%s", m.Channel().UUID(), m.URN().Identity())
 
-		if err := b.receivedMsgs.Set(ctx, rc, fingerprint, fmt.Sprintf("%s|%s", m.UUID(), m.hash())); err != nil {
+		if err := b.receivedMsgs.Set(ctx, rc, fingerprint, fmt.Sprintf("%s|%s", m.UUID(), msgHash(m))); err != nil {
 			slog.Error("error recording received msg", "msg", m.UUID(), "error", err)
 		}
 	}
 }
 
 // clearMsgSeen clears our seen incoming messages for the passed in channel and URN
-func (b *backend) clearMsgSeen(ctx context.Context, vc redis.Conn, m *MsgOut) {
+func (b *backend) clearMsgSeen(ctx context.Context, vc redis.Conn, m *models.MsgOut) {
 	fingerprint := fmt.Sprintf("%s|%s", m.Channel().UUID(), m.URN().Identity())
 
 	if err := b.receivedMsgs.Del(ctx, vc, fingerprint); err != nil {
 		slog.Error("error clearing received msgs", "urn", m.URN().Identity(), "error", err)
 	}
 }
-
-// MsgOut is an outgoing message which is popped from a queue and unmarshaled from JSON
-type MsgOut struct {
-	models.MsgOut
-
-	// extra fields set when popping
-	channel     *models.Channel
-	workerToken queue.WorkerToken
-}
-
-func (m *MsgOut) Channel() *models.Channel { return m.channel }

@@ -5,74 +5,29 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
-	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/null/v3"
 )
 
-// ChannelEvent wraps a models.ChannelEvent with the transient fields needed for spooling and queueing to mailroom
-type ChannelEvent struct {
-	*models.ChannelEvent
-
-	// needed for spool re-lookup of channel and for queueing to mailroom
-	ChannelUUID_ models.ChannelUUID `json:"channel_uuid"`
-
-	// used to update contact
-	ContactName_ string `json:"contact_name"`
-
-	channel *models.Channel
-}
-
-// newChannelEvent creates a new channel event
-func newChannelEvent(channel *models.Channel, eventType models.ChannelEventType, urn urns.URN, clog *models.ChannelLog) *ChannelEvent {
-	return &ChannelEvent{
-		ChannelEvent: models.NewChannelEvent(channel, eventType, urn, clog.UUID),
-		ChannelUUID_: channel.UUID_,
-		channel:      channel,
-	}
-}
-
-func (e *ChannelEvent) ChannelUUID() models.ChannelUUID { return e.ChannelUUID_ }
-func (e *ChannelEvent) Channel() *models.Channel        { return e.channel }
-
-func (e *ChannelEvent) WithContactName(name string) courier.ChannelEvent {
-	e.ContactName_ = name
-	return e
-}
-
-func (e *ChannelEvent) WithExtra(extra map[string]string) courier.ChannelEvent {
-	e.Extra_ = null.Map[string](extra)
-	return e
-}
-
-func (e *ChannelEvent) WithOccurredOn(time time.Time) courier.ChannelEvent {
-	e.OccurredOn_ = time
-	return e
-}
-
 // writeChannelEvent writes the passed in event to the database, queueing it to our spool in case the database is down
-func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEvent, clog *models.ChannelLog) error {
-	dbEvent := event.(*ChannelEvent)
-
-	err := writeChannelEventToDB(ctx, b, dbEvent, clog)
+func writeChannelEvent(ctx context.Context, b *backend, event *models.ChannelEvent, clog *models.ChannelLog) error {
+	err := writeChannelEventToDB(ctx, b, event, clog)
 
 	// failed writing, write to our spool instead
 	if err != nil {
-		slog.Error("error writing channel event to db", "error", err, "channel_id", dbEvent.ChannelID_, "event_type", dbEvent.EventType_)
+		slog.Error("error writing channel event to db", "error", err, "channel_id", event.ChannelID_, "event_type", event.EventType_)
 	}
 
 	if err != nil {
-		err = b.eventSpool.Add([]*ChannelEvent{dbEvent})
+		err = b.eventSpool.Add([]*models.ChannelEvent{event})
 	}
 
 	return err
 }
 
 // writeChannelEventToDB writes the passed in channel event to our db
-func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clog *models.ChannelLog) error {
+func writeChannelEventToDB(ctx context.Context, b *backend, e *models.ChannelEvent, clog *models.ChannelLog) error {
 	// grab the contact for this event
-	contact, err := contactForURN(ctx, b, e.OrgID_, e.channel, e.URN_, nil, e.ContactName_, true, clog)
+	contact, err := contactForURN(ctx, b, e.OrgID_, e.Channel_, e.URN_, nil, e.ContactName_, true, clog)
 	if err != nil {
 		return err
 	}
@@ -81,7 +36,7 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clo
 	e.ContactID_ = contact.ID_
 	e.ContactURNID_ = contact.URNID_
 
-	if err := models.InsertChannelEvent(ctx, b.rt.DB, e.ChannelEvent); err != nil {
+	if err := models.InsertChannelEvent(ctx, b.rt.DB, e); err != nil {
 		return err
 	}
 
@@ -99,8 +54,8 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clo
 
 // flushEvents is the flush function for the event spool - it retries writing spooled channel events to the database,
 // returning those that fail again so they're respooled
-func (b *backend) flushEvents(ctx context.Context, batch []*ChannelEvent) ([]*ChannelEvent, error) {
-	var failed []*ChannelEvent
+func (b *backend) flushEvents(ctx context.Context, batch []*models.ChannelEvent) ([]*models.ChannelEvent, error) {
+	var failed []*models.ChannelEvent
 
 	for _, event := range batch {
 		ctx, cancel := context.WithTimeout(ctx, time.Second*10)
@@ -116,16 +71,16 @@ func (b *backend) flushEvents(ctx context.Context, batch []*ChannelEvent) ([]*Ch
 	return failed, nil
 }
 
-func (b *backend) flushEvent(ctx context.Context, event *ChannelEvent) error {
+func (b *backend) flushEvent(ctx context.Context, event *models.ChannelEvent) error {
 	// look up our channel
 	channel, err := b.GetChannel(ctx, models.AnyChannelType, event.ChannelUUID_)
 	if err != nil {
 		return err
 	}
-	event.channel = channel
+	event.Channel_ = channel
 
 	// create log tho it won't be written
-	clog := courier.NewChannelLog(models.ChannelLogTypeMsgReceive, channel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeMsgReceive, channel, nil, nil)
 
 	// try to flush to our database
 	return writeChannelEventToDB(ctx, b, event, clog)

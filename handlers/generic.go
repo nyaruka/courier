@@ -31,7 +31,7 @@ func NewTelReceiveHandler(h courier.ChannelHandler, fromField string, bodyField 
 		}
 		// build our msg
 		msg := h.Backend().NewIncomingMsg(ctx, c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
-		return WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+		return WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 	}
 }
 

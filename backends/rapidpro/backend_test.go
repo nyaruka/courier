@@ -14,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gomodule/redigo/redis"
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
@@ -113,7 +112,7 @@ func (ts *BackendTestSuite) TestContact() {
 	testsuite.ResetDB(ts.T(), ts.b.rt)
 
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
 	urn := urns.URN("tel:+12065551518")
 
 	ctx := context.Background()
@@ -165,7 +164,7 @@ func (ts *BackendTestSuite) TestContact() {
 
 func (ts *BackendTestSuite) TestContactRace() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
 	urn := urns.URN("tel:+12065551518")
 
 	urnSleep = true
@@ -194,7 +193,7 @@ func (ts *BackendTestSuite) TestContactRace() {
 func (ts *BackendTestSuite) TestContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	fbChannel := ts.getChannel("FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
 	urn := urns.URN("tel:+12065551515")
 
 	ctx := context.Background()
@@ -306,7 +305,7 @@ func (ts *BackendTestSuite) TestContactURNMetadata() {
 	fbChannel := ts.getChannel("FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
 	knURN := urns.URN("tel:+12065551111")
 	fbURN := urns.URN("tel:+12065552222")
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
 
 	ctx := context.Background()
 
@@ -351,7 +350,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	now := time.Now().In(time.UTC)
 
 	updateStatusByUUID := func(uuid models.MsgUUID, status models.MsgStatus, newExtID string) *models.ChannelLog {
-		clog := courier.NewChannelLog(models.ChannelLogTypeMsgStatus, channel, nil)
+		clog := models.NewChannelLog(models.ChannelLogTypeMsgStatus, channel, nil, nil)
 		statusObj := ts.b.NewStatusUpdate(channel, uuid, status, clog)
 		if newExtID != "" {
 			statusObj.SetExternalIdentifier(newExtID)
@@ -363,7 +362,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	}
 
 	updateStatusByExtID := func(extID string, status models.MsgStatus) *models.ChannelLog {
-		clog := courier.NewChannelLog(models.ChannelLogTypeMsgStatus, channel, nil)
+		clog := models.NewChannelLog(models.ChannelLogTypeMsgStatus, channel, nil, nil)
 		statusObj := ts.b.NewStatusUpdateByExternalID(channel, extID, status, clog)
 		err := ts.b.WriteStatusUpdate(ctx, statusObj)
 		ts.NoError(err)
@@ -546,7 +545,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 func (ts *BackendTestSuite) TestMsgStatusSocketPublish() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(models.ChannelLogTypeMsgStatus, channel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeMsgStatus, channel, nil, nil)
 
 	ts.b.rt.Centrifugo.Client.(*centrifugo.MockClient).Clear()
 
@@ -590,7 +589,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(models.ChannelLogTypeMsgSend, channel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeMsgSend, channel, nil, nil)
 
 	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
@@ -634,9 +633,9 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	urn := urns.URN("tel:+12065551215")
 	urn2 := urns.URN("tel:+12065551277")
 
-	createAndWriteMsg := func(ch *models.Channel, u urns.URN, text, extID string) *MsgIn {
-		clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
-		m := ts.b.NewIncomingMsg(ctx, ch, u, text, extID, clog).(*MsgIn)
+	createAndWriteMsg := func(ch *models.Channel, u urns.URN, text, extID string) *models.MsgIn {
+		clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
+		m := ts.b.NewIncomingMsg(ctx, ch, u, text, extID, clog)
 		err := ts.b.WriteMsg(ctx, m, clog)
 		ts.NoError(err)
 		return m
@@ -729,7 +728,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.NoError(err)
 	ts.NotNil(msg)
 
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, msg.Channel(), nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, msg.Channel(), nil, nil)
 
 	// make sure it is the message we just added
 	ts.Equal(models.MsgUUID("0199df0f-9f82-7689-b02d-f34105991321"), msg.UUID())
@@ -878,7 +877,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	trace, _, err := utils.TraceHTTP(httpClient, req, 0)
 	ts.NoError(err)
 
-	clog1 := courier.NewChannelLog(models.ChannelLogTypeTokenRefresh, channel, nil)
+	clog1 := models.NewChannelLog(models.ChannelLogTypeTokenRefresh, channel, nil, nil)
 	clog1.HTTP(trace)
 	clog1.Error(models.ErrorResponseStatusCode())
 
@@ -900,7 +899,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.NotNil(dataGZ["http_logs"])
 	ts.Equal("https://api.messages.com/send.json", dataGZ["http_logs"].([]any)[0].(map[string]any)["url"])
 
-	clog2 := courier.NewChannelLog(models.ChannelLogTypeMsgSend, channel, nil)
+	clog2 := models.NewChannelLog(models.ChannelLogTypeMsgSend, channel, nil, nil)
 	clog2.HTTP(trace)
 
 	err = ts.b.WriteChannelLog(ctx, clog2)
@@ -919,12 +918,12 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 func (ts *BackendTestSuite) TestContactForMsg() {
 	ctx := context.Background()
 	waChannel := ts.getChannel("WAC", "dbc126ed-66bc-4e28-b67b-81dc33277a17")
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, waChannel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, waChannel, nil, nil)
 
 	// sender is the primary URN - a phone number, or a BSUID for a webhook with no phone number, in which case
 	// handlers attach no new URN
-	newWAMsg := func(sender, bsuid urns.URN) *MsgIn {
-		m := ts.b.NewIncomingMsg(ctx, waChannel, sender, "hi", "", clog).(*MsgIn)
+	newWAMsg := func(sender, bsuid urns.URN) *models.MsgIn {
+		m := ts.b.NewIncomingMsg(ctx, waChannel, sender, "hi", "", clog)
 		if bsuid != urns.NilURN {
 			m.WithNewURN(bsuid, models.NewURNAppend)
 		}
@@ -1035,14 +1034,14 @@ func (ts *BackendTestSuite) TestSaveAttachment() {
 func (ts *BackendTestSuite) TestWriteMsg() {
 	ctx := context.Background()
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
 
 	// have to round to microseconds because postgres can't store nanos
 	now := time.Now().Round(time.Microsecond).In(time.UTC)
 
 	// create a new courier msg
 	urn := urns.URN("tel:+12065551212")
-	msg1 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test-write", "ext123", clog).WithReceivedOn(now).WithContactName("test contact").(*MsgIn)
+	msg1 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test-write", "ext123", clog).WithReceivedOn(now).WithContactName("test contact")
 
 	// try to write it to our db
 	err := ts.b.WriteMsg(ctx, msg1, clog)
@@ -1052,7 +1051,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'test-write'`).Returns(1)
 
 	// trying to writing the same msg again should result in it getting the same UUID and not being actually written
-	msg2 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test-write", "ext123", clog).(*MsgIn)
+	msg2 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test-write", "ext123", clog)
 	err = ts.b.WriteMsg(ctx, msg2, clog)
 	ts.NoError(err)
 	ts.Equal(msg2.UUID(), msg1.UUID())
@@ -1093,24 +1092,24 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 
 	// waiting 5 seconds should let us write it successfully
 	time.Sleep(5 * time.Second)
-	msg3 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test-write", "", clog).(*MsgIn)
+	msg3 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test-write", "", clog)
 	ts.Greater(msg3.UUID(), msg1.UUID())
 
 	// msg with null bytes in it, that's fine for a request body
-	msg4 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test456\x00456", "ext456", clog).(*MsgIn)
+	msg4 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "test456\x00456", "ext456", clog)
 	_, err = writeMsgToDB(ctx, ts.b, msg4, clog)
 	ts.NoError(err)
 
 	// more null bytes
 	text, _ := url.PathUnescape("%1C%00%00%00%00%00%07%E0%00")
-	msg5 := ts.b.NewIncomingMsg(ctx, knChannel, urn, text, "", clog).(*MsgIn)
+	msg5 := ts.b.NewIncomingMsg(ctx, knChannel, urn, text, "", clog)
 	_, err = writeMsgToDB(ctx, ts.b, msg5, clog)
 	ts.NoError(err)
 
 	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	// check that msg is queued to mailroom for handling
-	msg6 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "hello 1 2 3", "", clog).(*MsgIn)
+	msg6 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "hello 1 2 3", "", clog)
 	err = ts.b.WriteMsg(ctx, msg6, clog)
 	ts.NoError(err)
 
@@ -1128,7 +1127,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	// check that msg with new_urn is queued with that field included
-	msg7 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "hello with new urn", "", clog).(*MsgIn)
+	msg7 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "hello with new urn", "", clog)
 	msg7.WithNewURN(urns.URN("tel:+12065559999"), models.NewURNAppend)
 	err = ts.b.WriteMsg(ctx, msg7, clog)
 	ts.NoError(err)
@@ -1148,7 +1147,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	// check that msg with payload is queued with that field included
-	msg8 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "hello with payload", "", clog).(*MsgIn)
+	msg8 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "hello with payload", "", clog)
 	msg8.WithPayload(json.RawMessage(`{"first_name": "Bob", "age": 32}`))
 	err = ts.b.WriteMsg(ctx, msg8, clog)
 	ts.NoError(err)
@@ -1173,10 +1172,10 @@ func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
 	uuids.SetGenerator(uuids.NewSeededGenerator(1234, time.Now))
 
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
 	urn := urns.URN("tel:+12065551218")
 
-	msg1 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "two regular attachments", "", clog).(*MsgIn)
+	msg1 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "two regular attachments", "", clog)
 	msg1.WithAttachment("http://example.com/test.jpg")
 	msg1.WithAttachment("http://example.com/test.m4a")
 
@@ -1186,7 +1185,7 @@ func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
 	ts.Equal([]string{"http://example.com/test.jpg", "http://example.com/test.m4a"}, msg1.Attachments())
 
 	// try an embedded attachment
-	msg2 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "embedded attachment data", "", clog).(*MsgIn)
+	msg2 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "embedded attachment data", "", clog)
 	msg2.WithAttachment(fmt.Sprintf("data:%s", base64.StdEncoding.EncodeToString(test.ReadFile("../../test/testdata/test.jpg"))))
 
 	// should have actually fetched and saved it to storage, with the correct content type
@@ -1195,14 +1194,14 @@ func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
 	ts.Equal([]string{"image/jpeg:http://localstack:4566/test-attachments/attachments/1/f879/21a1/f87921a1-0484-4660-9955-f9b28b006b78.jpg"}, msg2.Attachments())
 
 	// try an invalid embedded attachment
-	msg3 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "invalid embedded attachment data", "", clog).(*MsgIn)
+	msg3 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "invalid embedded attachment data", "", clog)
 	msg3.WithAttachment("data:34564363576573573")
 
 	err = ts.b.WriteMsg(ctx, msg3, clog)
 	ts.EqualError(err, "unable to decode attachment data: illegal base64 data at input byte 16")
 
 	// try a geo attachment
-	msg4 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "geo attachment", "", clog).(*MsgIn)
+	msg4 := ts.b.NewIncomingMsg(ctx, knChannel, urn, "geo attachment", "", clog)
 	msg4.WithAttachment("geo:123.234,-45.676")
 
 	// should be saved as is
@@ -1213,14 +1212,14 @@ func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
 
 func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 	exChannel := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327100a")
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, exChannel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, exChannel, nil, nil)
 	ctx := context.Background()
 
 	// have to round to microseconds because postgres can't store nanos
 	now := time.Now().Round(time.Microsecond).In(time.UTC)
 
 	urn := urns.URN("tel:+12065552020")
-	msg := ts.b.NewIncomingMsg(ctx, exChannel, urn, "test123", "ext123", clog).WithReceivedOn(now).WithContactName("test contact").(*MsgIn)
+	msg := ts.b.NewIncomingMsg(ctx, exChannel, urn, "test123", "ext123", clog).WithReceivedOn(now).WithContactName("test contact")
 
 	// try to write it to our db
 	err := ts.b.WriteMsg(ctx, msg, clog)
@@ -1247,7 +1246,7 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 func (ts *BackendTestSuite) TestChannelEvent() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, nil)
 	urn := urns.URN("tel:+12065551616")
 
 	event := ts.b.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithExtra(map[string]string{"ref_id": "12345"}).WithContactName("kermit frog")
@@ -1302,7 +1301,7 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 		"session_modified_on": "2025-01-28T20:43:34.157379218Z"
 	}`
 
-	msg := &MsgOut{}
+	msg := &models.MsgOut{}
 	jsonx.MustUnmarshal([]byte(msgJSON), msg)
 
 	err := ts.b.insertTimeoutFire(ctx, msg)
@@ -1332,7 +1331,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	testsuite.ResetValkey(ts.T(), ts.b.rt)
 
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, nil)
 	urn := urns.URN("tel:+12065551616")
 
 	// ensure contact exists before event write so new_contact is false
@@ -1520,7 +1519,7 @@ func (ts *BackendTestSuite) assertQueuedContactTask(contactID models.ContactID, 
 func (ts *BackendTestSuite) TestSpools() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, nil)
 	urn := urns.URN("tel:+12065552222")
 
 	// drain anything left over from previous runs so we can assert absolute sizes, and delete whatever those
@@ -1532,8 +1531,8 @@ func (ts *BackendTestSuite) TestSpools() {
 	ts.b.rt.DB.MustExec(`DELETE FROM channels_channelevent WHERE extra::jsonb->>'ref_id' = 'spool-flush'`)
 
 	// spool an incoming msg as if the database had been down when it was received
-	msg := ts.b.NewIncomingMsg(ctx, channel, urn, "spool-flush-test", "spool-ext1", clog).(*MsgIn)
-	ts.NoError(ts.b.msgSpool.Add([]*MsgIn{msg}))
+	msg := ts.b.NewIncomingMsg(ctx, channel, urn, "spool-flush-test", "spool-ext1", clog)
+	ts.NoError(ts.b.msgSpool.Add([]*models.MsgIn{msg}))
 	ts.Equal(1, ts.b.msgSpool.Size())
 
 	// flushing should write it to the database and queue it for handling
@@ -1542,7 +1541,7 @@ func (ts *BackendTestSuite) TestSpools() {
 	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'spool-flush-test'`).Returns(1)
 
 	// flushing a replayed copy of the same msg is deduped by its unique violation rather than failed
-	ts.NoError(ts.b.msgSpool.Add([]*MsgIn{msg}))
+	ts.NoError(ts.b.msgSpool.Add([]*models.MsgIn{msg}))
 	ts.NoError(ts.b.msgSpool.Flush())
 	ts.Equal(0, ts.b.msgSpool.Size())
 	assertdb.Query(ts.T(), ts.b.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'spool-flush-test'`).Returns(1)
@@ -1564,8 +1563,8 @@ func (ts *BackendTestSuite) TestSpools() {
 	ts.Equal(0, ts.b.statusSpool.Size())
 
 	// spool a channel event
-	event := ts.b.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithExtra(map[string]string{"ref_id": "spool-flush"}).(*ChannelEvent)
-	ts.NoError(ts.b.eventSpool.Add([]*ChannelEvent{event}))
+	event := ts.b.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithExtra(map[string]string{"ref_id": "spool-flush"})
+	ts.NoError(ts.b.eventSpool.Add([]*models.ChannelEvent{event}))
 	ts.Equal(1, ts.b.eventSpool.Size())
 
 	ts.NoError(ts.b.eventSpool.Flush())

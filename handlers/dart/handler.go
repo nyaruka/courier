@@ -89,7 +89,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	msg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Message, form.MessageID, clog)
 
 	// and finally queue our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
 type statusForm struct {
@@ -141,13 +141,13 @@ func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.Respons
 }
 
 // DartMedia expects "000" from a status request
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.MsgIn) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")
 	return err
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	if username == "" || password == "" {

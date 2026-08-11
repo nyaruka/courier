@@ -60,7 +60,7 @@ type mtResponse struct {
 	Description string `xml:"description"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	publicKey := msg.Channel().StringConfigForKey(configPublicKey, "")
 	privateKey := msg.Channel().StringConfigForKey(configPrivateKey, "")
 	instanceId := msg.Channel().IntConfigForKey(configInstanceId, -1)

@@ -96,7 +96,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	dbMsg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Msg, "", clog).WithReceivedOn(date).WithContactName(form.Name).WithURNAuthTokens(authTokens)
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{dbMsg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{dbMsg}, w, r, clog)
 }
 
 type registerForm struct {
@@ -169,7 +169,7 @@ type mtNotification struct {
 	Body  string `json:"body"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
 	credentialsJSONRaw := msg.Channel().ConfigForKey(configCredentialsFile, nil)
 	credentialsJSON, _ := credentialsJSONRaw.(map[string]any)

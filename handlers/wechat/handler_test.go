@@ -234,7 +234,7 @@ func TestDescribeURN(t *testing.T) {
 	s := newServer(mb)
 	handler := newHandler().(*handler)
 	handler.Initialize(s)
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 
 	tcs := []struct {
 		urn              urns.URN
@@ -271,7 +271,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	})
 	handler := newHandler().(*handler)
 	handler.Initialize(s)
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 
 	// check that request has the fetched access token
 	req, err := handler.BuildAttachmentRequest(context.Background(), testChannels[0], "https://api.weixin.qq.com/cgi-bin/media/download.action?media_id=12", clog)
@@ -308,7 +308,7 @@ func TestFetchAccessTokenThrottled(t *testing.T) {
 	})
 	handler := newHandler().(*handler)
 	handler.Initialize(s)
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 
 	// a rate limited token fetch is throttling rather than an empty token
 	_, _, err := handler.fetchAccessToken(testChannels[0], clog)
@@ -460,7 +460,7 @@ func TestSendEvent(t *testing.T) {
 	typing := events.NewTypingStarted(events.DirectionOutgoing, channelRef, "wechat:abcde12345", "")
 
 	// a typing started event is sent as a Typing command
-	clog := courier.NewChannelLogForEventSend(ch, nil)
+	clog := models.NewChannelLogForEventSend(ch, nil)
 	err := h.SendEvent(context.Background(), ch, typing, clog)
 	assert.NoError(t, err)
 	assert.Len(t, clog.HttpLogs, 1)

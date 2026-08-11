@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
@@ -13,7 +12,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-func GetMsgPayloads(ctx context.Context, msg courier.MsgOut, maxMsgLength int, clog *models.ChannelLog) ([]SendRequest, error) {
+func GetMsgPayloads(ctx context.Context, msg *models.MsgOut, maxMsgLength int, clog *models.ChannelLog) ([]SendRequest, error) {
 	if msg.Templating() != nil {
 		return []SendRequest{newBasePayload(msg).withTemplate(msg.Templating())}, nil
 	}
@@ -31,7 +30,7 @@ func RecipientFields(urn urns.URN) (to, recipient string) {
 }
 
 // newBasePayload creates a SendRequest with common fields populated.
-func newBasePayload(msg courier.MsgOut) SendRequest {
+func newBasePayload(msg *models.MsgOut) SendRequest {
 	request := SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual"}
 	request.To, request.Recipient = RecipientFields(msg.URN())
 	return request
@@ -48,7 +47,7 @@ func (p SendRequest) withTemplate(templating *models.Templating) SendRequest {
 const maxCaptionAndBodyLength = 1024
 
 // buildContentPayloads constructs payloads for a non-template message with text, attachments, and quick replies.
-func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *models.ChannelLog) ([]SendRequest, error) {
+func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.ChannelLog) ([]SendRequest, error) {
 	sqrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm, models.QuickReplyTypeURL)
 	qrs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeText)
 	locationQRs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeLocation)
@@ -141,7 +140,7 @@ func buildContentPayloads(msg courier.MsgOut, maxMsgLength int, clog *models.Cha
 	return payloads, nil
 }
 
-func splitText(msg courier.MsgOut, maxMsgLength int) []string {
+func splitText(msg *models.MsgOut, maxMsgLength int) []string {
 	if msg.Text() != "" {
 		return handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	}
@@ -161,14 +160,14 @@ func hasURLPreview(text string) bool {
 	return strings.Contains(text, "https://") || strings.Contains(text, "http://")
 }
 
-func buildTextPayload(msg courier.MsgOut, body string) SendRequest {
+func buildTextPayload(msg *models.MsgOut, body string) SendRequest {
 	p := newBasePayload(msg)
 	p.Type = "text"
 	p.Text = &Text{Body: body, PreviewURL: hasURLPreview(body)}
 	return p
 }
 
-func buildMediaPayload(msg courier.MsgOut, attachmentIdx int, caption string) (SendRequest, error) {
+func buildMediaPayload(msg *models.MsgOut, attachmentIdx int, caption string) (SendRequest, error) {
 	p := newBasePayload(msg)
 	attType, attURL := handlers.SplitAttachment(msg.Attachments()[attachmentIdx])
 	attType = strings.Split(attType, "/")[0]
@@ -196,7 +195,7 @@ func buildMediaPayload(msg courier.MsgOut, attachmentIdx int, caption string) (S
 	return p, nil
 }
 
-func buildLocationRequestPayload(msg courier.MsgOut, body string) SendRequest {
+func buildLocationRequestPayload(msg *models.MsgOut, body string) SendRequest {
 	p := newBasePayload(msg)
 	p.Type = "interactive"
 	interactive := Interactive{Type: "location_request_message", Body: struct {
@@ -207,7 +206,7 @@ func buildLocationRequestPayload(msg courier.MsgOut, body string) SendRequest {
 	return p
 }
 
-func buildFlowPayload(msg courier.MsgOut, body string, qr models.QuickReply) SendRequest {
+func buildFlowPayload(msg *models.MsgOut, body string, qr models.QuickReply) SendRequest {
 	p := newBasePayload(msg)
 	p.Type = "interactive"
 	interactive := Interactive{Type: "flow", Body: struct {
@@ -221,7 +220,7 @@ func buildFlowPayload(msg courier.MsgOut, body string, qr models.QuickReply) Sen
 	return p
 }
 
-func buildCTAURLPayload(msg courier.MsgOut, body string, qr models.QuickReply) SendRequest {
+func buildCTAURLPayload(msg *models.MsgOut, body string, qr models.QuickReply) SendRequest {
 	p := newBasePayload(msg)
 	p.Type = "interactive"
 	interactive := Interactive{Type: "cta_url", Body: struct {
@@ -245,7 +244,7 @@ func buildButtons(qrs []models.QuickReply) []Button {
 	return btns
 }
 
-func buildButtonPayload(msg courier.MsgOut, body string, qrs []models.QuickReply, useAttachmentHeader bool) ([]SendRequest, error) {
+func buildButtonPayload(msg *models.MsgOut, body string, qrs []models.QuickReply, useAttachmentHeader bool) ([]SendRequest, error) {
 	var payloads []SendRequest
 	p := newBasePayload(msg)
 	p.Type = "interactive"
@@ -281,7 +280,7 @@ func buildButtonPayload(msg courier.MsgOut, body string, qrs []models.QuickReply
 	return payloads, nil
 }
 
-func buildListPayload(msg courier.MsgOut, body string, qrs []models.QuickReply, menuButton string) SendRequest {
+func buildListPayload(msg *models.MsgOut, body string, qrs []models.QuickReply, menuButton string) SendRequest {
 	p := newBasePayload(msg)
 	p.Type = "interactive"
 

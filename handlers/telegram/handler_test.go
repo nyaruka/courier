@@ -1268,7 +1268,7 @@ func TestSendEvent(t *testing.T) {
 
 	typing := events.NewTypingStarted(events.DirectionOutgoing, assets.NewChannelReference("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "Telegram"), "telegram:12345", "")
 
-	clog := courier.NewChannelLogForEventSend(ch, nil)
+	clog := models.NewChannelLogForEventSend(ch, nil)
 	err := h.SendEvent(context.Background(), ch, typing, clog)
 	assert.NoError(t, err)
 	assert.Len(t, clog.HttpLogs, 1)

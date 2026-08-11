@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers/meta/whatsapp"
 	"github.com/nyaruka/courier/v26/test"
@@ -450,15 +449,12 @@ func TestGetMsgPayloads(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.label, func(t *testing.T) {
 			// Create mock message
-			mockMsg := test.NewMockMsg("87995844-2017-4ba0-bc73-f3da75b32f9b", channel, tc.urn, tc.text, tc.attachments)
-			mockMsg.SetQuickReplies(tc.quickReplies)
-			var msg courier.MsgOut = mockMsg
-			if tc.locale != "" {
-				msg = mockMsg.WithLocale(tc.locale)
-			}
+			msg := test.NewMockMsg("87995844-2017-4ba0-bc73-f3da75b32f9b", channel, tc.urn, tc.text, tc.attachments)
+			msg.QuickReplies_ = tc.quickReplies
+			msg.Locale_ = tc.locale
 
 			// Create channel log
-			clog := courier.NewChannelLogForSend(msg, nil)
+			clog := models.NewChannelLogForSend(msg, nil)
 
 			// Call GetMsgPayloads
 			payloads, err := whatsapp.GetMsgPayloads(ctx, msg, maxMsgLength, clog)

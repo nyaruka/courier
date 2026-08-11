@@ -72,7 +72,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	var msg courier.MsgIn
+	var msg *models.MsgIn
 
 	if form.Type == "sms" {
 		msg = h.Backend().NewIncomingMsg(ctx, channel, urn, form.Message, "", clog)
@@ -85,7 +85,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown message type: %s", form.Type))
 	}
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
 // guid: thinQ guid returned when an outbound message is sent via our API
@@ -136,7 +136,7 @@ type mtMessage struct {
 	Message string `json:"message"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
 	tokenUser := msg.Channel().StringConfigForKey(configAPITokenUser, "")
 	token := msg.Channel().StringConfigForKey(configAPIToken, "")

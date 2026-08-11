@@ -27,7 +27,7 @@ type ChannelHandler interface {
 	UseChannelRouteUUID() bool
 	RedactValues(*models.Channel) []string
 	GetChannel(context.Context, *http.Request) (*models.Channel, error)
-	Send(context.Context, MsgOut, *SendResult, *models.ChannelLog) error
+	Send(context.Context, *models.MsgOut, *SendResult, *models.ChannelLog) error
 
 	// SendableEvents returns the engine event types (e.g. typing_started) that can be sent to the
 	// given channel's platform, mapped to how often each should be resent to sustain its effect (zero if
@@ -36,7 +36,7 @@ type ChannelHandler interface {
 	SendEvent(context.Context, *models.Channel, events.Event, *models.ChannelLog) error
 
 	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []*models.StatusUpdate) error
-	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []MsgIn) error
+	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []*models.MsgIn) error
 	WriteRequestError(context.Context, http.ResponseWriter, error) error
 	WriteRequestIgnored(context.Context, http.ResponseWriter, string) error
 }

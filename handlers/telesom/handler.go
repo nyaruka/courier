@@ -63,11 +63,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	dbMsg := h.Backend().NewIncomingMsg(ctx, channel, urn, form.Message, "", clog)
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{dbMsg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{dbMsg}, w, r, clog)
 
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	privateKey := msg.Channel().StringConfigForKey(models.ConfigSecret, "")

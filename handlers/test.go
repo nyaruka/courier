@@ -178,7 +178,7 @@ func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler cour
 
 			if tc.ExpectedMsgText != nil || tc.ExpectedAttachments != nil {
 				require.Len(mb.WrittenMsgs(), 1, "expected a msg to be written")
-				msg := mb.WrittenMsgs()[0].(*test.MockMsg)
+				msg := mb.WrittenMsgs()[0]
 
 				if tc.ExpectedMsgText != nil {
 					assert.Equal(t, *tc.ExpectedMsgText, msg.Text())
@@ -187,9 +187,9 @@ func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler cour
 					assert.Equal(t, tc.ExpectedAttachments, msg.Attachments())
 				}
 				if tc.ExpectedPayload != "" {
-					assert.JSONEq(t, tc.ExpectedPayload, string(msg.Payload()))
+					assert.JSONEq(t, tc.ExpectedPayload, string(msg.Payload_))
 				} else {
-					assert.Nil(t, msg.Payload())
+					assert.Nil(t, msg.Payload_)
 				}
 				if !tc.ExpectedDate.IsZero() {
 					assert.Equal(t, tc.ExpectedDate.Local(), msg.ReceivedOn().Local())
@@ -237,11 +237,11 @@ func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler cour
 			}
 
 			if tc.ExpectedMsgText != nil || tc.ExpectedAttachments != nil {
-				msg := mb.WrittenMsgs()[0].(*test.MockMsg)
+				msg := mb.WrittenMsgs()[0]
 				if tc.ExpectedNewURN != nil {
-					assert.Equal(t, tc.ExpectedNewURN, msg.NewURN(), "new URN mismatch")
+					assert.Equal(t, tc.ExpectedNewURN, msg.NewURN_, "new URN mismatch")
 				} else {
-					assert.Nil(t, msg.NewURN(), "unexpected new URN on message")
+					assert.Nil(t, msg.NewURN_, "unexpected new URN on message")
 				}
 			}
 
@@ -278,7 +278,7 @@ func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler cour
 }
 
 // SendPrepFunc allows test cases to modify the channel, msg or server before a message is sent
-type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, *models.Channel, courier.MsgOut)
+type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, *models.Channel, *models.MsgOut)
 
 type ExpectedRequest struct {
 	Headers      map[string]string
@@ -344,30 +344,28 @@ type OutgoingTestCase struct {
 }
 
 // Msg creates the test message for this test case
-func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch *models.Channel) courier.MsgOut {
+func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch *models.Channel) *models.MsgOut {
 	msgOrigin := models.MsgOriginFlow
 	if tc.MsgOrigin != "" {
 		msgOrigin = tc.MsgOrigin
 	}
 
 	c := &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc", LastSeenOn: tc.MsgContactLastSeenOn, OtherURNs: tc.MsgContactOtherURNs}
-	m := mb.NewOutgoingMsg(ch, "0191e180-7d60-7000-aded-7d8b151cbd5b", c, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgResponseToExternalID, msgOrigin).(*test.MockMsg)
-	m.WithLocale(tc.MsgLocale)
-	m.WithUserID(tc.MsgUserID)
+	m := mb.NewOutgoingMsg(ch, "0191e180-7d60-7000-aded-7d8b151cbd5b", c, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgResponseToExternalID, msgOrigin)
+	m.Locale_ = tc.MsgLocale
+	m.UserID_ = tc.MsgUserID
+	m.Attachments_ = append(m.Attachments_, tc.MsgAttachments...)
 
-	for _, a := range tc.MsgAttachments {
-		m.WithAttachment(a)
-	}
 	if tc.MsgURNAuth != "" {
-		m.WithURNAuth(tc.MsgURNAuth)
+		m.URNAuth_ = tc.MsgURNAuth
 	}
 	if tc.MsgTemplating != "" {
 		templating := &models.Templating{}
 		jsonx.MustUnmarshal([]byte(tc.MsgTemplating), templating)
-		m.WithTemplating(templating)
+		m.Templating_ = templating
 	}
 	if tc.MsgFlow != nil {
-		m.WithFlow(tc.MsgFlow)
+		m.Flow_ = tc.MsgFlow
 	}
 	return m
 }
@@ -405,7 +403,7 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler courier
 				rt.HTTP.Transport = mockHTTP
 			}
 
-			clog := courier.NewChannelLogForSend(msg, handler.RedactValues(channel))
+			clog := models.NewChannelLogForSend(msg, handler.RedactValues(channel))
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 
 			res := &courier.SendResult{}

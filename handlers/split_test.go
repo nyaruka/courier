@@ -3,7 +3,6 @@ package handlers_test
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -15,7 +14,7 @@ func TestSplitMsg(t *testing.T) {
 	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US", []string{urns.Phone.Prefix}, nil)
 
 	tcs := []struct {
-		msg           courier.MsgOut
+		msg           *models.MsgOut
 		opts          handlers.SplitOptions
 		expectedParts []handlers.MsgPart
 	}{

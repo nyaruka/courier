@@ -384,7 +384,7 @@ func TestDescribeURN(t *testing.T) {
 
 	handler := newHandler()
 	handler.Initialize(courier.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()), test.NewMockBackend()))
-	clog := courier.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 	urn, _ := urns.New(urns.VK, "123456789")
 	data := map[string]string{"name": "John Doe"}
 
@@ -669,7 +669,7 @@ func TestSendEvent(t *testing.T) {
 	typing := events.NewTypingStarted(events.DirectionOutgoing, channelRef, "vk:123456789", "")
 
 	// a typing started event is sent as a typing activity
-	clog := courier.NewChannelLogForEventSend(ch, nil)
+	clog := models.NewChannelLogForEventSend(ch, nil)
 	err := h.SendEvent(context.Background(), ch, typing, clog)
 	assert.NoError(t, err)
 	assert.Len(t, clog.HttpLogs, 1)

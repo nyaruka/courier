@@ -38,6 +38,12 @@ type ChannelEvent struct {
 	ContactID_    ContactID        `db:"contact_id"         json:"-"`
 	ContactURNID_ ContactURNID     `db:"contact_urn_id"     json:"-"`
 	LogUUIDs      pq.StringArray   `db:"log_uuids"          json:"log_uuids"`
+
+	// not stored on the event itself but included in spool files and needed for queueing to mailroom
+	ChannelUUID_ ChannelUUID `db:"-" json:"channel_uuid"`
+	ContactName_ string      `db:"-" json:"contact_name"`
+
+	Channel_ *Channel `db:"-" json:"-"`
 }
 
 // NewChannelEvent creates a new channel event for the given channel and event type
@@ -50,6 +56,9 @@ func NewChannelEvent(channel *Channel, eventType ChannelEventType, urn urns.URN,
 		EventType_:  eventType,
 		OccurredOn_: time.Now().In(time.UTC),
 		LogUUIDs:    pq.StringArray{string(clogUUID)},
+
+		ChannelUUID_: channel.UUID(),
+		Channel_:     channel,
 	}
 }
 
@@ -57,10 +66,19 @@ func (e *ChannelEvent) EventUUID() uuids.UUID       { return uuids.UUID(e.UUID_)
 func (e *ChannelEvent) UUID() ChannelEventUUID      { return e.UUID_ }
 func (e *ChannelEvent) OrgID() OrgID                { return e.OrgID_ }
 func (e *ChannelEvent) ChannelID() ChannelID        { return e.ChannelID_ }
+func (e *ChannelEvent) ChannelUUID() ChannelUUID    { return e.ChannelUUID_ }
+func (e *ChannelEvent) Channel() *Channel           { return e.Channel_ }
 func (e *ChannelEvent) URN() urns.URN               { return e.URN_ }
 func (e *ChannelEvent) EventType() ChannelEventType { return e.EventType_ }
 func (e *ChannelEvent) Extra() map[string]string    { return e.Extra_ }
 func (e *ChannelEvent) OccurredOn() time.Time       { return e.OccurredOn_ }
+
+func (e *ChannelEvent) WithContactName(name string) *ChannelEvent { e.ContactName_ = name; return e }
+func (e *ChannelEvent) WithExtra(extra map[string]string) *ChannelEvent {
+	e.Extra_ = null.Map[string](extra)
+	return e
+}
+func (e *ChannelEvent) WithOccurredOn(t time.Time) *ChannelEvent { e.OccurredOn_ = t; return e }
 
 const sqlInsertChannelEvent = `
 INSERT INTO

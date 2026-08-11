@@ -1,4 +1,4 @@
-package courier_test
+package models_test
 
 import (
 	"errors"
@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/utils"
@@ -30,7 +29,7 @@ func TestChannelLog(t *testing.T) {
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 
 	channel := test.NewMockChannel("fef91e9b-a6ed-44fb-b6ce-feed8af585a8", "NX", "1234", "US", []string{urns.Phone.Prefix}, nil)
-	clog := courier.NewChannelLog(models.ChannelLogTypeTokenRefresh, channel, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeTokenRefresh, channel, nil, nil)
 
 	// make a request that will have a response
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)

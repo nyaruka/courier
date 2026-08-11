@@ -121,7 +121,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		return nil, err
 	}
 
-	msgs := []courier.MsgIn{}
+	msgs := []*models.MsgIn{}
 
 	for _, lineEvent := range payload.Events {
 		if lineEvent.ReplyToken == "" || (lineEvent.Source.Type == "" && lineEvent.Source.UserID == "") || (lineEvent.Message.Type == "" && lineEvent.Message.ID == "") {
@@ -331,7 +331,7 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 	return nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
 		return courier.ErrChannelConfig

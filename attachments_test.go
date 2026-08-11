@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -52,7 +53,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 	mb.AddChannel(mockChannel)
 
-	clog := courier.NewChannelLogForAttachmentFetch(mockChannel, []string{"sesame"})
+	clog := models.NewChannelLogForAttachmentFetch(mockChannel, []string{"sesame"})
 
 	att, err := courier.FetchAndStoreAttachment(ctx, rt, mb, mockChannel, "http://mock.com/media/hello.jpg", clog)
 	assert.NoError(t, err)
@@ -129,7 +130,7 @@ func TestFetchAndStoreAttachmentAccessDenied(t *testing.T) {
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 	mb.AddChannel(mockChannel)
 
-	clog := courier.NewChannelLogForAttachmentFetch(mockChannel, nil)
+	clog := models.NewChannelLogForAttachmentFetch(mockChannel, nil)
 
 	// a request denied by the SSRF blocklist should yield an "unavailable" attachment rather than an error
 	att, err := courier.FetchAndStoreAttachment(ctx, rt, mb, mockChannel, "http://127.0.0.1/media/blocked.jpg", clog)

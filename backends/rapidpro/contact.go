@@ -167,29 +167,29 @@ func contactForURN(ctx context.Context, b *backend, org models.OrgID, channel *m
 // (see https://developers.facebook.com/documentation/business-messaging/whatsapp/business-scoped-user-ids/) is
 // reused rather than duplicated. In that case the phone number is added to the matched contact so the message is
 // still attributed to it as the primary URN.
-func contactForMsg(ctx context.Context, b *backend, m *MsgIn, clog *models.ChannelLog) (*models.Contact, error) {
+func contactForMsg(ctx context.Context, b *backend, m *models.MsgIn, clog *models.ChannelLog) (*models.Contact, error) {
 	altURN := altLookupURN(m)
 
 	// simple case: no alternative URN to consider, look up or create by the primary URN
 	if altURN == urns.NilURN {
-		return contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
+		return contactForURN(ctx, b, m.OrgID_, m.Channel_, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 	}
 
 	// try the primary URN first, without creating a contact
-	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, false, clog)
+	contact, err := contactForURN(ctx, b, m.OrgID_, m.Channel_, m.URN_, m.URNAuthTokens_, m.ContactName_, false, clog)
 	if err != nil || contact != nil {
 		return contact, err
 	}
 
 	// the primary URN didn't match an existing contact, try the alternative
-	contact, err = contactForURN(ctx, b, m.OrgID_, m.channel, altURN, nil, "", false, clog)
+	contact, err = contactForURN(ctx, b, m.OrgID_, m.Channel_, altURN, nil, "", false, clog)
 	if err != nil {
 		return nil, err
 	}
 	if contact != nil {
 		// matched an existing contact by the BSUID - add the primary URN to it so the message stays attributed to
 		// the primary URN
-		added, err := addContactURN(ctx, b, m.channel, contact, m.URN_, m.URNAuthTokens_)
+		added, err := addContactURN(ctx, b, m.Channel_, contact, m.URN_, m.URNAuthTokens_)
 		if err != nil {
 			return nil, err
 		}
@@ -201,13 +201,13 @@ func contactForMsg(ctx context.Context, b *backend, m *MsgIn, clog *models.Chann
 	}
 
 	// no existing contact matched either URN, create one from the primary URN
-	return contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
+	return contactForURN(ctx, b, m.OrgID_, m.Channel_, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 }
 
 // altLookupURN returns an alternative URN to look up an existing contact by when the message's primary URN doesn't
 // match one: for a message from a WhatsApp phone number with a business-scoped user ID attached as its new URN,
 // that's the BSUID.
-func altLookupURN(m *MsgIn) urns.URN {
+func altLookupURN(m *models.MsgIn) urns.URN {
 	if m.NewURN_ != nil && m.URN_.Scheme() == urns.WhatsApp.Prefix && urns.IsWhatsAppBSUID(m.NewURN_.Value) {
 		return m.NewURN_.Value
 	}

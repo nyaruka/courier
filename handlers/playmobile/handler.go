@@ -107,7 +107,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "no messages, ignored")
 	}
 
-	msgs := make([]courier.MsgIn, 0, 1)
+	msgs := make([]*models.MsgIn, 0, 1)
 
 	// parse each inbound message
 	for _, pmMsg := range payload.Message {
@@ -150,7 +150,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(configUsername, "")
 	password := msg.Channel().StringConfigForKey(configPassword, "")
 	shortCode := msg.Channel().Address()

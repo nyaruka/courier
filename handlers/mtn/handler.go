@@ -88,7 +88,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 
 		// create and write the message
 		msg := h.Backend().NewIncomingMsg(ctx, channel, urn, payload.Message, "", clog).WithReceivedOn(date)
-		return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+		return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 
 	} else {
 		clog.Type = models.ChannelLogTypeMsgStatus
@@ -121,7 +121,7 @@ type mtPayload struct {
 	CPAddress        string   `json:"cpAddress,omitempty"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
 	accessToken, err := h.getAccessToken(msg.Channel(), clog)
 	if err != nil {
 		return courier.ErrChannelConfig

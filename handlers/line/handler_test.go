@@ -728,7 +728,7 @@ func TestSendEvent(t *testing.T) {
 	typing := events.NewTypingStarted(events.DirectionOutgoing, channelRef, "line:uabcdefghij", "")
 
 	// a typing started event is sent as a loading indicator
-	clog := courier.NewChannelLogForEventSend(ch, nil)
+	clog := models.NewChannelLogForEventSend(ch, nil)
 	err := h.SendEvent(context.Background(), ch, typing, clog)
 	assert.NoError(t, err)
 	assert.Len(t, clog.HttpLogs, 1)

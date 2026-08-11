@@ -1561,7 +1561,7 @@ func TestSendEvent(t *testing.T) {
 	typing := events.NewTypingStarted(events.DirectionOutgoing, channelRef, "whatsapp:12065551212", "SMabcdef1234567890abcdef1234567890")
 
 	// a typing indicator is sent as a typing indicators resource call referencing the incoming message
-	clog := courier.NewChannelLogForEventSend(channel, nil)
+	clog := models.NewChannelLogForEventSend(channel, nil)
 	err := h.SendEvent(context.Background(), channel, typing, clog)
 	assert.NoError(t, err)
 	assert.Len(t, clog.HttpLogs, 1)
