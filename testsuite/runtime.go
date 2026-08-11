@@ -27,7 +27,7 @@ func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
 	cfg.MediaDomain = "nyaruka.s3.com"
 
 	// AWS credentials and region are resolved from the standard SDK default chain, so export them as
-	// the standard env vars (localstack values) rather than via courier config
+	// the standard env vars (dev values) rather than via courier config
 	t.Setenv("AWS_ACCESS_KEY_ID", "root")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "tembatemba")
 	t.Setenv("AWS_REGION", "us-east-1")
@@ -36,7 +36,7 @@ func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
 	cfg.S3Endpoint = "http://localstack:4566"
 	cfg.S3AttachmentsBucket = "test-attachments"
 	cfg.S3PathStyle = true
-	cfg.DynamoEndpoint = "http://localstack:4566"
+	cfg.DynamoEndpoint = "http://dynamodb:8000"
 	cfg.DynamoTablePrefix = "Test"
 	cfg.SpoolDir = absPath("./_test_spool")
 
