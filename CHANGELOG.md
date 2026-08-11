@@ -1,3 +1,13 @@
+v26.3.31 (2026-08-11)
+-------------------------
+ * Fix Play Mobile incoming prefix stripping never being applied for channels loaded from the database
+ * Replace the Channel interface with the concrete channel model type
+ * Fail Turn sends when media can't be uploaded instead of falling back to a link
+ * Support Turn WhatsApp media and interactive template components
+ * Treat HTTP 429 responses as throttling across all channel handlers
+ * Retry transient failures on the LINE batched send and WeChat token fetch
+ * Move ChannelLog into core/models so model code can own channel log writes
+
 v26.3.30 (2026-08-10)
 -------------------------
  * Don't make Telegram keyboards single use when they contain form or location buttons
