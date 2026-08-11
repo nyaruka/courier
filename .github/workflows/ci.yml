@@ -31,7 +31,7 @@ jobs:
       localstack:
         image: localstack/localstack:4.14
         env:
-          SERVICES: s3,cloudwatch
+          SERVICES: s3
         ports:
           - 4566:4566
       dynamodb:
