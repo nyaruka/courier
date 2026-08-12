@@ -1406,7 +1406,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"flow","body":{"text":"Interactive form msg"},"action":{"name":"flow","parameters":{"flow_message_version":"3","flow_id":"123456","flow_cta":"Open Form"}}}}`,
 		}},
-		ExpectedExtIDs: []string{"157b5e14568e8"},
+		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedLogErrors: []*svclogs.Error{{Message: "quick reply of type text can't be combined with a form quick reply and won't be sent"}},
 	},
 	{
 		Label:           "Interactive with form missing form ID, sent as text",
@@ -1452,7 +1453,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"cta_url","body":{"text":"Interactive URL msg"},"action":{"name":"cta_url","parameters":{"display_text":"Open Link","url":"https://example.com"}}}}`,
 		}},
-		ExpectedExtIDs: []string{"157b5e14568e8"},
+		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedLogErrors: []*svclogs.Error{{Message: "quick reply of type text can't be combined with a url quick reply and won't be sent"}},
 	},
 	{
 		Label:           "Interactive with URL button, with attachment used as header",

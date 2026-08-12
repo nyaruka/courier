@@ -3,6 +3,7 @@ package whatsapp
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/nyaruka/courier/v26/core/models"
@@ -62,10 +63,20 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 
 	msgParts := splitText(msg, maxMsgLength)
 
+	// log any quick replies that will be dropped - because interactive messages require body text, or because a
+	// different kind of quick reply takes precedence on this message
+	if len(sqrs) > 0 && len(msgParts) == 0 {
+		for _, qr := range sqrs {
+			clog.Error(&svclogs.Error{Message: fmt.Sprintf("quick reply of type %s can't be sent on a message with no text", qr.Type)})
+		}
+	} else {
+		logDroppedQuickReplies(clog, locationQRs, formQRs, urlQRs, qrs)
+	}
+
 	qrsAsList := shouldUseList(qrs)
 
-	// truncate quick replies to max 10
-	if len(qrs) > 10 {
+	// truncate quick replies to max 10 - only relevant if text quick replies are what will be rendered
+	if len(locationQRs) == 0 && len(formQRs) == 0 && len(urlQRs) == 0 && len(qrs) > 10 {
 		clog.Error(&svclogs.Error{Message: "too many quick replies WhatsApp supports only up to 10 quick replies"})
 		qrs = qrs[:10]
 	}
@@ -151,6 +162,36 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 		}
 	}
 	return payloads, nil
+}
+
+// logDroppedQuickReplies logs a channel error for each quick reply that won't be sent because a message can only
+// render one kind of quick reply - location, form, url or text in order of precedence - and at most one form or
+// url button. Extra location quick replies aren't logged since they all collapse into the same location request.
+func logDroppedQuickReplies(clog *models.ChannelLog, locationQRs, formQRs, urlQRs, textQRs []models.QuickReply) {
+	var winning string
+	var dropped []models.QuickReply
+
+	switch {
+	case len(locationQRs) > 0:
+		winning = models.QuickReplyTypeLocation
+		dropped = slices.Concat(formQRs, urlQRs, textQRs)
+	case len(formQRs) > 0:
+		winning = models.QuickReplyTypeForm
+		dropped = slices.Concat(formQRs[1:], urlQRs, textQRs)
+	case len(urlQRs) > 0:
+		winning = models.QuickReplyTypeURL
+		dropped = slices.Concat(urlQRs[1:], textQRs)
+	default:
+		return
+	}
+
+	for _, qr := range dropped {
+		if qr.Type == winning {
+			clog.Error(&svclogs.Error{Message: fmt.Sprintf("only one quick reply of type %s can be sent per message", qr.Type)})
+		} else {
+			clog.Error(&svclogs.Error{Message: fmt.Sprintf("quick reply of type %s can't be combined with a %s quick reply and won't be sent", qr.Type, winning)})
+		}
+	}
 }
 
 func splitText(msg *models.MsgOut, maxMsgLength int) []string {
