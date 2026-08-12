@@ -296,7 +296,8 @@ var videoMsg = `{
 			"id": "41",
 			"link": "https://example.org/v1/media/41",
 			"mime_type": "text/plain",
-			"sha256": "the-sha-signature"
+			"sha256": "the-sha-signature",
+			"caption": "the caption"
 		}
 	}]
 }`
@@ -667,7 +668,7 @@ var testCasesTurn = []IncomingTestCase{
 		Data:                 videoMsg,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"msg"`,
-		ExpectedMsgText:      Sp(""),
+		ExpectedMsgText:      Sp("the caption"),
 		ExpectedAttachments:  []string{"https://foo.bar/v1/media/41"},
 		ExpectedURN:          "whatsapp:250788123123",
 		ExpectedExternalID:   "41",
