@@ -35,13 +35,13 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type BackendTestSuite struct {
+type ModelsTestSuite struct {
 	suite.Suite
 
 	rt *runtime.Runtime
 }
 
-func (ts *BackendTestSuite) SetupSuite() {
+func (ts *ModelsTestSuite) SetupSuite() {
 	ctx, rt := testsuite.Runtime(ts.T())
 	ts.rt = rt
 
@@ -54,7 +54,7 @@ func (ts *BackendTestSuite) SetupSuite() {
 	ts.rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
 }
 
-func (ts *BackendTestSuite) TearDownSuite() {
+func (ts *ModelsTestSuite) TearDownSuite() {
 	ctx := context.Background()
 
 	testsuite.ResetDB(ts.T(), ts.rt)
@@ -66,7 +66,7 @@ func (ts *BackendTestSuite) TearDownSuite() {
 	ts.rt.S3.EmptyBucket(ctx, "test-attachments")
 }
 
-func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *models.Channel {
+func (ts *ModelsTestSuite) getChannel(cType string, cUUID string) *models.Channel {
 	channelUUID := models.ChannelUUID(cUUID)
 
 	channel, err := models.GetChannel(context.Background(), models.ChannelType(cType), channelUUID)
@@ -76,7 +76,7 @@ func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *models.Chann
 	return channel
 }
 
-func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
+func (ts *ModelsTestSuite) TestDeleteMsgByExternalID() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ctx := context.Background()
 
@@ -107,7 +107,7 @@ func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
 	ts.assertQueuedContactTask(100, "msg_deleted", map[string]any{"msg_uuid": "019bb1ca-a92d-78f5-ba61-06aa62f2b41a"})
 }
 
-func (ts *BackendTestSuite) TestContact() {
+func (ts *ModelsTestSuite) TestContact() {
 
 	testsuite.ResetDB(ts.T(), ts.rt)
 
@@ -162,7 +162,7 @@ func (ts *BackendTestSuite) TestContact() {
 
 }
 
-func (ts *BackendTestSuite) TestContactRace() {
+func (ts *ModelsTestSuite) TestContactRace() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
 	urn := urns.URN("tel:+12065551518")
@@ -190,7 +190,7 @@ func (ts *BackendTestSuite) TestContactRace() {
 	ts.Equal(contact1.ID_, contact2.ID_)
 }
 
-func (ts *BackendTestSuite) TestContactURN() {
+func (ts *ModelsTestSuite) TestContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	fbChannel := ts.getChannel("FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
@@ -300,7 +300,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.Equal(contact2.URNID_, contact3.URNID_)
 }
 
-func (ts *BackendTestSuite) TestContactURNMetadata() {
+func (ts *ModelsTestSuite) TestContactURNMetadata() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	fbChannel := ts.getChannel("FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
 	knURN := urns.URN("tel:+12065551111")
@@ -344,7 +344,7 @@ func (ts *BackendTestSuite) TestContactURNMetadata() {
 	ts.Equal(fbChannel.ID(), urns[1].ChannelID)
 }
 
-func (ts *BackendTestSuite) TestMsgStatus() {
+func (ts *ModelsTestSuite) TestMsgStatus() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	now := time.Now().In(time.UTC)
@@ -542,7 +542,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 }
 
-func (ts *BackendTestSuite) TestMsgStatusSocketPublish() {
+func (ts *ModelsTestSuite) TestMsgStatusSocketPublish() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := models.NewChannelLog(models.ChannelLogTypeMsgStatus, channel, nil, nil)
@@ -583,7 +583,7 @@ func (ts *BackendTestSuite) TestMsgStatusSocketPublish() {
 	}
 }
 
-func (ts *BackendTestSuite) TestSentExternalIDCaching() {
+func (ts *ModelsTestSuite) TestSentExternalIDCaching() {
 	rc := ts.rt.VK.Get()
 	defer rc.Close()
 
@@ -623,7 +623,7 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	assertdb.Query(ts.T(), ts.rt.DB, `SELECT status FROM msgs_msg WHERE id = 10000`).Returns("D")
 }
 
-func (ts *BackendTestSuite) TestCheckForDuplicate() {
+func (ts *ModelsTestSuite) TestCheckForDuplicate() {
 	rc := ts.rt.VK.Get()
 	defer rc.Close()
 
@@ -701,7 +701,7 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	ts.NotEqual(msg7.UUID(), msg9.UUID())
 }
 
-func (ts *BackendTestSuite) TestOutgoingQueue() {
+func (ts *ModelsTestSuite) TestOutgoingQueue() {
 	// add one of our outgoing messages to the queue
 	ctx := context.Background()
 	r := ts.rt.VK.Get()
@@ -765,7 +765,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.False(sent)
 }
 
-func (ts *BackendTestSuite) TestChannel() {
+func (ts *ModelsTestSuite) TestChannel() {
 	noAddress := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c99a")
 	ts.Equal(i18n.Country("US"), noAddress.Country())
 	ts.Equal(models.NilChannelAddress, noAddress.ChannelAddress())
@@ -831,7 +831,7 @@ func (ts *BackendTestSuite) TestChannel() {
 	ts.False(exChannel2.HasRole(models.ChannelRoleAnswer))
 }
 
-func (ts *BackendTestSuite) TestGetChannel() {
+func (ts *ModelsTestSuite) TestGetChannel() {
 	ctx := context.Background()
 
 	knUUID := models.ChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
@@ -858,7 +858,7 @@ func (ts *BackendTestSuite) TestGetChannel() {
 	ts.Assert().True(ch == nil) // https://github.com/stretchr/testify/issues/503
 }
 
-func (ts *BackendTestSuite) TestWriteChanneLog() {
+func (ts *ModelsTestSuite) TestWriteChannelLog() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
@@ -913,7 +913,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	dyntest.AssertCount(ts.T(), ts.rt.Dynamo.Main.Client(), ts.rt.Dynamo.Main.Table(), 2)
 }
 
-func (ts *BackendTestSuite) TestContactForMsg() {
+func (ts *ModelsTestSuite) TestContactForMsg() {
 	ctx := context.Background()
 	waChannel := ts.getChannel("WAC", "dbc126ed-66bc-4e28-b67b-81dc33277a17")
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, waChannel, nil, nil)
@@ -1015,7 +1015,7 @@ func (ts *BackendTestSuite) TestContactForMsg() {
 	ts.Equal(c2.ID_, lookup("whatsapp:12065550000").ID_)
 }
 
-func (ts *BackendTestSuite) TestSaveAttachment() {
+func (ts *ModelsTestSuite) TestSaveAttachment() {
 	testJPG := test.ReadFile("../../test/testdata/test.jpg")
 	ctx := context.Background()
 
@@ -1029,7 +1029,7 @@ func (ts *BackendTestSuite) TestSaveAttachment() {
 	ts.Equal("http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/15a2ee5e-5e45-4711-8e0f-6b2abe4360d8.jpg", newURL)
 }
 
-func (ts *BackendTestSuite) TestWriteMsg() {
+func (ts *ModelsTestSuite) TestWriteMsg() {
 	ctx := context.Background()
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
@@ -1163,7 +1163,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	})
 }
 
-func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
+func (ts *ModelsTestSuite) TestWriteMsgWithAttachments() {
 	ctx := context.Background()
 
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
@@ -1208,7 +1208,7 @@ func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
 	ts.Equal([]string{"geo:123.234,-45.676"}, msg4.Attachments())
 }
 
-func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
+func (ts *ModelsTestSuite) TestPreferredChannelCheckRole() {
 	exChannel := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327100a")
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, exChannel, nil, nil)
 	ctx := context.Background()
@@ -1241,7 +1241,7 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 	ts.Equal(exContactURN.ChannelID, models.NilChannelID)
 }
 
-func (ts *BackendTestSuite) TestChannelEvent() {
+func (ts *ModelsTestSuite) TestChannelEvent() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, nil)
@@ -1272,7 +1272,7 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	})
 }
 
-func (ts *BackendTestSuite) TestSessionTimeout() {
+func (ts *ModelsTestSuite) TestSessionTimeout() {
 	ctx := context.Background()
 
 	dates.SetNowFunc(dates.NewSequentialNow(time.Date(2025, 1, 28, 20, 43, 34, 157379218, time.UTC), time.Second))
@@ -1322,7 +1322,7 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 	assertdb.Query(ts.T(), ts.rt.DB, `SELECT count(*) FROM contacts_contactfire`).Returns(1)
 }
 
-func (ts *BackendTestSuite) TestMailroomEvents() {
+func (ts *ModelsTestSuite) TestMailroomEvents() {
 	ctx := context.Background()
 
 	testsuite.ResetDB(ts.T(), ts.rt)
@@ -1365,7 +1365,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	})
 }
 
-func (ts *BackendTestSuite) TestResolveMedia() {
+func (ts *ModelsTestSuite) TestResolveMedia() {
 	ctx := context.Background()
 	rc := ts.rt.VK.Get()
 	defer rc.Close()
@@ -1485,7 +1485,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 	ts.Nil(media)
 }
 
-func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID models.ContactID) {
+func (ts *ModelsTestSuite) assertNoQueuedContactTask(contactID models.ContactID) {
 	rc := ts.rt.VK.Get()
 	defer rc.Close()
 
@@ -1495,7 +1495,7 @@ func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID models.ContactID
 	assertvk.LLen(ts.T(), rc, fmt.Sprintf("c:1:%d", contactID), 0)
 }
 
-func (ts *BackendTestSuite) assertQueuedContactTask(contactID models.ContactID, expectedType string, expectedBody map[string]any) {
+func (ts *ModelsTestSuite) assertQueuedContactTask(contactID models.ContactID, expectedType string, expectedBody map[string]any) {
 	rc := ts.rt.VK.Get()
 	defer rc.Close()
 
@@ -1514,7 +1514,7 @@ func (ts *BackendTestSuite) assertQueuedContactTask(contactID models.ContactID, 
 	ts.Equal(expectedBody, body["task"])
 }
 
-func (ts *BackendTestSuite) TestSpools() {
+func (ts *ModelsTestSuite) TestSpools() {
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, nil)
 	urn := urns.URN("tel:+12065552222")
@@ -1569,14 +1569,6 @@ func (ts *BackendTestSuite) TestSpools() {
 	assertdb.Query(ts.T(), ts.rt.DB, `SELECT count(*) FROM channels_channelevent WHERE extra::jsonb->>'ref_id' = 'spool-flush'`).Returns(1)
 }
 
-func TestMsgSuite(t *testing.T) {
-	suite.Run(t, new(BackendTestSuite))
-}
-
-func TestBackendSuite(t *testing.T) {
-	suite.Run(t, new(ServerTestSuite))
-}
-
-type ServerTestSuite struct {
-	suite.Suite
+func TestModelsSuite(t *testing.T) {
+	suite.Run(t, new(ModelsTestSuite))
 }
