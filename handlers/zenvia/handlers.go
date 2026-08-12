@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -24,20 +24,20 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler("ZVW", "Zenvia WhatsApp"))
-	courier.RegisterHandler(newHandler("ZVS", "Zenvia SMS"))
+	channels.RegisterHandler(newHandler("ZVW", "Zenvia WhatsApp"))
+	channels.RegisterHandler(newHandler("ZVS", "Zenvia SMS"))
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler(channelType models.ChannelType, name string) courier.ChannelHandler {
+func newHandler(channelType models.ChannelType, name string) channels.Handler {
 	return &handler{handlers.NewBaseHandler(channelType, name)}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.receiveStatus))
 	return nil
@@ -76,7 +76,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	if strings.ToUpper(payload.Type) != "MESSAGE" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unsupported event type: %s", payload.Type))
 	}
@@ -115,7 +115,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 			mediaURL = content.FileURL
 		} else {
 			// we received a message type we do not support.
-			courier.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", content.Type))
+			channels.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", content.Type))
 		}
 
 		// build our msg
@@ -149,7 +149,7 @@ type statusPayload struct {
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	if strings.ToUpper(payload.Type) != "MESSAGE_STATUS" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unsupported event type: %s", payload.Type))
 	}
@@ -179,11 +179,11 @@ type mtPayload struct {
 	Contents []mtContent `json:"contents"`
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	channel := msg.Channel()
 	token := channel.StringConfigForKey(models.ConfigAPIKey, "")
 	if token == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	payload := mtPayload{
@@ -240,7 +240,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 
 	externalID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {
-		return courier.ErrResponseContent
+		return channels.ErrResponseContent
 	}
 	res.AddExternalID(externalID)
 	return nil

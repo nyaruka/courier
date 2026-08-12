@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
@@ -74,20 +74,20 @@ type handler struct {
 	validateSignatures bool
 }
 
-func newTWIMLHandler(channelType models.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
+func newTWIMLHandler(channelType models.ChannelType, name string, validateSignatures bool) channels.Handler {
 	return &handler{handlers.NewBaseHandler(channelType, name), validateSignatures}
 }
 
 func init() {
-	courier.RegisterHandler(newTWIMLHandler("TW", "TWIML API", true))
-	courier.RegisterHandler(newTWIMLHandler("T", "Twilio", true))
-	courier.RegisterHandler(newTWIMLHandler("TMS", "Twilio Messaging Service", true))
-	courier.RegisterHandler(newTWIMLHandler("TWA", "Twilio Whatsapp", true))
-	courier.RegisterHandler(newTWIMLHandler("SW", "SignalWire", false))
+	channels.RegisterHandler(newTWIMLHandler("TW", "TWIML API", true))
+	channels.RegisterHandler(newTWIMLHandler("T", "Twilio", true))
+	channels.RegisterHandler(newTWIMLHandler("TMS", "Twilio Messaging Service", true))
+	channels.RegisterHandler(newTWIMLHandler("TWA", "Twilio Whatsapp", true))
+	channels.RegisterHandler(newTWIMLHandler("SW", "SignalWire", false))
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
@@ -123,7 +123,7 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -176,7 +176,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -237,7 +237,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	return events, err
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	// build our callback URL
 	callbackDomain := msg.Channel().CallbackDomain(h.Runtime().Config.Domain)
 	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?uuid=%s&action=callback", callbackDomain, strings.ToLower(string(h.ChannelType())), msg.Channel().UUID(), msg.UUID())
@@ -245,7 +245,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	accountToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if accountSID == "" || accountToken == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	channel := msg.Channel()
@@ -258,7 +258,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 	// do we have a template and support whatsapp scheme?
 	if msg.Templating() != nil && channel.IsScheme(urns.WhatsApp) {
 		if msg.Templating().ExternalID == "" {
-			return courier.ErrMessageInvalid
+			return channels.ErrMessageInvalid
 		}
 
 		form := url.Values{
@@ -298,7 +298,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 		// build our URL
 		baseURL := h.baseURL(channel)
 		if baseURL == "" {
-			return courier.ErrChannelConfig
+			return channels.ErrChannelConfig
 		}
 
 		sendURL, err := utils.AddURLPath(baseURL, "2010-04-01", "Accounts", accountSID, "Messages.json")
@@ -316,11 +316,11 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 == 5 {
-			return courier.ErrConnectionFailed
+			return channels.ErrConnectionFailed
 		}
 		// Twilio rate limits with a 429 (error 20429) and those requests aren't processed, so retry
 		if handlers.IsThrottled(resp) {
-			return courier.ErrConnectionThrottled
+			return channels.ErrConnectionThrottled
 		}
 
 		// see if we can parse the error if we have one
@@ -328,17 +328,17 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 			errorCode, _ := jsonparser.GetInt(respBody, "code")
 			if errorCode != 0 {
 				if errorCode == errorStopped {
-					return courier.ErrContactStopped
+					return channels.ErrContactStopped
 				}
 				codeAsStr := strconv.Itoa(int(errorCode))
 				errMsg, err := jsonparser.GetString(errorCodes, codeAsStr)
 				if err != nil {
 					errMsg = fmt.Sprintf("Service specific error: %s.", codeAsStr)
 				}
-				return courier.ErrFailedWithReason(codeAsStr, errMsg)
+				return channels.ErrFailedWithReason(codeAsStr, errMsg)
 			}
 
-			return courier.ErrResponseStatus
+			return channels.ErrResponseStatus
 		}
 
 		// grab the external id
@@ -391,7 +391,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 			// build our URL
 			baseURL := h.baseURL(channel)
 			if baseURL == "" {
-				return courier.ErrChannelConfig
+				return channels.ErrChannelConfig
 			}
 
 			sendURL, err := utils.AddURLPath(baseURL, "2010-04-01", "Accounts", accountSID, "Messages.json")
@@ -409,11 +409,11 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 
 			resp, respBody, err := h.RequestHTTP(req, clog)
 			if err != nil || resp.StatusCode/100 == 5 {
-				return courier.ErrConnectionFailed
+				return channels.ErrConnectionFailed
 			}
 			// Twilio rate limits with a 429 (error 20429) and those requests aren't processed, so retry
 			if handlers.IsThrottled(resp) {
-				return courier.ErrConnectionThrottled
+				return channels.ErrConnectionThrottled
 			}
 
 			// see if we can parse the error if we have one
@@ -421,17 +421,17 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 				errorCode, _ := jsonparser.GetInt(respBody, "code")
 				if errorCode != 0 {
 					if errorCode == errorStopped {
-						return courier.ErrContactStopped
+						return channels.ErrContactStopped
 					}
 					codeAsStr := strconv.Itoa(int(errorCode))
 					errMsg, err := jsonparser.GetString(errorCodes, codeAsStr)
 					if err != nil {
 						errMsg = fmt.Sprintf("Service specific error: %s.", codeAsStr)
 					}
-					return courier.ErrFailedWithReason(codeAsStr, errMsg)
+					return channels.ErrFailedWithReason(codeAsStr, errMsg)
 				}
 
-				return courier.ErrResponseStatus
+				return channels.ErrResponseStatus
 			}
 
 			// grab the external id
@@ -474,7 +474,7 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 	accountSID := ch.StringConfigForKey(configAccountSID, "")
 	accountToken := ch.StringConfigForKey(models.ConfigAuthToken, "")
 	if accountSID == "" || accountToken == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	payload := &struct {
@@ -492,18 +492,18 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
-		return courier.ErrConnectionFailed
+		return channels.ErrConnectionFailed
 	}
 
 	if handlers.IsThrottled(resp) {
-		return courier.ErrConnectionThrottled
+		return channels.ErrConnectionThrottled
 	}
 
 	response := &struct {
 		Success bool `json:"success"`
 	}{}
 	if err := json.Unmarshal(respBody, response); err != nil || resp.StatusCode/100 != 2 || !response.Success {
-		return courier.ErrResponseStatus
+		return channels.ErrResponseStatus
 	}
 
 	return nil

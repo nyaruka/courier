@@ -3,7 +3,7 @@ package clicksend
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -199,7 +199,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"Error Sending","source":"courier"}]}`,
 			},
 		},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -216,7 +216,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"Error Sending","source":"courier"}]}`,
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Failure Response",
@@ -233,7 +233,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"Error Sending","source":"courier"}]}`,
 			},
 		},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:   "Failure Response",
@@ -250,7 +250,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"Error Sending","source":"courier"}]}`,
 			},
 		},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 }
 

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,12 +18,12 @@ func TestErrorFromResponse(t *testing.T) {
 	}{
 		{200, nil, nil},
 		{201, nil, nil},
-		{400, nil, courier.ErrResponseStatus},
-		{401, nil, courier.ErrResponseStatus},
-		{429, nil, courier.ErrConnectionThrottled},
-		{500, nil, courier.ErrConnectionFailed},
-		{503, nil, courier.ErrConnectionFailed},
-		{0, errors.New("timeout"), courier.ErrConnectionFailed},
+		{400, nil, channels.ErrResponseStatus},
+		{401, nil, channels.ErrResponseStatus},
+		{429, nil, channels.ErrConnectionThrottled},
+		{500, nil, channels.ErrConnectionFailed},
+		{503, nil, channels.ErrConnectionFailed},
+		{0, errors.New("timeout"), channels.ErrConnectionFailed},
 	}
 
 	for _, tc := range tcs {

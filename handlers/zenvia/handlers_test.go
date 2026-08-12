@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -314,7 +314,7 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"No External ID"}]}`,
 		}},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:   "Error Sending",
@@ -328,7 +328,7 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Error Message"}]}`,
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -342,7 +342,7 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Error Message"}]}`,
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Connection Error",
@@ -356,7 +356,7 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Error Message"}]}`,
 		}},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 }
 
@@ -436,7 +436,7 @@ var defaultSMSSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"No External ID"}]}`,
 		}},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:   "Error Sending",
@@ -450,7 +450,7 @@ var defaultSMSSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Error Message"}]}`,
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 }
 

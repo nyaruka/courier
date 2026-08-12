@@ -15,7 +15,7 @@ import (
 	"github.com/nyaruka/goflow/core/events"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -612,7 +612,7 @@ var outgoingCases = []OutgoingTestCase{
 				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 	{
 		Label:   "Throttled",
@@ -628,7 +628,7 @@ var outgoingCases = []OutgoingTestCase{
 				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Response unexpected",
@@ -644,7 +644,7 @@ var outgoingCases = []OutgoingTestCase{
 				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 }
 
@@ -685,20 +685,20 @@ func TestSendEvent(t *testing.T) {
 
 	// a VK error in a 200 response is a response error
 	err = h.SendEvent(context.Background(), ch, typing, clog)
-	assert.Equal(t, courier.ErrResponseStatus, err)
+	assert.Equal(t, channels.ErrResponseStatus, err)
 
 	// as is a non-2XX response
 	err = h.SendEvent(context.Background(), ch, typing, clog)
-	assert.Equal(t, courier.ErrResponseStatus, err)
+	assert.Equal(t, channels.ErrResponseStatus, err)
 
 	// and a connection error is a connection error
 	err = h.SendEvent(context.Background(), ch, typing, clog)
-	assert.Equal(t, courier.ErrConnectionFailed, err)
+	assert.Equal(t, channels.ErrConnectionFailed, err)
 
 	// a channel without an auth token config can't send
 	noAuth := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VK", "2020", "US", []string{urns.VK.Prefix}, nil)
 	err = h.SendEvent(context.Background(), noAuth, typing, clog)
-	assert.Equal(t, courier.ErrChannelConfig, err)
+	assert.Equal(t, channels.ErrChannelConfig, err)
 
 	// nor can an event type the handler doesn't declare support for
 	err = h.SendEvent(context.Background(), ch, events.NewTypingStopped(events.DirectionOutgoing, channelRef, "vk:123456789", ""), clog)

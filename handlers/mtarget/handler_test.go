@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -171,7 +171,7 @@ var outgoingCases = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{"results":[{"code": "3", "reason": "FAILED", "ticket": "null"}]}`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -182,7 +182,7 @@ var outgoingCases = []OutgoingTestCase{
 				httpx.NewMockResponse(429, nil, []byte(`{"results":[{"code": "3", "reason": "FAILED", "ticket": "null"}]}`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error Response",
@@ -193,7 +193,7 @@ var outgoingCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{"results":[{"code": "3", "reason": "FAILED", "ticket": "null"}]}`)),
 			},
 		},
-		ExpectedError: courier.ErrFailedWithReason("3", "FAILED"),
+		ExpectedError: channels.ErrFailedWithReason("3", "FAILED"),
 	},
 }
 

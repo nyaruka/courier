@@ -1,4 +1,4 @@
-package courier
+package channels
 
 import (
 	"context"
@@ -8,17 +8,23 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/core/events"
 )
 
-// ChannelHandleFunc is the interface ChannelHandlers must satisfy to handle incoming requests.
-// The Server will take care of looking up the channel by UUID before passing it to this function.
+// Event is our interface for the types of things a HandleFunc can return.
+type Event interface {
+	EventUUID() uuids.UUID
+}
+
+// HandleFunc is the interface handlers must satisfy to handle incoming requests.
+// The server takes care of looking up the channel by UUID before passing it to this function.
 // Errors in format of the request or by the caller should be handled and logged internally. Errors in
 // execution or in courier itself should be passed back.
-type ChannelHandleFunc func(context.Context, *models.Channel, http.ResponseWriter, *http.Request, *models.ChannelLog) ([]Event, error)
+type HandleFunc func(context.Context, *models.Channel, http.ResponseWriter, *http.Request, *models.ChannelLog) ([]Event, error)
 
-// ChannelHandler is the interface all handlers must satisfy
-type ChannelHandler interface {
+// Handler is the interface all channel handlers must satisfy
+type Handler interface {
 	// SetRuntime is called before Initialize to give the handler the runtime it should use. Handlers embedding
 	// handlers.BaseHandler get it from there rather than implementing it themselves.
 	SetRuntime(*runtime.Runtime)
@@ -50,7 +56,7 @@ type AttachmentRequestBuilder interface {
 }
 
 // RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized
-func RegisterHandler(handler ChannelHandler) {
+func RegisterHandler(handler Handler) {
 	registeredHandlers[handler.ChannelType()] = handler
 
 	// handlers which can describe URNs are registered with the models package so contact creation can use them
@@ -60,13 +66,13 @@ func RegisterHandler(handler ChannelHandler) {
 }
 
 // GetHandler returns the handler for the passed in channel type, or nil if not found
-func GetHandler(ct models.ChannelType) ChannelHandler {
+func GetHandler(ct models.ChannelType) Handler {
 	return registeredHandlers[ct]
 }
 
 // RegisteredHandlers returns all the handlers compiled into this build, for the server to initialize
-func RegisteredHandlers() []ChannelHandler {
-	hs := make([]ChannelHandler, 0, len(registeredHandlers))
+func RegisteredHandlers() []Handler {
+	hs := make([]Handler, 0, len(registeredHandlers))
 	for _, h := range registeredHandlers {
 		hs = append(hs, h)
 	}
@@ -74,26 +80,26 @@ func RegisteredHandlers() []ChannelHandler {
 }
 
 // ActivateHandler marks a handler as one this instance is serving, i.e. it was included by config and initialized
-func ActivateHandler(handler ChannelHandler) {
+func ActivateHandler(handler Handler) {
 	activeHandlers[handler.ChannelType()] = handler
 }
 
 // GetActiveHandler returns the handler this instance is serving for the given channel type, or nil if that channel
 // type isn't being served - which is how sending fails fast for a channel this instance doesn't handle.
-func GetActiveHandler(ct models.ChannelType) ChannelHandler {
+func GetActiveHandler(ct models.ChannelType) Handler {
 	return activeHandlers[ct]
 }
 
-var registeredHandlers = make(map[models.ChannelType]ChannelHandler)
-var activeHandlers = make(map[models.ChannelType]ChannelHandler)
+var registeredHandlers = make(map[models.ChannelType]Handler)
+var activeHandlers = make(map[models.ChannelType]Handler)
 
 // Route is an HTTP route a channel handler serves, added during its initialization
 type Route struct {
-	Handler ChannelHandler
+	Handler Handler
 	Method  string
 	Action  string
 	LogType clogs.Type
-	Func    ChannelHandleFunc
+	Func    HandleFunc
 }
 
 // Routes is what a channel handler is initialized with, and collects the routes it wants to serve so that the web
@@ -108,7 +114,7 @@ func NewRoutes() *Routes {
 }
 
 // Add adds a route which the handler wants to serve
-func (r *Routes) Add(handler ChannelHandler, method string, action string, logType clogs.Type, handlerFunc ChannelHandleFunc) {
+func (r *Routes) Add(handler Handler, method string, action string, logType clogs.Type, handlerFunc HandleFunc) {
 	r.routes = append(r.routes, &Route{Handler: handler, Method: method, Action: action, LogType: logType, Func: handlerFunc})
 }
 

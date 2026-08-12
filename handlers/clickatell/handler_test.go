@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -211,7 +211,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"content": {"Error Message"}, "to": {"250788383383"}, "from": {"2020"}, "apiKey": {"API-KEY"}}},
 		},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -225,7 +225,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"content": {"Error Message"}, "to": {"250788383383"}, "from": {"2020"}, "apiKey": {"API-KEY"}}},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error Response",
@@ -239,7 +239,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"content": {"Error Message"}, "to": {"250788383383"}, "from": {"2020"}, "apiKey": {"API-KEY"}}},
 		},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 }
 

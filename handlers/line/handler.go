@@ -16,7 +16,7 @@ import (
 
 	"errors"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -44,19 +44,19 @@ var mediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{
 }
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("LN"), "Line")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	return nil
 }
@@ -114,7 +114,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -192,7 +192,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Ch
 	return req, nil
 }
 
-var _ courier.AttachmentRequestBuilder = (*handler)(nil)
+var _ channels.AttachmentRequestBuilder = (*handler)(nil)
 
 func (h *handler) validateSignature(channel *models.Channel, r *http.Request) error {
 	actual := r.Header.Get(signatureHeader)
@@ -306,7 +306,7 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 
 	authToken := ch.StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	payload := &struct {
@@ -330,10 +330,10 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 	return nil
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	// all msg parts in JSON
@@ -431,17 +431,17 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 			}
 
 			if err != nil || resp.StatusCode/100 == 5 {
-				return courier.ErrConnectionFailed
+				return channels.ErrConnectionFailed
 			}
 			// LINE rate limits per endpoint per channel with a 429, so retry rather than failing
 			if handlers.IsThrottled(resp) {
-				return courier.ErrConnectionThrottled
+				return channels.ErrConnectionThrottled
 			}
 
 			respPayload := &mtResponse{}
 			err = json.Unmarshal(respBody, respPayload)
 			if err != nil {
-				return courier.ErrResponseUnparseable
+				return channels.ErrResponseUnparseable
 			}
 
 			errMsg := respPayload.Message
@@ -454,20 +454,20 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 				resp, respBody, _ := h.RequestHTTP(req, clog)
 
 				if handlers.IsThrottled(resp) {
-					return courier.ErrConnectionThrottled
+					return channels.ErrConnectionThrottled
 				}
 
 				respPayload := &mtResponse{}
 				err = json.Unmarshal(respBody, respPayload)
 				if err != nil {
-					return courier.ErrResponseUnparseable
+					return channels.ErrResponseUnparseable
 				}
 
 				if resp.StatusCode/100 != 2 {
-					return courier.ErrFailedWithReason(strconv.Itoa(resp.StatusCode), respPayload.Message)
+					return channels.ErrFailedWithReason(strconv.Itoa(resp.StatusCode), respPayload.Message)
 				}
 			} else {
-				return courier.ErrFailedWithReason(strconv.Itoa(resp.StatusCode), respPayload.Message)
+				return channels.ErrFailedWithReason(strconv.Itoa(resp.StatusCode), respPayload.Message)
 			}
 		}
 	}

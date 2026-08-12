@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -112,7 +112,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"content": {`Error Message`}, "mobile": {"250788383383"}, "pass": {"Password"}, "user": {"Username"}},
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{Label: "Throttled",
 		MsgText: "Error Message", MsgURN: "tel:+250788383383",
@@ -124,7 +124,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"content": {`Error Message`}, "mobile": {"250788383383"}, "pass": {"Password"}, "user": {"Username"}},
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{Label: "Connection Error",
 		MsgText: "Error Message", MsgURN: "tel:+250788383383",
@@ -136,7 +136,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"content": {`Error Message`}, "mobile": {"250788383383"}, "pass": {"Password"}, "user": {"Username"}},
 		}},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 }
 

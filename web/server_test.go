@@ -9,7 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/core/sender"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -48,7 +48,7 @@ func TestIncoming(t *testing.T) {
 
 	// capture the channel logs of handled requests
 	var clogs []*models.ChannelLog
-	s.OnRequestHandled(func(ch *models.Channel, evts []courier.Event, clog *models.ChannelLog) { clogs = append(clogs, clog) })
+	s.OnRequestHandled(func(ch *models.Channel, evts []channels.Event, clog *models.ChannelLog) { clogs = append(clogs, clog) })
 
 	require.NoError(t, s.Start())
 	defer s.Stop()

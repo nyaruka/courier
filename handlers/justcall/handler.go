@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -27,16 +27,16 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("JCL"), "JustCall")}
 }
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
-// Initialize implements courier.ChannelHandler
-func (h *handler) Initialize(r *courier.Routes) error {
+// Initialize implements channels.Handler
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.statusMessage))
 	return nil
@@ -94,7 +94,7 @@ type moPayload struct {
 	} `json:"data"`
 }
 
-func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	if payload.Data.Type != "sms" || payload.Data.Direction != "I" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "Ignoring request, no message")
 	}
@@ -133,7 +133,7 @@ var statusMapping = map[string]models.MsgStatus{
 	"failed":      models.MsgStatusFailed,
 }
 
-func (h *handler) statusMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) statusMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	if payload.Data.Type != "sms" || payload.Data.Direction != "O" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "Ignoring request, no message")
 	}
@@ -154,11 +154,11 @@ type mtPayload struct {
 	MediaURL string `json:"media_url,omitempty"`
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	apiKey := msg.Channel().StringConfigForKey(models.ConfigAPIKey, "")
 	apiSecret := msg.Channel().StringConfigForKey(models.ConfigSecret, "")
 	if apiKey == "" || apiSecret == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	mediaURLs := make([]string, 0, 5)
@@ -197,7 +197,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 		clog.Error(models.ErrorResponseValueMissing("status"))
 	}
 	if respStatus != "success" {
-		return courier.ErrResponseContent
+		return channels.ErrResponseContent
 
 	}
 

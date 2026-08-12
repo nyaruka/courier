@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -117,7 +117,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"Invalid Parameters"}, "signature": {"4b640a668fd83223e38d429b15ea737ef58e1ab025b756baaca4743f3adb3f77"}},
 		}},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:   "Error Response",
@@ -131,7 +131,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"Error Response"}, "signature": {"9fe49f073109de29f8c6d5108fd5719ee0b70c22cedb23fffdbabc8a99b9a0a9"}},
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -145,7 +145,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"Error Response"}, "signature": {"9fe49f073109de29f8c6d5108fd5719ee0b70c22cedb23fffdbabc8a99b9a0a9"}},
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 }
 

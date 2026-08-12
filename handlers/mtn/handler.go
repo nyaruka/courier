@@ -14,7 +14,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/urns"
@@ -27,7 +27,7 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
@@ -36,15 +36,15 @@ type handler struct {
 	fetchTokenMutex sync.Mutex
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{
 		BaseHandler:     handlers.NewBaseHandler(models.ChannelType("MTN"), "MTN Developer Portal"),
 		fetchTokenMutex: sync.Mutex{},
 	}
 }
 
-// Initialize implements courier.ChannelHandler
-func (h *handler) Initialize(r *courier.Routes) error {
+// Initialize implements channels.Handler
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
 	return nil
 }
@@ -75,7 +75,7 @@ type moPayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	if payload.Message != "" {
 		clog.Type = models.ChannelLogTypeMsgReceive
 
@@ -120,10 +120,10 @@ type mtPayload struct {
 	CPAddress        string   `json:"cpAddress,omitempty"`
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	accessToken, err := h.getAccessToken(msg.Channel(), clog)
 	if err != nil {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	baseURL := msg.Channel().StringConfigForKey(configAPIHost, apiHostURL)

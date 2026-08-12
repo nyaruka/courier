@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -626,7 +626,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
 			},
 		},
-		ExpectedError: courier.ErrResponseUnparseable,
+		ExpectedError: channels.ErrResponseUnparseable,
 	},
 	{
 		Label:   "Error Sending",
@@ -640,7 +640,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
 			},
 		},
-		ExpectedError: courier.ErrFailedWithReason("403", "Failed to send messages"),
+		ExpectedError: channels.ErrFailedWithReason("403", "Failed to send messages"),
 	},
 	{
 		Label:   "Connection Error",
@@ -654,7 +654,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
 			},
 		},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 	{
 		Label:   "Throttled",
@@ -668,7 +668,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 }
 
@@ -740,16 +740,16 @@ func TestSendEvent(t *testing.T) {
 
 	// an error response is a response error
 	err = h.SendEvent(context.Background(), ch, typing, clog)
-	assert.Equal(t, courier.ErrResponseStatus, err)
+	assert.Equal(t, channels.ErrResponseStatus, err)
 
 	// as is a connection error
 	err = h.SendEvent(context.Background(), ch, typing, clog)
-	assert.Equal(t, courier.ErrConnectionFailed, err)
+	assert.Equal(t, channels.ErrConnectionFailed, err)
 
 	// a channel without an auth token config can't send
 	noAuth := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US", []string{urns.Line.Prefix}, nil)
 	err = h.SendEvent(context.Background(), noAuth, typing, clog)
-	assert.Equal(t, courier.ErrChannelConfig, err)
+	assert.Equal(t, channels.ErrChannelConfig, err)
 
 	// nor can an event type the handler doesn't declare support for
 	err = h.SendEvent(context.Background(), ch, events.NewTypingStopped(events.DirectionOutgoing, channelRef, "line:uabcdefghij", ""), clog)

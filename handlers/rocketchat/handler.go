@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -24,19 +24,19 @@ const (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("RC"), "RocketChat")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	return nil
 }
@@ -57,11 +57,11 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	// check authorization
 	secret := channel.StringConfigForKey(configSecret, "")
 	if fmt.Sprintf("Token %s", secret) != r.Header.Get("Authorization") {
-		return nil, courier.WriteAndLogUnauthorized(w, r, channel, fmt.Errorf("invalid Authorization header"))
+		return nil, channels.WriteAndLogUnauthorized(w, r, channel, fmt.Errorf("invalid Authorization header"))
 	}
 
 	// check content empty
@@ -96,7 +96,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Ch
 	return req, nil
 }
 
-var _ courier.AttachmentRequestBuilder = (*handler)(nil)
+var _ channels.AttachmentRequestBuilder = (*handler)(nil)
 
 type mtPayload struct {
 	UserURN     string         `json:"user"`
@@ -105,12 +105,12 @@ type mtPayload struct {
 	Attachments []RCAttachment `json:"attachments,omitempty"`
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	baseURL := msg.Channel().StringConfigForKey(configBaseURL, "")
 	secret := msg.Channel().StringConfigForKey(configSecret, "")
 	botUsername := msg.Channel().StringConfigForKey(configBotUsername, "")
 	if baseURL == "" || secret == "" || botUsername == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 	payload := &mtPayload{
 		UserURN:     msg.URN().Path(),
@@ -138,7 +138,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 
 	msgID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {
-		return courier.ErrResponseContent
+		return channels.ErrResponseContent
 	}
 	res.AddExternalID(msgID)
 

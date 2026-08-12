@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -303,7 +303,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b"}`,
 		}},
-		ExpectedError: courier.ErrFailedWithReason("3", "There is an error in the request itself (missing comma, brackets, etc.)"),
+		ExpectedError: channels.ErrFailedWithReason("3", "There is an error in the request itself (missing comma, brackets, etc.)"),
 	},
 	{
 		Label:   "Got general error response",
@@ -319,7 +319,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b"}`,
 		}},
 
-		ExpectedError: courier.ErrFailedWithReason("99", "General error"),
+		ExpectedError: channels.ErrFailedWithReason("99", "General error"),
 	},
 	{
 		Label:   "Got Invalid JSON response",
@@ -334,7 +334,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b"}`,
 		}},
-		ExpectedError: courier.ErrResponseUnparseable,
+		ExpectedError: channels.ErrResponseUnparseable,
 	},
 	{
 		Label:   "Error Sending",
@@ -349,7 +349,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Error Message","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b"}`,
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -364,14 +364,14 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Error Message","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b"}`,
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 }
 
 var invalidTokenSendTestCases = []OutgoingTestCase{
 	{
 		Label:         "Invalid token",
-		ExpectedError: courier.ErrChannelConfig,
+		ExpectedError: channels.ErrChannelConfig,
 	},
 }
 

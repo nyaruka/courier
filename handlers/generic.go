@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/gocommon/urns"
 )
 
 // NewTelReceiveHandler creates a new receive handler given the passed in text and from fields
-func NewTelReceiveHandler(h courier.ChannelHandler, fromField string, bodyField string) courier.ChannelHandleFunc {
-	return func(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func NewTelReceiveHandler(h channels.Handler, fromField string, bodyField string) channels.HandleFunc {
+	return func(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 		err := r.ParseForm()
 		if err != nil {
 			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
@@ -36,8 +36,8 @@ func NewTelReceiveHandler(h courier.ChannelHandler, fromField string, bodyField 
 }
 
 // NewExternalIDStatusHandler creates a new status handler given the passed in status map and fields
-func NewExternalIDStatusHandler(h courier.ChannelHandler, statuses map[string]models.MsgStatus, externalIDField string, statusField string) courier.ChannelHandleFunc {
-	return func(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func NewExternalIDStatusHandler(h channels.Handler, statuses map[string]models.MsgStatus, externalIDField string, statusField string) channels.HandleFunc {
+	return func(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 		err := r.ParseForm()
 		if err != nil {
 			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
@@ -60,10 +60,10 @@ func NewExternalIDStatusHandler(h courier.ChannelHandler, statuses map[string]mo
 	}
 }
 
-type JSONHandlerFunc[T any] func(context.Context, *models.Channel, http.ResponseWriter, *http.Request, *T, *models.ChannelLog) ([]courier.Event, error)
+type JSONHandlerFunc[T any] func(context.Context, *models.Channel, http.ResponseWriter, *http.Request, *T, *models.ChannelLog) ([]channels.Event, error)
 
-func JSONPayload[T any](h courier.ChannelHandler, handlerFunc JSONHandlerFunc[T]) courier.ChannelHandleFunc {
-	return func(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func JSONPayload[T any](h channels.Handler, handlerFunc JSONHandlerFunc[T]) channels.HandleFunc {
+	return func(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 		payload := new(T)
 
 		err := DecodeAndValidateJSON(payload, r)

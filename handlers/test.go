@@ -18,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gomodule/redigo/redis"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/testsuite"
@@ -165,7 +165,7 @@ func newServer(rt *runtime.Runtime) *web.Server {
 }
 
 // RunIncomingTestCases runs all the passed in tests cases for the passed in channel configurations
-func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler courier.ChannelHandler, testCases []IncomingTestCase) {
+func RunIncomingTestCases(t *testing.T, chs []*models.Channel, handler channels.Handler, testCases []IncomingTestCase) {
 	_, rt := testsuite.Runtime(t)
 
 	// state is reset once for the whole run rather than per case because handlers can carry state between
@@ -186,19 +186,19 @@ func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler cour
 
 	s := newServer(rt)
 
-	for _, ch := range channels {
+	for _, ch := range chs {
 		testsuite.InsertChannel(t, rt, ch)
 	}
 
 	// re-register the handler under test so that lookups by channel type - e.g. the URN describer used when
 	// creating a contact - resolve to this instance rather than the uninitialized one from its init()
-	courier.RegisterHandler(handler)
+	channels.RegisterHandler(handler)
 	require.NoError(t, s.MountHandler(handler))
 
 	// capture the events and channel logs of each handled request
-	var handledEvents []courier.Event
+	var handledEvents []channels.Event
 	var handledLogs []*models.ChannelLog
-	s.OnRequestHandled(func(ch *models.Channel, evts []courier.Event, clog *models.ChannelLog) {
+	s.OnRequestHandled(func(ch *models.Channel, evts []channels.Event, clog *models.ChannelLog) {
 		handledEvents = append(handledEvents, evts...)
 		handledLogs = append(handledLogs, clog)
 	})
@@ -332,7 +332,7 @@ func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler cour
 
 	if !validCase.NoInvalidChannelCheck {
 		t.Run("Receive With Invalid Channel", func(t *testing.T) {
-			for _, ch := range channels {
+			for _, ch := range chs {
 				rt.DB.MustExec(`DELETE FROM channels_channel WHERE uuid = $1`, ch.UUID())
 			}
 			models.FlushChannelCache()
@@ -342,7 +342,7 @@ func RunIncomingTestCases(t *testing.T, channels []*models.Channel, handler cour
 }
 
 // SendPrepFunc allows test cases to modify the channel, msg or server before a message is sent
-type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, *models.Channel, *models.MsgOut)
+type SendPrepFunc func(*httptest.Server, channels.Handler, *models.Channel, *models.MsgOut)
 
 type ExpectedRequest struct {
 	Headers      map[string]string
@@ -448,7 +448,7 @@ func (tc *OutgoingTestCase) Msg(ch *models.Channel) *models.MsgOut {
 }
 
 // RunOutgoingTestCases runs all the passed in test cases against the channel
-func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler courier.ChannelHandler, testCases []OutgoingTestCase, checkRedacted []string, setup func(*testing.T, *runtime.Runtime)) {
+func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler channels.Handler, testCases []OutgoingTestCase, checkRedacted []string, setup func(*testing.T, *runtime.Runtime)) {
 	ctx, rt := testsuite.Runtime(t)
 
 	testsuite.ResetDB(t, rt)
@@ -492,7 +492,7 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler courier
 			clog := models.NewChannelLogForSend(msg, handler.RedactValues(channel))
 			sendCtx, cancel := context.WithTimeout(ctx, time.Millisecond*100)
 
-			res := &courier.SendResult{}
+			res := &channels.SendResult{}
 			serr := handler.Send(sendCtx, msg, res, clog)
 			externalIDs := res.ExternalIDs()
 

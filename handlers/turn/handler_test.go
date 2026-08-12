@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -765,7 +765,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Path: "/v1/messages",
 			Body: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
 		}},
-		ExpectedError: courier.ErrFailedWithReason("232", "Error Sending"),
+		ExpectedError: channels.ErrFailedWithReason("232", "Error Sending"),
 	},
 	{
 		Label:   "Error Field Retryable",
@@ -780,7 +780,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Path: "/v1/messages",
 			Body: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
 		}},
-		ExpectedError: courier.ErrRetryableWithReason("131053", "Media upload error"),
+		ExpectedError: channels.ErrRetryableWithReason("131053", "Media upload error"),
 	},
 	{
 		// media messages can't carry a link, so a failed upload has to error rather than fall back
@@ -800,7 +800,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{},
 			{},
 		},
-		ExpectedError: courier.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp"),
+		ExpectedError: channels.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp"),
 	},
 	{
 		Label:          "Audio Send with link in text",
@@ -1488,7 +1488,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#131056) (Business Account, Consumer Account) pair rate limit hit","code": 131056 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error Throttled",
@@ -1499,7 +1499,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#130429) Rate limit hit","code": 130429 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error Turn HTTP 429 Rate Limit Bucket",
@@ -1517,7 +1517,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				}, []byte(`{"errors":[{"code":429,"title":"Rate limit hit for bucket text","details":"You are being rate limited by Turn. please read the documentation at https://whatsapp.turn.io/docs/"}]}`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error Retryable",
@@ -1528,7 +1528,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(400, nil, []byte(`{ "error": {"message": "Media upload error","code": 131053 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrRetryableWithReason("131053", "Media upload error"),
+		ExpectedError: channels.ErrRetryableWithReason("131053", "Media upload error"),
 	},
 	{
 		Label:   "Error",
@@ -1539,7 +1539,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#368) Temporarily blocked for policies violations","code": 368 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrFailedWithReason("368", "(#368) Temporarily blocked for policies violations"),
+		ExpectedError: channels.ErrFailedWithReason("368", "(#368) Temporarily blocked for policies violations"),
 	},
 	{
 		Label:   "Error Message",
@@ -1550,7 +1550,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "Other error with message","code": 0 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrFailedWithReason("0", "Other error with message"),
+		ExpectedError: channels.ErrFailedWithReason("0", "Other error with message"),
 	},
 	{
 		Label:   "Error Connection",
@@ -1561,7 +1561,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(500, nil, []byte(`Bad Gateway`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 }
 
@@ -1583,7 +1583,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 			{},
 			{Body: "media bytes"},
 		},
-		ExpectedError: courier.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp"),
+		ExpectedError: channels.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp"),
 	},
 	{
 		// the failed upload above is cached, so this one errors without re-attempting the download
@@ -1592,7 +1592,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 		MsgURN:         "whatsapp:250788123123",
 		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
 		MockResponses:  map[string][]*httpx.MockResponse{},
-		ExpectedError:  courier.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp"),
+		ExpectedError:  channels.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp"),
 	},
 	{
 		Label:          "Media Upload OK",

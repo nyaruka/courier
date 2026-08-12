@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -78,7 +78,7 @@ var outgoingCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`not xml`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseUnparseable,
+		ExpectedError: channels.ErrResponseUnparseable,
 	},
 	{
 		Label:   "Error Response",
@@ -89,7 +89,7 @@ var outgoingCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`<response><code>501</code><text>failure</text><message_id></message_id></response>`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:   "Error Sending",
@@ -100,7 +100,7 @@ var outgoingCases = []OutgoingTestCase{
 				httpx.NewMockResponse(501, nil, []byte(`Bad Gateway`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 	{
 		Label:   "Throttled",
@@ -111,7 +111,7 @@ var outgoingCases = []OutgoingTestCase{
 				httpx.NewMockResponse(429, nil, []byte(`Bad Gateway`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 }
 

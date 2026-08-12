@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -147,7 +147,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"message": {"Error Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}}},
 		},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -161,7 +161,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"message": {"Error Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}}},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Authentication Error",
@@ -175,7 +175,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}}},
 		},
-		ExpectedError: courier.ErrFailedWithReason("001", "Authentication error."),
+		ExpectedError: channels.ErrFailedWithReason("001", "Authentication error."),
 	},
 	{
 		Label:   "Account Expired",
@@ -189,7 +189,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}}},
 		},
-		ExpectedError: courier.ErrFailedWithReason("101", "Account expired or invalid parameters."),
+		ExpectedError: channels.ErrFailedWithReason("101", "Account expired or invalid parameters."),
 	},
 }
 

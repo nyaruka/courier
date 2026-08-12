@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"io"
 	"log/slog"
 	"net/http"
@@ -83,7 +83,7 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 		return nil, fmt.Errorf("error getting channel: %w", err)
 	}
 
-	handler := courier.GetActiveHandler(ch.ChannelType())
+	handler := channels.GetActiveHandler(ch.ChannelType())
 	if handler == nil {
 		return &sendEventResponse{Supported: false}, nil
 	}

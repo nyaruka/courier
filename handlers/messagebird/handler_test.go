@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -302,7 +302,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
 			Body:    `{"recipients":["188885551515"],"reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","originator":"18005551212","body":"Simple Message ☺"}`,
 		}},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 	{
 		Label:   "404 on Send",
@@ -317,7 +317,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
 			Body:    `{"recipients":["188885551515"],"reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","originator":"18005551212","body":"Simple Message ☺"}`,
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -332,7 +332,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
 			Body:    `{"recipients":["188885551515"],"reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","originator":"18005551212","body":"Simple Message ☺"}`,
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 }
 

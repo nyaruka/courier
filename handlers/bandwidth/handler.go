@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
@@ -31,19 +31,19 @@ const (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("BW"), "Bandwidth")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.statusMessage)
 	return nil
@@ -61,7 +61,7 @@ type moMessageData struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	var payload []moMessageData
 
 	body, err := handlers.ReadBody(r, 1000000)
@@ -124,7 +124,7 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	var payload []moStatusData
 	body, err := handlers.ReadBody(r, 1000000)
 	if err != nil {
@@ -175,7 +175,7 @@ type mtResponse struct {
 	Description string `json:"description"`
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
@@ -185,7 +185,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 	}
 
 	if username == "" || password == "" || accountID == "" || applicationID == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	msgParts := make([]string, 0)
@@ -226,19 +226,19 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 == 5 {
-			return courier.ErrConnectionFailed
+			return channels.ErrConnectionFailed
 		}
 		if handlers.IsThrottled(resp) {
-			return courier.ErrConnectionThrottled
+			return channels.ErrConnectionThrottled
 		}
 
 		response := &mtResponse{}
 		if err = json.Unmarshal(respBody, response); err != nil {
-			return courier.ErrResponseUnparseable
+			return channels.ErrResponseUnparseable
 		}
 
 		if resp.StatusCode/100 != 2 {
-			return courier.ErrFailedWithReason(response.Type, response.Description)
+			return channels.ErrFailedWithReason(response.Type, response.Description)
 		}
 
 		if response.ID != "" {

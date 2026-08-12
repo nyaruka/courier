@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -1121,7 +1121,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Error"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
 		},
-		ExpectedError: courier.ErrFailedWithReason("400", "Bot domain invalid."),
+		ExpectedError: channels.ErrFailedWithReason("400", "Bot domain invalid."),
 	},
 	{
 		Label:   "Throttled",
@@ -1135,7 +1135,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Error"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Stopped Contact Code",
@@ -1149,7 +1149,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Stopped Contact"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
 		},
-		ExpectedError: courier.ErrContactStopped,
+		ExpectedError: channels.ErrContactStopped,
 	},
 	{
 		Label:          "Send Photo",
@@ -1223,7 +1223,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Simple Message"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
 		},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:             "Unknown attachment type",
@@ -1281,16 +1281,16 @@ func TestSendEvent(t *testing.T) {
 
 	// non-ok response is a response error
 	err = h.SendEvent(context.Background(), ch, typing, clog)
-	assert.Equal(t, courier.ErrResponseStatus, err)
+	assert.Equal(t, channels.ErrResponseStatus, err)
 
 	// as is a connection error
 	err = h.SendEvent(context.Background(), ch, typing, clog)
-	assert.Equal(t, courier.ErrConnectionFailed, err)
+	assert.Equal(t, channels.ErrConnectionFailed, err)
 
 	// channel without an auth token can't send
 	noAuth := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US", []string{urns.Telegram.Prefix}, map[string]any{})
 	err = h.SendEvent(context.Background(), noAuth, typing, clog)
-	assert.Equal(t, courier.ErrChannelConfig, err)
+	assert.Equal(t, channels.ErrChannelConfig, err)
 
 	// an event type the handler doesn't declare support for can't be sent
 	err = h.SendEvent(context.Background(), ch, events.NewTypingStopped(events.DirectionOutgoing, nil, "telegram:12345", ""), clog)

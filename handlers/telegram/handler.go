@@ -14,7 +14,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
@@ -35,25 +35,25 @@ var mediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{
 }
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("TG"), "Telegram")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	return nil
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	// no message? ignore this
 	if payload.Message.MessageID == 0 {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
@@ -81,7 +81,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		if err != nil {
 			return nil, err
 		}
-		return []courier.Event{event}, courier.WriteChannelEventSuccess(w, event)
+		return []channels.Event{event}, channels.WriteChannelEventSuccess(w, event)
 	}
 
 	// normal message of some kind
@@ -201,11 +201,11 @@ func (h *handler) sendMsgPart(msg *models.MsgOut, token, path string, form url.V
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
-		return "", courier.ErrConnectionFailed
+		return "", channels.ErrConnectionFailed
 	}
 	// Telegram rate limits with a 429 and a retry_after parameter, so retry rather than failing
 	if handlers.IsThrottled(resp) {
-		return "", courier.ErrConnectionThrottled
+		return "", channels.ErrConnectionThrottled
 	}
 
 	response := &mtResponse{}
@@ -213,24 +213,24 @@ func (h *handler) sendMsgPart(msg *models.MsgOut, token, path string, form url.V
 
 	if err != nil || resp.StatusCode/100 != 2 || !response.Ok {
 		if response.ErrorCode == 403 && (response.Description == "Forbidden: bot was blocked by the user" || response.Description == "Forbidden: user is deactivated") {
-			return "", courier.ErrContactStopped
+			return "", channels.ErrContactStopped
 		} else if response.ErrorCode > 0 {
-			return "", courier.ErrFailedWithReason(strconv.Itoa(response.ErrorCode), response.Description)
+			return "", channels.ErrFailedWithReason(strconv.Itoa(response.ErrorCode), response.Description)
 		}
 
-		return "", courier.ErrResponseStatus
+		return "", channels.ErrResponseStatus
 	}
 
 	if response.Result.MessageID > 0 {
 		return strconv.FormatInt(response.Result.MessageID, 10), nil
 	}
-	return "", courier.ErrResponseContent
+	return "", channels.ErrResponseContent
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	attachments, err := handlers.ResolveAttachments(ctx, h.Runtime(), msg.Attachments(), mediaSupport, true, clog)
@@ -366,7 +366,7 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 
 	authToken := ch.StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	form := url.Values{"chat_id": []string{typing.URN.Path()}, "action": []string{"typing"}}
@@ -380,17 +380,17 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
-		return courier.ErrConnectionFailed
+		return channels.ErrConnectionFailed
 	}
 	if handlers.IsThrottled(resp) {
-		return courier.ErrConnectionThrottled
+		return channels.ErrConnectionThrottled
 	}
 
 	response := &struct {
 		Ok bool `json:"ok"`
 	}{}
 	if err := json.Unmarshal(respBody, response); err != nil || resp.StatusCode/100 != 2 || !response.Ok {
-		return courier.ErrResponseStatus
+		return channels.ErrResponseStatus
 	}
 
 	return nil
@@ -430,7 +430,7 @@ func (h *handler) resolveFileID(ctx context.Context, channel *models.Channel, fi
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	if err != nil {
-		courier.LogRequestError(req, channel, err)
+		channels.LogRequestError(req, channel, err)
 	}
 
 	resp, respBody, _ := h.RequestHTTP(req, clog)

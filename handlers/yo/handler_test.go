@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -75,7 +75,7 @@ var getSendTestCases = []OutgoingTestCase{
 			"password":     {"yo-password"},
 			"origin":       {"2020"},
 		}}},
-		ExpectedError: courier.ErrContactStopped,
+		ExpectedError: channels.ErrContactStopped,
 	},
 	{Label: "Errored wrong authorization",
 		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
@@ -90,7 +90,7 @@ var getSendTestCases = []OutgoingTestCase{
 			"password":     {"yo-password"},
 			"origin":       {"2020"},
 		}}},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{Label: "Unicode Send",
 		MsgText: "☺", MsgURN: "tel:+250788383383",
@@ -119,7 +119,7 @@ var getSendTestCases = []OutgoingTestCase{
 			"password":     {"yo-password"},
 			"origin":       {"2020"},
 		}}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{Label: "Throttled",
 		MsgText: "Error Message", MsgURN: "tel:+250788383383",
@@ -134,7 +134,7 @@ var getSendTestCases = []OutgoingTestCase{
 			"password":     {"yo-password"},
 			"origin":       {"2020"},
 		}}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{Label: "Connection error",
 		MsgText: "Error Message", MsgURN: "tel:+250788383383",
@@ -149,7 +149,7 @@ var getSendTestCases = []OutgoingTestCase{
 			"password":     {"yo-password"},
 			"origin":       {"2020"},
 		}}},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 	{Label: "Send Attachment",
 		MsgText: "My pic!", MsgURN: "tel:+250788383383", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},

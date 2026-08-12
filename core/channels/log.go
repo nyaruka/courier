@@ -1,4 +1,4 @@
-package courier
+package channels
 
 import (
 	"context"

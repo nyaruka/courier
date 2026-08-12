@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -543,7 +543,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: channels.ErrResponseUnexpected,
 	},
 	{
 		Label:   "Response status code is non-200",
@@ -554,7 +554,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -565,7 +565,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(429, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Response is invalid JSON",
@@ -576,7 +576,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`bad json`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseUnparseable,
+		ExpectedError: channels.ErrResponseUnparseable,
 	},
 	{
 		Label:   "Response is channel specific error",
@@ -587,7 +587,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "error": {"message": "The image size is too large.","code": 36000 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrFailedWithReason("36000", "The image size is too large."),
+		ExpectedError: channels.ErrFailedWithReason("36000", "The image size is too large."),
 	},
 }
 
@@ -642,16 +642,16 @@ func TestFacebookSendEvent(t *testing.T) {
 
 	// an error response is a response error
 	err = h.SendEvent(context.Background(), channel, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "facebook:5678", ""), clog)
-	assert.Equal(t, courier.ErrResponseStatus, err)
+	assert.Equal(t, channels.ErrResponseStatus, err)
 
 	// as is a connection error
 	err = h.SendEvent(context.Background(), channel, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "facebook:5678", ""), clog)
-	assert.Equal(t, courier.ErrConnectionFailed, err)
+	assert.Equal(t, channels.ErrConnectionFailed, err)
 
 	// a channel without an auth token config can't send
 	noAuth := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", []string{urns.Facebook.Prefix}, nil)
 	err = h.SendEvent(context.Background(), noAuth, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "facebook:5678", ""), clog)
-	assert.Equal(t, courier.ErrChannelConfig, err)
+	assert.Equal(t, channels.ErrChannelConfig, err)
 
 	// nor can an event type the handler doesn't know how to send
 	err = h.SendEvent(context.Background(), channel, events.NewContactLanguageChanged("eng"), clog)

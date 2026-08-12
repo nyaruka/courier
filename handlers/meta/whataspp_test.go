@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -1066,7 +1066,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`bad json`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseUnparseable,
+		ExpectedError: channels.ErrResponseUnparseable,
 	},
 	{
 		Label:   "Error Channel Contact Pair limit hit",
@@ -1077,7 +1077,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#131056) (Business Account, Consumer Account) pair rate limit hit","code": 131056 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error Throttled",
@@ -1088,7 +1088,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#130429) Rate limit hit","code": 130429 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error HTTP 429",
@@ -1099,7 +1099,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(429, nil, []byte(`{ "error": {"message": "Calls to this api have exceeded the rate limit","code": 613 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error Retryable",
@@ -1110,7 +1110,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(400, nil, []byte(`{ "error": {"message": "Media upload error","code": 131053 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrRetryableWithReason("131053", "Media upload error"),
+		ExpectedError: channels.ErrRetryableWithReason("131053", "Media upload error"),
 	},
 	{
 		Label:   "Error",
@@ -1121,7 +1121,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#368) Temporarily blocked for policies violations","code": 368 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrFailedWithReason("368", "(#368) Temporarily blocked for policies violations"),
+		ExpectedError: channels.ErrFailedWithReason("368", "(#368) Temporarily blocked for policies violations"),
 	},
 	{
 		Label:   "Error Message",
@@ -1132,7 +1132,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "Other error with message","code": 0 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrFailedWithReason("0", "Other error with message"),
+		ExpectedError: channels.ErrFailedWithReason("0", "Other error with message"),
 	},
 	{
 		Label:   "Error Connection",
@@ -1143,7 +1143,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(500, nil, []byte(`Bad Gateway`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 }
 
@@ -1233,11 +1233,11 @@ func TestWhatsAppSendEvent(t *testing.T) {
 
 	// an error response is a response error
 	err = h.SendEvent(context.Background(), channel, typing, clog)
-	assert.Equal(t, courier.ErrResponseStatus, err)
+	assert.Equal(t, channels.ErrResponseStatus, err)
 
 	// as is a connection error
 	err = h.SendEvent(context.Background(), channel, typing, clog)
-	assert.Equal(t, courier.ErrConnectionFailed, err)
+	assert.Equal(t, channels.ErrConnectionFailed, err)
 
 	// an event without a msg external ID can't be sent
 	err = h.SendEvent(context.Background(), channel, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "whatsapp:5511987654321", ""), clog)

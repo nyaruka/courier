@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/httpx"
@@ -26,25 +26,25 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("I2"), "I2SMS", handlers.WithRedactConfigKeys(models.ConfigPassword, configChannelHash))}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receive)
 	return nil
 }
 
 // receive is our handler for MO messages
-func (h *handler) receive(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receive(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
@@ -85,12 +85,12 @@ type mtResponse struct {
 	ErrorDesc string `json:"error_desc"`
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	channelHash := msg.Channel().StringConfigForKey(configChannelHash, "")
 	if username == "" || password == "" || channelHash == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
@@ -118,14 +118,14 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 		response := &mtResponse{}
 		err = json.Unmarshal(respBody, response)
 		if err != nil {
-			return courier.ErrResponseUnparseable
+			return channels.ErrResponseUnparseable
 		}
 
 		// we always get 00 on success
 		if response.ErrorCode == "00" {
 			res.AddExternalID(response.Result.SessionID)
 		} else {
-			return courier.ErrFailedWithReason(response.ErrorCode, response.ErrorDesc)
+			return channels.ErrFailedWithReason(response.ErrorCode, response.ErrorDesc)
 		}
 	}
 

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -188,7 +188,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Error Message"}`,
 			},
 		},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -205,7 +205,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Error Message"}`,
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:          "Send Attachment",
@@ -239,7 +239,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"0191e180-7d60-7000-aded-7d8b151cbd5b","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Simple Message"}`,
 			},
 		},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 }
 

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/httpx"
@@ -20,19 +20,19 @@ import (
 const configTransliteration = "transliteration"
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("IB"), "Infobip")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	r.Add(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.statusMessage))
 	return nil
@@ -57,9 +57,9 @@ type ibStatus struct {
 }
 
 // statusMessage is our HTTP handler function for status updates
-func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	data := make([]any, len(payload.Results))
-	statuses := make([]courier.Event, len(payload.Results))
+	statuses := make([]channels.Event, len(payload.Results))
 	for _, s := range payload.Results {
 		msgStatus, found := statusMapping[s.Status.GroupName]
 		if !found {
@@ -72,11 +72,11 @@ func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w 
 		if err != nil {
 			return nil, err
 		}
-		data = append(data, courier.NewStatusData(status))
+		data = append(data, channels.NewStatusData(status))
 		statuses = append(statuses, status)
 	}
 
-	return statuses, courier.WriteDataResponse(w, http.StatusOK, "statuses handled", data)
+	return statuses, channels.WriteDataResponse(w, http.StatusOK, "statuses handled", data)
 }
 
 type v3InboundPayload struct {
@@ -114,7 +114,7 @@ type v3InboundPrice struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages (both SMS and MMS)
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *v3InboundPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *v3InboundPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	if payload.MessageCount == 0 {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
@@ -247,13 +247,13 @@ type v2MMSMessageSegment struct {
 	ContentType string `json:"contentType,omitempty"` // Required for LINK type (e.g., image/jpeg)
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	apiKey := msg.Channel().StringConfigForKey(models.ConfigAPIKey, "")
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 
 	if apiKey == "" && (username == "" || password == "") {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	baseURL := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "https://api.infobip.com")
@@ -384,7 +384,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 
 	groupID, err := jsonparser.GetInt(respBody, "messages", "[0]", "status", "groupId")
 	if err != nil || (groupID != 1 && groupID != 3) {
-		return courier.ErrResponseContent
+		return channels.ErrResponseContent
 	}
 
 	externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "messageId")

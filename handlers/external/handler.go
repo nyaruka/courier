@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/antchfx/xmlquery"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
@@ -54,19 +54,19 @@ var contentTypeMappings = map[string]string{
 }
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("EX"), "External")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 
@@ -92,7 +92,7 @@ type stopContactForm struct {
 	From string `name:"from" validate:"required"`
 }
 
-func (h *handler) receiveStopContact(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStopContact(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &stopContactForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -116,7 +116,7 @@ func (h *handler) receiveStopContact(ctx context.Context, channel *models.Channe
 	if err != nil {
 		return nil, err
 	}
-	return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, channelEvent)
+	return []channels.Event{channelEvent}, channels.WriteChannelEventSuccess(w, channelEvent)
 }
 
 // utility function to grab the form value for either the passed in name (if non-empty) or the first set
@@ -140,7 +140,7 @@ func getFormField(form url.Values, defaultNames []string, name string) string {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	var err error
 
 	var from, dateString, text string
@@ -222,7 +222,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	moResponse := msgs[0].Channel().StringConfigForKey(configMOResponse, "")
 	if moResponse == "" {
-		return courier.WriteMsgSuccess(w, msgs)
+		return channels.WriteMsgSuccess(w, msgs)
 	}
 	moResponseContentType := msgs[0].Channel().StringConfigForKey(configMOResponseContentType, "")
 	if moResponseContentType != "" {
@@ -234,8 +234,8 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 }
 
 // buildStatusHandler deals with building a handler that takes what status is received in the URL
-func (h *handler) buildStatusHandler(status string) courier.ChannelHandleFunc {
-	return func(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) buildStatusHandler(status string) channels.HandleFunc {
+	return func(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 		return h.receiveStatus(ctx, status, channel, w, r, clog)
 	}
 }
@@ -252,7 +252,7 @@ var statusMappings = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, statusString string, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, statusString string, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -283,12 +283,12 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	channel := msg.Channel()
 
 	sendURL := channel.StringConfigForKey(models.ConfigSendURL, "")
 	if sendURL == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	// figure out what encoding to tell kannel to send as
@@ -384,7 +384,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 		}
 
 		if responseCheck != "" && !strings.Contains(string(respBody), responseCheck) {
-			return courier.ErrResponseContent
+			return channels.ErrResponseContent
 		}
 	}
 

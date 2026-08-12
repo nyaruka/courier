@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
@@ -35,23 +35,23 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("SL"), "Slack", handlers.WithRedactConfigKeys(configBotToken, configUserToken, configValidationToken))}
 }
 
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
 	return nil
 }
 
-func handleURLVerification(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload) ([]courier.Event, error) {
+func handleURLVerification(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload) ([]channels.Event, error) {
 	validationToken := channel.StringConfigForKey(configValidationToken, "")
 	if !utils.SecretEqual(payload.Token, validationToken) {
 		w.WriteHeader(http.StatusForbidden)
@@ -63,7 +63,7 @@ func handleURLVerification(ctx context.Context, channel *models.Channel, w http.
 	return nil, nil
 }
 
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	if payload.Type == "url_verification" {
 		clog.Type = models.ChannelLogTypeWebhookVerify
 
@@ -85,7 +85,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		for _, file := range payload.Event.Files {
 			fileURL, err := h.resolveFile(ctx, channel, file, clog)
 			if err != nil {
-				courier.LogRequestError(r, channel, err)
+				channels.LogRequestError(r, channel, err)
 			} else {
 				attachmentURLs = append(attachmentURLs, fileURL)
 			}
@@ -111,7 +111,7 @@ func (h *handler) resolveFile(ctx context.Context, channel *models.Channel, file
 	data := strings.NewReader(fmt.Sprintf(`{"file":"%s"}`, file.ID))
 	req, err := http.NewRequest(http.MethodPost, fileApiURL, data)
 	if err != nil {
-		courier.LogRequestError(req, channel, err)
+		channels.LogRequestError(req, channel, err)
 		return "", err
 	}
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
@@ -146,10 +146,10 @@ func (h *handler) resolveFile(ctx context.Context, channel *models.Channel, file
 	return filePath, nil
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	botToken := msg.Channel().StringConfigForKey(configBotToken, "")
 	if botToken == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	for _, attachment := range msg.Attachments() {
@@ -203,16 +203,16 @@ func (h *handler) sendTextMsgPart(msg *models.MsgOut, token string, clog *models
 
 	ok, err := jsonparser.GetBoolean(respBody, "ok")
 	if err != nil {
-		return courier.ErrResponseContent
+		return channels.ErrResponseContent
 	}
 
 	if !ok {
 		errDescription, err := jsonparser.GetString(respBody, "error")
 		if err != nil {
-			return courier.ErrResponseContent
+			return channels.ErrResponseContent
 		}
 		clog.Error(&clogs.Error{Message: errDescription})
-		return courier.ErrFailedWithReason("", errDescription)
+		return channels.ErrFailedWithReason("", errDescription)
 	}
 	return nil
 }
@@ -276,11 +276,11 @@ func (h *handler) sendFilePart(msg *models.MsgOut, token string, fileParams *Fil
 
 	var fr FileResponse
 	if err := json.Unmarshal(respBody, &fr); err != nil {
-		return courier.ErrResponseUnparseable
+		return channels.ErrResponseUnparseable
 	}
 
 	if !fr.OK {
-		return courier.ErrResponseContent
+		return channels.ErrResponseContent
 	}
 
 	return nil
