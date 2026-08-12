@@ -1015,14 +1015,12 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`},
-			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"cta_url","body":{"text":"Interactive URL msg"},"action":{"name":"cta_url","parameters":{"display_text":"Visit","url":"https://example.com"}}}}`},
+			{Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"cta_url","header":{"type":"image","image":{"link":"https://foo.bar/image.jpg"}},"body":{"text":"Interactive URL msg"},"action":{"name":"cta_url","parameters":{"display_text":"Visit","url":"https://example.com"}}}}`},
 		},
-		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive with URL button missing URL, sent as text",
