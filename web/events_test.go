@@ -22,7 +22,7 @@ import (
 // counts the event send channel logs written to DynamoDB
 func countChannelLogs(t *testing.T, rt *runtime.Runtime) int {
 	count := 0
-	for _, item := range dyntest.ScanAll(t, rt.Dynamo, "TestMain") {
+	for _, item := range dyntest.ScanAll(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table()) {
 		if strings.HasPrefix(item.Key.SK, "log#") && item.Data["type"] == "event_send" {
 			count++
 		}
@@ -44,7 +44,7 @@ func TestSendEvent(t *testing.T) {
 	_, rt := testsuite.Runtime(t)
 	testsuite.ResetDB(t, rt)
 	testsuite.ResetValkey(t, rt)
-	dyntest.Truncate(t, rt.Dynamo, "TestMain")
+	dyntest.Truncate(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table())
 
 	rt.Config.AuthToken = "sesame"
 	rt.Config.InternetPort = 8180
@@ -172,7 +172,7 @@ func TestSendEvent(t *testing.T) {
 	assertChannelLogCount(t, rt, 1)
 
 	// check the content of the written channel log
-	for _, item := range dyntest.ScanAll(t, rt.Dynamo, "TestMain") {
+	for _, item := range dyntest.ScanAll(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table()) {
 		if strings.HasPrefix(item.Key.SK, "log#") {
 			assert.Equal(t, "event_send", item.Data["type"])
 

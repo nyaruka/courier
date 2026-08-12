@@ -82,7 +82,7 @@ func TestIncoming(t *testing.T) {
 
 func TestOutgoing(t *testing.T) {
 	rt := serverRuntime(t)
-	dyntest.Truncate(t, rt.Dynamo, "TestMain")
+	dyntest.Truncate(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table())
 
 	s := web.NewServer(rt)
 	rt.HTTP.Transport = httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
@@ -161,7 +161,7 @@ func TestOutgoing(t *testing.T) {
 
 	// and we should have a channel log for the send with redacted errors and traces
 	require.Eventually(t, func() bool {
-		for _, item := range dyntest.ScanAll(t, rt.Dynamo, "TestMain") {
+		for _, item := range dyntest.ScanAll(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table()) {
 			if strings.HasPrefix(item.Key.SK, "log#") && item.Data["type"] == "msg_send" {
 				var dataGZ struct {
 					HttpLogs []*httpx.Log `json:"http_logs"`
@@ -301,7 +301,7 @@ func TestFetchAttachment(t *testing.T) {
 	// and channel logs should have been written for the fetches
 	require.Eventually(t, func() bool {
 		count := 0
-		for _, item := range dyntest.ScanAll(t, rt.Dynamo, "TestMain") {
+		for _, item := range dyntest.ScanAll(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table()) {
 			if strings.HasPrefix(item.Key.SK, "log#") && item.Data["type"] == "attachment_fetch" {
 				count++
 			}

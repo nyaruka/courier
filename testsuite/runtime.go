@@ -75,7 +75,7 @@ func NewRuntime(t *testing.T) *runtime.Runtime {
 	}
 
 	// create Dynamo tables if necessary
-	dyntest.CreateTables(t, rt.Dynamo, testdataPath("dynamo.json"), false)
+	dyntest.CreateTables(t, rt.Dynamo.Main.Client(), testdataPath("dynamo.json"), false)
 
 	rt.Centrifugo = centrifugo.NewService(centrifugo.NewMockClient(), rt.VK)
 

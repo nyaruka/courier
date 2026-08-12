@@ -204,7 +204,7 @@ func writeStatusUpdatesToDB(ctx context.Context, rt *runtime.Runtime, statuses [
 		}
 
 		for _, c := range changes {
-			if _, err := rt.Writers.History.Queue(c); err != nil {
+			if _, err := rt.Dynamo.History.Queue(c); err != nil {
 				slog.Error("error queuing status change to writer", "error", err, "msg_uuid", c.MsgUUID, "msg_status", c.MsgStatus)
 			}
 		}
