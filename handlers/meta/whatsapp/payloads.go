@@ -80,8 +80,8 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 	if len(msg.Attachments()) > 0 && len(msgParts) > 0 && headerCapable && len(locationQRs) == 0 && len(formQRs) == 0 {
 		attType, _ := handlers.SplitAttachment(msg.Attachments()[0])
 		attType = strings.Split(attType, "/")[0]
-		// only certain media types can be used as an interactive header
-		if attType == "image" || attType == "video" || attType == "document" {
+		// only certain media types can be used as an interactive header (application/* is sent as a document)
+		if attType == "image" || attType == "video" || attType == "document" || attType == "application" {
 			hasHeaderAttachment = true
 		}
 	}
