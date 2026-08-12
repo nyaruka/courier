@@ -96,32 +96,18 @@ type eventsPayload struct {
 			Body string `json:"body"`
 		} `json:"text"`
 		Audio *struct {
-			File     string `json:"file"      validate:"required"`
-			ID       string `json:"id"        validate:"required"`
-			Link     string `json:"link"`
-			MimeType string `json:"mime_type" validate:"required"`
-			Sha256   string `json:"sha256"    validate:"required"`
+			ID string `json:"id"`
 		} `json:"audio"`
 		Button *struct {
-			Payload string `json:"payload"`
-			Text    string `json:"text"    validate:"required"`
+			Text string `json:"text"`
 		} `json:"button"`
 		Document *struct {
-			File     string `json:"file"      validate:"required"`
-			ID       string `json:"id"        validate:"required"`
-			Link     string `json:"link"`
-			MimeType string `json:"mime_type" validate:"required"`
-			Sha256   string `json:"sha256"    validate:"required"`
-			Caption  string `json:"caption"`
-			Filename string `json:"filename"`
+			ID      string `json:"id"`
+			Caption string `json:"caption"`
 		} `json:"document"`
 		Image *struct {
-			File     string `json:"file"      validate:"required"`
-			ID       string `json:"id"        validate:"required"`
-			Link     string `json:"link"`
-			MimeType string `json:"mime_type" validate:"required"`
-			Sha256   string `json:"sha256"    validate:"required"`
-			Caption  string `json:"caption"`
+			ID      string `json:"id"`
+			Caption string `json:"caption"`
 		} `json:"image"`
 		Interactive *struct {
 			ButtonReply *struct {
@@ -141,25 +127,15 @@ type eventsPayload struct {
 			Type string `json:"type"`
 		} `json:"interactive"`
 		Location *struct {
-			Address   string  `json:"address"   validate:"required"`
-			Latitude  float32 `json:"latitude"  validate:"required"`
-			Longitude float32 `json:"longitude" validate:"required"`
-			Name      string  `json:"name"      validate:"required"`
-			URL       string  `json:"url"       validate:"required"`
+			Latitude  float64 `json:"latitude"`
+			Longitude float64 `json:"longitude"`
 		} `json:"location"`
 		Video *struct {
-			File     string `json:"file"      validate:"required"`
-			ID       string `json:"id"        validate:"required"`
-			Link     string `json:"link"`
-			MimeType string `json:"mime_type" validate:"required"`
-			Sha256   string `json:"sha256"    validate:"required"`
+			ID      string `json:"id"`
+			Caption string `json:"caption"`
 		} `json:"video"`
 		Voice *struct {
-			File     string `json:"file"      validate:"required"`
-			ID       string `json:"id"        validate:"required"`
-			Link     string `json:"link"`
-			MimeType string `json:"mime_type" validate:"required"`
-			Sha256   string `json:"sha256"    validate:"required"`
+			ID string `json:"id"`
 		} `json:"voice"`
 		Errors []whatsapp.WAError `json:"errors"`
 	} `json:"messages"`
@@ -256,6 +232,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		} else if msg.Type == "location" && msg.Location != nil {
 			mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
 		} else if msg.Type == "video" && msg.Video != nil {
+			text = msg.Video.Caption
 			mediaURL, err = resolveMediaURL(channel, msg.Video.ID)
 		} else if msg.Type == "voice" && msg.Voice != nil {
 			mediaURL, err = resolveMediaURL(channel, msg.Voice.ID)
