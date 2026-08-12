@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -132,8 +133,13 @@ type eventsPayload struct {
 				Title       string `json:"title"`
 				Description string `json:"description"`
 			} `json:"list_reply"`
+			NFMReply *struct {
+				Name         string `json:"name"`
+				Body         string `json:"body"`
+				ResponseJSON string `json:"response_json"`
+			} `json:"nfm_reply"`
 			Type string `json:"type"`
-		}
+		} `json:"interactive"`
 		Location *struct {
 			Address   string  `json:"address"   validate:"required"`
 			Latitude  float32 `json:"latitude"  validate:"required"`
@@ -155,11 +161,13 @@ type eventsPayload struct {
 			MimeType string `json:"mime_type" validate:"required"`
 			Sha256   string `json:"sha256"    validate:"required"`
 		} `json:"voice"`
+		Errors []whatsapp.WAError `json:"errors"`
 	} `json:"messages"`
 	Statuses []struct {
-		ID        string `json:"id"           validate:"required"`
-		Timestamp string `json:"timestamp"    validate:"required"`
-		Status    string `json:"status"       validate:"required"`
+		ID        string             `json:"id"           validate:"required"`
+		Timestamp string             `json:"timestamp"    validate:"required"`
+		Status    string             `json:"status"       validate:"required"`
+		Errors    []whatsapp.WAError `json:"errors"`
 	} `json:"statuses"`
 }
 
@@ -211,8 +219,14 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid whatsapp id"))
 		}
 
+		for _, msgError := range msg.Errors {
+			msgError.ErrorChannelLog(clog)
+		}
+
 		text := ""
 		mediaURL := ""
+		var msgPayload json.RawMessage
+		supported := true
 
 		if msg.Type == "text" {
 			text = msg.Text.Body
@@ -226,11 +240,18 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		} else if msg.Type == "image" && msg.Image != nil {
 			text = msg.Image.Caption
 			mediaURL, err = resolveMediaURL(channel, msg.Image.ID)
-		} else if msg.Type == "interactive" && msg.Interactive != nil {
-			if msg.Interactive.Type == "button_reply" && msg.Interactive.ButtonReply != nil {
-				text = msg.Interactive.ButtonReply.Title
-			} else if msg.Interactive.Type == "list_reply" && msg.Interactive.ListReply != nil {
-				text = msg.Interactive.ListReply.Title
+		} else if msg.Type == "interactive" && msg.Interactive != nil && msg.Interactive.Type == "button_reply" && msg.Interactive.ButtonReply != nil {
+			text = msg.Interactive.ButtonReply.Title
+		} else if msg.Type == "interactive" && msg.Interactive != nil && msg.Interactive.Type == "list_reply" && msg.Interactive.ListReply != nil {
+			text = msg.Interactive.ListReply.Title
+		} else if msg.Type == "interactive" && msg.Interactive != nil && msg.Interactive.Type == "nfm_reply" && msg.Interactive.NFMReply != nil {
+			text = msg.Interactive.NFMReply.Body
+			// attach the response JSON as the msg payload if it's a valid JSON object
+			raw := strings.TrimSpace(msg.Interactive.NFMReply.ResponseJSON)
+			if strings.HasPrefix(raw, "{") && json.Valid([]byte(raw)) {
+				msgPayload = json.RawMessage(raw)
+			} else if msg.Interactive.NFMReply.ResponseJSON != "" {
+				channels.LogRequestError(r, channel, errors.New("nfm_reply response_json is not a valid JSON object"))
 			}
 		} else if msg.Type == "location" && msg.Location != nil {
 			mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
@@ -239,8 +260,13 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		} else if msg.Type == "voice" && msg.Voice != nil {
 			mediaURL, err = resolveMediaURL(channel, msg.Voice.ID)
 		} else {
-			// we received a message type we do not support.
+			supported = false
+		}
+
+		// we received a message type we do not support - don't create an empty message for it
+		if !supported {
 			channels.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", msg.Type))
+			continue
 		}
 
 		// create our message
@@ -253,6 +279,10 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 
 		if mediaURL != "" {
 			event.WithAttachment(mediaURL)
+		}
+
+		if msgPayload != nil {
+			event.WithPayload(msgPayload)
 		}
 
 		// if we have a from_bsuid, add it as a secondary whatsapp URN (unless it's already the primary URN)
@@ -284,9 +314,13 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			if turnWaIgnoreStatuses[status.Status] {
 				data = append(data, channels.NewInfoData(fmt.Sprintf("ignoring status: %s", status.Status)))
 			} else {
-				handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status: %s", status.Status))
+				handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("unknown status: %s", status.Status))
 			}
 			continue
+		}
+
+		for _, statusError := range status.Errors {
+			statusError.ErrorChannelLog(clog)
 		}
 
 		event := models.NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
@@ -451,7 +485,8 @@ func (h *handler) buildPayloads(ctx context.Context, msg *models.MsgOut, clog *m
 	// attach preview media and button quick-replies on the same message; those must not be
 	// turned into separate image/interactive sends.
 	if msg.Templating() != nil {
-		langCode := getSupportedLanguage(msg.Locale())
+		// prefer the language mailroom resolved for the template, falling back to deriving one from the msg locale
+		langCode := cmp.Or(msg.Templating().Language, getSupportedLanguage(msg.Locale()))
 		namespace := msg.Templating().Namespace
 		if namespace == "" {
 			namespace = msg.Channel().StringConfigForKey(configNamespace, "")

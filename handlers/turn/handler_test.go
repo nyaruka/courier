@@ -390,6 +390,70 @@ var ignoreStatus = `
 }
 `
 
+var nfmReplyMsg = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"interactive": {
+			"nfm_reply": {
+				"name": "flow",
+				"body": "Sent",
+				"response_json": "{\"flow_token\": \"fl0w+t0k3n\", \"age\": \"32\"}"
+			},
+			"type": "nfm_reply"
+		},
+		"timestamp": "1454119029",
+		"type": "interactive"
+	}]
+}`
+
+var nfmReplyMsgNonObject = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"interactive": {
+			"nfm_reply": {
+				"name": "flow",
+				"body": "Sent",
+				"response_json": "[1, 2]"
+			},
+			"type": "nfm_reply"
+		},
+		"timestamp": "1454119029",
+		"type": "interactive"
+	}]
+}`
+
+var unsupportedTypeMsg = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"timestamp": "1454119029",
+		"type": "order"
+	}]
+}`
+
+var errorMsg = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"timestamp": "1454119029",
+		"type": "unsupported",
+		"errors": [{"code": 131051, "title": "Unsupported message type"}]
+	}]
+}`
+
+var errorStatus = `
+{
+  "statuses": [{
+    "id": "9712A34B4A8B6AD50F",
+    "status": "failed",
+    "timestamp": "1518694700",
+    "errors": [{"code": 131014, "title": "Request for url https://URL.jpg failed with error: 404 (Not Found)"}]
+  }]
+}
+`
+
 var turnWhatsappReceiveURL = "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive"
 
 var testCasesTurn = []IncomingTestCase{
@@ -548,6 +612,44 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
 	{
+		Label:                "Receive valid interactive flow reply message",
+		URL:                  turnWhatsappReceiveURL,
+		Data:                 nfmReplyMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp("Sent"),
+		ExpectedPayload:      `{"flow_token": "fl0w+t0k3n", "age": "32"}`,
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive interactive flow reply message with non-object response JSON",
+		URL:                  turnWhatsappReceiveURL,
+		Data:                 nfmReplyMsgNonObject,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp("Sent"),
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive unsupported message type, no message written",
+		URL:                  turnWhatsappReceiveURL,
+		Data:                 unsupportedTypeMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Events Handled",
+	},
+	{
+		Label:                "Receive message with errors, logged and no message written",
+		URL:                  turnWhatsappReceiveURL,
+		Data:                 errorMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Events Handled",
+		ExpectedErrors:       []*svclogs.Error{models.ErrorExternal("131051", "Unsupported message type")},
+	},
+	{
 		Label:                "Receive valid location message",
 		URL:                  turnWhatsappReceiveURL,
 		Data:                 locationMsg,
@@ -642,10 +744,23 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedBodyContains: "unable to parse",
 	},
 	{
+		Label:                "Receive failed status with error message",
+		URL:                  turnWhatsappReceiveURL,
+		Data:                 errorStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"status"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "9712A34B4A8B6AD50F", Status: models.MsgStatusFailed},
+		},
+		ExpectedErrors: []*svclogs.Error{
+			models.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)"),
+		},
+	},
+	{
 		Label:                "Receive invalid status",
 		URL:                  turnWhatsappReceiveURL,
 		Data:                 invalidStatus,
-		ExpectedRespStatus:   400,
+		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"unknown status: in_orbit"`,
 	},
 	{
@@ -944,7 +1059,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/v1/messages",
-			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
 
 		ExpectedExtIDs: []string{"157b5e14568e8"},
@@ -965,7 +1080,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/v1/messages",
-			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"}}}`,
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"}}}`,
 		}},
 
 		ExpectedExtIDs: []string{"157b5e14568e8"},
@@ -1076,7 +1191,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/v1/messages",
-			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -1105,7 +1220,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/v1/messages",
-			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"header","parameters":[{"type":"video","video":{"link":"https://foo.bar/video.mp4"}}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"header","parameters":[{"type":"video","video":{"link":"https://foo.bar/video.mp4"}}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -1134,7 +1249,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/v1/messages",
-			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"header","parameters":[{"type":"document","document":{"link":"https://foo.bar/doc.pdf","filename":"doc.pdf"}}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"header","parameters":[{"type":"document","document":{"link":"https://foo.bar/doc.pdf","filename":"doc.pdf"}}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -1162,7 +1277,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/v1/messages",
-			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]},{"type":"body","parameters":null}]}}`,
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]},{"type":"body","parameters":null}]}}`,
 		}},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -1191,7 +1306,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/v1/messages",
-			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"header","parameters":[{"type":"text","text":"Welcome"}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"header","parameters":[{"type":"text","text":"Welcome"}]},{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
@@ -1224,7 +1339,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/v1/messages",
-			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]},{"type":"body","parameters":[{"type":"text","text":"Ryan Lewis"},{"type":"text","text":"niño"}]},{"type":"button","sub_type":"quick_reply","index":"0","parameters":[{"type":"payload","payload":"Sip"}]},{"type":"button","sub_type":"url","index":"1","parameters":[{"type":"text","text":"id00231"}]}]}}`,
+			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"header","parameters":[{"type":"image","image":{"link":"https://foo.bar/image.jpg"}}]},{"type":"body","parameters":[{"type":"text","text":"Ryan Lewis"},{"type":"text","text":"niño"}]},{"type":"button","sub_type":"quick_reply","index":"0","parameters":[{"type":"payload","payload":"Sip"}]},{"type":"button","sub_type":"url","index":"1","parameters":[{"type":"text","text":"id00231"}]}]}}`,
 		}},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
