@@ -72,9 +72,12 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 
 	var payloads []SendRequest
 
-	// determine if the attachment can be used as a header in an interactive message
+	// determine if the attachment can be used as a header in an interactive message - button (max 3, not shown as a
+	// list) and CTA URL messages support media headers, but interactive messages require body text so without text
+	// the attachment has to be sent as a standalone media message
+	headerCapable := len(urlQRs) > 0 || (len(qrs) > 0 && len(qrs) <= 3 && !qrsAsList)
 	hasHeaderAttachment := false
-	if len(msg.Attachments()) > 0 && len(qrs) > 0 && len(qrs) <= 3 && len(locationQRs) == 0 && len(formQRs) == 0 && len(urlQRs) == 0 && !qrsAsList {
+	if len(msg.Attachments()) > 0 && len(msgParts) > 0 && headerCapable && len(locationQRs) == 0 && len(formQRs) == 0 {
 		attType, _ := handlers.SplitAttachment(msg.Attachments()[0])
 		attType = strings.Split(attType, "/")[0]
 		// only certain media types can be used as an interactive header
@@ -121,14 +124,18 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 			payloads = append(payloads, buildFlowPayload(msg, part, formQRs[0]))
 
 		case isLastPart && len(urlQRs) > 0:
-			payloads = append(payloads, buildCTAURLPayload(msg, part, urlQRs[0]))
-
-		case isLastPart && len(qrs) > 0 && !qrsAsList:
-			ps, err := buildButtonPayload(msg, part, qrs, hasHeaderAttachment)
+			p, err := buildCTAURLPayload(msg, part, urlQRs[0], hasHeaderAttachment)
 			if err != nil {
 				return nil, err
 			}
-			payloads = append(payloads, ps...)
+			payloads = append(payloads, p)
+
+		case isLastPart && len(qrs) > 0 && !qrsAsList:
+			p, err := buildButtonPayload(msg, part, qrs, hasHeaderAttachment)
+			if err != nil {
+				return nil, err
+			}
+			payloads = append(payloads, p)
 
 		case isLastPart && len(qrs) > 0 && qrsAsList:
 			payloads = append(payloads, buildListPayload(msg, part, qrs, menuButton))
@@ -220,18 +227,27 @@ func buildFlowPayload(msg *models.MsgOut, body string, qr models.QuickReply) Sen
 	return p
 }
 
-func buildCTAURLPayload(msg *models.MsgOut, body string, qr models.QuickReply) SendRequest {
+func buildCTAURLPayload(msg *models.MsgOut, body string, qr models.QuickReply, useAttachmentHeader bool) (SendRequest, error) {
 	p := newBasePayload(msg)
 	p.Type = "interactive"
 	interactive := Interactive{Type: "cta_url", Body: struct {
 		Text string `json:"text"`
 	}{Text: body}}
+
+	if useAttachmentHeader {
+		header, err := buildAttachmentHeader(msg)
+		if err != nil {
+			return SendRequest{}, err
+		}
+		interactive.Header = header
+	}
+
 	interactive.Action = &Action{
 		Name:       "cta_url",
 		Parameters: &ActionParameters{DisplayText: qr.GetText(), URL: qr.Extra},
 	}
 	p.Interactive = &interactive
-	return p
+	return p, nil
 }
 
 func buildButtons(qrs []models.QuickReply) []Button {
@@ -244,8 +260,7 @@ func buildButtons(qrs []models.QuickReply) []Button {
 	return btns
 }
 
-func buildButtonPayload(msg *models.MsgOut, body string, qrs []models.QuickReply, useAttachmentHeader bool) ([]SendRequest, error) {
-	var payloads []SendRequest
+func buildButtonPayload(msg *models.MsgOut, body string, qrs []models.QuickReply, useAttachmentHeader bool) (SendRequest, error) {
 	p := newBasePayload(msg)
 	p.Type = "interactive"
 
@@ -254,30 +269,39 @@ func buildButtonPayload(msg *models.MsgOut, body string, qrs []models.QuickReply
 	}{Text: body}}
 
 	if useAttachmentHeader {
-		attType, attURL := handlers.SplitAttachment(msg.Attachments()[0])
-		attType = strings.Split(attType, "/")[0]
-		if attType == "application" {
-			attType = "document"
+		header, err := buildAttachmentHeader(msg)
+		if err != nil {
+			return SendRequest{}, err
 		}
-
-		switch attType {
-		case "image":
-			interactive.Header = &Header{Type: "image", Image: &Media{Link: attURL}}
-		case "video":
-			interactive.Header = &Header{Type: "video", Video: &Media{Link: attURL}}
-		case "document":
-			filename, err := utils.BasePathForURL(attURL)
-			if err != nil {
-				return nil, err
-			}
-			interactive.Header = &Header{Type: "document", Document: &Media{Link: attURL, Filename: filename}}
-		}
+		interactive.Header = header
 	}
 
 	interactive.Action = &Action{Buttons: buildButtons(qrs)}
 	p.Interactive = &interactive
-	payloads = append(payloads, p)
-	return payloads, nil
+	return p, nil
+}
+
+// buildAttachmentHeader creates an interactive message header from the message's first attachment
+func buildAttachmentHeader(msg *models.MsgOut) (*Header, error) {
+	attType, attURL := handlers.SplitAttachment(msg.Attachments()[0])
+	attType = strings.Split(attType, "/")[0]
+	if attType == "application" {
+		attType = "document"
+	}
+
+	switch attType {
+	case "image":
+		return &Header{Type: "image", Image: &Media{Link: attURL}}, nil
+	case "video":
+		return &Header{Type: "video", Video: &Media{Link: attURL}}, nil
+	case "document":
+		filename, err := utils.BasePathForURL(attURL)
+		if err != nil {
+			return nil, err
+		}
+		return &Header{Type: "document", Document: &Media{Link: attURL, Filename: filename}}, nil
+	}
+	return nil, nil
 }
 
 func buildListPayload(msg *models.MsgOut, body string, qrs []models.QuickReply, menuButton string) SendRequest {
