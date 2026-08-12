@@ -1253,7 +1253,7 @@ func TestSendEvent(t *testing.T) {
 	h := newHandler().(*handler)
 	s.MountHandler(h)
 
-	s.Runtime().HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://api.telegram.org/botauth_token/sendChatAction": {
 			httpx.NewMockResponse(200, nil, []byte(`{"ok": true, "result": true}`)),
 			httpx.NewMockResponse(400, nil, []byte(`{"ok": false, "error_code": 400, "description": "Bad Request"}`)),

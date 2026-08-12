@@ -281,8 +281,8 @@ func TestDescribeURN(t *testing.T) {
 	testsuite.ResetValkey(t, rt)
 
 	// use a plain client so the handler can reach the mock API on localhost
-	rt.HTTP = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
-	rt.HTTPProxied = rt.HTTP
+	rt.HTTP.Default = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
+	rt.HTTP.Proxied = rt.HTTP.Default
 
 	// ensure there's a cached access token
 	rc := rt.VK.Get()
@@ -319,11 +319,11 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	// ensure that we start with no cached token
 	testsuite.ResetValkey(t, rt)
 
-	rt.HTTP = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
-	rt.HTTPProxied = rt.HTTP
+	rt.HTTP.Default = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
+	rt.HTTP.Proxied = rt.HTTP.Default
 
 	s := web.NewServer(rt)
-	rt.HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+	rt.HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://channels.jiochat.com/auth/token.action": {
 			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"access_token": "SESAME"}`)),
 		},

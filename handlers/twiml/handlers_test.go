@@ -1546,7 +1546,7 @@ func TestSendEvent(t *testing.T) {
 	h := newTWIMLHandler("TWA", "Twilio Whatsapp", true).(*handler)
 	s.MountHandler(h)
 
-	s.Runtime().HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://messaging.twilio.com/v3/Indicators/Typing.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"success": true}`)),
 			httpx.NewMockResponse(400, nil, []byte(`{"code": 21211, "message": "Invalid message SID"}`)),

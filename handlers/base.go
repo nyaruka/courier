@@ -111,13 +111,13 @@ func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (*models.
 
 // RequestHTTP does the given request, logging the trace, and returns the response
 func (h *BaseHandler) RequestHTTP(req *http.Request, clog *models.ChannelLog) (*http.Response, []byte, error) {
-	return h.requestHTTP(h.rt.HTTP, req, clog)
+	return h.requestHTTP(h.rt.HTTP.Default, req, clog)
 }
 
 // RequestHTTPProxied is like RequestHTTP but routes through the configured outbound proxy
 // (SendProxyURL) when one is set. Use this for handlers that send to user-configured URLs.
 func (h *BaseHandler) RequestHTTPProxied(req *http.Request, clog *models.ChannelLog) (*http.Response, []byte, error) {
-	return h.requestHTTP(h.rt.HTTPProxied, req, clog)
+	return h.requestHTTP(h.rt.HTTP.Proxied, req, clog)
 }
 
 // requestHTTP does the given request using the given client, logging the trace, and returns the response

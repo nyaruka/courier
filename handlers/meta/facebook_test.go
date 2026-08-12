@@ -611,7 +611,7 @@ func TestFacebookSendEvent(t *testing.T) {
 	h := newHandler("FBA", "Facebook").(*handler)
 	s.MountHandler(h)
 
-	s.Runtime().HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://graph.facebook.com/v25.0/me/messages*": {
 			httpx.NewMockResponse(200, nil, []byte(`{"recipient_id": "5678"}`)),
 			httpx.NewMockResponse(200, nil, []byte(`{"recipient_id": "5678"}`)),

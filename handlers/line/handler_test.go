@@ -717,7 +717,7 @@ func TestSendEvent(t *testing.T) {
 	h := newHandler().(*handler)
 	s.MountHandler(h)
 
-	s.Runtime().HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://api.line.me/v2/bot/chat/loading/start": {
 			httpx.NewMockResponse(202, nil, []byte(`{}`)),
 			httpx.NewMockResponse(400, nil, []byte(`{"message": "The property, 'chatId', in the request body is invalid"}`)),

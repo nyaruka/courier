@@ -93,11 +93,11 @@ func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, channel *
 		return nil, fmt.Errorf("unable to create attachment request: %w", err)
 	}
 
-	// attachment URLs are untrusted, so this goes through rt.HTTPAttachments, whose transport bounds the body read
+	// attachment URLs are untrusted, so this goes through rt.HTTP.Attachments, whose transport bounds the body read
 	// at runtime.MaxAttachmentBodyBytes and enforces access control (the SSRF blocklist) — a denied request comes
 	// back as an error with a nil response. DoTraced drains the body, which is what turns an oversized attachment
 	// into the ErrResponseSize checked below rather than a silently truncated file.
-	trace, resp, err := utils.DoTraced(rt.HTTPAttachments, attRequest)
+	trace, resp, err := utils.DoTraced(rt.HTTP.Attachments, attRequest)
 	if trace != nil {
 		clog.HTTP(trace)
 	}

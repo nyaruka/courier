@@ -14,13 +14,13 @@ func TestHTTPProxied(t *testing.T) {
 	// the default config uses virtual-host style S3 URLs, which require a resolvable region
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	// without SendProxyURL configured, HTTPProxied is the same client as HTTP
+	// without SendProxyURL configured, HTTP.Proxied is the same client as HTTP.Default
 	cfg := runtime.NewDefaultConfig()
 	require.NoError(t, cfg.Validate())
 
 	rt, err := newRuntimeForHTTPTest(cfg)
 	require.NoError(t, err)
-	assert.Same(t, rt.HTTP, rt.HTTPProxied)
+	assert.Same(t, rt.HTTP.Default, rt.HTTP.Proxied)
 
 	// stand up a stub forward proxy; a forward-proxied http:// request arrives here carrying the
 	// target's host, which lets us confirm the proxied client actually routes through it. The access
@@ -33,7 +33,7 @@ func TestHTTPProxied(t *testing.T) {
 	}))
 	defer proxy.Close()
 
-	// with SendProxyURL configured, HTTPProxied is a distinct client that routes through the proxy.
+	// with SendProxyURL configured, HTTP.Proxied is a distinct client that routes through the proxy.
 	// clear the SSRF blocklist so the IP-literal target below (never actually dialed) isn't rejected
 	// by access control before it can be proxied.
 	cfg = runtime.NewDefaultConfig()
@@ -43,16 +43,16 @@ func TestHTTPProxied(t *testing.T) {
 
 	rt, err = newRuntimeForHTTPTest(cfg)
 	require.NoError(t, err)
-	require.NotSame(t, rt.HTTP, rt.HTTPProxied)
+	require.NotSame(t, rt.HTTP.Default, rt.HTTP.Proxied)
 
-	resp, err := rt.HTTPProxied.Get("http://93.184.216.34/hook")
+	resp, err := rt.HTTP.Proxied.Get("http://93.184.216.34/hook")
 	require.NoError(t, err)
 	resp.Body.Close()
 	assert.Equal(t, "93.184.216.34", proxiedHost, "proxied client should route through the configured proxy")
 }
 
-// newRuntimeForHTTPTest constructs a Runtime by calling NewRuntime, which builds the HTTP and HTTPProxied
-// clients we want to assert on. NewRuntime also tries to open a DB pool etc., but those don't dial
+// newRuntimeForHTTPTest constructs a Runtime by calling NewRuntime, which builds the HTTP clients we want
+// to assert on. NewRuntime also tries to open a DB pool etc., but those don't dial
 // until used, so this is safe for unit tests focused on the HTTP plumbing.
 func newRuntimeForHTTPTest(cfg *runtime.Config) (*runtime.Runtime, error) {
 	return runtime.NewRuntime(cfg)

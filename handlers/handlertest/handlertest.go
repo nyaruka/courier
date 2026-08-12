@@ -178,9 +178,9 @@ func RunIncomingTestCases(t *testing.T, chs []*models.Channel, handler channels.
 	// isn't pointed at a test server (e.g. one describing a URN whilst a contact is created) is caught
 	// here rather than calling a real channel API
 	client := &http.Client{Transport: httpx.WithTraces(localOnlyTransport{http.DefaultTransport}), Timeout: 30 * time.Second}
-	rt.HTTP = client
-	rt.HTTPProxied = client
-	rt.HTTPAttachments = client
+	rt.HTTP.Default = client
+	rt.HTTP.Proxied = client
+	rt.HTTP.Attachments = client
 
 	// data: attachments are saved to storage as they're received so ensure the bucket exists
 	rt.S3.Client.CreateBucket(t.Context(), &s3.CreateBucketInput{Bucket: aws.String(rt.Config.S3AttachmentsBucket)})
@@ -455,13 +455,13 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler channel
 	testsuite.ResetDB(t, rt)
 	testsuite.ResetValkey(t, rt)
 
-	// use a plain HTTP client so per-case mock transports can be installed, shared by HTTP and HTTPProxied so
-	// installing a mocking transport intercepts every request a handler makes via either client. Tracing stays
+	// use a plain HTTP client so per-case mock transports can be installed, shared by all three clients so
+	// installing a mocking transport intercepts every request a handler makes via any of them. Tracing stays
 	// wrapped around whatever transport a case installs, since that's what produces the channel logs asserted below.
 	client := &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
-	rt.HTTP = client
-	rt.HTTPProxied = client
-	rt.HTTPAttachments = client
+	rt.HTTP.Default = client
+	rt.HTTP.Proxied = client
+	rt.HTTP.Attachments = client
 
 	if setup != nil {
 		setup(t, rt)
@@ -486,10 +486,10 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler channel
 
 			// reset to the default transport each case, then install a mocking transport when the
 			// case provides mocks - always inside tracing, which is what the handler's channel log is built from
-			rt.HTTP.Transport = httpx.WithTraces(nil)
+			rt.HTTP.Default.Transport = httpx.WithTraces(nil)
 			if len(tc.MockResponses) > 0 {
 				mockHTTP = httpx.WithMocks(nil, tc.MockResponses)
-				rt.HTTP.Transport = httpx.WithTraces(mockHTTP)
+				rt.HTTP.Default.Transport = httpx.WithTraces(mockHTTP)
 			}
 
 			clog := models.NewChannelLogForSend(msg, handler.RedactValues(channel))
@@ -500,7 +500,7 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler channel
 			externalIDs := res.ExternalIDs()
 
 			if mockHTTP != nil {
-				rt.HTTP.Transport = httpx.WithTraces(nil)
+				rt.HTTP.Default.Transport = httpx.WithTraces(nil)
 
 				actualRequests = mockHTTP.Requests()
 

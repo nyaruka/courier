@@ -659,7 +659,7 @@ func TestSendEvent(t *testing.T) {
 	h := newHandler().(*handler)
 	s.MountHandler(h)
 
-	s.Runtime().HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://api.vk.com/method/messages.setActivity.json*": {
 			httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 			httpx.NewMockResponse(200, nil, []byte(`{"error": {"error_code": 5, "error_msg": "User authorization failed"}}`)),

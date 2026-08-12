@@ -51,7 +51,7 @@ func TestSendEvent(t *testing.T) {
 	rt.Config.InternalPort = 8181
 
 	server := web.NewServer(rt)
-	server.Runtime().HTTP.Transport = httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	server.Runtime().HTTP.Default.Transport = httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/action": {
 			httpx.NewMockResponse(200, nil, []byte(`OK`)),
 			httpx.NewMockResponse(502, nil, []byte(`bad gateway`)),
