@@ -386,6 +386,23 @@ func TestGetMsgPayloads(t *testing.T) {
 				assert.Equal(t, "Check out our site", payloads[0].Interactive.Body.Text)
 				assert.Equal(t, "cta_url", payloads[0].Interactive.Action.Name)
 				assert.Equal(t, &whatsapp.ActionParameters{DisplayText: "Visit", URL: "https://example.com"}, payloads[0].Interactive.Action.Parameters)
+				// dropped text QR should be logged
+				assert.Len(t, clog.Errors, 1)
+				assert.Equal(t, "quick reply of type text can't be combined with a url quick reply and won't be sent", clog.Errors[0].Message)
+			},
+		},
+		{
+			label:                 "Two URL QRs - only first sent, second logged as dropped",
+			text:                  "Check out our sites",
+			quickReplies:          []models.QuickReply{{Type: "url", Text: "Visit", Extra: "https://example.com"}, {Type: "url", Text: "Docs", Extra: "https://docs.example.com"}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "interactive",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
+				assert.Equal(t, 1, len(payloads))
+				assert.Equal(t, &whatsapp.ActionParameters{DisplayText: "Visit", URL: "https://example.com"}, payloads[0].Interactive.Action.Parameters)
+				assert.Len(t, clog.Errors, 1)
+				assert.Equal(t, "only one quick reply of type url can be sent per message", clog.Errors[0].Message)
 			},
 		},
 		{
@@ -458,6 +475,8 @@ func TestGetMsgPayloads(t *testing.T) {
 				assert.Equal(t, 1, len(payloads))
 				assert.Equal(t, "image", payloads[0].Type)
 				assert.Equal(t, "https://example.com/image.jpg", payloads[0].Image.Link)
+				assert.Len(t, clog.Errors, 1)
+				assert.Equal(t, "quick reply of type url can't be sent on a message with no text", clog.Errors[0].Message)
 			},
 		},
 		{
