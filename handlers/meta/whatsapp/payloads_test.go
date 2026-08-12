@@ -1,7 +1,6 @@
 package whatsapp_test
 
 import (
-	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -34,7 +33,6 @@ func TestRecipientFields(t *testing.T) {
 }
 
 func TestGetMsgPayloads(t *testing.T) {
-	ctx := context.Background()
 	maxMsgLength := 4096
 
 	// Create a mock channel
@@ -680,7 +678,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			clog := models.NewChannelLogForSend(msg, nil)
 
 			// Call GetMsgPayloads
-			payloads, err := whatsapp.GetMsgPayloads(ctx, msg, maxMsgLength, clog)
+			payloads, err := whatsapp.GetMsgPayloads(msg, maxMsgLength, clog)
 
 			// Assert no error
 			require.NoError(t, err)

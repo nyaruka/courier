@@ -1,7 +1,6 @@
 package whatsapp
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -14,7 +13,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-func GetMsgPayloads(ctx context.Context, msg *models.MsgOut, maxMsgLength int, clog *models.ChannelLog) ([]SendRequest, error) {
+func GetMsgPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.ChannelLog) ([]SendRequest, error) {
 	if msg.Templating() != nil {
 		return []SendRequest{newBasePayload(msg).withTemplate(msg.Templating())}, nil
 	}
