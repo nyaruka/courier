@@ -225,7 +225,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 
 		text := ""
 		mediaURL := ""
-		var payload json.RawMessage
+		var msgPayload json.RawMessage
 		supported := true
 
 		if msg.Type == "text" {
@@ -249,7 +249,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			// attach the response JSON as the msg payload if it's a valid JSON object
 			raw := strings.TrimSpace(msg.Interactive.NFMReply.ResponseJSON)
 			if strings.HasPrefix(raw, "{") && json.Valid([]byte(raw)) {
-				payload = json.RawMessage(raw)
+				msgPayload = json.RawMessage(raw)
 			} else if msg.Interactive.NFMReply.ResponseJSON != "" {
 				channels.LogRequestError(r, channel, errors.New("nfm_reply response_json is not a valid JSON object"))
 			}
@@ -281,8 +281,8 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			event.WithAttachment(mediaURL)
 		}
 
-		if payload != nil {
-			event.WithPayload(payload)
+		if msgPayload != nil {
+			event.WithPayload(msgPayload)
 		}
 
 		// if we have a from_bsuid, add it as a secondary whatsapp URN (unless it's already the primary URN)
