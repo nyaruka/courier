@@ -132,7 +132,9 @@ func (c *Config) Parse() error {
 	}
 	c.DisallowedIPs, c.DisallowedNets = ips, nets
 
-	// the validator has already enforced that this is an http(s) URL if set
+	// the validator has already enforced that this is an http(s) URL if set. Cleared rather than left alone when
+	// unset, so that parsing twice can't leave a stale URL behind - same as the networks above.
+	c.SendProxyURLParsed = nil
 	if c.SendProxyURL != "" {
 		u, err := url.Parse(c.SendProxyURL)
 		if err != nil {

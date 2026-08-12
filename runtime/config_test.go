@@ -69,6 +69,11 @@ func TestConfigParse(t *testing.T) {
 	assert.Equal(t, []net.IP{net.ParseIP("::1")}, cfg.DisallowedIPs)
 	assert.Len(t, cfg.DisallowedNets, 9)
 
+	// parsing again with the proxy removed clears the parsed URL rather than leaving the previous one behind
+	cfg.SendProxyURL = ""
+	require.NoError(t, cfg.Parse())
+	assert.Nil(t, cfg.SendProxyURLParsed)
+
 	// with no proxy configured the parsed URL stays nil, which is how newHTTP knows not to build a proxied client
 	cfg = runtime.NewDefaultConfig()
 	require.NoError(t, cfg.Parse())
