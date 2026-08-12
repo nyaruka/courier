@@ -147,7 +147,7 @@ func TestGetMsgPayloads(t *testing.T) {
 		{
 			label:                 "1 QR with document attachment - should use document as header",
 			text:                  "Review this",
-			attachments:           []string{"document/pdf:https://example.com/document.pdf"},
+			attachments:           []string{"application/pdf:https://example.com/document.pdf"},
 			quickReplies:          []models.QuickReply{{Type: "text", Text: "Approve"}},
 			urn:                   "whatsapp:250788123123",
 			expectedPayloadsCount: 1,
@@ -407,6 +407,25 @@ func TestGetMsgPayloads(t *testing.T) {
 				assert.NotNil(t, payloads[0].Interactive.Header.Image)
 				assert.Equal(t, "https://example.com/image.jpg", payloads[0].Interactive.Header.Image.Link)
 				assert.Equal(t, &whatsapp.ActionParameters{DisplayText: "Visit", URL: "https://example.com"}, payloads[0].Interactive.Action.Parameters)
+			},
+		},
+		{
+			label:                 "URL QR with application attachment - should use document as header of cta_url",
+			text:                  "Review this",
+			attachments:           []string{"application/pdf:https://example.com/document.pdf"},
+			quickReplies:          []models.QuickReply{{Type: "url", Text: "Visit", Extra: "https://example.com"}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "interactive",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
+				assert.Equal(t, 1, len(payloads))
+				assert.Equal(t, "cta_url", payloads[0].Interactive.Type)
+				// Check header
+				assert.NotNil(t, payloads[0].Interactive.Header)
+				assert.Equal(t, "document", payloads[0].Interactive.Header.Type)
+				assert.NotNil(t, payloads[0].Interactive.Header.Document)
+				assert.Equal(t, "https://example.com/document.pdf", payloads[0].Interactive.Header.Document.Link)
+				assert.Equal(t, "document.pdf", payloads[0].Interactive.Header.Document.Filename)
 			},
 		},
 		{
