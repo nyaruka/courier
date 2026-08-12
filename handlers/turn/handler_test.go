@@ -885,6 +885,21 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedError: channels.ErrFailedWithReason("232", "Error Sending"),
 	},
 	{
+		Label:   "Error Field with details",
+		MsgText: "Error",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(400, nil, []byte(`{ "errors": [{"code": -1, "title": "Bad Request", "details": "Could not be parsed, invalid key"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/v1/messages",
+			Body: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
+		}},
+		ExpectedError: channels.ErrFailedWithReason("-1", "Bad Request: Could not be parsed, invalid key"),
+	},
+	{
 		Label:   "Error Field Retryable",
 		MsgText: "Error",
 		MsgURN:  "whatsapp:250788123123",
