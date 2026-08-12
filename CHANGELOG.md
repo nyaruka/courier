@@ -1,3 +1,9 @@
+v26.3.33 (2026-08-12)
+-------------------------
+ * Move the HTTP server into web, the sender into core/sender and the channel handler contract into core/channels
+ * Replace the Backend interface with models functions taking a runtime
+ * Include Twilio and MessageBird stop contact events in request logs and incoming metrics
+
 v26.3.32 (2026-08-11)
 -------------------------
  * Stop using the same structs for incoming msg and channel event database rows and spool files
