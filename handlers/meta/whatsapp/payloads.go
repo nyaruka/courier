@@ -73,10 +73,11 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 	var payloads []SendRequest
 
 	// determine if the attachment can be used as a header in an interactive message - button (max 3, not shown as a
-	// list) and CTA URL messages support media headers
+	// list) and CTA URL messages support media headers, but interactive messages require body text so without text
+	// the attachment has to be sent as a standalone media message
 	headerCapable := len(urlQRs) > 0 || (len(qrs) > 0 && len(qrs) <= 3 && !qrsAsList)
 	hasHeaderAttachment := false
-	if len(msg.Attachments()) > 0 && headerCapable && len(locationQRs) == 0 && len(formQRs) == 0 {
+	if len(msg.Attachments()) > 0 && len(msgParts) > 0 && headerCapable && len(locationQRs) == 0 && len(formQRs) == 0 {
 		attType, _ := handlers.SplitAttachment(msg.Attachments()[0])
 		attType = strings.Split(attType, "/")[0]
 		// only certain media types can be used as an interactive header

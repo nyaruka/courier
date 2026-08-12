@@ -428,6 +428,34 @@ func TestGetMsgPayloads(t *testing.T) {
 			},
 		},
 		{
+			label:                 "URL QR with image attachment but no text - attachment sent standalone, not dropped",
+			text:                  "",
+			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
+			quickReplies:          []models.QuickReply{{Type: "url", Text: "Visit", Extra: "https://example.com"}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "image",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
+				assert.Equal(t, 1, len(payloads))
+				assert.Equal(t, "image", payloads[0].Type)
+				assert.Equal(t, "https://example.com/image.jpg", payloads[0].Image.Link)
+			},
+		},
+		{
+			label:                 "Text QRs with image attachment but no text - attachment sent standalone, not dropped",
+			text:                  "",
+			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "text", Text: "No"}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "image",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
+				assert.Equal(t, 1, len(payloads))
+				assert.Equal(t, "image", payloads[0].Type)
+				assert.Equal(t, "https://example.com/image.jpg", payloads[0].Image.Link)
+			},
+		},
+		{
 			label:                 "URL QR without URL - should be ignored and logged",
 			text:                  "Check out our site",
 			quickReplies:          []models.QuickReply{{Type: "url", Text: "Visit"}},
