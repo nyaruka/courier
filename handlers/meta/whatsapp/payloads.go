@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -46,6 +47,24 @@ func (p SendRequest) withTemplate(templating *models.Templating) SendRequest {
 // maxCaptionAndBodyLength is the limit for media captions and interactive message bodies, which is lower than the
 // limit for plain text bodies
 const maxCaptionAndBodyLength = 1024
+
+// character limits for quick reply texts rendered in interactive messages
+const (
+	maxButtonTextLength   = 20 // reply button titles and CTA URL display text
+	maxFlowCTALength      = 30 // flow button text
+	maxListRowTitleLength = 24
+	maxListRowDescLength  = 72
+)
+
+// truncateQuickReplyText truncates the given quick reply text to the given character limit, logging a channel
+// error if it was too long to be sent as is.
+func truncateQuickReplyText(clog *models.ChannelLog, text string, limit int) string {
+	truncated := stringsx.TruncateEllipsis(text, limit)
+	if truncated != text {
+		clog.Error(&svclogs.Error{Message: fmt.Sprintf("quick reply text '%s' exceeds the %d character limit and will be truncated", text, limit)})
+	}
+	return truncated
+}
 
 // buildContentPayloads constructs payloads for a non-template message with text, attachments, and quick replies.
 func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.ChannelLog) ([]SendRequest, error) {
@@ -138,24 +157,24 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 			payloads = append(payloads, buildLocationRequestPayload(msg, part))
 
 		case isLastPart && len(formQRs) > 0:
-			payloads = append(payloads, buildFlowPayload(msg, part, formQRs[0]))
+			payloads = append(payloads, buildFlowPayload(msg, part, formQRs[0], clog))
 
 		case isLastPart && len(urlQRs) > 0:
-			p, err := buildCTAURLPayload(msg, part, urlQRs[0], hasHeaderAttachment)
+			p, err := buildCTAURLPayload(msg, part, urlQRs[0], hasHeaderAttachment, clog)
 			if err != nil {
 				return nil, err
 			}
 			payloads = append(payloads, p)
 
 		case isLastPart && len(qrs) > 0 && !qrsAsList:
-			p, err := buildButtonPayload(msg, part, qrs, hasHeaderAttachment)
+			p, err := buildButtonPayload(msg, part, qrs, hasHeaderAttachment, clog)
 			if err != nil {
 				return nil, err
 			}
 			payloads = append(payloads, p)
 
 		case isLastPart && len(qrs) > 0 && qrsAsList:
-			payloads = append(payloads, buildListPayload(msg, part, qrs, menuButton))
+			payloads = append(payloads, buildListPayload(msg, part, qrs, menuButton, clog))
 
 		default:
 			payloads = append(payloads, buildTextPayload(msg, part))
@@ -260,7 +279,7 @@ func buildLocationRequestPayload(msg *models.MsgOut, body string) SendRequest {
 	return p
 }
 
-func buildFlowPayload(msg *models.MsgOut, body string, qr models.QuickReply) SendRequest {
+func buildFlowPayload(msg *models.MsgOut, body string, qr models.QuickReply, clog *models.ChannelLog) SendRequest {
 	p := newBasePayload(msg)
 	p.Type = "interactive"
 	interactive := Interactive{Type: "flow", Body: struct {
@@ -268,13 +287,13 @@ func buildFlowPayload(msg *models.MsgOut, body string, qr models.QuickReply) Sen
 	}{Text: body}}
 	interactive.Action = &Action{
 		Name:       "flow",
-		Parameters: &ActionParameters{FlowMessageVersion: "3", FlowID: qr.Extra, FlowCTA: qr.GetText()},
+		Parameters: &ActionParameters{FlowMessageVersion: "3", FlowID: qr.Extra, FlowCTA: truncateQuickReplyText(clog, qr.GetText(), maxFlowCTALength)},
 	}
 	p.Interactive = &interactive
 	return p
 }
 
-func buildCTAURLPayload(msg *models.MsgOut, body string, qr models.QuickReply, useAttachmentHeader bool) (SendRequest, error) {
+func buildCTAURLPayload(msg *models.MsgOut, body string, qr models.QuickReply, useAttachmentHeader bool, clog *models.ChannelLog) (SendRequest, error) {
 	p := newBasePayload(msg)
 	p.Type = "interactive"
 	interactive := Interactive{Type: "cta_url", Body: struct {
@@ -291,23 +310,23 @@ func buildCTAURLPayload(msg *models.MsgOut, body string, qr models.QuickReply, u
 
 	interactive.Action = &Action{
 		Name:       "cta_url",
-		Parameters: &ActionParameters{DisplayText: qr.GetText(), URL: qr.Extra},
+		Parameters: &ActionParameters{DisplayText: truncateQuickReplyText(clog, qr.GetText(), maxButtonTextLength), URL: qr.Extra},
 	}
 	p.Interactive = &interactive
 	return p, nil
 }
 
-func buildButtons(qrs []models.QuickReply) []Button {
+func buildButtons(qrs []models.QuickReply, clog *models.ChannelLog) []Button {
 	btns := make([]Button, len(qrs))
 	for i, qr := range qrs {
 		btns[i] = Button{Type: "reply"}
 		btns[i].Reply.ID = fmt.Sprint(i)
-		btns[i].Reply.Title = qr.Text
+		btns[i].Reply.Title = truncateQuickReplyText(clog, qr.Text, maxButtonTextLength)
 	}
 	return btns
 }
 
-func buildButtonPayload(msg *models.MsgOut, body string, qrs []models.QuickReply, useAttachmentHeader bool) (SendRequest, error) {
+func buildButtonPayload(msg *models.MsgOut, body string, qrs []models.QuickReply, useAttachmentHeader bool, clog *models.ChannelLog) (SendRequest, error) {
 	p := newBasePayload(msg)
 	p.Type = "interactive"
 
@@ -323,7 +342,7 @@ func buildButtonPayload(msg *models.MsgOut, body string, qrs []models.QuickReply
 		interactive.Header = header
 	}
 
-	interactive.Action = &Action{Buttons: buildButtons(qrs)}
+	interactive.Action = &Action{Buttons: buildButtons(qrs, clog)}
 	p.Interactive = &interactive
 	return p, nil
 }
@@ -351,7 +370,7 @@ func buildAttachmentHeader(msg *models.MsgOut) (*Header, error) {
 	return nil, nil
 }
 
-func buildListPayload(msg *models.MsgOut, body string, qrs []models.QuickReply, menuButton string) SendRequest {
+func buildListPayload(msg *models.MsgOut, body string, qrs []models.QuickReply, menuButton string, clog *models.ChannelLog) SendRequest {
 	p := newBasePayload(msg)
 	p.Type = "interactive"
 
@@ -363,8 +382,8 @@ func buildListPayload(msg *models.MsgOut, body string, qrs []models.QuickReply, 
 	for i, qr := range qrs {
 		section.Rows[i] = SectionRow{
 			ID:          fmt.Sprint(i),
-			Title:       qr.Text,
-			Description: qr.Extra,
+			Title:       truncateQuickReplyText(clog, qr.Text, maxListRowTitleLength),
+			Description: truncateQuickReplyText(clog, qr.Extra, maxListRowDescLength),
 		}
 	}
 
