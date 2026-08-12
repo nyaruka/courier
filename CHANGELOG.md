@@ -1,3 +1,7 @@
+v26.3.34 (2026-08-12)
+-------------------------
+ * Resolve testsuite fixture paths relative to the package source
+
 v26.3.33 (2026-08-12)
 -------------------------
  * Move the HTTP server into web, the sender into core/sender and the channel handler contract into core/channels
