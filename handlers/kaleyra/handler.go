@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/urns"
@@ -30,19 +30,19 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("KWA"), "Kaleyra WhatsApp")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
 	r.Add(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
@@ -63,7 +63,7 @@ type moStatusForm struct {
 }
 
 // receiveMsg is our HTTP handler function for incoming messages
-func (h *handler) receiveMsg(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMsg(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &moMsgForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -111,7 +111,7 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for outgoing messages statuses
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &moStatusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -134,12 +134,12 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	apiKey := msg.Channel().StringConfigForKey(configApiKey, "")
 
 	if accountSID == "" || apiKey == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	sendURL := fmt.Sprintf("%s/v1/%s/messages", baseURL, accountSID)

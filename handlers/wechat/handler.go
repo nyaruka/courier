@@ -17,7 +17,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
@@ -36,7 +36,7 @@ const (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
@@ -45,7 +45,7 @@ type handler struct {
 	fetchTokenMutex sync.Mutex
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{
 		BaseHandler:     handlers.NewBaseHandler(models.ChannelType("WC"), "WeChat"),
 		fetchTokenMutex: sync.Mutex{},
@@ -53,7 +53,7 @@ func newHandler() courier.ChannelHandler {
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
 	r.Add(h, http.MethodPost, "", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
@@ -67,7 +67,7 @@ type verifyForm struct {
 }
 
 // VerifyURL is our HTTP handler function for WeChat config URL verification callbacks
-func (h *handler) VerifyURL(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) VerifyURL(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -108,7 +108,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateXML(payload, r)
 	if err != nil {
@@ -136,7 +136,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 			return nil, err
 		}
 
-		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, channelEvent)
+		return []channels.Event{channelEvent}, channels.WriteChannelEventSuccess(w, channelEvent)
 	}
 
 	// unknown event type (we only deal with subscribe)
@@ -178,7 +178,7 @@ type mtPayload struct {
 	} `json:"text"`
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	accessToken, err := h.getAccessToken(msg.Channel(), clog)
 	if err != nil {
 		return err
@@ -209,10 +209,10 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 
 		resp, _, err := h.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 == 5 {
-			return courier.ErrConnectionFailed
+			return channels.ErrConnectionFailed
 		}
 		if handlers.IsThrottled(resp) {
-			return courier.ErrConnectionThrottled
+			return channels.ErrConnectionThrottled
 		}
 	}
 
@@ -278,7 +278,7 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 
 	// WeChat reports errors in a 200 response, success is errcode 0
 	if errcode, err := jsonparser.GetInt(respBody, "errcode"); err != nil || errcode != 0 {
-		return courier.ErrResponseStatus
+		return channels.ErrResponseStatus
 	}
 
 	return nil
@@ -343,7 +343,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Ch
 	return req, nil
 }
 
-var _ courier.AttachmentRequestBuilder = (*handler)(nil)
+var _ channels.AttachmentRequestBuilder = (*handler)(nil)
 
 func (h *handler) getAccessToken(channel *models.Channel, clog *models.ChannelLog) (string, error) {
 	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID())

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -195,7 +195,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"destination":"250788383383","messageText":"Error Response"}`,
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -209,7 +209,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"destination":"250788383383","messageText":"Error Response"}`,
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error Sending",
@@ -220,7 +220,7 @@ var outgoingCases = []OutgoingTestCase{
 				httpx.NewMockResponse(501, nil, []byte(`Bad Gateway`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 }
 

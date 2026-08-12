@@ -9,7 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
@@ -28,19 +28,19 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("MG"), "Messangi")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	receiveHandler := handlers.NewTelReceiveHandler(h, "mobile", "mo")
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, receiveHandler)
 	return nil
@@ -59,13 +59,13 @@ type mtResponse struct {
 	Description string `xml:"description"`
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	publicKey := msg.Channel().StringConfigForKey(configPublicKey, "")
 	privateKey := msg.Channel().StringConfigForKey(configPrivateKey, "")
 	instanceId := msg.Channel().IntConfigForKey(configInstanceId, -1)
 	carrierId := msg.Channel().IntConfigForKey(configCarrierId, -1)
 	if publicKey == "" || privateKey == "" || instanceId == -1 || carrierId == -1 {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
@@ -91,12 +91,12 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 		response := &mtResponse{}
 		err = xml.Unmarshal(respBody, response)
 		if err != nil {
-			return courier.ErrResponseUnparseable
+			return channels.ErrResponseUnparseable
 		}
 
 		// we always get 204 on success
 		if response.Status != "OK" {
-			return courier.ErrResponseStatus
+			return channels.ErrResponseStatus
 		}
 	}
 

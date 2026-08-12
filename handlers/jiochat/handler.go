@@ -17,7 +17,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
@@ -36,7 +36,7 @@ const (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
@@ -45,7 +45,7 @@ type handler struct {
 	fetchTokenMutex sync.Mutex
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{
 		BaseHandler:     handlers.NewBaseHandler(models.ChannelType("JC"), "Jiochat"),
 		fetchTokenMutex: sync.Mutex{},
@@ -53,7 +53,7 @@ func newHandler() courier.ChannelHandler {
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
 	r.Add(h, http.MethodPost, "rcv/msg/message", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	r.Add(h, http.MethodPost, "rcv/event/menu", models.ChannelLogTypeEventReceive, handlers.JSONPayload(h, h.receiveMessage))
@@ -69,7 +69,7 @@ type verifyForm struct {
 }
 
 // VerifyURL is our HTTP handler function for Jiochat config URL verification callbacks
-func (h *handler) VerifyURL(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) VerifyURL(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -110,7 +110,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	if payload.MsgID == "" && payload.Event == "" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'"))
 	}
@@ -130,7 +130,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 			return nil, err
 		}
 
-		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, channelEvent)
+		return []channels.Event{channelEvent}, channels.WriteChannelEventSuccess(w, channelEvent)
 	}
 
 	// unknown event type (we only deal with subscribe)
@@ -163,10 +163,10 @@ type mtPayload struct {
 	} `json:"text"`
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	accessToken, err := h.getAccessToken(msg.Channel(), clog)
 	if err != nil {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
@@ -247,7 +247,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Ch
 	return req, nil
 }
 
-var _ courier.AttachmentRequestBuilder = (*handler)(nil)
+var _ channels.AttachmentRequestBuilder = (*handler)(nil)
 
 func (h *handler) getAccessToken(channel *models.Channel, clog *models.ChannelLog) (string, error) {
 	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID())

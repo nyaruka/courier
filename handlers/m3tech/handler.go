@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
@@ -21,25 +21,25 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("M3"), "M3Tech")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
 // receiveMessage takes care of handling incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
@@ -69,11 +69,11 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 	return err
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	if username == "" || password == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	// figure out if we need to send as unicode (encoding 7)

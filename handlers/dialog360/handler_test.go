@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -917,7 +917,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Error","preview_url":false}}`,
 			},
 		},
-		ExpectedError: courier.ErrResponseUnparseable,
+		ExpectedError: channels.ErrResponseUnparseable,
 	},
 	{
 		Label:   "Error",
@@ -934,7 +934,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Error","preview_url":false}}`,
 			},
 		},
-		ExpectedError: courier.ErrFailedWithReason("250012", "(#250012) some error"),
+		ExpectedError: channels.ErrFailedWithReason("250012", "(#250012) some error"),
 	},
 	{
 		Label:   "Error Channel Contact Pair limit hit",
@@ -945,7 +945,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#131056) (Business Account, Consumer Account) pair rate limit hit","code": 131056 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error Throttled",
@@ -962,7 +962,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Error","preview_url":false}}`,
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error HTTP 429",
@@ -973,7 +973,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				httpx.NewMockResponse(429, nil, []byte(`{ "error": {"message": "Calls to this api have exceeded the rate limit","code": 613 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error Retryable",
@@ -990,7 +990,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Error","preview_url":false}}`,
 			},
 		},
-		ExpectedError: courier.ErrRetryableWithReason("131053", "Media upload error"),
+		ExpectedError: channels.ErrRetryableWithReason("131053", "Media upload error"),
 	},
 	{
 		Label:   "Error Message",
@@ -1007,7 +1007,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Error","preview_url":false}}`,
 			},
 		},
-		ExpectedError: courier.ErrFailedWithReason("0", "Other error with message"),
+		ExpectedError: channels.ErrFailedWithReason("0", "Other error with message"),
 	},
 	{
 		Label:   "Error Connection",
@@ -1024,7 +1024,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Error","preview_url":false}}`,
 			},
 		},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 }
 
@@ -1076,11 +1076,11 @@ func TestSendEvent(t *testing.T) {
 
 	// an error response is a response error
 	err = h.SendEvent(context.Background(), channel, typing, clog)
-	assert.Equal(t, courier.ErrResponseStatus, err)
+	assert.Equal(t, channels.ErrResponseStatus, err)
 
 	// as is a connection error
 	err = h.SendEvent(context.Background(), channel, typing, clog)
-	assert.Equal(t, courier.ErrConnectionFailed, err)
+	assert.Equal(t, channels.ErrConnectionFailed, err)
 
 	// an event without a msg external ID can't be sent
 	err = h.SendEvent(context.Background(), channel, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "whatsapp:250788123123", ""), clog)
@@ -1089,7 +1089,7 @@ func TestSendEvent(t *testing.T) {
 	// a channel without an auth token config can't send
 	noAuth := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "D3C", "12345_ID", "", []string{urns.WhatsApp.Prefix}, map[string]any{"base_url": "https://waba-v2.360dialog.io"})
 	err = h.SendEvent(context.Background(), noAuth, typing, clog)
-	assert.Equal(t, courier.ErrChannelConfig, err)
+	assert.Equal(t, channels.ErrChannelConfig, err)
 
 	// nor can an event type the handler doesn't declare support for
 	err = h.SendEvent(context.Background(), channel, events.NewTypingStopped(events.DirectionOutgoing, channelRef, "whatsapp:250788123123", ""), clog)

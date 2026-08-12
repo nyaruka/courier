@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
@@ -82,18 +82,18 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("VK"), "VK")}
 }
 
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
 	return nil
 }
@@ -197,7 +197,7 @@ type mediaUploadInfoPayload struct {
 }
 
 // receiveEvent handles request event type
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	// check shared secret key before proceeding
 	secret := channel.StringConfigForKey(models.ConfigSecret, "")
 
@@ -227,7 +227,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 }
 
 // verifyServer handles VK's callback verification
-func (h *handler) verifyServer(channel *models.Channel, w http.ResponseWriter) ([]courier.Event, error) {
+func (h *handler) verifyServer(channel *models.Channel, w http.ResponseWriter) ([]channels.Event, error) {
 	verificationString := channel.StringConfigForKey(configServerVerificationString, "")
 	// write required response
 	_, err := fmt.Fprint(w, verificationString)
@@ -236,7 +236,7 @@ func (h *handler) verifyServer(channel *models.Channel, w http.ResponseWriter) (
 }
 
 // receiveMessage handles new message event
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moNewMessagePayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moNewMessagePayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	userId := payload.Object.Message.UserId
 	urn, err := urns.New(urns.VK, strconv.FormatInt(userId, 10))
 
@@ -262,7 +262,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	// write required response
 	_, err = fmt.Fprint(w, responseIncomingMessage)
 
-	return []courier.Event{msg}, err
+	return []channels.Event{msg}, err
 }
 
 // DescribeURN handles VK contact details
@@ -396,7 +396,7 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 	}
 
 	if ch.StringConfigForKey(models.ConfigAuthToken, "") == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	params := buildApiBaseParams(ch)
@@ -416,13 +416,13 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 
 	// VK reports errors in a 200 response, success is {"response": 1}
 	if _, err := jsonparser.GetInt(respBody, responseOutgoingMessageKey); err != nil {
-		return courier.ErrResponseStatus
+		return channels.ErrResponseStatus
 	}
 
 	return nil
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	params := buildApiBaseParams(msg.Channel())
 	params.Set(paramUserId, msg.URN().Path())
 	params.Set(paramRandomId, string(msg.UUID()))
@@ -452,7 +452,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 
 	externalMsgId, err := jsonparser.GetInt(respBody, responseOutgoingMessageKey)
 	if err != nil {
-		return courier.ErrResponseContent
+		return channels.ErrResponseContent
 	}
 
 	res.AddExternalID(strconv.FormatInt(externalMsgId, 10))

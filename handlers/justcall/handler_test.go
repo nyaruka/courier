@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -342,7 +342,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"+250788383383","body":"Error"}`,
 		}},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:   "Error",
@@ -361,7 +361,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"+250788383383","body":"Error"}`,
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -380,7 +380,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"+250788383383","body":"Error"}`,
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error Connection",
@@ -399,7 +399,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"+250788383383","body":"Error"}`,
 		}},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 }
 

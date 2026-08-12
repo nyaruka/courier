@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 )
 
 // ErrorFromResponse converts the response and error from a send request into the send error that should be
@@ -11,13 +11,13 @@ import (
 // for every channel type - it's a standard status code and no channel uses it to mean permanent failure.
 func ErrorFromResponse(resp *http.Response, err error) error {
 	if err != nil || resp.StatusCode/100 == 5 {
-		return courier.ErrConnectionFailed
+		return channels.ErrConnectionFailed
 	}
 	if resp.StatusCode == http.StatusTooManyRequests {
-		return courier.ErrConnectionThrottled
+		return channels.ErrConnectionThrottled
 	}
 	if resp.StatusCode/100 != 2 {
-		return courier.ErrResponseStatus
+		return channels.ErrResponseStatus
 	}
 	return nil
 }

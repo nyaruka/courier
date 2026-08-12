@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -31,7 +31,7 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler("FC", "FreshChat", true))
+	channels.RegisterHandler(newHandler("FC", "FreshChat", true))
 }
 
 type handler struct {
@@ -39,16 +39,16 @@ type handler struct {
 	validateSignatures bool
 }
 
-func newHandler(channelType models.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
+func newHandler(channelType models.ChannelType, name string, validateSignatures bool) channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("FC"), "FreshChat"), validateSignatures}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	return nil
 }
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -96,13 +96,13 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 
 	agentID := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 
 	if agentID == "" || authToken == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	user := strings.Split(msg.URN().Path(), "/")

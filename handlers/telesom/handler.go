@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils/clogs"
@@ -23,18 +23,18 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("TS"), "Telesom")}
 }
 
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
@@ -46,7 +46,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -66,12 +66,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	privateKey := msg.Channel().StringConfigForKey(models.ConfigSecret, "")
 	if username == "" || password == "" || privateKey == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 	tsSendURL := msg.Channel().StringConfigForKey(models.ConfigSendURL, sendURL)
 
@@ -107,7 +107,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 
 		if !strings.Contains(string(respBody), "Success") {
 			clog.Error(&clogs.Error{Message: fmt.Sprintf("Received invalid response content: %s", string(respBody))})
-			return courier.ErrResponseContent
+			return channels.ErrResponseContent
 		}
 	}
 

@@ -12,7 +12,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -33,7 +33,7 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
@@ -42,14 +42,14 @@ type handler struct {
 	fetchTokenMutex sync.Mutex
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{
 		BaseHandler:     handlers.NewBaseHandler(models.ChannelType("FCM"), "Firebase", handlers.WithRedactConfigKeys(configKey)),
 		fetchTokenMutex: sync.Mutex{},
 	}
 }
 
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.Add(h, http.MethodPost, "register", models.ChannelLogTypeEventReceive, h.registerContact)
 	return nil
@@ -64,7 +64,7 @@ type receiveForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &receiveForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -105,7 +105,7 @@ type registerForm struct {
 }
 
 // registerContact is our HTTP handler function for when a contact is registered (or renewed)
-func (h *handler) registerContact(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) registerContact(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &registerForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -168,16 +168,16 @@ type mtNotification struct {
 	Body  string `json:"body"`
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
 	credentialsJSONRaw := msg.Channel().ConfigForKey(configCredentialsFile, nil)
 	credentialsJSON, _ := credentialsJSONRaw.(map[string]any)
 	if credentialsJSON == nil {
 		oldConfigKey := msg.Channel().StringConfigForKey(configKey, "")
 		if oldConfigKey != "" {
-			return courier.ErrFailedWithReason("", "Error with config missing currently supported FCM authentication JSON")
+			return channels.ErrFailedWithReason("", "Error with config missing currently supported FCM authentication JSON")
 		}
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 	projectID := credentialsJSON["project_id"].(string)
 
@@ -239,15 +239,15 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 
 		responseName, err := jsonparser.GetString(respBody, "name")
 		if err != nil {
-			return courier.ErrResponseContent
+			return channels.ErrResponseContent
 		}
 
 		if !strings.Contains(responseName, fmt.Sprintf("projects/%s/messages/", projectID)) {
-			return courier.ErrResponseContent
+			return channels.ErrResponseContent
 		}
 		externalID := strings.TrimLeft(responseName, fmt.Sprintf("projects/%s/messages/", projectID))
 		if externalID == "" {
-			return courier.ErrResponseContent
+			return channels.ErrResponseContent
 		}
 
 		res.AddExternalID(externalID)
@@ -298,7 +298,7 @@ func (h *handler) fetchAccessToken(channel *models.Channel) (string, time.Durati
 	credentialsJSONRaw := channel.ConfigForKey(configCredentialsFile, nil)
 	credentialsJSON, _ := credentialsJSONRaw.(map[string]any)
 	if credentialsJSON == nil {
-		return "", 0, courier.ErrChannelConfig
+		return "", 0, channels.ErrChannelConfig
 	}
 
 	scopes := []string{"https://www.googleapis.com/auth/firebase.messaging"}

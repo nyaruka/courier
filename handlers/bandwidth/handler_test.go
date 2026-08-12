@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -351,7 +351,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"Error Message"}`,
 			},
 		},
-		ExpectedError: courier.ErrFailedWithReason("request-validation", "Your request could not be accepted"),
+		ExpectedError: channels.ErrFailedWithReason("request-validation", "Your request could not be accepted"),
 	},
 	{
 		Label:   "Throttled",
@@ -372,7 +372,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"Error Message"}`,
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 }
 

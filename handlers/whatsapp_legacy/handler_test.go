@@ -3,7 +3,7 @@ package whatsapp_legacy
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -50,7 +50,7 @@ func TestOutgoing(t *testing.T) {
 			Label:         "Disabled Send",
 			MsgText:       "hello",
 			MsgURN:        "whatsapp:250788123123",
-			ExpectedError: courier.ErrFailedWithReason("disabled", "WhatsApp legacy handler is disabled"),
+			ExpectedError: channels.ErrFailedWithReason("disabled", "WhatsApp legacy handler is disabled"),
 		},
 	}, nil, nil)
 }

@@ -3,7 +3,7 @@ package plivo
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -148,7 +148,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"src":"2020","dst":"250788383383","text":"No External ID","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
 		}},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{Label: "Error Sending",
 		MsgText: "Error Message",
@@ -161,7 +161,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"src":"2020","dst":"250788383383","text":"Error Message","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{Label: "Throttled",
 		MsgText: "Error Message",
@@ -174,7 +174,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"src":"2020","dst":"250788383383","text":"Error Message","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 }
 

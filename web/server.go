@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"log/slog"
 	"net"
 	"net/http"
@@ -182,7 +182,7 @@ func (s *Server) Router() chi.Router { return s.testRouter }
 
 // OnRequestHandled sets a hook called after each channel request is handled, with the events it produced and its
 // channel log - used by tests to capture what handlers return.
-func (s *Server) OnRequestHandled(fn func(*models.Channel, []courier.Event, *models.ChannelLog)) {
+func (s *Server) OnRequestHandled(fn func(*models.Channel, []channels.Event, *models.ChannelLog)) {
 	s.requestHandled = fn
 }
 
@@ -194,7 +194,7 @@ type Server struct {
 
 	rt *runtime.Runtime
 
-	requestHandled func(*models.Channel, []courier.Event, *models.ChannelLog)
+	requestHandled func(*models.Channel, []channels.Event, *models.ChannelLog)
 
 	waitGroup *sync.WaitGroup
 	stopChan  chan bool
@@ -206,7 +206,7 @@ func (s *Server) mountChannelHandlers() error {
 	includes := s.rt.Config.IncludeChannels
 	excludes := s.rt.Config.ExcludeChannels
 
-	for _, handler := range courier.RegisteredHandlers() {
+	for _, handler := range channels.RegisteredHandlers() {
 		channelType := string(handler.ChannelType())
 		if (includes == nil || slices.Contains(includes, channelType)) && (excludes == nil || !slices.Contains(excludes, channelType)) {
 			if err := s.MountHandler(handler); err != nil {
@@ -222,10 +222,10 @@ func (s *Server) mountChannelHandlers() error {
 
 // MountHandler initializes the given handler and mounts the routes it registers, marking it as one this instance
 // serves. Tests use it to mount a single handler without starting the listeners.
-func (s *Server) MountHandler(handler courier.ChannelHandler) error {
+func (s *Server) MountHandler(handler channels.Handler) error {
 	handler.SetRuntime(s.rt)
 
-	routes := courier.NewRoutes()
+	routes := channels.NewRoutes()
 	if err := handler.Initialize(routes); err != nil {
 		return fmt.Errorf("error initializing handler %s: %w", handler.ChannelType(), err)
 	}
@@ -234,14 +234,14 @@ func (s *Server) MountHandler(handler courier.ChannelHandler) error {
 		s.addRoute(route)
 	}
 
-	courier.ActivateHandler(handler)
+	channels.ActivateHandler(handler)
 	return nil
 }
 
-func (s *Server) channelHandleWrapper(handler courier.ChannelHandler, handlerFunc courier.ChannelHandleFunc, logType clogs.Type) http.HandlerFunc {
+func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc channels.HandleFunc, logType clogs.Type) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// stuff a few things in our context that help with logging
-		baseCtx := courier.WithRequestContext(r.Context(), r.URL.String(), time.Now())
+		baseCtx := channels.WithRequestContext(r.Context(), r.URL.String(), time.Now())
 
 		// add a 30 second timeout to the request
 		ctx, cancel := context.WithTimeout(baseCtx, time.Second*30)
@@ -250,14 +250,14 @@ func (s *Server) channelHandleWrapper(handler courier.ChannelHandler, handlerFun
 
 		recorder, err := httpx.NewRecorder(r, w, true)
 		if err != nil {
-			courier.WriteAndLogRequestError(ctx, handler, w, r, nil, err)
+			channels.WriteAndLogRequestError(ctx, handler, w, r, nil, err)
 			return
 		}
 
 		// get the channel for this request - can be nil, e.g. FBA verification requests
 		channel, err := handler.GetChannel(ctx, r)
 		if err != nil {
-			courier.WriteAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, err)
+			channels.WriteAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, err)
 			return
 		}
 
@@ -273,7 +273,7 @@ func (s *Server) channelHandleWrapper(handler courier.ChannelHandler, handlerFun
 
 				sentry.CurrentHub().Recover(panicVal)
 
-				courier.WriteAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
+				channels.WriteAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
 			}
 		}()
 
@@ -284,13 +284,13 @@ func (s *Server) channelHandleWrapper(handler courier.ChannelHandler, handlerFun
 		// if we received an error, write it out and report it
 		if hErr != nil {
 			slog.Error("error handling request", "error", hErr, "channel", channelUUID, "url", recorder.Trace.Request.URL.String())
-			courier.WriteAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, hErr)
+			channels.WriteAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, hErr)
 		}
 
 		// end recording of the request so that we have a response trace
 		if err := recorder.End(); err != nil {
 			slog.Error("error recording request", "error", err, "channel", channelUUID)
-			courier.WriteAndLogRequestError(ctx, handler, w, r, channel, err)
+			channels.WriteAndLogRequestError(ctx, handler, w, r, channel, err)
 		}
 
 		if channel != nil {
@@ -299,17 +299,17 @@ func (s *Server) channelHandleWrapper(handler courier.ChannelHandler, handlerFun
 			for _, event := range events {
 				switch e := event.(type) {
 				case *models.MsgIn:
-					courier.LogMsgReceived(r, e)
+					channels.LogMsgReceived(r, e)
 					if e.Duplicate_ {
 						numIgnored++
 					} else {
 						numMsgs++
 					}
 				case *models.StatusUpdate:
-					courier.LogMsgStatusReceived(r, e)
+					channels.LogMsgStatusReceived(r, e)
 					numStatuses++
 				case *models.ChannelEvent:
-					courier.LogChannelEventReceived(r, e)
+					channels.LogChannelEventReceived(r, e)
 					numEvents++
 				}
 			}
@@ -333,7 +333,7 @@ func (s *Server) channelHandleWrapper(handler courier.ChannelHandler, handlerFun
 }
 
 // mounts a route registered by a handler onto the channel router
-func (s *Server) addRoute(route *courier.Route) {
+func (s *Server) addRoute(route *channels.Route) {
 	method := strings.ToLower(route.Method)
 	channelType := strings.ToLower(string(route.Handler.ChannelType()))
 
@@ -355,7 +355,7 @@ func (s *Server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
 	resp, err := fetchAttachment(ctx, s.rt, r)
 	if err != nil {
 		slog.Error("error fetching attachment", "error", err)
-		courier.WriteError(w, http.StatusBadRequest, err)
+		channels.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -371,7 +371,7 @@ func (s *Server) handleSendEvent(w http.ResponseWriter, r *http.Request) {
 	resp, err := sendEvent(ctx, s, r)
 	if err != nil {
 		slog.Error("error sending event", "error", err)
-		courier.WriteError(w, http.StatusBadRequest, err)
+		channels.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -389,8 +389,8 @@ func (s *Server) handle404(listener string) http.HandlerFunc {
 		} else {
 			slog.Info("not found", "listener", listener, "url", r.URL.String(), "method", r.Method, "resp_status", "404")
 		}
-		errors := []any{courier.NewErrorData(fmt.Sprintf("not found: %s", r.URL.String()))}
-		err := courier.WriteDataResponse(w, http.StatusNotFound, "Not Found", errors)
+		errors := []any{channels.NewErrorData(fmt.Sprintf("not found: %s", r.URL.String()))}
+		err := channels.WriteDataResponse(w, http.StatusNotFound, "Not Found", errors)
 		if err != nil {
 			slog.Error("error writing response", "error", err)
 		}
@@ -404,8 +404,8 @@ func (s *Server) handle405(listener string) http.HandlerFunc {
 		} else {
 			slog.Info("invalid method", "listener", listener, "url", r.URL.String(), "method", r.Method, "resp_status", "405")
 		}
-		errors := []any{courier.NewErrorData(fmt.Sprintf("method not allowed: %s", r.Method))}
-		err := courier.WriteDataResponse(w, http.StatusMethodNotAllowed, "Method Not Allowed", errors)
+		errors := []any{channels.NewErrorData(fmt.Sprintf("method not allowed: %s", r.Method))}
+		err := channels.WriteDataResponse(w, http.StatusMethodNotAllowed, "Method Not Allowed", errors)
 		if err != nil {
 			slog.Error("error writing response", "error", err)
 		}

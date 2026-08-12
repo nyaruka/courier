@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -124,7 +124,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Form:    url.Values{"msg": {`Error Message`}, "to": {"0788383383"}, "from": {"2020"}, "key": {"3F1E492B2186551570F24C2F07D5D7E2"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -139,7 +139,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Form:    url.Values{"msg": {`Error Message`}, "to": {"0788383383"}, "from": {"2020"}, "key": {"3F1E492B2186551570F24C2F07D5D7E2"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:          "Send Attachment",
@@ -169,7 +169,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Form:    url.Values{"msg": {`Error Message`}, "to": {"0788383383"}, "from": {"2020"}, "key": {"3F1E492B2186551570F24C2F07D5D7E2"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 	{
 		Label:   "Response Unexpected",
@@ -185,7 +185,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
 		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "Received invalid response content: <return>Missing</return>"}},
-		ExpectedError:     courier.ErrResponseContent,
+		ExpectedError:     channels.ErrResponseContent,
 	},
 }
 

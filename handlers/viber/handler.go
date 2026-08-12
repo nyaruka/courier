@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/urns"
@@ -60,19 +60,19 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("VP"), "Viber")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
 	return nil
 }
@@ -116,7 +116,7 @@ type welcomeMessagePayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *eventPayload, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *eventPayload, clog *models.ChannelLog) ([]channels.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -153,7 +153,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
-		return []courier.Event{channelEvent}, writeWelcomeMessageResponse(w, channel, channelEvent)
+		return []channels.Event{channelEvent}, writeWelcomeMessageResponse(w, channel, channelEvent)
 
 	case "subscribed":
 		clog.Type = models.ChannelLogTypeEventReceive
@@ -175,7 +175,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 			return nil, err
 		}
 
-		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, channelEvent)
+		return []channels.Event{channelEvent}, channels.WriteChannelEventSuccess(w, channelEvent)
 
 	case "unsubscribed":
 		clog.Type = models.ChannelLogTypeEventReceive
@@ -195,7 +195,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 			return nil, err
 		}
 
-		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, channelEvent)
+		return []channels.Event{channelEvent}, channels.WriteChannelEventSuccess(w, channelEvent)
 
 	case "failed":
 		clog.Type = models.ChannelLogTypeMsgStatus
@@ -270,10 +270,10 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 	}
 
-	return nil, courier.WriteError(w, http.StatusBadRequest, fmt.Errorf("not handled, unknown event: %s", event))
+	return nil, channels.WriteError(w, http.StatusBadRequest, fmt.Errorf("not handled, unknown event: %s", event))
 }
 
-func writeWelcomeMessageResponse(w http.ResponseWriter, channel *models.Channel, event courier.Event) error {
+func writeWelcomeMessageResponse(w http.ResponseWriter, channel *models.Channel, event channels.Event) error {
 
 	authToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	msgText := channel.StringConfigForKey(configViberWelcomeMessage, "")
@@ -348,10 +348,10 @@ type mtResponse struct {
 	StatusMessage string `json:"status_message"`
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	// figure out whether we have a keyboard to send as well
@@ -442,7 +442,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 		respPayload := &mtResponse{}
 		err = json.Unmarshal(respBody, respPayload)
 		if err != nil {
-			return courier.ErrResponseUnparseable
+			return channels.ErrResponseUnparseable
 		}
 
 		if respPayload.Status != 0 {
@@ -450,7 +450,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 			if !found {
 				errorMessage = "General error"
 			}
-			return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Status), errorMessage)
+			return channels.ErrFailedWithReason(strconv.Itoa(respPayload.Status), errorMessage)
 		}
 
 		keyboard = nil

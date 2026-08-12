@@ -9,7 +9,7 @@ import (
 
 	"fmt"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -623,7 +623,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Message"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -637,7 +637,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Message"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error Code",
@@ -651,7 +651,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedError: courier.ErrFailedWithReason("1001", "Service specific error: 1001."),
+		ExpectedError: channels.ErrFailedWithReason("1001", "Service specific error: 1001."),
 	},
 	{
 		Label:   "Stopped Contact Code",
@@ -665,7 +665,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Stopped Contact"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedError: courier.ErrContactStopped,
+		ExpectedError: channels.ErrContactStopped,
 	},
 	{
 		Label:   "No SID",
@@ -787,7 +787,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 				Form:    url.Values{"Body": {"Error Message"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 			},
 		},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Error Code",
@@ -801,7 +801,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedError: courier.ErrFailedWithReason("1001", "Service specific error: 1001."),
+		ExpectedError: channels.ErrFailedWithReason("1001", "Service specific error: 1001."),
 	},
 	{
 		Label:   "Stopped Contact Code",
@@ -815,7 +815,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Stopped Contact"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedError: courier.ErrContactStopped,
+		ExpectedError: channels.ErrContactStopped,
 	},
 	{
 		Label:   "No SID",
@@ -924,7 +924,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Message"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Error Code",
@@ -938,7 +938,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedError: courier.ErrFailedWithReason("1001", "Service specific error: 1001."),
+		ExpectedError: channels.ErrFailedWithReason("1001", "Service specific error: 1001."),
 	},
 	{
 		Label:   "Stopped Contact Code",
@@ -952,7 +952,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Stopped Contact"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedError: courier.ErrContactStopped,
+		ExpectedError: channels.ErrContactStopped,
 	},
 	{
 		Label:   "No SID",
@@ -1040,7 +1040,7 @@ var swSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Message"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Error Code",
@@ -1054,7 +1054,7 @@ var swSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedError: courier.ErrFailedWithReason("1001", "Service specific error: 1001."),
+		ExpectedError: channels.ErrFailedWithReason("1001", "Service specific error: 1001."),
 	},
 	{
 		Label:   "Stopped Contact Code",
@@ -1068,7 +1068,7 @@ var swSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Stopped Contact"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}},
 		}},
-		ExpectedError: courier.ErrContactStopped,
+		ExpectedError: channels.ErrContactStopped,
 	},
 	{
 		Label:   "No SID",
@@ -1322,7 +1322,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			],
 			"language": "en_US"
 		}`,
-		ExpectedError: courier.ErrMessageInvalid,
+		ExpectedError: channels.ErrMessageInvalid,
 	},
 	{
 		Label:     "Error Code",
@@ -1350,7 +1350,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
-		ExpectedError: courier.ErrFailedWithReason("1001", "Service specific error: 1001."),
+		ExpectedError: channels.ErrFailedWithReason("1001", "Service specific error: 1001."),
 	},
 	{
 		Label:     "Stopped Contact Code",
@@ -1378,7 +1378,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
-		ExpectedError: courier.ErrContactStopped,
+		ExpectedError: channels.ErrContactStopped,
 	},
 	{
 		Label:     "No SID",
@@ -1434,7 +1434,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 }
 
@@ -1570,11 +1570,11 @@ func TestSendEvent(t *testing.T) {
 
 	// an error response is a response error
 	err = h.SendEvent(context.Background(), channel, typing, clog)
-	assert.Equal(t, courier.ErrResponseStatus, err)
+	assert.Equal(t, channels.ErrResponseStatus, err)
 
 	// as is a connection error
 	err = h.SendEvent(context.Background(), channel, typing, clog)
-	assert.Equal(t, courier.ErrConnectionFailed, err)
+	assert.Equal(t, channels.ErrConnectionFailed, err)
 
 	// an event without a msg external ID can't be sent
 	err = h.SendEvent(context.Background(), channel, events.NewTypingStarted(events.DirectionOutgoing, channelRef, "whatsapp:12065551212", ""), clog)
@@ -1583,7 +1583,7 @@ func TestSendEvent(t *testing.T) {
 	// a channel without complete auth config can't send
 	noAuth := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US", []string{urns.WhatsApp.Prefix}, map[string]any{})
 	err = h.SendEvent(context.Background(), noAuth, typing, clog)
-	assert.Equal(t, courier.ErrChannelConfig, err)
+	assert.Equal(t, channels.ErrChannelConfig, err)
 
 	// nor can an event type the handler doesn't declare support for
 	err = h.SendEvent(context.Background(), channel, events.NewTypingStopped(events.DirectionOutgoing, channelRef, "whatsapp:12065551212", ""), clog)

@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -157,7 +157,7 @@ var sendTestCases = []OutgoingTestCase{
 			Body: `{"from_did":"2065551212","to_did":"2067791234","message":"No External ID"}`,
 		}},
 		ExpectedLogErrors: []*clogs.Error{models.ErrorResponseValueMissing("guid")},
-		ExpectedError:     courier.ErrResponseContent,
+		ExpectedError:     channels.ErrResponseContent,
 	},
 	{
 		Label:   "Error Sending",
@@ -171,7 +171,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from_did":"2065551212","to_did":"2067791234","message":"Error Message"}`,
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -185,7 +185,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from_did":"2065551212","to_did":"2067791234","message":"Error Message"}`,
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Connection Error",
@@ -199,7 +199,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from_did":"2065551212","to_did":"2067791234","message":"Error Message"}`,
 		}},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 	{
 		Label:   "Reponse Unexpected",
@@ -215,7 +215,7 @@ var sendTestCases = []OutgoingTestCase{
 			Body:    `{"from_did":"2065551212","to_did":"2067791234","message":"Simple Message ☺"}`,
 		}},
 		ExpectedLogErrors: []*clogs.Error{models.ErrorResponseValueMissing("guid")},
-		ExpectedError:     courier.ErrResponseContent,
+		ExpectedError:     channels.ErrResponseContent,
 	},
 }
 

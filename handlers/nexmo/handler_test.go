@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -195,7 +195,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Form: url.Values{"text": {"Error status"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
 		}},
 
-		ExpectedError: courier.ErrFailedWithReason("send:10", "Too Many Existing Binds"),
+		ExpectedError: channels.ErrFailedWithReason("send:10", "Too Many Existing Binds"),
 	},
 	{
 		Label:   "Error Sending",
@@ -209,7 +209,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"text": {"Error Message"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -223,7 +223,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"text": {"Error Message"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Invalid Token",
@@ -237,7 +237,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"text": {"Simple Message"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled by Nexmo",
@@ -253,7 +253,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Form: url.Values{"text": {"Simple Message"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 }
 

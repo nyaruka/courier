@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/urns"
@@ -28,18 +28,18 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("YO"), "YO!")}
 }
 
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
@@ -53,7 +53,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -96,12 +96,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{dbMsg}, w, r, clog)
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 
 	if username == "" || password == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
@@ -133,7 +133,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 			// check whether we were blacklisted
 			createMessage := responseQS["ybs_autocreate_message"]
 			if len(createMessage) > 0 && strings.Contains(createMessage[0], "BLACKLISTED") {
-				return courier.ErrContactStopped
+				return channels.ErrContactStopped
 			}
 
 			// finally check that we were sent
@@ -141,7 +141,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 			if len(createStatus) > 0 && createStatus[0] == "OK" {
 				return nil
 			} else {
-				return courier.ErrResponseContent
+				return channels.ErrResponseContent
 			}
 		}
 	}

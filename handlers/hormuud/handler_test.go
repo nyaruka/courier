@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -159,7 +159,7 @@ var sendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"mobile":"250788383383","message":"Error Sending","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -178,7 +178,7 @@ var sendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"mobile":"250788383383","message":"Error Sending","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Connection Error",
@@ -197,7 +197,7 @@ var sendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"mobile":"250788383383","message":"Error","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
 		}},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 	{
 		Label:   "Null MessageID",
@@ -240,7 +240,7 @@ var tokenTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 }
 

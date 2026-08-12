@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -327,7 +327,7 @@ func TestFetchAccessTokenThrottled(t *testing.T) {
 
 	// a rate limited token fetch is throttling rather than an empty token
 	_, _, err := handler.fetchAccessToken(testChannels[0], clog)
-	assert.Equal(t, courier.ErrConnectionThrottled, err)
+	assert.Equal(t, channels.ErrConnectionThrottled, err)
 }
 
 var defaultSendTestCases = []OutgoingTestCase{
@@ -412,7 +412,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(500, nil, []byte(`Error`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 	{
 		Label:   "Throttled",
@@ -423,7 +423,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(429, nil, []byte(`Error`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 }
 
@@ -494,15 +494,15 @@ func TestSendEvent(t *testing.T) {
 
 	// a WeChat error in a 200 response is a response error
 	err = h.SendEvent(context.Background(), ch, typing, clog)
-	assert.Equal(t, courier.ErrResponseStatus, err)
+	assert.Equal(t, channels.ErrResponseStatus, err)
 
 	// as is a non-2XX response
 	err = h.SendEvent(context.Background(), ch, typing, clog)
-	assert.Equal(t, courier.ErrResponseStatus, err)
+	assert.Equal(t, channels.ErrResponseStatus, err)
 
 	// and a connection error is a connection error
 	err = h.SendEvent(context.Background(), ch, typing, clog)
-	assert.Equal(t, courier.ErrConnectionFailed, err)
+	assert.Equal(t, channels.ErrConnectionFailed, err)
 
 	// an event type the handler doesn't declare support for can't be sent
 	err = h.SendEvent(context.Background(), ch, events.NewContactLanguageChanged("eng"), clog)

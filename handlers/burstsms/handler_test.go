@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -95,7 +95,7 @@ var outgoingCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedError: courier.ErrResponseUnparseable,
+		ExpectedError: channels.ErrResponseUnparseable,
 	},
 	{
 		Label:   "Error Response",
@@ -115,7 +115,7 @@ var outgoingCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:   "Error Sending",
@@ -135,7 +135,7 @@ var outgoingCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 	{
 		Label:   "Throttled",
@@ -155,7 +155,7 @@ var outgoingCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 }
 

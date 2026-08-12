@@ -18,7 +18,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -77,7 +77,7 @@ type formMessage struct {
 }
 
 func init() {
-	courier.RegisterHandler(newHandler("MBD", "Messagebird", true))
+	channels.RegisterHandler(newHandler("MBD", "Messagebird", true))
 }
 
 type handler struct {
@@ -85,19 +85,19 @@ type handler struct {
 	validateSignatures bool
 }
 
-func newHandler(channelType models.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
+func newHandler(channelType models.ChannelType, name string, validateSignatures bool) channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("MBD"), "Messagebird"), validateSignatures}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.Add(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
 
 	return nil
 }
 
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 
 	// get our params
 	receivedStatus := &ReceivedStatus{}
@@ -149,7 +149,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	return events, err
 }
 
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -207,10 +207,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	authToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	user := msg.URN().Path()

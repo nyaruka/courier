@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
@@ -151,22 +151,22 @@ func userAgent(version string) string {
 
 // WriteStatusSuccessResponse writes a success response for the statuses
 func (h *BaseHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
-	return courier.WriteStatusSuccess(w, statuses)
+	return channels.WriteStatusSuccess(w, statuses)
 }
 
 // WriteMsgSuccessResponse writes a success response for the messages
 func (h *BaseHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
-	return courier.WriteMsgSuccess(w, msgs)
+	return channels.WriteMsgSuccess(w, msgs)
 }
 
 // WriteRequestError writes the passed in error to our response writer
 func (h *BaseHandler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
-	return courier.WriteError(w, http.StatusBadRequest, err)
+	return channels.WriteError(w, http.StatusBadRequest, err)
 }
 
 // WriteRequestIgnored writes an ignored payload to our response writer
 func (h *BaseHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
-	return courier.WriteIgnored(w, details)
+	return channels.WriteIgnored(w, details)
 }
 
 // WithValkeyConn is a utility to execute some code with a valkey connection

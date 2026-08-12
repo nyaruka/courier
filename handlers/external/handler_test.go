@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -439,7 +439,7 @@ var getSendTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -458,7 +458,7 @@ var getSendTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:          "Send Attachment",
@@ -535,7 +535,7 @@ var postSendTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:          "Send Attachment",
@@ -621,7 +621,7 @@ var jsonSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
 			Body:    `{ "to":"+250788383383", "text":"Error Message", "from":"2020", "quick_replies":[] }`,
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:          "Send Attachment",
@@ -727,7 +727,7 @@ var xmlSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:          "Send Attachment",
@@ -834,7 +834,7 @@ var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Error Sending with 200 status code",
@@ -849,7 +849,7 @@ var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		}},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:          "Send Attachment",

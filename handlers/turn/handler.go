@@ -17,7 +17,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/handlers/meta/whatsapp"
@@ -40,7 +40,7 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 
 	failedMediaCache = cache.NewLocal[string, bool](nil, 15*time.Minute)
 	failedMediaCache.Start()
@@ -50,12 +50,12 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("TRN"), "Turn.io WhatsApp")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvents))
 
 	return nil
@@ -166,8 +166,8 @@ type eventsPayload struct {
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *eventsPayload, clog *models.ChannelLog) ([]courier.Event, error) {
-	events := make([]courier.Event, 0, 2)
+func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *eventsPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+	events := make([]channels.Event, 0, 2)
 
 	// the list of data we will return in our response
 	data := make([]any, 0, 2)
@@ -193,7 +193,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		}
 
 		if msg.GroupID != "" {
-			data = append(data, courier.NewInfoData("ignoring group message"))
+			data = append(data, channels.NewInfoData("ignoring group message"))
 			continue
 		}
 
@@ -242,7 +242,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			mediaURL, err = resolveMediaURL(channel, msg.Voice.ID)
 		} else {
 			// we received a message type we do not support.
-			courier.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", msg.Type))
+			channels.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", msg.Type))
 		}
 
 		// create our message
@@ -250,7 +250,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 
 		// we had an error downloading media
 		if err != nil {
-			courier.LogRequestError(r, channel, err)
+			channels.LogRequestError(r, channel, err)
 		}
 
 		if mediaURL != "" {
@@ -265,7 +265,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 					event.WithNewURN(userIDURN, models.NewURNAppend)
 				}
 			} else {
-				courier.LogRequestError(r, channel, fmt.Errorf("invalid from_bsuid for whatsapp URN: %w", urnErr))
+				channels.LogRequestError(r, channel, fmt.Errorf("invalid from_bsuid for whatsapp URN: %w", urnErr))
 			}
 		}
 
@@ -275,7 +275,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		}
 
 		events = append(events, event)
-		data = append(data, courier.NewMsgReceiveData(event))
+		data = append(data, channels.NewMsgReceiveData(event))
 		seenMsgIDs[msg.ID] = true
 	}
 
@@ -284,7 +284,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		msgStatus, found := turnWaStatusMapping[status.Status]
 		if !found {
 			if turnWaIgnoreStatuses[status.Status] {
-				data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status: %s", status.Status)))
+				data = append(data, channels.NewInfoData(fmt.Sprintf("ignoring status: %s", status.Status)))
 			} else {
 				handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status: %s", status.Status))
 			}
@@ -298,10 +298,10 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		}
 
 		events = append(events, event)
-		data = append(data, courier.NewStatusData(event))
+		data = append(data, channels.NewStatusData(event))
 	}
 
-	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
+	return events, channels.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
 func resolveMediaURL(channel *models.Channel, mediaID string) (string, error) {
@@ -338,7 +338,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Ch
 	return req, nil
 }
 
-var _ courier.AttachmentRequestBuilder = (*handler)(nil)
+var _ channels.AttachmentRequestBuilder = (*handler)(nil)
 
 var turnWaStatusMapping = map[string]models.MsgStatus{
 	"sending":   models.MsgStatusWired,
@@ -549,7 +549,7 @@ func buildPayloads(ctx context.Context, msg *models.MsgOut, h *handler, clog *mo
 			// media messages must reference media uploaded to /v1/media by id - unlike template headers and
 			// interactive headers, they can't carry a link, so without an id there's no request worth making
 			if mediaID == "" {
-				return nil, courier.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp")
+				return nil, channels.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp")
 			}
 
 			mediaPayload := &mediaObject{ID: mediaID}
@@ -895,12 +895,12 @@ func (h *handler) fetchMediaID(ctx context.Context, msg *models.MsgOut, mediaURL
 	return mediaID, nil
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	accessToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	urlStr := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
 	if accessToken == "" || err != nil {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 	sendURL, _ := url.Parse("/v1/messages")
 
@@ -940,7 +940,7 @@ type mtResponsePayload struct {
 	} `json:"error"`
 }
 
-func (h *handler) makeAPIRequest(payload any, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *models.ChannelLog) error {
+func (h *handler) makeAPIRequest(payload any, accessToken string, res *channels.SendResult, wacPhoneURL *url.URL, clog *models.ChannelLog) error {
 	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))
@@ -954,41 +954,41 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *courier.S
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
-		return courier.ErrConnectionFailed
+		return channels.ErrConnectionFailed
 	}
 	// Turn returns HTTP 429 with its own rate-limit payload (errors[].code=429) and
 	// Retry-After / X-Ratelimit-* headers. Treat that as throttled so the message is
 	// retried via the errored queue rather than permanently failed.
 	if handlers.IsThrottled(resp) {
-		return courier.ErrConnectionThrottled
+		return channels.ErrConnectionThrottled
 	}
 
 	respPayload := &mtResponsePayload{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
-		return courier.ErrResponseUnparseable
+		return channels.ErrResponseUnparseable
 	}
 
 	if respPayload.Error.Code == 429 || slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Error.Code) {
-		return courier.ErrConnectionThrottled
+		return channels.ErrConnectionThrottled
 	}
 
 	if slices.Contains(whatsapp.WACRetryableErrorCodes, respPayload.Error.Code) {
-		return courier.ErrRetryableWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
+		return channels.ErrRetryableWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}
 
 	if respPayload.Error.Code != 0 || respPayload.Error.Message != "" {
-		return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
+		return channels.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}
 
 	if len(respPayload.Errors) > 0 {
 		if respPayload.Errors[0].Code == 429 || slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Errors[0].Code) {
-			return courier.ErrConnectionThrottled
+			return channels.ErrConnectionThrottled
 		}
 		if slices.Contains(whatsapp.WACRetryableErrorCodes, respPayload.Errors[0].Code) {
-			return courier.ErrRetryableWithReason(strconv.Itoa(respPayload.Errors[0].Code), respPayload.Errors[0].Title)
+			return channels.ErrRetryableWithReason(strconv.Itoa(respPayload.Errors[0].Code), respPayload.Errors[0].Title)
 		}
-		return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Errors[0].Code), respPayload.Errors[0].Title)
+		return channels.ErrFailedWithReason(strconv.Itoa(respPayload.Errors[0].Code), respPayload.Errors[0].Title)
 	}
 
 	if len(respPayload.Messages) > 0 {

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils/clogs"
@@ -191,9 +191,9 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 	}
 
 	var status *models.StatusUpdate
-	var res *courier.SendResult
+	var res *channels.SendResult
 	var redactValues []string
-	handler := courier.GetActiveHandler(msg.Channel().ChannelType())
+	handler := channels.GetActiveHandler(msg.Channel().ChannelType())
 	if handler != nil {
 		redactValues = handler.RedactValues(msg.Channel())
 	}
@@ -235,9 +235,9 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 	models.OnSendComplete(writeCTX, rt, msg, status, newURN, clog)
 }
 
-func (w *Sender) sendByHandler(ctx context.Context, h courier.ChannelHandler, m *models.MsgOut, clog *models.ChannelLog, log *slog.Logger) (*models.StatusUpdate, *courier.SendResult) {
+func (w *Sender) sendByHandler(ctx context.Context, h channels.Handler, m *models.MsgOut, clog *models.ChannelLog, log *slog.Logger) (*models.StatusUpdate, *channels.SendResult) {
 	rt := w.foreman.rt
-	res := &courier.SendResult{}
+	res := &channels.SendResult{}
 	err := h.Send(ctx, m, res, clog)
 
 	status := models.NewStatusUpdate(m.Channel(), m.UUID(), models.MsgStatusWired, clog)
@@ -247,7 +247,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h courier.ChannelHandler, m 
 		status.SetExternalIdentifier(res.ExternalIDs()[0])
 	}
 
-	var serr *courier.SendError
+	var serr *channels.SendError
 	if errors.As(err, &serr) {
 		if serr.Loggable() {
 			log.Error("error sending message", "error", err)
@@ -261,7 +261,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h courier.ChannelHandler, m 
 		clog.Error(serr.ClogError())
 
 		// if handler returned ErrContactStopped need to write a stop event
-		if serr == courier.ErrContactStopped {
+		if serr == channels.ErrContactStopped {
 			channelEvent := models.NewChannelEvent(m.Channel(), models.EventTypeStopContact, m.URN(), clog)
 			if err = models.WriteChannelEvent(ctx, rt, channelEvent, clog); err != nil {
 				log.Error("error writing stop event", "error", err)

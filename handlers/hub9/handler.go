@@ -1,7 +1,7 @@
 package hub9
 
 import (
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/handlers/dart"
 )
 
@@ -11,5 +11,5 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(dart.NewHandler("H9", "Hub9", sendURL, maxMsgLength))
+	channels.RegisterHandler(dart.NewHandler("H9", "Hub9", sendURL, maxMsgLength))
 }

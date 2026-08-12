@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -226,7 +226,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"dlr-url":    {"https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
 			},
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:           "Throttled",
@@ -252,7 +252,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"dlr-url":    {"https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
 			},
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 }
 

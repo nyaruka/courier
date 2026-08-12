@@ -3,7 +3,7 @@ package messangi
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
@@ -99,7 +99,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/mmc/rest/api/sendMT/7/2020/2/18765422035/SW52YWxpZCBQYXJhbWV0ZXJz/my-public-key/f3d2ea825cf61226925dee2db3c14b7fc00f3183f11809d2183d1e2dbd230df6",
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -113,7 +113,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/mmc/rest/api/sendMT/7/2020/2/18765422035/SW52YWxpZCBQYXJhbWV0ZXJz/my-public-key/f3d2ea825cf61226925dee2db3c14b7fc00f3183f11809d2183d1e2dbd230df6",
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Error Response",
@@ -127,7 +127,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/mmc/rest/api/sendMT/7/2020/2/18765422035/RXJyb3IgUmVzcG9uc2U/my-public-key/27f4c67fa00848ea6029cc0b1797aae6d05e2970ecb6e44ca486b463b933e61a",
 		}},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 }
 

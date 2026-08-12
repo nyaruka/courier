@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -353,7 +353,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: channels.ErrResponseUnexpected,
 	},
 	{
 		Label:   "Response status code is non-200",
@@ -364,7 +364,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: channels.ErrResponseStatus,
 	},
 	{
 		Label:   "Throttled",
@@ -375,7 +375,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(429, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Response is invalid JSON",
@@ -386,7 +386,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`bad json`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseUnparseable,
+		ExpectedError: channels.ErrResponseUnparseable,
 	},
 	{
 		Label:   "Response is channel specific error",
@@ -397,7 +397,7 @@ var instagramOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "error": {"message": "The image size is too large.","code": 36000 }}`)),
 			},
 		},
-		ExpectedError: courier.ErrFailedWithReason("36000", "The image size is too large."),
+		ExpectedError: channels.ErrFailedWithReason("36000", "The image size is too large."),
 	},
 }
 

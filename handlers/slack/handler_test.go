@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -215,7 +215,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"channel":"U0123ABCDEF","text":"Hello"}`,
 		}},
-		ExpectedError:     courier.ErrFailedWithReason("", "invalid_auth"),
+		ExpectedError:     channels.ErrFailedWithReason("", "invalid_auth"),
 		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "invalid_auth"}},
 	},
 	{
@@ -230,7 +230,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"channel":"U0123ABCDEF","text":"Hello"}`,
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:   "Response Unexpected",
@@ -241,7 +241,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{"channel":"U0123ABCDEF"}`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:   "Response Unexpected",
@@ -252,7 +252,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{"ok":false,"channel":"U0123ABCDEF"}`)),
 			},
 		},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 }
 
@@ -292,7 +292,7 @@ var fileSendTestCases = []OutgoingTestCase{
 			{},
 			{BodyContains: "image.png"},
 		},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 }
 

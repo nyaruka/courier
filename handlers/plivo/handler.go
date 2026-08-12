@@ -18,7 +18,7 @@ import (
 
 	"github.com/buger/jsonparser"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/httpx"
@@ -37,19 +37,19 @@ const (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("PL"), "Plivo")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
@@ -72,7 +72,7 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -106,7 +106,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -136,12 +136,12 @@ type mtPayload struct {
 	Method string `json:"method"`
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	authID := msg.Channel().StringConfigForKey(configPlivoAuthID, "")
 	authToken := msg.Channel().StringConfigForKey(configPlivoAuthToken, "")
 	plivoAppID := msg.Channel().StringConfigForKey(configPlivoAPPID, "")
 	if authID == "" || authToken == "" || plivoAppID == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	callbackDomain := msg.Channel().CallbackDomain(h.Runtime().Config.Domain)
@@ -176,7 +176,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 
 		externalID, err := jsonparser.GetString(respBody, "message_uuid", "[0]")
 		if err != nil {
-			return courier.ErrResponseContent
+			return channels.ErrResponseContent
 		}
 
 		res.AddExternalID(externalID)

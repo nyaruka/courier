@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
@@ -81,19 +81,19 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("NX"), "Nexmo", handlers.WithRedactConfigKeys(configNexmoAPISecret, configNexmoAppPrivateKey))}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
@@ -120,7 +120,7 @@ var statusMappings = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &statusForm{}
 	handlers.DecodeAndValidateForm(form, r)
 
@@ -150,7 +150,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &moForm{}
 	handlers.DecodeAndValidateForm(form, r)
 
@@ -169,12 +169,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 
 	nexmoAPIKey := msg.Channel().StringConfigForKey(configNexmoAPIKey, "")
 	nexmoAPISecret := msg.Channel().StringConfigForKey(configNexmoAPISecret, "")
 	if nexmoAPIKey == "" || nexmoAPISecret == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	// build our callback URL
@@ -215,7 +215,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 			resp, respBody, requestErr = h.RequestHTTP(req, clog)
 			matched := throttledRE.FindAllStringSubmatch(string(respBody), -1)
 			if len(matched) > 0 && len(matched[0]) > 0 {
-				return courier.ErrConnectionThrottled
+				return channels.ErrConnectionThrottled
 			} else {
 				break
 			}
@@ -228,7 +228,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 		nexmoStatus, err := jsonparser.GetString(respBody, "messages", "[0]", "status")
 		errCode, _ := strconv.Atoi(nexmoStatus)
 		if err != nil || nexmoStatus != "0" {
-			return courier.ErrFailedWithReason("send:"+nexmoStatus, sendErrorCodes[errCode])
+			return channels.ErrFailedWithReason("send:"+nexmoStatus, sendErrorCodes[errCode])
 		}
 
 		externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "message-id")

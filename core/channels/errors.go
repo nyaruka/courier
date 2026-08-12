@@ -1,4 +1,4 @@
-package courier
+package channels
 
 import (
 	"github.com/nyaruka/courier/v26/utils/clogs"

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
@@ -210,7 +210,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
 			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":"0191e180-7d60-7000-aded-7d8b151cbd5b","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:      "No Multicast ID",
@@ -226,7 +226,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
 			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":"0191e180-7d60-7000-aded-7d8b151cbd5b","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:      "Request Error",
@@ -242,7 +242,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
 			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":"0191e180-7d60-7000-aded-7d8b151cbd5b","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
-		ExpectedError: courier.ErrConnectionFailed,
+		ExpectedError: channels.ErrConnectionFailed,
 	},
 	{
 		Label:      "Throttled",
@@ -258,7 +258,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
 			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":"0191e180-7d60-7000-aded-7d8b151cbd5b","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
-		ExpectedError: courier.ErrConnectionThrottled,
+		ExpectedError: channels.ErrConnectionThrottled,
 	},
 	{
 		Label:      "Response Unexpected",
@@ -274,7 +274,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
 			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":"0191e180-7d60-7000-aded-7d8b151cbd5b","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:      "Response Unexpected",
@@ -290,7 +290,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
 			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":"0191e180-7d60-7000-aded-7d8b151cbd5b","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 	{
 		Label:      "Response Unexpected",
@@ -306,7 +306,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
 			Body:    `{"message":{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":"0191e180-7d60-7000-aded-7d8b151cbd5b","session_status":""},"token":"auth1","android":{"priority":"high"}}}`,
 		}},
-		ExpectedError: courier.ErrResponseContent,
+		ExpectedError: channels.ErrResponseContent,
 	},
 }
 

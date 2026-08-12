@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/stringsx"
@@ -37,7 +37,7 @@ type handler struct {
 }
 
 // NewHandler returns a new DartMedia ready to be registered
-func NewHandler(channelType string, name string, sendURL string, maxLength int) courier.ChannelHandler {
+func NewHandler(channelType string, name string, sendURL string, maxLength int) channels.Handler {
 	return &handler{
 		handlers.NewBaseHandler(models.ChannelType(channelType), name),
 		sendURL,
@@ -46,11 +46,11 @@ func NewHandler(channelType string, name string, sendURL string, maxLength int) 
 }
 
 func init() {
-	courier.RegisterHandler(NewHandler("DA", "DartMedia", sendURL, maxMsgLength))
+	channels.RegisterHandler(NewHandler("DA", "DartMedia", sendURL, maxMsgLength))
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.Add(h, http.MethodGet, "delivered", models.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
@@ -64,7 +64,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -97,7 +97,7 @@ type statusForm struct {
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -146,11 +146,11 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 	return err
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	if username == "" || password == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), h.maxLength)
@@ -188,7 +188,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 
 		responseCode := stringsx.Truncate(string(respBody), 3)
 		if responseCode != "000" {
-			return courier.ErrFailedWithReason(responseCode, errorCodes[responseCode])
+			return channels.ErrFailedWithReason(responseCode, errorCodes[responseCode])
 		}
 
 	}

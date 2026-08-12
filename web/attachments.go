@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"io"
 	"mime"
 	"net/http"
@@ -63,7 +63,7 @@ func fetchAttachment(ctx context.Context, rt *runtime.Runtime, r *http.Request) 
 		return nil, fmt.Errorf("error getting channel: %w", err)
 	}
 
-	clog := models.NewChannelLogForAttachmentFetch(ch, courier.GetHandler(ch.ChannelType()).RedactValues(ch))
+	clog := models.NewChannelLogForAttachmentFetch(ch, channels.GetHandler(ch.ChannelType()).RedactValues(ch))
 
 	attachment, err := FetchAndStoreAttachment(ctx, rt, ch, fa.URL, clog)
 
@@ -86,8 +86,8 @@ func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, channel *
 
 	var attRequest *http.Request
 
-	handler := courier.GetHandler(channel.ChannelType())
-	builder, isBuilder := handler.(courier.AttachmentRequestBuilder)
+	handler := channels.GetHandler(channel.ChannelType())
+	builder, isBuilder := handler.(channels.AttachmentRequestBuilder)
 	if isBuilder {
 		attRequest, err = builder.BuildAttachmentRequest(ctx, channel, parsedURL.String(), clog)
 	} else {

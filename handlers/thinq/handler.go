@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier/v26"
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/httpx"
@@ -26,19 +26,19 @@ var sendURL = "https://api.thinq.com/account/%s/product/origination/sms/send"
 var sendMMSURL = "https://api.thinq.com/account/%s/product/origination/mms/send"
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
+func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("TQ"), "ThinQ")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(r *courier.Routes) error {
+func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
@@ -57,7 +57,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	// get our params
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -110,7 +110,7 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	// get our params
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -135,12 +135,12 @@ type mtMessage struct {
 	Message string `json:"message"`
 }
 
-func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.SendResult, clog *models.ChannelLog) error {
+func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
 	tokenUser := msg.Channel().StringConfigForKey(configAPITokenUser, "")
 	token := msg.Channel().StringConfigForKey(configAPIToken, "")
 	if accountID == "" || tokenUser == "" || token == "" {
-		return courier.ErrChannelConfig
+		return channels.ErrChannelConfig
 	}
 
 	// we send attachments first so that text appears below
@@ -171,7 +171,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 		externalID, err := jsonparser.GetString(respBody, "guid")
 		if err != nil {
 			clog.Error(models.ErrorResponseValueMissing("guid"))
-			return courier.ErrResponseContent
+			return channels.ErrResponseContent
 		}
 
 		res.AddExternalID(externalID)
@@ -203,7 +203,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *courier.Sen
 			externalID, err := jsonparser.GetString(respBody, "guid")
 			if err != nil {
 				clog.Error(models.ErrorResponseValueMissing("guid"))
-				return courier.ErrResponseContent
+				return channels.ErrResponseContent
 			}
 
 			res.AddExternalID(externalID)
