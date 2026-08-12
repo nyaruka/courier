@@ -51,7 +51,7 @@ func (h *mockHandler) Send(ctx context.Context, msg *models.MsgOut, res *channel
 	// log a request that contains a header value that should be redacted; goes through the runtime's
 	// HTTP client so tests can intercept it with a mocking transport
 	req, _ := httpx.NewRequest(ctx, "GET", "http://mock.com/send", nil, map[string]string{"Authorization": "Token sesame"})
-	trace, resp, err := utils.DoTraced(h.rt.HTTP, req)
+	trace, resp, err := utils.DoTraced(h.rt.HTTP.Default, req)
 	if trace != nil {
 		clog.HTTP(trace)
 	}
@@ -77,7 +77,7 @@ func (h *mockHandler) Send(ctx context.Context, msg *models.MsgOut, res *channel
 // SendEvent sends the given event, logging any HTTP calls or errors
 func (h *mockHandler) SendEvent(ctx context.Context, ch *models.Channel, event events.Event, clog *models.ChannelLog) error {
 	req, _ := httpx.NewRequest(ctx, "POST", "http://mock.com/action", nil, nil)
-	trace, resp, err := utils.DoTraced(h.rt.HTTP, req)
+	trace, resp, err := utils.DoTraced(h.rt.HTTP.Default, req)
 	if trace != nil {
 		clog.HTTP(trace)
 	}

@@ -1055,7 +1055,7 @@ func TestSendEvent(t *testing.T) {
 	h := newWAHandler(models.ChannelType("D3C"), "360Dialog").(*handler)
 	s.MountHandler(h)
 
-	s.Runtime().HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://waba-v2.360dialog.io/messages": {
 			httpx.NewMockResponse(200, nil, []byte(`{"success": true}`)),
 			httpx.NewMockResponse(400, nil, []byte(`{"error": {"message": "(#131009) Parameter value is not valid", "code": 131009}}`)),

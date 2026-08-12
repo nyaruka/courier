@@ -85,7 +85,7 @@ func TestOutgoing(t *testing.T) {
 	dyntest.Truncate(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table())
 
 	s := web.NewServer(rt)
-	rt.HTTP.Transport = httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	rt.HTTP.Default.Transport = httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/send": {
 			httpx.NewMockResponse(200, nil, []byte(`SENT`)),
 			httpx.MockConnectionError,
@@ -231,7 +231,7 @@ func TestFetchAttachment(t *testing.T) {
 	server := web.NewServer(rt)
 
 	// attachments are fetched through the dedicated bounded client, so that's where the mocks go
-	server.Runtime().HTTPAttachments.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+	server.Runtime().HTTP.Attachments.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"http://mock.com/media/hello.jpg": {
 			httpx.NewMockResponse(200, nil, testJPG),
 		},

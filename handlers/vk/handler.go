@@ -567,7 +567,7 @@ func (h *handler) downloadMedia(mediaURL string) (io.Reader, error) {
 	}
 
 	// access control is enforced by the client's transport
-	if res, err := h.Runtime().HTTP.Do(req); err == nil {
+	if res, err := h.Runtime().HTTP.Default.Do(req); err == nil {
 		return res.Body, nil
 	} else {
 		return nil, err

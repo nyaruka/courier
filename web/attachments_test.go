@@ -30,7 +30,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	rt := testsuite.NewRuntime(t)
 	rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
 
-	rt.HTTPAttachments = &http.Client{Transport: httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	rt.HTTP.Attachments = &http.Client{Transport: httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/media/hello.jpg": {
 			httpx.NewMockResponse(200, nil, testJPG),
 		},
@@ -122,7 +122,7 @@ func TestFetchAndStoreAttachmentAccessDenied(t *testing.T) {
 	// rejected before any connection is made; the mocking transport underneath has no entries and so
 	// would panic if a request ever reached it, guarding against the access check silently passing
 	access := httpx.NewAccessConfig(time.Second, []net.IP{net.ParseIP("127.0.0.1")}, nil)
-	rt.HTTPAttachments = &http.Client{Transport: httpx.WithTraces(httpx.WithAccessControl(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{}), access))}
+	rt.HTTP.Attachments = &http.Client{Transport: httpx.WithTraces(httpx.WithAccessControl(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{}), access))}
 
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 
@@ -152,7 +152,7 @@ func TestFetchAndStoreAttachmentOversized(t *testing.T) {
 	// response is cheap to produce. The limit goes inside the tracing, exactly as the runtime composes it, so
 	// that it applies before the body is buffered into the trace.
 	const limit = 64
-	rt.HTTPAttachments = &http.Client{Transport: httpx.WithTraces(httpx.WithReadLimit(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	rt.HTTP.Attachments = &http.Client{Transport: httpx.WithTraces(httpx.WithReadLimit(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/media/huge.jpg": {
 			httpx.NewMockResponse(200, nil, bytes.Repeat([]byte("x"), limit*10)),
 		},

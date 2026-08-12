@@ -1211,7 +1211,7 @@ func TestWhatsAppSendEvent(t *testing.T) {
 	h := newHandler("WAC", "WhatsApp Cloud").(*handler)
 	s.MountHandler(h)
 
-	s.Runtime().HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://graph.facebook.com/12345_ID/messages": {
 			httpx.NewMockResponse(200, nil, []byte(`{"success": true}`)),
 			httpx.NewMockResponse(400, nil, []byte(`{"error": {"message": "(#131009) Parameter value is not valid", "code": 131009}}`)),
