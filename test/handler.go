@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
@@ -49,10 +50,9 @@ func (h *mockHandler) Initialize(r *channels.Routes) error {
 func (h *mockHandler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	// log a request that contains a header value that should be redacted; goes through the runtime's
 	// HTTP client so tests can intercept it with a mocking transport
-	tctx, traces := httpx.WithTraceCollector(ctx)
-	req, _ := httpx.NewRequest(tctx, "GET", "http://mock.com/send", nil, map[string]string{"Authorization": "Token sesame"})
-	resp, err := h.rt.HTTP.Do(req)
-	if trace := traces.Last(); trace != nil {
+	req, _ := httpx.NewRequest(ctx, "GET", "http://mock.com/send", nil, map[string]string{"Authorization": "Token sesame"})
+	trace, resp, err := utils.DoTraced(h.rt.HTTP, req)
+	if trace != nil {
 		clog.HTTP(trace)
 	}
 
@@ -76,10 +76,9 @@ func (h *mockHandler) Send(ctx context.Context, msg *models.MsgOut, res *channel
 
 // SendEvent sends the given event, logging any HTTP calls or errors
 func (h *mockHandler) SendEvent(ctx context.Context, ch *models.Channel, event events.Event, clog *models.ChannelLog) error {
-	tctx, traces := httpx.WithTraceCollector(ctx)
-	req, _ := httpx.NewRequest(tctx, "POST", "http://mock.com/action", nil, nil)
-	resp, err := h.rt.HTTP.Do(req)
-	if trace := traces.Last(); trace != nil {
+	req, _ := httpx.NewRequest(ctx, "POST", "http://mock.com/action", nil, nil)
+	trace, resp, err := utils.DoTraced(h.rt.HTTP, req)
+	if trace != nil {
 		clog.HTTP(trace)
 	}
 

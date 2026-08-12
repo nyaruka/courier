@@ -95,21 +95,9 @@ func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, channel *
 
 	// attachment URLs are untrusted, so this goes through rt.HTTPAttachments, whose transport bounds the body read
 	// at runtime.MaxAttachmentBodyBytes and enforces access control (the SSRF blocklist) — a denied request comes
-	// back as an error with a nil response.
-	ctx, traces := httpx.WithTraceCollector(ctx)
-
-	resp, err := rt.HTTPAttachments.Do(attRequest.WithContext(ctx))
-
-	// the read limit is enforced as the body is read, and the tracing transport defers that error onto the
-	// handed-back body rather than returning it. Draining is what turns an oversized attachment into the
-	// ErrResponseSize checked below — without it we'd accept a truncated body as if it were the whole file.
-	if err == nil && resp != nil {
-		if _, drainErr := io.Copy(io.Discard, resp.Body); drainErr != nil {
-			err = drainErr
-		}
-	}
-
-	trace := traces.Last()
+	// back as an error with a nil response. DoTraced drains the body, which is what turns an oversized attachment
+	// into the ErrResponseSize checked below rather than a silently truncated file.
+	trace, resp, err := utils.DoTraced(rt.HTTPAttachments, attRequest)
 	if trace != nil {
 		clog.HTTP(trace)
 	}

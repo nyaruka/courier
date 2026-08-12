@@ -8,6 +8,7 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/svclogs"
@@ -32,14 +33,14 @@ func TestChannelLog(t *testing.T) {
 
 	// make a request that will have a response
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
-	trace, err := test.DoTraced(httpClient, req)
+	trace, _, err := utils.DoTraced(httpClient, req)
 	assert.NoError(t, err)
 
 	clog.HTTP(trace)
 
 	// make a request that has no response (connection error); the client wraps the transport's error
 	req, _ = http.NewRequest("POST", "https://api.messages.com/send.json", nil)
-	trace, err = test.DoTraced(httpClient, req)
+	trace, _, err = utils.DoTraced(httpClient, req)
 	assert.ErrorContains(t, err, "unable to connect to server")
 
 	clog.HTTP(trace)
