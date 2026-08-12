@@ -64,11 +64,7 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 
 	rt.Centrifugo = centrifugo.NewService(centrifugo.NewClient(cfg.CentrifugoEndpoint, cfg.CentrifugoKey), rt.VK)
 
-	rt.HTTP, err = newHTTP(cfg)
-	if err != nil {
-		return nil, err
-	}
-
+	rt.HTTP = newHTTP(cfg)
 	rt.Stats = NewStatsCollector()
 
 	return rt, nil

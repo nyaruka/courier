@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -27,14 +26,10 @@ type HTTP struct {
 	Attachments *http.Client
 }
 
-func newHTTP(cfg *Config) (*HTTP, error) {
-	// parse the SSRF blocklist up front so it can be baked into each client's transport via
-	// httpx.WithAccessControl, rather than passed to every request.
-	disallowedIPs, disallowedNets, err := cfg.ParseDisallowedNetworks()
-	if err != nil {
-		return nil, fmt.Errorf("error parsing disallowed networks: %w", err)
-	}
-	access := httpx.NewAccessConfig(10*time.Second, disallowedIPs, disallowedNets)
+func newHTTP(cfg *Config) *HTTP {
+	// the SSRF blocklist is baked into each client's transport via httpx.WithAccessControl, rather than passed to
+	// every request. Config.Parse turned the configured networks into the IPs and nets this needs.
+	access := httpx.NewAccessConfig(10*time.Second, cfg.DisallowedIPs, cfg.DisallowedNets)
 
 	transport := newBaseTransport()
 
@@ -60,19 +55,14 @@ func newHTTP(cfg *Config) (*HTTP, error) {
 	// host and rejects the request if it maps to a disallowed IP. This check runs regardless of the proxy; when the
 	// proxy is set the request still dials the proxy rather than the destination, so the proxy's own egress rules
 	// govern the actual connection to the destination.
-	proxyURL, err := cfg.ParseSendProxyURL()
-	if err != nil {
-		return nil, fmt.Errorf("error parsing send proxy URL: %w", err)
-	}
-
 	h.Proxied = h.Default
-	if proxyURL != nil {
+	if cfg.SendProxyURLParsed != nil {
 		proxiedTransport := transport.Clone()
-		proxiedTransport.Proxy = http.ProxyURL(proxyURL)
+		proxiedTransport.Proxy = http.ProxyURL(cfg.SendProxyURLParsed)
 		h.Proxied = &http.Client{Transport: httpx.WithTraces(httpx.WithAccessControl(proxiedTransport, access)), Timeout: 30 * time.Second}
 	}
 
-	return h, nil
+	return h
 }
 
 // newTestHTTP builds the clients for a test runtime, which don't need access control or the proxy. All three are the
