@@ -1,3 +1,21 @@
+v26.3.35 (2026-08-12)
+-------------------------
+ * Parse derived config values once in Config.Parse rather than at each use site
+ * Switch to Business Source License 1.1
+ * Bring Turn handler to parity with other WhatsApp handlers
+ * Use captions of incoming Turn video messages as message text
+ * Group the outbound HTTP clients into a single runtime.HTTP
+ * Group the DynamoDB writers, spool and client into a single runtime.Dynamo
+ * Truncate WhatsApp quick reply texts that exceed their character limits
+ * Log WhatsApp quick replies that are dropped instead of discarding them silently
+ * Allow application attachments as WhatsApp interactive message headers
+ * Log and skip attachments that can't be sent as WhatsApp media messages
+ * Port Turn handler onto the shared WhatsApp payload builder
+ * Support attachment headers on WhatsApp CTA URL messages
+ * Move handler test helpers out of the handlers package
+ * Add utils.DoTraced so the trace-and-drain pattern lives in one place
+ * Use shared svclogs package and context-scoped HTTP tracing
+
 v26.3.34 (2026-08-12)
 -------------------------
  * Resolve testsuite fixture paths relative to the package source
