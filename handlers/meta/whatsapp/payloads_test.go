@@ -553,6 +553,63 @@ func TestGetMsgPayloads(t *testing.T) {
 			},
 		},
 		{
+			label:                 "Button title over 20 characters - should be truncated and logged",
+			text:                  "Pick one",
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "This is a very long button title"}, {Type: "text", Text: "Short"}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "interactive",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
+				assert.Equal(t, "button", payloads[0].Interactive.Type)
+				assert.Equal(t, "This is a very lo...", payloads[0].Interactive.Action.Buttons[0].Reply.Title)
+				assert.Equal(t, "Short", payloads[0].Interactive.Action.Buttons[1].Reply.Title)
+				assert.Len(t, clog.Errors, 1)
+				assert.Equal(t, "quick reply text 'This is a very long button title' exceeds the 20 character limit and will be truncated", clog.Errors[0].Message)
+			},
+		},
+		{
+			label:                 "List row title and description over limits - should be truncated and logged",
+			text:                  "Pick one",
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "Option with a very long title", Extra: strings.Repeat("x", 80)}, {Type: "text", Text: "Short", Extra: "ok"}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "interactive",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
+				assert.Equal(t, "list", payloads[0].Interactive.Type)
+				rows := payloads[0].Interactive.Action.Sections[0].Rows
+				assert.Equal(t, "Option with a very lo...", rows[0].Title)
+				assert.Equal(t, strings.Repeat("x", 69)+"...", rows[0].Description)
+				assert.Equal(t, "Short", rows[1].Title)
+				assert.Len(t, clog.Errors, 2)
+			},
+		},
+		{
+			label:                 "Flow CTA over 20 characters - should be truncated and logged",
+			text:                  "Book an appointment",
+			quickReplies:          []models.QuickReply{{Type: "form", Text: "Book your appointment now please", Extra: "123456"}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "interactive",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
+				assert.Equal(t, "flow", payloads[0].Interactive.Type)
+				assert.Equal(t, "Book your appoint...", payloads[0].Interactive.Action.Parameters.FlowCTA)
+				assert.Len(t, clog.Errors, 1)
+			},
+		},
+		{
+			label:                 "URL button display text over 20 characters - should be truncated and logged",
+			text:                  "Check out our site",
+			quickReplies:          []models.QuickReply{{Type: "url", Text: "Visit our brand new website", Extra: "https://example.com"}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "interactive",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
+				assert.Equal(t, "cta_url", payloads[0].Interactive.Type)
+				assert.Equal(t, "Visit our brand n...", payloads[0].Interactive.Action.Parameters.DisplayText)
+				assert.Len(t, clog.Errors, 1)
+			},
+		},
+		{
 			label:                 "Text between 1024 and 4096 without attachments or QRs - should be a single text message",
 			text:                  strings.Repeat("x", 2000),
 			urn:                   "whatsapp:250788123123",
