@@ -6,11 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/gocommon/aws/cwatch"
-	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/centrifugo"
 	"github.com/nyaruka/gocommon/httpx"
@@ -26,7 +24,7 @@ const MaxAttachmentBodyBytes = 100 * 1024 * 1024
 type Runtime struct {
 	Config     *Config
 	DB         *sqlx.DB
-	Dynamo     *dynamodb.Client
+	Dynamo     *Dynamo
 	VK         *redis.Pool
 	S3         *s3x.Service
 	CW         *cwatch.Service
@@ -46,9 +44,7 @@ type Runtime struct {
 	// body is buffered into the trace.
 	HTTPAttachments *http.Client
 
-	Writers *Writers
-	Spool   *dynamo.Spool
-	Stats   *StatsCollector
+	Stats *StatsCollector
 }
 
 func NewRuntime(cfg *Config) (*Runtime, error) {
@@ -67,9 +63,9 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 
 	// the AWS service constructors resolve credentials and region from the SDK default chain (env
 	// vars, instance/task IAM role, shared config/credentials files, etc.)
-	rt.Dynamo, err = dynamo.NewClient(ctx, cfg.DynamoEndpoint)
+	rt.Dynamo, err = newDynamo(ctx, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("error creating DynamoDB client: %w", err)
+		return nil, err
 	}
 
 	rt.VK, err = vkutil.NewPool(cfg.Valkey, vkutil.WithMaxActive(cfg.MaxWorkers*2))
@@ -131,8 +127,6 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 		rt.HTTPProxied = &http.Client{Transport: httpx.WithTraces(httpx.WithAccessControl(proxiedTransport, httpAccess)), Timeout: 30 * time.Second}
 	}
 
-	rt.Spool = dynamo.NewSpool(rt.Dynamo, rt.Config.SpoolDir+"/dynamo", 30*time.Second)
-	rt.Writers = newWriters(cfg, rt.Dynamo, rt.Spool)
 	rt.Stats = NewStatsCollector()
 
 	return rt, nil
@@ -160,15 +154,9 @@ func NewTestRuntime(cfg *Config) *Runtime {
 }
 
 func (r *Runtime) Start() error {
-	if err := r.Spool.Start(); err != nil {
-		return fmt.Errorf("error starting dynamo spool: %w", err)
-	}
-
-	r.Writers.start()
-	return nil
+	return r.Dynamo.start()
 }
 
 func (r *Runtime) Stop() {
-	r.Writers.stop()
-	r.Spool.Stop()
+	r.Dynamo.stop()
 }

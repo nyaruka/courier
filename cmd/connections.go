@@ -24,7 +24,7 @@ func testConnections(rt *runtime.Runtime) {
 	}
 
 	// test DynamoDB
-	if err := dynamo.Test(ctx, rt.Dynamo, rt.Config.DynamoTablePrefix+"Main"); err != nil {
+	if err := dynamo.Test(ctx, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table(), rt.Dynamo.History.Table()); err != nil {
 		log.Error("dynamodb not reachable", "error", err)
 	} else {
 		log.Info("dynamodb ok")

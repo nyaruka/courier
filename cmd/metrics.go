@@ -108,7 +108,7 @@ func reportMetrics(ctx context.Context, rt *runtime.Runtime, dbWaitDuration, red
 		cwatch.Datum("ValkeyConnectionsWaitDuration", float64(redisWaitDurationInPeriod)/float64(time.Second), cwtypes.StandardUnitSeconds),
 		cwatch.Datum("QueuedMsgs", float64(bulkSize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "bulk")),
 		cwatch.Datum("QueuedMsgs", float64(prioritySize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "priority")),
-		cwatch.Datum("DynamoSpooledItems", float64(rt.Spool.Size()), cwtypes.StandardUnitCount),
+		cwatch.Datum("DynamoSpooledItems", float64(rt.Dynamo.Spool.Size()), cwtypes.StandardUnitCount),
 		cwatch.Datum("PostgresSpooledItems", float64(msgSpoolSize), cwtypes.StandardUnitCount, cwatch.Dimension("SpoolName", "msgs")),
 		cwatch.Datum("PostgresSpooledItems", float64(statusSpoolSize), cwtypes.StandardUnitCount, cwatch.Dimension("SpoolName", "statuses")),
 		cwatch.Datum("PostgresSpooledItems", float64(eventSpoolSize), cwtypes.StandardUnitCount, cwatch.Dimension("SpoolName", "events")),

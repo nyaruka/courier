@@ -48,8 +48,8 @@ func (ts *BackendTestSuite) SetupSuite() {
 	// start from a clean baseline in case a previous test run left state behind
 	testsuite.ResetDB(ts.T(), ts.rt)
 	testsuite.ResetValkey(ts.T(), ts.rt)
-	dyntest.Truncate(ts.T(), ts.rt.Dynamo, ts.rt.Writers.Main.Table())
-	dyntest.Truncate(ts.T(), ts.rt.Dynamo, ts.rt.Writers.History.Table())
+	dyntest.Truncate(ts.T(), ts.rt.Dynamo.Main.Client(), ts.rt.Dynamo.Main.Table())
+	dyntest.Truncate(ts.T(), ts.rt.Dynamo.History.Client(), ts.rt.Dynamo.History.Table())
 
 	ts.rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
 }
@@ -60,8 +60,8 @@ func (ts *BackendTestSuite) TearDownSuite() {
 	testsuite.ResetDB(ts.T(), ts.rt)
 	testsuite.ResetValkey(ts.T(), ts.rt)
 
-	dyntest.Truncate(ts.T(), ts.rt.Dynamo, ts.rt.Writers.Main.Table())
-	dyntest.Truncate(ts.T(), ts.rt.Dynamo, ts.rt.Writers.History.Table())
+	dyntest.Truncate(ts.T(), ts.rt.Dynamo.Main.Client(), ts.rt.Dynamo.Main.Table())
+	dyntest.Truncate(ts.T(), ts.rt.Dynamo.History.Client(), ts.rt.Dynamo.History.Table())
 
 	ts.rt.S3.EmptyBucket(ctx, "test-attachments")
 }
@@ -371,9 +371,9 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	}
 
 	getHistoryItems := func() []*dynamo.Item {
-		ts.rt.Writers.History.Flush()
-		items := dyntest.ScanAll(ts.T(), ts.rt.Dynamo, "TestHistory")
-		dyntest.Truncate(ts.T(), ts.rt.Dynamo, "TestHistory")
+		ts.rt.Dynamo.History.Flush()
+		items := dyntest.ScanAll(ts.T(), ts.rt.Dynamo.History.Client(), ts.rt.Dynamo.History.Table())
+		dyntest.Truncate(ts.T(), ts.rt.Dynamo.History.Client(), ts.rt.Dynamo.History.Table())
 		return items
 	}
 
@@ -863,7 +863,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
 	getClogFromDynamo := func(clog *models.ChannelLog) (*dynamo.Item, error) {
-		return dynamo.GetItem(ctx, ts.rt.Dynamo, ts.rt.Writers.Main.Table(), models.ChannelLogDynamoKey(clog))
+		return dynamo.GetItem(ctx, ts.rt.Dynamo.Main.Client(), ts.rt.Dynamo.Main.Table(), models.ChannelLogDynamoKey(clog))
 	}
 
 	httpClient := &http.Client{Transport: httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
@@ -910,7 +910,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ts.NoError(err)
 	ts.Equal("msg_send", item2.Data["type"])
 
-	dyntest.AssertCount(ts.T(), ts.rt.Dynamo, ts.rt.Writers.Main.Table(), 2)
+	dyntest.AssertCount(ts.T(), ts.rt.Dynamo.Main.Client(), ts.rt.Dynamo.Main.Table(), 2)
 }
 
 func (ts *BackendTestSuite) TestContactForMsg() {

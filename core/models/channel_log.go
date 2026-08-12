@@ -154,7 +154,7 @@ func (l *dynamoChannelLog) MarshalDynamo() (*dynamo.Item, error) {
 func WriteChannelLog(rt *runtime.Runtime, clog *ChannelLog) {
 	log := slog.With("log_uuid", clog.UUID, "log_type", clog.Type, "channel_uuid", clog.ChannelUUID)
 
-	capacity, err := rt.Writers.Main.Queue(&dynamoChannelLog{clog})
+	capacity, err := rt.Dynamo.Main.Queue(&dynamoChannelLog{clog})
 	if err != nil {
 		log.Error("error queuing channel log to writer", "error", err)
 		return
