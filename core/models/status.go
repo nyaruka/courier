@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier/v26/runtime"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/dbutil"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/core/events"
@@ -19,12 +19,12 @@ import (
 
 // StatusUpdate represents a status update on a message
 type StatusUpdate struct {
-	ChannelUUID_        ChannelUUID `json:"channel_uuid"                    db:"channel_uuid"`
-	ChannelID_          ChannelID   `json:"channel_id"                      db:"channel_id"`
-	MsgUUID_            MsgUUID     `json:"msg_uuid,omitempty"              db:"msg_uuid"`
-	ExternalIdentifier_ string      `json:"external_identifier,omitempty"   db:"external_identifier"`
-	Status_             MsgStatus   `json:"status"                          db:"status"`
-	LogUUID             clogs.UUID  `json:"log_uuid"                        db:"log_uuid"`
+	ChannelUUID_        ChannelUUID  `json:"channel_uuid"                    db:"channel_uuid"`
+	ChannelID_          ChannelID    `json:"channel_id"                      db:"channel_id"`
+	MsgUUID_            MsgUUID      `json:"msg_uuid,omitempty"              db:"msg_uuid"`
+	ExternalIdentifier_ string       `json:"external_identifier,omitempty"   db:"external_identifier"`
+	Status_             MsgStatus    `json:"status"                          db:"status"`
+	LogUUID             svclogs.UUID `json:"log_uuid"                        db:"log_uuid"`
 }
 
 func (s *StatusUpdate) EventUUID() uuids.UUID    { return uuids.UUID(s.MsgUUID_) }

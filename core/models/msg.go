@@ -18,11 +18,11 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
@@ -82,15 +82,15 @@ const (
 // MsgIn is an incoming message as created by a handler, and is also what we marshal to spool files when the
 // database is down. It doesn't carry any database ids - those are resolved when it's written.
 type MsgIn struct {
-	UUID_        MsgUUID      `json:"uuid"`
-	ChannelUUID_ ChannelUUID  `json:"channel_uuid"`
-	URN_         urns.URN     `json:"urn"`
-	Text_        string       `json:"text"`
-	Attachments_ []string     `json:"attachments,omitempty"`
-	ExternalID_  string       `json:"external_id,omitempty"`
-	CreatedOn_   time.Time    `json:"created_on"`
-	ReceivedOn_  *time.Time   `json:"received_on,omitempty"`
-	LogUUIDs     []clogs.UUID `json:"log_uuids"`
+	UUID_        MsgUUID        `json:"uuid"`
+	ChannelUUID_ ChannelUUID    `json:"channel_uuid"`
+	URN_         urns.URN       `json:"urn"`
+	Text_        string         `json:"text"`
+	Attachments_ []string       `json:"attachments,omitempty"`
+	ExternalID_  string         `json:"external_id,omitempty"`
+	CreatedOn_   time.Time      `json:"created_on"`
+	ReceivedOn_  *time.Time     `json:"received_on,omitempty"`
+	LogUUIDs     []svclogs.UUID `json:"log_uuids"`
 
 	// optional extras set by handlers, used to update the contact or passed to mailroom for handling
 	ContactName_   string            `json:"contact_name,omitempty"`
@@ -114,7 +114,7 @@ func NewIncomingMsg(channel *Channel, urn urns.URN, text string, extID string, c
 		ExternalID_:  dbutil.ToValidUTF8(extID),
 		CreatedOn_:   now,
 		ReceivedOn_:  &now,
-		LogUUIDs:     []clogs.UUID{clog.UUID},
+		LogUUIDs:     []svclogs.UUID{clog.UUID},
 
 		Channel_: channel,
 	}

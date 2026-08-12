@@ -9,9 +9,9 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -184,7 +184,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Form:    url.Values{"msg": {"Simple Message"}, "to": {"0788383383"}, "from": {"2020"}, "key": {"D69BB824F88F20482B94ECF3822EBD84"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
-		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "Received invalid response content: <return>Missing</return>"}},
+		ExpectedLogErrors: []*svclogs.Error{&svclogs.Error{Message: "Received invalid response content: <return>Missing</return>"}},
 		ExpectedError:     channels.ErrResponseContent,
 	},
 }

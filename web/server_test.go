@@ -15,7 +15,6 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
-	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/aws/dynamo"
@@ -86,7 +85,7 @@ func TestOutgoing(t *testing.T) {
 	dyntest.Truncate(t, rt.Dynamo, "TestMain")
 
 	s := web.NewServer(rt)
-	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	rt.HTTP.Transport = httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/send": {
 			httpx.NewMockResponse(200, nil, []byte(`SENT`)),
 			httpx.MockConnectionError,
@@ -94,7 +93,7 @@ func TestOutgoing(t *testing.T) {
 			httpx.NewMockResponse(429, nil, []byte(`too much!`)),
 			httpx.NewMockResponse(403, nil, []byte(`stop!`)),
 		},
-	})
+	}))
 
 	require.NoError(t, s.Start())
 	defer s.Stop()
@@ -230,7 +229,9 @@ func TestFetchAttachment(t *testing.T) {
 	rt.S3.Client.CreateBucket(t.Context(), &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
 
 	server := web.NewServer(rt)
-	server.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+
+	// attachments are fetched through the dedicated bounded client, so that's where the mocks go
+	server.Runtime().HTTPAttachments.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"http://mock.com/media/hello.jpg": {
 			httpx.NewMockResponse(200, nil, testJPG),
 		},
@@ -254,9 +255,13 @@ func TestFetchAttachment(t *testing.T) {
 		if authToken != "" {
 			req.Header.Set("Authorization", "Bearer "+authToken)
 		}
-		trace, _, err := utils.TraceHTTP(http.DefaultClient, req, 0)
+		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		return trace.Response.StatusCode, trace.ResponseBody
+		defer resp.Body.Close()
+
+		respBody, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		return resp.StatusCode, respBody
 	}
 
 	// try to submit with no auth header

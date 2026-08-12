@@ -7,52 +7,25 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 )
 
-// TraceHTTP performs req, returning a trace of the request and its final response. Tracing is layered
-// onto the given client's transport for this single call rather than shared on the client itself, so
-// concurrent callers never race on trace state; any other middleware already on the client's transport
-// (e.g. access control) stays in effect.
+// DoTraced performs req through the given client and returns the trace of that single call alongside the response.
+// The client's transport must be wrapped with httpx.WithTraces, as the runtime's clients are; a collector is put on
+// the request context so that only this call's trace comes back even though the client is shared.
 //
-// If the server redirects, only the final hop's trace is returned — the intermediate redirect hops are
-// dropped — so a redirected request yields a single trace, as httpx.DoTrace did, rather than one per
-// hop. The returned trace is nil only if the request couldn't be issued at all.
-//
-// maxBodyBytes bounds both how many bytes are read from each response body (rejecting a larger body
-// with httpx.ErrResponseSize, the protection needed when fetching from untrusted endpoints) and how
-// much of the body is captured into the trace; a value <= 0 reads and captures the whole body.
-//
-// The returned response and error otherwise mirror http.Client.Do — on a transport error the response
-// is nil and the error is set — except that a body-read error (e.g. ErrResponseSize), which the tracing
-// transport defers onto the response body, is surfaced here as the returned error so callers see it the
-// same way httpx.DoTrace reported it. The body remains available via the trace's ResponseBody.
-func TraceHTTP(client *http.Client, req *http.Request, maxBodyBytes int) (*httpx.Trace, *http.Response, error) {
-	// WithReadLimit (inside WithTraces, so the bound applies before the body is buffered) caps the
-	// bytes read from the response body; WithTraces then captures that bounded body into the trace.
-	tracing := httpx.WithTraces(httpx.WithReadLimit(client.Transport, maxBodyBytes))
+// The response body is drained before returning. The tracing transport buffers the body into the trace and defers any
+// read error onto the handed-back body rather than returning it, so a caller which takes its bytes from the trace -
+// which is what all of ours do - would otherwise accept a body truncated by a read limit, or a short read, as though
+// it were complete. Draining here surfaces that as the returned error instead, and is the reason to go through this
+// rather than calling client.Do directly.
+func DoTraced(client *http.Client, req *http.Request) (*httpx.Trace, *http.Response, error) {
+	ctx, traces := httpx.WithTraceCollector(req.Context())
 
-	resp, err := (&http.Client{
-		Transport:     tracing,
-		CheckRedirect: client.CheckRedirect,
-		Jar:           client.Jar,
-		Timeout:       client.Timeout,
-	}).Do(req)
+	resp, err := client.Do(req.WithContext(ctx))
 
-	// WithTraces replays a body-read error (an oversized body surfaced as ErrResponseSize by
-	// WithReadLimit, or a truncated/short read) on resp.Body rather than returning it. Drain the final
-	// response to surface that error as the returned error, as httpx.DoTrace did; the body is still
-	// available via the trace's ResponseBody. The drain is O(1) on success (bytes.Reader.WriteTo into
-	// io.Discard), so this runs unconditionally — gating it on a read limit would silently swallow
-	// read errors for limit-less callers.
 	if err == nil && resp != nil {
 		if _, drainErr := io.Copy(io.Discard, resp.Body); drainErr != nil {
 			err = drainErr
 		}
 	}
 
-	// keep only the final hop's trace; on a redirect the earlier hops are the 3xx responses that led
-	// here and would otherwise each produce a separate channel-log entry
-	traces := tracing.Traces()
-	if len(traces) == 0 {
-		return nil, resp, err
-	}
-	return traces[len(traces)-1], resp, err
+	return traces.Last(), resp, err
 }

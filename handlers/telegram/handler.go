@@ -18,8 +18,8 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/core/events"
 )
@@ -131,7 +131,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 			webAppPayload = json.RawMessage(raw)
 		} else {
 			text = payload.Message.WebAppData.Data
-			clog.Error(&clogs.Error{Message: "web_app_data data is not a valid JSON object"})
+			clog.Error(&svclogs.Error{Message: "web_app_data data is not a valid JSON object"})
 		}
 	}
 
@@ -260,7 +260,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		// instead of failing the send
 		qrs = slices.DeleteFunc(qrs, func(q models.QuickReply) bool {
 			if !isValidButtonURL(q.Extra) {
-				clog.Error(&clogs.Error{Message: fmt.Sprintf("quick reply of type url has an invalid URL and can't be sent: %s", q.Extra)})
+				clog.Error(&svclogs.Error{Message: fmt.Sprintf("quick reply of type url has an invalid URL and can't be sent: %s", q.Extra)})
 				return true
 			}
 			return false

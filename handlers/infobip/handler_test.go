@@ -8,8 +8,8 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -367,7 +367,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"0191e180-7d60-7000-aded-7d8b151cbd5b"}],"content":{"text":"☺"},"webhooks":{"delivery":{"url":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","intermediateReport":true,"contentType":"application/json"}}}]}`,
 		}},
-		ExpectedLogErrors: []*clogs.Error{models.ErrorResponseValueMissing("messageId")},
+		ExpectedLogErrors: []*svclogs.Error{models.ErrorResponseValueMissing("messageId")},
 	},
 	{
 		Label:          "Send MMS with Attachment",

@@ -10,8 +10,8 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -183,7 +183,7 @@ var defaultReceiveTestCases = []IncomingTestCase{
 		ExpectedEvents: []ExpectedEvent{
 			{Type: models.EventTypeStopContact, URN: "tel:+18885551515"},
 		},
-		ExpectedErrors: []*clogs.Error{models.ErrorExternal("103", "Contact has sent 'stop'")},
+		ExpectedErrors: []*svclogs.Error{models.ErrorExternal("103", "Contact has sent 'stop'")},
 	},
 	{
 		Label:                "Receive Invalid Status",

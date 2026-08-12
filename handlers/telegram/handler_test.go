@@ -15,9 +15,9 @@ import (
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/core/events"
@@ -741,7 +741,7 @@ var testCases = []IncomingTestCase{
 		ExpectedURN:          "telegram:3527065#nicpottier",
 		ExpectedExternalID:   "98",
 		ExpectedDate:         time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC),
-		ExpectedErrors:       []*clogs.Error{{Message: "web_app_data data is not a valid JSON object"}},
+		ExpectedErrors:       []*svclogs.Error{{Message: "web_app_data data is not a valid JSON object"}},
 	},
 	{
 		Label:                "Receive Empty",
@@ -756,7 +756,7 @@ var testCases = []IncomingTestCase{
 		Data:                 invalidFileID,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
-		ExpectedErrors:       []*clogs.Error{models.ErrorResponseUnparseable("JSON")},
+		ExpectedErrors:       []*svclogs.Error{models.ErrorResponseUnparseable("JSON")},
 	},
 	{
 		Label:                "Receive NoOk FileID",
@@ -771,7 +771,7 @@ var testCases = []IncomingTestCase{
 		Data:                 invalidJsonFile,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
-		ExpectedErrors:       []*clogs.Error{models.ErrorResponseUnparseable("JSON")},
+		ExpectedErrors:       []*svclogs.Error{models.ErrorResponseUnparseable("JSON")},
 	},
 	{
 		Label:                "Receive error File response",
@@ -779,7 +779,7 @@ var testCases = []IncomingTestCase{
 		Data:                 errorFile,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
-		ExpectedErrors:       []*clogs.Error{models.ErrorExternal("500", "error loading file")},
+		ExpectedErrors:       []*svclogs.Error{models.ErrorExternal("500", "error loading file")},
 	},
 	{
 		Label:                "Receive NotOk FileID",
@@ -937,7 +937,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Skip"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
 		},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type form is missing its extra value and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"133"},
@@ -970,7 +970,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Please register"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Register","web_app":{"url":"https://example.com/form"}},{"text":"Skip"}]],"resize_keyboard":true,"one_time_keyboard":false}`}}},
 		},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"133"},
@@ -1004,7 +1004,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
 		},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type video isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"133"},
@@ -1022,7 +1022,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Read More","url":"https://example.com/more"}]]}`}}},
 		},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type url has an invalid URL and can't be sent: example.com/visit"},
 			{Message: "quick reply of type url has an invalid URL and can't be sent: http://localhost/visit"},
 			{Message: "quick reply of type url has an invalid URL and can't be sent: https://example.com/a page"},
@@ -1042,7 +1042,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
 		},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type url is missing its extra value and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"133"},
@@ -1060,7 +1060,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"text": {"Where are you?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Send Location","request_location":true}]],"resize_keyboard":true,"one_time_keyboard":false}`}}},
 		},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type url isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"133"},
@@ -1230,7 +1230,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgText:           "My foo!",
 		MsgURN:            "telegram:12345",
 		MsgAttachments:    []string{"unknown/foo:https://foo.bar/unknown.foo"},
-		ExpectedLogErrors: []*clogs.Error{models.ErrorMediaUnsupported("unknown/foo")},
+		ExpectedLogErrors: []*svclogs.Error{models.ErrorMediaUnsupported("unknown/foo")},
 	},
 }
 
@@ -1253,7 +1253,7 @@ func TestSendEvent(t *testing.T) {
 	h := newHandler().(*handler)
 	s.MountHandler(h)
 
-	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://api.telegram.org/botauth_token/sendChatAction": {
 			httpx.NewMockResponse(200, nil, []byte(`{"ok": true, "result": true}`)),
 			httpx.NewMockResponse(400, nil, []byte(`{"ok": false, "error_code": 400, "description": "Bad Request"}`)),

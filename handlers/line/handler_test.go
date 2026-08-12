@@ -12,9 +12,9 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/core/events"
@@ -548,7 +548,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Read more?","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
 			},
 		},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type url is missing its extra value and can't be sent"},
 		},
 	},
@@ -565,7 +565,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Are you happy?","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"Yes","text":"Yes"}}]}}]}`,
 			},
 		},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
 		},
 	},
@@ -716,7 +716,7 @@ func TestSendEvent(t *testing.T) {
 	h := newHandler().(*handler)
 	s.MountHandler(h)
 
-	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://api.line.me/v2/bot/chat/loading/start": {
 			httpx.NewMockResponse(202, nil, []byte(`{}`)),
 			httpx.NewMockResponse(400, nil, []byte(`{"message": "The property, 'chatId', in the request body is invalid"}`)),

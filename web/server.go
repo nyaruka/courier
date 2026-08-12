@@ -21,9 +21,9 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/svclogs"
 )
 
 // NewServer creates a new Server for the passed in runtime. The server will have to be started
@@ -238,7 +238,7 @@ func (s *Server) MountHandler(handler channels.Handler) error {
 	return nil
 }
 
-func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc channels.HandleFunc, logType clogs.Type) http.HandlerFunc {
+func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc channels.HandleFunc, logType svclogs.Type) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// stuff a few things in our context that help with logging
 		baseCtx := channels.WithRequestContext(r.Context(), r.URL.String(), time.Now())

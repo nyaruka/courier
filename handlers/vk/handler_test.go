@@ -20,8 +20,8 @@ import (
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/courier/v26/web"
+	"github.com/nyaruka/gocommon/svclogs"
 )
 
 const (
@@ -519,7 +519,7 @@ var outgoingCases = []OutgoingTestCase{
 				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "keyboard": {singleButtonKeyboardJson}, "message": {"Send keyboard"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"1"},
@@ -573,7 +573,7 @@ var outgoingCases = []OutgoingTestCase{
 				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "keyboard": {singleButtonKeyboardJson}, "message": {"Send keyboard"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type url is missing its extra value and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"1"},
@@ -593,7 +593,7 @@ var outgoingCases = []OutgoingTestCase{
 				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Send keyboard"}, "random_id": {"0191e180-7d60-7000-aded-7d8b151cbd5b"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
 		},
 		ExpectedExtIDs: []string{"1"},
@@ -659,7 +659,7 @@ func TestSendEvent(t *testing.T) {
 	h := newHandler().(*handler)
 	s.MountHandler(h)
 
-	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://api.vk.com/method/messages.setActivity.json*": {
 			httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 			httpx.NewMockResponse(200, nil, []byte(`{"error": {"error_code": 5, "error_msg": "User authorization failed"}}`)),

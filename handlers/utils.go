@@ -10,7 +10,7 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/gocommon/svclogs"
 )
 
 var (
@@ -65,9 +65,9 @@ func FilterSupportedQuickReplies(qrs []models.QuickReply, clog *models.ChannelLo
 	t := make([]models.QuickReply, 0, len(qrs))
 	for _, qr := range qrs {
 		if !slices.Contains(types, qr.Type) {
-			clog.Error(&clogs.Error{Message: fmt.Sprintf("quick reply of type %s isn't supported by this channel and can't be sent", qr.Type)})
+			clog.Error(&svclogs.Error{Message: fmt.Sprintf("quick reply of type %s isn't supported by this channel and can't be sent", qr.Type)})
 		} else if qr.RequiresExtra() && qr.Extra == "" {
-			clog.Error(&clogs.Error{Message: fmt.Sprintf("quick reply of type %s is missing its extra value and can't be sent", qr.Type)})
+			clog.Error(&svclogs.Error{Message: fmt.Sprintf("quick reply of type %s is missing its extra value and can't be sent", qr.Type)})
 		} else {
 			t = append(t, qr)
 		}

@@ -1,6 +1,7 @@
 package web_test
 
 import (
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -9,7 +10,6 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
-	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
@@ -51,7 +51,7 @@ func TestSendEvent(t *testing.T) {
 	rt.Config.InternalPort = 8181
 
 	server := web.NewServer(rt)
-	server.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	server.Runtime().HTTP.Transport = httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/action": {
 			httpx.NewMockResponse(200, nil, []byte(`OK`)),
 			httpx.NewMockResponse(502, nil, []byte(`bad gateway`)),
@@ -60,7 +60,7 @@ func TestSendEvent(t *testing.T) {
 			httpx.NewMockResponse(200, nil, []byte(`OK`)),
 			httpx.NewMockResponse(200, nil, []byte(`OK`)),
 		},
-	})
+	}))
 	require.NoError(t, server.Start())
 	defer server.Stop()
 
@@ -77,9 +77,13 @@ func TestSendEvent(t *testing.T) {
 		if authToken != "" {
 			req.Header.Set("Authorization", "Bearer "+authToken)
 		}
-		trace, _, err := utils.TraceHTTP(http.DefaultClient, req, 0)
+		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		return trace.Response.StatusCode, trace.ResponseBody
+		defer resp.Body.Close()
+
+		respBody, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		return resp.StatusCode, respBody
 	}
 
 	// builds a request body with a typing event routed to the given channel type/uuid/urn

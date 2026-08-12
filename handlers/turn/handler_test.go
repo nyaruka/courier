@@ -9,9 +9,9 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
@@ -1431,7 +1431,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"to":"250788123123","type":"text","text":{"body":"Interactive form msg"}}`,
 		}},
 		ExpectedExtIDs:    []string{"157b5e14568e8"},
-		ExpectedLogErrors: []*clogs.Error{{Message: "quick reply of type form is missing its extra value and can't be sent"}},
+		ExpectedLogErrors: []*svclogs.Error{{Message: "quick reply of type form is missing its extra value and can't be sent"}},
 	},
 	{
 		Label:           "Interactive with URL button",
@@ -1477,7 +1477,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"to":"250788123123","type":"text","text":{"body":"Interactive URL msg"}}`,
 		}},
 		ExpectedExtIDs:    []string{"157b5e14568e8"},
-		ExpectedLogErrors: []*clogs.Error{{Message: "quick reply of type url is missing its extra value and can't be sent"}},
+		ExpectedLogErrors: []*svclogs.Error{{Message: "quick reply of type url is missing its extra value and can't be sent"}},
 	},
 	{
 		Label:   "Error Channel Contact Pair limit hit",

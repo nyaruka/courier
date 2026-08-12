@@ -236,7 +236,7 @@ func TestDescribeURN(t *testing.T) {
 	testsuite.ResetValkey(t, rt)
 
 	// use a plain client so the handler can reach the mock API on localhost
-	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
+	rt.HTTP = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
 	rt.HTTPProxied = rt.HTTP
 
 	// ensure there's a cached access token
@@ -274,11 +274,11 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	// ensure that we start with no cached token
 	testsuite.ResetValkey(t, rt)
 
-	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
+	rt.HTTP = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
 	rt.HTTPProxied = rt.HTTP
 
 	s := web.NewServer(rt)
-	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	rt.HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://api.weixin.qq.com/cgi-bin/token?appid=app-id&grant_type=client_credential&secret=app-secret123": {
 			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"access_token": "SESAME"}`)),
 		},
@@ -312,11 +312,11 @@ func TestFetchAccessTokenThrottled(t *testing.T) {
 	// ensure that we start with no cached token
 	testsuite.ResetValkey(t, rt)
 
-	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
+	rt.HTTP = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
 	rt.HTTPProxied = rt.HTTP
 
 	s := web.NewServer(rt)
-	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	rt.HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://api.weixin.qq.com/cgi-bin/token?appid=app-id&grant_type=client_credential&secret=app-secret123": {
 			httpx.NewMockResponse(429, nil, []byte(`{"errcode": 45009, "errmsg": "reach max api daily quota limit"}`)),
 		},
@@ -450,7 +450,7 @@ func TestSendEvent(t *testing.T) {
 	_, rt := testsuite.Runtime(t)
 	testsuite.ResetValkey(t, rt)
 
-	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
+	rt.HTTP = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
 	rt.HTTPProxied = rt.HTTP
 
 	// ensure there's a cached access token
@@ -462,7 +462,7 @@ func TestSendEvent(t *testing.T) {
 	h := newHandler().(*handler)
 	s.MountHandler(h)
 
-	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	rt.HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://api.weixin.qq.com/cgi-bin/message/custom/typing*": {
 			httpx.NewMockResponse(200, nil, []byte(`{"errcode": 0, "errmsg": "ok"}`)),
 			httpx.NewMockResponse(200, nil, []byte(`{"errcode": 0, "errmsg": "ok"}`)),

@@ -8,7 +8,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -66,7 +66,7 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 
 	// truncate quick replies to max 10
 	if len(qrs) > 10 {
-		clog.Error(&clogs.Error{Message: "too many quick replies WhatsApp supports only up to 10 quick replies"})
+		clog.Error(&svclogs.Error{Message: "too many quick replies WhatsApp supports only up to 10 quick replies"})
 		qrs = qrs[:10]
 	}
 

@@ -12,8 +12,8 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -106,7 +106,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		}
 
 		if !strings.Contains(string(respBody), "Success") {
-			clog.Error(&clogs.Error{Message: fmt.Sprintf("Received invalid response content: %s", string(respBody))})
+			clog.Error(&svclogs.Error{Message: fmt.Sprintf("Received invalid response content: %s", string(respBody))})
 			return channels.ErrResponseContent
 		}
 	}

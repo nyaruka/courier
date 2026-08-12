@@ -22,12 +22,12 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/testsuite"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/stretchr/testify/assert"
@@ -75,7 +75,7 @@ type IncomingTestCase struct {
 	ExpectedExternalID    string
 	ExpectedStatuses      []ExpectedStatus
 	ExpectedEvents        []ExpectedEvent
-	ExpectedErrors        []*clogs.Error
+	ExpectedErrors        []*svclogs.Error
 	ExpectedNewURN        *models.NewURNSpec
 	NoLogsExpected        bool
 }
@@ -177,9 +177,10 @@ func RunIncomingTestCases(t *testing.T, chs []*models.Channel, handler channels.
 	// transport enforces the SSRF blocklist - but fail anything leaving the host so that a handler which
 	// isn't pointed at a test server (e.g. one describing a URN whilst a contact is created) is caught
 	// here rather than calling a real channel API
-	client := &http.Client{Transport: localOnlyTransport{http.DefaultTransport}, Timeout: 30 * time.Second}
+	client := &http.Client{Transport: httpx.WithTraces(localOnlyTransport{http.DefaultTransport}), Timeout: 30 * time.Second}
 	rt.HTTP = client
 	rt.HTTPProxied = client
+	rt.HTTPAttachments = client
 
 	// data: attachments are saved to storage as they're received so ensure the bucket exists
 	rt.S3.Client.CreateBucket(t.Context(), &s3.CreateBucketInput{Bucket: aws.String(rt.Config.S3AttachmentsBucket)})
@@ -321,7 +322,7 @@ func RunIncomingTestCases(t *testing.T, chs []*models.Channel, handler channels.
 			if !tc.NoLogsExpected {
 				if assert.Equal(t, 1, len(handledLogs), "expected a channel log") {
 					clog := handledLogs[0]
-					assert.Equal(t, append([]*clogs.Error{}, tc.ExpectedErrors...), clog.Errors, "unexpected errors logged")
+					assert.Equal(t, append([]*svclogs.Error{}, tc.ExpectedErrors...), clog.Errors, "unexpected errors logged")
 				}
 			}
 		})
@@ -403,7 +404,7 @@ type OutgoingTestCase struct {
 	ExpectedRequests  []ExpectedRequest
 	ExpectedExtIDs    []string
 	ExpectedError     error
-	ExpectedLogErrors []*clogs.Error
+	ExpectedLogErrors []*svclogs.Error
 	ExpectedNewURN    urns.URN
 }
 
@@ -455,10 +456,12 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler channel
 	testsuite.ResetValkey(t, rt)
 
 	// use a plain HTTP client so per-case mock transports can be installed, shared by HTTP and HTTPProxied so
-	// installing a mocking transport intercepts every request a handler makes via either client
-	client := &http.Client{Timeout: 30 * time.Second}
+	// installing a mocking transport intercepts every request a handler makes via either client. Tracing stays
+	// wrapped around whatever transport a case installs, since that's what produces the channel logs asserted below.
+	client := &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
 	rt.HTTP = client
 	rt.HTTPProxied = client
+	rt.HTTPAttachments = client
 
 	if setup != nil {
 		setup(t, rt)
@@ -482,11 +485,11 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler channel
 			actualRequests := make([]*http.Request, 0, 1)
 
 			// reset to the default transport each case, then install a mocking transport when the
-			// case provides mocks
-			rt.HTTP.Transport = nil
+			// case provides mocks - always inside tracing, which is what the handler's channel log is built from
+			rt.HTTP.Transport = httpx.WithTraces(nil)
 			if len(tc.MockResponses) > 0 {
 				mockHTTP = httpx.WithMocks(nil, tc.MockResponses)
-				rt.HTTP.Transport = mockHTTP
+				rt.HTTP.Transport = httpx.WithTraces(mockHTTP)
 			}
 
 			clog := models.NewChannelLogForSend(msg, handler.RedactValues(channel))
@@ -497,7 +500,7 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler channel
 			externalIDs := res.ExternalIDs()
 
 			if mockHTTP != nil {
-				rt.HTTP.Transport = nil
+				rt.HTTP.Transport = httpx.WithTraces(nil)
 
 				actualRequests = mockHTTP.Requests()
 
@@ -519,7 +522,7 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler channel
 
 			assert.Equal(t, tc.ExpectedExtIDs, externalIDs, "external IDs mismatch")
 			assert.Equal(t, tc.ExpectedError, serr, "send method error mismatch")
-			assert.Equal(t, append([]*clogs.Error{}, tc.ExpectedLogErrors...), clog.Errors, "channel log errors mismatch")
+			assert.Equal(t, append([]*svclogs.Error{}, tc.ExpectedLogErrors...), clog.Errors, "channel log errors mismatch")
 
 			// simulate the sender completing the send so send results (e.g. new URNs) are processed
 			status := models.NewStatusUpdate(channel, msg.UUID(), models.MsgStatusWired, clog)

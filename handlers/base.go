@@ -124,8 +124,8 @@ func (h *BaseHandler) RequestHTTPProxied(req *http.Request, clog *models.Channel
 func (h *BaseHandler) requestHTTP(client *http.Client, req *http.Request, clog *models.ChannelLog) (*http.Response, []byte, error) {
 	req.Header.Set("User-Agent", userAgent(h.rt.Config.Version))
 
-	// trace via the client's transport, which already enforces access control (the SSRF blocklist)
-	trace, resp, err := utils.TraceHTTP(client, req, 0)
+	// the client's transport is shared and already enforces access control (the SSRF blocklist)
+	trace, resp, err := utils.DoTraced(client, req)
 
 	var body []byte
 	if trace != nil {

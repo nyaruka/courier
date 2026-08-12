@@ -15,9 +15,9 @@ import (
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
@@ -216,7 +216,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"channel":"U0123ABCDEF","text":"Hello"}`,
 		}},
 		ExpectedError:     channels.ErrFailedWithReason("", "invalid_auth"),
-		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "invalid_auth"}},
+		ExpectedLogErrors: []*svclogs.Error{&svclogs.Error{Message: "invalid_auth"}},
 	},
 	{
 		Label:   "Throttled",

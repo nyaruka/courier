@@ -10,8 +10,8 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -156,7 +156,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from_did":"2065551212","to_did":"2067791234","message":"No External ID"}`,
 		}},
-		ExpectedLogErrors: []*clogs.Error{models.ErrorResponseValueMissing("guid")},
+		ExpectedLogErrors: []*svclogs.Error{models.ErrorResponseValueMissing("guid")},
 		ExpectedError:     channels.ErrResponseContent,
 	},
 	{
@@ -214,7 +214,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Basic dXNlcjE6c2VzYW1l"},
 			Body:    `{"from_did":"2065551212","to_did":"2067791234","message":"Simple Message ☺"}`,
 		}},
-		ExpectedLogErrors: []*clogs.Error{models.ErrorResponseValueMissing("guid")},
+		ExpectedLogErrors: []*svclogs.Error{models.ErrorResponseValueMissing("guid")},
 		ExpectedError:     channels.ErrResponseContent,
 	},
 }

@@ -18,12 +18,8 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
-)
-
-const (
-	maxAttBodyReadBytes = 100 * 1024 * 1024
+	"github.com/nyaruka/gocommon/svclogs"
 )
 
 type Attachment struct {
@@ -40,8 +36,8 @@ type fetchAttachmentRequest struct {
 }
 
 type fetchAttachmentResponse struct {
-	Attachment *Attachment `json:"attachment"`
-	LogUUID    clogs.UUID  `json:"log_uuid"`
+	Attachment *Attachment  `json:"attachment"`
+	LogUUID    svclogs.UUID `json:"log_uuid"`
 }
 
 func fetchAttachment(ctx context.Context, rt *runtime.Runtime, r *http.Request) (*fetchAttachmentResponse, error) {
@@ -97,10 +93,11 @@ func FetchAndStoreAttachment(ctx context.Context, rt *runtime.Runtime, channel *
 		return nil, fmt.Errorf("unable to create attachment request: %w", err)
 	}
 
-	// attachment URLs are untrusted, so bound the body read at maxAttBodyReadBytes — TraceHTTP surfaces
-	// an oversized body as httpx.ErrResponseSize. access control (the SSRF blocklist) is enforced by
-	// rt.HTTP's transport, so a denied request comes back as an error with a nil response.
-	trace, resp, err := utils.TraceHTTP(rt.HTTP, attRequest, maxAttBodyReadBytes)
+	// attachment URLs are untrusted, so this goes through rt.HTTPAttachments, whose transport bounds the body read
+	// at runtime.MaxAttachmentBodyBytes and enforces access control (the SSRF blocklist) — a denied request comes
+	// back as an error with a nil response. DoTraced drains the body, which is what turns an oversized attachment
+	// into the ErrResponseSize checked below rather than a silently truncated file.
+	trace, resp, err := utils.DoTraced(rt.HTTPAttachments, attRequest)
 	if trace != nil {
 		clog.HTTP(trace)
 	}

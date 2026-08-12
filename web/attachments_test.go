@@ -1,6 +1,7 @@
 package web_test
 
 import (
+	"bytes"
 	"context"
 	"net"
 	"net/http"
@@ -29,7 +30,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	rt := testsuite.NewRuntime(t)
 	rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
 
-	rt.HTTP = &http.Client{Transport: httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	rt.HTTPAttachments = &http.Client{Transport: httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/media/hello.jpg": {
 			httpx.NewMockResponse(200, nil, testJPG),
 		},
@@ -51,7 +52,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 		"http://mock.com/media/hello7": {
 			httpx.NewMockResponse(200, nil, []byte(`hello world`)),
 		},
-	})}
+	}))}
 
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 
@@ -121,7 +122,7 @@ func TestFetchAndStoreAttachmentAccessDenied(t *testing.T) {
 	// rejected before any connection is made; the mocking transport underneath has no entries and so
 	// would panic if a request ever reached it, guarding against the access check silently passing
 	access := httpx.NewAccessConfig(time.Second, []net.IP{net.ParseIP("127.0.0.1")}, nil)
-	rt.HTTP = &http.Client{Transport: httpx.WithAccessControl(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{}), access)}
+	rt.HTTPAttachments = &http.Client{Transport: httpx.WithTraces(httpx.WithAccessControl(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{}), access))}
 
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 
@@ -134,4 +135,48 @@ func TestFetchAndStoreAttachmentAccessDenied(t *testing.T) {
 
 	// nothing is saved to storage, but the denied request is still logged
 	assert.Len(t, clog.HttpLogs, 1)
+}
+
+func TestFetchAndStoreAttachmentOversized(t *testing.T) {
+	defer uuids.SetGenerator(uuids.DefaultGenerator)
+	uuids.SetGenerator(uuids.NewSeededGenerator(1234, time.Now))
+
+	ctx := context.Background()
+
+	rt := testsuite.NewRuntime(t)
+	rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("test-attachments")})
+
+	testJPG := test.ReadFile("../test/testdata/test.jpg")
+
+	// the real client bounds bodies at runtime.MaxAttachmentBodyBytes; use a tiny bound here so an oversized
+	// response is cheap to produce. The limit goes inside the tracing, exactly as the runtime composes it, so
+	// that it applies before the body is buffered into the trace.
+	const limit = 64
+	rt.HTTPAttachments = &http.Client{Transport: httpx.WithTraces(httpx.WithReadLimit(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+		"http://mock.com/media/huge.jpg": {
+			httpx.NewMockResponse(200, nil, bytes.Repeat([]byte("x"), limit*10)),
+		},
+		"http://mock.com/media/small.jpg": {
+			httpx.NewMockResponse(200, map[string]string{"Content-Type": "image/jpeg"}, testJPG[:limit]),
+		},
+	}), limit))}
+
+	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
+	clog := models.NewChannelLogForAttachmentFetch(mockChannel, nil)
+
+	// a body past the limit must come back unavailable rather than being stored truncated. The limit is enforced
+	// as the body is read and surfaced on the handed-back body rather than returned, so this is what proves the
+	// fetch drains it - without that drain a partial body would be saved as if it were the whole file.
+	att, err := web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/huge.jpg", clog)
+	assert.NoError(t, err)
+	assert.Equal(t, &web.Attachment{ContentType: "unavailable", URL: "http://mock.com/media/huge.jpg"}, att)
+
+	// a body within the limit is still fetched and stored as normal
+	att, err = web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/small.jpg", clog)
+	assert.NoError(t, err)
+	assert.Equal(t, "image/jpeg", att.ContentType)
+	assert.Equal(t, limit, att.Size)
+
+	// both attempts are logged either way
+	assert.Len(t, clog.HttpLogs, 2)
 }

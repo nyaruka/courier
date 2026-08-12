@@ -8,8 +8,8 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -86,7 +86,7 @@ var testCases = []IncomingTestCase{
 		ExpectedStatuses: []ExpectedStatus{
 			{ExternalID: "external1", Status: models.MsgStatusFailed},
 		},
-		ExpectedErrors: []*clogs.Error{models.ErrorExternal("dlr:6", "Anti-Spam Rejection")},
+		ExpectedErrors: []*svclogs.Error{models.ErrorExternal("dlr:6", "Anti-Spam Rejection")},
 	},
 	{
 		Label:                "Status accepted",
