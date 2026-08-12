@@ -406,6 +406,36 @@ func TestGetMsgPayloads(t *testing.T) {
 			},
 		},
 		{
+			label:                 "Two form QRs - only first sent, second logged as dropped",
+			text:                  "Book an appointment",
+			quickReplies:          []models.QuickReply{{Type: "form", Text: "Book now", Extra: "111"}, {Type: "form", Text: "Book later", Extra: "222"}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "interactive",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
+				assert.Equal(t, 1, len(payloads))
+				assert.Equal(t, "flow", payloads[0].Interactive.Type)
+				assert.Equal(t, "111", payloads[0].Interactive.Action.Parameters.FlowID)
+				assert.Len(t, clog.Errors, 1)
+				assert.Equal(t, "only one quick reply of type form can be sent per message", clog.Errors[0].Message)
+			},
+		},
+		{
+			label:                 "Mixed QRs with attachment but no text - all QRs logged as dropped",
+			text:                  "",
+			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},
+			quickReplies:          []models.QuickReply{{Type: "url", Text: "Visit", Extra: "https://example.com"}, {Type: "text", Text: "Yes"}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "image",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
+				assert.Equal(t, 1, len(payloads))
+				assert.Len(t, clog.Errors, 2)
+				assert.Equal(t, "quick reply of type url can't be sent on a message with no text", clog.Errors[0].Message)
+				assert.Equal(t, "quick reply of type text can't be sent on a message with no text", clog.Errors[1].Message)
+			},
+		},
+		{
 			label:                 "URL QR with image attachment - should use image as header of cta_url",
 			text:                  "Check out our site",
 			attachments:           []string{"image/jpeg:https://example.com/image.jpg"},

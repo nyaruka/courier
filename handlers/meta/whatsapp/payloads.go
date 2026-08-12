@@ -75,8 +75,8 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 
 	qrsAsList := shouldUseList(qrs)
 
-	// truncate quick replies to max 10
-	if len(qrs) > 10 {
+	// truncate quick replies to max 10 - only relevant if text quick replies are what will be rendered
+	if len(locationQRs) == 0 && len(formQRs) == 0 && len(urlQRs) == 0 && len(qrs) > 10 {
 		clog.Error(&svclogs.Error{Message: "too many quick replies WhatsApp supports only up to 10 quick replies"})
 		qrs = qrs[:10]
 	}
