@@ -1328,24 +1328,14 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "BUTTON1"}},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image2.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://foo.bar/image2.jpg": {
-				httpx.NewMockResponse(200, nil, []byte(`data`)),
-			},
-			"*/v1/media": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "media" : [{"id": "5f6a7b8c-1283-4b94-988d-7276bdec4de2"}] }`)),
-			},
 			"*/v1/messages": {
-				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
-			{},
-			{},
-			{Body: `{"to":"250788123123","type":"image","image":{"id":"5f6a7b8c-1283-4b94-988d-7276bdec4de2"}}`},
-			{Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`},
+			{Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"button","header":{"type":"image","image":{"link":"https://foo.bar/image2.jpg"}},"body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`},
 		},
-		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive List Message Send with attachment",
@@ -1461,6 +1451,22 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"cta_url","body":{"text":"Interactive URL msg"},"action":{"name":"cta_url","parameters":{"display_text":"Open Link","url":"https://example.com"}}}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
+		Label:           "Interactive with URL button, with attachment used as header",
+		MsgText:         "Interactive URL msg",
+		MsgURN:          "whatsapp:250788123123",
+		MsgQuickReplies: []models.QuickReply{{Type: "url", Text: "Visit", Extra: "https://example.com"}},
+		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image2.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/v1/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"cta_url","header":{"type":"image","image":{"link":"https://foo.bar/image2.jpg"}},"body":{"text":"Interactive URL msg"},"action":{"name":"cta_url","parameters":{"display_text":"Visit","url":"https://example.com"}}}}`,
 		}},
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},

@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -21,7 +20,6 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/handlers/meta/whatsapp"
-	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/gocommon/cache"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
@@ -396,51 +394,12 @@ type mtTextPayload struct {
 	} `json:"text"`
 }
 
+// interactive messages have the same shape as their Cloud API counterparts, and their headers CAN reference
+// media by link
 type mtInteractivePayload struct {
 	recipient
-	Type        string `json:"type" validate:"required"`
-	Interactive struct {
-		Type   string `json:"type" validate:"required"` //"text" | "image" | "video" | "document"
-		Header *struct {
-			Type     string `json:"type"`
-			Text     string `json:"text,omitempty"`
-			Video    string `json:"video,omitempty"`
-			Image    string `json:"image,omitempty"`
-			Document string `json:"document,omitempty"`
-		} `json:"header,omitempty"`
-		Body struct {
-			Text string `json:"text"`
-		} `json:"body" validate:"required"`
-		Footer *struct {
-			Text string `json:"text"`
-		} `json:"footer,omitempty"`
-		Action struct {
-			Name       string                     `json:"name,omitempty"`
-			Button     string                     `json:"button,omitempty"`
-			Sections   []mtSection                `json:"sections,omitempty"`
-			Buttons    []mtButton                 `json:"buttons,omitempty"`
-			Parameters *whatsapp.ActionParameters `json:"parameters,omitempty"`
-		} `json:"action" validate:"required"`
-	} `json:"interactive"`
-}
-
-type mtSection struct {
-	Title string         `json:"title,omitempty"`
-	Rows  []mtSectionRow `json:"rows" validate:"required"`
-}
-
-type mtSectionRow struct {
-	ID          string `json:"id" validate:"required"`
-	Title       string `json:"title,omitempty"`
-	Description string `json:"description,omitempty"`
-}
-
-type mtButton struct {
-	Type  string `json:"type" validate:"required"`
-	Reply struct {
-		ID    string `json:"id" validate:"required"`
-		Title string `json:"title" validate:"required"`
-	} `json:"reply" validate:"required"`
+	Type        string                `json:"type" validate:"required"`
+	Interactive *whatsapp.Interactive `json:"interactive"`
 }
 
 // media messages reference media by the id returned from /v1/media - they can't carry a link
@@ -485,10 +444,7 @@ type mtVideoPayload struct {
 	Video *mediaObject `json:"video"`
 }
 
-func buildPayloads(ctx context.Context, msg *models.MsgOut, h *handler, clog *models.ChannelLog) ([]any, error) {
-	var payloads []any
-	var err error
-
+func (h *handler) buildPayloads(ctx context.Context, msg *models.MsgOut, clog *models.ChannelLog) ([]any, error) {
 	rcpt := newRecipient(msg)
 
 	// Template messages must be sent as a single template payload. Mailroom/goflow may also
@@ -518,299 +474,70 @@ func buildPayloads(ctx context.Context, msg *models.MsgOut, h *handler, clog *mo
 		return []any{payload}, nil
 	}
 
-	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
-
-	sqrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm, models.QuickReplyTypeURL)
-	qrs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeText)
-	qrsAsList := false
-	for i, qr := range qrs {
-		if i > 2 || qr.Extra != "" {
-			qrsAsList = true
-		}
+	requests, err := whatsapp.GetMsgPayloads(ctx, msg, maxMsgLength, clog)
+	if err != nil {
+		return nil, err
 	}
 
-	locationQRs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeLocation)
-	formQRs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeForm)
-	urlQRs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeURL)
-
-	isInteractiveMsg := len(qrs) > 0 || len(locationQRs) > 0 || len(formQRs) > 0 || len(urlQRs) > 0
-
-	textAsCaption := false
-
-	if len(msg.Attachments()) > 0 {
-		for attachmentCount, attachment := range msg.Attachments() {
-
-			mimeType, mediaURL := handlers.SplitAttachment(attachment)
-			mediaID, err := h.fetchMediaID(ctx, msg, mediaURL, clog)
-			if err != nil {
-				slog.Error("error while uploading media to whatsapp", "error", err, "channel_uuid", msg.Channel().UUID())
-			}
-
-			// media messages must reference media uploaded to /v1/media by id - unlike template headers and
-			// interactive headers, they can't carry a link, so without an id there's no request worth making
-			if mediaID == "" {
-				return nil, channels.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp")
-			}
-
-			mediaPayload := &mediaObject{ID: mediaID}
-			if strings.HasPrefix(mimeType, "audio") {
-				payload := mtAudioPayload{
-					recipient: rcpt,
-					Type:      "audio",
-				}
-				payload.Audio = mediaPayload
-				payloads = append(payloads, payload)
-			} else if strings.HasPrefix(mimeType, "application") || strings.HasPrefix(mimeType, "document") {
-				payload := mtDocumentPayload{
-					recipient: rcpt,
-					Type:      "document",
-				}
-				if attachmentCount == 0 && !isInteractiveMsg {
-					mediaPayload.Caption = msg.Text()
-					textAsCaption = true
-				}
-				mediaPayload.Filename, err = utils.BasePathForURL(mediaURL)
-
-				// Logging error
-				if err != nil {
-					slog.Error("Error while parsing the media URL", "error", err, "channel_uuid", msg.Channel().UUID())
-				}
-				payload.Document = mediaPayload
-				payloads = append(payloads, payload)
-			} else if strings.HasPrefix(mimeType, "image") {
-				payload := mtImagePayload{
-					recipient: rcpt,
-					Type:      "image",
-				}
-				if attachmentCount == 0 && !isInteractiveMsg {
-					mediaPayload.Caption = msg.Text()
-					textAsCaption = true
-				}
-				payload.Image = mediaPayload
-				payloads = append(payloads, payload)
-			} else if strings.HasPrefix(mimeType, "video") {
-				payload := mtVideoPayload{
-					recipient: rcpt,
-					Type:      "video",
-				}
-				if attachmentCount == 0 && !isInteractiveMsg {
-					mediaPayload.Caption = msg.Text()
-					textAsCaption = true
-				}
-				payload.Video = mediaPayload
-				payloads = append(payloads, payload)
-			} else {
-				clog.Error(models.ErrorMediaUnsupported(mimeType))
-				break
-			}
+	payloads := make([]any, 0, len(requests))
+	for _, request := range requests {
+		payload, err := h.convertPayload(ctx, msg, rcpt, request, clog)
+		if err != nil {
+			return nil, err
 		}
-
-		if !textAsCaption && !isInteractiveMsg {
-			for _, part := range parts {
-
-				//check if you have a link
-				var payload mtTextPayload
-				if strings.Contains(part, "https://") || strings.Contains(part, "http://") {
-					payload = mtTextPayload{
-						recipient:  rcpt,
-						Type:       "text",
-						PreviewURL: true,
-					}
-				} else {
-					payload = mtTextPayload{
-						recipient: rcpt,
-						Type:      "text",
-					}
-				}
-				payload.Text.Body = part
-				payloads = append(payloads, payload)
-			}
-		}
-
-		if isInteractiveMsg {
-			for i, part := range parts {
-				if i < (len(parts) - 1) { //if split into more than one message, the first parts will be text and the last interactive
-					payload := mtTextPayload{
-						recipient: rcpt,
-						Type:      "text",
-					}
-					payload.Text.Body = part
-					payloads = append(payloads, payload)
-
-				} else {
-					payload := mtInteractivePayload{
-						recipient: rcpt,
-						Type:      "interactive",
-					}
-
-					if len(locationQRs) > 0 {
-						payload.Interactive.Type = "location_request_message"
-						payload.Interactive.Body.Text = part
-						payload.Interactive.Action.Name = "send_location"
-						payloads = append(payloads, payload)
-
-					} else if len(formQRs) > 0 {
-						qr := formQRs[0]
-						payload.Interactive.Type = "flow"
-						payload.Interactive.Body.Text = part
-						payload.Interactive.Action.Name = "flow"
-						payload.Interactive.Action.Parameters = &whatsapp.ActionParameters{
-							FlowMessageVersion: "3",
-							FlowID:             qr.Extra,
-							FlowCTA:            qr.GetText(),
-						}
-						payloads = append(payloads, payload)
-
-					} else if len(urlQRs) > 0 {
-						qr := urlQRs[0]
-						payload.Interactive.Type = "cta_url"
-						payload.Interactive.Body.Text = part
-						payload.Interactive.Action.Name = "cta_url"
-						payload.Interactive.Action.Parameters = &whatsapp.ActionParameters{
-							DisplayText: qr.GetText(),
-							URL:         qr.Extra,
-						}
-						payloads = append(payloads, payload)
-
-					} else if !qrsAsList { // we show buttons
-						payload.Interactive.Type = "button"
-						payload.Interactive.Body.Text = part
-						btns := make([]mtButton, len(qrs))
-						for btnIdx, qr := range qrs {
-							btns[btnIdx] = mtButton{
-								Type: "reply",
-							}
-							btns[btnIdx].Reply.ID = fmt.Sprint(btnIdx)
-							btns[btnIdx].Reply.Title = qr.Text
-						}
-						payload.Interactive.Action.Buttons = btns
-						payloads = append(payloads, payload)
-					} else {
-						payload.Interactive.Type = "list"
-						payload.Interactive.Body.Text = part
-						payload.Interactive.Action.Button = "Menu"
-						section := mtSection{
-							Rows: make([]mtSectionRow, len(qrs)),
-						}
-						for rowIdx, qr := range qrs {
-							section.Rows[rowIdx] = mtSectionRow{
-								ID:          fmt.Sprint(rowIdx),
-								Title:       qr.Text,
-								Description: qr.Extra,
-							}
-						}
-						payload.Interactive.Action.Sections = []mtSection{
-							section,
-						}
-						payloads = append(payloads, payload)
-					}
-				}
-			}
-		}
-
-	} else {
-		if isInteractiveMsg {
-			for i, part := range parts {
-				if i < (len(parts) - 1) { //if split into more than one message, the first parts will be text and the last interactive
-					payload := mtTextPayload{
-						recipient: rcpt,
-						Type:      "text",
-					}
-					payload.Text.Body = part
-					payloads = append(payloads, payload)
-
-				} else {
-					payload := mtInteractivePayload{
-						recipient: rcpt,
-						Type:      "interactive",
-					}
-
-					if len(locationQRs) > 0 {
-						payload.Interactive.Type = "location_request_message"
-						payload.Interactive.Body.Text = part
-						payload.Interactive.Action.Name = "send_location"
-						payloads = append(payloads, payload)
-
-					} else if len(formQRs) > 0 {
-						qr := formQRs[0]
-						payload.Interactive.Type = "flow"
-						payload.Interactive.Body.Text = part
-						payload.Interactive.Action.Name = "flow"
-						payload.Interactive.Action.Parameters = &whatsapp.ActionParameters{
-							FlowMessageVersion: "3",
-							FlowID:             qr.Extra,
-							FlowCTA:            qr.GetText(),
-						}
-						payloads = append(payloads, payload)
-
-					} else if len(urlQRs) > 0 {
-						qr := urlQRs[0]
-						payload.Interactive.Type = "cta_url"
-						payload.Interactive.Body.Text = part
-						payload.Interactive.Action.Name = "cta_url"
-						payload.Interactive.Action.Parameters = &whatsapp.ActionParameters{
-							DisplayText: qr.GetText(),
-							URL:         qr.Extra,
-						}
-						payloads = append(payloads, payload)
-
-					} else if !qrsAsList { // we show buttons
-						payload.Interactive.Type = "button"
-						payload.Interactive.Body.Text = part
-						btns := make([]mtButton, len(qrs))
-						for i, qr := range qrs {
-							btns[i] = mtButton{
-								Type: "reply",
-							}
-							btns[i].Reply.ID = fmt.Sprint(i)
-							btns[i].Reply.Title = qr.Text
-						}
-						payload.Interactive.Action.Buttons = btns
-						payloads = append(payloads, payload)
-					} else {
-						payload.Interactive.Type = "list"
-						payload.Interactive.Body.Text = part
-						payload.Interactive.Action.Button = "Menu"
-						section := mtSection{
-							Rows: make([]mtSectionRow, len(qrs)),
-						}
-						for i, qr := range qrs {
-							section.Rows[i] = mtSectionRow{
-								ID:          fmt.Sprint(i),
-								Title:       qr.Text,
-								Description: qr.Extra,
-							}
-						}
-						payload.Interactive.Action.Sections = []mtSection{
-							section,
-						}
-						payloads = append(payloads, payload)
-					}
-				}
-			}
-		} else {
-			for _, part := range parts {
-
-				// check if you have a link
-				var payload mtTextPayload
-				if strings.Contains(part, "https://") || strings.Contains(part, "http://") {
-					payload = mtTextPayload{
-						recipient:  rcpt,
-						Type:       "text",
-						PreviewURL: true,
-					}
-				} else {
-					payload = mtTextPayload{
-						recipient: rcpt,
-						Type:      "text",
-					}
-				}
-				payload.Text.Body = part
-				payloads = append(payloads, payload)
-			}
-		}
+		payloads = append(payloads, payload)
 	}
-	return payloads, err
+	return payloads, nil
+}
+
+// convertPayload converts a Cloud API style send request from the shared payload builder into this API's format:
+// media messages must reference media uploaded to /v1/media by id - unlike template headers and interactive
+// headers, they can't carry a link - and URL previews are a top level field.
+func (h *handler) convertPayload(ctx context.Context, msg *models.MsgOut, rcpt recipient, request whatsapp.SendRequest, clog *models.ChannelLog) (any, error) {
+	switch request.Type {
+	case "text":
+		payload := mtTextPayload{recipient: rcpt, Type: "text", PreviewURL: request.Text.PreviewURL}
+		payload.Text.Body = request.Text.Body
+		return payload, nil
+
+	case "image", "audio", "video", "document":
+		var media *whatsapp.Media
+		switch request.Type {
+		case "image":
+			media = request.Image
+		case "audio":
+			media = request.Audio
+		case "video":
+			media = request.Video
+		case "document":
+			media = request.Document
+		}
+
+		mediaID, err := h.fetchMediaID(ctx, msg, media.Link, clog)
+		if err != nil {
+			slog.Error("error while uploading media to whatsapp", "error", err, "channel_uuid", msg.Channel().UUID())
+		}
+		if mediaID == "" {
+			return nil, channels.ErrRetryableWithReason("media_upload_failed", "unable to upload media to WhatsApp")
+		}
+
+		object := &mediaObject{ID: mediaID, Caption: media.Caption, Filename: media.Filename}
+		switch request.Type {
+		case "image":
+			return mtImagePayload{recipient: rcpt, Type: "image", Image: object}, nil
+		case "audio":
+			return mtAudioPayload{recipient: rcpt, Type: "audio", Audio: object}, nil
+		case "video":
+			return mtVideoPayload{recipient: rcpt, Type: "video", Video: object}, nil
+		default:
+			return mtDocumentPayload{recipient: rcpt, Type: "document", Document: object}, nil
+		}
+
+	case "interactive":
+		return mtInteractivePayload{recipient: rcpt, Type: "interactive", Interactive: request.Interactive}, nil
+	}
+
+	return nil, fmt.Errorf("unsupported payload type: %s", request.Type)
 }
 
 // fetchMediaID tries to fetch the id for the uploaded media, setting the result in redis.
@@ -904,7 +631,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	}
 	sendURL, _ := url.Parse("/v1/messages")
 
-	requestPayloads, err := buildPayloads(ctx, msg, h, clog)
+	requestPayloads, err := h.buildPayloads(ctx, msg, clog)
 	if err != nil {
 		return err
 	}
