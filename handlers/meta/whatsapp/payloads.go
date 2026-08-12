@@ -50,7 +50,8 @@ const maxCaptionAndBodyLength = 1024
 
 // character limits for quick reply texts rendered in interactive messages
 const (
-	maxButtonTextLength   = 20 // reply button titles, CTA URL and flow button text
+	maxButtonTextLength   = 20 // reply button titles and CTA URL display text
+	maxFlowCTALength      = 30 // flow button text
 	maxListRowTitleLength = 24
 	maxListRowDescLength  = 72
 )
@@ -286,7 +287,7 @@ func buildFlowPayload(msg *models.MsgOut, body string, qr models.QuickReply, clo
 	}{Text: body}}
 	interactive.Action = &Action{
 		Name:       "flow",
-		Parameters: &ActionParameters{FlowMessageVersion: "3", FlowID: qr.Extra, FlowCTA: truncateQuickReplyText(clog, qr.GetText(), maxButtonTextLength)},
+		Parameters: &ActionParameters{FlowMessageVersion: "3", FlowID: qr.Extra, FlowCTA: truncateQuickReplyText(clog, qr.GetText(), maxFlowCTALength)},
 	}
 	p.Interactive = &interactive
 	return p

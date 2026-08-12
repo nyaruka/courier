@@ -584,7 +584,7 @@ func TestGetMsgPayloads(t *testing.T) {
 			},
 		},
 		{
-			label:                 "Flow CTA over 20 characters - should be truncated and logged",
+			label:                 "Flow CTA over 30 characters - should be truncated and logged",
 			text:                  "Book an appointment",
 			quickReplies:          []models.QuickReply{{Type: "form", Text: "Book your appointment now please", Extra: "123456"}},
 			urn:                   "whatsapp:250788123123",
@@ -592,7 +592,23 @@ func TestGetMsgPayloads(t *testing.T) {
 			expectedType:          "interactive",
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
 				assert.Equal(t, "flow", payloads[0].Interactive.Type)
-				assert.Equal(t, "Book your appoint...", payloads[0].Interactive.Action.Parameters.FlowCTA)
+				assert.Equal(t, "Book your appointment now p...", payloads[0].Interactive.Action.Parameters.FlowCTA)
+				assert.Len(t, clog.Errors, 1)
+				assert.Equal(t, "quick reply text 'Book your appointment now please' exceeds the 30 character limit and will be truncated", clog.Errors[0].Message)
+			},
+		},
+		{
+			label:                 "Button titles at exactly the limit or with multibyte characters - correct truncation",
+			text:                  "Pick one",
+			quickReplies:          []models.QuickReply{{Type: "text", Text: "Exactly twenty chars"}, {Type: "text", Text: strings.Repeat("é", 22)}},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "interactive",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
+				// exactly at the limit is left unchanged and not logged
+				assert.Equal(t, "Exactly twenty chars", payloads[0].Interactive.Action.Buttons[0].Reply.Title)
+				// multibyte text is truncated by runes, not bytes
+				assert.Equal(t, strings.Repeat("é", 17)+"...", payloads[0].Interactive.Action.Buttons[1].Reply.Title)
 				assert.Len(t, clog.Errors, 1)
 			},
 		},
