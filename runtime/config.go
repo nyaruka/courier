@@ -55,6 +55,11 @@ type Config struct {
 
 	// ExcludeChannels is the list of channels to exclude, empty means exclude none
 	ExcludeChannels []string
+
+	// parsed values that can't be set directly
+	DisallowedIPs      []net.IP
+	DisallowedNets     []*net.IPNet
+	SendProxyURLParsed *url.URL
 }
 
 // NewDefaultConfig returns a new default configuration object
@@ -105,38 +110,38 @@ func LoadConfig(cfg *Config, args ...string) (*Config, error) {
 		return nil, err
 	}
 
-	if err := cfg.Validate(); err != nil {
+	if err := cfg.Parse(); err != nil {
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
 	return cfg, nil
 }
 
-// Validate validates the config
-func (c *Config) Validate() error {
+// Parse validates the config and fills in the values which can't be used in the form they're configured in. It's
+// called by LoadConfig, and a config built by other means (e.g. NewDefaultConfig in a test) must be parsed before
+// being handed to NewRuntime - the values it fills in have no meaningful zero value, so skipping it would silently
+// leave the SSRF blocklist empty rather than fail.
+func (c *Config) Parse() error {
 	if err := utils.Validate(c); err != nil {
 		return err
 	}
 
-	if _, _, err := c.ParseDisallowedNetworks(); err != nil {
+	ips, nets, err := httpx.ParseNetworks(c.DisallowedNetworks...)
+	if err != nil {
 		return fmt.Errorf("unable to parse 'DisallowedNetworks': %w", err)
 	}
+	c.DisallowedIPs, c.DisallowedNets = ips, nets
 
-	if _, err := c.ParseSendProxyURL(); err != nil {
-		return fmt.Errorf("unable to parse 'SendProxyURL': %w", err)
+	// the validator has already enforced that this is an http(s) URL if set. Cleared rather than left alone when
+	// unset, so that parsing twice can't leave a stale URL behind - same as the networks above.
+	c.SendProxyURLParsed = nil
+	if c.SendProxyURL != "" {
+		u, err := url.Parse(c.SendProxyURL)
+		if err != nil {
+			return fmt.Errorf("unable to parse 'SendProxyURL': %w", err)
+		}
+		c.SendProxyURLParsed = u
 	}
+
 	return nil
-}
-
-// ParseDisallowedNetworks parses the list of IPs and IP networks (written in CIDR notation)
-func (c *Config) ParseDisallowedNetworks() ([]net.IP, []*net.IPNet, error) {
-	return httpx.ParseNetworks(c.DisallowedNetworks...)
-}
-
-// ParseSendProxyURL parses SendProxyURL. Returns (nil, nil) when SendProxyURL is empty.
-func (c *Config) ParseSendProxyURL() (*url.URL, error) {
-	if c.SendProxyURL == "" {
-		return nil, nil
-	}
-	return url.Parse(c.SendProxyURL)
 }

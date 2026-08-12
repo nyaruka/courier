@@ -65,6 +65,9 @@ func NewRuntime(t *testing.T) *runtime.Runtime {
 	// items spooled by a previous test run would be replayed into this run's reset database
 	require.NoError(t, os.RemoveAll(cfg.SpoolDir))
 
+	// tests get the same SSRF blocklist as production, which NewRuntime reads from the parsed config
+	require.NoError(t, cfg.Parse())
+
 	rt, err := runtime.NewRuntime(cfg)
 	require.NoError(t, err)
 

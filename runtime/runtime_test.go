@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,11 +17,17 @@ func TestHTTPProxied(t *testing.T) {
 
 	// without SendProxyURL configured, HTTP.Proxied is the same client as HTTP.Default
 	cfg := runtime.NewDefaultConfig()
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Parse())
 
 	rt, err := newRuntimeForHTTPTest(cfg)
 	require.NoError(t, err)
 	assert.Same(t, rt.HTTP.Default, rt.HTTP.Proxied)
+
+	// the blocklist Config.Parse built is baked into the client's transport, so a request to a disallowed address
+	// is rejected without dialing. This is the assertion that fails if a runtime is ever built from a config that
+	// wasn't parsed, since an unparsed config yields an empty blocklist rather than an error.
+	_, err = rt.HTTP.Default.Get("http://127.0.0.1:1/")
+	assert.ErrorIs(t, err, httpx.ErrAccessConfig)
 
 	// stand up a stub forward proxy; a forward-proxied http:// request arrives here carrying the
 	// target's host, which lets us confirm the proxied client actually routes through it. The access
@@ -39,7 +46,7 @@ func TestHTTPProxied(t *testing.T) {
 	cfg = runtime.NewDefaultConfig()
 	cfg.DisallowedNetworks = nil
 	cfg.SendProxyURL = proxy.URL
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Parse())
 
 	rt, err = newRuntimeForHTTPTest(cfg)
 	require.NoError(t, err)
