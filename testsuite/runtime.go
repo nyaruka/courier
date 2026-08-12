@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path"
+	goruntime "runtime"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/core/models"
@@ -15,11 +16,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	postgresSchemaPath = "./testsuite/testdata/schema.sql"
-	postgresDataPath   = "./testsuite/testdata/data.sql"
-	dynamoTablesPath   = "./testsuite/testdata/dynamo.json"
-)
+// testdataPath returns the absolute path of a file in this package's testdata directory. Paths are resolved relative
+// to this source file rather than the module being tested, so that they also work from modules importing this package.
+func testdataPath(file string) string {
+	_, thisFile, _, _ := goruntime.Caller(0)
+	return path.Join(path.Dir(thisFile), "testdata", file)
+}
 
 // Runtime returns a runtime for the test environment with the runtime and models layer started - what most
 // tests want.
@@ -73,7 +75,7 @@ func NewRuntime(t *testing.T) *runtime.Runtime {
 	}
 
 	// create Dynamo tables if necessary
-	dyntest.CreateTables(t, rt.Dynamo, absPath(dynamoTablesPath), false)
+	dyntest.CreateTables(t, rt.Dynamo, testdataPath("dynamo.json"), false)
 
 	rt.Centrifugo = centrifugo.NewService(centrifugo.NewMockClient(), rt.VK)
 
@@ -88,8 +90,8 @@ func NewRuntime(t *testing.T) *runtime.Runtime {
 }
 
 func ResetDB(t *testing.T, rt *runtime.Runtime) {
-	rt.DB.MustExec(string(ReadFile(t, absPath(postgresSchemaPath))))
-	rt.DB.MustExec(string(ReadFile(t, absPath(postgresDataPath))))
+	rt.DB.MustExec(string(ReadFile(t, testdataPath("schema.sql"))))
+	rt.DB.MustExec(string(ReadFile(t, testdataPath("data.sql"))))
 }
 
 func ResetValkey(t *testing.T, rt *runtime.Runtime) {
