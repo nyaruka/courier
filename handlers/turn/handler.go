@@ -10,7 +10,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -486,7 +485,7 @@ func (h *handler) buildPayloads(ctx context.Context, msg *models.MsgOut, clog *m
 		return []any{payload}, nil
 	}
 
-	requests, err := whatsapp.GetMsgPayloads(ctx, msg, maxMsgLength, clog)
+	requests, err := whatsapp.GetMsgPayloads(msg, maxMsgLength, clog)
 	if err != nil {
 		return nil, err
 	}
@@ -665,18 +664,13 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 // https://developers.facebook.com/documentation/business-messaging/whatsapp/support/error-codes
 // the struct below captures both errors array and error object
 type mtResponsePayload struct {
+	whatsapp.SendResponse
+
 	Errors []struct {
 		Code    int    `json:"code"`
 		Title   string `json:"title"`
 		Details string `json:"details"`
 	} `json:"errors"`
-	Messages []*struct {
-		ID string `json:"id"`
-	} `json:"messages"`
-	Error struct {
-		Message string `json:"message"`
-		Code    int    `json:"code"`
-	} `json:"error"`
 }
 
 func (h *handler) makeAPIRequest(payload any, accessToken string, res *channels.SendResult, wacPhoneURL *url.URL, clog *models.ChannelLog) error {
@@ -703,40 +697,26 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *channels.
 	}
 
 	respPayload := &mtResponsePayload{}
-	err = json.Unmarshal(respBody, respPayload)
-	if err != nil {
+	if err := json.Unmarshal(respBody, respPayload); err != nil {
 		return channels.ErrResponseUnparseable
 	}
-
-	if respPayload.Error.Code == 429 || slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Error.Code) {
-		return channels.ErrConnectionThrottled
+	if err := respPayload.Err(); err != nil {
+		return err
 	}
 
-	if slices.Contains(whatsapp.WACRetryableErrorCodes, respPayload.Error.Code) {
-		return channels.ErrRetryableWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
-	}
-
-	if respPayload.Error.Code != 0 || respPayload.Error.Message != "" {
-		return channels.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
-	}
-
+	// errors can also come as an errors array using the same Meta error codes
 	if len(respPayload.Errors) > 0 {
-		if respPayload.Errors[0].Code == 429 || slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Errors[0].Code) {
-			return channels.ErrConnectionThrottled
+		e := respPayload.Errors[0]
+		message := e.Title
+		if e.Details != "" {
+			message += ": " + e.Details
 		}
-		if slices.Contains(whatsapp.WACRetryableErrorCodes, respPayload.Errors[0].Code) {
-			return channels.ErrRetryableWithReason(strconv.Itoa(respPayload.Errors[0].Code), respPayload.Errors[0].Title)
-		}
-		return channels.ErrFailedWithReason(strconv.Itoa(respPayload.Errors[0].Code), respPayload.Errors[0].Title)
+		return whatsapp.SendErrorFromCode(e.Code, message)
 	}
 
-	if len(respPayload.Messages) > 0 {
-		externalID := respPayload.Messages[0].ID
-		if externalID != "" {
-			res.AddExternalID(externalID)
-		}
+	if id := respPayload.ExternalID(); id != "" {
+		res.AddExternalID(id)
 	}
-
 	return nil
 }
 

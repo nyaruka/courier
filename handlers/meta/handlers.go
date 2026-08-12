@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -700,7 +699,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg *models.MsgOut, res *
 	path, _ := url.Parse(fmt.Sprintf("/%s/messages", msg.Channel().Address()))
 	wacPhoneURL := base.ResolveReference(path)
 
-	requestPayloads, err := whatsapp.GetMsgPayloads(ctx, msg, maxMsgLengthWAC, clog)
+	requestPayloads, err := whatsapp.GetMsgPayloads(msg, maxMsgLengthWAC, clog)
 	if err != nil {
 		return err
 	}
@@ -876,26 +875,13 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 		return "", channels.ErrConnectionThrottled
 	}
 
-	respPayload := &whatsapp.SendResponse{}
-	err = json.Unmarshal(respBody, respPayload)
+	respPayload, err := whatsapp.ParseSendResponse(respBody)
 	if err != nil {
-		return "", channels.ErrResponseUnparseable
+		return "", err
 	}
 
-	if slices.Contains(whatsapp.WACThrottlingErrorCodes, respPayload.Error.Code) {
-		return "", channels.ErrConnectionThrottled
-	}
-
-	if slices.Contains(whatsapp.WACRetryableErrorCodes, respPayload.Error.Code) {
-		return "", channels.ErrRetryableWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
-	}
-
-	if respPayload.Error.Code != 0 || respPayload.Error.Message != "" {
-		return "", channels.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
-	}
-
-	if len(respPayload.Messages) > 0 && respPayload.Messages[0].ID != "" {
-		res.AddExternalID(respPayload.Messages[0].ID)
+	if id := respPayload.ExternalID(); id != "" {
+		res.AddExternalID(id)
 	}
 	return respPayload.UserID(), nil
 }

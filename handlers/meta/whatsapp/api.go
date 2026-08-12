@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -418,8 +420,45 @@ func NewTypingRequest(msgID string) *TypingRequest {
 
 // UserID returns the user_id from the first contact in the response if present.
 func (r *SendResponse) UserID() string {
-	if len(r.Contacts) > 0 && r.Contacts[0].UserID != "" {
+	if len(r.Contacts) > 0 && r.Contacts[0] != nil {
 		return r.Contacts[0].UserID
 	}
 	return ""
+}
+
+// ExternalID returns the ID of the first message in the response if present.
+func (r *SendResponse) ExternalID() string {
+	if len(r.Messages) > 0 && r.Messages[0] != nil {
+		return r.Messages[0].ID
+	}
+	return ""
+}
+
+// Err returns the appropriate send error if this response contains an error, or nil if it doesn't.
+func (r *SendResponse) Err() error {
+	if r.Error.Code != 0 || r.Error.Message != "" {
+		return SendErrorFromCode(r.Error.Code, r.Error.Message)
+	}
+	return nil
+}
+
+// ParseSendResponse parses the given response body from a send request, returning the parsed response and the
+// appropriate send error if it indicates the message couldn't be sent.
+func ParseSendResponse(respBody []byte) (*SendResponse, error) {
+	respPayload := &SendResponse{}
+	if err := json.Unmarshal(respBody, respPayload); err != nil {
+		return nil, channels.ErrResponseUnparseable
+	}
+	return respPayload, respPayload.Err()
+}
+
+// SendErrorFromCode maps an error code and message in a send response to the appropriate send error.
+func SendErrorFromCode(code int, message string) error {
+	if code == 429 || slices.Contains(WACThrottlingErrorCodes, code) {
+		return channels.ErrConnectionThrottled
+	}
+	if slices.Contains(WACRetryableErrorCodes, code) {
+		return channels.ErrRetryableWithReason(strconv.Itoa(code), message)
+	}
+	return channels.ErrFailedWithReason(strconv.Itoa(code), message)
 }
