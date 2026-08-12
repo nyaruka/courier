@@ -470,6 +470,21 @@ func TestGetMsgPayloads(t *testing.T) {
 			},
 		},
 		{
+			label:                 "Unsupported attachment type - should be skipped and logged, text still sent",
+			text:                  "Here's a contact",
+			attachments:           []string{"text/vcard:https://example.com/contact.vcf"},
+			urn:                   "whatsapp:250788123123",
+			expectedPayloadsCount: 1,
+			expectedType:          "text",
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest, clog *models.ChannelLog) {
+				assert.Equal(t, 1, len(payloads))
+				assert.Equal(t, "text", payloads[0].Type)
+				assert.Equal(t, "Here's a contact", payloads[0].Text.Body)
+				assert.Len(t, clog.Errors, 1)
+				assert.Equal(t, "media_unsupported", clog.Errors[0].Code)
+			},
+		},
+		{
 			label:                 "Text between 1024 and 4096 without attachments or QRs - should be a single text message",
 			text:                  strings.Repeat("x", 2000),
 			urn:                   "whatsapp:250788123123",

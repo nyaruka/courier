@@ -93,8 +93,14 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 		}
 
 		caption := ""
-		attType, _ := handlers.SplitAttachment(att)
-		attType = strings.Split(attType, "/")[0]
+		contentType, _ := handlers.SplitAttachment(att)
+		attType := strings.Split(contentType, "/")[0]
+
+		// skip attachment types that can't be sent as media messages
+		if attType != "image" && attType != "audio" && attType != "video" && attType != "application" && attType != "document" {
+			clog.Error(models.ErrorMediaUnsupported(contentType))
+			continue
+		}
 
 		// only non-audio single attachment messages can have captions
 		if attType != "audio" && len(msgParts) == 1 && len(msg.Attachments()) == 1 && len(qrs) == 0 && len(locationQRs) == 0 && len(formQRs) == 0 && len(urlQRs) == 0 {

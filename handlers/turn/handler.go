@@ -496,9 +496,6 @@ func (h *handler) buildPayloads(ctx context.Context, msg *models.MsgOut, clog *m
 func (h *handler) convertPayload(ctx context.Context, msg *models.MsgOut, rcpt recipient, request whatsapp.SendRequest, clog *models.ChannelLog) (any, error) {
 	switch request.Type {
 	case "text":
-		if request.Text == nil {
-			return nil, fmt.Errorf("unsupported attachment type on message: %s", msg.UUID())
-		}
 		payload := mtTextPayload{recipient: rcpt, Type: "text", PreviewURL: request.Text.PreviewURL}
 		payload.Text.Body = request.Text.Body
 		return payload, nil
