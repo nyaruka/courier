@@ -11,7 +11,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
-	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -273,7 +273,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h channels.Handler, m *model
 
 		status.SetStatus(models.MsgStatusErrored)
 
-		clog.Error(&clogs.Error{Code: "internal_error", Message: "An internal error occured."})
+		clog.Error(&svclogs.Error{Code: "internal_error", Message: "An internal error occured."})
 	}
 
 	return status, res

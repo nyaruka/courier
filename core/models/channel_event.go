@@ -7,7 +7,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier/v26/runtime"
-	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
@@ -38,7 +38,7 @@ type ChannelEvent struct {
 	EventType_   ChannelEventType  `json:"event_type"`
 	Extra_       map[string]string `json:"extra,omitempty"`
 	OccurredOn_  time.Time         `json:"occurred_on"`
-	LogUUIDs     []clogs.UUID      `json:"log_uuids"`
+	LogUUIDs     []svclogs.UUID    `json:"log_uuids"`
 
 	// optional extra set by handlers, used to update the contact
 	ContactName_ string `json:"contact_name,omitempty"`
@@ -54,7 +54,7 @@ func NewChannelEvent(channel *Channel, eventType ChannelEventType, urn urns.URN,
 		URN_:         urn,
 		EventType_:   eventType,
 		OccurredOn_:  time.Now().In(time.UTC),
-		LogUUIDs:     []clogs.UUID{clog.UUID},
+		LogUUIDs:     []svclogs.UUID{clog.UUID},
 
 		Channel_: channel,
 	}

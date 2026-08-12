@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -11,7 +12,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
-	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/goflow/core/events"
 )
 
@@ -124,11 +125,23 @@ func (h *BaseHandler) RequestHTTPProxied(req *http.Request, clog *models.Channel
 func (h *BaseHandler) requestHTTP(client *http.Client, req *http.Request, clog *models.ChannelLog) (*http.Response, []byte, error) {
 	req.Header.Set("User-Agent", userAgent(h.rt.Config.Version))
 
-	// trace via the client's transport, which already enforces access control (the SSRF blocklist)
-	trace, resp, err := utils.TraceHTTP(client, req, 0)
+	// collect the trace of just this call - the client's transport is shared and already enforces access control
+	// (the SSRF blocklist), and records into whichever collector the request's context carries
+	ctx, traces := httpx.WithTraceCollector(req.Context())
+
+	resp, err := client.Do(req.WithContext(ctx))
+
+	// the tracing transport buffers the body into the trace and defers any read error onto the handed-back body
+	// rather than returning it. We hand callers the body from the trace and never read resp.Body, so drain it here
+	// to surface a truncated read as an error instead of silently passing off a short body as complete.
+	if err == nil && resp != nil {
+		if _, drainErr := io.Copy(io.Discard, resp.Body); drainErr != nil {
+			err = drainErr
+		}
+	}
 
 	var body []byte
-	if trace != nil {
+	if trace := traces.Last(); trace != nil {
 		clog.HTTP(trace)
 		body = trace.ResponseBody
 	}

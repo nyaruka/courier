@@ -8,8 +8,8 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -205,7 +205,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":["250788383383"],"body":"No External ID","delivery_report":"per_recipient"}`,
 		}},
-		ExpectedLogErrors: []*clogs.Error{models.ErrorResponseValueMissing("id")},
+		ExpectedLogErrors: []*svclogs.Error{models.ErrorResponseValueMissing("id")},
 	},
 	{
 		Label:   "Error Sending",

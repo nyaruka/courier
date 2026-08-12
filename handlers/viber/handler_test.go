@@ -14,8 +14,8 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -139,7 +139,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular","Columns":"6"}]}}`,
 		}},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
 		},
 	},
@@ -172,7 +172,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular","Columns":"6"}]}}`,
 		}},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type url is missing its extra value and can't be sent"},
 		},
 	},
@@ -190,7 +190,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"0191e180-7d60-7000-aded-7d8b151cbd5b"}`,
 		}},
-		ExpectedLogErrors: []*clogs.Error{
+		ExpectedLogErrors: []*svclogs.Error{
 			{Message: "quick reply of type form isn't supported by this channel and can't be sent"},
 		},
 	},
@@ -776,7 +776,7 @@ var testWelcomeMessageCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 validConversationStarted,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0199dd4c-8e70-7000-9955-f9b28b006b78"}`,
+		ExpectedBodyContains: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0199dd4c-9a28-7000-9955-f9b28b006b78"}`,
 		ExpectedEvents: []ExpectedEvent{
 			{Type: models.EventTypeWelcomeMessage, URN: "viber:xy5/5y6O81+/kbWHpLhBoA=="},
 		},

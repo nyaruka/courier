@@ -18,6 +18,11 @@ import (
 	"github.com/vinovest/sqlx"
 )
 
+// MaxAttachmentBodyBytes bounds how much of an incoming attachment we'll read. Attachments are fetched from URLs
+// chosen by the remote service rather than by us, so the bound is what stops one from being able to make us buffer
+// an arbitrarily large body.
+const MaxAttachmentBodyBytes = 100 * 1024 * 1024
+
 type Runtime struct {
 	Config     *Config
 	DB         *sqlx.DB
@@ -27,11 +32,19 @@ type Runtime struct {
 	CW         *cwatch.Service
 	Centrifugo *centrifugo.Service
 
+	// HTTP is the general purpose client for outbound calls. Its transport captures a trace of any request whose
+	// context carries an httpx.TraceCollector, which is how callers get the trace to attach to a channel log.
 	HTTP *http.Client
 
 	// HTTPProxied is the HTTP client used by handlers that send to user-configured URLs. When
 	// SendProxyURL is set, it routes through that forward proxy. Otherwise it's the same as HTTP.
 	HTTPProxied *http.Client
+
+	// HTTPAttachments is the client used to fetch incoming attachments. It is the only path on which we fetch from
+	// a URL chosen by the remote service rather than by us, so it bounds how much of a response body it will read;
+	// reading past that fails with httpx.ErrResponseSize. The bound sits inside the tracing so it applies before the
+	// body is buffered into the trace.
+	HTTPAttachments *http.Client
 
 	Writers *Writers
 	Spool   *dynamo.Spool
@@ -88,7 +101,17 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 	transport.MaxIdleConns = 64
 	transport.MaxIdleConnsPerHost = 8
 	transport.IdleConnTimeout = 15 * time.Second
-	rt.HTTP = &http.Client{Transport: httpx.WithAccessControl(transport, httpAccess), Timeout: 30 * time.Second}
+
+	// tracing goes on the outside of each client so that a request denied by access control is still captured as a
+	// trace. It records into whichever httpx.TraceCollector the request's context carries, and costs nothing for a
+	// request made without one, so it belongs here rather than being assembled per call.
+	rt.HTTP = &http.Client{Transport: httpx.WithTraces(httpx.WithAccessControl(transport, httpAccess)), Timeout: 30 * time.Second}
+
+	// the attachments client additionally bounds the response body, since it fetches from URLs we didn't choose
+	rt.HTTPAttachments = &http.Client{
+		Transport: httpx.WithTraces(httpx.WithReadLimit(httpx.WithAccessControl(transport, httpAccess), MaxAttachmentBodyBytes)),
+		Timeout:   30 * time.Second,
+	}
 
 	// build a proxied variant when SendProxyURL is configured; otherwise reuse the regular client
 	// so handlers can always go through HTTPProxied without behavior change.
@@ -105,7 +128,7 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 	if proxyURL != nil {
 		proxiedTransport := transport.Clone()
 		proxiedTransport.Proxy = http.ProxyURL(proxyURL)
-		rt.HTTPProxied = &http.Client{Transport: httpx.WithAccessControl(proxiedTransport, httpAccess), Timeout: 30 * time.Second}
+		rt.HTTPProxied = &http.Client{Transport: httpx.WithTraces(httpx.WithAccessControl(proxiedTransport, httpAccess)), Timeout: 30 * time.Second}
 	}
 
 	rt.Spool = dynamo.NewSpool(rt.Dynamo, rt.Config.SpoolDir+"/dynamo", 30*time.Second)
@@ -121,12 +144,14 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 // tests can install a mocking transport via httpx.WithMocks without mutating http.DefaultClient.
 func NewTestRuntime(cfg *Config) *Runtime {
 	// give the client a timeout matching the production clients so a test that accidentally lets a
-	// request escape its mocking transport fails fast instead of hanging
-	client := &http.Client{Timeout: 30 * time.Second}
+	// request escape its mocking transport fails fast instead of hanging, and the same tracing the
+	// production clients carry so code under test produces channel logs the way it does in production
+	client := &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
 	return &Runtime{
-		Config:      cfg,
-		HTTP:        client,
-		HTTPProxied: client,
+		Config:          cfg,
+		HTTP:            client,
+		HTTPProxied:     client,
+		HTTPAttachments: client,
 		// note the nil valkey pool: publishing requires a subscriber presence lookup, so tests that
 		// exercise a publish path need a runtime with a real pool (i.e. testsuite.Runtime)
 		Centrifugo: centrifugo.NewService(centrifugo.NewMockClient(), nil),

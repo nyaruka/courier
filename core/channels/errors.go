@@ -1,7 +1,7 @@
 package channels
 
 import (
-	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -47,8 +47,8 @@ func (e *SendError) Retryable() bool { return e.retryable }
 func (e *SendError) Loggable() bool { return e.loggable }
 
 // ClogError returns the user facing error to record on the channel log
-func (e *SendError) ClogError() *clogs.Error {
-	return &clogs.Error{Code: e.clogCode, ExtCode: e.clogExtCode, Message: e.clogMsg}
+func (e *SendError) ClogError() *svclogs.Error {
+	return &svclogs.Error{Code: e.clogCode, ExtCode: e.clogExtCode, Message: e.clogMsg}
 }
 
 // ErrChannelConfig should be returned by a handler send method when channel config is invalid

@@ -7,7 +7,7 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
-	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/core/events"
 )
@@ -98,7 +98,7 @@ type Route struct {
 	Handler Handler
 	Method  string
 	Action  string
-	LogType clogs.Type
+	LogType svclogs.Type
 	Func    HandleFunc
 }
 
@@ -114,7 +114,7 @@ func NewRoutes() *Routes {
 }
 
 // Add adds a route which the handler wants to serve
-func (r *Routes) Add(handler Handler, method string, action string, logType clogs.Type, handlerFunc HandleFunc) {
+func (r *Routes) Add(handler Handler, method string, action string, logType svclogs.Type, handlerFunc HandleFunc) {
 	r.routes = append(r.routes, &Route{Handler: handler, Method: method, Action: action, LogType: logType, Func: handlerFunc})
 }
 

@@ -33,14 +33,14 @@ func TestRequestHTTP(t *testing.T) {
 	clog := models.NewChannelLogForSend(mm, nil)
 
 	// use a plain client so we can install a mocking transport
-	rt.HTTP = &http.Client{Timeout: 30 * time.Second}
+	rt.HTTP = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
 	rt.HTTPProxied = rt.HTTP
-	rt.HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	rt.HTTP.Transport = httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
 			httpx.NewMockResponse(400, nil, []byte(`{"status":"error"}`)),
 		},
-	})
+	}))
 
 	server := web.NewServer(rt)
 

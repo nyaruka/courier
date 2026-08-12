@@ -8,22 +8,21 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestChannelLog(t *testing.T) {
-	httpClient := &http.Client{Transport: httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	httpClient := &http.Client{Transport: httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
 			httpx.MockConnectionError,
 		},
-	})}
+	}))}
 
 	uuids.SetGenerator(uuids.NewSeededGenerator(1234, dates.NewSequentialNow(time.Date(2024, 9, 11, 14, 33, 0, 0, time.UTC), time.Second)))
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
@@ -33,22 +32,22 @@ func TestChannelLog(t *testing.T) {
 
 	// make a request that will have a response
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
-	trace, _, err := utils.TraceHTTP(httpClient, req, 0)
+	trace, err := test.DoTraced(httpClient, req)
 	assert.NoError(t, err)
 
 	clog.HTTP(trace)
 
 	// make a request that has no response (connection error); the client wraps the transport's error
 	req, _ = http.NewRequest("POST", "https://api.messages.com/send.json", nil)
-	trace, _, err = utils.TraceHTTP(httpClient, req, 0)
+	trace, err = test.DoTraced(httpClient, req)
 	assert.ErrorContains(t, err, "unable to connect to server")
 
 	clog.HTTP(trace)
-	clog.Error(&clogs.Error{Code: "not_right", Message: "Something not right"})
+	clog.Error(&svclogs.Error{Code: "not_right", Message: "Something not right"})
 	clog.RawError(errors.New("this is an error"))
 	clog.End()
 
-	assert.Equal(t, clogs.UUID("0191e180-7d60-7000-8e0f-6b2abe4360d8"), clog.UUID)
+	assert.Equal(t, svclogs.UUID("0191e180-7d60-7000-8e0f-6b2abe4360d8"), clog.UUID)
 	assert.Equal(t, models.ChannelLogTypeTokenRefresh, clog.Type)
 	assert.Equal(t, channel.UUID(), clog.ChannelUUID)
 	assert.Equal(t, channel.OrgID(), clog.OrgID)
@@ -80,7 +79,7 @@ func TestChannelLog(t *testing.T) {
 
 func TestChannelErrors(t *testing.T) {
 	tcs := []struct {
-		err             *clogs.Error
+		err             *svclogs.Error
 		expectedCode    string
 		expectedExtCode string
 		expectedMessage string

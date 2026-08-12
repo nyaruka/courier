@@ -14,9 +14,9 @@ import (
 	. "github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/core/events"
@@ -247,7 +247,7 @@ var testCasesD3C = []IncomingTestCase{
 		Data:                  string(test.ReadFile("../meta/testdata/wac/error_msg.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		ExpectedErrors:        []*clogs.Error{models.ErrorExternal("131051", "Unsupported message type")},
+		ExpectedErrors:        []*svclogs.Error{models.ErrorExternal("131051", "Unsupported message type")},
 		NoInvalidChannelCheck: true,
 	},
 	{
@@ -256,7 +256,7 @@ var testCasesD3C = []IncomingTestCase{
 		Data:                  string(test.ReadFile("../meta/testdata/wac/error_errors.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
-		ExpectedErrors:        []*clogs.Error{models.ErrorExternal("0", "We were unable to authenticate the app user")},
+		ExpectedErrors:        []*svclogs.Error{models.ErrorExternal("0", "We were unable to authenticate the app user")},
 		NoInvalidChannelCheck: true,
 	},
 	{
@@ -274,7 +274,7 @@ var testCasesD3C = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
 		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external_id", Status: models.MsgStatusFailed}},
-		ExpectedErrors:       []*clogs.Error{models.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)")},
+		ExpectedErrors:       []*svclogs.Error{models.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)")},
 	},
 	{
 		Label:                "Receive Invalid Status",
@@ -692,7 +692,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"},{"id":"4","title":"ROW5"},{"id":"5","title":"ROW6"},{"id":"6","title":"ROW7"},{"id":"7","title":"ROW8"},{"id":"8","title":"ROW9"},{"id":"9","title":"ROW10"}]}]}}}`,
 		}},
 		ExpectedExtIDs:    []string{"157b5e14568e8"},
-		ExpectedLogErrors: []*clogs.Error{&clogs.Error{Message: "too many quick replies WhatsApp supports only up to 10 quick replies"}},
+		ExpectedLogErrors: []*svclogs.Error{&svclogs.Error{Message: "too many quick replies WhatsApp supports only up to 10 quick replies"}},
 	},
 	{
 		Label:           "Interactive List Message Send In Spanish",
@@ -1052,7 +1052,7 @@ func TestSendEvent(t *testing.T) {
 	h := newWAHandler(models.ChannelType("D3C"), "360Dialog").(*handler)
 	s.MountHandler(h)
 
-	s.Runtime().HTTP.Transport = httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
+	s.Runtime().HTTP.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://waba-v2.360dialog.io/messages": {
 			httpx.NewMockResponse(200, nil, []byte(`{"success": true}`)),
 			httpx.NewMockResponse(400, nil, []byte(`{"error": {"message": "(#131009) Parameter value is not valid", "code": 131009}}`)),

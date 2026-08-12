@@ -9,9 +9,8 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
-	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/core/events"
 )
@@ -50,9 +49,10 @@ func (h *mockHandler) Initialize(r *channels.Routes) error {
 func (h *mockHandler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	// log a request that contains a header value that should be redacted; goes through the runtime's
 	// HTTP client so tests can intercept it with a mocking transport
-	req, _ := httpx.NewRequest(ctx, "GET", "http://mock.com/send", nil, map[string]string{"Authorization": "Token sesame"})
-	trace, resp, err := utils.TraceHTTP(h.rt.HTTP, req, 1024)
-	if trace != nil {
+	tctx, traces := httpx.WithTraceCollector(ctx)
+	req, _ := httpx.NewRequest(tctx, "GET", "http://mock.com/send", nil, map[string]string{"Authorization": "Token sesame"})
+	resp, err := h.rt.HTTP.Do(req)
+	if trace := traces.Last(); trace != nil {
 		clog.HTTP(trace)
 	}
 
@@ -65,7 +65,7 @@ func (h *mockHandler) Send(ctx context.Context, msg *models.MsgOut, res *channel
 	}
 
 	// log an error than contains a value that should be redacted
-	clog.Error(&clogs.Error{Code: "seeds", Message: "contains sesame seeds"})
+	clog.Error(&svclogs.Error{Code: "seeds", Message: "contains sesame seeds"})
 
 	if msg.Text() == "err:config" {
 		return channels.ErrChannelConfig
@@ -76,9 +76,10 @@ func (h *mockHandler) Send(ctx context.Context, msg *models.MsgOut, res *channel
 
 // SendEvent sends the given event, logging any HTTP calls or errors
 func (h *mockHandler) SendEvent(ctx context.Context, ch *models.Channel, event events.Event, clog *models.ChannelLog) error {
-	req, _ := httpx.NewRequest(ctx, "POST", "http://mock.com/action", nil, nil)
-	trace, resp, err := utils.TraceHTTP(h.rt.HTTP, req, 1024)
-	if trace != nil {
+	tctx, traces := httpx.WithTraceCollector(ctx)
+	req, _ := httpx.NewRequest(tctx, "POST", "http://mock.com/action", nil, nil)
+	resp, err := h.rt.HTTP.Do(req)
+	if trace := traces.Last(); trace != nil {
 		clog.HTTP(trace)
 	}
 

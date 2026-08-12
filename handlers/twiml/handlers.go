@@ -26,10 +26,10 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/courier/v26/utils/clogs"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/core/events"
@@ -665,7 +665,7 @@ func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter
 }
 
 // https://www.twilio.com/docs/api/errors
-func twilioError(code int64) *clogs.Error {
+func twilioError(code int64) *svclogs.Error {
 	codeAsStr := strconv.Itoa(int(code))
 	errMsg, _ := jsonparser.GetString(errorCodes, codeAsStr)
 	return models.ErrorExternal(codeAsStr, errMsg)

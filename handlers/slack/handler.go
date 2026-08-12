@@ -17,7 +17,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/courier/v26/utils/clogs"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -211,7 +211,7 @@ func (h *handler) sendTextMsgPart(msg *models.MsgOut, token string, clog *models
 		if err != nil {
 			return channels.ErrResponseContent
 		}
-		clog.Error(&clogs.Error{Message: errDescription})
+		clog.Error(&svclogs.Error{Message: errDescription})
 		return channels.ErrFailedWithReason("", errDescription)
 	}
 	return nil
