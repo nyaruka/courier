@@ -1102,6 +1102,54 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedLogErrors: []*svclogs.Error{{Message: "form quick reply extra '123456/BOOKING?name=50%' is malformed (invalid query: invalid URL escape \"%\") and flow will be sent with default action parameters"}},
 	},
 	{
+		Label:           "Interactive with form, with data not allowed with data exchange",
+		MsgText:         "Interactive form msg",
+		MsgURN:          "whatsapp:250788123123",
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Text: "Book now", Extra: "dx:123456?name=Bob"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/12345_ID/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"flow","body":{"text":"Interactive form msg"},"action":{"name":"flow","parameters":{"flow_message_version":"3","flow_id":"123456","flow_cta":"Book now"}}}}`,
+		}},
+		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedLogErrors: []*svclogs.Error{{Message: "form quick reply extra 'dx:123456?name=Bob' is malformed (data values can't be specified with data_exchange) and flow will be sent with default action parameters"}},
+	},
+	{
+		Label:           "Interactive with form, with missing screen ID",
+		MsgText:         "Interactive form msg",
+		MsgURN:          "whatsapp:250788123123",
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Text: "Book now", Extra: "123456/"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/12345_ID/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"flow","body":{"text":"Interactive form msg"},"action":{"name":"flow","parameters":{"flow_message_version":"3","flow_id":"123456","flow_cta":"Book now"}}}}`,
+		}},
+		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedLogErrors: []*svclogs.Error{{Message: "form quick reply extra '123456/' is malformed (missing screen id) and flow will be sent with default action parameters"}},
+	},
+	{
+		Label:           "Interactive with form, with missing flow ID",
+		MsgText:         "Interactive form msg",
+		MsgURN:          "whatsapp:250788123123",
+		MsgQuickReplies: []models.QuickReply{{Type: "form", Text: "Book now", Extra: "?token=98765"}},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/12345_ID/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"flow","body":{"text":"Interactive form msg"},"action":{"name":"flow","parameters":{"flow_message_version":"3","flow_id":"?token=98765","flow_cta":"Book now"}}}}`,
+		}},
+		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedLogErrors: []*svclogs.Error{{Message: "form quick reply extra '?token=98765' is malformed (missing flow id) and flow will be sent with default action parameters"}},
+	},
+	{
 		Label:           "Interactive with form missing form ID, sent as text",
 		MsgText:         "Interactive form msg",
 		MsgURN:          "whatsapp:250788123123",
