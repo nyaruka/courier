@@ -1,3 +1,11 @@
+v26.3.36 (2026-08-18)
+-------------------------
+ * Update dependencies
+ * Add tests for malformed form extra cases
+ * Support flow_action, flow_action_payload and flow_token when sending WhatsApp Flows
+ * Consolidate WhatsApp send response parsing into a shared helper
+ * Remove disabled WhatsApp legacy handler
+
 v26.3.35 (2026-08-12)
 -------------------------
  * Parse derived config values once in Config.Parse rather than at each use site
