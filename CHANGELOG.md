@@ -1,3 +1,7 @@
+v26.3.37 (2026-08-18)
+-------------------------
+ * Remove orphaned per-channel rate limit checks from queue pop script
+
 v26.3.36 (2026-08-18)
 -------------------------
  * Update dependencies
