@@ -1,7 +1,9 @@
 package whatsapp
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 
@@ -278,16 +280,92 @@ func buildLocationRequestPayload(msg *models.MsgOut, body string) SendRequest {
 	return p
 }
 
+// flowParams are the optional flow action parameters parsed from a form quick reply's extra value
+type flowParams struct {
+	action string
+	screen string
+	data   map[string]string
+	token  string
+}
+
+// parseFormExtra parses the extra value of a form quick reply, which has the syntax
+//
+//	[dx:]<flow_id>[/<screen>][?<key>=<value>&...]
+//
+// where the dx: prefix selects the data_exchange flow action, and token is a reserved query key that sets
+// flow_token. The flow id is returned even when parsing fails so callers can still fall back to a plain
+// flow message.
+func parseFormExtra(extra string) (string, *flowParams, error) {
+	rest, isDX := strings.CutPrefix(extra, "dx:")
+	base, query, hasQuery := strings.Cut(rest, "?")
+	id, screen, hasScreen := strings.Cut(base, "/")
+
+	params := &flowParams{}
+	if isDX {
+		params.action = "data_exchange"
+	}
+
+	if id == "" {
+		return "", nil, errors.New("missing flow id")
+	}
+	if hasScreen {
+		if isDX {
+			return id, nil, errors.New("screen can't be specified with data_exchange")
+		}
+		if screen == "" {
+			return id, nil, errors.New("missing screen id")
+		}
+		params.action = "navigate"
+		params.screen = screen
+	}
+	if hasQuery {
+		values, err := url.ParseQuery(query)
+		if err != nil {
+			return id, nil, fmt.Errorf("invalid query: %s", err)
+		}
+		params.token = values.Get("token")
+		values.Del("token")
+		if len(values) > 0 {
+			if isDX {
+				return id, nil, errors.New("data values can't be specified with data_exchange")
+			}
+			if !hasScreen {
+				return id, nil, errors.New("data values require a screen")
+			}
+			params.data = make(map[string]string, len(values))
+			for key, vals := range values {
+				params.data[key] = vals[0]
+			}
+		}
+	}
+	return id, params, nil
+}
+
 func buildFlowPayload(msg *models.MsgOut, body string, qr models.QuickReply, clog *models.ChannelLog) SendRequest {
 	p := newBasePayload(msg)
 	p.Type = "interactive"
 	interactive := Interactive{Type: "flow", Body: struct {
 		Text string `json:"text"`
 	}{Text: body}}
-	interactive.Action = &Action{
-		Name:       "flow",
-		Parameters: &ActionParameters{FlowMessageVersion: "3", FlowID: qr.Extra, FlowCTA: truncateQuickReplyText(clog, qr.GetText(), maxFlowCTALength)},
+
+	actionParams := &ActionParameters{FlowMessageVersion: "3", FlowID: qr.Extra, FlowCTA: truncateQuickReplyText(clog, qr.GetText(), maxFlowCTALength)}
+
+	id, flow, err := parseFormExtra(qr.Extra)
+	if err != nil {
+		clog.Error(&svclogs.Error{Message: fmt.Sprintf("form quick reply extra '%s' is malformed (%s) and flow will be sent with default action parameters", qr.Extra, err)})
+		if id != "" {
+			actionParams.FlowID = id
+		}
+	} else {
+		actionParams.FlowID = id
+		actionParams.FlowAction = flow.action
+		actionParams.FlowToken = flow.token
+		if flow.screen != "" {
+			actionParams.FlowActionPayload = &FlowActionPayload{Screen: flow.screen, Data: flow.data}
+		}
 	}
+
+	interactive.Action = &Action{Name: "flow", Parameters: actionParams}
 	p.Interactive = &interactive
 	return p
 }

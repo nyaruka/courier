@@ -323,14 +323,23 @@ type Template struct {
 	Components []*Component `json:"components,omitempty"`
 }
 
+// payload of a navigate flow action, specifying the entry screen and optionally its initial data
+type FlowActionPayload struct {
+	Screen string            `json:"screen"`
+	Data   map[string]string `json:"data,omitempty"`
+}
+
 // parameters for flow actions (https://developers.facebook.com/docs/whatsapp/flows/gettingstarted/sendingaflow)
 // and cta_url actions (https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-cta-url-messages)
 type ActionParameters struct {
-	FlowMessageVersion string `json:"flow_message_version,omitempty"`
-	FlowID             string `json:"flow_id,omitempty"`
-	FlowCTA            string `json:"flow_cta,omitempty"`
-	DisplayText        string `json:"display_text,omitempty"`
-	URL                string `json:"url,omitempty"`
+	FlowMessageVersion string             `json:"flow_message_version,omitempty"`
+	FlowID             string             `json:"flow_id,omitempty"`
+	FlowCTA            string             `json:"flow_cta,omitempty"`
+	FlowAction         string             `json:"flow_action,omitempty"`
+	FlowActionPayload  *FlowActionPayload `json:"flow_action_payload,omitempty"`
+	FlowToken          string             `json:"flow_token,omitempty"`
+	DisplayText        string             `json:"display_text,omitempty"`
+	URL                string             `json:"url,omitempty"`
 }
 
 type Header struct {
