@@ -64,19 +64,6 @@ func TestLua(t *testing.T) {
 	delay := time.Second*2 - time.Duration(time.Now().UnixNano()%int64(time.Second)) + time.Millisecond*500
 	time.Sleep(delay)
 
-	// mark chan1 as rate limited
-	rc.Do("SET", "rate_limit_bulk:chan1", "engaged")
-	rc.Do("EXPIRE", "rate_limit_bulk:chan1", 5)
-
-	// popping shouldn't error or return a value
-	q, value, err := queue.PopFromQueue(rc, "msgs")
-	assert.NoError(t, err)
-	assert.Equal(t, "", value)
-	assert.Equal(t, queue.Retry, q)
-
-	// unmark chan1 as rate limited
-	rc.Do("DEL", "rate_limit_bulk:chan1")
-
 	// pop 10 items off
 	for i := 0; i < 10; i++ {
 		q, value, err := queue.PopFromQueue(rc, "msgs")
@@ -86,7 +73,7 @@ func TestLua(t *testing.T) {
 	}
 
 	// next value should be throttled
-	q, value, err = queue.PopFromQueue(rc, "msgs")
+	q, value, err := queue.PopFromQueue(rc, "msgs")
 	assert.NoError(t, err)
 	assert.Equal(t, "", value)
 	assert.Equal(t, queue.Retry, q)
@@ -110,17 +97,10 @@ func TestLua(t *testing.T) {
 	err = queue.PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":31}]`, queue.HighPriority)
 	assert.NoError(t, err)
 
-	// make sure pause bulk key do not prevent use to get from the high priority queue
-	rc.Do("SET", "rate_limit_bulk:chan1", "engaged")
-	rc.Do("EXPIRE", "rate_limit_bulk:chan1", 5)
-
 	q, value, err = queue.PopFromQueue(rc, "msgs")
 	assert.NoError(t, err)
 	assert.Equal(t, queue.WorkerToken("msgs:chan1|10"), q)
 	assert.Equal(t, `{"id":31}`, value)
-
-	// make sure paused is not present for more tests
-	rc.Do("DEL", "rate_limit_bulk:chan1")
 
 	// should get next five bulk msgs fine
 	for i := 10; i < 15; i++ {
@@ -187,55 +167,6 @@ func TestLua(t *testing.T) {
 	assert.Equal(t, queue.EmptyQueue, q)
 	assert.Empty(t, value)
 
-	err = queue.PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":34}]`, queue.HighPriority)
-	assert.NoError(t, err)
-
-	// 3 seconds so it's still set when we check at ~2 seconds but reliably expired when we check at ~5 seconds
-	rc.Do("SET", "rate_limit:chan1", "engaged")
-	rc.Do("EXPIRE", "rate_limit:chan1", 3)
-
-	// we have the rate limit set
-	q, value, err = queue.PopFromQueue(rc, "msgs")
-	assert.NoError(t, err)
-	if value != "" && q != queue.EmptyQueue {
-		t.Fatal("Should be throttled")
-	}
-
-	time.Sleep(2 * time.Second)
-
-	q, value, err = queue.PopFromQueue(rc, "msgs")
-	assert.NoError(t, err)
-	assert.Equal(t, "", value)
-	assert.Equal(t, queue.Retry, q)
-
-	assertvk.ZGetAll(t, rc, "msgs:active", map[string]float64{})
-	assertvk.ZGetAll(t, rc, "msgs:throttled", map[string]float64{"msgs:chan1|10": 0})
-	assertvk.ZGetAll(t, rc, "msgs:future", map[string]float64{})
-
-	// but if we wait for the rate limit to expire
-	time.Sleep(3 * time.Second)
-
-	// next should be 34.. tho we poll because we can't rely on the dethrottler having moved the queue back
-	// to active at an exact time
-	for deadline := time.Now().Add(5 * time.Second); ; {
-		q, value, err = queue.PopFromQueue(rc, "msgs")
-		assert.NoError(t, err)
-		if value != "" || time.Now().After(deadline) {
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	assert.Equal(t, queue.WorkerToken("msgs:chan1|10"), q)
-	assert.Equal(t, `{"id":34}`, value)
-
-	// nothing should be left
-	q = queue.Retry
-	for q == queue.Retry {
-		q, value, err = queue.PopFromQueue(rc, "msgs")
-	}
-	assert.NoError(t, err)
-	assert.Equal(t, queue.EmptyQueue, q)
-	assert.Empty(t, value)
 }
 
 func TestThrottle(t *testing.T) {

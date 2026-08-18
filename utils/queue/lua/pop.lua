@@ -15,21 +15,8 @@ local delim = string.find(queue, "|")
 local tps = 0
 local tpsKey = ""
 
-local queueName = ""
-
 if delim then
-    queueName = string.sub(queue, string.len(KEYS[2])+2, delim-1)
     tps = tonumber(string.sub(queue, delim+1))
-end
-
-if queueName then
-    local rateLimitKey = "rate_limit:" .. queueName
-    local rateLimitEngaged = redis.call("get", rateLimitKey)
-    if rateLimitEngaged then
-        redis.call("zincrby", KEYS[2] .. ":throttled", workers, queue)
-        redis.call("zrem", KEYS[2] .. ":active", queue)
-        return {"retry", ""}
-    end
 end
 
 -- if we have a tps, then check whether we exceed it
@@ -54,14 +41,6 @@ local isFutureResult = result[1] and tonumber(result[2]) > tonumber(KEYS[1])
 
 -- if we didn't find one, try again from our bulk queue
 if not result[1] or isFutureResult then
-    -- check if we are rate limited for bulk queue
-    local rateLimitBulkKey = "rate_limit_bulk:" .. queueName
-    local rateLimitBulk = redis.call("get", rateLimitBulkKey)
-    if rateLimitBulk then
-        return {"retry", ""}
-    end
-
-    -- we are not pause check our bulk queue
     local bulkQueue = queue .. "/0"
     local bulkResult = redis.call("zrangebyscore", bulkQueue, 0, "+inf", "WITHSCORES", "LIMIT", 0, 1)
 
