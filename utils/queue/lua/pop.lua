@@ -78,7 +78,7 @@ if result[1] and not isFutureResult then
     if tps > 0 then
         local tpsCost = 1
         if type(popped) == "table" and type(popped["tps_cost"]) == "number" then
-            tpsCost = math.floor(popped["tps_cost"])
+            tpsCost = math.max(1, math.floor(popped["tps_cost"]))
         end
         redis.call("incrby", tpsKey, tpsCost)
         redis.call("expire", tpsKey, 10)
