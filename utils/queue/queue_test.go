@@ -169,6 +169,42 @@ func TestLua(t *testing.T) {
 
 }
 
+func TestTPSCost(t *testing.T) {
+	rp := getPool()
+	rc := rp.Get()
+	defer rc.Close()
+
+	rate := 10
+
+	// push a message whose tps_cost consumes the entire rate, followed by a regular message
+	err := queue.PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":0,"tps_cost":10}]`, queue.HighPriority)
+	require.NoError(t, err)
+	err = queue.PushOntoQueue(rc, "msgs", "chan1", rate, `[{"id":1}]`, queue.HighPriority)
+	require.NoError(t, err)
+
+	// align ourselves to mid-second so our pops and TPS key reads land in the same second
+	delay := time.Second - time.Duration(time.Now().UnixNano()%int64(time.Second)) + time.Millisecond*500
+	time.Sleep(delay)
+
+	q, value, err := queue.PopFromQueue(rc, "msgs")
+	assert.NoError(t, err)
+	assert.Equal(t, queue.WorkerToken("msgs:chan1|10"), q)
+	assert.Equal(t, `{"id":0,"tps_cost":10}`, value)
+
+	// popped message should have been charged its full cost against this second's TPS key
+	tpsUsed, err := redis.Int(rc.Do("GET", fmt.Sprintf("msgs:chan1|10:tps:%d", time.Now().Unix())))
+	assert.NoError(t, err)
+	assert.Equal(t, 10, tpsUsed)
+
+	// so the next pop should be throttled even though only one message was popped
+	q, value, err = queue.PopFromQueue(rc, "msgs")
+	assert.NoError(t, err)
+	assert.Equal(t, queue.Retry, q)
+	assert.Equal(t, "", value)
+
+	assertvk.ZGetAll(t, rc, "msgs:throttled", map[string]float64{"msgs:chan1|10": 1})
+}
+
 func TestThrottle(t *testing.T) {
 	assert := assert.New(t)
 	pool := getPool()
