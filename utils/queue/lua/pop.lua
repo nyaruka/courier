@@ -70,14 +70,19 @@ if result[1] and not isFutureResult then
 
     -- parse it as JSON to get the first element out
     local valueList = cjson.decode(result[1])
-    local popValue = cjson.encode(valueList[1])
+    local popped = valueList[1]
+    local popValue = cjson.encode(popped)
     table.remove(valueList, 1)
 
     -- increment our tps for this second if we have a limit
-    if tps > 0 then 
-        redis.call("incrby", tpsKey, popValue["tps_cost"] or 1)
+    if tps > 0 then
+        local tpsCost = 1
+        if type(popped) == "table" and type(popped["tps_cost"]) == "number" then
+            tpsCost = math.max(1, math.floor(popped["tps_cost"]))
+        end
+        redis.call("incrby", tpsKey, tpsCost)
         redis.call("expire", tpsKey, 10)
-    end 
+    end
 
     -- encode it back if there is anything left
     if table.getn(valueList) > 0 then
