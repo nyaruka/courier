@@ -1,3 +1,7 @@
+v26.3.38 (2026-08-19)
+-------------------------
+ * Fix pop script to correctly charge tps_cost of queued messages
+
 v26.3.37 (2026-08-18)
 -------------------------
  * Remove orphaned per-channel rate limit checks from queue pop script
