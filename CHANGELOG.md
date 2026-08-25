@@ -1,3 +1,7 @@
+v26.3.39 (2026-08-25)
+-------------------------
+ * Replace built-in Sentry integration with hooks for wrapping applications
+
 v26.3.38 (2026-08-19)
 -------------------------
  * Fix pop script to correctly charge tps_cost of queued messages
