@@ -385,6 +385,7 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 
 	m := testsuite.ReadDBMsg(ts.T(), ts.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	ts.Equal(models.MsgStatusWired, m.Status)
+	ts.Equal(null.String("S"), m.Folder)
 	ts.Equal(null.String("ext0"), m.ExternalIdentifier)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.After(now))
@@ -404,6 +405,7 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	ts.Equal(models.MsgStatusSent, m.Status)
+	ts.Equal(null.String("S"), m.Folder)
 	ts.Equal(null.String("ext0"), m.ExternalIdentifier) // no change
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.Equal(sentOn)) // no change
@@ -420,6 +422,7 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	ts.Equal(m.Status, models.MsgStatusDelivered)
+	ts.Equal(null.String("S"), m.Folder)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.Equal(sentOn))                     // no change
 	ts.Equal(null.String("ext0"), m.ExternalIdentifier) // no change
@@ -436,6 +439,7 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.rt, "0199df10-10dc-7e6e-834b-3d959ece93b2")
 	ts.Equal(m.Status, models.MsgStatusRead)
+	ts.Equal(null.String("S"), m.Folder)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.Equal(sentOn)) // no change
 	ts.Equal([]string{string(clog1.UUID), string(clog2.UUID), string(clog3.UUID), string(clog4.UUID)}, []string(m.LogUUIDs))
@@ -451,6 +455,7 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.rt, "0199df10-9519-7fe2-a29c-c890d1713673")
 	ts.Equal(models.MsgStatusPending, m.Status)
+	ts.Equal(null.String("P"), m.Folder) // unchanged - courier never moves an incoming message out of pending
 	ts.Equal(m.ExternalIdentifier, null.String("ext2"))
 	ts.Equal([]string(nil), []string(m.LogUUIDs))
 
@@ -459,6 +464,7 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(models.MsgStatusFailed, m.Status)
+	ts.Equal(null.String("X"), m.Folder)
 	ts.True(m.ModifiedOn.After(now))
 	ts.Nil(m.SentOn)
 	ts.Equal([]string{string(clog5.UUID)}, []string(m.LogUUIDs))
@@ -518,6 +524,7 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(m.Status, models.MsgStatusErrored)
+	ts.Equal(null.String("O"), m.Folder) // errored messages go back to the outbox
 	ts.Equal(m.ErrorCount, 1)
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.NextAttempt.After(now))
@@ -529,6 +536,7 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(m.Status, models.MsgStatusErrored)
+	ts.Equal(null.String("O"), m.Folder)
 	ts.Equal(m.ErrorCount, 2)
 	ts.Equal(null.NullString, m.FailedReason)
 
@@ -537,6 +545,7 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 
 	m = testsuite.ReadDBMsg(ts.T(), ts.rt, "0199df0f-9f82-7689-b02d-f34105991321")
 	ts.Equal(m.Status, models.MsgStatusFailed)
+	ts.Equal(null.String("X"), m.Folder) // erroring past the retry limit fails the message into the failed folder
 	ts.Equal(m.ErrorCount, 3)
 	ts.Equal(null.String("E"), m.FailedReason)
 
@@ -1075,6 +1084,8 @@ func (ts *ModelsTestSuite) TestWriteMsg() {
 	ts.Equal(contactURN.ID, m.ContactURNID)
 	ts.Equal("ext123", string(m.ExternalIdentifier))
 	ts.Equal("test-write", m.Text)
+	ts.Equal(models.MsgStatusPending, m.Status)
+	ts.Equal(null.String("P"), m.Folder) // incoming messages start in the pending folder
 	ts.Equal(0, len(m.Attachments))
 	ts.Equal(now, m.SentOn.In(time.UTC))
 	ts.NotNil(m.CreatedOn)

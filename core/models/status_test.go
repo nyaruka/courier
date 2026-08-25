@@ -79,6 +79,16 @@ func TestWriteStatusUpdates(t *testing.T) {
 		"019bb29e-b2c6-7e5f-b980-ccb3e9e21fbc": "S",
 	})
 
+	// folder is written in step with status - sent messages in the sent folder, errored ones back in the outbox, and
+	// the incoming messages left alone in pending
+	assertdb.Query(t, rt.DB, `SELECT uuid, folder FROM msgs_msg`).Map(map[string]any{
+		"0199df0f-9f82-7689-b02d-f34105991321": "S",
+		"0199df10-10dc-7e6e-834b-3d959ece93b2": "O",
+		"0199df10-9519-7fe2-a29c-c890d1713673": "P",
+		"019bb1ca-a92d-78f5-ba61-06aa62f2b41a": "P",
+		"019bb29e-b2c6-7e5f-b980-ccb3e9e21fbc": "S",
+	})
+
 	assertdb.Query(t, rt.DB, `SELECT uuid::text, status, external_identifier FROM msgs_msg WHERE uuid= '0199df0f-9f82-7689-b02d-f34105991321'`).
 		Columns(map[string]any{
 			"uuid":                "0199df0f-9f82-7689-b02d-f34105991321",
@@ -124,6 +134,10 @@ func TestWriteStatusUpdates(t *testing.T) {
 		assert.Equal(t, "", string(changes[0].FailedReason))
 	}
 
+	// still errored so still in the outbox
+	assertdb.Query(t, rt.DB, `SELECT status, folder FROM msgs_msg WHERE uuid = '0199df10-10dc-7e6e-834b-3d959ece93b2'`).
+		Columns(map[string]any{"status": "E", "folder": "O"})
+
 	// write yet another errored status for message 2 - this should flip it to failed
 	changes, err = models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
 		{
@@ -140,6 +154,28 @@ func TestWriteStatusUpdates(t *testing.T) {
 		assert.Equal(t, models.MsgStatus("F"), changes[0].MsgStatus)
 		assert.Equal(t, "E", string(changes[0].FailedReason))
 	}
+
+	// the errored status flipped the message to failed so its folder has to have followed it there
+	assertdb.Query(t, rt.DB, `SELECT status, folder FROM msgs_msg WHERE uuid = '0199df10-10dc-7e6e-834b-3d959ece93b2'`).
+		Columns(map[string]any{"status": "F", "folder": "X"})
+
+	// and an update on an already failed message keeps it failed and in the failed folder
+	_, err = models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
+		{
+			ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
+			ChannelID_:   10,
+			MsgUUID_:     "0199df10-10dc-7e6e-834b-3d959ece93b2",
+			Status_:      models.MsgStatusErrored,
+			LogUUID:      "019a6e53-e1e8-7df7-a264-ce2372824e1d",
+		},
+	})
+	assert.NoError(t, err)
+
+	assertdb.Query(t, rt.DB, `SELECT status, folder FROM msgs_msg WHERE uuid = '0199df10-10dc-7e6e-834b-3d959ece93b2'`).
+		Columns(map[string]any{"status": "F", "folder": "X"})
+
+	// courier never writes a NULL folder for a message it touches
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE folder IS NULL`).Returns(0)
 }
 
 func TestStatusChanges(t *testing.T) {

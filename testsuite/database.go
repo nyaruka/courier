@@ -37,6 +37,7 @@ type DBMsg struct {
 	Status             models.MsgStatus     `db:"status"`
 	MsgType            string               `db:"msg_type"`
 	Visibility         models.MsgVisibility `db:"visibility"`
+	Folder             null.String          `db:"folder"`
 	HighPriority       bool                 `db:"high_priority"`
 	IsAndroid          bool                 `db:"is_android"`
 	Text               string               `db:"text"`
