@@ -303,7 +303,9 @@ const sqlNewMsgStatus = `CASE
 		ELSE s.status 
 		END`
 
-// the craziness below lets us update our status to 'F' and schedule retries without knowing anything about the message
+// the craziness below lets us update our status to 'F' and schedule retries without knowing anything about the message.
+// the folder derivation assumes the message is visible, which holds because nothing makes an outgoing message
+// non-visible - if that ever changes, a deleted message needs its own folder rather than one derived from status.
 var sqlUpdateMsgByUUID = fmt.Sprintf(`
 UPDATE msgs_msg SET 
 	status = %[1]s,
