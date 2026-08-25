@@ -9,13 +9,11 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"runtime/debug"
 	"slices"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nyaruka/courier/v26/core/models"
@@ -269,9 +267,7 @@ func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc chan
 		defer func() {
 			// catch any panics and recover
 			if panicVal := recover(); panicVal != nil {
-				debug.PrintStack()
-
-				sentry.CurrentHub().Recover(panicVal)
+				runtime.PanicHandler(panicVal, map[string]string{"channel_type": string(handler.ChannelType())})
 
 				channels.WriteAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
 			}
@@ -380,8 +376,8 @@ func (s *Server) handleSendEvent(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonx.MustMarshal(resp))
 }
 
-// handle404 returns a 404 handler. The internal listener logs at Error level (sentry-routed via slog-sentry)
-// so we alert on caller-side bugs in rapidpro/mailroom that hit unknown internal paths.
+// handle404 returns a 404 handler. The internal listener logs at Error level so we alert on caller-side bugs in
+// rapidpro/mailroom that hit unknown internal paths.
 func (s *Server) handle404(listener string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if listener == "internal" {

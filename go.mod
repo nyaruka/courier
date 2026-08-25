@@ -9,7 +9,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.63.3
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.107.2
 	github.com/buger/jsonparser v1.6.1
-	github.com/getsentry/sentry-go v0.48.0
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -22,8 +21,6 @@ require (
 	github.com/nyaruka/goflow v0.293.0
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/vkutil v0.22.0
-	github.com/samber/slog-multi v1.8.0
-	github.com/samber/slog-sentry/v2 v2.11.0
 	github.com/stretchr/testify v1.12.0
 	github.com/vinovest/sqlx v1.7.2
 	golang.org/x/oauth2 v0.36.0
@@ -32,6 +29,9 @@ require (
 require (
 	github.com/blevesearch/segment v0.9.1 // indirect
 	github.com/centrifugal/gocent/v3 v3.4.0 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
+	github.com/rogpeppe/go-internal v1.14.1 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
 
 require (
@@ -70,8 +70,6 @@ require (
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.1 // indirect
 	github.com/nyaruka/phonenumbers/v2 v2.0.7 // indirect
-	github.com/samber/lo v1.53.0 // indirect
-	github.com/samber/slog-common v0.22.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/exp v0.0.0-20260813180055-c1d0aacb2297 // indirect

@@ -39,5 +39,4 @@ files. There is no built-in default region, so `AWS_REGION` (or `AWS_DEFAULT_REG
 ### Logging and error reporting:
 
  * `COURIER_DEPLOYMENT_ID`: used for metrics reporting
- * `COURIER_SENTRY_DSN`: DSN to use when logging errors to Sentry
  * `COURIER_LOG_LEVEL`: logging level to use
