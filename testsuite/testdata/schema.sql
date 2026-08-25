@@ -91,6 +91,7 @@ CREATE TABLE msgs_msg (
     direction character varying(1) NOT NULL,
     status character varying(1) NOT NULL,
     visibility character varying(1) NOT NULL,
+    folder character varying(1) NULL,
     is_android boolean NOT NULL,
     msg_count integer NOT NULL,
     high_priority boolean NULL,

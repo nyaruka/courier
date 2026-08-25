@@ -294,13 +294,23 @@ func resolveStatusUpdateByExternalIdentifier(ctx context.Context, rt *runtime.Ru
 	return rows.Err()
 }
 
-// the craziness below lets us update our status to 'F' and schedule retries without knowing anything about the message
-const sqlUpdateMsgByUUID = `
-UPDATE msgs_msg SET 
-	status = CASE 
+// the expression which computes the new status of a message, referenced twice in the update statement below - once to
+// write the status itself, and once to derive the folder that status puts the message in. it lives here as a single
+// constant so that the two can't drift apart.
+const sqlNewMsgStatus = `CASE 
 		WHEN s.status = 'E' 
 		THEN CASE WHEN error_count >= 2 OR msgs_msg.status = 'F' THEN 'F' ELSE 'E' END 
 		ELSE s.status 
+		END`
+
+// the craziness below lets us update our status to 'F' and schedule retries without knowing anything about the message
+var sqlUpdateMsgByUUID = fmt.Sprintf(`
+UPDATE msgs_msg SET 
+	status = %[1]s,
+	folder = CASE (%[1]s)::varchar(1) 
+		WHEN 'W' THEN 'S' WHEN 'S' THEN 'S' WHEN 'D' THEN 'S' WHEN 'R' THEN 'S' 
+		WHEN 'F' THEN 'X' 
+		ELSE 'O' -- initializing, queued or errored 
 		END,
 	error_count = CASE WHEN s.status = 'E' THEN error_count + 1 ELSE error_count END,
 	next_attempt = CASE WHEN s.status = 'E' THEN NOW() + (5 * (error_count+1) * interval '1 minutes') ELSE next_attempt END,
@@ -313,7 +323,7 @@ UPDATE msgs_msg SET
         (VALUES(:msg_uuid::uuid, :channel_id::int, :status, :external_identifier, :log_uuid::uuid)) AS s(msg_uuid, channel_id, status, external_identifier, log_uuid),
         contacts_contact c
     WHERE msgs_msg.uuid = s.msg_uuid AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O' AND c.id = msgs_msg.contact_id
-RETURNING msgs_msg.uuid AS msg_uuid, msgs_msg.status AS msg_status, msgs_msg.failed_reason, c.uuid AS contact_uuid, msgs_msg.org_id`
+RETURNING msgs_msg.uuid AS msg_uuid, msgs_msg.status AS msg_status, msgs_msg.failed_reason, c.uuid AS contact_uuid, msgs_msg.org_id`, sqlNewMsgStatus)
 
 func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*StatusUpdate) ([]*StatusChange, error) {
 	// rewrite query as a bulk operation
