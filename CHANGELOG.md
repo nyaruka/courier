@@ -1,3 +1,7 @@
+v26.3.40 (2026-08-25)
+-------------------------
+ * Write msgs_msg.folder when creating incoming messages and updating outgoing message statuses
+
 v26.3.39 (2026-08-25)
 -------------------------
  * Replace built-in Sentry integration with hooks for wrapping applications
