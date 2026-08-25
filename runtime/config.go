@@ -13,10 +13,9 @@ import (
 
 // Config is our top level configuration object
 type Config struct {
-	DB        string `validate:"url,startswith=postgres:"   help:"URL for your Postgres database"`
-	Valkey    string `validate:"url,startswith=valkey:"     help:"URL for your Valkey instance"`
-	SpoolDir  string `help:"the local directory where courier will write statuses or msgs that need to be retried (needs to be writable)"`
-	SentryDSN string `help:"the DSN used for logging errors to Sentry"`
+	DB       string `validate:"url,startswith=postgres:"   help:"URL for your Postgres database"`
+	Valkey   string `validate:"url,startswith=valkey:"     help:"URL for your Valkey instance"`
+	SpoolDir string `help:"the local directory where courier will write statuses or msgs that need to be retried (needs to be writable)"`
 
 	Domain          string `help:"the domain courier is exposed on"`
 	InternetAddress string `help:"the address our internet facing web server will bind to, empty means all interfaces"`
