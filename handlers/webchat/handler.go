@@ -93,7 +93,9 @@ type startResponse struct {
 //
 // It's necessarily unauthenticated - it's what hands a brand new visitor their credential, and the channel UUID
 // it's addressed by is public in the widget's JS - so each request creating a contact is an abuse surface. The
-// per-IP throttle below caps how fast a single caller can mint contacts; a distributed flood is left to
+// per-IP throttle below caps how fast a single caller can mint contacts - but only if the IP is trustworthy:
+// the server's RealIP middleware takes it from forwarded headers without a trusted-proxy allowlist, so this
+// relies on the edge overwriting client-supplied headers. Spoofed-header and distributed floods are left to
 // edge-level protection like any other unauthenticated endpoint.
 func (h *handler) start(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	if !h.allowStart(channel, r) {
@@ -119,8 +121,8 @@ func (h *handler) start(ctx context.Context, channel *models.Channel, w http.Res
 	return nil, nil
 }
 
-// allowStart checks the requesting IP against the channel's start rate limit, counting requests in fixed windows
-// with a valkey key that expires with the window
+// allowStart checks the requesting IP against the channel's start rate limit, counting requests in a valkey key
+// whose TTL slides with each request and expires one window after the last
 func (h *handler) allowStart(channel *models.Channel, r *http.Request) bool {
 	// the server's RealIP middleware has already resolved forwarded headers into RemoteAddr, which may or may
 	// not still carry a port
@@ -140,10 +142,11 @@ func (h *handler) allowStart(channel *models.Channel, r *http.Request) bool {
 		slog.Error("error checking chat start rate limit", "error", err, "key", key)
 		return true
 	}
-	if count == 1 {
-		if _, err := rc.Do("EXPIRE", key, startLimitWindow); err != nil {
-			slog.Error("error setting chat start rate limit expiry", "error", err, "key", key)
-		}
+	// re-arm the TTL on every request rather than only the first: INCR + EXPIRE isn't atomic, and a key left
+	// behind by a lost EXPIRE would otherwise count forever and permanently block the IP. The result is a
+	// sliding window - continuous callers stay throttled, which is fine for a start-flood cap.
+	if _, err := rc.Do("EXPIRE", key, startLimitWindow); err != nil {
+		slog.Error("error setting chat start rate limit expiry", "error", err, "key", key)
 	}
 
 	return count <= startLimit

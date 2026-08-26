@@ -90,17 +90,21 @@ func TestStartRateLimit(t *testing.T) {
 	testsuite.ResetDB(t, rt)
 	testsuite.ResetValkey(t, rt)
 
+	const otherChannelUUID = "b81c3f45-2d6e-4a1f-9c72-8e5d0a4b6f13"
+
 	s := web.NewServer(rt)
 	testsuite.InsertChannel(t, rt, testChannels[0])
+	testsuite.InsertChannel(t, rt, test.NewMockChannel(otherChannelUUID, "WCH", "", "", []string{urns.WebChat.Prefix}, nil))
 	require.NoError(t, s.MountHandler(newHandler()))
 
-	start := func(ip string) *httptest.ResponseRecorder {
-		req, _ := http.NewRequest(http.MethodPost, "https://localhost"+startURL, strings.NewReader(`{}`))
+	startOn := func(chURL, ip string) *httptest.ResponseRecorder {
+		req, _ := http.NewRequest(http.MethodPost, "https://localhost"+chURL, strings.NewReader(`{}`))
 		req.RemoteAddr = ip
 		rr := httptest.NewRecorder()
 		s.Router().ServeHTTP(rr, req)
 		return rr
 	}
+	start := func(ip string) *httptest.ResponseRecorder { return startOn(startURL, ip) }
 
 	// an IP can start up to the limit of chats within the window...
 	for i := range startLimit {
@@ -120,6 +124,9 @@ func TestStartRateLimit(t *testing.T) {
 
 	// but other IPs aren't affected
 	assert.Equal(t, 200, start("41.23.45.68:1234").Code)
+
+	// nor is the same IP on a different channel - the limit is scoped per channel
+	assert.Equal(t, 200, startOn("/c/wch/"+otherChannelUUID+"/start", "41.23.45.67:1234").Code)
 
 	// and the count expires with the window
 	vc := rt.VK.Get()
