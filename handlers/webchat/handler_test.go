@@ -17,6 +17,7 @@ import (
 	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/centrifugo"
 	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/random"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,7 @@ const (
 	startURL    = "/c/wch/" + channelUUID + "/start"
 	receiveURL  = "/c/wch/" + channelUUID + "/receive"
 
-	testChatID = "aB3dE5fG7hJ9kL1mN3pQ5rS7"
+	testChatID = "vM0GGhDrqpTQefIEinK0up3C" // what the seeded secure source below generates
 )
 
 var testChannels = []*models.Channel{
@@ -76,21 +77,11 @@ var incomingCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	// stub chat ID generation so the started chat is the one the receive cases use
-	generateChatID = func() string { return testChatID }
-	defer func() { generateChatID = defaultGenerateChatID }()
+	// seed chat ID generation so the started chat is the one the receive cases use
+	random.SetSecureSource(random.NewSeededSource(1234))
+	defer random.SetSecureSource(random.DefaultSecureSource)
 
 	RunIncomingTestCases(t, testChannels, newHandler(), incomingCases)
-}
-
-func TestChatIDGeneration(t *testing.T) {
-	seen := map[string]bool{}
-	for range 100 {
-		id := defaultGenerateChatID()
-		assert.Regexp(t, `^[a-zA-Z0-9]{24}$`, id)
-		assert.False(t, seen[id], "duplicate chat ID generated")
-		seen[id] = true
-	}
 }
 
 // the framework can't assert response headers or make OPTIONS requests, so CORS support is tested directly

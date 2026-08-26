@@ -2,7 +2,6 @@ package webchat
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"net/http"
 
@@ -11,17 +10,19 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/centrifugo"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/random"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/core/events"
 )
 
 const (
 	chatIDLength = 24
-	chatIDChars  = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 	// the type of the event published to a conversation's chat socket for each outgoing message
 	eventTypeMsgOut = "msg_out"
 )
+
+var chatIDChars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
 func init() {
 	channels.RegisterHandler(newHandler())
@@ -55,31 +56,6 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (*models.Chan
 	return h.BaseHandler.GetChannel(ctx, r)
 }
 
-// generateChatID returns a new random chat ID - a var so tests can make it deterministic
-var generateChatID = defaultGenerateChatID
-
-// a chat ID is a bearer credential - possession is the only thing that identifies a webchat visitor - so it must
-// come from a CSPRNG (24 chars of [a-zA-Z0-9] is ~143 bits of entropy)
-func defaultGenerateChatID() string {
-	id := make([]byte, chatIDLength)
-	buf := make([]byte, 32)
-	i := 0
-	for i < chatIDLength {
-		rand.Read(buf) // crypto/rand, never errors
-		for _, b := range buf {
-			// 248 is the largest multiple of 62 that fits in a byte - rejecting values above it avoids modulo bias
-			if b < 248 {
-				id[i] = chatIDChars[b%62]
-				i++
-				if i == chatIDLength {
-					break
-				}
-			}
-		}
-	}
-	return string(id)
-}
-
 // withCORS wraps a handler function to set the CORS header that all responses on our public endpoints need -
 // error responses included, or the widget's browser couldn't read them - because the widget calls from
 // third-party origins
@@ -107,7 +83,9 @@ type startResponse struct {
 // start is our HTTP handler for a visitor opening a chat for the first time: it mints them a new chat ID and
 // creates the contact behind it
 func (h *handler) start(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
-	chatID := generateChatID()
+	// a chat ID is a bearer credential - possession is the only thing that identifies a webchat visitor - so it
+	// comes from a CSPRNG (24 chars of [a-zA-Z0-9] is ~143 bits of entropy)
+	chatID := random.SecureString(chatIDLength, chatIDChars)
 	urn, err := urns.NewFromParts(urns.WebChat.Prefix, chatID, nil, "")
 	if err != nil {
 		return nil, fmt.Errorf("error creating webchat URN: %w", err)
