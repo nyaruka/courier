@@ -3,8 +3,11 @@ package webchat
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"net"
 	"net/http"
 
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
@@ -20,6 +23,11 @@ const (
 
 	// the type of the event published to a conversation's chat socket for each outgoing message
 	eventTypeMsgOut = "msg_out"
+
+	// how many chats a single IP can start on a channel per window - generous for a real visitor (who starts
+	// one chat, ever) while capping how fast anyone can mint contacts
+	startLimit       = 10
+	startLimitWindow = 60 // seconds
 )
 
 var chatIDChars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
@@ -81,8 +89,18 @@ type startResponse struct {
 }
 
 // start is our HTTP handler for a visitor opening a chat for the first time: it mints them a new chat ID and
-// creates the contact behind it
+// creates the contact behind it.
+//
+// It's necessarily unauthenticated - it's what hands a brand new visitor their credential, and the channel UUID
+// it's addressed by is public in the widget's JS - so each request creating a contact is an abuse surface. The
+// per-IP throttle below caps how fast a single caller can mint contacts; a distributed flood is left to
+// edge-level protection like any other unauthenticated endpoint.
 func (h *handler) start(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+	if !h.allowStart(channel, r) {
+		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
+		return nil, channels.WriteError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
+	}
+
 	// a chat ID is a bearer credential - possession is the only thing that identifies a webchat visitor - so it
 	// comes from a CSPRNG (24 chars of [a-zA-Z0-9] is ~143 bits of entropy)
 	chatID := random.SecureString(chatIDLength, chatIDChars)
@@ -99,6 +117,36 @@ func (h *handler) start(ctx context.Context, channel *models.Channel, w http.Res
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonx.MustMarshal(&startResponse{ChatID: chatID}))
 	return nil, nil
+}
+
+// allowStart checks the requesting IP against the channel's start rate limit, counting requests in fixed windows
+// with a valkey key that expires with the window
+func (h *handler) allowStart(channel *models.Channel, r *http.Request) bool {
+	// the server's RealIP middleware has already resolved forwarded headers into RemoteAddr, which may or may
+	// not still carry a port
+	ip := r.RemoteAddr
+	if host, _, err := net.SplitHostPort(ip); err == nil {
+		ip = host
+	}
+
+	key := fmt.Sprintf("chat-starts:%s|%s", channel.UUID(), ip)
+
+	rc := h.Runtime().VK.Get()
+	defer rc.Close()
+
+	count, err := redis.Int(rc.Do("INCR", key))
+	if err != nil {
+		// a valkey problem shouldn't stop visitors starting chats so proceed unthrottled
+		slog.Error("error checking chat start rate limit", "error", err, "key", key)
+		return true
+	}
+	if count == 1 {
+		if _, err := rc.Do("EXPIRE", key, startLimitWindow); err != nil {
+			slog.Error("error setting chat start rate limit expiry", "error", err, "key", key)
+		}
+	}
+
+	return count <= startLimit
 }
 
 type receivePayload struct {
