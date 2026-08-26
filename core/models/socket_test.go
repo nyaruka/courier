@@ -19,6 +19,12 @@ func TestHistorySocket(t *testing.T) {
 	assert.Equal(t, "history:a393abc0-283d-4c9b-a1b3-641a035c34bf", models.HistorySocket(contact))
 }
 
+func TestChatSocket(t *testing.T) {
+	channel := models.ChannelUUID("0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71")
+
+	assert.Equal(t, "chat:0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71:aB3dE5fG7hJ9kL1mN3pQ5rS7", models.ChatSocket(channel, "aB3dE5fG7hJ9kL1mN3pQ5rS7"))
+}
+
 func TestPublishStatusChanges(t *testing.T) {
 	ctx, rt := testsuite.Runtime(t)
 

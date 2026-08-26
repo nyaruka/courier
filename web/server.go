@@ -105,6 +105,8 @@ func (s *Server) Start() error {
 	internalRouter.Get("/", s.handleHealth("internal"))
 	internalRouter.Post("/ci/attachment/fetch", s.tokenAuthRequired(s.handleFetchAttachment))
 	internalRouter.Post("/ci/event/send", s.tokenAuthRequired(s.handleSendEvent))
+	internalRouter.Post("/ci/chat/subscribe", s.tokenAuthRequired(s.handleChatSubscribe))
+	internalRouter.Post("/ci/chat/sub_refresh", s.tokenAuthRequired(s.handleChatSubRefresh))
 
 	s.internetServer = &http.Server{
 		Addr:         internetAddr,
