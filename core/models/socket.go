@@ -19,6 +19,15 @@ func HistorySocket(contactUUID ContactUUID) string {
 	return fmt.Sprintf("%s:%s", SocketHistoryNamespace, contactUUID)
 }
 
+// SocketChatNamespace is the realtime pub/sub namespace for webchat conversations. A chat socket is addressed as
+// "chat:<channel-uuid>:<chat-id>" and is what a webchat visitor's browser subscribes to for outgoing messages.
+const SocketChatNamespace = "chat"
+
+// ChatSocket returns the realtime pub/sub socket for a webchat conversation ("chat:<channel-uuid>:<chat-id>").
+func ChatSocket(channelUUID ChannelUUID, chatID string) string {
+	return fmt.Sprintf("%s:%s:%s", SocketChatNamespace, channelUUID, chatID)
+}
+
 // PublishStatusChanges publishes the given status changes to their contacts' history sockets, each as a
 // msg_status_changed event - the same shape mailroom publishes for engine events. It's best-effort and a no-op for
 // any socket that currently has no subscribers - the centrifugo service resolves subscriber presence for the whole

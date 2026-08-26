@@ -55,6 +55,7 @@ import (
 	_ "github.com/nyaruka/courier/v26/handlers/viber"
 	_ "github.com/nyaruka/courier/v26/handlers/vk"
 	_ "github.com/nyaruka/courier/v26/handlers/wavy"
+	_ "github.com/nyaruka/courier/v26/handlers/webchat"
 	_ "github.com/nyaruka/courier/v26/handlers/wechat"
 	_ "github.com/nyaruka/courier/v26/handlers/yo"
 	_ "github.com/nyaruka/courier/v26/handlers/zenvia"

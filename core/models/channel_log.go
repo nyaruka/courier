@@ -23,6 +23,7 @@ const (
 	ChannelLogTypeTokenRefresh    svclogs.Type = "token_refresh"
 	ChannelLogTypePageSubscribe   svclogs.Type = "page_subscribe"
 	ChannelLogTypeWebhookVerify   svclogs.Type = "webhook_verify"
+	ChannelLogTypeChatStart       svclogs.Type = "chat_start"
 )
 
 func ErrorResponseStatusCode() *svclogs.Error {
