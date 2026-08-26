@@ -1,3 +1,8 @@
+v26.3.41 (2026-08-26)
+-------------------------
+ * Add WebChat channel type
+ * Rate limit webchat chat starts per IP per channel
+
 v26.3.40 (2026-08-25)
 -------------------------
  * Write msgs_msg.folder when creating incoming messages and updating outgoing message statuses
