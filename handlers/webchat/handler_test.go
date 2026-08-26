@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
@@ -82,6 +83,58 @@ func TestIncoming(t *testing.T) {
 	defer random.SetSecureSource(random.DefaultSecureSource)
 
 	RunIncomingTestCases(t, testChannels, newHandler(), incomingCases)
+}
+
+func TestStartRateLimit(t *testing.T) {
+	_, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	const otherChannelUUID = "b81c3f45-2d6e-4a1f-9c72-8e5d0a4b6f13"
+
+	s := web.NewServer(rt)
+	testsuite.InsertChannel(t, rt, testChannels[0])
+	testsuite.InsertChannel(t, rt, test.NewMockChannel(otherChannelUUID, "WCH", "", "", []string{urns.WebChat.Prefix}, nil))
+	require.NoError(t, s.MountHandler(newHandler()))
+
+	startOn := func(chURL, ip string) *httptest.ResponseRecorder {
+		req, _ := http.NewRequest(http.MethodPost, "https://localhost"+chURL, strings.NewReader(`{}`))
+		req.RemoteAddr = ip
+		rr := httptest.NewRecorder()
+		s.Router().ServeHTTP(rr, req)
+		return rr
+	}
+	start := func(ip string) *httptest.ResponseRecorder { return startOn(startURL, ip) }
+
+	// an IP can start up to the limit of chats within the window...
+	for i := range startLimit {
+		assert.Equal(t, 200, start("41.23.45.67:1234").Code, "start %d", i)
+	}
+
+	// ...then gets throttled, with the CORS header still on the error so the widget can read it
+	rr := start("41.23.45.67:1234")
+	assert.Equal(t, 429, rr.Code)
+	assert.Contains(t, rr.Body.String(), "rate limit exceeded")
+	assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+
+	// without a contact being created
+	var contacts int
+	require.NoError(t, rt.DB.Get(&contacts, `SELECT count(*) FROM contacts_contact WHERE uuid != 'a984069d-0008-4d8c-a772-b14a8a6acccc'`))
+	assert.Equal(t, startLimit, contacts)
+
+	// but other IPs aren't affected
+	assert.Equal(t, 200, start("41.23.45.68:1234").Code)
+
+	// nor is the same IP on a different channel - the limit is scoped per channel
+	assert.Equal(t, 200, startOn("/c/wch/"+otherChannelUUID+"/start", "41.23.45.67:1234").Code)
+
+	// and the count expires with the window
+	vc := rt.VK.Get()
+	defer vc.Close()
+	ttl, err := redis.Int(vc.Do("TTL", "chat-starts:"+channelUUID+"|41.23.45.67"))
+	require.NoError(t, err)
+	assert.Greater(t, ttl, 0)
+	assert.LessOrEqual(t, ttl, startLimitWindow)
 }
 
 // the framework can't assert response headers or make OPTIONS requests, so CORS support is tested directly
