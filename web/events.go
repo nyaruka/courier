@@ -130,7 +130,7 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 
 	// event sends are frequent and boring when they succeed so we only write logs for errors
 	clog.End()
-	if clog.IsError() {
+	if clog.IsError() && handler.StoreChannelLogs() {
 		models.WriteChannelLog(s.rt, clog)
 	}
 

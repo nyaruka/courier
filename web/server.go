@@ -315,7 +315,9 @@ func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc chan
 
 			clog.End()
 
-			models.WriteChannelLog(s.rt, clog)
+			if handler.StoreChannelLogs() {
+				models.WriteChannelLog(s.rt, clog)
+			}
 
 			s.rt.Stats.RecordIncoming(string(channel.ChannelType()), numMsgs, numStatuses, numEvents, numIgnored, clog.Elapsed)
 

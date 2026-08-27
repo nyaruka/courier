@@ -12,6 +12,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/core/sender"
+	_ "github.com/nyaruka/courier/v26/handlers/webchat" // for a channel type that doesn't store channel logs
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
@@ -42,6 +43,7 @@ func serverRuntime(t *testing.T) *runtime.Runtime {
 
 func TestIncoming(t *testing.T) {
 	rt := serverRuntime(t)
+	dyntest.Truncate(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table())
 
 	s := web.NewServer(rt)
 
@@ -78,6 +80,16 @@ func TestIncoming(t *testing.T) {
 	if assert.Len(t, clogs, 2) {
 		assert.Len(t, clogs[1].HttpLogs, 1)
 	}
+
+	// and both logs should be written to storage since this channel type stores them
+	rt.Dynamo.Main.Flush()
+	stored := 0
+	for _, item := range dyntest.ScanAll(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table()) {
+		if strings.HasPrefix(item.Key.SK, "log#") && item.Data["type"] == "msg_receive" {
+			stored++
+		}
+	}
+	assert.Equal(t, 2, stored)
 }
 
 func TestOutgoing(t *testing.T) {
@@ -219,6 +231,27 @@ func TestOutgoing(t *testing.T) {
 	var numStopEvents int
 	require.NoError(t, rt.DB.Get(&numStopEvents, `SELECT count(*) FROM channels_channelevent WHERE event_type = 'stop_contact'`))
 	assert.Equal(t, 1, numStopEvents)
+
+	// queue a message on a webchat channel - a type that doesn't store channel logs - it should still be
+	// sent (an internal publish) and marked as wired...
+	wchChannel := test.NewMockChannel("0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71", "WCH", "", "", []string{urns.WebChat.Prefix}, nil)
+	testsuite.InsertChannel(t, rt, wchChannel)
+
+	wchMsg := &models.MsgOut{
+		OrgID_: 1, UUID_: "0199df05-a01b-7000-8f5e-2c3d4e5f6a7b", Contact_: &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc"},
+		Text_: "hi", HighPriority_: true, CreatedOn_: time.Now(), ChannelUUID_: wchChannel.UUID(), URN_: "webchat:65vbbDAQCdPdEWlEhDGy4utO", Origin_: models.MsgOriginChat,
+	}
+	insertMsg(wchMsg.UUID_, wchChannel)
+	rc = rt.VK.Get()
+	require.NoError(t, queue.PushOntoQueue(rc, "msgs", string(wchChannel.UUID()), 10, "["+string(jsonx.MustMarshal(wchMsg))+"]", queue.HighPriority))
+	rc.Close()
+	assertStatus(wchMsg.UUID_, models.MsgStatusWired)
+
+	// ...but without a channel log being stored for it
+	rt.Dynamo.Main.Flush()
+	for _, item := range dyntest.ScanAll(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table()) {
+		assert.False(t, strings.HasPrefix(item.Key.PK, "cha#"+string(wchChannel.UUID())), "unexpected channel log stored for webchat channel")
+	}
 }
 
 func TestFetchAttachment(t *testing.T) {
@@ -240,6 +273,9 @@ func TestFetchAttachment(t *testing.T) {
 		},
 		"http://mock.com/media/hello.pdf": {
 			httpx.MockConnectionError,
+		},
+		"http://mock.com/media/hello2.jpg": {
+			httpx.NewMockResponse(200, nil, testJPG),
 		},
 	})
 	require.NoError(t, server.Start())
@@ -298,7 +334,13 @@ func TestFetchAttachment(t *testing.T) {
 	assert.Equal(t, 200, statusCode)
 	assert.JSONEq(t, `{"attachment": {"content_type": "unavailable", "url": "http://mock.com/media/hello.pdf", "size": 0}, "log_uuid": "0191e180-8530-7000-8920-17713634b9f5"}`, string(respBody))
 
-	// and channel logs should have been written for the fetches
+	// a fetch for a channel type that doesn't store channel logs still works
+	testsuite.InsertChannel(t, rt, test.NewMockChannel("0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71", "WCH", "", "", []string{urns.WebChat.Prefix}, nil))
+	statusCode, respBody = submit(`{"channel_uuid": "0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71", "channel_type": "WCH", "url": "http://mock.com/media/hello2.jpg"}`, "sesame")
+	assert.Equal(t, 200, statusCode)
+	assert.Contains(t, string(respBody), `"image/jpeg"`)
+
+	// and channel logs should have been written for the fetches - except the webchat one
 	require.Eventually(t, func() bool {
 		count := 0
 		for _, item := range dyntest.ScanAll(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table()) {

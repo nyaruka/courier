@@ -23,6 +23,7 @@ type BaseHandler struct {
 	name               string
 	rt                 *runtime.Runtime
 	uuidChannelRouting bool
+	storeChannelLogs   bool
 	redactConfigKeys   []string
 }
 
@@ -32,6 +33,7 @@ func NewBaseHandler(channelType models.ChannelType, name string, options ...func
 		channelType:        channelType,
 		name:               name,
 		uuidChannelRouting: true,
+		storeChannelLogs:   true,
 		redactConfigKeys:   defaultRedactConfigKeys,
 	}
 	for _, o := range options {
@@ -43,6 +45,14 @@ func NewBaseHandler(channelType models.ChannelType, name string, options ...func
 func DisableUUIDRouting() func(*BaseHandler) {
 	return func(s *BaseHandler) {
 		s.uuidChannelRouting = false
+	}
+}
+
+// DisableChannelLogStorage is for channel types whose traffic is internal to the platform - their channel logs
+// wouldn't describe anything users could act on, so they aren't persisted for them to view
+func DisableChannelLogStorage() func(*BaseHandler) {
+	return func(s *BaseHandler) {
+		s.storeChannelLogs = false
 	}
 }
 
@@ -75,6 +85,11 @@ func (h *BaseHandler) ChannelName() string {
 // UseChannelRouteUUID returns whether the router should use the channel UUID in the URL path
 func (h *BaseHandler) UseChannelRouteUUID() bool {
 	return h.uuidChannelRouting
+}
+
+// StoreChannelLogs returns whether channel logs for this handler's channels should be persisted for users to view
+func (h *BaseHandler) StoreChannelLogs() bool {
+	return h.storeChannelLogs
 }
 
 func (h *BaseHandler) RedactValues(ch *models.Channel) []string {

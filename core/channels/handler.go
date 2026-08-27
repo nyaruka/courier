@@ -34,6 +34,13 @@ type Handler interface {
 	ChannelType() models.ChannelType
 	ChannelName() string
 	UseChannelRouteUUID() bool
+
+	// StoreChannelLogs returns whether channel logs for this handler's channels should be persisted for users
+	// to view. Channel types whose traffic is internal to the platform rather than with an external provider
+	// don't store them - the logs still exist in memory during handling so errors reach server logging and
+	// message statuses as usual.
+	StoreChannelLogs() bool
+
 	RedactValues(*models.Channel) []string
 	GetChannel(context.Context, *http.Request) (*models.Channel, error)
 	Send(context.Context, *models.MsgOut, *SendResult, *models.ChannelLog) error

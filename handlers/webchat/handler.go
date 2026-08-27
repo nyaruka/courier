@@ -48,7 +48,10 @@ type handler struct {
 }
 
 func newHandler() channels.Handler {
-	return &handler{handlers.NewBaseHandler(models.ChannelType("WCH"), "WebChat")}
+	// webchat has no external provider - sends are publishes to our own realtime server and start/receive are
+	// our own public endpoints - so its channel logs would only describe internal infrastructure and aren't
+	// stored for users
+	return &handler{handlers.NewBaseHandler(models.ChannelType("WCH"), "WebChat", handlers.DisableChannelLogStorage())}
 }
 
 // Initialize is called by the engine once everything is loaded

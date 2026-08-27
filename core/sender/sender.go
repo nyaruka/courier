@@ -224,8 +224,10 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 
 	clog.End()
 
-	// write our logs as well
-	models.WriteChannelLog(rt, clog)
+	// write our logs as well - unless this channel type doesn't store them
+	if handler == nil || handler.StoreChannelLogs() {
+		models.WriteChannelLog(rt, clog)
+	}
 
 	// mark our send task as complete
 	var newURN urns.URN
