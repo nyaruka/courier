@@ -550,7 +550,6 @@ func (m *MsgOut) Channel() *Channel            { return m.Channel_ }
 func (m *MsgOut) Contact() *ContactReference   { return m.Contact_ }
 func (m *MsgOut) Text() string                 { return m.Text_ }
 func (m *MsgOut) Attachments() []string        { return m.Attachments_ }
-func (m *MsgOut) CreatedOn() time.Time         { return m.CreatedOn_ }
 func (m *MsgOut) URN() urns.URN                { return m.URN_ }
 func (m *MsgOut) QuickReplies() []QuickReply   { return m.QuickReplies_ }
 func (m *MsgOut) Locale() i18n.Locale          { return m.Locale_ }

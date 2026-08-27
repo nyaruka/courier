@@ -318,7 +318,6 @@ func TestOutgoing(t *testing.T) {
 		Contact_:     &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc"},
 		URN_:         urns.URN("webchat:" + testChatID),
 		Text_:        "Hello there",
-		CreatedOn_:   time.Date(2025, 10, 13, 11, 19, 45, 0, time.UTC),
 		ChannelUUID_: ch.UUID(),
 		Channel_:     ch,
 	}
@@ -345,14 +344,17 @@ func TestOutgoing(t *testing.T) {
 	sent := testsuite.CentrifugoHistory(t, rt, socket)
 	require.Len(t, sent, 1)
 
-	// the published event is the message's own msg_created event - same uuid and created_on - redacted to
-	// just the content
 	var decoded map[string]any
 	require.NoError(t, json.Unmarshal(sent[0], &decoded))
-	assert.Equal(t, "0191e180-7d60-7000-aded-7d8b151cbd5b", decoded["uuid"])
-	assert.Equal(t, "msg_created", decoded["type"])
-	assert.Equal(t, "2025-10-13T11:19:45Z", decoded["created_on"])
-	assert.Equal(t, map[string]any{"text": "Hello there"}, decoded["msg"])
+	assert.True(t, uuids.Is(decoded["uuid"].(string)))
+	assert.Equal(t, "msg_out", decoded["type"])
+	assert.Equal(t, "2025-10-13T11:20:30Z", decoded["created_on"])
+	assert.Equal(t, "0191e180-7d60-7000-aded-7d8b151cbd5b", decoded["msg_uuid"])
+	assert.Equal(t, "Hello there", decoded["text"])
+
+	// a plain text message has no attachments or quick replies fields at all
+	assert.NotContains(t, decoded, "attachments")
+	assert.NotContains(t, decoded, "quick_replies")
 
 	// a message with attachments and quick replies includes them in the event
 	msg.Attachments_ = []string{"image/jpeg:https://example.com/cat.jpg", "audio/mp3:https://example.com/hi.mp3"}
@@ -365,14 +367,12 @@ func TestOutgoing(t *testing.T) {
 
 	decoded = map[string]any{}
 	require.NoError(t, json.Unmarshal(sent[1], &decoded))
-	assert.Equal(t, map[string]any{
-		"text":        "Hello there",
-		"attachments": []any{"image/jpeg:https://example.com/cat.jpg", "audio/mp3:https://example.com/hi.mp3"},
-		"quick_replies": []any{
-			map[string]any{"type": "text", "text": "Yes"},
-			map[string]any{"type": "url", "text": "More", "extra": "https://example.com"},
-		},
-	}, decoded["msg"])
+	assert.Equal(t, "Hello there", decoded["text"])
+	assert.Equal(t, []any{"image/jpeg:https://example.com/cat.jpg", "audio/mp3:https://example.com/hi.mp3"}, decoded["attachments"])
+	assert.Equal(t, []any{
+		map[string]any{"type": "text", "text": "Yes"},
+		map[string]any{"type": "url", "text": "More", "extra": "https://example.com"},
+	}, decoded["quick_replies"])
 
 	// a publish failure is returned as a send error
 	rt.Centrifugo.Client.(*centrifugo.MockClient).SetError(errors.New("boom"))
