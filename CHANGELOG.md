@@ -1,3 +1,8 @@
+v26.3.42 (2026-08-27)
+-------------------------
+ * Enforce allowed domains for webchat channels
+ * Fix log type of Kannel status report logs
+
 v26.3.41 (2026-08-26)
 -------------------------
  * Add WebChat channel type
