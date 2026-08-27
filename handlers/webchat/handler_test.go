@@ -236,9 +236,11 @@ func TestAllowedDomains(t *testing.T) {
 	require.NoError(t, rt.DB.Get(&contacts, `SELECT count(*) FROM contacts_contact WHERE uuid != 'a984069d-0008-4d8c-a772-b14a8a6acccc'`))
 	assert.Equal(t, 4, contacts)
 
-	// but a request with no Origin header (a non-browser client) passes
+	// but a request with no Origin header (a non-browser client) passes, still marked as varying on origin
 	rr = request(cfgStartURL, "")
 	assert.Equal(t, 200, rr.Code)
+	assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+	assert.Equal(t, "Origin", rr.Header().Get("Vary"))
 
 	// and preflights stay permissive - the channel isn't loaded for them, and the POST response is what gates
 	// the browser

@@ -83,10 +83,12 @@ func withCORS(fn channels.HandleFunc) channels.HandleFunc {
 		domains := allowedDomains(channel)
 		origin := r.Header.Get("Origin")
 
-		if len(domains) > 0 && origin != "" {
-			// this response depends on the request's origin so caches must vary on it too
+		if len(domains) > 0 {
+			// every branch below picks the allow-origin value from the request's origin so caches must vary on it
 			w.Header().Add("Vary", "Origin")
+		}
 
+		if len(domains) > 0 && origin != "" {
 			if !originAllowed(origin, domains) {
 				// deliberately no allow-origin header on this response, so the embedding page's browser also
 				// blocks it from reading the error
