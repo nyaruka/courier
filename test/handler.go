@@ -34,6 +34,7 @@ func (h *mockHandler) SetRuntime(rt *runtime.Runtime)        { h.rt = rt }
 func (h *mockHandler) ChannelName() string                   { return "Mock Handler" }
 func (h *mockHandler) ChannelType() models.ChannelType       { return models.ChannelType("MCK") }
 func (h *mockHandler) UseChannelRouteUUID() bool             { return true }
+func (h *mockHandler) StoreChannelLogs() bool                { return true }
 func (h *mockHandler) RedactValues(*models.Channel) []string { return []string{"sesame"} }
 
 func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (*models.Channel, error) {

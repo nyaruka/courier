@@ -16,6 +16,7 @@ import (
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/courier/v26/web"
+	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
 	"github.com/nyaruka/gocommon/centrifugo"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/random"
@@ -83,6 +84,47 @@ func TestIncoming(t *testing.T) {
 	defer random.SetSecureSource(random.DefaultSecureSource)
 
 	RunIncomingTestCases(t, testChannels, newHandler(), incomingCases)
+}
+
+// webchat traffic is internal to the platform so its channel logs are never stored - each visitor request
+// would otherwise write one
+func TestChannelLogsNotStored(t *testing.T) {
+	_, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+	dyntest.Truncate(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table())
+
+	random.SetSecureSource(random.NewSeededSource(1234))
+	defer random.SetSecureSource(random.DefaultSecureSource)
+
+	s := web.NewServer(rt)
+	testsuite.InsertChannel(t, rt, testChannels[0])
+	require.NoError(t, s.MountHandler(newHandler()))
+
+	// capture the in-memory logs of handled requests
+	var clogs []*models.ChannelLog
+	s.OnRequestHandled(func(ch *models.Channel, evts []channels.Event, clog *models.ChannelLog) { clogs = append(clogs, clog) })
+
+	post := func(path, body string) *httptest.ResponseRecorder {
+		req, _ := http.NewRequest(http.MethodPost, "https://localhost"+path, strings.NewReader(body))
+		rr := httptest.NewRecorder()
+		s.Router().ServeHTTP(rr, req)
+		return rr
+	}
+
+	assert.Equal(t, 200, post(startURL, `{}`).Code)
+	assert.Equal(t, 200, post(receiveURL, `{"chat_id": "`+testChatID+`", "text": "Hello"}`).Code)
+
+	// the logs still exist in memory during handling...
+	require.Len(t, clogs, 2)
+	assert.Equal(t, models.ChannelLogTypeChatStart, clogs[0].Type)
+	assert.Equal(t, models.ChannelLogTypeMsgReceive, clogs[1].Type)
+
+	// ...but are never written to storage
+	rt.Dynamo.Main.Flush()
+	for _, item := range dyntest.ScanAll(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table()) {
+		assert.False(t, strings.HasPrefix(item.Key.SK, "log#"), "unexpected channel log stored: %s", item.Key.SK)
+	}
 }
 
 func TestStartRateLimit(t *testing.T) {

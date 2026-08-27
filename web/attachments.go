@@ -59,13 +59,16 @@ func fetchAttachment(ctx context.Context, rt *runtime.Runtime, r *http.Request) 
 		return nil, fmt.Errorf("error getting channel: %w", err)
 	}
 
-	clog := models.NewChannelLogForAttachmentFetch(ch, channels.GetHandler(ch.ChannelType()).RedactValues(ch))
+	handler := channels.GetHandler(ch.ChannelType())
+	clog := models.NewChannelLogForAttachmentFetch(ch, handler.RedactValues(ch))
 
 	attachment, err := FetchAndStoreAttachment(ctx, rt, ch, fa.URL, clog)
 
 	// try to write channel log even if we have an error
 	clog.End()
-	models.WriteChannelLog(rt, clog)
+	if handler.StoreChannelLogs() {
+		models.WriteChannelLog(rt, clog)
+	}
 
 	if err != nil {
 		return nil, fmt.Errorf("error fetching attachment for msg %s: %w", fa.MsgUUID, err)
