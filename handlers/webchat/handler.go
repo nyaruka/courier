@@ -18,7 +18,9 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/random"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/core"
 	"github.com/nyaruka/goflow/core/events"
+	"github.com/nyaruka/goflow/utils"
 )
 
 const (
@@ -27,9 +29,6 @@ const (
 	// optional channel config: the host[:port] values (no scheme) of the sites the widget may be embedded on -
 	// empty or absent means unrestricted
 	configAllowedDomains = "allowed_domains"
-
-	// the type of the event published to a conversation's chat socket for each outgoing message
-	eventTypeMsgOut = "msg_out"
 
 	// how many chats a single IP can start on a channel per window - generous for a real visitor (who starts
 	// one chat, ever) while capping how fast anyone can mint contacts
@@ -238,27 +237,26 @@ func (h *handler) receive(ctx context.Context, channel *models.Channel, w http.R
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
-// msgOutEvent is the event published to the conversation's chat socket for an outgoing message - the same
-// uuid/type/created_on shape as the engine events published to history sockets, with attachments as
-// content-type:url strings and quick replies as objects like goflow's msg events
-type msgOutEvent struct {
-	events.BaseEvent
-
-	MsgUUID      models.MsgUUID      `json:"msg_uuid"`
-	Text         string              `json:"text"`
-	Attachments  []string            `json:"attachments,omitempty"`
-	QuickReplies []models.QuickReply `json:"quick_replies,omitempty"`
-}
-
+// Send publishes the message to the conversation's chat socket as the engine's msg_created event, redacted
+// to the content fields the widget renders - no URN or channel reference. The event's identity (uuid,
+// created_on) is reproduced from the original: a message's uuid is its msg_created event's uuid, so the
+// widget sees the same event that the contact's history records.
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	socket := models.ChatSocket(msg.Channel().UUID(), msg.URN().Path())
-	event := &msgOutEvent{
-		BaseEvent:    events.NewBaseEvent(eventTypeMsgOut),
-		MsgUUID:      msg.UUID(),
-		Text:         msg.Text(),
-		Attachments:  msg.Attachments(),
-		QuickReplies: msg.QuickReplies(),
+
+	content := &core.MsgContent{Text: msg.Text()}
+	for _, att := range msg.Attachments() {
+		content.Attachments = append(content.Attachments, utils.Attachment(att))
 	}
+	for _, qr := range msg.QuickReplies() {
+		content.QuickReplies = append(content.QuickReplies, core.QuickReply{Type: qr.Type, Text: qr.Text, Extra: qr.Extra})
+	}
+
+	event := &events.MsgCreated{
+		BaseEvent: events.NewBaseEventWithUUID(events.EventUUID(msg.UUID()), events.TypeMsgCreated),
+		Msg:       core.NewMsgOut("", nil, content, nil, "", ""),
+	}
+	event.CreatedOn_ = msg.CreatedOn()
 
 	// like all socket publishes this is presence-aware and best-effort: if the visitor doesn't currently have
 	// the chat open the publish is dropped, and the message is still considered sent
