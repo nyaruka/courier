@@ -1,3 +1,8 @@
+v26.3.43 (2026-08-27)
+-------------------------
+ * Don't store channel logs for channel types whose traffic is internal to the platform
+ * Update dependencies
+
 v26.3.42 (2026-08-27)
 -------------------------
  * Enforce allowed domains for webchat channels
