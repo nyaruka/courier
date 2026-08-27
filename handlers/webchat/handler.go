@@ -9,16 +9,17 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/centrifugo"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/random"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/goflow/core/events"
 )
 
 const (
@@ -238,12 +239,13 @@ func (h *handler) receive(ctx context.Context, channel *models.Channel, w http.R
 	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
-// msgOutEvent is the event published to the conversation's chat socket for an outgoing message - the same
-// uuid/type/created_on shape as the engine events published to history sockets, with attachments as
-// content-type:url strings and quick replies as objects like goflow's msg events
+// msgOutEvent is the event published to the conversation's chat socket for an outgoing message. Chat socket
+// events are their own client-centric vocabulary rather than engine events, though the content fields keep
+// the same shapes as the engine's msg events - attachments as content-type:url strings, quick replies as
+// objects.
 type msgOutEvent struct {
-	events.BaseEvent
-
+	Type         string              `json:"type"`
+	CreatedOn    time.Time           `json:"created_on"`
 	MsgUUID      models.MsgUUID      `json:"msg_uuid"`
 	Text         string              `json:"text"`
 	Attachments  []string            `json:"attachments,omitempty"`
@@ -253,7 +255,8 @@ type msgOutEvent struct {
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	socket := models.ChatSocket(msg.Channel().UUID(), msg.URN().Path())
 	event := &msgOutEvent{
-		BaseEvent:    events.NewBaseEvent(eventTypeMsgOut),
+		Type:         eventTypeMsgOut,
+		CreatedOn:    dates.Now(),
 		MsgUUID:      msg.UUID(),
 		Text:         msg.Text(),
 		Attachments:  msg.Attachments(),
