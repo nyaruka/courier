@@ -173,6 +173,83 @@ func TestCORS(t *testing.T) {
 	assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
 }
 
+func TestAllowedDomains(t *testing.T) {
+	_, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	const cfgChannelUUID = "7d3fb8a2-5c1e-4b9f-a6d4-2e8c0f7b5a19"
+	cfgStartURL := "/c/wch/" + cfgChannelUUID + "/start"
+	cfgReceiveURL := "/c/wch/" + cfgChannelUUID + "/receive"
+
+	s := web.NewServer(rt)
+	testsuite.InsertChannel(t, rt, testChannels[0])
+	testsuite.InsertChannel(t, rt, test.NewMockChannel(cfgChannelUUID, "WCH", "", "", []string{urns.WebChat.Prefix},
+		map[string]any{"allowed_domains": []string{"example.com", "localhost:3000"}},
+	))
+	require.NoError(t, s.MountHandler(newHandler()))
+
+	request := func(path, origin string) *httptest.ResponseRecorder {
+		req, _ := http.NewRequest(http.MethodPost, "https://localhost"+path, strings.NewReader(`{}`))
+		if origin != "" {
+			req.Header.Set("Origin", origin)
+		}
+		rr := httptest.NewRecorder()
+		s.Router().ServeHTTP(rr, req)
+		return rr
+	}
+
+	// a channel without allowed_domains ignores the origin and keeps the wildcard header
+	rr := request(startURL, "https://anywhere.com")
+	assert.Equal(t, 200, rr.Code)
+	assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+
+	// an allowed origin gets itself reflected back instead of the wildcard, with Vary: Origin
+	rr = request(cfgStartURL, "https://example.com")
+	assert.Equal(t, 200, rr.Code)
+	assert.Equal(t, "https://example.com", rr.Header().Get("Access-Control-Allow-Origin"))
+	assert.Equal(t, "Origin", rr.Header().Get("Vary"))
+
+	// host matching is case-insensitive, and entries can carry a port
+	rr = request(cfgStartURL, "https://EXAMPLE.com")
+	assert.Equal(t, 200, rr.Code)
+	assert.Equal(t, "https://EXAMPLE.com", rr.Header().Get("Access-Control-Allow-Origin"))
+	rr = request(cfgStartURL, "http://localhost:3000")
+	assert.Equal(t, 200, rr.Code)
+	assert.Equal(t, "http://localhost:3000", rr.Header().Get("Access-Control-Allow-Origin"))
+
+	// a disallowed origin gets a 403 with no allow-origin header, so the embedding page can't read it either
+	for _, origin := range []string{"https://evil.com", "https://sub.example.com", "https://example.com:8080", "null"} {
+		rr = request(cfgStartURL, origin)
+		assert.Equal(t, 403, rr.Code, origin)
+		assert.Contains(t, rr.Body.String(), "origin not allowed", origin)
+		assert.Empty(t, rr.Header().Get("Access-Control-Allow-Origin"), origin)
+	}
+
+	// on the receive endpoint too
+	rr = request(cfgReceiveURL, "https://evil.com")
+	assert.Equal(t, 403, rr.Code)
+	assert.Empty(t, rr.Header().Get("Access-Control-Allow-Origin"))
+
+	// without any contacts being created by the blocked starts
+	var contacts int
+	require.NoError(t, rt.DB.Get(&contacts, `SELECT count(*) FROM contacts_contact WHERE uuid != 'a984069d-0008-4d8c-a772-b14a8a6acccc'`))
+	assert.Equal(t, 4, contacts)
+
+	// but a request with no Origin header (a non-browser client) passes
+	rr = request(cfgStartURL, "")
+	assert.Equal(t, 200, rr.Code)
+
+	// and preflights stay permissive - the channel isn't loaded for them, and the POST response is what gates
+	// the browser
+	req, _ := http.NewRequest(http.MethodOptions, "https://localhost"+cfgStartURL, nil)
+	req.Header.Set("Origin", "https://evil.com")
+	rr = httptest.NewRecorder()
+	s.Router().ServeHTTP(rr, req)
+	assert.Equal(t, 204, rr.Code)
+	assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+}
+
 // sends don't make HTTP requests so the framework's outgoing cases don't fit - instead we test the socket
 // publishes directly
 func TestOutgoing(t *testing.T) {
