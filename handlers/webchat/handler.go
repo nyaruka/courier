@@ -239,17 +239,26 @@ func (h *handler) receive(ctx context.Context, channel *models.Channel, w http.R
 }
 
 // msgOutEvent is the event published to the conversation's chat socket for an outgoing message - the same
-// uuid/type/created_on shape as the engine events published to history sockets
+// uuid/type/created_on shape as the engine events published to history sockets, with attachments as
+// content-type:url strings and quick replies as objects like goflow's msg events
 type msgOutEvent struct {
 	events.BaseEvent
 
-	MsgUUID models.MsgUUID `json:"msg_uuid"`
-	Text    string         `json:"text"`
+	MsgUUID      models.MsgUUID      `json:"msg_uuid"`
+	Text         string              `json:"text"`
+	Attachments  []string            `json:"attachments,omitempty"`
+	QuickReplies []models.QuickReply `json:"quick_replies,omitempty"`
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	socket := models.ChatSocket(msg.Channel().UUID(), msg.URN().Path())
-	event := &msgOutEvent{BaseEvent: events.NewBaseEvent(eventTypeMsgOut), MsgUUID: msg.UUID(), Text: msg.Text()}
+	event := &msgOutEvent{
+		BaseEvent:    events.NewBaseEvent(eventTypeMsgOut),
+		MsgUUID:      msg.UUID(),
+		Text:         msg.Text(),
+		Attachments:  msg.Attachments(),
+		QuickReplies: msg.QuickReplies(),
+	}
 
 	// like all socket publishes this is presence-aware and best-effort: if the visitor doesn't currently have
 	// the chat open the publish is dropped, and the message is still considered sent
