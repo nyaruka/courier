@@ -6,6 +6,9 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
+	"slices"
+	"strings"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/core/channels"
@@ -20,6 +23,10 @@ import (
 
 const (
 	chatIDLength = 24
+
+	// optional channel config: the host[:port] values (no scheme) of the sites the widget may be embedded on -
+	// empty or absent means unrestricted
+	configAllowedDomains = "allowed_domains"
 
 	// the type of the event published to a conversation's chat socket for each outgoing message
 	eventTypeMsgOut = "msg_out"
@@ -64,17 +71,67 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (*models.Chan
 	return h.BaseHandler.GetChannel(ctx, r)
 }
 
-// withCORS wraps a handler function to set the CORS header that all responses on our public endpoints need -
-// error responses included, or the widget's browser couldn't read them - because the widget calls from
-// third-party origins
+// withCORS wraps a handler function to enforce the channel's allowed domains and set the CORS header that all
+// responses on our public endpoints need - error responses included, or the widget's browser couldn't read
+// them - because the widget calls from third-party origins.
+//
+// Allowed domains are an anti-embedding control for real browsers, which send a genuine Origin header - not an
+// anti-abuse control, since scripted clients can spoof or omit Origin freely (the start rate limit and edge
+// protection cover those) - so a request without an Origin header always passes.
 func withCORS(fn channels.HandleFunc) channels.HandleFunc {
 	return func(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		domains := allowedDomains(channel)
+		origin := r.Header.Get("Origin")
+
+		if len(domains) > 0 {
+			// every branch below picks the allow-origin value from the request's origin so caches must vary on it
+			w.Header().Add("Vary", "Origin")
+		}
+
+		if len(domains) > 0 && origin != "" {
+			if !originAllowed(origin, domains) {
+				// deliberately no allow-origin header on this response, so the embedding page's browser also
+				// blocks it from reading the error
+				channels.LogRequestError(r, channel, fmt.Errorf("origin not allowed: %s", origin))
+				return nil, channels.WriteError(w, http.StatusForbidden, fmt.Errorf("origin not allowed"))
+			}
+
+			// reflect the specific origin instead of * so only pages on allowed domains get readable responses
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+
 		return fn(ctx, channel, w, r, clog)
 	}
 }
 
-// preflight is our HTTP handler for CORS preflight requests to the start and receive endpoints
+// allowedDomains reads the channel's allowed_domains config as a list of host[:port] strings
+func allowedDomains(channel *models.Channel) []string {
+	vals, _ := channel.ConfigForKey(configAllowedDomains, nil).([]any)
+	domains := make([]string, 0, len(vals))
+	for _, val := range vals {
+		if s, ok := val.(string); ok {
+			domains = append(domains, s)
+		}
+	}
+	return domains
+}
+
+// originAllowed parses an Origin header value (scheme://host[:port]) and checks whether its host[:port]
+// matches one of the configured domains, case-insensitively
+func originAllowed(origin string, domains []string) bool {
+	u, err := url.Parse(origin)
+	if err != nil || u.Host == "" {
+		return false
+	}
+	return slices.ContainsFunc(domains, func(d string) bool { return strings.EqualFold(d, u.Host) })
+}
+
+// preflight is our HTTP handler for CORS preflight requests to the start and receive endpoints. The channel
+// deliberately isn't loaded here (see GetChannel) so preflights can't check allowed domains and stay
+// permissive - that's fine because the browser is gated by the allow-origin header on the actual POST
+// response, which does check them.
 func (h *handler) preflight(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
