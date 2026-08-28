@@ -119,6 +119,36 @@ var locationReceive = `{
 	}
 }`
 
+var multiContentReceive = `{
+	"id": "string",
+	"timestamp": "2017-05-03T03:04:45Z",
+	"type": "MESSAGE",
+	"message": {
+	  "id": "string",
+	  "from": "254791541111",
+	  "to": "2020",
+	  "direction": "IN",
+	  "contents": [
+		{
+		  "type": "text",
+		  "text": "Look at this"
+		},
+		{
+		  "type": "file",
+		  "fileUrl": "https://foo.bar/v1/media/41"
+		},
+		{
+		  "type": "location",
+		  "longitude": 1.00,
+		  "latitude": 0.00
+		}
+	  ],
+	  "visitor": {
+		"name": "Bob"
+	  }
+	}
+}`
+
 var invalidDateReceive = `{
 	"id": "string",
 	"timestamp": "2014-08-26T12:55:48.593-03:00",
@@ -173,6 +203,9 @@ var testWhatappCases = []IncomingTestCase{
 	{Label: "Receive location Valid", URL: receiveWhatsappURL, Data: locationReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "Message Accepted",
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: "whatsapp:254791541111", ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
+	{Label: "Receive multiple contents", URL: receiveWhatsappURL, Data: multiContentReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText: Sp("Look at this"), ExpectedAttachments: []string{"https://foo.bar/v1/media/41", "geo:0.000000,1.000000"}, ExpectedURN: "whatsapp:254791541111", ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
+
 	{Label: "Not JSON body", URL: receiveWhatsappURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse request JSON"},
 	{Label: "Wrong JSON schema", URL: receiveWhatsappURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedBodyContains: "request JSON doesn't match required schema"},
 	{Label: "Missing field", URL: receiveWhatsappURL, Data: missingFieldsReceive, ExpectedRespStatus: 400, ExpectedBodyContains: "validation for 'ID' failed on the 'required'"},
@@ -207,6 +240,9 @@ var testSMSCases = []IncomingTestCase{
 
 	{Label: "Receive location Valid", URL: receiveSMSURL, Data: locationReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "Message Accepted",
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: "whatsapp:254791541111", ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
+
+	{Label: "Receive multiple contents", URL: receiveSMSURL, Data: multiContentReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText: Sp("Look at this"), ExpectedAttachments: []string{"https://foo.bar/v1/media/41", "geo:0.000000,1.000000"}, ExpectedURN: "whatsapp:254791541111", ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
 	{Label: "Not JSON body", URL: receiveSMSURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse request JSON"},
 	{Label: "Wrong JSON schema", URL: receiveSMSURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedBodyContains: "request JSON doesn't match required schema"},
