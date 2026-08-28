@@ -218,11 +218,30 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no entries")
 	}
 
-	// the list of events we deal with
-	events := make([]channels.Event, 0, 2)
+	in, err := h.parseEvents(channel, payload, clog)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
 
-	// the list of data we will return in our response
-	data := make([]any, 0, 2)
+	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+	if err != nil {
+		// whatever was written before the failure still happened, so report it rather than losing it from our
+		// logging and stats - the response is still an error, so the provider resends the batch
+		return channels.IncomingEvents(results), err
+	}
+
+	return channels.IncomingEvents(results), channels.WriteIncomingResponse(w, results)
+}
+
+// parseEvents turns a payload into the set of things it contained, without writing any of them - which is what
+// lets the whole batch be written together, and keeps a failure part way through it from leaving a response
+// that describes more than we actually did.
+//
+// It matters most here because this handler creates channel events, which have no duplicate detection of their
+// own: a parse failure used to leave the events before it written and then ask the provider to resend the whole
+// batch, which wrote them a second time.
+func (h *handler) parseEvents(channel *models.Channel, payload *moPayload, clog *models.ChannelLog) (*channels.Incoming, error) {
+	in := channels.NewIncoming()
 
 	seenMsgIDs := make(map[string]bool, 2)
 
@@ -247,7 +266,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		// create our URN
 		urn, err := urns.New(urns.Facebook, msg.Sender.ID)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid facebook id"))
+			return in, errors.New("invalid facebook id")
 		}
 		if msg.OptIn != nil {
 			event := models.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithOccurredOn(date)
@@ -256,13 +275,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			extra := map[string]string{referrerIDKey: msg.OptIn.Ref}
 			event = event.WithExtra(extra)
 
-			err := models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
-			if err != nil {
-				return nil, err
-			}
-
-			events = append(events, event)
-			data = append(data, channels.NewEventReceiveData(event))
+			in.Event(event)
 
 		} else if msg.Postback != nil {
 			// by default postbacks are treated as new conversations, unless we have referral information
@@ -291,13 +304,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 
 			event = event.WithExtra(extra)
 
-			err := models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
-			if err != nil {
-				return nil, err
-			}
-
-			events = append(events, event)
-			data = append(data, channels.NewEventReceiveData(event))
+			in.Event(event)
 
 		} else if msg.Referral != nil {
 			// this is an incoming referral
@@ -317,13 +324,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			}
 			event = event.WithExtra(extra)
 
-			err := models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
-			if err != nil {
-				return nil, err
-			}
-
-			events = append(events, event)
-			data = append(data, channels.NewEventReceiveData(event))
+			in.Event(event)
 
 		} else if msg.Message != nil {
 			// this is an incoming message
@@ -333,7 +334,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 
 			// ignore echos
 			if msg.Message.IsEcho {
-				data = append(data, channels.NewInfoData("ignoring echo"))
+				in.Ignored("ignoring echo")
 				continue
 			}
 
@@ -377,34 +378,21 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 				event.WithAttachment(attURL)
 			}
 
-			err := models.WriteMsg(ctx, h.Runtime(), event, clog)
-			if err != nil {
-				return nil, err
-			}
-
-			events = append(events, event)
-			data = append(data, channels.NewMsgReceiveData(event))
+			in.Msg(event)
 			seenMsgIDs[msg.Message.MID] = true
 
 		} else if msg.Delivery != nil {
 			// this is a delivery report
 			for _, mid := range msg.Delivery.MIDs {
-				event := models.NewStatusUpdateByExternalID(channel, mid, models.MsgStatusDelivered, clog)
-				err := models.WriteStatusUpdate(ctx, h.Runtime(), event)
-				if err != nil {
-					return nil, err
-				}
-
-				events = append(events, event)
-				data = append(data, channels.NewStatusData(event))
+				in.Status(models.NewStatusUpdateByExternalID(channel, mid, models.MsgStatusDelivered, clog))
 			}
 
 		} else {
-			data = append(data, channels.NewInfoData("ignoring unknown entry type"))
+			in.Ignored("ignoring unknown entry type")
 		}
 	}
 
-	return events, channels.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
+	return in, nil
 }
 
 //	{
