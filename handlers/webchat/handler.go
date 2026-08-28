@@ -215,7 +215,9 @@ func (h *handler) allowStart(channel *models.Channel, r *http.Request) bool {
 
 type receivePayload struct {
 	ChatID string `json:"chat_id" validate:"required"`
-	Text   string `json:"text"    validate:"required"`
+	// max counts runes, and we reject rather than truncate because we control the widget - an over-limit
+	// message is a client bug or abuse
+	Text string `json:"text" validate:"required,max=1000"`
 }
 
 // receive is our HTTP handler function for incoming messages

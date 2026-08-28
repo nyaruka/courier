@@ -69,6 +69,22 @@ var incomingCases = []IncomingTestCase{
 		ExpectedBodyContains: "invalid chat id",
 	},
 	{
+		Label:                "Receive Max Length Text",
+		URL:                  receiveURL,
+		Data:                 `{"chat_id": "` + testChatID + `", "text": "` + strings.Repeat("é", 1000) + `"}`,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText:      Sp(strings.Repeat("é", 1000)),
+		ExpectedURN:          urns.URN("webchat:" + testChatID),
+	},
+	{
+		Label:                "Receive Too Long Text",
+		URL:                  receiveURL,
+		Data:                 `{"chat_id": "` + testChatID + `", "text": "` + strings.Repeat("é", 1001) + `"}`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Field validation for 'Text' failed on the 'max' tag",
+	},
+	{
 		Label:                "Receive Missing Text",
 		URL:                  receiveURL,
 		Data:                 `{"chat_id": "` + testChatID + `"}`,
