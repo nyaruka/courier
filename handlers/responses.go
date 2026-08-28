@@ -8,28 +8,46 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 )
 
-// WriteMsgsAndResponse writes the passed in message to our backend
+// WriteMsgsAndResponse writes the passed in messages and responds with the handler's message success response
 func WriteMsgsAndResponse(ctx context.Context, h channels.Handler, msgs []*models.MsgIn, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
-	events := make([]channels.Event, len(msgs))
-	for i, m := range msgs {
-		err := models.WriteMsg(ctx, h.Runtime(), m, clog)
-		if err != nil {
-			return nil, err
-		}
-		events[i] = m
+	in := channels.NewIncoming()
+	for _, m := range msgs {
+		in.Msg(m)
 	}
 
-	return events, h.WriteMsgSuccessResponse(ctx, w, msgs)
-}
-
-// WriteMsgStatusAndResponse write the passed in status to our backend
-func WriteMsgStatusAndResponse(ctx context.Context, h channels.Handler, channel *models.Channel, status *models.StatusUpdate, w http.ResponseWriter, r *http.Request) ([]channels.Event, error) {
-	err := models.WriteStatusUpdate(ctx, h.Runtime(), status)
+	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
 	if err != nil {
 		return nil, err
 	}
 
-	return []channels.Event{status}, h.WriteStatusSuccessResponse(ctx, w, []*models.StatusUpdate{status})
+	return channels.IncomingEvents(results), h.WriteMsgSuccessResponse(ctx, w, msgs)
+}
+
+// WriteMsgStatusAndResponse writes the passed in status and responds with the handler's status success response
+func WriteMsgStatusAndResponse(ctx context.Context, h channels.Handler, channel *models.Channel, status *models.StatusUpdate, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+	in := channels.NewIncoming()
+	in.Status(status)
+
+	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+	if err != nil {
+		return nil, err
+	}
+
+	return channels.IncomingEvents(results), h.WriteStatusSuccessResponse(ctx, w, []*models.StatusUpdate{status})
+}
+
+// WriteChannelEventAndResponse writes the passed in channel event and responds with the standard event success
+// response
+func WriteChannelEventAndResponse(ctx context.Context, h channels.Handler, event *models.ChannelEvent, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+	in := channels.NewIncoming()
+	in.Event(event)
+
+	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+	if err != nil {
+		return nil, err
+	}
+
+	return channels.IncomingEvents(results), channels.WriteChannelEventSuccess(w, event)
 }
 
 // WriteAndLogRequestError logs the passed in error and writes the response to the response writer

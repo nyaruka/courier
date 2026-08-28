@@ -58,25 +58,23 @@ type ibStatus struct {
 
 // statusMessage is our HTTP handler function for status updates
 func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *models.ChannelLog) ([]channels.Event, error) {
-	data := make([]any, len(payload.Results))
-	statuses := make([]channels.Event, len(payload.Results))
+	in := channels.NewIncoming()
+
 	for _, s := range payload.Results {
 		msgStatus, found := statusMapping[s.Status.GroupName]
 		if !found {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", s.Status.GroupName))
 		}
 
-		// write our status
-		status := models.NewStatusUpdateByExternalID(channel, s.MessageID, msgStatus, clog)
-		err := models.WriteStatusUpdate(ctx, h.Runtime(), status)
-		if err != nil {
-			return nil, err
-		}
-		data = append(data, channels.NewStatusData(status))
-		statuses = append(statuses, status)
+		in.Status(models.NewStatusUpdateByExternalID(channel, s.MessageID, msgStatus, clog))
 	}
 
-	return statuses, channels.WriteDataResponse(w, http.StatusOK, "statuses handled", data)
+	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+	if err != nil {
+		return nil, err
+	}
+
+	return channels.IncomingEvents(results), channels.WriteIncomingResponse(w, results)
 }
 
 type v3InboundPayload struct {

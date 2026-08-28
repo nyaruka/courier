@@ -131,7 +131,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	}
 
 	// write status
-	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r, clog)
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

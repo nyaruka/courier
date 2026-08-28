@@ -76,7 +76,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 
 		// write our status
 		status := models.NewStatusUpdateByExternalID(channel, payload.BatchID, msgStatus, clog)
-		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
+		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r, clog)
 
 	} else if payload.Type == "mo_text" {
 		clog.Type = models.ChannelLogTypeMsgReceive

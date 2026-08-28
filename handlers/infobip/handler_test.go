@@ -278,11 +278,13 @@ var testCases = []IncomingTestCase{
 		ExpectedBodyContains: "Field validation for 'Results' failed",
 	},
 	{
-		Label:                "Status delivered",
-		URL:                  statusURL,
-		Data:                 validStatusDelivered,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"status":"D"`,
+		Label:              "Status delivered",
+		URL:                statusURL,
+		Data:               validStatusDelivered,
+		ExpectedRespStatus: 200,
+		// asserted from the start of the body so that the envelope shape is covered too - the data used to be
+		// built with make+append and so was prefixed with a null for every status in the request
+		ExpectedBodyContains: `{"message":"Events Handled","data":[{"type":"status","channel_uuid":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","status":"D"`,
 		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "0191e180-7d60-7000-aded-7d8b151cbd5b", Status: models.MsgStatusDelivered}},
 	},
 	{
@@ -302,11 +304,13 @@ var testCases = []IncomingTestCase{
 		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "0191e180-7d60-7000-aded-7d8b151cbd5b", Status: models.MsgStatusFailed}},
 	},
 	{
-		Label:                "Status pending",
-		URL:                  statusURL,
-		Data:                 validStatusPending,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"status":"S"`,
+		Label:              "Status pending",
+		URL:                statusURL,
+		Data:               validStatusPending,
+		ExpectedRespStatus: 200,
+		// this request carries two statuses, so the data used to be prefixed with two nulls - anchoring at the
+		// start of the body is what catches that, since the statuses themselves were adjacent either way
+		ExpectedBodyContains: `{"message":"Events Handled","data":[{"type":"status","channel_uuid":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","status":"S","external_id":"0191e180-7d60-7000-aded-7d8b151cbd5b"},{"type":"status"`,
 		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "0191e180-7d60-7000-aded-7d8b151cbd5b", Status: models.MsgStatusSent}, {ExternalID: "0191e180-7d60-7000-aded-7d8b151cbd5b", Status: models.MsgStatusSent}},
 	},
 	{

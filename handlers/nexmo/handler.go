@@ -139,7 +139,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 
 	status := models.NewStatusUpdateByExternalID(channel, form.MessageID, msgStatus, clog)
 
-	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r, clog)
 }
 
 type moForm struct {

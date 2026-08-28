@@ -108,7 +108,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 
 		// write our status
 		status := models.NewStatusUpdateByExternalID(channel, payload.TransactionID, msgStatus, clog)
-		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
+		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r, clog)
 	}
 }
 

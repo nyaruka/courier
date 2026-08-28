@@ -136,11 +136,7 @@ func (h *handler) receiveMsg(ctx context.Context, c *models.Channel, w http.Resp
 	// if this a stop command, shortcut stopping that contact
 	if keyword == "Stop" {
 		stop := models.NewChannelEvent(c, models.EventTypeStopContact, urn, clog)
-		err := models.WriteChannelEvent(ctx, h.Runtime(), stop, clog)
-		if err != nil {
-			return nil, err
-		}
-		return []channels.Event{stop}, channels.WriteChannelEventSuccess(w, stop)
+		return handlers.WriteChannelEventAndResponse(ctx, h, stop, w, r, clog)
 	}
 
 	// otherwise, create and write the message

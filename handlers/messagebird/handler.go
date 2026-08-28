@@ -135,18 +135,21 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 		}
 		// create a stop channel event
 		stopEvent = models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
-		err = models.WriteChannelEvent(ctx, h.Runtime(), stopEvent, clog)
-		if err != nil {
-			return nil, err
-		}
 		clog.Error(models.ErrorExternal(fmt.Sprint(receivedStatus.StatusErrorCode), "Contact has sent 'stop'"))
 	}
 
-	events, err := handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
+	in := channels.NewIncoming()
 	if stopEvent != nil {
-		events = append(events, stopEvent)
+		in.Event(stopEvent)
 	}
-	return events, err
+	in.Status(status)
+
+	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+	if err != nil {
+		return nil, err
+	}
+
+	return channels.IncomingEvents(results), h.WriteStatusSuccessResponse(ctx, w, []*models.StatusUpdate{status})
 }
 
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {

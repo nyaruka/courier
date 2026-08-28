@@ -144,7 +144,7 @@ func (h *handler) statusMessage(ctx context.Context, c *models.Channel, w http.R
 	}
 	// write our status
 	status := models.NewStatusUpdateByExternalID(c, fmt.Sprint(payload.Data.MessageID), msgStatus, clog)
-	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
+	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r, clog)
 }
 
 type mtPayload struct {
