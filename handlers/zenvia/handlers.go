@@ -100,34 +100,38 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 	contactName := payload.Visitor.Name
 
-	msgs := []*models.MsgIn{}
+	// the contents of a payload are the parts of a single message and so share its id - we combine them into one
+	// msg with attachments rather than creating a msg per part, which would see all but the first part discarded
+	// as duplicates of the first
+	texts := make([]string, 0, len(payload.Message.Contents))
+	attachments := make([]string, 0, len(payload.Message.Contents))
 
 	for _, content := range payload.Message.Contents {
-
-		text := ""
-		mediaURL := ""
-
-		if content.Type == "text" {
-			text = content.Text
-		} else if content.Type == "location" {
-			mediaURL = fmt.Sprintf("geo:%f,%f", content.Latitude, content.Longitude)
-		} else if content.Type == "file" {
-			mediaURL = content.FileURL
-		} else {
+		switch content.Type {
+		case "text":
+			if content.Text != "" {
+				texts = append(texts, content.Text)
+			}
+		case "location":
+			attachments = append(attachments, fmt.Sprintf("geo:%f,%f", content.Latitude, content.Longitude))
+		case "file":
+			if content.FileURL != "" {
+				attachments = append(attachments, content.FileURL)
+			}
+		default:
 			// we received a message type we do not support.
 			channels.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", content.Type))
 		}
-
-		// build our msg
-		msg := models.NewIncomingMsg(channel, urn, text, payload.Message.ID, clog).WithReceivedOn(date.UTC()).WithContactName(contactName)
-		if mediaURL != "" {
-			msg.WithAttachment(mediaURL)
-		}
-		msgs = append(msgs, msg)
 	}
 
-	// and finally write our messages
-	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
+	// build our msg
+	msg := models.NewIncomingMsg(channel, urn, strings.Join(texts, "\n"), payload.Message.ID, clog).WithReceivedOn(date.UTC()).WithContactName(contactName)
+	for _, attachment := range attachments {
+		msg.WithAttachment(attachment)
+	}
+
+	// and finally write our message
+	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
 }
 
 var statusMapping = map[string]models.MsgStatus{
