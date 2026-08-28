@@ -301,11 +301,13 @@ var whatsappIncomingTests = []IncomingTestCase{
 		PrepRequest: addValidSignature,
 	},
 	{
-		Label:                "Receive Invalid Status",
-		URL:                  whatappReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/invalid_status.json")),
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"unknown status: in_orbit"`,
+		Label:              "Receive Invalid Status",
+		URL:                whatappReceiveURL,
+		Data:               string(test.ReadFile("./testdata/wac/invalid_status.json")),
+		ExpectedRespStatus: 200,
+		// anchored at the start of the body because an unknown status used to write a whole "Error" response of
+		// its own and then carry on, leaving two JSON documents concatenated in the one response
+		ExpectedBodyContains: `{"message":"Events Handled","data":[{"type":"info","info":"unknown status: in_orbit"}]}`,
 		PrepRequest:          addValidSignature,
 	},
 	{
