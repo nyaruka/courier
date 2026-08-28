@@ -77,11 +77,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	// this is a start command, trigger a new conversation
 	if text == "/start" {
 		event := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog).WithContactName(name).WithOccurredOn(date)
-		err = models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
-		if err != nil {
-			return nil, err
-		}
-		return []channels.Event{event}, channels.WriteChannelEventSuccess(w, event)
+		return handlers.WriteChannelEventAndResponse(ctx, h, event, w, r, clog)
 	}
 
 	// normal message of some kind

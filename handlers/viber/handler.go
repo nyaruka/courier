@@ -148,12 +148,17 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		// build the channel event
 		channelEvent := models.NewChannelEvent(channel, models.EventTypeWelcomeMessage, urn, clog).WithContactName(ContactName)
 
-		err = models.WriteChannelEvent(ctx, h.Runtime(), channelEvent, clog)
+		// the response to this is itself the welcome message, so we write it ourselves rather than using
+		// one of the standard responses
+		in := channels.NewIncoming()
+		in.Event(channelEvent)
+
+		results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
-		return []channels.Event{channelEvent}, writeWelcomeMessageResponse(w, channel, channelEvent)
+		return channels.IncomingEvents(results), writeWelcomeMessageResponse(w, channel, channelEvent)
 
 	case "subscribed":
 		clog.Type = models.ChannelLogTypeEventReceive
@@ -170,12 +175,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		// build the channel event
 		channelEvent := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog).WithContactName(ContactName)
 
-		err = models.WriteChannelEvent(ctx, h.Runtime(), channelEvent, clog)
-		if err != nil {
-			return nil, err
-		}
-
-		return []channels.Event{channelEvent}, channels.WriteChannelEventSuccess(w, channelEvent)
+		return handlers.WriteChannelEventAndResponse(ctx, h, channelEvent, w, r, clog)
 
 	case "unsubscribed":
 		clog.Type = models.ChannelLogTypeEventReceive
@@ -190,18 +190,13 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		// build the channel event
 		channelEvent := models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
 
-		err = models.WriteChannelEvent(ctx, h.Runtime(), channelEvent, clog)
-		if err != nil {
-			return nil, err
-		}
-
-		return []channels.Event{channelEvent}, channels.WriteChannelEventSuccess(w, channelEvent)
+		return handlers.WriteChannelEventAndResponse(ctx, h, channelEvent, w, r, clog)
 
 	case "failed":
 		clog.Type = models.ChannelLogTypeMsgStatus
 
 		msgStatus := models.NewStatusUpdateByExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), models.MsgStatusFailed, clog)
-		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
+		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r, clog)
 
 	case "delivered":
 		clog.Type = models.ChannelLogTypeMsgStatus

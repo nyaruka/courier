@@ -131,12 +131,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 		channelEvent := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog)
 
-		err := models.WriteChannelEvent(ctx, h.Runtime(), channelEvent, clog)
-		if err != nil {
-			return nil, err
-		}
-
-		return []channels.Event{channelEvent}, channels.WriteChannelEventSuccess(w, channelEvent)
+		return handlers.WriteChannelEventAndResponse(ctx, h, channelEvent, w, r, clog)
 	}
 
 	// unknown event type (we only deal with subscribe)

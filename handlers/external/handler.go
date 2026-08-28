@@ -112,11 +112,7 @@ func (h *handler) receiveStopContact(ctx context.Context, channel *models.Channe
 
 	// create a stop channel event
 	channelEvent := models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
-	err = models.WriteChannelEvent(ctx, h.Runtime(), channelEvent, clog)
-	if err != nil {
-		return nil, err
-	}
-	return []channels.Event{channelEvent}, channels.WriteChannelEventSuccess(w, channelEvent)
+	return handlers.WriteChannelEventAndResponse(ctx, h, channelEvent, w, r, clog)
 }
 
 // utility function to grab the form value for either the passed in name (if non-empty) or the first set
@@ -280,7 +276,7 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 
 	// write our status
 	status := models.NewStatusUpdate(channel, models.MsgUUID(msgUUID), msgStatus, clog)
-	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r, clog)
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

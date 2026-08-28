@@ -56,7 +56,7 @@ func NewExternalIDStatusHandler(h channels.Handler, statuses map[string]models.M
 
 		// create our status
 		status := models.NewStatusUpdateByExternalID(c, externalID, sValue, clog)
-		return WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
+		return WriteMsgStatusAndResponse(ctx, h, c, status, w, r, clog)
 	}
 }
 
