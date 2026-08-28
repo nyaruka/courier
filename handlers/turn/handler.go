@@ -148,10 +148,27 @@ type eventsPayload struct {
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
 func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *eventsPayload, clog *models.ChannelLog) ([]channels.Event, error) {
-	events := make([]channels.Event, 0, 2)
+	in, err := h.parseEvents(channel, payload, r, clog)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
 
-	// the list of data we will return in our response
-	data := make([]any, 0, 2)
+	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+	if err != nil {
+		// whatever was written before the failure still happened, so report it rather than losing it from our
+		// logging and stats - the response is still an error, so the provider resends and the messages dedupe
+		return channels.IncomingEvents(results), err
+	}
+
+	return channels.IncomingEvents(results), channels.WriteIncomingResponse(w, results)
+}
+
+// parseEvents turns a payload into the set of things it contained, without writing any of them - which is what
+// lets the whole batch be written together, and keeps a failure part way through it from leaving a response
+// that describes more than we actually did. It still does I/O, since resolving a message's media means asking
+// the provider for its URL, but it makes no changes.
+func (h *handler) parseEvents(channel *models.Channel, payload *eventsPayload, r *http.Request, clog *models.ChannelLog) (*channels.Incoming, error) {
+	in := channels.NewIncoming()
 
 	seenMsgIDs := make(map[string]bool, 2)
 
@@ -174,14 +191,14 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		}
 
 		if msg.GroupID != "" {
-			data = append(data, channels.NewInfoData("ignoring group message"))
+			in.Ignored("ignoring group message")
 			continue
 		}
 
 		// create our date from the timestamp
 		ts, err := strconv.ParseInt(msg.Timestamp, 10, 64)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid timestamp: %s", msg.Timestamp))
+			return in, fmt.Errorf("invalid timestamp: %s", msg.Timestamp)
 		}
 		date := time.Unix(ts, 0).UTC()
 
@@ -191,7 +208,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 
 		urn, err := urns.New(urns.WhatsApp, sender)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid whatsapp id"))
+			return in, errors.New("invalid whatsapp id")
 		}
 
 		for _, msgError := range msg.Errors {
@@ -273,13 +290,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			}
 		}
 
-		err = models.WriteMsg(ctx, h.Runtime(), event, clog)
-		if err != nil {
-			return nil, err
-		}
-
-		events = append(events, event)
-		data = append(data, channels.NewMsgReceiveData(event))
+		in.Msg(event)
 		seenMsgIDs[msg.ID] = true
 	}
 
@@ -288,9 +299,10 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		msgStatus, found := turnWaStatusMapping[status.Status]
 		if !found {
 			if turnWaIgnoreStatuses[status.Status] {
-				data = append(data, channels.NewInfoData(fmt.Sprintf("ignoring status: %s", status.Status)))
+				in.Ignored(fmt.Sprintf("ignoring status: %s", status.Status))
 			} else {
-				handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("unknown status: %s", status.Status))
+				channels.LogRequestIgnored(r, channel, fmt.Sprintf("unknown status: %s", status.Status))
+				in.Ignored(fmt.Sprintf("unknown status: %s", status.Status))
 			}
 			continue
 		}
@@ -299,17 +311,10 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 			statusError.ErrorChannelLog(clog)
 		}
 
-		event := models.NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
-		err := models.WriteStatusUpdate(ctx, h.Runtime(), event)
-		if err != nil {
-			return nil, err
-		}
-
-		events = append(events, event)
-		data = append(data, channels.NewStatusData(event))
+		in.Status(models.NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog))
 	}
 
-	return events, channels.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
+	return in, nil
 }
 
 func resolveMediaURL(channel *models.Channel, mediaID string) (string, error) {

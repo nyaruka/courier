@@ -758,11 +758,13 @@ var testCasesTurn = []IncomingTestCase{
 		},
 	},
 	{
-		Label:                "Receive invalid status",
-		URL:                  turnWhatsappReceiveURL,
-		Data:                 invalidStatus,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"unknown status: in_orbit"`,
+		Label:              "Receive invalid status",
+		URL:                turnWhatsappReceiveURL,
+		Data:               invalidStatus,
+		ExpectedRespStatus: 200,
+		// anchored at the start of the body because an unknown status used to write a whole "Ignored" response
+		// of its own and then carry on, leaving two JSON documents concatenated in the one response
+		ExpectedBodyContains: `{"message":"Events Handled","data":[{"type":"info","info":"unknown status: in_orbit"}]}`,
 	},
 	{
 		Label:                "Receive ignore status",
