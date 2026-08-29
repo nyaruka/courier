@@ -257,7 +257,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 	// save message to our backend - a VK notification only ever carries the one message, so this is the
 	// degenerate case of a batch, but it keeps writing in the one place that owns it
-	in := channels.NewIncoming()
+	in := channels.NewIncoming(channel)
 	in.Msg(msg)
 
 	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)

@@ -226,7 +226,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 		}
 	}
 
-	in := channels.NewIncoming()
+	in := channels.NewIncoming(channel)
 	if stopEvent != nil {
 		in.Event(stopEvent)
 	}

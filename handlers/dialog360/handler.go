@@ -113,7 +113,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 //
 // A non-empty second return means the request should be ignored in its entirety.
 func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, clog *models.ChannelLog) (*channels.Incoming, string) {
-	in := channels.NewIncoming()
+	in := channels.NewIncoming(channel)
 
 	seenMsgIDs := make(map[string]bool)
 	contactNames := make(map[string]string)

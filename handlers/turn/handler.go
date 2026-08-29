@@ -171,7 +171,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 // that describes more than we actually did. It still does I/O, since resolving a message's media means asking
 // the provider for its URL, but it makes no changes.
 func (h *handler) parseEvents(channel *models.Channel, payload *eventsPayload, r *http.Request, clog *models.ChannelLog) (*channels.Incoming, error) {
-	in := channels.NewIncoming()
+	in := channels.NewIncoming(channel)
 
 	seenMsgIDs := make(map[string]bool, 2)
 

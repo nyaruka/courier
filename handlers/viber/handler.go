@@ -150,7 +150,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 
 		// the response to this is itself the welcome message, so we write it ourselves rather than using
 		// one of the standard responses
-		in := channels.NewIncoming()
+		in := channels.NewIncoming(channel)
 		in.Event(channelEvent)
 
 		results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)

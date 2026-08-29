@@ -57,7 +57,7 @@ func TestWriteIncoming(t *testing.T) {
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, ch, nil, nil)
 
 	// a mixed batch is written in the order it was added, and each item reports what became of it
-	in := channels.NewIncoming()
+	in := channels.NewIncoming(ch)
 	in.Msg(models.NewIncomingMsg(ch, "tel:+12065551212", "hello", "ext1", clog))
 	in.Ignored("ignoring echo")
 	in.Status(models.NewStatusUpdateByExternalID(ch, "ext2", models.MsgStatusDelivered, clog))
@@ -81,8 +81,21 @@ func TestWriteIncoming(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'hello' AND external_identifier = 'ext1'`).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM channels_channelevent WHERE event_type = 'stop_contact'`).Returns(1)
 
+	// a message the provider deleted is acted on as part of the batch, and described in the response
+	in = channels.NewIncoming(ch)
+	in.DeletedMsg("ext1")
+
+	results, err = channels.WriteIncoming(ctx, rt, in, clog)
+	assert.NoError(t, err)
+	require.Len(t, results, 1)
+	assert.Equal(t, channels.OutcomeWritten, results[0].Outcome)
+	assert.Equal(t, "msg deleted", results[0].Details)
+
+	// it isn't an event, having not been received - it's something we did to one we already had
+	assert.Empty(t, channels.IncomingEvents(results))
+
 	// a message we've already received is reported as a duplicate rather than written again
-	in = channels.NewIncoming()
+	in = channels.NewIncoming(ch)
 	in.Msg(models.NewIncomingMsg(ch, "tel:+12065551212", "hello", "ext1", clog))
 
 	results, err = channels.WriteIncoming(ctx, rt, in, clog)
@@ -94,7 +107,7 @@ func TestWriteIncoming(t *testing.T) {
 	assert.Len(t, channels.IncomingEvents(results), 1)
 
 	// writing stops at the first item that fails, so the results describe the prefix we got through
-	in = channels.NewIncoming()
+	in = channels.NewIncoming(ch)
 	in.Msg(models.NewIncomingMsg(ch, "tel:+12065551212", "first", "ext3", clog))
 	in.Msg(models.NewIncomingMsg(ch, "tel:+12065551212", "second", "ext4", clog).WithAttachment("data:....."))
 	in.Msg(models.NewIncomingMsg(ch, "tel:+12065551212", "third", "ext5", clog))
