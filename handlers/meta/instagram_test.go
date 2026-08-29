@@ -171,11 +171,12 @@ var instagramIncomingTests = []IncomingTestCase{
 		PrepRequest:          addValidSignature,
 	},
 	{
-		Label:                "Message unsent",
-		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/unsent_msg.json")),
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `msg deleted`,
+		Label:              "Message unsent",
+		URL:                "/c/ig/receive",
+		Data:               string(test.ReadFile("./testdata/ig/unsent_msg.json")),
+		ExpectedRespStatus: 200,
+		// the deletion is part of the batch now, so it shows up in the response like any other item
+		ExpectedBodyContains: `{"message":"Events Handled","data":[{"type":"info","info":"msg deleted"}]}`,
 		PrepRequest:          addValidSignature,
 	},
 }

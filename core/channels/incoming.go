@@ -18,18 +18,26 @@ import (
 // had to write each part as they parsed it and hand-roll their own response, which leaves no single place
 // to apply anything that spans the request.
 type Incoming struct {
-	items []incomingItem
+	channel *models.Channel
+	items   []incomingItem
 }
 
-// one thing an incoming request contained: either something to write, or a note that we ignored part of the
-// request - which isn't written anywhere but is still described in the response
+// one thing an incoming request contained: an event to write, a message the provider has deleted, or a note
+// that we ignored part of the request - which isn't written anywhere but is still described in the response
 type incomingItem struct {
 	event   Event
+	deleted *deletedMsg
 	ignored string
 }
 
-// NewIncoming creates an empty set of incoming items for a handler to add to
-func NewIncoming() *Incoming { return &Incoming{} }
+// a message we'd previously received which the provider has since deleted
+type deletedMsg struct {
+	externalID string
+}
+
+// NewIncoming creates an empty set of incoming items for a handler to add to. Everything one request
+// contained is for the same channel - the one the server resolved before the handler was called.
+func NewIncoming(ch *models.Channel) *Incoming { return &Incoming{channel: ch} }
 
 // Msg adds a message parsed from the request
 func (i *Incoming) Msg(m *models.MsgIn) { i.items = append(i.items, incomingItem{event: m}) }
@@ -40,12 +48,22 @@ func (i *Incoming) Status(s *models.StatusUpdate) { i.items = append(i.items, in
 // Event adds a channel event parsed from the request
 func (i *Incoming) Event(e *models.ChannelEvent) { i.items = append(i.items, incomingItem{event: e}) }
 
+// DeletedMsg notes that a message we'd received has since been deleted at the provider, which some of them
+// report on the same webhook that delivered it. It's part of the batch rather than something the handler acts
+// on as it parses, so that it happens in order with the rest of the request and can report a failure.
+func (i *Incoming) DeletedMsg(externalID string) {
+	i.items = append(i.items, incomingItem{deleted: &deletedMsg{externalID: externalID}})
+}
+
 // Ignored notes a part of the request we understood but didn't act on, such as a message echoed back to us.
 // Nothing is written for it, but it appears in the response so that what we saw is visible to the provider.
 func (i *Incoming) Ignored(details string) { i.items = append(i.items, incomingItem{ignored: details}) }
 
 // Len returns how many items have been added
 func (i *Incoming) Len() int { return len(i.items) }
+
+// what the response says for a message the provider deleted
+const msgDeletedInfo = "msg deleted"
 
 // Outcome is what became of a single item of an incoming request
 type Outcome string
@@ -84,6 +102,14 @@ func WriteIncoming(ctx context.Context, rt *runtime.Runtime, in *Incoming, clog 
 	results := make([]IncomingResult, 0, len(in.items))
 
 	for _, item := range in.items {
+		if item.deleted != nil {
+			if err := models.DeleteMsgByExternalID(ctx, rt, in.channel, item.deleted.externalID); err != nil {
+				results = append(results, IncomingResult{Details: msgDeletedInfo, Outcome: OutcomeFailed, Err: err})
+				return results, err
+			}
+			results = append(results, IncomingResult{Details: msgDeletedInfo, Outcome: OutcomeWritten})
+			continue
+		}
 		if item.event == nil {
 			results = append(results, IncomingResult{Details: item.ignored, Outcome: OutcomeIgnored})
 			continue

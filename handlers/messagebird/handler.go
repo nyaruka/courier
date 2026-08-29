@@ -138,7 +138,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 		clog.Error(models.ErrorExternal(fmt.Sprint(receivedStatus.StatusErrorCode), "Contact has sent 'stop'"))
 	}
 
-	in := channels.NewIncoming()
+	in := channels.NewIncoming(channel)
 	if stopEvent != nil {
 		in.Event(stopEvent)
 	}

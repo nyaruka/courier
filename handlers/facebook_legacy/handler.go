@@ -244,7 +244,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 // own: a parse failure used to leave the events before it written and then ask the provider to resend the whole
 // batch, which wrote them a second time.
 func (h *handler) parseEvents(channel *models.Channel, payload *moPayload, clog *models.ChannelLog) (*channels.Incoming, error) {
-	in := channels.NewIncoming()
+	in := channels.NewIncoming(channel)
 
 	seenMsgIDs := make(map[string]bool, 2)
 

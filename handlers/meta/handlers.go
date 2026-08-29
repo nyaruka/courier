@@ -228,7 +228,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 	var in *channels.Incoming
 
 	if channel.ChannelType() == "FBA" || channel.ChannelType() == "IG" {
-		in, err = h.parseFacebookInstagramPayload(ctx, channel, payload, r, clog)
+		in, err = h.parseFacebookInstagramPayload(channel, payload, r, clog)
 	} else {
 		in, err = h.parseWhatsAppPayload(channel, payload, r, clog)
 	}
@@ -255,7 +255,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 // a response that describes more than we actually did. It still does I/O, since resolving a message's media
 // means asking the provider for its URL, but it makes no changes.
 func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, clog *models.ChannelLog) (*channels.Incoming, error) {
-	in := channels.NewIncoming()
+	in := channels.NewIncoming(channel)
 
 	token := h.Runtime().Config.WhatsappAdminSystemUserToken
 
@@ -373,10 +373,8 @@ func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notific
 // of them. It matters most for this payload shape, which carries channel events - those have no duplicate
 // detection of their own, so a parse failure part way through used to leave the events before it written and
 // then ask the provider to resend the whole batch, writing them a second time.
-//
-// It takes a context because a deleted message is acted on as it's parsed rather than being part of the batch.
-func (h *handler) parseFacebookInstagramPayload(ctx context.Context, channel *models.Channel, payload *Notifications, r *http.Request, clog *models.ChannelLog) (*channels.Incoming, error) {
-	in := channels.NewIncoming()
+func (h *handler) parseFacebookInstagramPayload(channel *models.Channel, payload *Notifications, r *http.Request, clog *models.ChannelLog) (*channels.Incoming, error) {
+	in := channels.NewIncoming(channel)
 
 	var err error
 
@@ -490,8 +488,7 @@ func (h *handler) parseFacebookInstagramPayload(ctx context.Context, channel *mo
 			}
 
 			if msg.Message.IsDeleted {
-				models.DeleteMsgByExternalID(ctx, h.Runtime(), channel, msg.Message.MID)
-				in.Ignored("msg deleted")
+				in.DeletedMsg(msg.Message.MID)
 				continue
 			}
 
