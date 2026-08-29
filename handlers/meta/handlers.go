@@ -225,29 +225,37 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no entries")
 	}
 
-	var events []channels.Event
-	var data []any
+	var in *channels.Incoming
 
 	if channel.ChannelType() == "FBA" || channel.ChannelType() == "IG" {
-		events, data, err = h.processFacebookInstagramPayload(ctx, channel, payload, w, r, clog)
+		in, err = h.parseFacebookInstagramPayload(ctx, channel, payload, r, clog)
 	} else {
-		events, data, err = h.processWhatsAppPayload(ctx, channel, payload, w, r, clog)
-
+		in, err = h.parseWhatsAppPayload(channel, payload, r, clog)
 	}
 
 	if err != nil {
-		return nil, err
+		// the failure is in the payload itself, so asking for it again wouldn't get any further - write whatever
+		// was parsed ahead of it rather than dropping it
+		results, _ := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+		return channels.IncomingEvents(results), handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	return events, channels.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
+	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+	if err != nil {
+		// whatever was written before the failure still happened, so report it rather than losing it from our
+		// logging and stats - the response is still an error, though this handler reports those as 200s
+		return channels.IncomingEvents(results), err
+	}
+
+	return channels.IncomingEvents(results), channels.WriteIncomingResponse(w, results)
 }
 
-func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, []any, error) {
-	// the list of events we deal with
-	events := make([]channels.Event, 0, 2)
-
-	// the list of data we will return in our response
-	data := make([]any, 0, 2)
+// parseWhatsAppPayload turns a notification into the set of things it contained, without writing any of them -
+// which is what lets the whole batch be written together, and keeps a failure part way through it from leaving
+// a response that describes more than we actually did. It still does I/O, since resolving a message's media
+// means asking the provider for its URL, but it makes no changes.
+func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, clog *models.ChannelLog) (*channels.Incoming, error) {
+	in := channels.NewIncoming()
 
 	token := h.Runtime().Config.WhatsappAdminSystemUserToken
 
@@ -279,13 +287,13 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 				}
 
 				if waMsg.GroupID != "" {
-					data = append(data, channels.NewInfoData("ignoring group message"))
+					in.Ignored("ignoring group message")
 					continue
 				}
 
 				date, urn, text, mediaURL, mediaID, err, finalErr := waMsg.ExtractData(clog)
 				if finalErr != nil {
-					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, finalErr)
+					return in, finalErr
 				}
 
 				if err != nil {
@@ -326,13 +334,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 					}
 				}
 
-				err = models.WriteMsg(ctx, h.Runtime(), event, clog)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				events = append(events, event)
-				data = append(data, channels.NewMsgReceiveData(event))
+				in.Msg(event)
 				seenMsgIDs[waMsg.ID] = true
 			}
 
@@ -341,9 +343,10 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 				msgStatus, found := whatsapp.StatusMapping[status.Status]
 				if !found {
 					if whatsapp.IgnoreStatuses[status.Status] {
-						data = append(data, channels.NewInfoData(fmt.Sprintf("ignoring status: %s", status.Status)))
+						in.Ignored(fmt.Sprintf("ignoring status: %s", status.Status))
 					} else {
-						handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status: %s", status.Status))
+						channels.LogRequestError(r, channel, fmt.Errorf("unknown status: %s", status.Status))
+						in.Ignored(fmt.Sprintf("unknown status: %s", status.Status))
 					}
 					continue
 				}
@@ -352,15 +355,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 					statusError.ErrorChannelLog(clog)
 				}
 
-				event := models.NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
-				err := models.WriteStatusUpdate(ctx, h.Runtime(), event)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				events = append(events, event)
-				data = append(data, channels.NewStatusData(event))
-
+				in.Status(models.NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog))
 			}
 
 			for _, chError := range change.Value.Errors {
@@ -370,17 +365,20 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 		}
 
 	}
-	return events, data, nil
+
+	return in, nil
 }
 
-func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *models.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, []any, error) {
+// parseFacebookInstagramPayload turns a notification into the set of things it contained, without writing any
+// of them. It matters most for this payload shape, which carries channel events - those have no duplicate
+// detection of their own, so a parse failure part way through used to leave the events before it written and
+// then ask the provider to resend the whole batch, writing them a second time.
+//
+// It takes a context because a deleted message is acted on as it's parsed rather than being part of the batch.
+func (h *handler) parseFacebookInstagramPayload(ctx context.Context, channel *models.Channel, payload *Notifications, r *http.Request, clog *models.ChannelLog) (*channels.Incoming, error) {
+	in := channels.NewIncoming()
+
 	var err error
-
-	// the list of events we deal with
-	events := make([]channels.Event, 0, 2)
-
-	// the list of data we will return in our response
-	data := make([]any, 0, 2)
 
 	seenMsgIDs := make(map[string]bool, 2)
 
@@ -412,31 +410,25 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 		if payload.Object == "instagram" {
 			urn, err = urns.New(urns.Instagram, sender)
 			if err != nil {
-				return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid instagram id"))
+				return in, errors.New("invalid instagram id")
 			}
 		} else {
 			urn, err = urns.New(urns.Facebook, sender)
 			if err != nil {
-				return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid facebook id"))
+				return in, errors.New("invalid facebook id")
 			}
 		}
 
 		if msg.OptIn != nil {
 			if msg.OptIn.Type == "notification_messages" {
-				data = append(data, channels.NewInfoData("ignoring optin"))
+				in.Ignored("ignoring optin")
 			} else {
 				// this is an optin from the checkbox plugin, treat it as a referral
 				event := models.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).
 					WithOccurredOn(date).
 					WithExtra(map[string]string{referrerIDKey: msg.OptIn.Ref})
 
-				err := models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				events = append(events, event)
-				data = append(data, channels.NewEventReceiveData(event))
+				in.Event(event)
 			}
 
 		} else if msg.Postback != nil {
@@ -463,13 +455,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 
 			event = event.WithExtra(extra)
 
-			err := models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			events = append(events, event)
-			data = append(data, channels.NewEventReceiveData(event))
+			in.Event(event)
 
 		} else if msg.Referral != nil {
 			// this is an incoming referral
@@ -489,13 +475,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 			}
 			event = event.WithExtra(extra)
 
-			err := models.WriteChannelEvent(ctx, h.Runtime(), event, clog)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			events = append(events, event)
-			data = append(data, channels.NewEventReceiveData(event))
+			in.Event(event)
 
 		} else if msg.Message != nil {
 			// this is an incoming message
@@ -505,13 +485,13 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 
 			// ignore echos
 			if msg.Message.IsEcho {
-				data = append(data, channels.NewInfoData("ignoring echo"))
+				in.Ignored("ignoring echo")
 				continue
 			}
 
 			if msg.Message.IsDeleted {
 				models.DeleteMsgByExternalID(ctx, h.Runtime(), channel, msg.Message.MID)
-				data = append(data, channels.NewInfoData("msg deleted"))
+				in.Ignored("msg deleted")
 				continue
 			}
 
@@ -532,7 +512,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 				}
 
 				if att.Type == "story_mention" {
-					data = append(data, channels.NewInfoData("ignoring story_mention"))
+					in.Ignored("ignoring story_mention")
 					continue
 				}
 
@@ -554,34 +534,21 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel *
 				event.WithAttachment(attURL)
 			}
 
-			err := models.WriteMsg(ctx, h.Runtime(), event, clog)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			events = append(events, event)
-			data = append(data, channels.NewMsgReceiveData(event))
+			in.Msg(event)
 			seenMsgIDs[msg.Message.MID] = true
 
 		} else if msg.Delivery != nil {
 			// this is a delivery report
 			for _, mid := range msg.Delivery.MIDs {
-				event := models.NewStatusUpdateByExternalID(channel, mid, models.MsgStatusDelivered, clog)
-				err := models.WriteStatusUpdate(ctx, h.Runtime(), event)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				events = append(events, event)
-				data = append(data, channels.NewStatusData(event))
+				in.Status(models.NewStatusUpdateByExternalID(channel, mid, models.MsgStatusDelivered, clog))
 			}
 
 		} else {
-			data = append(data, channels.NewInfoData("ignoring unknown entry type"))
+			in.Ignored("ignoring unknown entry type")
 		}
 	}
 
-	return events, data, nil
+	return in, nil
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

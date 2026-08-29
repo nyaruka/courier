@@ -88,23 +88,32 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no entries")
 	}
 
-	var events []channels.Event
-	var data []any
-
-	events, data, err := h.processWhatsAppPayload(ctx, channel, payload, w, r, clog)
-	if err != nil {
-		return nil, err
+	in, ignore := h.parseWhatsAppPayload(channel, payload, r, clog)
+	if ignore != "" {
+		// the failure is in the payload itself, so asking for it again wouldn't get any further - write whatever
+		// was parsed ahead of it rather than dropping it
+		results, _ := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+		return channels.IncomingEvents(results), handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, ignore)
 	}
 
-	return events, channels.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
+	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+	if err != nil {
+		// whatever was written before the failure still happened, so report it rather than losing it from our
+		// logging and stats - the response is still an error, so the provider resends and the messages dedupe
+		return channels.IncomingEvents(results), err
+	}
+
+	return channels.IncomingEvents(results), channels.WriteIncomingResponse(w, results)
 }
 
-func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, []any, error) {
-	// the list of events we deal with
-	events := make([]channels.Event, 0, 2)
-
-	// the list of data we will return in our response
-	data := make([]any, 0, 2)
+// parseWhatsAppPayload turns a notification into the set of things it contained, without writing any of them -
+// which is what lets the whole batch be written together, and keeps a failure part way through it from leaving
+// a response that describes more than we actually did. It still does I/O, since resolving a message's media
+// means asking the provider for its URL, but it makes no changes.
+//
+// A non-empty second return means the request should be ignored in its entirety.
+func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, clog *models.ChannelLog) (*channels.Incoming, string) {
+	in := channels.NewIncoming()
 
 	seenMsgIDs := make(map[string]bool)
 	contactNames := make(map[string]string)
@@ -134,13 +143,13 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 				}
 
 				if waMsg.GroupID != "" {
-					data = append(data, channels.NewInfoData("ignoring group message"))
+					in.Ignored("ignoring group message")
 					continue
 				}
 
 				date, urn, text, mediaURL, mediaID, err, finalErr := waMsg.ExtractData(clog)
 				if finalErr != nil {
-					return nil, nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, finalErr.Error())
+					return in, finalErr.Error()
 				}
 
 				if err != nil {
@@ -181,13 +190,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 					}
 				}
 
-				err = models.WriteMsg(ctx, h.Runtime(), event, clog)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				events = append(events, event)
-				data = append(data, channels.NewMsgReceiveData(event))
+				in.Msg(event)
 				seenMsgIDs[waMsg.ID] = true
 			}
 
@@ -196,9 +199,10 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 				msgStatus, found := whatsapp.StatusMapping[status.Status]
 				if !found {
 					if whatsapp.IgnoreStatuses[status.Status] {
-						data = append(data, channels.NewInfoData(fmt.Sprintf("ignoring status: %s", status.Status)))
+						in.Ignored(fmt.Sprintf("ignoring status: %s", status.Status))
 					} else {
-						handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("unknown status: %s", status.Status))
+						channels.LogRequestIgnored(r, channel, fmt.Sprintf("unknown status: %s", status.Status))
+						in.Ignored(fmt.Sprintf("unknown status: %s", status.Status))
 					}
 					continue
 				}
@@ -207,15 +211,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 					clog.Error(models.ErrorExternal(strconv.Itoa(statusError.Code), statusError.Title))
 				}
 
-				event := models.NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
-				err := models.WriteStatusUpdate(ctx, h.Runtime(), event)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				events = append(events, event)
-				data = append(data, channels.NewStatusData(event))
-
+				in.Status(models.NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog))
 			}
 
 			for _, chError := range change.Value.Errors {
@@ -225,7 +221,8 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel *models.Ch
 		}
 
 	}
-	return events, data, nil
+
+	return in, ""
 }
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set

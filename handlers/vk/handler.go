@@ -255,14 +255,19 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	if msg.Text() == "" && len(msg.Attachments()) == 0 {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or attachment"))
 	}
-	// save message to our backend
-	if err := models.WriteMsg(ctx, h.Runtime(), msg, clog); err != nil {
+	// save message to our backend - a VK notification only ever carries the one message, so this is the
+	// degenerate case of a batch, but it keeps writing in the one place that owns it
+	in := channels.NewIncoming()
+	in.Msg(msg)
+
+	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// write required response
 	_, err = fmt.Fprint(w, responseIncomingMessage)
 
-	return []channels.Event{msg}, err
+	return channels.IncomingEvents(results), err
 }
 
 // DescribeURN handles VK contact details

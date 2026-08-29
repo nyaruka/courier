@@ -361,6 +361,34 @@ var invalidTimestamp = `{
   }]
 }`
 
+// a payload whose first message is fine and whose second can't be parsed - the unparseable one is in the data
+// rather than the transport, so redelivering it would fail the same way and the first would never land
+var validThenInvalidTimestamp = `{
+	"contacts":[{
+		"profile": {
+			"name": "Jerry Cooney"
+		},
+		"wa_id": "250788123123"
+	}],
+  "messages": [{
+    "from": "250788123123",
+    "id": "41",
+    "timestamp": "1454119029",
+    "text": {
+      "body": "hello world"
+    },
+    "type": "text"
+   },{
+    "from": "250788123123",
+    "id": "42",
+    "timestamp": "asdf",
+    "text": {
+      "body": "second message"
+    },
+    "type": "text"
+   }]
+}`
+
 var invalidMsg = `not json`
 
 var validStatus = `
@@ -726,6 +754,17 @@ var testCasesTurn = []IncomingTestCase{
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "invalid timestamp",
 	},
+	{
+		Label:                "Receive valid message ahead of an invalid one",
+		URL:                  turnWhatsappReceiveURL,
+		Data:                 validThenInvalidTimestamp,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "invalid timestamp",
+		ExpectedContactName:  Sp("Jerry Cooney"),
+		ExpectedMsgText:      Sp("hello world"),
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+	},
 
 	{
 		Label:                "Receive valid status",
@@ -758,11 +797,13 @@ var testCasesTurn = []IncomingTestCase{
 		},
 	},
 	{
-		Label:                "Receive invalid status",
-		URL:                  turnWhatsappReceiveURL,
-		Data:                 invalidStatus,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"unknown status: in_orbit"`,
+		Label:              "Receive invalid status",
+		URL:                turnWhatsappReceiveURL,
+		Data:               invalidStatus,
+		ExpectedRespStatus: 200,
+		// anchored at the start of the body because an unknown status used to write a whole "Ignored" response
+		// of its own and then carry on, leaving two JSON documents concatenated in the one response
+		ExpectedBodyContains: `{"message":"Events Handled","data":[{"type":"info","info":"unknown status: in_orbit"}]}`,
 	},
 	{
 		Label:                "Receive ignore status",
