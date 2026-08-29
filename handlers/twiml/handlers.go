@@ -172,7 +172,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		mediaURL := r.PostForm.Get(fmt.Sprintf("MediaUrl%d", i))
 		msg.WithAttachment(mediaURL)
 	}
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -207,7 +209,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 		status = models.NewStatusUpdateByExternalID(channel, form.MessageSID, msgStatus, clog)
 	}
 
-	var stopEvent *models.ChannelEvent
+	in := channels.NewIncoming(channel)
 
 	errorCode, _ := strconv.ParseInt(form.ErrorCode, 10, 64)
 	if errorCode != 0 {
@@ -217,8 +219,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 			}
 
-			// create a stop channel event
-			stopEvent = models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
+			// the contact has asked to stop, which we record alongside the status that told us
+			in.Event(models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog))
 		}
 		clog.Error(twilioError(errorCode))
 		if errorCode == errorThrottled {
@@ -226,18 +228,9 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 		}
 	}
 
-	in := channels.NewIncoming(channel)
-	if stopEvent != nil {
-		in.Event(stopEvent)
-	}
 	in.Status(status)
 
-	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
-	if err != nil {
-		return nil, err
-	}
-
-	return channels.IncomingEvents(results), h.WriteStatusSuccessResponse(ctx, w, []*models.StatusUpdate{status})
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

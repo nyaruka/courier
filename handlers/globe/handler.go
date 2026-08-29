@@ -79,7 +79,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "no messages, ignored")
 	}
 
-	msgs := make([]*models.MsgIn, 0, 1)
+	in := channels.NewIncoming(c)
 
 	// parse each inbound message
 	for _, glMsg := range payload.InboundSMSMessageList.InboundSMSMessage {
@@ -99,10 +99,10 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 		}
 
 		msg := models.NewIncomingMsg(c, urn, glMsg.Message, glMsg.MessageID, clog).WithReceivedOn(date)
-		msgs = append(msgs, msg)
+		in.Msg(msg)
 	}
 
-	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 //	{

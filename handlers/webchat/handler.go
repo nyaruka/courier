@@ -238,7 +238,9 @@ func (h *handler) receive(ctx context.Context, channel *models.Channel, w http.R
 	}
 
 	msg := models.NewIncomingMsg(channel, urn, payload.Text, "", clog)
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 // msgOutEvent is the event published to the conversation's chat socket for an outgoing message. Chat socket

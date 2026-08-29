@@ -105,7 +105,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 type moStatusData struct {
@@ -158,7 +160,9 @@ func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w 
 
 	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, statusPayload.Message.ID, msgStatus, clog)
-	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Status(status)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 type mtPayload struct {

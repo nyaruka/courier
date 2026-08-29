@@ -112,7 +112,9 @@ func (h *handler) receiveStopContact(ctx context.Context, channel *models.Channe
 
 	// create a stop channel event
 	channelEvent := models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
-	return handlers.WriteChannelEventAndResponse(ctx, h, channelEvent, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Event(channelEvent)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 // utility function to grab the form value for either the passed in name (if non-empty) or the first set
@@ -211,7 +213,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	msg := models.NewIncomingMsg(channel, urn, text, "", clog).WithReceivedOn(date)
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 // WriteMsgSuccessResponse writes our response in TWIML format
@@ -276,7 +280,9 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 
 	// write our status
 	status := models.NewStatusUpdate(channel, models.MsgUUID(msgUUID), msgStatus, clog)
-	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Status(status)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

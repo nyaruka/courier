@@ -76,8 +76,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 	// this is a start command, trigger a new conversation
 	if text == "/start" {
+		clog.Type = models.ChannelLogTypeEventReceive
+
 		event := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog).WithContactName(name).WithOccurredOn(date)
-		return handlers.WriteChannelEventAndResponse(ctx, h, event, w, r, clog)
+		in := channels.NewIncoming(channel)
+		in.Event(event)
+		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 	}
 
 	// normal message of some kind
@@ -147,7 +151,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 // isValidButtonURL approximates Telegram's validation of inline keyboard button URLs, which accepts HTTP(S) and

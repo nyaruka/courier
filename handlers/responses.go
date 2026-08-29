@@ -8,52 +8,59 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 )
 
-// WriteMsgsAndResponse writes the passed in messages and responds with the handler's message success response
-func WriteMsgsAndResponse(ctx context.Context, h channels.Handler, msgs []*models.MsgIn, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
-	// a request with nothing in it has no channel to speak of, and nothing to write
-	if len(msgs) == 0 {
-		return nil, h.WriteMsgSuccessResponse(ctx, w, msgs)
-	}
-
-	// every message in a request is for the channel the server resolved before calling the handler
-	in := channels.NewIncoming(msgs[0].Channel())
-	for _, m := range msgs {
-		in.Msg(m)
+// WriteIncomingAndResponse writes everything a request contained and then answers it.
+//
+// Which response that is comes from the log type its route was registered with: a receive route answers as a
+// receive, a status callback as a status. The shape a provider expects belongs to the endpoint it called
+// rather than to whatever the request happened to carry, which is why this reads the route's intent instead of
+// inspecting the batch - a status callback that also stopped a contact still answers as a status callback.
+func WriteIncomingAndResponse(ctx context.Context, h channels.Handler, in *channels.Incoming, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+	// a request we found nothing in is one we ignored, rather than one we handled emptily - which saves every
+	// handler that can parse its way to nothing from checking for it
+	if in.Len() == 0 {
+		return nil, WriteAndLogRequestIgnored(ctx, h, in.Channel(), w, r, "ignoring request, nothing to handle")
 	}
 
 	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
 	if err != nil {
-		return nil, err
+		// whatever was written before the failure still happened, so report it rather than losing it from our
+		// logging and stats
+		return channels.IncomingEvents(results), err
 	}
 
-	return channels.IncomingEvents(results), h.WriteMsgSuccessResponse(ctx, w, msgs)
-}
+	events := channels.IncomingEvents(results)
 
-// WriteMsgStatusAndResponse writes the passed in status and responds with the handler's status success response
-func WriteMsgStatusAndResponse(ctx context.Context, h channels.Handler, channel *models.Channel, status *models.StatusUpdate, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
-	in := channels.NewIncoming(channel)
-	in.Status(status)
+	switch clog.Type {
+	case models.ChannelLogTypeMsgReceive:
+		msgs := make([]*models.MsgIn, 0, len(events))
+		for _, e := range events {
+			if m, ok := e.(*models.MsgIn); ok {
+				msgs = append(msgs, m)
+			}
+		}
+		return events, h.WriteMsgSuccessResponse(ctx, w, msgs)
 
-	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
-	if err != nil {
-		return nil, err
+	case models.ChannelLogTypeMsgStatus:
+		statuses := make([]*models.StatusUpdate, 0, len(events))
+		for _, e := range events {
+			if s, ok := e.(*models.StatusUpdate); ok {
+				statuses = append(statuses, s)
+			}
+		}
+		return events, h.WriteStatusSuccessResponse(ctx, w, statuses)
+
+	case models.ChannelLogTypeEventReceive:
+		chEvents := make([]*models.ChannelEvent, 0, len(events))
+		for _, e := range events {
+			if ce, ok := e.(*models.ChannelEvent); ok {
+				chEvents = append(chEvents, ce)
+			}
+		}
+		return events, channels.WriteChannelEventsSuccess(w, chEvents)
+
+	default:
+		return events, channels.WriteIncomingResponse(w, results)
 	}
-
-	return channels.IncomingEvents(results), h.WriteStatusSuccessResponse(ctx, w, []*models.StatusUpdate{status})
-}
-
-// WriteChannelEventAndResponse writes the passed in channel event and responds with the standard event success
-// response
-func WriteChannelEventAndResponse(ctx context.Context, h channels.Handler, event *models.ChannelEvent, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
-	in := channels.NewIncoming(event.Channel())
-	in.Event(event)
-
-	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
-	if err != nil {
-		return nil, err
-	}
-
-	return channels.IncomingEvents(results), channels.WriteChannelEventSuccess(w, event)
 }
 
 // WriteAndLogRequestError logs the passed in error and writes the response to the response writer

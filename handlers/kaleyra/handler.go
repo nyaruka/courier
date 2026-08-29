@@ -100,7 +100,9 @@ func (h *handler) receiveMsg(ctx context.Context, channel *models.Channel, w htt
 	}
 
 	// write msg
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 var statusMapping = map[string]models.MsgStatus{
@@ -131,7 +133,9 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	}
 
 	// write status
-	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Status(status)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

@@ -69,12 +69,7 @@ func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w 
 		in.Status(models.NewStatusUpdateByExternalID(channel, s.MessageID, msgStatus, clog))
 	}
 
-	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
-	if err != nil {
-		return nil, err
-	}
-
-	return channels.IncomingEvents(results), channels.WriteIncomingResponse(w, results)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 type v3InboundPayload struct {
@@ -117,7 +112,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
 
-	msgs := []*models.MsgIn{}
+	in := channels.NewIncoming(channel)
 	for _, infobipMessage := range payload.Results {
 		messageID := infobipMessage.MessageID
 		dateString := infobipMessage.ReceivedAt
@@ -174,14 +169,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		for _, attachment := range attachments {
 			msg = msg.WithAttachment(attachment)
 		}
-		msgs = append(msgs, msg)
+		in.Msg(msg)
 	}
 
-	if len(msgs) == 0 {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
-	}
-
-	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 type v3OutboundPayload struct {

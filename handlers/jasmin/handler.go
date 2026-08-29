@@ -78,7 +78,9 @@ func (h *handler) receiveStatus(ctx context.Context, c *models.Channel, w http.R
 	}
 
 	status := models.NewStatusUpdateByExternalID(c, form.ID, reqStatus, clog)
-	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r, clog)
+	in := channels.NewIncoming(c)
+	in.Status(status)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 type moForm struct {
@@ -114,7 +116,9 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 	msg := models.NewIncomingMsg(c, urn, text, form.ID, clog).WithReceivedOn(time.Now().UTC())
 
 	// and finally queue our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(c)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {

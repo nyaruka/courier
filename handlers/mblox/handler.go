@@ -76,7 +76,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 
 		// write our status
 		status := models.NewStatusUpdateByExternalID(channel, payload.BatchID, msgStatus, clog)
-		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r, clog)
+		in := channels.NewIncoming(channel)
+		in.Status(status)
+		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 
 	} else if payload.Type == "mo_text" {
 		clog.Type = models.ChannelLogTypeMsgReceive
@@ -100,7 +102,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		msg := models.NewIncomingMsg(channel, urn, payload.Body, payload.ID, clog).WithReceivedOn(date.UTC())
 
 		// and finally write our message
-		return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+		in := channels.NewIncoming(channel)
+		in.Msg(msg)
+		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 	}
 
 	return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("not handled, unknown type: %s", payload.Type))

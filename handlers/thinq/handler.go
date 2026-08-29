@@ -84,7 +84,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown message type: %s", form.Type))
 	}
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 // guid: thinQ guid returned when an outbound message is sent via our API
@@ -126,7 +128,9 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 
 	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, form.GUID, msgStatus, clog)
-	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Status(status)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 type mtMessage struct {

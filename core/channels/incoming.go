@@ -62,6 +62,9 @@ func (i *Incoming) Ignored(details string) { i.items = append(i.items, incomingI
 // Len returns how many items have been added
 func (i *Incoming) Len() int { return len(i.items) }
 
+// Channel returns the channel the request this describes was for
+func (i *Incoming) Channel() *models.Channel { return i.channel }
+
 // what the response says for a message the provider deleted
 const msgDeletedInfo = "msg deleted"
 

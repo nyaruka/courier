@@ -590,11 +590,13 @@ var testCases = []IncomingTestCase{
 	},
 	{
 
-		Label:                "Receive Start Message",
-		URL:                  "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
-		Data:                 startMsg,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
+		Label:              "Receive Start Message",
+		URL:                "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+		Data:               startMsg,
+		ExpectedRespStatus: 200,
+		// this arrives on the receive route but produces a channel event, so it answers as an event - naming
+		// the envelope rather than matching "Accepted", which both envelopes contain
+		ExpectedBodyContains: `{"message":"Event Accepted","data":[{"type":"event"`,
 		ExpectedContactName:  Sp("Nic Pottier"),
 		ExpectedEvents: []ExpectedEvent{
 			{Type: models.EventTypeNewConversation, URN: "telegram:3527065#nicpottier", Time: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},

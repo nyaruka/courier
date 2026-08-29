@@ -131,7 +131,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 		channelEvent := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog)
 
-		return handlers.WriteChannelEventAndResponse(ctx, h, channelEvent, w, r, clog)
+		in := channels.NewIncoming(channel)
+		in.Event(channelEvent)
+		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 	}
 
 	// unknown event type (we only deal with subscribe)
@@ -149,7 +151,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 // WriteMsgSuccessResponse writes our response

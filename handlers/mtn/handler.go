@@ -87,7 +87,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 
 		// create and write the message
 		msg := models.NewIncomingMsg(channel, urn, payload.Message, "", clog).WithReceivedOn(date)
-		return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+		in := channels.NewIncoming(channel)
+		in.Msg(msg)
+		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 
 	} else {
 		clog.Type = models.ChannelLogTypeMsgStatus
@@ -108,7 +110,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 
 		// write our status
 		status := models.NewStatusUpdateByExternalID(channel, payload.TransactionID, msgStatus, clog)
-		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r, clog)
+		in := channels.NewIncoming(channel)
+		in.Status(status)
+		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 	}
 }
 
