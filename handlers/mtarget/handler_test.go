@@ -49,11 +49,13 @@ var incomingCases = []IncomingTestCase{
 		ExpectedBodyContains: "not a possible number",
 	},
 	{
-		Label:                "Receive Stop",
-		URL:                  receiveURL,
-		Data:                 receiveStop,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
+		Label:              "Receive Stop",
+		URL:                receiveURL,
+		Data:               receiveStop,
+		ExpectedRespStatus: 200,
+		// this arrives on the receive route but produces a channel event, so it answers as an event - naming
+		// the envelope rather than matching "Accepted", which both envelopes contain
+		ExpectedBodyContains: `{"message":"Event Accepted","data":[{"type":"event"`,
 		ExpectedEvents: []ExpectedEvent{
 			{Type: models.EventTypeStopContact, URN: "tel:+923161909799"},
 		},

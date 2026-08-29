@@ -76,6 +76,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 	// this is a start command, trigger a new conversation
 	if text == "/start" {
+		clog.Type = models.ChannelLogTypeEventReceive
+
 		event := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog).WithContactName(name).WithOccurredOn(date)
 		in := channels.NewIncoming(channel)
 		in.Event(event)

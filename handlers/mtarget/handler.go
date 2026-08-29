@@ -135,6 +135,8 @@ func (h *handler) receiveMsg(ctx context.Context, c *models.Channel, w http.Resp
 
 	// if this a stop command, shortcut stopping that contact
 	if keyword == "Stop" {
+		clog.Type = models.ChannelLogTypeEventReceive
+
 		stop := models.NewChannelEvent(c, models.EventTypeStopContact, urn, clog)
 		in := channels.NewIncoming(c)
 		in.Event(stop)
