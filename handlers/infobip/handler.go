@@ -69,12 +69,7 @@ func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w 
 		in.Status(models.NewStatusUpdateByExternalID(channel, s.MessageID, msgStatus, clog))
 	}
 
-	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
-	if err != nil {
-		return nil, err
-	}
-
-	return channels.IncomingEvents(results), channels.WriteIncomingResponse(w, results)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 type v3InboundPayload struct {
@@ -181,7 +176,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
 
-	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
+	in := channels.NewIncoming(channel)
+	for _, m := range msgs {
+		in.Msg(m)
+	}
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 type v3OutboundPayload struct {

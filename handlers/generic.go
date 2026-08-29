@@ -31,7 +31,9 @@ func NewTelReceiveHandler(h channels.Handler, fromField string, bodyField string
 		}
 		// build our msg
 		msg := models.NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
-		return WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+		in := channels.NewIncoming(c)
+		in.Msg(msg)
+		return WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 	}
 }
 
@@ -56,7 +58,9 @@ func NewExternalIDStatusHandler(h channels.Handler, statuses map[string]models.M
 
 		// create our status
 		status := models.NewStatusUpdateByExternalID(c, externalID, sValue, clog)
-		return WriteMsgStatusAndResponse(ctx, h, c, status, w, r, clog)
+		in := channels.NewIncoming(c)
+		in.Status(status)
+		return WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 	}
 }
 

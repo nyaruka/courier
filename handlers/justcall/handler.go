@@ -123,7 +123,9 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 	}
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(c)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 var statusMapping = map[string]models.MsgStatus{
@@ -144,7 +146,9 @@ func (h *handler) statusMessage(ctx context.Context, c *models.Channel, w http.R
 	}
 	// write our status
 	status := models.NewStatusUpdateByExternalID(c, fmt.Sprint(payload.Data.MessageID), msgStatus, clog)
-	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r, clog)
+	in := channels.NewIncoming(c)
+	in.Status(status)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 type mtPayload struct {

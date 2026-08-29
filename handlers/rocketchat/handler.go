@@ -79,7 +79,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		msg.WithAttachment(attachment.URL)
 	}
 
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 // BuildAttachmentRequest download media for message attachment with RC auth_token/user_id set

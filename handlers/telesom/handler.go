@@ -62,7 +62,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	dbMsg := models.NewIncomingMsg(channel, urn, form.Message, "", clog)
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{dbMsg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(dbMsg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 
 }
 

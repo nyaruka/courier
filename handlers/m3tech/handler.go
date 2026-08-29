@@ -59,7 +59,9 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 
 	// create and write the message
 	msg := models.NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(c)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 // WriteMsgSuccessResponse writes a success response for the messages

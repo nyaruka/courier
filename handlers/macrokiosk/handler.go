@@ -75,7 +75,9 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	}
 	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, form.MsgID, msgStatus, clog)
-	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Status(status)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 
 }
 
@@ -130,7 +132,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 	// create and write the message
 	msg := models.NewIncomingMsg(channel, urn, form.Text, form.MsgID, clog).WithReceivedOn(date.UTC())
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 // WriteMsgSuccessResponse

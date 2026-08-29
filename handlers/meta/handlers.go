@@ -240,14 +240,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 		return channels.IncomingEvents(results), handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
-	if err != nil {
-		// whatever was written before the failure still happened, so report it rather than losing it from our
-		// logging and stats - the response is still an error, though this handler reports those as 200s
-		return channels.IncomingEvents(results), err
-	}
-
-	return channels.IncomingEvents(results), channels.WriteIncomingResponse(w, results)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 // parseWhatsAppPayload turns a notification into the set of things it contained, without writing any of them -

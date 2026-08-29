@@ -98,7 +98,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 			msg.WithAttachment(attURL)
 		}
 
-		return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+		in := channels.NewIncoming(channel)
+		in.Msg(msg)
+		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 	}
 	return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 }

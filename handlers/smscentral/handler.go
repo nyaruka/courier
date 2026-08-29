@@ -59,7 +59,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	// build our msg
 	msg := models.NewIncomingMsg(channel, urn, form.Message, "", clog)
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

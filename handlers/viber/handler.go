@@ -175,7 +175,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		// build the channel event
 		channelEvent := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog).WithContactName(ContactName)
 
-		return handlers.WriteChannelEventAndResponse(ctx, h, channelEvent, w, r, clog)
+		in := channels.NewIncoming(channel)
+		in.Event(channelEvent)
+		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 
 	case "unsubscribed":
 		clog.Type = models.ChannelLogTypeEventReceive
@@ -190,13 +192,17 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 		// build the channel event
 		channelEvent := models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
 
-		return handlers.WriteChannelEventAndResponse(ctx, h, channelEvent, w, r, clog)
+		in := channels.NewIncoming(channel)
+		in.Event(channelEvent)
+		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 
 	case "failed":
 		clog.Type = models.ChannelLogTypeMsgStatus
 
 		msgStatus := models.NewStatusUpdateByExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), models.MsgStatusFailed, clog)
-		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r, clog)
+		in := channels.NewIncoming(channel)
+		in.Status(msgStatus)
+		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 
 	case "delivered":
 		clog.Type = models.ChannelLogTypeMsgStatus
@@ -262,7 +268,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 			msg.WithAttachment(mediaURL)
 		}
 		// and finally write our message
-		return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+		in := channels.NewIncoming(channel)
+		in.Msg(msg)
+		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 	}
 
 	return nil, channels.WriteError(w, http.StatusBadRequest, fmt.Errorf("not handled, unknown event: %s", event))

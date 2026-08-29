@@ -86,7 +86,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	msg := models.NewIncomingMsg(channel, urn, payload.Body.Text, payload.Service.RequestID, clog).WithReceivedOn(date)
 
 	// and write it
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 // Start Mobile expects a XML response from a message receive request

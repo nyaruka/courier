@@ -45,7 +45,16 @@ func WriteAndLogUnauthorized(w http.ResponseWriter, r *http.Request, c *models.C
 
 // WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it
 func WriteChannelEventSuccess(w http.ResponseWriter, event *models.ChannelEvent) error {
-	return WriteDataResponse(w, http.StatusOK, "Event Accepted", []any{NewEventReceiveData(event)})
+	return WriteChannelEventsSuccess(w, []*models.ChannelEvent{event})
+}
+
+// WriteChannelEventsSuccess writes a JSON response for the passed in events indicating we handled them
+func WriteChannelEventsSuccess(w http.ResponseWriter, events []*models.ChannelEvent) error {
+	data := make([]any, len(events))
+	for i, e := range events {
+		data[i] = NewEventReceiveData(e)
+	}
+	return WriteDataResponse(w, http.StatusOK, "Event Accepted", data)
 }
 
 // WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it

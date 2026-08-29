@@ -144,12 +144,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 	}
 	in.Status(status)
 
-	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
-	if err != nil {
-		return nil, err
-	}
-
-	return channels.IncomingEvents(results), h.WriteStatusSuccessResponse(ctx, w, []*models.StatusUpdate{status})
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
@@ -207,7 +202,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		}
 	}
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

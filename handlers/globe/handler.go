@@ -102,7 +102,11 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 		msgs = append(msgs, msg)
 	}
 
-	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
+	in := channels.NewIncoming(c)
+	for _, m := range msgs {
+		in.Msg(m)
+	}
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 //	{

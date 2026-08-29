@@ -64,7 +64,9 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 	}
 
 	msg := models.NewIncomingMsg(c, urn, payload.MessageText, "", clog)
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(c)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 type mtPayload struct {

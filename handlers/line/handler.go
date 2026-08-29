@@ -170,7 +170,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
 
-	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
+	in := channels.NewIncoming(channel)
+	for _, m := range msgs {
+		in.Msg(m)
+	}
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 
 }
 

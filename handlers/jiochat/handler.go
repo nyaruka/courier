@@ -123,13 +123,19 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 	// subscribe event, trigger a new conversation
 	if payload.MsgType == "event" && payload.Event == "subscribe" {
+		clog.Type = models.ChannelLogTypeEventReceive
+
 		channelEvent := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog)
 
-		return handlers.WriteChannelEventAndResponse(ctx, h, channelEvent, w, r, clog)
+		in := channels.NewIncoming(channel)
+		in.Event(channelEvent)
+		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 	}
 
 	// unknown event type (we only deal with subscribe)
 	if payload.MsgType == "event" {
+		clog.Type = models.ChannelLogTypeEventReceive
+
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "unknown event type")
 	}
 
@@ -141,7 +147,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []*models.MsgIn{msg}, w, r, clog)
+	in := channels.NewIncoming(channel)
+	in.Msg(msg)
+	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 
 func buildMediaURL(mediaID string) string {
