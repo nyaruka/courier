@@ -206,7 +206,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		URL:                  "/c/fba/receive",
 		Data:                 string(test.ReadFile("./testdata/fba/different_page.json")),
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"data":[]`,
+		ExpectedBodyContains: "ignoring request, nothing to handle",
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -240,7 +240,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		URL:                  "/c/fba/receive",
 		Data:                 string(test.ReadFile("./testdata/fba/no_messaging_entries.json")),
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Handled",
+		ExpectedBodyContains: "ignoring request, nothing to handle",
 		PrepRequest:          addValidSignature,
 	},
 	{

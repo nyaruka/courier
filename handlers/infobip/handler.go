@@ -112,7 +112,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
 
-	msgs := []*models.MsgIn{}
+	in := channels.NewIncoming(channel)
 	for _, infobipMessage := range payload.Results {
 		messageID := infobipMessage.MessageID
 		dateString := infobipMessage.ReceivedAt
@@ -169,17 +169,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		for _, attachment := range attachments {
 			msg = msg.WithAttachment(attachment)
 		}
-		msgs = append(msgs, msg)
+		in.Msg(msg)
 	}
 
-	if len(msgs) == 0 {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
-	}
-
-	in := channels.NewIncoming(channel)
-	for _, m := range msgs {
-		in.Msg(m)
-	}
 	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 

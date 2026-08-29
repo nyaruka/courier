@@ -106,7 +106,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "no messages, ignored")
 	}
 
-	msgs := make([]*models.MsgIn, 0, 1)
+	in := channels.NewIncoming(c)
 
 	// parse each inbound message
 	for _, pmMsg := range payload.Message {
@@ -142,14 +142,10 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("no text"))
 		}
 		msg := models.NewIncomingMsg(c, urn, pmMsg.Content.Text, pmMsg.ID, clog)
-		msgs = append(msgs, msg)
+		in.Msg(msg)
 	}
 
 	// and finally write our message
-	in := channels.NewIncoming(c)
-	for _, m := range msgs {
-		in.Msg(m)
-	}
 	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 }
 

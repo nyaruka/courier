@@ -100,7 +100,7 @@ var instagramIncomingTests = []IncomingTestCase{
 		URL:                  "/c/ig/receive",
 		Data:                 string(test.ReadFile("./testdata/ig/different_page.json")),
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"data":[]`,
+		ExpectedBodyContains: "ignoring request, nothing to handle",
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -134,7 +134,7 @@ var instagramIncomingTests = []IncomingTestCase{
 		URL:                  "/c/ig/receive",
 		Data:                 string(test.ReadFile("./testdata/ig/no_messaging_entries.json")),
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Handled",
+		ExpectedBodyContains: "ignoring request, nothing to handle",
 		PrepRequest:          addValidSignature,
 	},
 	{

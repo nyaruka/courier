@@ -254,7 +254,7 @@ var testCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 missingText,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "ignoring request, no message",
+		ExpectedBodyContains: "ignoring request, nothing to handle",
 	},
 	{
 		Label:                "Invalid URN",

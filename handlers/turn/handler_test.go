@@ -668,14 +668,14 @@ var testCasesTurn = []IncomingTestCase{
 		URL:                  turnWhatsappReceiveURL,
 		Data:                 unsupportedTypeMsg,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Events Handled",
+		ExpectedBodyContains: "ignoring request, nothing to handle",
 	},
 	{
 		Label:                "Receive message with errors, logged and no message written",
 		URL:                  turnWhatsappReceiveURL,
 		Data:                 errorMsg,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Events Handled",
+		ExpectedBodyContains: "ignoring request, nothing to handle",
 		ExpectedErrors:       []*svclogs.Error{models.ErrorExternal("131051", "Unsupported message type")},
 	},
 	{

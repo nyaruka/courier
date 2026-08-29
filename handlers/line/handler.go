@@ -120,7 +120,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		return nil, err
 	}
 
-	msgs := []*models.MsgIn{}
+	in := channels.NewIncoming(channel)
 
 	for _, lineEvent := range payload.Events {
 		if lineEvent.ReplyToken == "" || (lineEvent.Source.Type == "" && lineEvent.Source.UserID == "") || (lineEvent.Message.Type == "" && lineEvent.Message.ID == "") {
@@ -163,17 +163,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 			msg.WithAttachment(mediaURL)
 		}
 
-		msgs = append(msgs, msg)
+		in.Msg(msg)
 	}
 
-	if len(msgs) == 0 {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
-	}
-
-	in := channels.NewIncoming(channel)
-	for _, m := range msgs {
-		in.Msg(m)
-	}
 	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
 
 }

@@ -15,6 +15,12 @@ import (
 // rather than to whatever the request happened to carry, which is why this reads the route's intent instead of
 // inspecting the batch - a status callback that also stopped a contact still answers as a status callback.
 func WriteIncomingAndResponse(ctx context.Context, h channels.Handler, in *channels.Incoming, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+	// a request we found nothing in is one we ignored, rather than one we handled emptily - which saves every
+	// handler that can parse its way to nothing from checking for it
+	if in.Len() == 0 {
+		return nil, WriteAndLogRequestIgnored(ctx, h, in.Channel(), w, r, "ignoring request, nothing to handle")
+	}
+
 	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
 	if err != nil {
 		// whatever was written before the failure still happened, so report it rather than losing it from our

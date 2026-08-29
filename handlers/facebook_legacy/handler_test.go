@@ -516,7 +516,7 @@ var testCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 attachmentReel,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Handled",
+		ExpectedBodyContains: "ignoring request, nothing to handle",
 		ExpectedEvents:       []ExpectedEvent{},
 	},
 	{
@@ -524,7 +524,7 @@ var testCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 attachmentFallback,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Handled",
+		ExpectedBodyContains: "ignoring request, nothing to handle",
 		ExpectedEvents:       []ExpectedEvent{},
 	},
 	{
@@ -613,7 +613,7 @@ var testCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 differentPage,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"data":[]`,
+		ExpectedBodyContains: "ignoring request, nothing to handle",
 	},
 	{
 		Label:                "Echo",
@@ -641,7 +641,7 @@ var testCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 noMessagingEntries,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Handled",
+		ExpectedBodyContains: "ignoring request, nothing to handle",
 	},
 	{
 		Label:                "Unknown Messaging Entry",

@@ -209,7 +209,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 		status = models.NewStatusUpdateByExternalID(channel, form.MessageSID, msgStatus, clog)
 	}
 
-	var stopEvent *models.ChannelEvent
+	in := channels.NewIncoming(channel)
 
 	errorCode, _ := strconv.ParseInt(form.ErrorCode, 10, 64)
 	if errorCode != 0 {
@@ -219,8 +219,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 			}
 
-			// create a stop channel event
-			stopEvent = models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
+			// the contact has asked to stop, which we record alongside the status that told us
+			in.Event(models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog))
 		}
 		clog.Error(twilioError(errorCode))
 		if errorCode == errorThrottled {
@@ -228,10 +228,6 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 		}
 	}
 
-	in := channels.NewIncoming(channel)
-	if stopEvent != nil {
-		in.Event(stopEvent)
-	}
 	in.Status(status)
 
 	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)

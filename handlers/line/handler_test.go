@@ -354,7 +354,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 missingMessage,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "ignoring request, no message",
+		ExpectedBodyContains: "ignoring request, nothing to handle",
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -370,7 +370,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 noEvent,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "ignoring request, no message",
+		ExpectedBodyContains: "ignoring request, nothing to handle",
 		PrepRequest:          addValidSignature,
 	},
 	{
