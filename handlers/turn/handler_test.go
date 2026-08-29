@@ -361,6 +361,34 @@ var invalidTimestamp = `{
   }]
 }`
 
+// a payload whose first message is fine and whose second can't be parsed - the unparseable one is in the data
+// rather than the transport, so redelivering it would fail the same way and the first would never land
+var validThenInvalidTimestamp = `{
+	"contacts":[{
+		"profile": {
+			"name": "Jerry Cooney"
+		},
+		"wa_id": "250788123123"
+	}],
+  "messages": [{
+    "from": "250788123123",
+    "id": "41",
+    "timestamp": "1454119029",
+    "text": {
+      "body": "hello world"
+    },
+    "type": "text"
+   },{
+    "from": "250788123123",
+    "id": "42",
+    "timestamp": "asdf",
+    "text": {
+      "body": "second message"
+    },
+    "type": "text"
+   }]
+}`
+
 var invalidMsg = `not json`
 
 var validStatus = `
@@ -725,6 +753,17 @@ var testCasesTurn = []IncomingTestCase{
 		Data:                 invalidTimestamp,
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "invalid timestamp",
+	},
+	{
+		Label:                "Receive valid message ahead of an invalid one",
+		URL:                  turnWhatsappReceiveURL,
+		Data:                 validThenInvalidTimestamp,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "invalid timestamp",
+		ExpectedContactName:  Sp("Jerry Cooney"),
+		ExpectedMsgText:      Sp("hello world"),
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
 	},
 
 	{

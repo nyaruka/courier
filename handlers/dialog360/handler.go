@@ -90,7 +90,10 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 
 	in, ignore := h.parseWhatsAppPayload(channel, payload, r, clog)
 	if ignore != "" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, ignore)
+		// the failure is in the payload itself, so asking for it again wouldn't get any further - write whatever
+		// was parsed ahead of it rather than dropping it
+		results, _ := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+		return channels.IncomingEvents(results), handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, ignore)
 	}
 
 	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)

@@ -220,7 +220,10 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 
 	in, err := h.parseEvents(channel, payload, clog)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		// the failure is in the payload itself, so asking for it again wouldn't get any further - write whatever
+		// was parsed ahead of it rather than dropping it
+		results, _ := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+		return channels.IncomingEvents(results), handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
