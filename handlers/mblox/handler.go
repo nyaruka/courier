@@ -36,7 +36,7 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.ReceiveJSON(h, h.receiveEvent))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h.receiveEvent))
 	return nil
 }
 

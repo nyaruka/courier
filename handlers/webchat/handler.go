@@ -58,7 +58,7 @@ func newHandler() channels.Handler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "start", models.ChannelLogTypeChatStart, withCORS(h.start))
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, withCORS(handlers.ReceiveJSON(h, h.receive)))
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, withCORS(channels.Receive(h, handlers.JSONPayload(h.receive))))
 
 	// the chat widget runs on arbitrary third-party websites, so both endpoints need CORS preflight support
 	r.Add(h, http.MethodOptions, "start", models.ChannelLogTypeUnknown, h.preflight)

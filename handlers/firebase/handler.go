@@ -50,7 +50,7 @@ func newHandler() channels.Handler {
 }
 
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.Receive(h, h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.Add(h, http.MethodPost, "register", models.ChannelLogTypeEventReceive, h.registerContact)
 	return nil
 }
@@ -109,13 +109,13 @@ func (h *handler) registerContact(ctx context.Context, channel *models.Channel, 
 	form := &registerForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return nil, channels.WriteAndLogRequestError(ctx, h, w, r, channel, err)
 	}
 
 	// create our URN
 	urn, err := urns.New(urns.Firebase, form.URN)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return nil, channels.WriteAndLogRequestError(ctx, h, w, r, channel, err)
 	}
 
 	// create our contact

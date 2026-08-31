@@ -45,7 +45,7 @@ func newWAHandler(channelType models.ChannelType, name string) channels.Handler 
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.ReceiveJSON(h, h.receiveEvent))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h.receiveEvent))
 	return nil
 }
 

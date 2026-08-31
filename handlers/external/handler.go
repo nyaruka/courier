@@ -67,23 +67,23 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.Receive(h, h.receiveMessage))
-	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, handlers.Receive(h, h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 
 	sentHandler := h.buildStatusHandler("sent")
-	r.Add(h, http.MethodGet, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
-	r.Add(h, http.MethodPost, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
+	r.AddReceive(h, http.MethodGet, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
+	r.AddReceive(h, http.MethodPost, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
 
 	deliveredHandler := h.buildStatusHandler("delivered")
-	r.Add(h, http.MethodGet, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
-	r.Add(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
+	r.AddReceive(h, http.MethodGet, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
+	r.AddReceive(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
 
 	failedHandler := h.buildStatusHandler("failed")
-	r.Add(h, http.MethodGet, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
-	r.Add(h, http.MethodPost, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
+	r.AddReceive(h, http.MethodGet, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
+	r.AddReceive(h, http.MethodPost, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
 
-	r.Add(h, http.MethodPost, "stopped", models.ChannelLogTypeEventReceive, handlers.Receive(h, h.receiveStopContact))
-	r.Add(h, http.MethodGet, "stopped", models.ChannelLogTypeEventReceive, handlers.Receive(h, h.receiveStopContact))
+	r.AddReceive(h, http.MethodPost, "stopped", models.ChannelLogTypeEventReceive, h.receiveStopContact)
+	r.AddReceive(h, http.MethodGet, "stopped", models.ChannelLogTypeEventReceive, h.receiveStopContact)
 
 	return nil
 }
@@ -230,11 +230,11 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 	return err
 }
 
-// buildStatusHandler deals with building a handler that takes what status is received in the URL
-func (h *handler) buildStatusHandler(status string) channels.HandleFunc {
-	return handlers.Receive(h, func(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+// buildStatusHandler deals with building a receive function that takes what status is received in the URL
+func (h *handler) buildStatusHandler(status string) channels.ReceiveFunc {
+	return func(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 		return h.receiveStatus(ctx, status, channel, r, in, clog)
-	})
+	}
 }
 
 type statusForm struct {

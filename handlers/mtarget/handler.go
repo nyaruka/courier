@@ -45,10 +45,10 @@ var statusMapping = map[string]models.MsgStatus{
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.Receive(h, h.receiveMsg))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
 
-	statusHandler := handlers.NewExternalIDStatusHandler(h, statusMapping, "MsgId", "Status")
-	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, statusHandler)
+	statusHandler := handlers.NewExternalIDStatusHandler(statusMapping, "MsgId", "Status")
+	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, statusHandler)
 	return nil
 }
 

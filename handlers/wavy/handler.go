@@ -34,9 +34,9 @@ func init() {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.ReceiveJSON(h, h.receiveMessage))
-	r.Add(h, http.MethodPost, "sent", models.ChannelLogTypeMsgStatus, handlers.ReceiveJSON(h, h.sentStatusMessage))
-	r.Add(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, handlers.ReceiveJSON(h, h.deliveredStatusMessage))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "sent", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h.sentStatusMessage))
+	r.AddReceive(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h.deliveredStatusMessage))
 	return nil
 }
 

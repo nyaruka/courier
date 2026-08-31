@@ -8,13 +8,13 @@
 // of each one so that the response and our stats describe what actually happened rather than what was
 // attempted - and it opts out silently, which is what makes it worth stating.
 //
-// Most handlers don't hand anything over explicitly, because handlers.Receive does it for them: a receive
-// function is given an Incoming, fills it in from the request, and returns. Writing it, answering the request
-// and logging what the request was are all the seam's. A branch whose provider dictates the response body -
-// a verification challenge echoed back, Viber's welcome message - returns Reply with that body, and the batch
-// is still written first. The routes that stay on the older HandleFunc are the ones that aren't receiving
-// anything at all: the GET verification handshakes, a chat widget's CORS preflight, Firebase's contact
-// registration.
+// Most handlers don't hand anything over explicitly, because their routes are registered with AddReceive: a
+// receive function is given an Incoming, fills it in from the request, and returns. Writing it, answering the
+// request and logging what the request was are all the seam's. A branch whose provider dictates the response
+// body - a verification challenge echoed back, Viber's welcome message - returns Reply with that body, and
+// the batch is still written first. The routes registered with Add and a raw HandleFunc are the ones that
+// aren't receiving anything at all: the GET verification handshakes, a chat widget's CORS preflight,
+// Firebase's contact registration.
 //
 // What a request is being handled as travels on the Incoming rather than on the channel log. It starts as
 // whatever the route was registered as, and a route serving more than one purpose says which with As(). That

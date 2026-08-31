@@ -55,7 +55,7 @@ func newHandler() channels.Handler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
-	r.Add(h, http.MethodPost, "", models.ChannelLogTypeMsgReceive, handlers.Receive(h, h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
@@ -71,7 +71,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel *models.Channel, w http
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return nil, channels.WriteAndLogRequestError(ctx, h, w, r, channel, err)
 	}
 
 	dictOrder := []string{channel.StringConfigForKey(models.ConfigSecret, ""), form.Timestamp, form.Nonce}

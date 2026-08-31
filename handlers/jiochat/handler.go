@@ -55,9 +55,9 @@ func newHandler() channels.Handler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
-	r.Add(h, http.MethodPost, "rcv/msg/message", models.ChannelLogTypeMsgReceive, handlers.ReceiveJSON(h, h.receiveMessage))
-	r.Add(h, http.MethodPost, "rcv/event/menu", models.ChannelLogTypeEventReceive, handlers.ReceiveJSON(h, h.receiveMessage))
-	r.Add(h, http.MethodPost, "rcv/event/follow", models.ChannelLogTypeEventReceive, handlers.ReceiveJSON(h, h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "rcv/msg/message", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "rcv/event/menu", models.ChannelLogTypeEventReceive, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "rcv/event/follow", models.ChannelLogTypeEventReceive, handlers.JSONPayload(h.receiveMessage))
 	return nil
 }
 
@@ -73,7 +73,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel *models.Channel, w http
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return nil, channels.WriteAndLogRequestError(ctx, h, w, r, channel, err)
 	}
 
 	dictOrder := []string{channel.StringConfigForKey(configAppSecret, ""), form.Timestamp, form.Nonce}

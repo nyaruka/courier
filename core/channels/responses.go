@@ -19,6 +19,12 @@ func WriteAndLogRequestError(ctx context.Context, h Handler, w http.ResponseWrit
 	return h.WriteRequestError(ctx, w, err)
 }
 
+// WriteAndLogRequestIgnored writes a JSON response saying the request was ignored and logs why
+func WriteAndLogRequestIgnored(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Request, c *models.Channel, details string) error {
+	LogRequestIgnored(r, c, details)
+	return h.WriteRequestIgnored(ctx, w, details)
+}
+
 // WriteError writes a JSON response for the passed in error
 func WriteError(w http.ResponseWriter, statusCode int, err error) error {
 	errors := []any{NewErrorData(err.Error())}

@@ -33,8 +33,8 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.ReceiveJSON(h, h.receiveMessage))
-	r.Add(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, handlers.ReceiveJSON(h, h.statusMessage))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h.statusMessage))
 	return nil
 }
 
@@ -289,7 +289,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		for _, attachmentStr := range msg.Attachments() {
 			mimeType, url := handlers.SplitAttachment(attachmentStr)
 			if mimeType == "" || url == "" {
-				handlers.WriteAndLogRequestError(ctx, h, msg.Channel(), nil, nil, fmt.Errorf("ignoring invalid attachment: %s", attachmentStr))
+				clog.Error(models.ErrorAttachmentNotDecodable())
 				continue
 			}
 
