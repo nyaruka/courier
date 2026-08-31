@@ -41,7 +41,7 @@ func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (*models.
 	return models.GetChannel(ctx, "MCK", "e4bb1578-29da-4fa5-a214-9da19dd24230")
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *mockHandler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
 	return nil
@@ -114,7 +114,7 @@ func (h *mockHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWr
 	return channels.WriteIgnored(w, details)
 }
 
-// ReceiveMsg sends the passed in message, returning any error
+// receiveMsg receives a message from the request form, returning any error
 func (h *mockHandler) receiveMsg(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	r.ParseForm()
 	from := r.Form.Get("from")

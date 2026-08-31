@@ -49,7 +49,7 @@ func init() {
 	channels.RegisterHandler(NewHandler("DA", "DartMedia", sendURL, maxMsgLength))
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.AddReceive(h, http.MethodGet, "delivered", models.ChannelLogTypeMsgStatus, h.receiveStatus)
@@ -63,7 +63,7 @@ type moForm struct {
 	MessageID string `name:"messageid"`
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
+// receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -96,7 +96,7 @@ type statusForm struct {
 	Status    string `name:"status"`
 }
 
-// receiveStatus is our HTTP handler function for status updates
+// receiveStatus is our receive function for status updates
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -127,20 +127,19 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 		return fmt.Errorf("parsing failed: messageid '%s' is not a UUID", form.MessageID)
 	}
 
-	// write our status
 	status := models.NewStatusUpdate(channel, models.MsgUUID(msgUUID), msgStatus, clog)
 	in.Status(status)
 	return nil
 }
 
-// DartMedia expects "000" from a message receive request
+// DartMedia expects "000" from a status request
 func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")
 	return err
 }
 
-// DartMedia expects "000" from a status request
+// DartMedia expects "000" from a message receive request
 func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")

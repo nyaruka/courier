@@ -43,7 +43,7 @@ var statusMapping = map[string]models.MsgStatus{
 	"6": models.MsgStatusFailed,
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
 
@@ -52,7 +52,7 @@ func (h *handler) Initialize(r *channels.Routes) error {
 	return nil
 }
 
-// ReceiveMsg handles both MO messages and Stop commands
+// receiveMsg handles both MO messages and Stop commands
 func (h *handler) receiveMsg(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	err := r.ParseForm()
 	if err != nil {
@@ -68,7 +68,7 @@ func (h *handler) receiveMsg(ctx context.Context, c *models.Channel, r *http.Req
 		return fmt.Errorf("missing required field 'Msisdn'")
 	}
 
-	// if we have a long message id, then this is part of a multipart message, we don't write the message until
+	// if we have a long message id, then this is part of a multipart message, we don't create the message until
 	// we have received all parts, which we buffer in Redis
 	longID := r.Form.Get("msglong.id")
 	if longID != "" {
@@ -142,7 +142,6 @@ func (h *handler) receiveMsg(ctx context.Context, c *models.Channel, r *http.Req
 		return nil
 	}
 
-	// otherwise, create and write the message
 	msg := models.NewIncomingMsg(c, urn, text, msgID, clog).WithReceivedOn(time.Now().UTC())
 	in.Msg(msg)
 	return nil

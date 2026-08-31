@@ -72,7 +72,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("VP"), "Viber")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h.receiveEvent))
 	return nil
@@ -116,7 +116,7 @@ type welcomeMessagePayload struct {
 	Sender       map[string]string `json:"sender,omitempty"`
 }
 
-// receiveEvent is our HTTP handler function for incoming messages
+// receiveEvent is our receive function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if err := h.validateSignature(channel, r); err != nil {
 		return err

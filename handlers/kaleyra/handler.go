@@ -41,7 +41,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("KWA"), "Kaleyra WhatsApp")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
 	r.AddReceive(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
@@ -62,7 +62,7 @@ type moStatusForm struct {
 	Status string `name:"status" validate:"required"`
 }
 
-// receiveMsg is our HTTP handler function for incoming messages
+// receiveMsg is our receive function for incoming messages
 func (h *handler) receiveMsg(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &moMsgForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -110,7 +110,7 @@ var statusMapping = map[string]models.MsgStatus{
 	"read":      models.MsgStatusRead,
 }
 
-// receiveStatus is our HTTP handler function for outgoing messages statuses
+// receiveStatus is our receive function for status updates
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &moStatusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)

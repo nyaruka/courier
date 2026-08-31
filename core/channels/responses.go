@@ -13,7 +13,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-// WriteAndLogRequestError writes a JSON response for the passed in message and logs an info message
+// WriteAndLogRequestError writes a JSON response for the passed in error and logs an info message
 func WriteAndLogRequestError(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Request, c *models.Channel, err error) error {
 	LogRequestError(r, c, err)
 	return h.WriteRequestError(ctx, w, err)
@@ -51,7 +51,7 @@ func WriteChannelEventsSuccess(w http.ResponseWriter, events []*models.ChannelEv
 	return WriteDataResponse(w, http.StatusOK, "Event Accepted", data)
 }
 
-// WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it
+// WriteMsgSuccess writes a JSON response for the passed in msgs indicating we handled them
 func WriteMsgSuccess(w http.ResponseWriter, msgs []*models.MsgIn) error {
 	data := []any{}
 	for _, msg := range msgs {

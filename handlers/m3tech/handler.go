@@ -32,7 +32,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("M3"), "M3Tech")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
@@ -57,7 +57,6 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http
 		return err
 	}
 
-	// create and write the message
 	msg := models.NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
 	in.Msg(msg)
 	return nil

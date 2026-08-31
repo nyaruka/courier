@@ -59,8 +59,7 @@ func NewServer(rt *runtime.Runtime) *Server {
 // connection errors
 func (s *Server) Start() error {
 	// bind both listener sockets up front so callers know we're accepting connections by the
-	// time Start returns, and so a bind failure fails fast before we've started the backend,
-	// spool flushers, or anything else that would need to be unwound
+	// time Start returns, and so a bind failure fails fast before the serve goroutines start
 	internetAddr := fmt.Sprintf("%s:%d", s.rt.Config.InternetAddress, s.rt.Config.InternetPort)
 	internetLn, err := net.Listen("tcp", internetAddr)
 	if err != nil {

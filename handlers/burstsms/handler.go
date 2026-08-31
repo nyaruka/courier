@@ -37,7 +37,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("BS"), "Burst SMS")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	receiveHandler := handlers.NewTelReceiveHandler("mobile", "response")
 	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, receiveHandler)

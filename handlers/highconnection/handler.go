@@ -32,7 +32,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("HX"), "High Connection")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.AddReceive(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
@@ -47,7 +47,7 @@ type moForm struct {
 	ReceiveDate string `name:"RECEPTION_DATE"`
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
+// receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -104,7 +104,7 @@ var statusMapping = map[int]models.MsgStatus{
 	16: models.MsgStatusFailed,
 }
 
-// receiveStatus is our HTTP handler function for status updates
+// receiveStatus is our receive function for status updates
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -117,7 +117,6 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 		return fmt.Errorf("unknown status '%d', must be one of 2, 4, 6, 11, 12, 13, 14, 15  or 16", form.Status)
 	}
 
-	// write our status
 	status := models.NewStatusUpdate(channel, models.MsgUUID(form.RetID), msgStatus, clog)
 	in.Status(status)
 	return nil

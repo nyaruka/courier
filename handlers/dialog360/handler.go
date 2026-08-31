@@ -43,7 +43,7 @@ func newWAHandler(channelType models.ChannelType, name string) channels.Handler 
 	return &handler{handlers.NewBaseHandler(channelType, name)}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h.receiveEvent))
 	return nil
@@ -75,7 +75,7 @@ type Notifications struct {
 	} `json:"entry"`
 }
 
-// receiveEvent is our HTTP handler function for incoming messages and status updates
+// receiveEvent is our receive function for incoming messages and status updates
 func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *Notifications, in *channels.Received, clog *models.ChannelLog) error {
 	// is not a 'whatsapp_business_account' object? ignore it
 	if payload.Object != "whatsapp_business_account" {
@@ -96,8 +96,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 // which is what lets the whole batch be written together, and keeps a failure part way through it from leaving
 // a response that describes more than we actually did. It still does I/O, since resolving a message's media
 // means asking the provider for its URL, but it makes no changes.
-//
-// A non-empty second return means the request should be ignored in its entirety.
 func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 
 	seenMsgIDs := make(map[string]bool)
@@ -288,8 +286,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		}
 	}
 
-	// if we got a user_id in the response, set it as a new URN on the send result so the backend
-	// can queue a contact_changed task to append it to the contact (unless it's the URN we sent to)
+	// if we got a user_id in the response, set it as a new URN on the send result so that send completion
+	// can queue a contact_changed task to append it to the contact (unless it is the URN we sent to)
 	if userID != "" {
 		userIDURN, err := urns.New(urns.WhatsApp, userID)
 		if err != nil {

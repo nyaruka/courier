@@ -55,7 +55,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("WCH"), "WebChat", handlers.DisableChannelLogStorage())}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "start", models.ChannelLogTypeChatStart, withCORS(h.start))
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, withCORS(channels.Receive(h, handlers.JSONPayload(h.receive))))
@@ -220,7 +220,7 @@ type receivePayload struct {
 	Text string `json:"text" validate:"required,max=1000"`
 }
 
-// receive is our HTTP handler function for incoming messages
+// receive is our receive function for incoming messages
 func (h *handler) receive(ctx context.Context, channel *models.Channel, r *http.Request, payload *receivePayload, in *channels.Received, clog *models.ChannelLog) error {
 	urn, err := urns.NewFromParts(urns.WebChat.Prefix, payload.ChatID, nil, "")
 	if err != nil {

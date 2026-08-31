@@ -74,7 +74,7 @@ type moPayload struct {
 	DeliveryStatus string `json:"deliveryStatus"`
 }
 
-// receiveEvent is our HTTP handler function for incoming messages
+// receiveEvent is our receive function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.Message != "" {
 		in.As(models.ChannelLogTypeMsgReceive)
@@ -85,7 +85,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 			return err
 		}
 
-		// create and write the message
 		msg := models.NewIncomingMsg(channel, urn, payload.Message, "", clog).WithReceivedOn(date)
 		in.Msg(msg)
 		return nil
@@ -106,7 +105,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 			return channels.Ignore("no status changed, ignored")
 		}
 
-		// write our status
 		status := models.NewStatusUpdateByExternalID(channel, payload.TransactionID, msgStatus, clog)
 		in.Status(status)
 		return nil

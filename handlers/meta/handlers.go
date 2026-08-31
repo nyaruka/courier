@@ -75,7 +75,7 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeWebhookVerify, h.receiveVerify)
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h.receiveEvents))
@@ -208,7 +208,7 @@ func (h *handler) resolveMediaURL(mediaID string, token string, clog *models.Cha
 	return mediaURL, err
 }
 
-// receiveEvents is our HTTP handler function for incoming messages and status updates
+// receiveEvents is our receive function for incoming messages and status updates
 func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *Notifications, in *channels.Received, clog *models.ChannelLog) error {
 	if err := h.validateSignature(r); err != nil {
 		return err
@@ -659,8 +659,8 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg *models.MsgOut, res *
 		}
 	}
 
-	// if we got a user_id in the response, set it as a new URN on the send result so the backend
-	// can queue a contact_changed task to append it to the contact (unless it's the URN we sent to)
+	// if we got a user_id in the response, set it as a new URN on the send result so that send completion
+	// can queue a contact_changed task to append it to the contact (unless it is the URN we sent to)
 	if userID != "" {
 		userIDURN, err := urns.New(urns.WhatsApp, userID)
 		if err != nil {

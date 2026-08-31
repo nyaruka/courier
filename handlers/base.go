@@ -17,7 +17,7 @@ import (
 
 var defaultRedactConfigKeys = []string{models.ConfigAuthToken, models.ConfigAPIKey, models.ConfigSecret, models.ConfigPassword, models.ConfigSendAuthorization}
 
-// BaseHandler is the base class for most handlers, it just stored the runtime, name and channel type for the handler
+// BaseHandler is the base class for most handlers, holding the identity and options they're constructed with
 type BaseHandler struct {
 	channelType        models.ChannelType
 	name               string

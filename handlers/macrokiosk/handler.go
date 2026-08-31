@@ -40,7 +40,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("MK"), "Macrokiosk")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
 	r.AddReceive(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
@@ -61,7 +61,7 @@ var statusMapping = map[string]models.MsgStatus{
 	"PROCESSING":  models.MsgStatusWired,
 }
 
-// receiveStatus is our HTTP handler function for status updates
+// receiveStatus is our receive function for status updates
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -73,7 +73,6 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 	if !found {
 		return channels.Ignore("ignoring unknown status '%s'", form.Status)
 	}
-	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, form.MsgID, msgStatus, clog)
 	in.Status(status)
 	return nil
@@ -90,7 +89,7 @@ type moForm struct {
 	Time      string `name:"time"`
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
+// receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -129,7 +128,6 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 		return err
 	}
 
-	// create and write the message
 	msg := models.NewIncomingMsg(channel, urn, form.Text, form.MsgID, clog).WithReceivedOn(date.UTC())
 	in.Msg(msg)
 	return nil

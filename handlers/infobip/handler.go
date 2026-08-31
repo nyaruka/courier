@@ -31,7 +31,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("IB"), "Infobip")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
 	r.AddReceive(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h.statusMessage))
@@ -56,7 +56,7 @@ type ibStatus struct {
 	} `validate:"required" json:"status"`
 }
 
-// statusMessage is our HTTP handler function for status updates
+// statusMessage is our receive function for status updates
 func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *statusPayload, in *channels.Received, clog *models.ChannelLog) error {
 
 	for _, s := range payload.Results {
@@ -105,7 +105,7 @@ type v3InboundPrice struct {
 	Currency        string  `json:"currency"`
 }
 
-// receiveMessage is our HTTP handler function for incoming messages (both SMS and MMS)
+// receiveMessage is our receive function for incoming messages (both SMS and MMS)
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *v3InboundPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.MessageCount == 0 {
 		return channels.Ignore("ignoring request, no message")

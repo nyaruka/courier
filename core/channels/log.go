@@ -24,7 +24,7 @@ func WithRequestContext(ctx context.Context, url string, start time.Time) contex
 	return context.WithValue(ctx, contextRequestStart, start)
 }
 
-// LogMsgStatusReceived logs our that we received a new MsgStatus
+// LogMsgStatusReceived logs that we received a new MsgStatus
 func LogMsgStatusReceived(r *http.Request, status *models.StatusUpdate) {
 	if slog.Default().Enabled(r.Context(), slog.LevelDebug) {
 		slog.Debug("status updated",
@@ -91,7 +91,7 @@ func LogRequestHandled(r *http.Request, channel *models.Channel, details string)
 	}
 }
 
-// LogRequestError logs that errored during parsing (this is logged as an info as it isn't an error on our side)
+// LogRequestError logs a request that errored during parsing (this is logged as an info as it isn't an error on our side)
 func LogRequestError(r *http.Request, channel *models.Channel, err error) {
 	log := slog.With(
 		"url", r.Context().Value(contextRequestURL),

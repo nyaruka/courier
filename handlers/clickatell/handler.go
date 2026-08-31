@@ -36,7 +36,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("CT"), "Clickatell")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
 	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h.receiveStatus))
@@ -64,7 +64,7 @@ var statusMapping = map[int]models.MsgStatus{
 	14: models.MsgStatusFailed, // too long
 }
 
-// receiveStatus is our HTTP handler function for status updates
+// receiveStatus is our receive function for status updates
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, payload *statusPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.MessageID == "" || payload.StatusCode == 0 {
 		return fmt.Errorf("missing one of 'messageId' or 'statusCode' in request parameters")
@@ -75,7 +75,6 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 		return fmt.Errorf("unknown status '%d', must be one of 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14", payload.StatusCode)
 	}
 
-	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, payload.MessageID, msgStatus, clog)
 	in.Status(status)
 	return nil
@@ -90,7 +89,7 @@ type moPayload struct {
 	Charset    string `name:"charset"`
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
+// receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.FromNumber == "" || payload.MessageID == "" || payload.Text == "" || payload.Timestamp == 0 {
 		return fmt.Errorf("missing one of 'messageId', 'fromNumber', 'text' or 'timestamp' in request body")

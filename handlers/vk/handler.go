@@ -226,8 +226,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 	}
 }
 
-// verifyServer handles VK's callback verification
-
 // receiveMessage handles new message event
 func (h *handler) receiveMessage(channel *models.Channel, payload *moNewMessagePayload, in *channels.Received, clog *models.ChannelLog) error {
 	userId := payload.Object.Message.UserId

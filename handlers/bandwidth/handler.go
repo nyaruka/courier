@@ -42,7 +42,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("BW"), "Bandwidth")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.statusMessage)
@@ -60,7 +60,7 @@ type moMessageData struct {
 	} `json:"message" validate:"required"`
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
+// receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	var payload []moMessageData
 
@@ -123,7 +123,7 @@ var statusMapping = map[string]models.MsgStatus{
 	"message-failed":    models.MsgStatusFailed,
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
+// statusMessage is our receive function for status updates
 func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	var payload []moStatusData
 	body, err := handlers.ReadBody(r, 1000000)
@@ -155,7 +155,6 @@ func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, r 
 		clog.Error(models.ErrorExternal(strconv.Itoa(statusPayload.ErrorCode), statusPayload.Description))
 	}
 
-	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, statusPayload.Message.ID, msgStatus, clog)
 	in.Status(status)
 	return nil

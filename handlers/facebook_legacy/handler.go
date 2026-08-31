@@ -62,7 +62,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("FB"), "Facebook")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h.receiveEvents))
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeWebhookVerify, h.receiveVerify)
@@ -206,7 +206,7 @@ type moPayload struct {
 	} `json:"entry"`
 }
 
-// receiveEvents is our HTTP handler function for incoming messages and status updates
+// receiveEvents is our receive function for incoming messages and status updates
 func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	// not a page object? ignore
 	if payload.Object != "page" {
