@@ -326,8 +326,8 @@ func (h *handler) validateSignature(c *models.Channel, r *http.Request) error {
 	return nil
 }
 
-// WriteMsgSuccessResponse writes a success response for the messages, MB expects an 'OK' body in our response
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+// RespondMsgs writes a success response for the messages, MB expects an 'OK' body in our response
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	w.Header().Add("Content-type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte("OK"))

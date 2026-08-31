@@ -25,7 +25,7 @@ func TestReceivedResponse(t *testing.T) {
 	// a response describes each part of the request in the order the handler added it, including the parts
 	// that weren't written
 	w := httptest.NewRecorder()
-	err := channels.WriteReceivedResponse(w, []channels.WriteResult{
+	err := channels.RespondReceived(w, []channels.WriteResult{
 		{Event: msg, Outcome: channels.OutcomeWritten},
 		{Event: status, Outcome: channels.OutcomeWritten},
 		{Event: event, Outcome: channels.OutcomeWritten},
@@ -43,7 +43,7 @@ func TestReceivedResponse(t *testing.T) {
 
 	// an empty set of items still gets a well formed response
 	w = httptest.NewRecorder()
-	assert.NoError(t, channels.WriteReceivedResponse(w, nil))
+	assert.NoError(t, channels.RespondReceived(w, nil))
 	assert.Equal(t, "{\"message\":\"Events Handled\",\"data\":[]}\n", w.Body.String())
 }
 

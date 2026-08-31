@@ -641,16 +641,16 @@ func twCalculateSignature(url string, form url.Values, authToken string) ([]byte
 	return encoded, nil
 }
 
-// WriteMsgSuccessResponse writes our response in TWIML format
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+// RespondMsgs writes our response in TWIML format
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, `<?xml version="1.0" encoding="UTF-8"?><Response/>`)
 	return err
 }
 
-// WriteRequestIgnored writes our response in TWIML format
-func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
+// RespondIgnored writes our response in TWIML format
+func (h *handler) RespondIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?><!-- %s --><Response/>`, details)

@@ -1,6 +1,7 @@
 // Package channels is what a channel handler is written against: the handler contract itself, the routes a
-// handler registers, the responses and errors it can write, and - in Received and WriteReceived - the one
-// place that writes what a handler parsed out of a request.
+// handler registers, the responses and errors it can answer a request with, and - in Received and
+// WriteReceived - the one place that writes what a handler parsed out of a request. Writing means the
+// database; a request is answered by the Respond functions.
 //
 // That last part is the convention worth knowing. Received events are written here, never by a handler: a
 // handler turns a provider's payload into a Received and hands it over. A handler that writes for itself

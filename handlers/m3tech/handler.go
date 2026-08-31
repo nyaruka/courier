@@ -62,8 +62,8 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http
 	return nil
 }
 
-// WriteMsgSuccessResponse writes a success response for the messages
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+// RespondMsgs writes a success response for the messages
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	w.Header().Set("Content-Type", "application/json")
 	_, err := fmt.Fprintf(w, "SMS Accepted: %s", msgs[0].UUID())
 	return err

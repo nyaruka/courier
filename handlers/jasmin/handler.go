@@ -118,15 +118,15 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http
 	return nil
 }
 
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	return writeJasminACK(w)
 }
 
-func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
+func (h *handler) RespondStatuses(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
 	return writeJasminACK(w)
 }
 
-func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
+func (h *handler) RespondIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
 	return writeJasminACK(w)
 }
 

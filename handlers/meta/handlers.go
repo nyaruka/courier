@@ -117,9 +117,9 @@ func (h *handler) RedactValues(ch *models.Channel) []string {
 	return vals
 }
 
-// WriteRequestError writes the passed in error to our response writer
-func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
-	return channels.WriteError(w, http.StatusOK, err)
+// RespondError writes the passed in error to our response writer
+func (h *handler) RespondError(ctx context.Context, w http.ResponseWriter, err error) error {
+	return channels.RespondError(w, http.StatusOK, err)
 }
 
 // GetChannel returns the channel
@@ -172,13 +172,13 @@ func (h *handler) receiveVerify(ctx context.Context, channel *models.Channel, w 
 
 	// this isn't a subscribe verification, that's an error
 	if mode != "subscribe" {
-		return nil, channels.WriteErrorResponse(ctx, h, w, r, channel, fmt.Errorf("unknown request"))
+		return nil, channels.RespondRequestError(ctx, h, w, r, channel, fmt.Errorf("unknown request"))
 	}
 
 	// verify the token against our server facebook webhook secret, if the same return the challenge FB sent us
 	secret := r.URL.Query().Get("hub.verify_token")
 	if !utils.SecretEqual(secret, h.Runtime().Config.FacebookWebhookSecret) {
-		return nil, channels.WriteErrorResponse(ctx, h, w, r, channel, fmt.Errorf("token does not match secret"))
+		return nil, channels.RespondRequestError(ctx, h, w, r, channel, fmt.Errorf("token does not match secret"))
 	}
 	// and respond with the challenge token
 	_, err := fmt.Fprint(w, r.URL.Query().Get("hub.challenge"))

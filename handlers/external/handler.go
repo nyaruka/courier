@@ -215,11 +215,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 	return nil
 }
 
-// WriteMsgSuccessResponse writes the channel's configured MO response if it has one
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+// RespondMsgs writes the channel's configured MO response if it has one
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	moResponse := msgs[0].Channel().StringConfigForKey(configMOResponse, "")
 	if moResponse == "" {
-		return channels.WriteMsgSuccess(w, msgs)
+		return channels.RespondMsgs(w, msgs)
 	}
 	moResponseContentType := msgs[0].Channel().StringConfigForKey(configMOResponseContentType, "")
 	if moResponseContentType != "" {

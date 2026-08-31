@@ -251,8 +251,8 @@ func (h *handler) receiveMessage(channel *models.Channel, payload *moNewMessageP
 	return nil
 }
 
-// WriteMsgSuccessResponse writes the body VK requires for a message it delivered
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+// RespondMsgs writes the body VK requires for a message it delivered
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	_, err := fmt.Fprint(w, responseIncomingMessage)
 	return err
 }

@@ -98,20 +98,20 @@ func (h *mockHandler) SendableEvents(ch *models.Channel) map[string]time.Duratio
 	return map[string]time.Duration{events.TypeTypingStarted: 10 * time.Second}
 }
 
-func (h *mockHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
-	return channels.WriteStatusSuccess(w, statuses)
+func (h *mockHandler) RespondStatuses(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
+	return channels.RespondStatuses(w, statuses)
 }
 
-func (h *mockHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
-	return channels.WriteMsgSuccess(w, msgs)
+func (h *mockHandler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+	return channels.RespondMsgs(w, msgs)
 }
 
-func (h *mockHandler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
-	return channels.WriteError(w, http.StatusBadRequest, err)
+func (h *mockHandler) RespondError(ctx context.Context, w http.ResponseWriter, err error) error {
+	return channels.RespondError(w, http.StatusBadRequest, err)
 }
 
-func (h *mockHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
-	return channels.WriteIgnored(w, details)
+func (h *mockHandler) RespondIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
+	return channels.RespondIgnored(w, details)
 }
 
 // receiveMsg receives a message from the request form, returning any error

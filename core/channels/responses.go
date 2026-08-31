@@ -13,14 +13,14 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-// WriteErrorResponse writes an error response for the passed in error, using the handler's error writer
-func WriteErrorResponse(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Request, c *models.Channel, err error) error {
+// RespondRequestError answers the request as an error, using the handler's own error response
+func RespondRequestError(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Request, c *models.Channel, err error) error {
 	LogRequestError(r, c, err)
-	return h.WriteRequestError(ctx, w, err)
+	return h.RespondError(ctx, w, err)
 }
 
-// WriteError writes a JSON response for the passed in error
-func WriteError(w http.ResponseWriter, statusCode int, err error) error {
+// RespondError writes a JSON response for the passed in error
+func RespondError(w http.ResponseWriter, statusCode int, err error) error {
 	errors := []any{NewErrorData(err.Error())}
 
 	vErrs, isValidation := err.(validator.ValidationErrors)
@@ -29,45 +29,45 @@ func WriteError(w http.ResponseWriter, statusCode int, err error) error {
 			errors = append(errors, NewErrorData(fmt.Sprintf("field '%s' %s", strings.ToLower(vErrs[i].Field()), vErrs[i].Tag())))
 		}
 	}
-	return WriteDataResponse(w, statusCode, "Error", errors)
+	return RespondData(w, statusCode, "Error", errors)
 }
 
-// WriteIgnored writes a JSON response indicating that we ignored the request
-func WriteIgnored(w http.ResponseWriter, details string) error {
-	return WriteDataResponse(w, http.StatusOK, "Ignored", []any{NewInfoData(details)})
+// RespondIgnored writes a JSON response indicating that we ignored the request
+func RespondIgnored(w http.ResponseWriter, details string) error {
+	return RespondData(w, http.StatusOK, "Ignored", []any{NewInfoData(details)})
 }
 
-// WriteChannelEventsSuccess writes a JSON response for the passed in events indicating we handled them
-func WriteChannelEventsSuccess(w http.ResponseWriter, events []*models.ChannelEvent) error {
+// RespondEvents writes a JSON response for the passed in events indicating we handled them
+func RespondEvents(w http.ResponseWriter, events []*models.ChannelEvent) error {
 	data := make([]any, len(events))
 	for i, e := range events {
 		data[i] = NewEventReceiveData(e)
 	}
-	return WriteDataResponse(w, http.StatusOK, "Event Accepted", data)
+	return RespondData(w, http.StatusOK, "Event Accepted", data)
 }
 
-// WriteMsgSuccess writes a JSON response for the passed in msgs indicating we handled them
-func WriteMsgSuccess(w http.ResponseWriter, msgs []*models.MsgIn) error {
+// RespondMsgs writes a JSON response for the passed in msgs indicating we handled them
+func RespondMsgs(w http.ResponseWriter, msgs []*models.MsgIn) error {
 	data := []any{}
 	for _, msg := range msgs {
 		data = append(data, NewMsgReceiveData(msg))
 	}
 
-	return WriteDataResponse(w, http.StatusOK, "Message Accepted", data)
+	return RespondData(w, http.StatusOK, "Message Accepted", data)
 }
 
-// WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
-func WriteStatusSuccess(w http.ResponseWriter, statuses []*models.StatusUpdate) error {
+// RespondStatuses writes a JSON response for the passed in statuses indicating we handled them
+func RespondStatuses(w http.ResponseWriter, statuses []*models.StatusUpdate) error {
 	data := []any{}
 	for _, status := range statuses {
 		data = append(data, NewStatusData(status))
 	}
 
-	return WriteDataResponse(w, http.StatusOK, "Status Update Accepted", data)
+	return RespondData(w, http.StatusOK, "Status Update Accepted", data)
 }
 
-// WriteDataResponse writes a JSON formatted response with the passed in status code, message and data
-func WriteDataResponse(w http.ResponseWriter, statusCode int, message string, data []any) error {
+// RespondData writes a JSON formatted response with the passed in status code, message and data
+func RespondData(w http.ResponseWriter, statusCode int, message string, data []any) error {
 	return writeJSONResponse(w, statusCode, &dataResponse{message, data})
 }
 

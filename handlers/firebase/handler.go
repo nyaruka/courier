@@ -109,13 +109,13 @@ func (h *handler) registerContact(ctx context.Context, channel *models.Channel, 
 	form := &registerForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, channels.WriteErrorResponse(ctx, h, w, r, channel, err)
+		return nil, channels.RespondRequestError(ctx, h, w, r, channel, err)
 	}
 
 	// create our URN
 	urn, err := urns.New(urns.Firebase, form.URN)
 	if err != nil {
-		return nil, channels.WriteErrorResponse(ctx, h, w, r, channel, err)
+		return nil, channels.RespondRequestError(ctx, h, w, r, channel, err)
 	}
 
 	// create our contact

@@ -249,14 +249,14 @@ func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc chan
 
 		recorder, err := httpx.NewRecorder(r, w, true)
 		if err != nil {
-			channels.WriteErrorResponse(ctx, handler, w, r, nil, err)
+			channels.RespondRequestError(ctx, handler, w, r, nil, err)
 			return
 		}
 
 		// get the channel for this request - can be nil, e.g. FBA verification requests
 		channel, err := handler.GetChannel(ctx, r)
 		if err != nil {
-			channels.WriteErrorResponse(ctx, handler, recorder.ResponseWriter, r, channel, err)
+			channels.RespondRequestError(ctx, handler, recorder.ResponseWriter, r, channel, err)
 			return
 		}
 
@@ -270,7 +270,7 @@ func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc chan
 			if panicVal := recover(); panicVal != nil {
 				runtime.PanicHandler(panicVal, map[string]string{"channel_type": string(handler.ChannelType())})
 
-				channels.WriteErrorResponse(ctx, handler, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
+				channels.RespondRequestError(ctx, handler, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
 			}
 		}()
 
@@ -282,13 +282,13 @@ func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc chan
 		// it's logged as an error above the response, rather than as the provider's problem
 		if hErr != nil {
 			slog.Error("error handling request", "error", hErr, "channel", channelUUID, "url", recorder.Trace.Request.URL.String())
-			handler.WriteRequestError(ctx, recorder.ResponseWriter, hErr)
+			handler.RespondError(ctx, recorder.ResponseWriter, hErr)
 		}
 
 		// end recording of the request so that we have a response trace
 		if err := recorder.End(); err != nil {
 			slog.Error("error recording request", "error", err, "channel", channelUUID)
-			handler.WriteRequestError(ctx, w, err)
+			handler.RespondError(ctx, w, err)
 		}
 
 		if channel != nil {
@@ -367,7 +367,7 @@ func (s *Server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
 	resp, err := fetchAttachment(ctx, s.rt, r)
 	if err != nil {
 		slog.Error("error fetching attachment", "error", err)
-		channels.WriteError(w, http.StatusBadRequest, err)
+		channels.RespondError(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -383,7 +383,7 @@ func (s *Server) handleSendEvent(w http.ResponseWriter, r *http.Request) {
 	resp, err := sendEvent(ctx, s, r)
 	if err != nil {
 		slog.Error("error sending event", "error", err)
-		channels.WriteError(w, http.StatusBadRequest, err)
+		channels.RespondError(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -402,7 +402,7 @@ func (s *Server) handle404(listener string) http.HandlerFunc {
 			slog.Info("not found", "listener", listener, "url", r.URL.String(), "method", r.Method, "resp_status", "404")
 		}
 		errors := []any{channels.NewErrorData(fmt.Sprintf("not found: %s", r.URL.String()))}
-		err := channels.WriteDataResponse(w, http.StatusNotFound, "Not Found", errors)
+		err := channels.RespondData(w, http.StatusNotFound, "Not Found", errors)
 		if err != nil {
 			slog.Error("error writing response", "error", err)
 		}
@@ -417,7 +417,7 @@ func (s *Server) handle405(listener string) http.HandlerFunc {
 			slog.Info("invalid method", "listener", listener, "url", r.URL.String(), "method", r.Method, "resp_status", "405")
 		}
 		errors := []any{channels.NewErrorData(fmt.Sprintf("method not allowed: %s", r.Method))}
-		err := channels.WriteDataResponse(w, http.StatusMethodNotAllowed, "Method Not Allowed", errors)
+		err := channels.RespondData(w, http.StatusMethodNotAllowed, "Method Not Allowed", errors)
 		if err != nil {
 			slog.Error("error writing response", "error", err)
 		}

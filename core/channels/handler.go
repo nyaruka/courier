@@ -54,10 +54,10 @@ type Handler interface {
 	SendableEvents(*models.Channel) map[string]time.Duration
 	SendEvent(context.Context, *models.Channel, events.Event, *models.ChannelLog) error
 
-	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []*models.StatusUpdate) error
-	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []*models.MsgIn) error
-	WriteRequestError(context.Context, http.ResponseWriter, error) error
-	WriteRequestIgnored(context.Context, http.ResponseWriter, string) error
+	RespondStatuses(context.Context, http.ResponseWriter, []*models.StatusUpdate) error
+	RespondMsgs(context.Context, http.ResponseWriter, []*models.MsgIn) error
+	RespondError(context.Context, http.ResponseWriter, error) error
+	RespondIgnored(context.Context, http.ResponseWriter, string) error
 }
 
 // AttachmentRequestBuilder is the interface handlers which can allow a custom way to download attachment media for messages should satisfy

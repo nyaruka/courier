@@ -71,7 +71,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel *models.Channel, w http
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, channels.WriteErrorResponse(ctx, h, w, r, channel, err)
+		return nil, channels.RespondRequestError(ctx, h, w, r, channel, err)
 	}
 
 	dictOrder := []string{channel.StringConfigForKey(models.ConfigSecret, ""), form.Timestamp, form.Nonce}
@@ -153,8 +153,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 	return nil
 }
 
-// WriteMsgSuccessResponse writes our response
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+// RespondMsgs writes our response
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "") // WeChat expected empty string to not retry looking for passive reply
 	return err
