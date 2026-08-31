@@ -94,7 +94,7 @@ func newHandler() channels.Handler {
 }
 
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h.receiveEvent))
 	return nil
 }
 
@@ -197,51 +197,44 @@ type mediaUploadInfoPayload struct {
 }
 
 // receiveEvent handles request event type
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	// check shared secret key before proceeding
 	secret := channel.StringConfigForKey(models.ConfigSecret, "")
 
 	if !utils.SecretEqual(payload.SecretKey, secret) {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("wrong secret key"))
+		return errors.New("wrong secret key")
 	}
 	// check event type and decode body to correspondent struct
 	switch payload.Type {
 	case eventTypeServerVerification:
-		clog.Type = models.ChannelLogTypeWebhookVerify
+		in.As(models.ChannelLogTypeWebhookVerify)
 
-		return h.verifyServer(channel, w)
+		return channels.Reply("text/plain", []byte(channel.StringConfigForKey(configServerVerificationString, "")))
 
 	case eventTypeNewMessage:
-		clog.Type = models.ChannelLogTypeMsgReceive
+		in.As(models.ChannelLogTypeMsgReceive)
 
 		newMessage := &moNewMessagePayload{}
 
 		if err := handlers.DecodeAndValidateJSON(newMessage, r); err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return err
 		}
-		return h.receiveMessage(ctx, channel, w, r, newMessage, clog)
+		return h.receiveMessage(channel, newMessage, in, clog)
 
 	default:
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message or server verification event")
+		return channels.Ignore("ignoring request, no message or server verification event")
 	}
 }
 
 // verifyServer handles VK's callback verification
-func (h *handler) verifyServer(channel *models.Channel, w http.ResponseWriter) ([]channels.Event, error) {
-	verificationString := channel.StringConfigForKey(configServerVerificationString, "")
-	// write required response
-	_, err := fmt.Fprint(w, verificationString)
-
-	return nil, err
-}
 
 // receiveMessage handles new message event
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moNewMessagePayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(channel *models.Channel, payload *moNewMessagePayload, in *channels.Received, clog *models.ChannelLog) error {
 	userId := payload.Object.Message.UserId
 	urn, err := urns.New(urns.VK, strconv.FormatInt(userId, 10))
 
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 	date := time.Unix(payload.Object.Message.Date, 0).UTC()
 	text := payload.Object.Message.Text
@@ -253,13 +246,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 	// check for empty content
 	if msg.Text() == "" && len(msg.Attachments()) == 0 {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or attachment"))
+		return errors.New("no text or attachment")
 	}
-	// a VK notification only ever carries the one message, so this is the degenerate case of a batch
-	in := channels.NewIncoming(channel)
-	in.Msg(msg)
 
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	in.Msg(msg)
+	return nil
 }
 
 // WriteMsgSuccessResponse writes the body VK requires for a message it delivered

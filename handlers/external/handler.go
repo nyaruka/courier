@@ -67,23 +67,23 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 
 	sentHandler := h.buildStatusHandler("sent")
-	r.Add(h, http.MethodGet, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
-	r.Add(h, http.MethodPost, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
+	r.AddReceive(h, http.MethodGet, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
+	r.AddReceive(h, http.MethodPost, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
 
 	deliveredHandler := h.buildStatusHandler("delivered")
-	r.Add(h, http.MethodGet, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
-	r.Add(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
+	r.AddReceive(h, http.MethodGet, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
+	r.AddReceive(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
 
 	failedHandler := h.buildStatusHandler("failed")
-	r.Add(h, http.MethodGet, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
-	r.Add(h, http.MethodPost, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
+	r.AddReceive(h, http.MethodGet, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
+	r.AddReceive(h, http.MethodPost, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
 
-	r.Add(h, http.MethodPost, "stopped", models.ChannelLogTypeEventReceive, h.receiveStopContact)
-	r.Add(h, http.MethodGet, "stopped", models.ChannelLogTypeEventReceive, h.receiveStopContact)
+	r.AddReceive(h, http.MethodPost, "stopped", models.ChannelLogTypeEventReceive, h.receiveStopContact)
+	r.AddReceive(h, http.MethodGet, "stopped", models.ChannelLogTypeEventReceive, h.receiveStopContact)
 
 	return nil
 }
@@ -92,11 +92,11 @@ type stopContactForm struct {
 	From string `name:"from" validate:"required"`
 }
 
-func (h *handler) receiveStopContact(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveStopContact(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &stopContactForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// create our URN
@@ -107,14 +107,13 @@ func (h *handler) receiveStopContact(ctx context.Context, channel *models.Channe
 		urn, err = urns.NewFromParts(channel.Schemes()[0], form.From, nil, "")
 	}
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// create a stop channel event
 	channelEvent := models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog)
-	in := channels.NewIncoming(channel)
 	in.Event(channelEvent)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 // utility function to grab the form value for either the passed in name (if non-empty) or the first set
@@ -138,7 +137,7 @@ func getFormField(form url.Values, defaultNames []string, name string) string {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	var err error
 
 	var from, dateString, text string
@@ -151,17 +150,17 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		body, err := io.ReadAll(io.LimitReader(r.Body, 100000))
 		defer r.Body.Close()
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to read request body: %s", err))
+			return fmt.Errorf("unable to read request body: %s", err)
 		}
 
 		doc, err := xmlquery.Parse(strings.NewReader(string(body)))
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to parse request XML: %s", err))
+			return fmt.Errorf("unable to parse request XML: %s", err)
 		}
 		fromNode := xmlquery.FindOne(doc, fromXPath)
 		textNode := xmlquery.FindOne(doc, textXPath)
 		if fromNode == nil || textNode == nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing from at: %s or text at: %s node", fromXPath, textXPath))
+			return fmt.Errorf("missing from at: %s or text at: %s node", fromXPath, textXPath)
 		}
 
 		from = fromNode.InnerText()
@@ -176,7 +175,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 			err = r.ParseForm()
 		}
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid request: %w", err))
+			return fmt.Errorf("invalid request: %w", err)
 		}
 
 		from = getFormField(r.Form, defaultFromFields, channel.StringConfigForKey(configMOFromField, ""))
@@ -186,7 +185,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 	// must have from field
 	if from == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("must have one of 'sender' or 'from' set"))
+		return fmt.Errorf("must have one of 'sender' or 'from' set")
 	}
 
 	// if we have a date, parse it
@@ -194,7 +193,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid date format, must be RFC 3339"))
+			return fmt.Errorf("invalid date format, must be RFC 3339")
 		}
 	}
 
@@ -206,16 +205,14 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		urn, err = urns.NewFromParts(channel.Schemes()[0], from, nil, "")
 	}
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// build our msg
 	msg := models.NewIncomingMsg(channel, urn, text, "", clog).WithReceivedOn(date)
 
-	// and finally write our message
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 // WriteMsgSuccessResponse writes our response in TWIML format
@@ -233,10 +230,10 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 	return err
 }
 
-// buildStatusHandler deals with building a handler that takes what status is received in the URL
-func (h *handler) buildStatusHandler(status string) channels.HandleFunc {
-	return func(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
-		return h.receiveStatus(ctx, status, channel, w, r, clog)
+// buildStatusHandler deals with building a receive function that takes what status is received in the URL
+func (h *handler) buildStatusHandler(status string) channels.ReceiveFunc {
+	return func(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
+		return h.receiveStatus(ctx, status, channel, r, in, clog)
 	}
 }
 
@@ -252,19 +249,19 @@ var statusMappings = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, statusString string, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, statusString string, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	if form.ID == "" && form.UUID == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parameters id or uuid should not be empty"))
+		return fmt.Errorf("parameters id or uuid should not be empty")
 	}
 
 	if !uuids.Is(form.ID) && !uuids.Is(form.UUID) {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parsing failed: id '%s' and uuid '%s' are not valid UUIDs", form.ID, form.UUID))
+		return fmt.Errorf("parsing failed: id '%s' and uuid '%s' are not valid UUIDs", form.ID, form.UUID)
 	}
 
 	msgUUID := form.UUID
@@ -275,14 +272,11 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	// get our status
 	msgStatus, found := statusMappings[strings.ToLower(statusString)]
 	if !found {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString))
+		return fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString)
 	}
 
-	// write our status
-	status := models.NewStatusUpdate(channel, models.MsgUUID(msgUUID), msgStatus, clog)
-	in := channels.NewIncoming(channel)
-	in.Status(status)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	in.Status(models.NewStatusUpdate(channel, models.MsgUUID(msgUUID), msgStatus, clog))
+	return nil
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

@@ -39,7 +39,7 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
@@ -51,22 +51,21 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateForm(payload, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		return err
 	}
 
 	urn, err := urns.ParsePhone(payload.Sender, c.Country(), true, false)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		return err
 	}
 
 	msg := models.NewIncomingMsg(c, urn, payload.MessageText, "", clog)
-	in := channels.NewIncoming(c)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type mtPayload struct {

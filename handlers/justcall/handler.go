@@ -37,8 +37,8 @@ func init() {
 
 // Initialize implements channels.Handler
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
-	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.statusMessage))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h.statusMessage))
 	return nil
 }
 
@@ -94,9 +94,9 @@ type moPayload struct {
 	} `json:"data"`
 }
 
-func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.Data.Type != "sms" || payload.Data.Direction != "I" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "Ignoring request, no message")
+		return channels.Ignore("Ignoring request, no message")
 	}
 
 	dateString := payload.Data.Datetime
@@ -105,14 +105,14 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 	if dateString != "" {
 		date, err = time.Parse("2006-01-02 15:04:05", dateString)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("invalid date format, must be RFC 3339"))
+			return errors.New("invalid date format, must be RFC 3339")
 		}
 		date = date.UTC()
 	}
 
 	urn, err := urns.ParsePhone(payload.Data.From, c.Country(), true, false)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		return err
 	}
 
 	// build our msg
@@ -122,10 +122,8 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 		msg.WithAttachment(payload.Data.MMS[0].MediaURL)
 	}
 
-	// and finally write our message
-	in := channels.NewIncoming(c)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 var statusMapping = map[string]models.MsgStatus{
@@ -135,20 +133,19 @@ var statusMapping = map[string]models.MsgStatus{
 	"failed":      models.MsgStatusFailed,
 }
 
-func (h *handler) statusMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) statusMessage(ctx context.Context, c *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.Data.Type != "sms" || payload.Data.Direction != "O" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "Ignoring request, no message")
+		return channels.Ignore("Ignoring request, no message")
 	}
 
 	msgStatus, found := statusMapping[payload.Data.Status]
 	if !found {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("unknown status '%s', must be one of send, delivered, undelivered, failed", payload.Data.Status))
+		return fmt.Errorf("unknown status '%s', must be one of send, delivered, undelivered, failed", payload.Data.Status)
 	}
 	// write our status
 	status := models.NewStatusUpdateByExternalID(c, fmt.Sprint(payload.Data.MessageID), msgStatus, clog)
-	in := channels.NewIncoming(c)
 	in.Status(status)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type mtPayload struct {

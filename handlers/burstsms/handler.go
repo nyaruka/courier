@@ -39,11 +39,11 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	receiveHandler := handlers.NewTelReceiveHandler(h, "mobile", "response")
-	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, receiveHandler)
+	receiveHandler := handlers.NewTelReceiveHandler("mobile", "response")
+	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, receiveHandler)
 
-	statusHandler := handlers.NewExternalIDStatusHandler(h, statusMap, "message_id", "status")
-	r.Add(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, statusHandler)
+	statusHandler := handlers.NewExternalIDStatusHandler(statusMap, "message_id", "status")
+	r.AddReceive(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, statusHandler)
 	return nil
 }
 

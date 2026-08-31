@@ -54,7 +54,7 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvents))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h.receiveEvents))
 
 	return nil
 }
@@ -147,24 +147,17 @@ type eventsPayload struct {
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *eventsPayload, clog *models.ChannelLog) ([]channels.Event, error) {
-	in, err := h.parseEvents(channel, payload, r, clog)
-	if err != nil {
-		// the failure is in the payload itself, so asking for it again wouldn't get any further - write whatever
-		// was parsed ahead of it rather than dropping it
-		results, _ := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
-		return channels.IncomingEvents(results), handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventsPayload, in *channels.Received, clog *models.ChannelLog) error {
+	// a failure here is in the payload itself, so asking for it again wouldn't get any further. The seam writes
+	// whatever was parsed ahead of it rather than dropping it.
+	return h.parseEvents(channel, payload, r, in, clog)
 }
 
 // parseEvents turns a payload into the set of things it contained, without writing any of them - which is what
 // lets the whole batch be written together, and keeps a failure part way through it from leaving a response
 // that describes more than we actually did. It still does I/O, since resolving a message's media means asking
 // the provider for its URL, but it makes no changes.
-func (h *handler) parseEvents(channel *models.Channel, payload *eventsPayload, r *http.Request, clog *models.ChannelLog) (*channels.Incoming, error) {
-	in := channels.NewIncoming(channel)
+func (h *handler) parseEvents(channel *models.Channel, payload *eventsPayload, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 
 	seenMsgIDs := make(map[string]bool, 2)
 
@@ -194,7 +187,7 @@ func (h *handler) parseEvents(channel *models.Channel, payload *eventsPayload, r
 		// create our date from the timestamp
 		ts, err := strconv.ParseInt(msg.Timestamp, 10, 64)
 		if err != nil {
-			return in, fmt.Errorf("invalid timestamp: %s", msg.Timestamp)
+			return fmt.Errorf("invalid timestamp: %s", msg.Timestamp)
 		}
 		date := time.Unix(ts, 0).UTC()
 
@@ -204,7 +197,7 @@ func (h *handler) parseEvents(channel *models.Channel, payload *eventsPayload, r
 
 		urn, err := urns.New(urns.WhatsApp, sender)
 		if err != nil {
-			return in, errors.New("invalid whatsapp id")
+			return errors.New("invalid whatsapp id")
 		}
 
 		for _, msgError := range msg.Errors {
@@ -310,7 +303,7 @@ func (h *handler) parseEvents(channel *models.Channel, payload *eventsPayload, r
 		in.Status(models.NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog))
 	}
 
-	return in, nil
+	return nil
 }
 
 func resolveMediaURL(channel *models.Channel, mediaID string) (string, error) {

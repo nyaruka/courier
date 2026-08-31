@@ -91,24 +91,24 @@ func newHandler(channelType models.ChannelType, name string, validateSignatures 
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	r.Add(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
 
 	return nil
 }
 
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 
 	// get our params
 	receivedStatus := &ReceivedStatus{}
 	err := handlers.DecodeAndValidateForm(receivedStatus, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no msg status, ignoring")
+		return channels.Ignore("no msg status, ignoring")
 	}
 
 	msgStatus, found := statusMapping[receivedStatus.Status]
 	if !found {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", receivedStatus.Status))
+		return fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", receivedStatus.Status)
 	}
 
 	// if the message id was passed explicitely, use that
@@ -126,12 +126,10 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 		status = models.NewStatusUpdateByExternalID(channel, receivedStatus.ID, msgStatus, clog)
 	}
 
-	in := channels.NewIncoming(channel)
-
 	if receivedStatus.StatusErrorCode == errorStopped {
 		urn, err := urns.ParsePhone(receivedStatus.Recipient, "", true, false)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return err
 		}
 		// the contact has asked to stop, which we record alongside the status that told us
 		in.Event(models.NewChannelEvent(channel, models.EventTypeStopContact, urn, clog))
@@ -140,19 +138,19 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 
 	in.Status(status)
 
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	err := h.validateSignature(channel, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	payload := &formMessage{}
 	err = handlers.DecodeAndValidateForm(payload, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	text := ""
@@ -165,7 +163,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		shortCodeDateLayout := "20060102150405"
 		date, err = time.Parse(shortCodeDateLayout, payload.ReceiveDatetime)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to parse date '%s': %v", payload.ReceiveDatetime, err))
+			return fmt.Errorf("unable to parse date '%s': %v", payload.ReceiveDatetime, err)
 		}
 	} else {
 		text = payload.Body
@@ -173,19 +171,19 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		standardDateLayout := "2006-01-02T15:04:05+00:00"
 		date, err = time.Parse(standardDateLayout, payload.CreatedDatetime)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to parse date '%s': %v", payload.CreatedDatetime, err))
+			return fmt.Errorf("unable to parse date '%s': %v", payload.CreatedDatetime, err)
 		}
 	}
 
 	// no message? ignore this
 	if text == "" && len(payload.MediaURLs) == 0 {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or media"))
+		return errors.New("no text or media")
 	}
 
 	// create our URN
 	urn, err := urns.ParsePhone(payload.Originator, channel.Country(), true, false)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// build our msg
@@ -197,10 +195,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 			msg.WithAttachment(mediaURL)
 		}
 	}
-	// and finally write our message
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

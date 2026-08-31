@@ -67,6 +67,7 @@ var (
 var testCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid",
+		ExpectedLogType:      models.ChannelLogTypeMsgReceive,
 		URL:                  receiveURL,
 		Data:                 validReceive,
 		ExpectedRespStatus:   200,
@@ -78,6 +79,7 @@ var testCases = []IncomingTestCase{
 	},
 	{
 		Label:                "Receive Missing Params",
+		ExpectedLogType:      models.ChannelLogTypeMsgReceive,
 		URL:                  receiveURL,
 		Data:                 missingParamsRecieve,
 		ExpectedRespStatus:   400,
@@ -92,6 +94,7 @@ var testCases = []IncomingTestCase{
 	},
 	{
 		Label:                "Status Valid",
+		ExpectedLogType:      models.ChannelLogTypeMsgStatus,
 		URL:                  receiveURL,
 		Data:                 validStatus,
 		ExpectedRespStatus:   200,
@@ -107,6 +110,7 @@ var testCases = []IncomingTestCase{
 	},
 	{
 		Label:                "Status Missing Batch ID",
+		ExpectedLogType:      models.ChannelLogTypeMsgStatus,
 		URL:                  receiveURL,
 		Data:                 missingBatchID,
 		ExpectedRespStatus:   400,

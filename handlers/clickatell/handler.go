@@ -38,8 +38,8 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
-	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.receiveStatus))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h.receiveStatus))
 	return nil
 }
 
@@ -65,23 +65,20 @@ var statusMapping = map[int]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, payload *statusPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.MessageID == "" || payload.StatusCode == 0 {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
-			fmt.Errorf("missing one of 'messageId' or 'statusCode' in request parameters"))
+		return fmt.Errorf("missing one of 'messageId' or 'statusCode' in request parameters")
 	}
 
 	msgStatus, found := statusMapping[payload.StatusCode]
 	if !found {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
-			fmt.Errorf("unknown status '%d', must be one of 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14", payload.StatusCode))
+		return fmt.Errorf("unknown status '%d', must be one of 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14", payload.StatusCode)
 	}
 
 	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, payload.MessageID, msgStatus, clog)
-	in := channels.NewIncoming(channel)
 	in.Status(status)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type moPayload struct {
@@ -94,10 +91,9 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.FromNumber == "" || payload.MessageID == "" || payload.Text == "" || payload.Timestamp == 0 {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
-			fmt.Errorf("missing one of 'messageId', 'fromNumber', 'text' or 'timestamp' in request body"))
+		return fmt.Errorf("missing one of 'messageId', 'fromNumber', 'text' or 'timestamp' in request body")
 	}
 
 	date := time.Unix(0, payload.Timestamp*1000000)
@@ -128,15 +124,13 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	// create our URN
 	urn, err := urns.ParsePhone(payload.FromNumber, channel.Country(), true, false)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 	// build our msg
 	msg := models.NewIncomingMsg(channel, urn, text, payload.MessageID, clog).WithReceivedOn(date.UTC())
 
-	// and finally write our message
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 // utility method to decode crazy clickatell 16 bit format

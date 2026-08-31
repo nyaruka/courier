@@ -40,7 +40,7 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
 	return nil
 }
 
@@ -74,35 +74,33 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if len(payload.InboundSMSMessageList.InboundSMSMessage) == 0 {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "no messages, ignored")
+		return channels.Ignore("no messages, ignored")
 	}
-
-	in := channels.NewIncoming(c)
 
 	// parse each inbound message
 	for _, glMsg := range payload.InboundSMSMessageList.InboundSMSMessage {
 		// parse our date from format: "Fri Nov 22 2013 12:12:13 GMT+0000 (UTC)"
 		date, err := time.Parse("Mon Jan 2 2006 15:04:05 GMT+0000 (UTC)", glMsg.DateTime)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+			return err
 		}
 
 		if !strings.HasPrefix(glMsg.SenderAddress, "tel:") {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("invalid 'senderAddress' parameter"))
+			return fmt.Errorf("invalid 'senderAddress' parameter")
 		}
 
 		urn, err := urns.ParsePhone(glMsg.SenderAddress[4:], c.Country(), true, false)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+			return err
 		}
 
 		msg := models.NewIncomingMsg(c, urn, glMsg.Message, glMsg.MessageID, clog).WithReceivedOn(date)
 		in.Msg(msg)
 	}
 
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 //	{

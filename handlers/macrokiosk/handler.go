@@ -42,10 +42,10 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
-	r.Add(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
-	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+	r.AddReceive(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
@@ -62,22 +62,21 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("ignoring unknown status '%s'", form.Status))
+		return channels.Ignore("ignoring unknown status '%s'", form.Status)
 	}
 	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, form.MsgID, msgStatus, clog)
-	in := channels.NewIncoming(channel)
 	in.Status(status)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 
 }
 
@@ -92,11 +91,11 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	recipient := form.Longcode
@@ -107,34 +106,33 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	}
 
 	if recipient == "" || sender == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing shortcode, longcode, from or msisdn parameters"))
+		return fmt.Errorf("missing shortcode, longcode, from or msisdn parameters")
 	}
 
 	if channel.Address() != recipient {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid to number [%s], expecting [%s]", recipient, channel.Address()))
+		return fmt.Errorf("invalid to number [%s], expecting [%s]", recipient, channel.Address())
 	}
 
 	loc, err := time.LoadLocation("Asia/Kuala_Lumpur")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	date, err := time.ParseInLocation("2006-01-0215:04:05", form.Time, loc)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// create our URN
 	urn, err := urns.ParsePhone(sender, channel.Country(), true, false)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// create and write the message
 	msg := models.NewIncomingMsg(channel, urn, form.Text, form.MsgID, clog).WithReceivedOn(date.UTC())
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 // WriteMsgSuccessResponse

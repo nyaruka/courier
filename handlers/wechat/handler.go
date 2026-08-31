@@ -55,7 +55,7 @@ func newHandler() channels.Handler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
-	r.Add(h, http.MethodPost, "", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodPost, "", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
@@ -71,7 +71,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel *models.Channel, w http
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return nil, channels.WriteAndLogRequestError(ctx, h, w, r, channel, err)
 	}
 
 	dictOrder := []string{channel.StringConfigForKey(models.ConfigSecret, ""), form.Timestamp, form.Nonce}
@@ -108,39 +108,38 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateXML(payload, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	if payload.MsgID == "" && payload.Event == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'"))
+		return fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'")
 	}
 
 	date := time.Unix(payload.CreateTime/1000, payload.CreateTime%1000*1000000).UTC()
 	urn, err := urns.New(urns.WeChat, payload.FromUsername)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// subscribe event, trigger a new conversation
 	if payload.MsgType == "event" && payload.Event == "subscribe" {
-		clog.Type = models.ChannelLogTypeEventReceive
+		in.As(models.ChannelLogTypeEventReceive)
 
 		channelEvent := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog)
 
-		in := channels.NewIncoming(channel)
 		in.Event(channelEvent)
-		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+		return nil
 	}
 
 	// unknown event type (we only deal with subscribe)
 	if payload.MsgType == "event" {
-		clog.Type = models.ChannelLogTypeEventReceive
+		in.As(models.ChannelLogTypeEventReceive)
 
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "unknown event type")
+		return channels.Ignore("unknown event type")
 	}
 
 	// create our message
@@ -150,10 +149,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		msg.WithAttachment(mediaURL)
 	}
 
-	// and finally write our message
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 // WriteMsgSuccessResponse writes our response

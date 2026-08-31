@@ -64,7 +64,7 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvents))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h.receiveEvents))
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeWebhookVerify, h.receiveVerify)
 	return nil
 }
@@ -75,19 +75,19 @@ func (h *handler) receiveVerify(ctx context.Context, channel *models.Channel, w 
 
 	// this isn't a subscribe verification, that's an error
 	if mode != "subscribe" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown request"))
+		return nil, channels.WriteAndLogRequestError(ctx, h, w, r, channel, fmt.Errorf("unknown request"))
 	}
 
 	// verify the token against our secret, if the same return the challenge FB sent us
 	secret := r.URL.Query().Get("hub.verify_token")
 	if !utils.SecretEqual(secret, channel.StringConfigForKey(models.ConfigSecret, "")) {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("token does not match secret"))
+		return nil, channels.WriteAndLogRequestError(ctx, h, w, r, channel, fmt.Errorf("token does not match secret"))
 	}
 
 	// make sure we have an auth token
 	authToken := channel.StringConfigForKey(models.ConfigAuthToken, "")
 	if authToken == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing auth token for FB channel"))
+		return nil, channels.WriteAndLogRequestError(ctx, h, w, r, channel, fmt.Errorf("missing auth token for FB channel"))
 	}
 
 	// everything looks good, we will subscribe to this page's messages asynchronously
@@ -207,26 +207,20 @@ type moPayload struct {
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	// not a page object? ignore
 	if payload.Object != "page" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring non-page request")
+		return channels.Ignore("ignoring non-page request")
 	}
 
 	// no entries? ignore this request
 	if len(payload.Entry) == 0 {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no entries")
+		return channels.Ignore("ignoring request, no entries")
 	}
 
-	in, err := h.parseEvents(channel, payload, clog)
-	if err != nil {
-		// the failure is in the payload itself, so asking for it again wouldn't get any further - write whatever
-		// was parsed ahead of it rather than dropping it
-		results, _ := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
-		return channels.IncomingEvents(results), handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	// a failure here is in the payload itself, so asking for it again wouldn't get any further. The seam writes
+	// whatever was parsed ahead of it rather than dropping it.
+	return h.parseEvents(channel, payload, in, clog)
 }
 
 // parseEvents turns a payload into the set of things it contained, without writing any of them - which is what
@@ -236,8 +230,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w 
 // It matters most here because this handler creates channel events, which have no duplicate detection of their
 // own: a parse failure used to leave the events before it written and then ask the provider to resend the whole
 // batch, which wrote them a second time.
-func (h *handler) parseEvents(channel *models.Channel, payload *moPayload, clog *models.ChannelLog) (*channels.Incoming, error) {
-	in := channels.NewIncoming(channel)
+func (h *handler) parseEvents(channel *models.Channel, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 
 	seenMsgIDs := make(map[string]bool, 2)
 
@@ -262,7 +255,7 @@ func (h *handler) parseEvents(channel *models.Channel, payload *moPayload, clog 
 		// create our URN
 		urn, err := urns.New(urns.Facebook, msg.Sender.ID)
 		if err != nil {
-			return in, errors.New("invalid facebook id")
+			return errors.New("invalid facebook id")
 		}
 		if msg.OptIn != nil {
 			event := models.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithOccurredOn(date)
@@ -388,7 +381,7 @@ func (h *handler) parseEvents(channel *models.Channel, payload *moPayload, clog 
 		}
 	}
 
-	return in, nil
+	return nil
 }
 
 //	{

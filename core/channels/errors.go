@@ -1,9 +1,60 @@
 package channels
 
 import (
+	"fmt"
+	"net/http"
+
 	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
+
+// IgnoredRequest is returned by a receive function for a request we understood but which asked nothing of us -
+// a status we don't track, an echo of our own message. It isn't a failure, so it's answered as ignored rather
+// than as an error, and the details say what we saw.
+type IgnoredRequest struct {
+	Details string
+}
+
+func (e *IgnoredRequest) Error() string { return e.Details }
+
+// Ignore returns an error saying this request asked nothing of us, and why
+func Ignore(format string, args ...any) error {
+	return &IgnoredRequest{Details: fmt.Sprintf(format, args...)}
+}
+
+// UnauthenticatedRequest is returned by a receive function for a request that didn't prove it came from the
+// provider - a missing or wrong auth header. It's answered as unauthorized rather than as a bad request.
+type UnauthenticatedRequest struct {
+	Err error
+}
+
+func (e *UnauthenticatedRequest) Error() string { return e.Err.Error() }
+
+// Unauthenticated returns an error saying this request didn't prove where it came from
+func Unauthenticated(err error) error { return &UnauthenticatedRequest{Err: err} }
+
+// RequestReply is returned by a receive function whose provider dictates the body this particular request
+// must be answered with - a verification challenge echoed back, a welcome message. Anything the batch
+// gathered is still written first; the reply replaces only the standard success response.
+type RequestReply struct {
+	ContentType string
+	Body        []byte
+}
+
+func (e *RequestReply) Error() string { return "request answered with its own reply" }
+
+// Write writes the reply to the given response writer
+func (e *RequestReply) Write(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", e.ContentType)
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write(e.Body)
+	return err
+}
+
+// Reply returns an error saying this request must be answered with the given body
+func Reply(contentType string, body []byte) error {
+	return &RequestReply{ContentType: contentType, Body: body}
+}
 
 type SendResult struct {
 	externalIDs []string

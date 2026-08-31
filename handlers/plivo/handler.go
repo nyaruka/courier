@@ -50,8 +50,8 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
@@ -72,20 +72,20 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("ignoring unknown status '%s'", form.Status))
+		return channels.Ignore("ignoring unknown status '%s'", form.Status)
 	}
 
 	if strings.TrimPrefix(channel.Address(), "+") != strings.TrimPrefix(form.From, "+") {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid to number [%s], expecting [%s]", strings.TrimPrefix(form.From, "+"), strings.TrimPrefix(channel.Address(), "+")))
+		return fmt.Errorf("invalid to number [%s], expecting [%s]", strings.TrimPrefix(form.From, "+"), strings.TrimPrefix(channel.Address(), "+"))
 	}
 
 	externalID := form.MessageUUID
@@ -95,9 +95,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 
 	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, externalID, msgStatus, clog)
-	in := channels.NewIncoming(channel)
 	in.Status(status)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type moForm struct {
@@ -108,28 +107,27 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	if strings.TrimPrefix(channel.Address(), "+") != strings.TrimPrefix(form.To, "+") {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid to number [%s], expecting [%s]", strings.TrimPrefix(form.To, "+"), strings.TrimPrefix(channel.Address(), "+")))
+		return fmt.Errorf("invalid to number [%s], expecting [%s]", strings.TrimPrefix(form.To, "+"), strings.TrimPrefix(channel.Address(), "+"))
 	}
 
 	// create our URN
 	urn, err := urns.ParsePhone(form.From, channel.Country(), true, false)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// create and write the message
 	msg := models.NewIncomingMsg(channel, urn, form.Text, form.MessageUUID, clog)
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type mtPayload struct {

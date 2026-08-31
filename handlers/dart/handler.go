@@ -51,8 +51,8 @@ func init() {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	r.Add(h, http.MethodGet, "delivered", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodGet, "delivered", models.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
 }
 
@@ -64,15 +64,15 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	if form.Original == "" || form.SendTo == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing required parameters original and sendto"))
+		return fmt.Errorf("missing required parameters original and sendto")
 	}
 
 	// create our URN
@@ -80,17 +80,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	if err != nil {
 		urn, err = urns.New(urns.External, form.Original)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return err
 		}
 	}
 
 	// build our msg
 	msg := models.NewIncomingMsg(channel, urn, form.Message, form.MessageID, clog)
 
-	// and finally queue our message
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type statusForm struct {
@@ -99,20 +97,20 @@ type statusForm struct {
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	if form.Status == "" || form.MessageID == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parameters messageid and status should not be empty"))
+		return fmt.Errorf("parameters messageid and status should not be empty")
 	}
 
 	statusInt, err := strconv.Atoi(form.Status)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parsing failed: status '%s' is not an integer", form.Status))
+		return fmt.Errorf("parsing failed: status '%s' is not an integer", form.Status)
 	}
 
 	msgStatus := models.MsgStatusSent
@@ -126,14 +124,13 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 
 	msgUUID := strings.Split(form.MessageID, ".")[0]
 	if !uuids.Is(msgUUID) {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parsing failed: messageid '%s' is not a UUID", form.MessageID))
+		return fmt.Errorf("parsing failed: messageid '%s' is not a UUID", form.MessageID)
 	}
 
 	// write our status
 	status := models.NewStatusUpdate(channel, models.MsgUUID(msgUUID), msgStatus, clog)
-	in := channels.NewIncoming(channel)
 	in.Status(status)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 // DartMedia expects "000" from a message receive request

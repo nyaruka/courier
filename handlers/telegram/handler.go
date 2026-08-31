@@ -48,15 +48,15 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
 	return nil
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	// no message? ignore this
 	if payload.Message.MessageID == 0 {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
+		return channels.Ignore("Ignoring request, no message")
 	}
 
 	// create our date from the timestamp
@@ -65,7 +65,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	// create our URN
 	urn, err := urns.NewFromParts(urns.Telegram.Prefix, strconv.FormatInt(payload.Message.From.ContactID, 10), nil, strings.ToLower(payload.Message.From.Username))
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// build our name from first and last
@@ -76,12 +76,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 	// this is a start command, trigger a new conversation
 	if text == "/start" {
-		clog.Type = models.ChannelLogTypeEventReceive
-
-		event := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog).WithContactName(name).WithOccurredOn(date)
-		in := channels.NewIncoming(channel)
-		in.Event(event)
-		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+		in.As(models.ChannelLogTypeEventReceive)
+		in.Event(models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog).WithContactName(name).WithOccurredOn(date))
+		return nil
 	}
 
 	// normal message of some kind
@@ -137,7 +134,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 	// we had an error downloading media
 	if err != nil && text == "" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("unable to resolve file: %s", err.Error()))
+		return channels.Ignore("unable to resolve file: %s", err.Error())
 	}
 
 	// build our msg
@@ -150,10 +147,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		msg.WithPayload(webAppPayload)
 	}
 
-	// and finally write our message
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 // isValidButtonURL approximates Telegram's validation of inline keyboard button URLs, which accepts HTTP(S) and

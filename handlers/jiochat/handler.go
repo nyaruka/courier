@@ -55,9 +55,9 @@ func newHandler() channels.Handler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
-	r.Add(h, http.MethodPost, "rcv/msg/message", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
-	r.Add(h, http.MethodPost, "rcv/event/menu", models.ChannelLogTypeEventReceive, handlers.JSONPayload(h, h.receiveMessage))
-	r.Add(h, http.MethodPost, "rcv/event/follow", models.ChannelLogTypeEventReceive, handlers.JSONPayload(h, h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "rcv/msg/message", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "rcv/event/menu", models.ChannelLogTypeEventReceive, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "rcv/event/follow", models.ChannelLogTypeEventReceive, handlers.JSONPayload(h.receiveMessage))
 	return nil
 }
 
@@ -73,7 +73,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel *models.Channel, w http
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return nil, channels.WriteAndLogRequestError(ctx, h, w, r, channel, err)
 	}
 
 	dictOrder := []string{channel.StringConfigForKey(configAppSecret, ""), form.Timestamp, form.Nonce}
@@ -110,46 +110,38 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.MsgID == "" && payload.Event == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'"))
+		return fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'")
 	}
 
 	date := time.Unix(payload.CreateTime/1000, payload.CreateTime%1000*1000000).UTC()
 	urn, err := urns.New(urns.JioChat, payload.FromUsername)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid jiochat id"))
+		return errors.New("invalid jiochat id")
 	}
 
-	// subscribe event, trigger a new conversation
-	if payload.MsgType == "event" && payload.Event == "subscribe" {
-		clog.Type = models.ChannelLogTypeEventReceive
-
-		channelEvent := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog)
-
-		in := channels.NewIncoming(channel)
-		in.Event(channelEvent)
-		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
-	}
-
-	// unknown event type (we only deal with subscribe)
 	if payload.MsgType == "event" {
-		clog.Type = models.ChannelLogTypeEventReceive
+		in.As(models.ChannelLogTypeEventReceive)
 
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "unknown event type")
+		// subscribe event, trigger a new conversation
+		if payload.Event == "subscribe" {
+			in.Event(models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog))
+			return nil
+		}
+
+		// unknown event type (we only deal with subscribe)
+		return channels.Ignore("unknown event type")
 	}
 
 	// create our message
 	msg := models.NewIncomingMsg(channel, urn, payload.Content, payload.MsgID, clog).WithReceivedOn(date)
 	if payload.MsgType == "image" || payload.MsgType == "video" || payload.MsgType == "voice" {
-		mediaURL := buildMediaURL(payload.MediaID)
-		msg.WithAttachment(mediaURL)
+		msg.WithAttachment(buildMediaURL(payload.MediaID))
 	}
 
-	// and finally write our message
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 func buildMediaURL(mediaID string) string {

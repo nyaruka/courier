@@ -313,11 +313,11 @@ func TestSendFiles(t *testing.T) {
 
 func TestVerification(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), []IncomingTestCase{
-		{Label: "Valid token", URL: receiveURL, ExpectedRespStatus: 200,
+		{Label: "Valid token", URL: receiveURL, ExpectedRespStatus: 200, ExpectedBodyContains: "challenge123",
 			Data:    `{"token":"one-long-verification-token","challenge":"challenge123","type":"url_verification"}`,
 			Headers: map[string]string{"content-type": "text/plain"},
 		},
-		{Label: "Invalid token", URL: receiveURL, ExpectedRespStatus: 403,
+		{Label: "Invalid token", URL: receiveURL, ExpectedRespStatus: 401, ExpectedBodyContains: "wrong validation token",
 			Data:    `{"token":"abc321","challenge":"challenge123","type":"url_verification"}`,
 			Headers: map[string]string{"content-type": "text/plain"},
 		},

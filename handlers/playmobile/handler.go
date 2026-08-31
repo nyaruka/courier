@@ -43,7 +43,7 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
@@ -94,30 +94,28 @@ type mtResponse struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	payload := &mtResponse{}
 	err := handlers.DecodeAndValidateXML(payload, r)
 
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		return err
 	}
 
 	if len(payload.Message) == 0 {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "no messages, ignored")
+		return channels.Ignore("no messages, ignored")
 	}
-
-	in := channels.NewIncoming(c)
 
 	// parse each inbound message
 	for _, pmMsg := range payload.Message {
 		if pmMsg.MSIDSN == "" || pmMsg.ID == "" {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required fields msidsn or id"))
+			return fmt.Errorf("missing required fields msidsn or id")
 		}
 
 		// create our URN
 		urn, err := urns.ParsePhone(pmMsg.MSIDSN, c.Country(), true, false)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+			return err
 		}
 
 		// remove message prefix according to a list of possible prefixes, useful for free accounts. Channel config is
@@ -139,14 +137,14 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 
 		// build our msg
 		if pmMsg.Content.Text == "" {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("no text"))
+			return errors.New("no text")
 		}
 		msg := models.NewIncomingMsg(c, urn, pmMsg.Content.Text, pmMsg.ID, clog)
 		in.Msg(msg)
 	}
 
 	// and finally write our message
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

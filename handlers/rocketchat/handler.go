@@ -37,7 +37,7 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
 	return nil
 }
 
@@ -57,21 +57,21 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	// check authorization
 	secret := channel.StringConfigForKey(configSecret, "")
 	if fmt.Sprintf("Token %s", secret) != r.Header.Get("Authorization") {
-		return nil, channels.WriteAndLogUnauthorized(w, r, channel, fmt.Errorf("invalid Authorization header"))
+		return channels.Unauthenticated(fmt.Errorf("invalid Authorization header"))
 	}
 
 	// check content empty
 	if payload.Text == "" && len(payload.Attachments) == 0 {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or attachment"))
+		return errors.New("no text or attachment")
 	}
 
 	urn, err := urns.NewFromParts(urns.RocketChat.Prefix, payload.User.URN, nil, payload.User.Username)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	msg := models.NewIncomingMsg(channel, urn, payload.Text, "", clog).WithContactName(payload.User.FullName)
@@ -79,9 +79,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		msg.WithAttachment(attachment.URL)
 	}
 
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 // BuildAttachmentRequest download media for message attachment with RC auth_token/user_id set

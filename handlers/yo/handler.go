@@ -40,7 +40,7 @@ func newHandler() channels.Handler {
 }
 
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
@@ -53,11 +53,11 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// must have one of from or sender set, error if neither
@@ -66,7 +66,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		sender = form.From
 	}
 	if sender == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("must have one of 'sender' or 'from'"))
+		return errors.New("must have one of 'sender' or 'from'")
 	}
 
 	// if we have a date, parse it
@@ -79,23 +79,21 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid date format, must be RFC 3339"))
+			return errors.New("invalid date format, must be RFC 3339")
 		}
 	}
 
 	// create our URN
 	urn, err := urns.ParsePhone(sender, channel.Country(), true, false)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// build our msg
 	dbMsg := models.NewIncomingMsg(channel, urn, form.Message, "", clog).WithReceivedOn(date)
 
-	// and finally write our message
-	in := channels.NewIncoming(channel)
 	in.Msg(dbMsg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
