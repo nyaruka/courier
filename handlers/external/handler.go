@@ -82,8 +82,9 @@ func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodGet, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
 	r.AddReceive(h, http.MethodPost, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
 
-	r.AddReceive(h, http.MethodPost, "stopped", models.ChannelLogTypeEventReceive, h.receiveStopContact)
-	r.AddReceive(h, http.MethodGet, "stopped", models.ChannelLogTypeEventReceive, h.receiveStopContact)
+	stopHandler := handlers.FormPayload(h.receiveStopContact)
+	r.AddReceive(h, http.MethodPost, "stopped", models.ChannelLogTypeEventReceive, stopHandler)
+	r.AddReceive(h, http.MethodGet, "stopped", models.ChannelLogTypeEventReceive, stopHandler)
 
 	return nil
 }
@@ -92,15 +93,10 @@ type stopContactForm struct {
 	From string `name:"from" validate:"required"`
 }
 
-func (h *handler) receiveStopContact(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	form := &stopContactForm{}
-	err := handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
-		return err
-	}
-
+func (h *handler) receiveStopContact(ctx context.Context, channel *models.Channel, r *http.Request, form *stopContactForm, in *channels.Received, clog *models.ChannelLog) error {
 	// create our URN
-	urn := urns.NilURN
+	var urn urns.URN
+	var err error
 	if channel.Schemes()[0] == urns.Phone.Prefix {
 		urn, err = urns.ParsePhone(form.From, channel.Country(), true, false)
 	} else {
@@ -232,9 +228,9 @@ func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs [
 
 // buildStatusHandler deals with building a receive function that takes what status is received in the URL
 func (h *handler) buildStatusHandler(status string) channels.ReceiveFunc {
-	return func(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-		return h.receiveStatus(ctx, status, channel, r, in, clog)
-	}
+	return handlers.FormPayload(func(ctx context.Context, channel *models.Channel, r *http.Request, form *statusForm, in *channels.Received, clog *models.ChannelLog) error {
+		return h.receiveStatus(ctx, status, channel, r, form, in, clog)
+	})
 }
 
 type statusForm struct {
@@ -249,13 +245,7 @@ var statusMappings = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our receive function for status updates
-func (h *handler) receiveStatus(ctx context.Context, statusString string, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	form := &statusForm{}
-	err := handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
-		return err
-	}
-
+func (h *handler) receiveStatus(ctx context.Context, statusString string, channel *models.Channel, r *http.Request, form *statusForm, in *channels.Received, clog *models.ChannelLog) error {
 	if form.ID == "" && form.UUID == "" {
 		return fmt.Errorf("parameters id or uuid should not be empty")
 	}

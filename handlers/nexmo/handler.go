@@ -121,6 +121,8 @@ var statusMappings = map[string]models.MsgStatus{
 
 // receiveStatus is our receive function for status updates
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
+	// this one decodes for itself rather than using FormPayload, because it tolerates a partial decode - it
+	// checks the fields it needs below and ignores the request if they're missing
 	form := &statusForm{}
 	handlers.DecodeAndValidateForm(form, r)
 
@@ -152,6 +154,7 @@ type moForm struct {
 
 // receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
+	// decodes for itself for the same reason as receiveStatus above
 	form := &moForm{}
 	handlers.DecodeAndValidateForm(form, r)
 

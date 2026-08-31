@@ -43,8 +43,8 @@ func newHandler() channels.Handler {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
-	r.AddReceive(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, handlers.FormPayload(h.receiveMsg))
+	r.AddReceive(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, handlers.FormPayload(h.receiveStatus))
 	return nil
 }
 
@@ -63,13 +63,7 @@ type moStatusForm struct {
 }
 
 // receiveMsg is our receive function for incoming messages
-func (h *handler) receiveMsg(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	form := &moMsgForm{}
-	err := handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
-		return err
-	}
-
+func (h *handler) receiveMsg(ctx context.Context, channel *models.Channel, r *http.Request, form *moMsgForm, in *channels.Received, clog *models.ChannelLog) error {
 	// invalid type? ignore this
 	if form.Type != "text" && form.Type != "image" && form.Type != "video" && form.Type != "voice" && form.Type != "document" {
 		return channels.Ignore("ignoring request, unknown message type")
@@ -111,13 +105,7 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our receive function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	form := &moStatusForm{}
-	err := handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
-		return err
-	}
-
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, form *moStatusForm, in *channels.Received, clog *models.ChannelLog) error {
 	// unknown status? ignore this
 	msgStatus, found := statusMapping[form.Status]
 	if !found {

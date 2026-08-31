@@ -55,7 +55,7 @@ func newHandler() channels.Handler {
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
-	r.AddReceive(h, http.MethodPost, "", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodPost, "", models.ChannelLogTypeMsgReceive, handlers.XMLPayload(h.receiveMessage))
 	return nil
 }
 
@@ -108,13 +108,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our receive function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	payload := &moPayload{}
-	err := handlers.DecodeAndValidateXML(payload, r)
-	if err != nil {
-		return err
-	}
-
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.MsgID == "" && payload.Event == "" {
 		return fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'")
 	}

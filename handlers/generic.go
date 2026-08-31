@@ -71,14 +71,33 @@ func NewExternalIDStatusHandler(statuses map[string]models.MsgStatus, externalID
 	}
 }
 
-// JSONReceiveFunc is a receive function for a provider that sends JSON, which is decoded and validated for it
-type JSONReceiveFunc[T any] func(context.Context, *models.Channel, *http.Request, *T, *channels.Received, *models.ChannelLog) error
+// PayloadReceiveFunc is a receive function for a provider whose request body is decoded and validated into a
+// payload struct before the handler sees it. JSONPayload, FormPayload and XMLPayload each adapt one into a
+// plain receive function, differing only in how they decode.
+type PayloadReceiveFunc[T any] func(context.Context, *models.Channel, *http.Request, *T, *channels.Received, *models.ChannelLog) error
 
-// JSONPayload adapts a JSONReceiveFunc into a plain receive function
-func JSONPayload[T any](fn JSONReceiveFunc[T]) channels.ReceiveFunc {
+// JSONPayload adapts a receive function for a provider that sends JSON, decoding and validating it first
+func JSONPayload[T any](fn PayloadReceiveFunc[T]) channels.ReceiveFunc {
+	return withPayload(fn, DecodeAndValidateJSON)
+}
+
+// FormPayload adapts a receive function for a provider that sends form values, decoding and validating them
+// first. Handlers that must check a signature over the raw body decode for themselves instead.
+func FormPayload[T any](fn PayloadReceiveFunc[T]) channels.ReceiveFunc {
+	return withPayload(fn, DecodeAndValidateForm)
+}
+
+// XMLPayload adapts a receive function for a provider that sends XML, decoding and validating it first
+func XMLPayload[T any](fn PayloadReceiveFunc[T]) channels.ReceiveFunc {
+	return withPayload(fn, DecodeAndValidateXML)
+}
+
+// withPayload is the shared shape of the three adapters above: decode into a new T, then hand it to the
+// receive function - which never has to consider a request it couldn't be parsed from.
+func withPayload[T any](fn PayloadReceiveFunc[T], decode func(any, *http.Request) error) channels.ReceiveFunc {
 	return func(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 		payload := new(T)
-		if err := DecodeAndValidateJSON(payload, r); err != nil {
+		if err := decode(payload, r); err != nil {
 			return err
 		}
 		return fn(ctx, c, r, payload, in, clog)

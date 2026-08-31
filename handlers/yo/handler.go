@@ -40,7 +40,7 @@ func newHandler() channels.Handler {
 }
 
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, handlers.FormPayload(h.receiveMessage))
 	return nil
 }
 
@@ -53,13 +53,7 @@ type moForm struct {
 }
 
 // receiveMessage is our receive function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	form := &moForm{}
-	err := handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
-		return err
-	}
-
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, form *moForm, in *channels.Received, clog *models.ChannelLog) error {
 	// must have one of from or sender set, error if neither
 	sender := form.Sender
 	if sender == "" {
@@ -77,6 +71,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 
 	date := time.Now()
 	if dateString != "" {
+		var err error
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {
 			return errors.New("invalid date format, must be RFC 3339")
