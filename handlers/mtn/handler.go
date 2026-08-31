@@ -98,7 +98,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 
 		msgStatus, found := statusMapping[payload.DeliveryStatus]
 		if !found {
-			return fmt.Errorf("unknown status '%s'", payload.DeliveryStatus)
+			return handlers.UnknownStatusError(statusMapping, payload.DeliveryStatus)
 		}
 
 		if msgStatus == models.MsgStatusWired {

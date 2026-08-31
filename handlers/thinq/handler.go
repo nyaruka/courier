@@ -107,7 +107,7 @@ var statusMapping = map[string]models.MsgStatus{
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, form *statusForm, in *channels.Received, clog *models.ChannelLog) error {
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return fmt.Errorf("unknown status: '%s'", form.Status)
+		return handlers.UnknownStatusError(statusMapping, form.Status)
 	}
 
 	status := models.NewStatusUpdateByExternalID(channel, form.GUID, msgStatus, clog)
