@@ -67,7 +67,7 @@ require (
 	github.com/muir/sqltoken v0.5.2 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.1 // indirect
-	github.com/nyaruka/phonenumbers/v2 v2.0.8 // indirect
+	github.com/nyaruka/phonenumbers/v2 v2.0.10 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa // indirect
