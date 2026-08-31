@@ -71,7 +71,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 
 		msgStatus, found := statusMapping[payload.Status]
 		if !found {
-			return fmt.Errorf(`unknown status '%s', must be one of 'Delivered', 'Dispatched', 'Aborted', 'Rejected', 'Failed'  or 'Expired'`, payload.Status)
+			return handlers.UnknownStatusError(statusMapping, payload.Status)
 		}
 
 		in.Status(models.NewStatusUpdateByExternalID(channel, payload.BatchID, msgStatus, clog))

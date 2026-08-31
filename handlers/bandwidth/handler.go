@@ -148,7 +148,7 @@ func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, r 
 	statusPayload := payload[0]
 	msgStatus, found := statusMapping[statusPayload.Type]
 	if !found {
-		return fmt.Errorf("unknown status '%s', must be one of 'message-sending', 'message-delivered' or 'message-failed'", statusPayload.Type)
+		return handlers.UnknownStatusError(statusMapping, statusPayload.Type)
 	}
 
 	if statusPayload.ErrorCode != 0 {

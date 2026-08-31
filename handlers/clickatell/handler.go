@@ -72,7 +72,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 
 	msgStatus, found := statusMapping[payload.StatusCode]
 	if !found {
-		return fmt.Errorf("unknown status '%d', must be one of 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14", payload.StatusCode)
+		return handlers.UnknownStatusError(statusMapping, payload.StatusCode)
 	}
 
 	status := models.NewStatusUpdateByExternalID(channel, payload.MessageID, msgStatus, clog)

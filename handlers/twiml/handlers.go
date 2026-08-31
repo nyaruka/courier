@@ -192,7 +192,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 
 	msgStatus, found := statusMapping[form.MessageStatus]
 	if !found {
-		return fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", form.MessageStatus)
+		return handlers.UnknownStatusError(statusMapping, form.MessageStatus)
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on

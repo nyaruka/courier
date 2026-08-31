@@ -106,7 +106,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return fmt.Errorf("unknown status '%s', must be one of 'Success','Sent','Buffered','Rejected', 'Failed', or 'Expired'", form.Status)
+		return handlers.UnknownStatusError(statusMapping, form.Status)
 	}
 
 	status := models.NewStatusUpdateByExternalID(channel, form.ID, msgStatus, clog)

@@ -3,7 +3,6 @@ package wavy
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -65,7 +64,7 @@ type sentStatusPayload struct {
 func (h *handler) sentStatusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *sentStatusPayload, in *channels.Received, clog *models.ChannelLog) error {
 	msgStatus, found := statusMapping[payload.SentStatusCode]
 	if !found {
-		return fmt.Errorf("unknown sent status code '%d', must be one of 2, 101, 102, 103, 201, 202, 203, 204, 205, 207 or 301 ", payload.SentStatusCode)
+		return handlers.UnknownStatusError(statusMapping, payload.SentStatusCode)
 	}
 
 	status := models.NewStatusUpdateByExternalID(channel, payload.CollerationID, msgStatus, clog)
@@ -82,7 +81,7 @@ type deliveredStatusPayload struct {
 func (h *handler) deliveredStatusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *deliveredStatusPayload, in *channels.Received, clog *models.ChannelLog) error {
 	msgStatus, found := statusMapping[payload.DeliveredStatusCode]
 	if !found {
-		return fmt.Errorf("unknown delivered status code '%d', must be 4 or 104", payload.DeliveredStatusCode)
+		return handlers.UnknownStatusError(statusMapping, payload.DeliveredStatusCode)
 	}
 
 	status := models.NewStatusUpdateByExternalID(channel, payload.CollerationID, msgStatus, clog)

@@ -43,7 +43,7 @@ var testCases = []IncomingTestCase{
 		Label:                "Receive Invalid Status",
 		URL:                  statusURL + "?message_id=12345&status=unknown",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "unknown status value",
+		ExpectedBodyContains: "unknown status 'unknown'",
 	},
 }
 

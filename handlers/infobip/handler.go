@@ -62,7 +62,7 @@ func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, r 
 	for _, s := range payload.Results {
 		msgStatus, found := statusMapping[s.Status.GroupName]
 		if !found {
-			return fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", s.Status.GroupName)
+			return handlers.UnknownStatusError(statusMapping, s.Status.GroupName)
 		}
 
 		in.Status(models.NewStatusUpdateByExternalID(channel, s.MessageID, msgStatus, clog))

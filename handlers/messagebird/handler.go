@@ -108,7 +108,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 
 	msgStatus, found := statusMapping[receivedStatus.Status]
 	if !found {
-		return fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", receivedStatus.Status)
+		return handlers.UnknownStatusError(statusMapping, receivedStatus.Status)
 	}
 
 	// if the message id was passed explicitely, use that

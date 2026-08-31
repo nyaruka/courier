@@ -140,7 +140,7 @@ func (h *handler) statusMessage(ctx context.Context, c *models.Channel, r *http.
 
 	msgStatus, found := statusMapping[payload.Data.Status]
 	if !found {
-		return fmt.Errorf("unknown status '%s', must be one of send, delivered, undelivered, failed", payload.Data.Status)
+		return handlers.UnknownStatusError(statusMapping, payload.Data.Status)
 	}
 	status := models.NewStatusUpdateByExternalID(c, fmt.Sprint(payload.Data.MessageID), msgStatus, clog)
 	in.Status(status)

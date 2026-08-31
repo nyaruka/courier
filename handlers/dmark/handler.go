@@ -98,7 +98,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return fmt.Errorf("unknown status '%s', must be one of '1','2','4','8' or '16'", form.Status)
+		return handlers.UnknownStatusError(statusMapping, form.Status)
 	}
 
 	status := models.NewStatusUpdate(channel, models.MsgUUID(form.UUID), msgStatus, clog)
