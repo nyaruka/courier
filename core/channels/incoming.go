@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/svclogs"
 )
 
 // Incoming is the ordered set of things one incoming request contained - the messages, status updates and
@@ -19,6 +20,7 @@ import (
 // to apply anything that spans the request.
 type Incoming struct {
 	channel *models.Channel
+	kind    svclogs.Type
 	items   []incomingItem
 }
 
@@ -38,6 +40,17 @@ type deletedMsg struct {
 // NewIncoming creates an empty set of incoming items for a handler to add to. Everything one request
 // contained is for the same channel - the one the server resolved before the handler was called.
 func NewIncoming(ch *models.Channel) *Incoming { return &Incoming{channel: ch} }
+
+// As declares what this request is being handled as, which decides how it's answered and how it's logged.
+//
+// It starts as whatever the route was registered as, which is right for the routes that serve one purpose. A
+// route that serves more than one - a provider that delivers messages and statuses through a single URL, or a
+// receive route where a particular message means a contact started a conversation - says so with this, at the
+// point it works out which it's dealing with.
+func (i *Incoming) As(kind svclogs.Type) *Incoming { i.kind = kind; return i }
+
+// Kind returns what this request is being handled as
+func (i *Incoming) Kind() svclogs.Type { return i.kind }
 
 // Msg adds a message parsed from the request
 func (i *Incoming) Msg(m *models.MsgIn) { i.items = append(i.items, incomingItem{event: m}) }

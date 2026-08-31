@@ -10,16 +10,26 @@ import (
 
 // WriteIncomingAndResponse writes everything a request contained and then answers it.
 //
-// Which response that is comes from the log type its route was registered with: a receive route answers as a
-// receive, a status callback as a status. The shape a provider expects belongs to the endpoint it called
-// rather than to whatever the request happened to carry, which is why this reads the route's intent instead of
-// inspecting the batch - a status callback that also stopped a contact still answers as a status callback.
+// Which response that is comes from what the request is being handled as: a receive answers as a receive, a
+// status callback as a status. The shape a provider expects belongs to the endpoint it called rather than to
+// whatever the request happened to carry, which is why this reads the batch's declared kind instead of
+// inspecting its contents - a status callback that also stopped a contact still answers as a status callback.
+//
+// That declaration is also what the request is logged as, so the two can't drift apart.
 func WriteIncomingAndResponse(ctx context.Context, h channels.Handler, in *channels.Incoming, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	// a request we found nothing in is one we ignored, rather than one we handled emptily - which saves every
 	// handler that can parse its way to nothing from checking for it
 	if in.Len() == 0 {
 		return nil, WriteAndLogRequestIgnored(ctx, h, in.Channel(), w, r, "ignoring request, nothing to handle")
 	}
+
+	// what a request is handled as is declared on the batch, and is what it's logged as. Handlers not yet on
+	// the Receive seam build their own batch without one, so fall back to what the server logged the route as.
+	kind := in.Kind()
+	if kind == "" {
+		kind = clog.Type
+	}
+	clog.Type = kind
 
 	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
 	if err != nil {
@@ -30,7 +40,7 @@ func WriteIncomingAndResponse(ctx context.Context, h channels.Handler, in *chann
 
 	events := channels.IncomingEvents(results)
 
-	switch clog.Type {
+	switch kind {
 	case models.ChannelLogTypeMsgReceive:
 		msgs := make([]*models.MsgIn, 0, len(events))
 		for _, e := range events {

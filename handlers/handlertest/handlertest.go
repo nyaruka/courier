@@ -78,6 +78,10 @@ type IncomingTestCase struct {
 	ExpectedErrors        []*svclogs.Error
 	ExpectedNewURN        *models.NewURNSpec
 	NoLogsExpected        bool
+
+	// ExpectedLogType asserts the type the channel log ended up with, which is derived from what the request
+	// turned out to contain rather than declared by the route. Left unset it isn't checked.
+	ExpectedLogType svclogs.Type
 }
 
 // utility method to make a request to a handler URL
@@ -323,6 +327,10 @@ func RunIncomingTestCases(t *testing.T, chs []*models.Channel, handler channels.
 				if assert.Equal(t, 1, len(handledLogs), "expected a channel log") {
 					clog := handledLogs[0]
 					assert.Equal(t, append([]*svclogs.Error{}, tc.ExpectedErrors...), clog.Errors, "unexpected errors logged")
+
+					if tc.ExpectedLogType != "" {
+						assert.Equal(t, tc.ExpectedLogType, clog.Type, "unexpected channel log type")
+					}
 				}
 			}
 		})

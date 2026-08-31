@@ -1,9 +1,25 @@
 package channels
 
 import (
+	"fmt"
+
 	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
+
+// IgnoredRequest is returned by a receive function for a request we understood but which asked nothing of us -
+// a status we don't track, an echo of our own message. It isn't a failure, so it's answered as ignored rather
+// than as an error, and the details say what we saw.
+type IgnoredRequest struct {
+	Details string
+}
+
+func (e *IgnoredRequest) Error() string { return e.Details }
+
+// Ignore returns an error saying this request asked nothing of us, and why
+func Ignore(format string, args ...any) error {
+	return &IgnoredRequest{Details: fmt.Sprintf(format, args...)}
+}
 
 type SendResult struct {
 	externalIDs []string
