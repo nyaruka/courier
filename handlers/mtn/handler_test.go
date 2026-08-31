@@ -147,6 +147,16 @@ var incomingCases = []IncomingTestCase{
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "unknown status",
 	},
+	{
+		// this route serves both messages and statuses, so a body we can't even read stays logged as the
+		// multi-purpose type it was registered as
+		Label:                "Receive invalid JSON",
+		URL:                  receiveURL,
+		Data:                 `not json`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unable to parse request JSON",
+		ExpectedLogType:      models.ChannelLogTypeMultiReceive,
+	},
 }
 
 func TestIncoming(t *testing.T) {

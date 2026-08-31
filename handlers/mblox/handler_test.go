@@ -116,6 +116,16 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "missing one of 'batch_id' or 'status' in request body",
 	},
+	{
+		// this route serves both messages and statuses, so a payload that's neither stays logged as the
+		// multi-purpose type it was registered as
+		Label:                "Unknown Type",
+		ExpectedLogType:      models.ChannelLogTypeMultiReceive,
+		URL:                  receiveURL,
+		Data:                 `{"type": "mo_binary"}`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "not handled, unknown type: mo_binary",
+	},
 }
 
 func TestIncoming(t *testing.T) {

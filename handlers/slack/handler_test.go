@@ -52,6 +52,25 @@ const helloMsg = `{
 	"event_time": 1355517523
 }`
 
+// a message the bot itself posted, which comes back to us on the same webhook and isn't ours to receive
+const botMsg = `{
+	"token": "one-long-verification-token",
+	"team_id": "T061EG9R6",
+	"api_app_id": "A0PNCHHK2",
+	"event": {
+			"type": "message",
+			"channel": "U0123ABCDEF",
+			"bot_id": "B0PNCHHK2",
+			"text": "Hello World!",
+			"ts": "1355517523.000005",
+			"event_ts": "1355517523.000005",
+			"channel_type": "im"
+	},
+	"type": "event_callback",
+	"event_id": "Ev0PV52K21",
+	"event_time": 1355517523
+}`
+
 const imageFileMsg = `{
 	"token": "Bwf82iq5kCEkHOzRQ7p4FqkQ",
 	"team_id": "T03CN5KTA6S",
@@ -173,6 +192,17 @@ var handleTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedExternalID:   "Ev0PV52K21",
+	},
+	{
+		// this route serves both messages and the verification handshake, so an event that's neither stays
+		// logged as the multi-purpose type it was registered as
+		Label:                "Receive bot message",
+		URL:                  receiveURL,
+		Headers:              map[string]string{},
+		Data:                 botMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Ignoring request, no message",
+		ExpectedLogType:      models.ChannelLogTypeMultiReceive,
 	},
 }
 

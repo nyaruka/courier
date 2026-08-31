@@ -21,6 +21,12 @@ type ReceiveFunc func(context.Context, *models.Channel, *http.Request, *Received
 
 // AddReceive adds a route served by a receive function. Routes that need to own their whole response - a
 // verification handshake, a CORS preflight - use Add with a HandleFunc instead.
+//
+// The log type is what the route serves, and is where the batch starts out - so a route serving one purpose
+// names it, and a route serving several registers as ChannelLogTypeMultiReceive and narrows it with
+// Received.As once it knows which it's dealing with. Registering the multi-purpose type isn't a placeholder:
+// it's what a request that never got as far as being classified - one that failed to parse, or named an event
+// we don't handle - is left logged as.
 func (r *Routes) AddReceive(handler Handler, method string, action string, logType svclogs.Type, fn ReceiveFunc) {
 	r.Add(handler, method, action, logType, Receive(handler, fn))
 }
