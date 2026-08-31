@@ -381,6 +381,13 @@ var handleTestCases = []IncomingTestCase{
 		ExpectedBodyContains: "invalid request signature",
 		PrepRequest:          addInvalidSignature,
 	},
+	{
+		Label:                "Receive Valid Message Missing signature",
+		URL:                  receiveURL,
+		Data:                 receiveValidMessage,
+		ExpectedRespStatus:   401,
+		ExpectedBodyContains: "missing request signature",
+	},
 }
 
 func addValidSignature(r *http.Request) {
