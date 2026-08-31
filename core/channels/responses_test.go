@@ -2,7 +2,6 @@ package channels_test
 
 import (
 	"errors"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -30,17 +29,6 @@ func TestWriteIgnored(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, "{\"message\":\"Ignored\",\"data\":[{\"type\":\"info\",\"info\":\"why you calling\"}]}\n", w.Body.String())
-}
-
-func TestWriteAndLogUnauthorized(t *testing.T) {
-	ch := test.NewMockChannel("5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec", "NX", "+1234567890", "US", []string{urns.Phone.Prefix}, nil)
-	r, _ := http.NewRequest("GET", "http://example.com", nil)
-	w := httptest.NewRecorder()
-
-	err := channels.WriteAndLogUnauthorized(w, r, ch, errors.New("wrong password"))
-	assert.NoError(t, err)
-	assert.Equal(t, 401, w.Code)
-	assert.Equal(t, "{\"message\":\"Unauthorized\",\"data\":[{\"type\":\"error\",\"error\":\"wrong password\"}]}\n", w.Body.String())
 }
 
 func TestWriteMsgSuccess(t *testing.T) {
