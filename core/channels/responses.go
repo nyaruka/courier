@@ -19,12 +19,6 @@ func WriteAndLogRequestError(ctx context.Context, h Handler, w http.ResponseWrit
 	return h.WriteRequestError(ctx, w, err)
 }
 
-// WriteAndLogRequestIgnored writes a JSON response saying the request was ignored and logs why
-func WriteAndLogRequestIgnored(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Request, c *models.Channel, details string) error {
-	LogRequestIgnored(r, c, details)
-	return h.WriteRequestIgnored(ctx, w, details)
-}
-
 // WriteError writes a JSON response for the passed in error
 func WriteError(w http.ResponseWriter, statusCode int, err error) error {
 	errors := []any{NewErrorData(err.Error())}
@@ -41,12 +35,6 @@ func WriteError(w http.ResponseWriter, statusCode int, err error) error {
 // WriteIgnored writes a JSON response indicating that we ignored the request
 func WriteIgnored(w http.ResponseWriter, details string) error {
 	return WriteDataResponse(w, http.StatusOK, "Ignored", []any{NewInfoData(details)})
-}
-
-// WriteAndLogUnauthorized writes a JSON response for the passed in message and logs an info message
-func WriteAndLogUnauthorized(w http.ResponseWriter, r *http.Request, c *models.Channel, err error) error {
-	LogRequestError(r, c, err)
-	return WriteDataResponse(w, http.StatusUnauthorized, "Unauthorized", []any{NewErrorData(err.Error())})
 }
 
 // WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it
