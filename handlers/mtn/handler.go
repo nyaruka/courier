@@ -45,7 +45,7 @@ func newHandler() channels.Handler {
 
 // Initialize implements channels.Handler
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h.receiveEvent))
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h.receiveEvent))
 	return nil
 }
 
