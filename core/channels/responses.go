@@ -13,8 +13,8 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-// WriteAndLogRequestError writes a JSON response for the passed in error and logs an info message
-func WriteAndLogRequestError(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Request, c *models.Channel, err error) error {
+// WriteErrorResponse writes an error response for the passed in error, using the handler's error writer
+func WriteErrorResponse(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Request, c *models.Channel, err error) error {
 	LogRequestError(r, c, err)
 	return h.WriteRequestError(ctx, w, err)
 }

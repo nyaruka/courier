@@ -71,7 +71,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel *models.Channel, w http
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, channels.WriteAndLogRequestError(ctx, h, w, r, channel, err)
+		return nil, channels.WriteErrorResponse(ctx, h, w, r, channel, err)
 	}
 
 	dictOrder := []string{channel.StringConfigForKey(models.ConfigSecret, ""), form.Timestamp, form.Nonce}

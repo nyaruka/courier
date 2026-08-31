@@ -249,14 +249,14 @@ func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc chan
 
 		recorder, err := httpx.NewRecorder(r, w, true)
 		if err != nil {
-			channels.WriteAndLogRequestError(ctx, handler, w, r, nil, err)
+			channels.WriteErrorResponse(ctx, handler, w, r, nil, err)
 			return
 		}
 
 		// get the channel for this request - can be nil, e.g. FBA verification requests
 		channel, err := handler.GetChannel(ctx, r)
 		if err != nil {
-			channels.WriteAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, err)
+			channels.WriteErrorResponse(ctx, handler, recorder.ResponseWriter, r, channel, err)
 			return
 		}
 
@@ -270,7 +270,7 @@ func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc chan
 			if panicVal := recover(); panicVal != nil {
 				runtime.PanicHandler(panicVal, map[string]string{"channel_type": string(handler.ChannelType())})
 
-				channels.WriteAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
+				channels.WriteErrorResponse(ctx, handler, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
 			}
 		}()
 
