@@ -197,7 +197,7 @@ type mediaUploadInfoPayload struct {
 }
 
 // receiveEvent handles request event type
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	// check shared secret key before proceeding
 	secret := channel.StringConfigForKey(models.ConfigSecret, "")
 
@@ -229,7 +229,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 // verifyServer handles VK's callback verification
 
 // receiveMessage handles new message event
-func (h *handler) receiveMessage(channel *models.Channel, payload *moNewMessagePayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveMessage(channel *models.Channel, payload *moNewMessagePayload, in *channels.Received, clog *models.ChannelLog) error {
 	userId := payload.Object.Message.UserId
 	urn, err := urns.New(urns.VK, strconv.FormatInt(userId, 10))
 

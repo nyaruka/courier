@@ -209,7 +209,7 @@ func (h *handler) resolveMediaURL(mediaID string, token string, clog *models.Cha
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *Notifications, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *Notifications, in *channels.Received, clog *models.ChannelLog) error {
 	if err := h.validateSignature(r); err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r 
 // which is what lets the whole batch be written together, and keeps a failure part way through it from leaving
 // a response that describes more than we actually did. It still does I/O, since resolving a message's media
 // means asking the provider for its URL, but it makes no changes.
-func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 
 	token := h.Runtime().Config.WhatsappAdminSystemUserToken
 
@@ -354,7 +354,7 @@ func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notific
 // of them. It matters most for this payload shape, which carries channel events - those have no duplicate
 // detection of their own, so a parse failure part way through used to leave the events before it written and
 // then ask the provider to resend the whole batch, writing them a second time.
-func (h *handler) parseFacebookInstagramPayload(channel *models.Channel, payload *Notifications, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) parseFacebookInstagramPayload(channel *models.Channel, payload *Notifications, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 
 	var err error
 

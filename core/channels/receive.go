@@ -17,7 +17,7 @@ import (
 // as unauthorized, and Reply with the exact body the provider expects - which is what lets a route with one
 // verification branch keep the rest of itself on this seam. A handler that parses its way to nothing just
 // returns, and the empty batch says the same thing.
-type ReceiveFunc func(context.Context, *models.Channel, *http.Request, *Incoming, *models.ChannelLog) error
+type ReceiveFunc func(context.Context, *models.Channel, *http.Request, *Received, *models.ChannelLog) error
 
 // AddReceive adds a route served by a receive function. Routes that need to own their whole response - a
 // verification handshake, a CORS preflight - use Add with a HandleFunc instead.
@@ -31,7 +31,7 @@ func Receive(h Handler, fn ReceiveFunc) HandleFunc {
 	return func(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]Event, error) {
 		// the batch starts out as whatever the route was registered as, which the handler can change once it
 		// knows what it's actually dealing with
-		in := NewIncoming(c).As(clog.Type)
+		in := NewReceived(c).As(clog.Type)
 
 		err := fn(ctx, c, r, in, clog)
 
@@ -43,7 +43,7 @@ func Receive(h Handler, fn ReceiveFunc) HandleFunc {
 			// whatever the handler parsed before it gave up is still ours to keep - a provider that batches
 			// several messages into one request won't send the good ones again just because a later one was
 			// malformed, so they're written before the failure is reported
-			events, werr := writeIncoming(ctx, h, in, clog)
+			events, werr := writeReceived(ctx, h, in, clog)
 			if werr != nil {
 				return events, werr
 			}
@@ -63,20 +63,20 @@ func Receive(h Handler, fn ReceiveFunc) HandleFunc {
 			return events, WriteAndLogRequestError(ctx, h, w, r, c, err)
 		}
 
-		return writeIncomingAndResponse(ctx, h, in, w, r, clog)
+		return writeReceivedAndResponse(ctx, h, in, w, r, clog)
 	}
 }
 
 // writes a batch without answering for it, for the paths that answer some other way
-func writeIncoming(ctx context.Context, h Handler, in *Incoming, clog *models.ChannelLog) ([]Event, error) {
+func writeReceived(ctx context.Context, h Handler, in *Received, clog *models.ChannelLog) ([]Event, error) {
 	if in.Len() == 0 {
 		return nil, nil
 	}
-	results, err := WriteIncoming(ctx, h.Runtime(), in, clog)
-	return IncomingEvents(results), err
+	results, err := WriteReceived(ctx, h.Runtime(), in, clog)
+	return AcceptedEvents(results), err
 }
 
-// writeIncomingAndResponse writes everything a request contained and then answers it.
+// writeReceivedAndResponse writes everything a request contained and then answers it.
 //
 // Which response that is comes from what the request is being handled as: a receive answers as a receive, a
 // status callback as a status. The shape a provider expects belongs to the endpoint it called rather than to
@@ -84,21 +84,21 @@ func writeIncoming(ctx context.Context, h Handler, in *Incoming, clog *models.Ch
 // inspecting its contents - a status callback that also stopped a contact still answers as a status callback.
 //
 // That declaration is also what the request is logged as, so the two can't drift apart.
-func writeIncomingAndResponse(ctx context.Context, h Handler, in *Incoming, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]Event, error) {
+func writeReceivedAndResponse(ctx context.Context, h Handler, in *Received, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]Event, error) {
 	// a request we found nothing in is one we ignored, rather than one we handled emptily - which saves every
 	// handler that can parse its way to nothing from checking for it
 	if in.Len() == 0 {
 		return nil, WriteAndLogRequestIgnored(ctx, h, w, r, in.Channel(), "ignoring request, nothing to handle")
 	}
 
-	results, err := WriteIncoming(ctx, h.Runtime(), in, clog)
+	results, err := WriteReceived(ctx, h.Runtime(), in, clog)
 	if err != nil {
 		// whatever was written before the failure still happened, so report it rather than losing it from our
 		// logging and stats
-		return IncomingEvents(results), err
+		return AcceptedEvents(results), err
 	}
 
-	events := IncomingEvents(results)
+	events := AcceptedEvents(results)
 
 	switch in.Kind() {
 	case models.ChannelLogTypeMsgReceive:
@@ -129,6 +129,6 @@ func writeIncomingAndResponse(ctx context.Context, h Handler, in *Incoming, w ht
 		return events, WriteChannelEventsSuccess(w, chEvents)
 
 	default:
-		return events, WriteIncomingResponse(w, results)
+		return events, WriteReceivedResponse(w, results)
 	}
 }

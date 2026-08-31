@@ -74,7 +74,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, payload *moPayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if len(payload.InboundSMSMessageList.InboundSMSMessage) == 0 {
 		return channels.Ignore("no messages, ignored")
 	}

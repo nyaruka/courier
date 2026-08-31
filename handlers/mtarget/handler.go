@@ -53,7 +53,7 @@ func (h *handler) Initialize(r *channels.Routes) error {
 }
 
 // ReceiveMsg handles both MO messages and Stop commands
-func (h *handler) receiveMsg(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveMsg(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	err := r.ParseForm()
 	if err != nil {
 		return err

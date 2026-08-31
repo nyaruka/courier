@@ -221,7 +221,7 @@ type receivePayload struct {
 }
 
 // receive is our HTTP handler function for incoming messages
-func (h *handler) receive(ctx context.Context, channel *models.Channel, r *http.Request, payload *receivePayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receive(ctx context.Context, channel *models.Channel, r *http.Request, payload *receivePayload, in *channels.Received, clog *models.ChannelLog) error {
 	urn, err := urns.NewFromParts(urns.WebChat.Prefix, payload.ChatID, nil, "")
 	if err != nil {
 		return fmt.Errorf("invalid chat id: %s", payload.ChatID)

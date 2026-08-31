@@ -97,7 +97,7 @@ func (h *handler) Initialize(r *channels.Routes) error {
 	return nil
 }
 
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 
 	// get our params
 	receivedStatus := &ReceivedStatus{}
@@ -141,7 +141,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 	return nil
 }
 
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return err

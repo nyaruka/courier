@@ -46,7 +46,7 @@ func (h *handler) Initialize(r *channels.Routes) error {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	// check authentication
 	secret := c.StringConfigForKey(models.ConfigSecret, "")
 	if secret != "" {

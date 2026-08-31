@@ -39,7 +39,7 @@ func (h *handler) Initialize(r *channels.Routes) error {
 }
 
 // receiveMessage takes care of handling incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	err := r.ParseForm()
 	if err != nil {
 		return err

@@ -207,7 +207,7 @@ type moPayload struct {
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	// not a page object? ignore
 	if payload.Object != "page" {
 		return channels.Ignore("ignoring non-page request")
@@ -230,7 +230,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r 
 // It matters most here because this handler creates channel events, which have no duplicate detection of their
 // own: a parse failure used to leave the events before it written and then ask the provider to resend the whole
 // batch, which wrote them a second time.
-func (h *handler) parseEvents(channel *models.Channel, payload *moPayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) parseEvents(channel *models.Channel, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 
 	seenMsgIDs := make(map[string]bool, 2)
 

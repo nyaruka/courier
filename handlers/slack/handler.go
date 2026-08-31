@@ -51,7 +51,7 @@ func (h *handler) Initialize(r *channels.Routes) error {
 	return nil
 }
 
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.Type == "url_verification" {
 		in.As(models.ChannelLogTypeWebhookVerify)
 

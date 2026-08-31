@@ -13,7 +13,7 @@ import (
 
 // NewTelReceiveHandler creates a new receive function given the passed in text and from fields
 func NewTelReceiveHandler(fromField string, bodyField string) channels.ReceiveFunc {
-	return func(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+	return func(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 		if err := r.ParseForm(); err != nil {
 			return err
 		}
@@ -36,7 +36,7 @@ func NewTelReceiveHandler(fromField string, bodyField string) channels.ReceiveFu
 
 // NewExternalIDStatusHandler creates a new status receive function given the passed in status map and fields
 func NewExternalIDStatusHandler(statuses map[string]models.MsgStatus, externalIDField string, statusField string) channels.ReceiveFunc {
-	return func(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+	return func(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 		if err := r.ParseForm(); err != nil {
 			return err
 		}
@@ -58,11 +58,11 @@ func NewExternalIDStatusHandler(statuses map[string]models.MsgStatus, externalID
 }
 
 // JSONReceiveFunc is a receive function for a provider that sends JSON, which is decoded and validated for it
-type JSONReceiveFunc[T any] func(context.Context, *models.Channel, *http.Request, *T, *channels.Incoming, *models.ChannelLog) error
+type JSONReceiveFunc[T any] func(context.Context, *models.Channel, *http.Request, *T, *channels.Received, *models.ChannelLog) error
 
 // JSONPayload adapts a JSONReceiveFunc into a plain receive function
 func JSONPayload[T any](fn JSONReceiveFunc[T]) channels.ReceiveFunc {
-	return func(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+	return func(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 		payload := new(T)
 		if err := DecodeAndValidateJSON(payload, r); err != nil {
 			return err

@@ -62,7 +62,7 @@ type sentStatusPayload struct {
 }
 
 // sentStatusMessage is our HTTP handler function for status updates
-func (h *handler) sentStatusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *sentStatusPayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) sentStatusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *sentStatusPayload, in *channels.Received, clog *models.ChannelLog) error {
 	msgStatus, found := statusMapping[payload.SentStatusCode]
 	if !found {
 		return fmt.Errorf("unknown sent status code '%d', must be one of 2, 101, 102, 103, 201, 202, 203, 204, 205, 207 or 301 ", payload.SentStatusCode)
@@ -80,7 +80,7 @@ type deliveredStatusPayload struct {
 }
 
 // sentStatusMessage is our HTTP handler function for status updates
-func (h *handler) deliveredStatusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *deliveredStatusPayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) deliveredStatusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *deliveredStatusPayload, in *channels.Received, clog *models.ChannelLog) error {
 	msgStatus, found := statusMapping[payload.DeliveredStatusCode]
 	if !found {
 		return fmt.Errorf("unknown delivered status code '%d', must be 4 or 104", payload.DeliveredStatusCode)
@@ -101,7 +101,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	date := time.Unix(0, int64(payload.Timestamp*1000000)).UTC()
 
 	// create our URN

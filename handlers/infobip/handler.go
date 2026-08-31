@@ -57,7 +57,7 @@ type ibStatus struct {
 }
 
 // statusMessage is our HTTP handler function for status updates
-func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *statusPayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *statusPayload, in *channels.Received, clog *models.ChannelLog) error {
 
 	for _, s := range payload.Results {
 		msgStatus, found := statusMapping[s.Status.GroupName]
@@ -106,7 +106,7 @@ type v3InboundPrice struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages (both SMS and MMS)
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *v3InboundPayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *v3InboundPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.MessageCount == 0 {
 		return channels.Ignore("ignoring request, no message")
 	}

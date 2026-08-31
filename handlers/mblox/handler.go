@@ -61,7 +61,7 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventPayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.Type == "recipient_delivery_report_sms" {
 		in.As(models.ChannelLogTypeMsgStatus)
 

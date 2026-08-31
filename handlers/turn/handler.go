@@ -147,7 +147,7 @@ type eventsPayload struct {
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventsPayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventsPayload, in *channels.Received, clog *models.ChannelLog) error {
 	// a failure here is in the payload itself, so asking for it again wouldn't get any further. The seam writes
 	// whatever was parsed ahead of it rather than dropping it.
 	return h.parseEvents(channel, payload, r, in, clog)
@@ -157,7 +157,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r 
 // lets the whole batch be written together, and keeps a failure part way through it from leaving a response
 // that describes more than we actually did. It still does I/O, since resolving a message's media means asking
 // the provider for its URL, but it makes no changes.
-func (h *handler) parseEvents(channel *models.Channel, payload *eventsPayload, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) parseEvents(channel *models.Channel, payload *eventsPayload, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 
 	seenMsgIDs := make(map[string]bool, 2)
 

@@ -76,7 +76,7 @@ type Notifications struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *Notifications, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *Notifications, in *channels.Received, clog *models.ChannelLog) error {
 	// is not a 'whatsapp_business_account' object? ignore it
 	if payload.Object != "whatsapp_business_account" {
 		return channels.Ignore("ignoring request")
@@ -98,7 +98,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 // means asking the provider for its URL, but it makes no changes.
 //
 // A non-empty second return means the request should be ignored in its entirety.
-func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 
 	seenMsgIDs := make(map[string]bool)
 	contactNames := make(map[string]string)

@@ -53,7 +53,7 @@ func (h *handler) Initialize(r *channels.Routes) error {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Incoming, clog *models.ChannelLog) error {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	// no message? ignore this
 	if payload.Message.MessageID == 0 {
 		return channels.Ignore("Ignoring request, no message")
