@@ -145,7 +145,7 @@ var incomingCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 uknownStatus,
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "unknown status",
+		ExpectedBodyContains: `unknown status 'blabla', must be one of 'DELIVRD', 'DeliveredToNetwork', 'DeliveredToTerminal', 'DeliveryImpossible', 'DeliveryNotificationNotSupported', 'DeliveryUncertain', 'EXPIRED', 'MessageWaiting'`,
 	},
 	{
 		// a body we can't even read is never classified, so it keeps the kind the route was registered with -

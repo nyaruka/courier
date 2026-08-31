@@ -262,7 +262,7 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	// get our status
 	msgStatus, found := statusMappings[strings.ToLower(statusString)]
 	if !found {
-		return fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString)
+		return handlers.UnknownStatusError(statusMappings, statusString)
 	}
 
 	in.Status(models.NewStatusUpdate(channel, models.MsgUUID(msgUUID), msgStatus, clog))

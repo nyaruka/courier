@@ -77,7 +77,7 @@ var testCases = []IncomingTestCase{
 		Data:                 "guid=1234&status=UN",
 		ExpectedRespStatus:   400,
 		ExpectedExternalID:   "1234",
-		ExpectedBodyContains: `"unknown status: 'UN'"`,
+		ExpectedBodyContains: `unknown status 'UN', must be one of 'DELETED', 'DELIVRD', 'EXPIRED', 'REJECTD', 'UNDELIV', 'UNKNOWN'`,
 	},
 	{
 		Label:                "Status Missing GUID",
