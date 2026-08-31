@@ -214,15 +214,8 @@ func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r 
 		return err
 	}
 
-	// is not a 'page' and 'instagram' object? ignore it
-	if payload.Object != "page" && payload.Object != "instagram" && payload.Object != "whatsapp_business_account" {
-		return channels.Ignore("ignoring request")
-	}
-
-	// no entries? ignore this request
-	if len(payload.Entry) == 0 {
-		return channels.Ignore("ignoring request, no entries")
-	}
+	// a payload with an unexpected object or no entries never gets here - GetChannel decodes the same body
+	// and fails the request first
 
 	// a failure here is in the payload itself, so asking for it again wouldn't get any further. The seam writes
 	// whatever was parsed ahead of it rather than dropping it.

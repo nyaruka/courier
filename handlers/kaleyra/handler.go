@@ -124,13 +124,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 		return channels.Ignore("unknown status: %s", form.Status)
 	}
 
-	// msg not found? ignore this
-	status := models.NewStatusUpdateByExternalID(channel, form.ID, msgStatus, clog)
-	if status == nil {
-		return channels.Ignore("ignoring request, message %s not found", form.ID)
-	}
-
-	in.Status(status)
+	in.Status(models.NewStatusUpdateByExternalID(channel, form.ID, msgStatus, clog))
 	return nil
 }
 

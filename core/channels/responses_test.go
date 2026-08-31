@@ -48,7 +48,7 @@ func TestWriteMsgSuccess(t *testing.T) {
 	assert.Equal(t, "{\"message\":\"Message Accepted\",\"data\":[{\"type\":\"msg\",\"channel_uuid\":\"5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec\",\"msg_uuid\":\"588aafc4-ab5c-48ce-89e8-05c9fdeeafb7\",\"text\":\"hi there\",\"urn\":\"tel:+0987654321\"}]}\n", w.Body.String())
 }
 
-func TestWriteChannelEventSuccess(t *testing.T) {
+func TestWriteChannelEventsSuccess(t *testing.T) {
 	ch := test.NewMockChannel("5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec", "NX", "+1234567890", "US", []string{urns.Phone.Prefix}, nil)
 	evt := &models.ChannelEvent{
 		UUID_:        "0199df03-621a-7e52-a6b0-7086c8b1a86a",
@@ -60,7 +60,7 @@ func TestWriteChannelEventSuccess(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 
-	err := channels.WriteChannelEventSuccess(w, evt)
+	err := channels.WriteChannelEventsSuccess(w, []*models.ChannelEvent{evt})
 	assert.NoError(t, err)
 	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, "{\"message\":\"Event Accepted\",\"data\":[{\"type\":\"event\",\"channel_uuid\":\"5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec\",\"event_type\":\"stop_contact\",\"urn\":\"tel:+0987654321\",\"received_on\":\"2022-09-15T12:07:30Z\"}]}\n", w.Body.String())

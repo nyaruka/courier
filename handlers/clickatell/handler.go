@@ -44,8 +44,8 @@ func (h *handler) Initialize(r *channels.Routes) error {
 }
 
 type statusPayload struct {
-	MessageID  string `name:"messageId"`
-	StatusCode int    `name:"statusCode"`
+	MessageID  string `json:"messageId"`
+	StatusCode int    `json:"statusCode"`
 }
 
 var statusMapping = map[int]models.MsgStatus{
@@ -81,12 +81,12 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 }
 
 type moPayload struct {
-	MessageID  string `name:"messageId"`
-	FromNumber string `name:"fromNumber"`
-	ToNumber   string `name:"toNumber"`
-	Timestamp  int64  `name:"timestamp"`
-	Text       string `name:"text"`
-	Charset    string `name:"charset"`
+	MessageID  string `json:"messageId"`
+	FromNumber string `json:"fromNumber"`
+	ToNumber   string `json:"toNumber"`
+	Timestamp  int64  `json:"timestamp"`
+	Text       string `json:"text"`
+	Charset    string `json:"charset"`
 }
 
 // receiveMessage is our receive function for incoming messages

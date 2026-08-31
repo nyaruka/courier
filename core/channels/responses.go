@@ -37,11 +37,6 @@ func WriteIgnored(w http.ResponseWriter, details string) error {
 	return WriteDataResponse(w, http.StatusOK, "Ignored", []any{NewInfoData(details)})
 }
 
-// WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it
-func WriteChannelEventSuccess(w http.ResponseWriter, event *models.ChannelEvent) error {
-	return WriteChannelEventsSuccess(w, []*models.ChannelEvent{event})
-}
-
 // WriteChannelEventsSuccess writes a JSON response for the passed in events indicating we handled them
 func WriteChannelEventsSuccess(w http.ResponseWriter, events []*models.ChannelEvent) error {
 	data := make([]any, len(events))
