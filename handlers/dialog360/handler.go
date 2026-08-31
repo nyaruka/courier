@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -92,119 +90,23 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 	return h.parseWhatsAppPayload(channel, payload, r, in, clog)
 }
 
-// parseWhatsAppPayload turns a notification into the set of things it contained, without writing any of them -
-// which is what lets the whole batch be written together, and keeps a failure part way through it from leaving
-// a response that describes more than we actually did. It still does I/O, since resolving a message's media
-// means asking the provider for its URL, but it makes no changes.
+// parseWhatsAppPayload hands the notification's changes to the shared WhatsApp parser, which fills in the batch.
+// Media is resolved with the channel's own token against the provider's base URL.
+//
+// A malformed payload is answered as ignored rather than as an error: unlike the Cloud API handler, this one
+// doesn't force a 200 on error responses, and 360dialog would retry a payload that can't parse any better the
+// second time.
 func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
+	resolveMedia := func(mediaID string) (string, error) { return h.resolveMediaURL(channel, mediaID, clog) }
 
-	seenMsgIDs := make(map[string]bool)
-	contactNames := make(map[string]string)
-
-	// for each entry
+	var changes []whatsapp.Change
 	for _, entry := range payload.Entry {
-		if len(entry.Changes) == 0 {
-			continue
-		}
-
-		for _, change := range entry.Changes {
-
-			// contacts are keyed by both identifiers they can carry, as a message from a user with a username may
-			// only reference them by their user_id
-			for _, contact := range change.Value.Contacts {
-				if contact.WaID != "" {
-					contactNames[contact.WaID] = contact.Profile.Name
-				}
-				if contact.UserID != "" {
-					contactNames[contact.UserID] = contact.Profile.Name
-				}
-			}
-
-			for _, waMsg := range change.Value.Messages {
-				if seenMsgIDs[waMsg.ID] {
-					continue
-				}
-
-				if waMsg.GroupID != "" {
-					in.Ignored("ignoring group message")
-					continue
-				}
-
-				date, urn, text, mediaURL, mediaID, err, finalErr := waMsg.ExtractData(clog)
-				if finalErr != nil {
-					return channels.Ignore("%s", finalErr.Error())
-				}
-
-				if err != nil {
-					channels.LogRequestError(r, channel, err)
-					continue
-				}
-
-				if mediaID != "" && mediaURL == "" {
-					mediaURL, err = h.resolveMediaURL(channel, mediaID, clog)
-					// we had an error downloading media
-					if err != nil {
-						channels.LogRequestError(r, channel, err)
-					}
-				}
-
-				// create our message
-				event := models.NewIncomingMsg(channel, urn, text, waMsg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[waMsg.Identifier()])
-
-				if mediaURL != "" {
-					event.WithAttachment(mediaURL)
-				}
-
-				if payload := waMsg.ExtractPayload(); payload != nil {
-					event.WithPayload(payload)
-				} else if waMsg.Interactive.Type == "nfm_reply" && waMsg.Interactive.NFMReply.ResponseJSON != "" {
-					channels.LogRequestError(r, channel, errors.New("nfm_reply response_json is not a valid JSON object"))
-				}
-
-				// if we have a user_id, add it as a secondary whatsapp URN (unless it's already the primary URN)
-				if waMsg.FromUserID != "" {
-					userIDURN, urnErr := urns.New(urns.WhatsApp, waMsg.FromUserID)
-					if urnErr == nil {
-						if userIDURN != urn {
-							event.WithNewURN(userIDURN, models.NewURNAppend)
-						}
-					} else {
-						channels.LogRequestError(r, channel, fmt.Errorf("invalid user_id for whatsapp URN: %w", urnErr))
-					}
-				}
-
-				in.Msg(event)
-				seenMsgIDs[waMsg.ID] = true
-			}
-
-			for _, status := range change.Value.Statuses {
-
-				msgStatus, found := whatsapp.StatusMapping[status.Status]
-				if !found {
-					if whatsapp.IgnoreStatuses[status.Status] {
-						in.Ignored(fmt.Sprintf("ignoring status: %s", status.Status))
-					} else {
-						channels.LogRequestIgnored(r, channel, fmt.Sprintf("unknown status: %s", status.Status))
-						in.Ignored(fmt.Sprintf("unknown status: %s", status.Status))
-					}
-					continue
-				}
-
-				for _, statusError := range status.Errors {
-					clog.Error(models.ErrorExternal(strconv.Itoa(statusError.Code), statusError.Title))
-				}
-
-				in.Status(models.NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog))
-			}
-
-			for _, chError := range change.Value.Errors {
-				clog.Error(models.ErrorExternal(strconv.Itoa(chError.Code), chError.Title))
-			}
-
-		}
-
+		changes = append(changes, entry.Changes...)
 	}
 
+	if err := whatsapp.ParseChanges(channel, changes, resolveMedia, r, in, clog); err != nil {
+		return channels.Ignore("%s", err.Error())
+	}
 	return nil
 }
 
