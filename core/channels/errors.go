@@ -21,6 +21,17 @@ func Ignore(format string, args ...any) error {
 	return &IgnoredRequest{Details: fmt.Sprintf(format, args...)}
 }
 
+// UnauthenticatedRequest is returned by a receive function for a request that didn't prove it came from the
+// provider - a missing or wrong auth header. It's answered as unauthorized rather than as a bad request.
+type UnauthenticatedRequest struct {
+	Err error
+}
+
+func (e *UnauthenticatedRequest) Error() string { return e.Err.Error() }
+
+// Unauthenticated returns an error saying this request didn't prove where it came from
+func Unauthenticated(err error) error { return &UnauthenticatedRequest{Err: err} }
+
 type SendResult struct {
 	externalIDs []string
 	newURN      urns.URN

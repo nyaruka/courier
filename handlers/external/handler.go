@@ -232,9 +232,9 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 
 // buildStatusHandler deals with building a handler that takes what status is received in the URL
 func (h *handler) buildStatusHandler(status string) channels.HandleFunc {
-	return func(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
-		return h.receiveStatus(ctx, status, channel, w, r, clog)
-	}
+	return handlers.Receive(h, func(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+		return h.receiveStatus(ctx, status, channel, r, in, clog)
+	})
 }
 
 type statusForm struct {
@@ -249,19 +249,19 @@ var statusMappings = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, statusString string, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, statusString string, channel *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	if form.ID == "" && form.UUID == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parameters id or uuid should not be empty"))
+		return fmt.Errorf("parameters id or uuid should not be empty")
 	}
 
 	if !uuids.Is(form.ID) && !uuids.Is(form.UUID) {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parsing failed: id '%s' and uuid '%s' are not valid UUIDs", form.ID, form.UUID))
+		return fmt.Errorf("parsing failed: id '%s' and uuid '%s' are not valid UUIDs", form.ID, form.UUID)
 	}
 
 	msgUUID := form.UUID
@@ -272,14 +272,11 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	// get our status
 	msgStatus, found := statusMappings[strings.ToLower(statusString)]
 	if !found {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString))
+		return fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString)
 	}
 
-	// write our status
-	status := models.NewStatusUpdate(channel, models.MsgUUID(msgUUID), msgStatus, clog)
-	in := channels.NewIncoming(channel)
-	in.Status(status)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	in.Status(models.NewStatusUpdate(channel, models.MsgUUID(msgUUID), msgStatus, clog))
+	return nil
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

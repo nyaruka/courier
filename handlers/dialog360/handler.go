@@ -45,7 +45,7 @@ func newWAHandler(channelType models.ChannelType, name string) channels.Handler 
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvent))
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.ReceiveJSON(h, h.receiveEvent))
 	return nil
 }
 
@@ -76,27 +76,20 @@ type Notifications struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *Notifications, clog *models.ChannelLog) ([]channels.Event, error) {
-
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *Notifications, in *channels.Incoming, clog *models.ChannelLog) error {
 	// is not a 'whatsapp_business_account' object? ignore it
 	if payload.Object != "whatsapp_business_account" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request")
+		return channels.Ignore("ignoring request")
 	}
 
 	// no entries? ignore this request
 	if len(payload.Entry) == 0 {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no entries")
+		return channels.Ignore("ignoring request, no entries")
 	}
 
-	in, ignore := h.parseWhatsAppPayload(channel, payload, r, clog)
-	if ignore != "" {
-		// the failure is in the payload itself, so asking for it again wouldn't get any further - write whatever
-		// was parsed ahead of it rather than dropping it
-		results, _ := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
-		return channels.IncomingEvents(results), handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, ignore)
-	}
-
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	// a failure here is in the payload itself, so asking for it again wouldn't get any further. The seam writes
+	// whatever was parsed ahead of it rather than dropping it.
+	return h.parseWhatsAppPayload(channel, payload, r, in, clog)
 }
 
 // parseWhatsAppPayload turns a notification into the set of things it contained, without writing any of them -
@@ -105,8 +98,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 // means asking the provider for its URL, but it makes no changes.
 //
 // A non-empty second return means the request should be ignored in its entirety.
-func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, clog *models.ChannelLog) (*channels.Incoming, string) {
-	in := channels.NewIncoming(channel)
+func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 
 	seenMsgIDs := make(map[string]bool)
 	contactNames := make(map[string]string)
@@ -142,7 +134,7 @@ func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notific
 
 				date, urn, text, mediaURL, mediaID, err, finalErr := waMsg.ExtractData(clog)
 				if finalErr != nil {
-					return in, finalErr.Error()
+					return channels.Ignore("%s", finalErr.Error())
 				}
 
 				if err != nil {
@@ -215,7 +207,7 @@ func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notific
 
 	}
 
-	return in, ""
+	return nil
 }
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set

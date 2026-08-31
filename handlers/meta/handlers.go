@@ -78,7 +78,7 @@ type handler struct {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeWebhookVerify, h.receiveVerify)
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvents))
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.ReceiveJSON(h, h.receiveEvents))
 	return nil
 }
 
@@ -209,46 +209,34 @@ func (h *handler) resolveMediaURL(mediaID string, token string, clog *models.Cha
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *Notifications, clog *models.ChannelLog) ([]channels.Event, error) {
-	err := h.validateSignature(r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *Notifications, in *channels.Incoming, clog *models.ChannelLog) error {
+	if err := h.validateSignature(r); err != nil {
+		return err
 	}
 
 	// is not a 'page' and 'instagram' object? ignore it
 	if payload.Object != "page" && payload.Object != "instagram" && payload.Object != "whatsapp_business_account" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request")
+		return channels.Ignore("ignoring request")
 	}
 
 	// no entries? ignore this request
 	if len(payload.Entry) == 0 {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no entries")
+		return channels.Ignore("ignoring request, no entries")
 	}
 
-	var in *channels.Incoming
-
+	// a failure here is in the payload itself, so asking for it again wouldn't get any further. The seam writes
+	// whatever was parsed ahead of it rather than dropping it.
 	if channel.ChannelType() == "FBA" || channel.ChannelType() == "IG" {
-		in, err = h.parseFacebookInstagramPayload(channel, payload, r, clog)
-	} else {
-		in, err = h.parseWhatsAppPayload(channel, payload, r, clog)
+		return h.parseFacebookInstagramPayload(channel, payload, r, in, clog)
 	}
-
-	if err != nil {
-		// the failure is in the payload itself, so asking for it again wouldn't get any further - write whatever
-		// was parsed ahead of it rather than dropping it
-		results, _ := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
-		return channels.IncomingEvents(results), handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return h.parseWhatsAppPayload(channel, payload, r, in, clog)
 }
 
 // parseWhatsAppPayload turns a notification into the set of things it contained, without writing any of them -
 // which is what lets the whole batch be written together, and keeps a failure part way through it from leaving
 // a response that describes more than we actually did. It still does I/O, since resolving a message's media
 // means asking the provider for its URL, but it makes no changes.
-func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, clog *models.ChannelLog) (*channels.Incoming, error) {
-	in := channels.NewIncoming(channel)
+func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notifications, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 
 	token := h.Runtime().Config.WhatsappAdminSystemUserToken
 
@@ -286,7 +274,7 @@ func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notific
 
 				date, urn, text, mediaURL, mediaID, err, finalErr := waMsg.ExtractData(clog)
 				if finalErr != nil {
-					return in, finalErr
+					return finalErr
 				}
 
 				if err != nil {
@@ -359,15 +347,14 @@ func (h *handler) parseWhatsAppPayload(channel *models.Channel, payload *Notific
 
 	}
 
-	return in, nil
+	return nil
 }
 
 // parseFacebookInstagramPayload turns a notification into the set of things it contained, without writing any
 // of them. It matters most for this payload shape, which carries channel events - those have no duplicate
 // detection of their own, so a parse failure part way through used to leave the events before it written and
 // then ask the provider to resend the whole batch, writing them a second time.
-func (h *handler) parseFacebookInstagramPayload(channel *models.Channel, payload *Notifications, r *http.Request, clog *models.ChannelLog) (*channels.Incoming, error) {
-	in := channels.NewIncoming(channel)
+func (h *handler) parseFacebookInstagramPayload(channel *models.Channel, payload *Notifications, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 
 	var err error
 
@@ -401,12 +388,12 @@ func (h *handler) parseFacebookInstagramPayload(channel *models.Channel, payload
 		if payload.Object == "instagram" {
 			urn, err = urns.New(urns.Instagram, sender)
 			if err != nil {
-				return in, errors.New("invalid instagram id")
+				return errors.New("invalid instagram id")
 			}
 		} else {
 			urn, err = urns.New(urns.Facebook, sender)
 			if err != nil {
-				return in, errors.New("invalid facebook id")
+				return errors.New("invalid facebook id")
 			}
 		}
 
@@ -538,7 +525,7 @@ func (h *handler) parseFacebookInstagramPayload(channel *models.Channel, payload
 		}
 	}
 
-	return in, nil
+	return nil
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

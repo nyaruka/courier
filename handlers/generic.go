@@ -14,55 +14,48 @@ import (
 
 // NewTelReceiveHandler creates a new receive handler given the passed in text and from fields
 func NewTelReceiveHandler(h channels.Handler, fromField string, bodyField string) channels.HandleFunc {
-	return func(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
-		err := r.ParseForm()
-		if err != nil {
-			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
+	return Receive(h, func(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+		if err := r.ParseForm(); err != nil {
+			return err
 		}
 
 		body := r.Form.Get(bodyField)
 		from := r.Form.Get(fromField)
 		if from == "" {
-			return nil, WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required field '%s'", fromField))
+			return fmt.Errorf("missing required field '%s'", fromField)
 		}
-		// create our URN
+
 		urn, err := urns.ParsePhone(from, c.Country(), true, false)
 		if err != nil {
-			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
+			return err
 		}
-		// build our msg
-		msg := models.NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
-		in := channels.NewIncoming(c)
-		in.Msg(msg)
-		return WriteIncomingAndResponse(ctx, h, in, w, r, clog)
-	}
+
+		in.Msg(models.NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(time.Now().UTC()))
+		return nil
+	})
 }
 
 // NewExternalIDStatusHandler creates a new status handler given the passed in status map and fields
 func NewExternalIDStatusHandler(h channels.Handler, statuses map[string]models.MsgStatus, externalIDField string, statusField string) channels.HandleFunc {
-	return func(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
-		err := r.ParseForm()
-		if err != nil {
-			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
+	return Receive(h, func(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
+		if err := r.ParseForm(); err != nil {
+			return err
 		}
 
 		externalID := r.Form.Get(externalIDField)
 		if externalID == "" {
-			return nil, WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required field '%s'", externalIDField))
+			return fmt.Errorf("missing required field '%s'", externalIDField)
 		}
 
 		s := r.Form.Get(statusField)
 		sValue, found := statuses[s]
 		if !found {
-			return nil, WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("unknown status value '%s'", s))
+			return fmt.Errorf("unknown status value '%s'", s)
 		}
 
-		// create our status
-		status := models.NewStatusUpdateByExternalID(c, externalID, sValue, clog)
-		in := channels.NewIncoming(c)
-		in.Status(status)
-		return WriteIncomingAndResponse(ctx, h, in, w, r, clog)
-	}
+		in.Status(models.NewStatusUpdateByExternalID(c, externalID, sValue, clog))
+		return nil
+	})
 }
 
 type JSONHandlerFunc[T any] func(context.Context, *models.Channel, http.ResponseWriter, *http.Request, *T, *models.ChannelLog) ([]channels.Event, error)
@@ -84,9 +77,19 @@ func JSONPayload[T any](h channels.Handler, handlerFunc JSONHandlerFunc[T]) chan
 // given batch and returns. Writing that batch, answering the request and logging it are all the server's,
 // which is what keeps every handler's incoming path the same shape.
 //
-// Returning an error answers the request as an error. Returning channels.Ignore answers it as ignored. A
-// handler that parses its way to nothing just returns, and the empty batch says the same thing.
+// Returning an error answers the request as an error. Returning channels.Ignore answers it as ignored, and
+// channels.Unauthenticated as unauthorized. A handler that parses its way to nothing just returns, and the
+// empty batch says the same thing.
 type ReceiveFunc func(context.Context, *models.Channel, *http.Request, *channels.Incoming, *models.ChannelLog) error
+
+// writes a batch without answering for it, for the paths that answer some other way
+func writeIncoming(ctx context.Context, h channels.Handler, in *channels.Incoming, clog *models.ChannelLog) ([]channels.Event, error) {
+	if in.Len() == 0 {
+		return nil, nil
+	}
+	results, err := channels.WriteIncoming(ctx, h.Runtime(), in, clog)
+	return channels.IncomingEvents(results), err
+}
 
 // Receive adapts a ReceiveFunc into a route the server can serve
 func Receive(h channels.Handler, fn ReceiveFunc) channels.HandleFunc {
@@ -102,11 +105,23 @@ func Receive(h channels.Handler, fn ReceiveFunc) channels.HandleFunc {
 		clog.Type = in.Kind()
 
 		if err != nil {
+			// whatever the handler parsed before it gave up is still ours to keep - a provider that batches
+			// several messages into one request won't send the good ones again just because a later one was
+			// malformed, so they're written before the failure is reported
+			events, werr := writeIncoming(ctx, h, in, clog)
+			if werr != nil {
+				return events, werr
+			}
+
 			var ignored *channels.IgnoredRequest
 			if errors.As(err, &ignored) {
-				return nil, WriteAndLogRequestIgnored(ctx, h, c, w, r, ignored.Details)
+				return events, WriteAndLogRequestIgnored(ctx, h, c, w, r, ignored.Details)
 			}
-			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
+			var unauthenticated *channels.UnauthenticatedRequest
+			if errors.As(err, &unauthenticated) {
+				return events, channels.WriteAndLogUnauthorized(w, r, c, unauthenticated.Err)
+			}
+			return events, WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
 		return WriteIncomingAndResponse(ctx, h, in, w, r, clog)
