@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"path/filepath"
 	"regexp"
@@ -97,8 +98,11 @@ func ResolveMedia(ctx context.Context, rt *runtime.Runtime, mediaUrl string) (*M
 			return nil, fmt.Errorf("error looking up media: %w", err)
 		}
 
-		// cache it for future requests
-		mediaCache.Set(ctx, rc, mediaUUID, string(jsonx.MustMarshal(media)))
+		// cache it for future requests - a failure to cache shouldn't fail the lookup, but it shouldn't be
+		// invisible either, so log it like the other writes to this cache do
+		if err := mediaCache.Set(ctx, rc, mediaUUID, string(jsonx.MustMarshal(media))); err != nil {
+			slog.Error("error caching media", "media", mediaUUID, "error", err)
+		}
 	}
 
 	// if we found a media record but it doesn't match the URL, don't use it

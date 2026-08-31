@@ -16,11 +16,11 @@ require (
 	github.com/gorilla/schema v1.4.1
 	github.com/h2non/filetype v1.1.3
 	github.com/lib/pq v1.12.3
-	github.com/nyaruka/ezconf v0.6.1
-	github.com/nyaruka/gocommon v1.94.2
-	github.com/nyaruka/goflow v0.293.1
-	github.com/nyaruka/null/v3 v3.0.0
-	github.com/nyaruka/vkutil v0.22.0
+	github.com/nyaruka/ezconf v0.7.0
+	github.com/nyaruka/gocommon v1.94.3
+	github.com/nyaruka/goflow v0.293.2
+	github.com/nyaruka/null/v3 v3.1.0
+	github.com/nyaruka/vkutil v0.23.0
 	github.com/stretchr/testify v1.12.1
 	github.com/vinovest/sqlx v1.7.2
 	golang.org/x/oauth2 v0.36.0
@@ -67,7 +67,7 @@ require (
 	github.com/muir/sqltoken v0.5.2 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.1 // indirect
-	github.com/nyaruka/phonenumbers/v2 v2.0.10 // indirect
+	github.com/nyaruka/phonenumbers/v2 v2.0.11 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa // indirect
