@@ -14,6 +14,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestKindLogType(t *testing.T) {
+	// everything a provider tells us about a contact shares one log type, however the handler classified it -
+	// what it actually was is visible in the log's own request and response
+	assert.Equal(t, models.ChannelLogTypeReceive, channels.ReceiveKindMsg.LogType())
+	assert.Equal(t, models.ChannelLogTypeReceive, channels.ReceiveKindEvent.LogType())
+	assert.Equal(t, models.ChannelLogTypeReceive, channels.ReceiveKindAny.LogType())
+
+	// these two keep their own, being the ones worth picking out of a channel's logs
+	assert.Equal(t, models.ChannelLogTypeMsgStatus, channels.ReceiveKindStatus.LogType())
+	assert.Equal(t, models.ChannelLogTypeWebhookVerify, channels.ReceiveKindVerify.LogType())
+}
+
 func TestReceivedResponse(t *testing.T) {
 	ch := test.NewMockChannel("dbc126ed-66bc-4e28-b67b-81dc3327c95d", "KN", "2020", "US", []string{urns.Phone.Prefix}, nil)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, ch, nil, nil)

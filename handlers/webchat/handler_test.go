@@ -133,7 +133,7 @@ func TestChannelLogsNotStored(t *testing.T) {
 	// the logs still exist in memory during handling...
 	require.Len(t, clogs, 2)
 	assert.Equal(t, models.ChannelLogTypeChatStart, clogs[0].Type)
-	assert.Equal(t, models.ChannelLogTypeMsgReceive, clogs[1].Type)
+	assert.Equal(t, models.ChannelLogTypeReceive, clogs[1].Type)
 
 	// ...but are never written to storage
 	rt.Dynamo.Main.Flush()

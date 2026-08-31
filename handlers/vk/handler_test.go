@@ -329,7 +329,7 @@ var testCases = []IncomingTestCase{
 	},
 	{
 		Label:                "Valid secret",
-		ExpectedLogType:      models.ChannelLogTypeMultiReceive,
+		ExpectedLogType:      models.ChannelLogTypeReceive,
 		URL:                  receiveURL,
 		Data:                 `{"type": "some_event", "object": {}, "secret": "abc123xyz"}`,
 		ExpectedRespStatus:   200,
@@ -344,7 +344,7 @@ var testCases = []IncomingTestCase{
 	},
 	{
 		Label:                "Invalid secret",
-		ExpectedLogType:      models.ChannelLogTypeMultiReceive,
+		ExpectedLogType:      models.ChannelLogTypeReceive,
 		URL:                  receiveURL,
 		Data:                 `{"type": "some_event", "object": {}, "secret": "0987654321"}`,
 		ExpectedRespStatus:   401,

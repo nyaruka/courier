@@ -55,7 +55,7 @@ func newHandler() channels.Handler {
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
-	r.AddReceive(h, http.MethodPost, "", models.ChannelLogTypeMsgReceive, handlers.XMLPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "", channels.ReceiveKindMsg, handlers.XMLPayload(h.receiveMessage))
 	return nil
 }
 
@@ -121,7 +121,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 
 	// subscribe event, trigger a new conversation
 	if payload.MsgType == "event" && payload.Event == "subscribe" {
-		in.As(models.ChannelLogTypeEventReceive)
+		in.As(channels.ReceiveKindEvent)
 
 		channelEvent := models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog)
 
@@ -131,7 +131,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 
 	// unknown event type (we only deal with subscribe)
 	if payload.MsgType == "event" {
-		in.As(models.ChannelLogTypeEventReceive)
+		in.As(channels.ReceiveKindEvent)
 
 		return channels.Ignore("unknown event type")
 	}

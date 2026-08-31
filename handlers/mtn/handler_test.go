@@ -148,14 +148,14 @@ var incomingCases = []IncomingTestCase{
 		ExpectedBodyContains: "unknown status",
 	},
 	{
-		// this route serves both messages and statuses, so a body we can't even read stays logged as the
-		// multi-purpose type it was registered as
+		// a body we can't even read is never classified, so it keeps the kind the route was registered with -
+		// which logs as a receive rather than as this channel's status callbacks do
 		Label:                "Receive invalid JSON",
 		URL:                  receiveURL,
 		Data:                 `not json`,
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "unable to parse request JSON",
-		ExpectedLogType:      models.ChannelLogTypeMultiReceive,
+		ExpectedLogType:      models.ChannelLogTypeReceive,
 	},
 }
 

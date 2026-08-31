@@ -58,7 +58,11 @@ func newHandler() channels.Handler {
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "start", models.ChannelLogTypeChatStart, withCORS(h.start))
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, withCORS(channels.Receive(h, handlers.JSONPayload(h.receive))))
+
+	// this can't use AddReceive because the CORS headers have to wrap the seam rather than sit inside it, so
+	// the kind is named twice - once for what the route serves, once for what its log is called
+	receive := channels.Receive(h, channels.ReceiveKindMsg, handlers.JSONPayload(h.receive))
+	r.Add(h, http.MethodPost, "receive", channels.ReceiveKindMsg.LogType(), withCORS(receive))
 
 	// the chat widget runs on arbitrary third-party websites, so both endpoints need CORS preflight support
 	r.Add(h, http.MethodOptions, "start", models.ChannelLogTypeUnknown, h.preflight)

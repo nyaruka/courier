@@ -20,7 +20,7 @@ func parseChanges(t *testing.T, changesJSON string) (*channels.Received, error) 
 	t.Helper()
 
 	ch := test.NewMockChannel("dbc126ed-66bc-4e28-b67b-81dc3327c95d", "WAC", "12345", "US", []string{urns.WhatsApp.Prefix}, nil)
-	clog := models.NewChannelLog(models.ChannelLogTypeMultiReceive, ch, nil, nil)
+	clog := models.NewChannelLog(models.ChannelLogTypeReceive, ch, nil, nil)
 	in := channels.NewReceived(ch)
 	r := httptest.NewRequest("POST", "/c/wac/dbc126ed-66bc-4e28-b67b-81dc3327c95d/receive", nil)
 

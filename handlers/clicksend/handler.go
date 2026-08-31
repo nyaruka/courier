@@ -32,7 +32,7 @@ func newHandler() channels.Handler {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.NewTelReceiveHandler("from", "body"))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.NewTelReceiveHandler("from", "body"))
 	return nil
 }
 

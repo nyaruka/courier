@@ -12,13 +12,19 @@ import (
 )
 
 const (
-	ChannelLogTypeUnknown         svclogs.Type = "unknown"
-	ChannelLogTypeMsgSend         svclogs.Type = "msg_send"
+	ChannelLogTypeUnknown svclogs.Type = "unknown"
+	ChannelLogTypeMsgSend svclogs.Type = "msg_send"
+
+	// ChannelLogTypeReceive covers everything a provider sends us about a contact - a message, a channel event,
+	// or a request carrying several of those. Which it was is visible in the log's own request and response, so
+	// splitting it further only gave the log viewer labels too alike to tell apart.
+	ChannelLogTypeReceive svclogs.Type = "receive"
+
+	// ChannelLogTypeMsgStatus is a provider reporting on a message we sent, which is worth its own type because
+	// it's the one an operator filters for when chasing a message that never left 'sent'.
+	ChannelLogTypeMsgStatus svclogs.Type = "msg_status"
+
 	ChannelLogTypeEventSend       svclogs.Type = "event_send"
-	ChannelLogTypeMsgStatus       svclogs.Type = "msg_status"
-	ChannelLogTypeMsgReceive      svclogs.Type = "msg_receive"
-	ChannelLogTypeEventReceive    svclogs.Type = "event_receive"
-	ChannelLogTypeMultiReceive    svclogs.Type = "multi_receive"
 	ChannelLogTypeAttachmentFetch svclogs.Type = "attachment_fetch"
 	ChannelLogTypeTokenRefresh    svclogs.Type = "token_refresh"
 	ChannelLogTypePageSubscribe   svclogs.Type = "page_subscribe"

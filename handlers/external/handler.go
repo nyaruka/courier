@@ -67,24 +67,24 @@ func newHandler() channels.Handler {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, h.receiveMessage)
+	r.AddReceive(h, http.MethodGet, "receive", channels.ReceiveKindMsg, h.receiveMessage)
 
 	sentHandler := h.buildStatusHandler("sent")
-	r.AddReceive(h, http.MethodGet, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
-	r.AddReceive(h, http.MethodPost, "sent", models.ChannelLogTypeMsgStatus, sentHandler)
+	r.AddReceive(h, http.MethodGet, "sent", channels.ReceiveKindStatus, sentHandler)
+	r.AddReceive(h, http.MethodPost, "sent", channels.ReceiveKindStatus, sentHandler)
 
 	deliveredHandler := h.buildStatusHandler("delivered")
-	r.AddReceive(h, http.MethodGet, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
-	r.AddReceive(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, deliveredHandler)
+	r.AddReceive(h, http.MethodGet, "delivered", channels.ReceiveKindStatus, deliveredHandler)
+	r.AddReceive(h, http.MethodPost, "delivered", channels.ReceiveKindStatus, deliveredHandler)
 
 	failedHandler := h.buildStatusHandler("failed")
-	r.AddReceive(h, http.MethodGet, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
-	r.AddReceive(h, http.MethodPost, "failed", models.ChannelLogTypeMsgStatus, failedHandler)
+	r.AddReceive(h, http.MethodGet, "failed", channels.ReceiveKindStatus, failedHandler)
+	r.AddReceive(h, http.MethodPost, "failed", channels.ReceiveKindStatus, failedHandler)
 
 	stopHandler := handlers.FormPayload(h.receiveStopContact)
-	r.AddReceive(h, http.MethodPost, "stopped", models.ChannelLogTypeEventReceive, stopHandler)
-	r.AddReceive(h, http.MethodGet, "stopped", models.ChannelLogTypeEventReceive, stopHandler)
+	r.AddReceive(h, http.MethodPost, "stopped", channels.ReceiveKindEvent, stopHandler)
+	r.AddReceive(h, http.MethodGet, "stopped", channels.ReceiveKindEvent, stopHandler)
 
 	return nil
 }

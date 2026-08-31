@@ -37,8 +37,8 @@ func init() {
 
 // Initialize implements channels.Handler
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h.statusMessage))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "status", channels.ReceiveKindStatus, handlers.JSONPayload(h.statusMessage))
 	return nil
 }
 

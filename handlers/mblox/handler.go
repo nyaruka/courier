@@ -36,7 +36,7 @@ func newHandler() channels.Handler {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h.receiveEvent))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveEvent))
 	return nil
 }
 
@@ -63,7 +63,7 @@ var statusMapping = map[string]models.MsgStatus{
 // receiveEvent is our receive function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.Type == "recipient_delivery_report_sms" {
-		in.As(models.ChannelLogTypeMsgStatus)
+		in.As(channels.ReceiveKindStatus)
 
 		if payload.BatchID == "" || payload.Status == "" {
 			return fmt.Errorf("missing one of 'batch_id' or 'status' in request body")
@@ -78,7 +78,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 		return nil
 
 	} else if payload.Type == "mo_text" {
-		in.As(models.ChannelLogTypeMsgReceive)
+		in.As(channels.ReceiveKindMsg)
 
 		if payload.ID == "" || payload.From == "" || payload.To == "" || payload.Body == "" || payload.ReceivedAt == "" {
 			return fmt.Errorf("missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body")
