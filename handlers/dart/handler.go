@@ -51,8 +51,8 @@ func init() {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodGet, "receive", channels.KindMsg, handlers.FormPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodGet, "delivered", channels.KindStatus, handlers.FormPayload(h.receiveStatus))
+	r.AddReceive(h, http.MethodGet, "receive", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodGet, "delivered", channels.ReceiveKindStatus, handlers.FormPayload(h.receiveStatus))
 	return nil
 }
 

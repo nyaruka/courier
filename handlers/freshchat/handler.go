@@ -45,7 +45,7 @@ func newHandler(channelType models.ChannelType, name string, validateSignatures 
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.KindMsg, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))
 	return nil
 }
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {

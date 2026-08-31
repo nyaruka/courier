@@ -39,8 +39,8 @@ func newHandler() channels.Handler {
 }
 
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodGet, "receive", channels.KindMsg, handlers.XMLPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodPost, "receive", channels.KindMsg, handlers.XMLPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodGet, "receive", channels.ReceiveKindMsg, handlers.XMLPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.XMLPayload(h.receiveMessage))
 	return nil
 }
 

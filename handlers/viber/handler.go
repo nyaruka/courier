@@ -74,7 +74,7 @@ func newHandler() channels.Handler {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.KindAny, handlers.JSONPayload(h.receiveEvent))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveEvent))
 	return nil
 }
 
@@ -125,12 +125,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 	event := payload.Event
 	switch event {
 	case "webhook":
-		in.As(channels.KindVerify)
+		in.As(channels.ReceiveKindVerify)
 
 		return channels.Ignore("webhook valid")
 
 	case "conversation_started":
-		in.As(channels.KindEvent)
+		in.As(channels.ReceiveKindEvent)
 
 		msgText := channel.StringConfigForKey(configViberWelcomeMessage, "")
 		if msgText == "" {
@@ -153,7 +153,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 		return welcomeMessageReply(channel, channelEvent)
 
 	case "subscribed":
-		in.As(channels.KindEvent)
+		in.As(channels.ReceiveKindEvent)
 
 		viberID := payload.User.ID
 		ContactName := payload.User.Name
@@ -168,7 +168,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 		return nil
 
 	case "unsubscribed":
-		in.As(channels.KindEvent)
+		in.As(channels.ReceiveKindEvent)
 
 		viberID := payload.UserID
 
@@ -182,19 +182,19 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 		return nil
 
 	case "failed":
-		in.As(channels.KindStatus)
+		in.As(channels.ReceiveKindStatus)
 
 		in.Status(models.NewStatusUpdateByExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), models.MsgStatusFailed, clog))
 		return nil
 
 	case "delivered":
-		in.As(channels.KindStatus)
+		in.As(channels.ReceiveKindStatus)
 
 		// we ignore delivered events for viber as they send these for incoming messages too and its not worth the db hit to verify that
 		return channels.Ignore("ignoring delivered status")
 
 	case "message":
-		in.As(channels.KindMsg)
+		in.As(channels.ReceiveKindMsg)
 
 		sender := payload.Sender.ID
 		if sender == "" {

@@ -50,7 +50,7 @@ func newHandler() channels.Handler {
 }
 
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.KindMsg, handlers.FormPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMessage))
 	r.Add(h, http.MethodPost, "register", models.ChannelLogTypeReceive, h.registerContact)
 	return nil
 }

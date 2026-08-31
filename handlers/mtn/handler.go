@@ -45,7 +45,7 @@ func newHandler() channels.Handler {
 
 // Initialize implements channels.Handler
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.KindAny, handlers.JSONPayload(h.receiveEvent))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveEvent))
 	return nil
 }
 
@@ -77,7 +77,7 @@ type moPayload struct {
 // receiveEvent is our receive function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.Message != "" {
-		in.As(channels.KindMsg)
+		in.As(channels.ReceiveKindMsg)
 
 		date := time.Unix(payload.Created/1000, payload.Created%1000*1000000).UTC()
 		urn, err := urns.ParsePhone(payload.From, channel.Country(), true, false)
@@ -90,7 +90,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 		return nil
 
 	} else {
-		in.As(channels.KindStatus)
+		in.As(channels.ReceiveKindStatus)
 
 		if payload.TransactionID == "" {
 			return channels.Ignore("missing transactionId, ignored")

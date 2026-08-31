@@ -94,7 +94,7 @@ func newHandler() channels.Handler {
 }
 
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.KindAny, handlers.JSONPayload(h.receiveEvent))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveEvent))
 	return nil
 }
 
@@ -207,12 +207,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 	// check event type and decode body to correspondent struct
 	switch payload.Type {
 	case eventTypeServerVerification:
-		in.As(channels.KindVerify)
+		in.As(channels.ReceiveKindVerify)
 
 		return channels.Reply("text/plain", []byte(channel.StringConfigForKey(configServerVerificationString, "")))
 
 	case eventTypeNewMessage:
-		in.As(channels.KindMsg)
+		in.As(channels.ReceiveKindMsg)
 
 		newMessage := &moNewMessagePayload{}
 

@@ -17,13 +17,13 @@ import (
 func TestKindLogType(t *testing.T) {
 	// everything a provider tells us about a contact shares one log type, however the handler classified it -
 	// what it actually was is visible in the log's own request and response
-	assert.Equal(t, models.ChannelLogTypeReceive, channels.KindMsg.LogType())
-	assert.Equal(t, models.ChannelLogTypeReceive, channels.KindEvent.LogType())
-	assert.Equal(t, models.ChannelLogTypeReceive, channels.KindAny.LogType())
+	assert.Equal(t, models.ChannelLogTypeReceive, channels.ReceiveKindMsg.LogType())
+	assert.Equal(t, models.ChannelLogTypeReceive, channels.ReceiveKindEvent.LogType())
+	assert.Equal(t, models.ChannelLogTypeReceive, channels.ReceiveKindAny.LogType())
 
 	// these two keep their own, being the ones worth picking out of a channel's logs
-	assert.Equal(t, models.ChannelLogTypeMsgStatus, channels.KindStatus.LogType())
-	assert.Equal(t, models.ChannelLogTypeWebhookVerify, channels.KindVerify.LogType())
+	assert.Equal(t, models.ChannelLogTypeMsgStatus, channels.ReceiveKindStatus.LogType())
+	assert.Equal(t, models.ChannelLogTypeWebhookVerify, channels.ReceiveKindVerify.LogType())
 }
 
 func TestReceivedResponse(t *testing.T) {

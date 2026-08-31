@@ -22,10 +22,10 @@ type ReceiveFunc func(context.Context, *models.Channel, *http.Request, *Received
 // verification handshake, a CORS preflight - use Add with a HandleFunc instead.
 //
 // The kind is what the route serves, and is where the batch starts out - so a route serving one purpose names
-// it, and a route serving several registers KindAny and narrows it with Received.As once it knows which it's
-// dealing with. KindAny isn't a placeholder: it's what a request that never got as far as being classified -
+// it, and a route serving several registers ReceiveKindAny and narrows it with Received.As once it knows which it's
+// dealing with. ReceiveKindAny isn't a placeholder: it's what a request that never got as far as being classified -
 // one that failed to parse, or named an event we don't handle - is left as.
-func (r *Routes) AddReceive(handler Handler, method string, action string, kind Kind, fn ReceiveFunc) {
+func (r *Routes) AddReceive(handler Handler, method string, action string, kind ReceiveKind, fn ReceiveFunc) {
 	r.Add(handler, method, action, kind.LogType(), Receive(handler, kind, fn))
 }
 
@@ -37,7 +37,7 @@ func (r *Routes) AddReceive(handler Handler, method string, action string, kind 
 // separate because they always both happen - even a request that ends in a parse error keeps the good
 // messages ahead of the failure, since a provider that batches several messages into one request won't send
 // them again just because a later one was malformed.
-func Receive(h Handler, kind Kind, fn ReceiveFunc) HandleFunc {
+func Receive(h Handler, kind ReceiveKind, fn ReceiveFunc) HandleFunc {
 	return func(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]Event, error) {
 		// the batch starts out as whatever the route serves, which the handler can change once it knows what
 		// it's actually dealing with
@@ -104,7 +104,7 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 	events := AcceptedEvents(results)
 
 	switch in.Kind() {
-	case KindMsg:
+	case ReceiveKindMsg:
 		msgs := make([]*models.MsgIn, 0, len(events))
 		for _, e := range events {
 			if m, ok := e.(*models.MsgIn); ok {
@@ -113,7 +113,7 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 		}
 		return h.RespondMsgs(ctx, w, msgs)
 
-	case KindStatus:
+	case ReceiveKindStatus:
 		statuses := make([]*models.StatusUpdate, 0, len(events))
 		for _, e := range events {
 			if s, ok := e.(*models.StatusUpdate); ok {
@@ -122,7 +122,7 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 		}
 		return h.RespondStatuses(ctx, w, statuses)
 
-	case KindEvent:
+	case ReceiveKindEvent:
 		chEvents := make([]*models.ChannelEvent, 0, len(events))
 		for _, e := range events {
 			if ce, ok := e.(*models.ChannelEvent); ok {

@@ -78,7 +78,7 @@ type handler struct {
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeWebhookVerify, h.receiveVerify)
-	r.AddReceive(h, http.MethodPost, "receive", channels.KindAny, handlers.JSONPayload(h.receiveEvents))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveEvents))
 	return nil
 }
 

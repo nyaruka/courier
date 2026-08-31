@@ -10,8 +10,8 @@ import (
 	"github.com/nyaruka/gocommon/svclogs"
 )
 
-// Kind is what an incoming request is being handled as. A route declares one when it registers, and a route
-// serving several declares KindAny and narrows it with Received.As once it knows which it's dealing with.
+// ReceiveKind is what an incoming request is being handled as. A route declares one when it registers, and a route
+// serving several declares ReceiveKindAny and narrows it with Received.As once it knows which it's dealing with.
 //
 // It answers two questions that used to be one field between them. Which response the provider gets comes from
 // here, because the shape a provider expects belongs to the endpoint it called - which is why handlers whose
@@ -19,24 +19,24 @@ import (
 // them. What the request is logged as also comes from here, via LogType. Keeping both derived from a single
 // declaration is what stops them disagreeing; keeping them separate derivations is what lets the log stay
 // coarse while the response stays exact.
-type Kind string
+type ReceiveKind string
 
 const (
-	KindMsg    Kind = "msg"    // a message from a contact
-	KindStatus Kind = "status" // a provider reporting on a message we sent
-	KindEvent  Kind = "event"  // something a contact did that isn't a message
-	KindVerify Kind = "verify" // a provider checking the endpoint is ours
-	KindAny    Kind = "any"    // a route that serves several of the above, before it knows which
+	ReceiveKindMsg    ReceiveKind = "msg"    // a message from a contact
+	ReceiveKindStatus ReceiveKind = "status" // a provider reporting on a message we sent
+	ReceiveKindEvent  ReceiveKind = "event"  // something a contact did that isn't a message
+	ReceiveKindVerify ReceiveKind = "verify" // a provider checking the endpoint is ours
+	ReceiveKindAny    ReceiveKind = "any"    // a route that serves several of the above, before it knows which
 )
 
 // LogType is what a request of this kind is logged as. Everything about a contact shares one type - what it
 // was is already visible in the log's request and response - while a status callback keeps its own, and a
 // verification handshake keeps its own.
-func (k Kind) LogType() svclogs.Type {
+func (k ReceiveKind) LogType() svclogs.Type {
 	switch k {
-	case KindStatus:
+	case ReceiveKindStatus:
 		return models.ChannelLogTypeMsgStatus
-	case KindVerify:
+	case ReceiveKindVerify:
 		return models.ChannelLogTypeWebhookVerify
 	default:
 		return models.ChannelLogTypeReceive
@@ -53,7 +53,7 @@ func (k Kind) LogType() svclogs.Type {
 // to apply anything that spans the request.
 type Received struct {
 	channel *models.Channel
-	kind    Kind
+	kind    ReceiveKind
 	items   []receivedItem
 }
 
@@ -80,10 +80,10 @@ func NewReceived(ch *models.Channel) *Received { return &Received{channel: ch} }
 // route that serves more than one - a provider that delivers messages and statuses through a single URL, or a
 // receive route where a particular message means a contact started a conversation - says so with this, at the
 // point it works out which it's dealing with.
-func (i *Received) As(kind Kind) *Received { i.kind = kind; return i }
+func (i *Received) As(kind ReceiveKind) *Received { i.kind = kind; return i }
 
 // Kind returns what this request is being handled as
-func (i *Received) Kind() Kind { return i.kind }
+func (i *Received) Kind() ReceiveKind { return i.kind }
 
 // Msg adds a message parsed from the request
 func (i *Received) Msg(m *models.MsgIn) { i.items = append(i.items, receivedItem{event: m}) }
