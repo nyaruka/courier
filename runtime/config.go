@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -14,7 +15,7 @@ import (
 // Config is our top level configuration object
 type Config struct {
 	DB       string `validate:"url,startswith=postgres:"   help:"URL for your Postgres database"`
-	Valkey   string `validate:"url,startswith=valkey:"     help:"URL for your Valkey instance"`
+	Valkey   string `validate:"url,startswith=valkey:|startswith=valkeys:" help:"URL for your Valkey instance, valkeys:// for TLS"`
 	SpoolDir string `help:"the local directory where courier will write statuses or msgs that need to be retried (needs to be writable)"`
 
 	Domain          string `help:"the domain courier is exposed on"`
@@ -106,6 +107,12 @@ func LoadConfig(cfg *Config, args ...string) (*Config, error) {
 		loader.SetArgs(args...)
 	}
 	if err := loader.Load(); err != nil {
+		// Load never writes to stdout or stderr itself, so a request for usage comes back as ErrHelp for us to
+		// act on here, where we still have the loader to show it with. The sentinel is passed up so that the
+		// caller can tell an explicit -help from a genuine config failure.
+		if errors.Is(err, ezconf.ErrHelp) {
+			loader.Usage()
+		}
 		return nil, err
 	}
 

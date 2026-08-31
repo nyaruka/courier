@@ -1,11 +1,13 @@
 package runtime_test
 
 import (
+	"flag"
 	"log/slog"
 	"net"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/ezconf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,6 +19,7 @@ var invalidConfigTestCases = []struct {
 	{config: &runtime.Config{DB: ":foo", Valkey: "valkey:valkey/23"}, expectedError: "Field validation for 'DB' failed on the 'url' tag"},
 	{config: &runtime.Config{DB: "mysql:test", Valkey: "valkey:valkey/23"}, expectedError: "Field validation for 'DB' failed on the 'startswith' tag"},
 	{config: &runtime.Config{DB: "postgres://courier:courier@postgres:5432/courier", Valkey: ":foo"}, expectedError: "Field validation for 'Valkey' failed on the 'url' tag"},
+	{config: &runtime.Config{DB: "postgres://courier:courier@postgres:5432/courier", Valkey: "redis://valkey:6379/15"}, expectedError: "Field validation for 'Valkey' failed on the 'startswith=valkey:|startswith=valkeys:' tag"},
 	{config: &runtime.Config{DB: "postgres://temba:temba@postgres/temba?sslmode=disable", Valkey: "valkey://valkey:6379/15", SendProxyURL: "not-a-url"}, expectedError: "Field validation for 'SendProxyURL' failed on the 'http_url' tag"},
 }
 
@@ -78,4 +81,17 @@ func TestConfigParse(t *testing.T) {
 	cfg = runtime.NewDefaultConfig()
 	require.NoError(t, cfg.Parse())
 	assert.Nil(t, cfg.SendProxyURLParsed)
+
+	// valkeys:// is accepted as well as valkey://, so that a TLS connection can be configured
+	cfg = runtime.NewDefaultConfig()
+	cfg.Valkey = "valkeys://valkey:6379/15"
+	assert.NoError(t, cfg.Parse())
+}
+
+func TestLoadConfigHelp(t *testing.T) {
+	// asking for usage comes back as the ErrHelp sentinel rather than exiting the process, so that the caller can
+	// show usage and exit cleanly instead of reporting a config failure
+	_, err := runtime.LoadConfig(runtime.NewDefaultConfig(), `--help`)
+	assert.ErrorIs(t, err, ezconf.ErrHelp)
+	assert.ErrorIs(t, err, flag.ErrHelp)
 }
