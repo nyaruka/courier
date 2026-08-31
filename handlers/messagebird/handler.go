@@ -97,12 +97,11 @@ func (h *handler) Initialize(r *channels.Routes) error {
 	return nil
 }
 
+// this one decodes for itself rather than using FormPayload, because it answers a decode failure as ignored
+// rather than as an error - which keeps a malformed status callback from being retried at us
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-
-	// get our params
 	receivedStatus := &ReceivedStatus{}
-	err := handlers.DecodeAndValidateForm(receivedStatus, r)
-	if err != nil {
+	if err := handlers.DecodeAndValidateForm(receivedStatus, r); err != nil {
 		return channels.Ignore("no msg status, ignoring")
 	}
 
@@ -115,7 +114,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 	var status *models.StatusUpdate
 	if receivedStatus.Reference != "" {
 		if !uuids.Is(receivedStatus.Reference) {
-			slog.Error("error converting Messagebird status reference to UUID", "error", err, "uuid", receivedStatus.Reference)
+			slog.Error("error converting Messagebird status reference to UUID", "uuid", receivedStatus.Reference)
 		} else {
 			status = models.NewStatusUpdate(channel, models.MsgUUID(receivedStatus.Reference), msgStatus, clog)
 		}

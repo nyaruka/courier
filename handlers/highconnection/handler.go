@@ -34,8 +34,8 @@ func newHandler() channels.Handler {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	r.AddReceive(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.FormPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, handlers.FormPayload(h.receiveStatus))
 	return nil
 }
 
@@ -48,15 +48,10 @@ type moForm struct {
 }
 
 // receiveMessage is our receive function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	form := &moForm{}
-	err := handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
-		return err
-	}
-
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, form *moForm, in *channels.Received, clog *models.ChannelLog) error {
 	date := time.Now()
 	if form.ReceiveDate != "" {
+		var err error
 		date, err = time.Parse("2006-01-02T15:04:05", form.ReceiveDate)
 		if err != nil {
 			return err
@@ -105,13 +100,7 @@ var statusMapping = map[int]models.MsgStatus{
 }
 
 // receiveStatus is our receive function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	form := &statusForm{}
-	err := handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
-		return err
-	}
-
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, form *statusForm, in *channels.Received, clog *models.ChannelLog) error {
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
 		return handlers.UnknownStatusError(statusMapping, form.Status)

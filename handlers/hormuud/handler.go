@@ -39,7 +39,7 @@ func newHandler() channels.Handler {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.FormPayload(h.receiveMessage))
 	return nil
 }
 
@@ -51,13 +51,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our receive function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	payload := &moPayload{}
-	err := handlers.DecodeAndValidateForm(payload, r)
-	if err != nil {
-		return err
-	}
-
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	urn, err := urns.ParsePhone(payload.Sender, c.Country(), true, false)
 	if err != nil {
 		return err

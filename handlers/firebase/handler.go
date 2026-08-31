@@ -50,7 +50,7 @@ func newHandler() channels.Handler {
 }
 
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.FormPayload(h.receiveMessage))
 	r.Add(h, http.MethodPost, "register", models.ChannelLogTypeEventReceive, h.registerContact)
 	return nil
 }
@@ -64,15 +64,10 @@ type receiveForm struct {
 }
 
 // receiveMessage is our receive function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	form := &receiveForm{}
-	err := handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
-		return err
-	}
-
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, form *receiveForm, in *channels.Received, clog *models.ChannelLog) error {
 	date := time.Now().UTC()
 	if form.Date != "" {
+		var err error
 		date, err = time.Parse("2006-01-02T15:04:05.000", form.Date)
 		if err != nil {
 			return fmt.Errorf("unable to parse date: %s", form.Date)

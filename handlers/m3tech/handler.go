@@ -6,13 +6,11 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
-	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
@@ -34,31 +32,7 @@ func newHandler() channels.Handler {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	return nil
-}
-
-// receiveMessage takes care of handling incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	err := r.ParseForm()
-	if err != nil {
-		return err
-	}
-
-	body := r.Form.Get("text")
-	from := r.Form.Get("from")
-	if from == "" {
-		return fmt.Errorf("missing required field 'from'")
-	}
-
-	// create our URN
-	urn, err := urns.ParsePhone(from, c.Country(), true, false)
-	if err != nil {
-		return err
-	}
-
-	msg := models.NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
-	in.Msg(msg)
+	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.NewTelReceiveHandler("from", "text"))
 	return nil
 }
 
