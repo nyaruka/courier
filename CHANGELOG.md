@@ -1,3 +1,10 @@
+v26.3.44 (2026-08-31)
+-------------------------
+ * Include attachments and quick replies in webchat msg_out events
+ * Add maximum text length to webchat receive endpoint
+ * Combine multiple contents in an incoming Zenvia payload into a single message
+ * Update dependencies
+
 v26.3.43 (2026-08-27)
 -------------------------
  * Don't store channel logs for channel types whose traffic is internal to the platform
