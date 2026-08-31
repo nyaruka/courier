@@ -124,15 +124,13 @@ var statusMapping = map[string]models.MsgStatus{
 
 // receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	err := h.validateSignature(channel, r)
-	if err != nil {
-		return err
+	if err := h.validateSignature(channel, r); err != nil {
+		return channels.Unauthenticated(err)
 	}
 
 	// get our params
 	form := &moForm{}
-	err = handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
+	if err := handlers.DecodeAndValidateForm(form, r); err != nil {
 		return err
 	}
 
@@ -178,15 +176,13 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 
 // receiveStatus is our receive function for status updates
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	err := h.validateSignature(channel, r)
-	if err != nil {
-		return err
+	if err := h.validateSignature(channel, r); err != nil {
+		return channels.Unauthenticated(err)
 	}
 
 	// get our params
 	form := &statusForm{}
-	err = handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
+	if err := handlers.DecodeAndValidateForm(form, r); err != nil {
 		return channels.Ignore("no msg status, ignoring")
 	}
 

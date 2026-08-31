@@ -345,7 +345,7 @@ var testCases = []IncomingTestCase{
 		Label:                "Invalid secret",
 		URL:                  receiveURL,
 		Data:                 `{"type": "some_event", "object": {}, "secret": "0987654321"}`,
-		ExpectedRespStatus:   400,
+		ExpectedRespStatus:   401,
 		ExpectedBodyContains: "wrong secret key",
 	},
 	{

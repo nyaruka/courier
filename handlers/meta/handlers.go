@@ -117,7 +117,12 @@ func (h *handler) RedactValues(ch *models.Channel) []string {
 	return vals
 }
 
-// RespondError writes the passed in error to our response writer
+// RespondError answers an error with a 200 carrying the error in its body. Meta retries a webhook that answers
+// anything else, and disables a subscription that keeps failing, so a request we can't do anything with is one
+// we'd rather they stopped sending than sent again.
+//
+// This is why a failed signature check here returns a plain error rather than channels.Unauthenticated as it
+// does in the other handlers - the seam answers that with a 401 of its own, which would bypass this.
 func (h *handler) RespondError(ctx context.Context, w http.ResponseWriter, err error) error {
 	return channels.RespondError(w, http.StatusOK, err)
 }

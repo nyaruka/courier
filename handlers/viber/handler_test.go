@@ -685,7 +685,7 @@ var testCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
 		PrepRequest: addValidSignature},
-	{Label: "Receive invalid signature", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid request signature",
+	{Label: "Receive invalid signature", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 401, ExpectedBodyContains: "invalid request signature",
 		PrepRequest: addInvalidSignature},
 	{Label: "Receive invalid JSON", URL: receiveURL, Data: invalidJSON, ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse request JSON",
 		PrepRequest: addValidSignature},

@@ -377,7 +377,7 @@ var handleTestCases = []IncomingTestCase{
 		Label:                "Receive Valid Message Invalid signature",
 		URL:                  receiveURL,
 		Data:                 receiveValidMessage,
-		ExpectedRespStatus:   400,
+		ExpectedRespStatus:   401,
 		ExpectedBodyContains: "invalid request signature",
 		PrepRequest:          addInvalidSignature,
 	},

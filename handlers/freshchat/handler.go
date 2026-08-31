@@ -49,9 +49,8 @@ func (h *handler) Initialize(r *channels.Routes) error {
 	return nil
 }
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
-	err := h.validateSignature(channel, r)
-	if err != nil {
-		return err
+	if err := h.validateSignature(channel, r); err != nil {
+		return channels.Unauthenticated(err)
 	}
 
 	// no message? ignore this
@@ -68,9 +67,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 	date := payload.Data.Message.CreatedTime
 
 	// create our URN
-	urn := urns.NilURN
 	urnstring := fmt.Sprintf("%s/%s", payload.Data.Message.ChannelID, payload.Data.Message.ActorID)
-	urn, err = urns.New(urns.FreshChat, urnstring)
+	urn, err := urns.New(urns.FreshChat, urnstring)
 	if err != nil {
 		return err
 	}

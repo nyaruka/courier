@@ -141,20 +141,19 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 }
 
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
-	err := h.validateSignature(channel, r)
-	if err != nil {
-		return err
+	if err := h.validateSignature(channel, r); err != nil {
+		return channels.Unauthenticated(err)
 	}
 
 	payload := &formMessage{}
-	err = handlers.DecodeAndValidateForm(payload, r)
-	if err != nil {
+	if err := handlers.DecodeAndValidateForm(payload, r); err != nil {
 		return err
 	}
 
 	text := ""
 	messageID := ""
-	date := time.Time{}
+	var date time.Time
+	var err error
 	//chechk if shortcode or regular
 	if payload.Shortcode != "" {
 		text = payload.MessageBody

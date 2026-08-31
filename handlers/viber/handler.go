@@ -119,7 +119,7 @@ type welcomeMessagePayload struct {
 // receiveEvent is our receive function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if err := h.validateSignature(channel, r); err != nil {
-		return err
+		return channels.Unauthenticated(err)
 	}
 
 	event := payload.Event
