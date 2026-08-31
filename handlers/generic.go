@@ -77,9 +77,10 @@ func JSONPayload[T any](h channels.Handler, handlerFunc JSONHandlerFunc[T]) chan
 // given batch and returns. Writing that batch, answering the request and logging it are all the server's,
 // which is what keeps every handler's incoming path the same shape.
 //
-// Returning an error answers the request as an error. Returning channels.Ignore answers it as ignored, and
-// channels.Unauthenticated as unauthorized. A handler that parses its way to nothing just returns, and the
-// empty batch says the same thing.
+// Returning an error answers the request as an error. Returning channels.Ignore answers it as ignored,
+// channels.Unauthenticated as unauthorized, and channels.Reply with the exact body the provider expects -
+// which is what lets a route with one verification branch keep the rest of itself on this seam. A handler
+// that parses its way to nothing just returns, and the empty batch says the same thing.
 type ReceiveFunc func(context.Context, *models.Channel, *http.Request, *channels.Incoming, *models.ChannelLog) error
 
 // writes a batch without answering for it, for the paths that answer some other way
@@ -113,6 +114,10 @@ func Receive(h channels.Handler, fn ReceiveFunc) channels.HandleFunc {
 				return events, werr
 			}
 
+			var reply *channels.RequestReply
+			if errors.As(err, &reply) {
+				return events, reply.Write(w)
+			}
 			var ignored *channels.IgnoredRequest
 			if errors.As(err, &ignored) {
 				return events, WriteAndLogRequestIgnored(ctx, h, c, w, r, ignored.Details)
@@ -124,7 +129,7 @@ func Receive(h channels.Handler, fn ReceiveFunc) channels.HandleFunc {
 			return events, WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
-		return WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+		return writeIncomingAndResponse(ctx, h, in, w, r, clog)
 	}
 }
 

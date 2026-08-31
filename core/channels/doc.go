@@ -10,9 +10,11 @@
 //
 // Most handlers don't hand anything over explicitly, because handlers.Receive does it for them: a receive
 // function is given an Incoming, fills it in from the request, and returns. Writing it, answering the request
-// and logging what the request was are all the seam's. The routes that stay on the older HandleFunc are the
-// ones whose provider dictates a response body the standard ones can't express - a verification handshake
-// echoing a challenge back, Viber's welcome message, a chat widget's CORS preflight.
+// and logging what the request was are all the seam's. A branch whose provider dictates the response body -
+// a verification challenge echoed back, Viber's welcome message - returns Reply with that body, and the batch
+// is still written first. The routes that stay on the older HandleFunc are the ones that aren't receiving
+// anything at all: the GET verification handshakes, a chat widget's CORS preflight, Firebase's contact
+// registration.
 //
 // What a request is being handled as travels on the Incoming rather than on the channel log. It starts as
 // whatever the route was registered as, and a route serving more than one purpose says which with As(). That

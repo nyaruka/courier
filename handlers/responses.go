@@ -8,7 +8,9 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 )
 
-// WriteIncomingAndResponse writes everything a request contained and then answers it.
+// writeIncomingAndResponse writes everything a request contained and then answers it. It's the tail of the
+// Receive seam rather than something a handler calls - a handler that needs a response the standard ones
+// can't express returns channels.Reply instead.
 //
 // Which response that is comes from what the request is being handled as: a receive answers as a receive, a
 // status callback as a status. The shape a provider expects belongs to the endpoint it called rather than to
@@ -16,7 +18,7 @@ import (
 // inspecting its contents - a status callback that also stopped a contact still answers as a status callback.
 //
 // That declaration is also what the request is logged as, so the two can't drift apart.
-func WriteIncomingAndResponse(ctx context.Context, h channels.Handler, in *channels.Incoming, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func writeIncomingAndResponse(ctx context.Context, h channels.Handler, in *channels.Incoming, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	// a request we found nothing in is one we ignored, rather than one we handled emptily - which saves every
 	// handler that can parse its way to nothing from checking for it
 	if in.Len() == 0 {

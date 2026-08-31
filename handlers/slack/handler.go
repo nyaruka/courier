@@ -47,38 +47,30 @@ func newHandler() channels.Handler {
 }
 
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.ReceiveJSON(h, h.receiveEvent))
 	return nil
 }
 
-func handleURLVerification(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload) ([]channels.Event, error) {
-	validationToken := channel.StringConfigForKey(configValidationToken, "")
-	if !utils.SecretEqual(payload.Token, validationToken) {
-		w.WriteHeader(http.StatusForbidden)
-		return nil, fmt.Errorf("wrong validation token for channel: %s", channel.UUID())
-	}
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(payload.Challenge))
-	return nil, nil
-}
-
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Incoming, clog *models.ChannelLog) error {
 	if payload.Type == "url_verification" {
-		clog.Type = models.ChannelLogTypeWebhookVerify
+		in.As(models.ChannelLogTypeWebhookVerify)
 
-		return handleURLVerification(ctx, channel, w, r, payload)
+		validationToken := channel.StringConfigForKey(configValidationToken, "")
+		if !utils.SecretEqual(payload.Token, validationToken) {
+			return channels.Unauthenticated(fmt.Errorf("wrong validation token for channel: %s", channel.UUID()))
+		}
+		return channels.Reply("text/plain", []byte(payload.Challenge))
 	}
 
 	// if event is not a message or is from the bot ignore it
 	if payload.Event.Type == "message" && payload.Event.BotID == "" && payload.Event.ChannelType == "im" {
-		clog.Type = models.ChannelLogTypeMsgReceive
+		in.As(models.ChannelLogTypeMsgReceive)
 
 		date := time.Unix(int64(payload.EventTime), 0)
 
 		urn, err := urns.New(urns.Slack, payload.Event.User)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return err
 		}
 
 		attachmentURLs := make([]string, 0)
@@ -98,11 +90,10 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w h
 			msg.WithAttachment(attURL)
 		}
 
-		in := channels.NewIncoming(channel)
 		in.Msg(msg)
-		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+		return nil
 	}
-	return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
+	return channels.Ignore("Ignoring request, no message")
 }
 
 func (h *handler) resolveFile(ctx context.Context, channel *models.Channel, file File, clog *models.ChannelLog) (string, error) {

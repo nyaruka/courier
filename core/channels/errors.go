@@ -2,6 +2,7 @@ package channels
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
@@ -31,6 +32,29 @@ func (e *UnauthenticatedRequest) Error() string { return e.Err.Error() }
 
 // Unauthenticated returns an error saying this request didn't prove where it came from
 func Unauthenticated(err error) error { return &UnauthenticatedRequest{Err: err} }
+
+// RequestReply is returned by a receive function whose provider dictates the body this particular request
+// must be answered with - a verification challenge echoed back, a welcome message. Anything the batch
+// gathered is still written first; the reply replaces only the standard success response.
+type RequestReply struct {
+	ContentType string
+	Body        []byte
+}
+
+func (e *RequestReply) Error() string { return "request answered with its own reply" }
+
+// Write writes the reply to the given response writer
+func (e *RequestReply) Write(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", e.ContentType)
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write(e.Body)
+	return err
+}
+
+// Reply returns an error saying this request must be answered with the given body
+func Reply(contentType string, body []byte) error {
+	return &RequestReply{ContentType: contentType, Body: body}
+}
 
 type SendResult struct {
 	externalIDs []string
