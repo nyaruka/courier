@@ -1,3 +1,11 @@
+v26.3.45 (2026-08-31)
+-------------------------
+ * Answer a failed signature check on an incoming request as unauthorized
+ * Separate what an incoming request is answered as from what it's logged as
+ * Share the WhatsApp payload parser between Cloud API and 360dialog handlers
+ * Simplify channel receive route registration and request payload parsing
+ * Update dependencies
+
 v26.3.44 (2026-08-31)
 -------------------------
  * Include attachments and quick replies in webchat msg_out events
