@@ -317,7 +317,7 @@ func TestVerification(t *testing.T) {
 			Data:    `{"token":"one-long-verification-token","challenge":"challenge123","type":"url_verification"}`,
 			Headers: map[string]string{"content-type": "text/plain"},
 		},
-		{Label: "Invalid token", URL: receiveURL, ExpectedRespStatus: 401, ExpectedBodyContains: "wrong validation token",
+		{Label: "Invalid token", URL: receiveURL, ExpectedRespStatus: 401, ExpectedBodyContains: `{"message":"Unauthorized","data":[{"type":"error","error":"wrong validation token`,
 			Data:    `{"token":"abc321","challenge":"challenge123","type":"url_verification"}`,
 			Headers: map[string]string{"content-type": "text/plain"},
 		},
