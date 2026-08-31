@@ -45,7 +45,7 @@ func newHandler() channels.Handler {
 
 // Initialize implements channels.Handler
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveEvent))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveAny))
 	return nil
 }
 
@@ -74,8 +74,8 @@ type moPayload struct {
 	DeliveryStatus string `json:"deliveryStatus"`
 }
 
-// receiveEvent is our receive function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
+// receiveAny is our receive function for the single URL MTN delivers both messages and status reports through
+func (h *handler) receiveAny(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.Message != "" {
 		in.As(channels.ReceiveKindMsg)
 

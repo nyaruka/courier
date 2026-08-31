@@ -43,7 +43,7 @@ func newHandler() channels.Handler {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodGet, "receive", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMsg))
+	r.AddReceive(h, http.MethodGet, "receive", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMessage))
 	r.AddReceive(h, http.MethodGet, "status", channels.ReceiveKindStatus, handlers.FormPayload(h.receiveStatus))
 	return nil
 }
@@ -62,8 +62,8 @@ type moStatusForm struct {
 	Status string `name:"status" validate:"required"`
 }
 
-// receiveMsg is our receive function for incoming messages
-func (h *handler) receiveMsg(ctx context.Context, channel *models.Channel, r *http.Request, form *moMsgForm, in *channels.Received, clog *models.ChannelLog) error {
+// receiveMessage is our receive function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, form *moMsgForm, in *channels.Received, clog *models.ChannelLog) error {
 	// invalid type? ignore this
 	if form.Type != "text" && form.Type != "image" && form.Type != "video" && form.Type != "voice" && form.Type != "document" {
 		return channels.Ignore("ignoring request, unknown message type")

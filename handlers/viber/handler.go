@@ -74,7 +74,7 @@ func newHandler() channels.Handler {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveEvent))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveAny))
 	return nil
 }
 
@@ -116,8 +116,9 @@ type welcomeMessagePayload struct {
 	Sender       map[string]string `json:"sender,omitempty"`
 }
 
-// receiveEvent is our receive function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventPayload, in *channels.Received, clog *models.ChannelLog) error {
+// receiveAny is our receive function for the single URL Viber delivers messages, statuses, contact events and
+// its verification handshake through
+func (h *handler) receiveAny(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if err := h.validateSignature(channel, r); err != nil {
 		return channels.Unauthenticated(err)
 	}

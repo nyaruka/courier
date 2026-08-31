@@ -61,7 +61,7 @@ func (h *handler) Initialize(r *channels.Routes) error {
 
 	// this can't use AddReceive because the CORS headers have to wrap the seam rather than sit inside it, so
 	// the kind is named twice - once for what the route serves, once for what its log is called
-	receive := channels.Receive(h, channels.ReceiveKindMsg, handlers.JSONPayload(h.receive))
+	receive := channels.Receive(h, channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))
 	r.Add(h, http.MethodPost, "receive", channels.ReceiveKindMsg.LogType(), withCORS(receive))
 
 	// the chat widget runs on arbitrary third-party websites, so both endpoints need CORS preflight support
@@ -224,8 +224,8 @@ type receivePayload struct {
 	Text string `json:"text" validate:"required,max=1000"`
 }
 
-// receive is our receive function for incoming messages
-func (h *handler) receive(ctx context.Context, channel *models.Channel, r *http.Request, payload *receivePayload, in *channels.Received, clog *models.ChannelLog) error {
+// receiveMessage is our receive function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *receivePayload, in *channels.Received, clog *models.ChannelLog) error {
 	urn, err := urns.NewFromParts(urns.WebChat.Prefix, payload.ChatID, nil, "")
 	if err != nil {
 		return fmt.Errorf("invalid chat id: %s", payload.ChatID)

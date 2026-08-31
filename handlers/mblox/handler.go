@@ -36,7 +36,7 @@ func newHandler() channels.Handler {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveEvent))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveAny))
 	return nil
 }
 
@@ -60,8 +60,8 @@ var statusMapping = map[string]models.MsgStatus{
 	"Expired":    models.MsgStatusFailed,
 }
 
-// receiveEvent is our receive function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventPayload, in *channels.Received, clog *models.ChannelLog) error {
+// receiveAny is our receive function for the single URL Mblox delivers both messages and delivery reports through
+func (h *handler) receiveAny(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.Type == "recipient_delivery_report_sms" {
 		in.As(channels.ReceiveKindStatus)
 
