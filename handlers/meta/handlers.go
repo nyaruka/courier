@@ -78,7 +78,7 @@ type handler struct {
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeWebhookVerify, h.receiveVerify)
-	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveEvents))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveAny))
 	return nil
 }
 
@@ -213,8 +213,8 @@ func (h *handler) resolveMediaURL(mediaID string, token string, clog *models.Cha
 	return mediaURL, err
 }
 
-// receiveEvents is our receive function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *Notifications, in *channels.Received, clog *models.ChannelLog) error {
+// receiveAny is our receive function for the single URL Meta delivers messages, status updates and events through
+func (h *handler) receiveAny(ctx context.Context, channel *models.Channel, r *http.Request, payload *Notifications, in *channels.Received, clog *models.ChannelLog) error {
 	if err := h.validateSignature(r); err != nil {
 		return err
 	}

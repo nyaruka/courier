@@ -34,7 +34,7 @@ func newHandler() channels.Handler {
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodPost, "delivered", channels.ReceiveKindStatus, handlers.JSONPayload(h.statusMessage))
+	r.AddReceive(h, http.MethodPost, "delivered", channels.ReceiveKindStatus, handlers.JSONPayload(h.receiveStatus))
 	return nil
 }
 
@@ -56,8 +56,8 @@ type ibStatus struct {
 	} `validate:"required" json:"status"`
 }
 
-// statusMessage is our receive function for status updates
-func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *statusPayload, in *channels.Received, clog *models.ChannelLog) error {
+// receiveStatus is our receive function for status updates
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, payload *statusPayload, in *channels.Received, clog *models.ChannelLog) error {
 
 	for _, s := range payload.Results {
 		msgStatus, found := statusMapping[s.Status.GroupName]

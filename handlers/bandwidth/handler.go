@@ -45,7 +45,7 @@ func newHandler() channels.Handler {
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, h.receiveMessage)
-	r.AddReceive(h, http.MethodPost, "status", channels.ReceiveKindStatus, h.statusMessage)
+	r.AddReceive(h, http.MethodPost, "status", channels.ReceiveKindStatus, h.receiveStatus)
 	return nil
 }
 
@@ -123,8 +123,8 @@ var statusMapping = map[string]models.MsgStatus{
 	"message-failed":    models.MsgStatusFailed,
 }
 
-// statusMessage is our receive function for status updates
-func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
+// receiveStatus is our receive function for status updates
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	var payload []moStatusData
 	body, err := handlers.ReadBody(r, 1000000)
 	if err != nil {

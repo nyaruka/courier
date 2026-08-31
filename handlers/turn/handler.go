@@ -54,7 +54,7 @@ func newHandler() channels.Handler {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveEvents))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveAny))
 
 	return nil
 }
@@ -146,8 +146,8 @@ type eventsPayload struct {
 	} `json:"statuses"`
 }
 
-// receiveEvents is our receive function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventsPayload, in *channels.Received, clog *models.ChannelLog) error {
+// receiveAny is our receive function for the single URL Turn delivers both messages and status updates through
+func (h *handler) receiveAny(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventsPayload, in *channels.Received, clog *models.ChannelLog) error {
 	// a failure here is in the payload itself, so asking for it again wouldn't get any further. The seam writes
 	// whatever was parsed ahead of it rather than dropping it.
 	return h.parseEvents(channel, payload, r, in, clog)

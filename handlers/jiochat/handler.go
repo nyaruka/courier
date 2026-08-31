@@ -55,9 +55,9 @@ func newHandler() channels.Handler {
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
-	r.AddReceive(h, http.MethodPost, "rcv/msg/message", channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodPost, "rcv/event/menu", channels.ReceiveKindEvent, handlers.JSONPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodPost, "rcv/event/follow", channels.ReceiveKindEvent, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "rcv/msg/message", channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveAny))
+	r.AddReceive(h, http.MethodPost, "rcv/event/menu", channels.ReceiveKindEvent, handlers.JSONPayload(h.receiveAny))
+	r.AddReceive(h, http.MethodPost, "rcv/event/follow", channels.ReceiveKindEvent, handlers.JSONPayload(h.receiveAny))
 	return nil
 }
 
@@ -109,8 +109,8 @@ type moPayload struct {
 	MediaID      string `json:"MediaId"`
 }
 
-// receiveMessage is our receive function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
+// receiveAny serves all three of this channel's receive routes, sorting messages from events by payload type
+func (h *handler) receiveAny(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.MsgID == "" && payload.Event == "" {
 		return fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'")
 	}

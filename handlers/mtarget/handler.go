@@ -45,15 +45,15 @@ var statusMapping = map[string]models.MsgStatus{
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, h.receiveMsg)
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, h.receiveMessage)
 
 	statusHandler := handlers.NewExternalIDStatusHandler(statusMapping, "MsgId", "Status")
 	r.AddReceive(h, http.MethodPost, "status", channels.ReceiveKindStatus, statusHandler)
 	return nil
 }
 
-// receiveMsg handles both MO messages and Stop commands
-func (h *handler) receiveMsg(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
+// receiveMessage handles both MO messages and Stop commands
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	err := r.ParseForm()
 	if err != nil {
 		return err

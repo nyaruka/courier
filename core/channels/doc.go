@@ -29,6 +29,12 @@
 // contact is one type, because a message and a channel event are not worth telling apart in a list when the
 // log's own request and response say which it was.
 //
+// Receive functions are named after the kind their route registers: receiveMessage, receiveStatus,
+// receiveEvent, and receiveAny for a route serving several. A handler with two routes of one kind says which
+// in the name instead - receiveSentStatus beside receiveDeliveredStatus. Narrowing with As() doesn't change
+// the name, because a message endpoint where one particular message means a contact stopped is still a
+// message endpoint; a function serving routes of genuinely different kinds is the case receiveAny covers.
+//
 // Everything else in core/models is a handler's to use directly. Models owns the data - the types, the
 // constants and the database access - and handlers lean on it constantly, building a models.MsgIn, reading
 // models.ConfigAuthToken, looking a channel up with models.GetChannel. The line is drawn around incoming

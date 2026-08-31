@@ -43,7 +43,7 @@ func newWAHandler(channelType models.ChannelType, name string) channels.Handler 
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveEvent))
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveAny))
 	return nil
 }
 
@@ -73,8 +73,8 @@ type Notifications struct {
 	} `json:"entry"`
 }
 
-// receiveEvent is our receive function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *Notifications, in *channels.Received, clog *models.ChannelLog) error {
+// receiveAny is our receive function for the single URL 360dialog delivers both messages and status updates through
+func (h *handler) receiveAny(ctx context.Context, channel *models.Channel, r *http.Request, payload *Notifications, in *channels.Received, clog *models.ChannelLog) error {
 	// is not a 'whatsapp_business_account' object? ignore it
 	if payload.Object != "whatsapp_business_account" {
 		return channels.Ignore("ignoring request")

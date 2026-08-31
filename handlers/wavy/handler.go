@@ -34,9 +34,9 @@ func init() {
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodPost, "sent", channels.ReceiveKindStatus, handlers.JSONPayload(h.sentStatusMessage))
+	r.AddReceive(h, http.MethodPost, "sent", channels.ReceiveKindStatus, handlers.JSONPayload(h.receiveSentStatus))
 	r.AddReceive(h, http.MethodPost, "delivered", channels.ReceiveKindStatus,
-		handlers.JSONPayload(h.deliveredStatusMessage))
+		handlers.JSONPayload(h.receiveDeliveredStatus))
 	return nil
 }
 
@@ -61,8 +61,9 @@ type sentStatusPayload struct {
 	SentStatusCode int    `json:"sentStatusCode"   validate:"required"`
 }
 
-// sentStatusMessage is our receive function for status updates
-func (h *handler) sentStatusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *sentStatusPayload, in *channels.Received, clog *models.ChannelLog) error {
+// receiveSentStatus is our receive function for the sent callback, which Wavy delivers separately from the
+// delivered one below
+func (h *handler) receiveSentStatus(ctx context.Context, channel *models.Channel, r *http.Request, payload *sentStatusPayload, in *channels.Received, clog *models.ChannelLog) error {
 	msgStatus, found := statusMapping[payload.SentStatusCode]
 	if !found {
 		return handlers.UnknownStatusError(statusMapping, payload.SentStatusCode)
@@ -78,8 +79,9 @@ type deliveredStatusPayload struct {
 	DeliveredStatusCode int    `json:"deliveredStatusCode"    validate:"required"`
 }
 
-// deliveredStatusMessage is our receive function for status updates
-func (h *handler) deliveredStatusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *deliveredStatusPayload, in *channels.Received, clog *models.ChannelLog) error {
+// receiveDeliveredStatus is our receive function for the delivered callback, which carries a different payload
+// from the sent one above
+func (h *handler) receiveDeliveredStatus(ctx context.Context, channel *models.Channel, r *http.Request, payload *deliveredStatusPayload, in *channels.Received, clog *models.ChannelLog) error {
 	msgStatus, found := statusMapping[payload.DeliveredStatusCode]
 	if !found {
 		return handlers.UnknownStatusError(statusMapping, payload.DeliveredStatusCode)
