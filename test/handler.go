@@ -43,7 +43,7 @@ func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (*models.
 
 // Initialize registers the routes this handler serves
 func (h *mockHandler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
+	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeReceive, h.receiveMsg)
 	return nil
 }
 

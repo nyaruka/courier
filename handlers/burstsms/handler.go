@@ -40,10 +40,10 @@ func newHandler() channels.Handler {
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	receiveHandler := handlers.NewTelReceiveHandler("mobile", "response")
-	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, receiveHandler)
+	r.AddReceive(h, http.MethodGet, "receive", channels.KindMsg, receiveHandler)
 
 	statusHandler := handlers.NewExternalIDStatusHandler(statusMap, "message_id", "status")
-	r.AddReceive(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, statusHandler)
+	r.AddReceive(h, http.MethodGet, "status", channels.KindStatus, statusHandler)
 	return nil
 }
 

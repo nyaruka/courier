@@ -47,13 +47,13 @@ func newHandler() channels.Handler {
 }
 
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h.receiveEvent))
+	r.AddReceive(h, http.MethodPost, "receive", channels.KindAny, handlers.JSONPayload(h.receiveEvent))
 	return nil
 }
 
 func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.Type == "url_verification" {
-		in.As(models.ChannelLogTypeWebhookVerify)
+		in.As(channels.KindVerify)
 
 		validationToken := channel.StringConfigForKey(configValidationToken, "")
 		if !utils.SecretEqual(payload.Token, validationToken) {
@@ -64,7 +64,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 
 	// if event is not a message or is from the bot ignore it
 	if payload.Event.Type == "message" && payload.Event.BotID == "" && payload.Event.ChannelType == "im" {
-		in.As(models.ChannelLogTypeMsgReceive)
+		in.As(channels.KindMsg)
 
 		date := time.Unix(int64(payload.EventTime), 0)
 

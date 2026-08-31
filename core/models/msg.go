@@ -318,7 +318,7 @@ func flushMsg(ctx context.Context, rt *runtime.Runtime, m *MsgIn) error {
 	m.Channel_ = channel
 
 	// create log tho it won't be written
-	clog := NewChannelLog(ChannelLogTypeMsgReceive, channel, nil, nil)
+	clog := NewChannelLog(ChannelLogTypeReceive, channel, nil, nil)
 
 	// try to write it our db
 	contact, err := writeMsgToDB(ctx, rt, m, clog)

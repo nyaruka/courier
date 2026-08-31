@@ -55,9 +55,9 @@ func newHandler() channels.Handler {
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
-	r.AddReceive(h, http.MethodPost, "rcv/msg/message", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodPost, "rcv/event/menu", models.ChannelLogTypeEventReceive, handlers.JSONPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodPost, "rcv/event/follow", models.ChannelLogTypeEventReceive, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "rcv/msg/message", channels.KindMsg, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "rcv/event/menu", channels.KindEvent, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "rcv/event/follow", channels.KindEvent, handlers.JSONPayload(h.receiveMessage))
 	return nil
 }
 
@@ -122,7 +122,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 	}
 
 	if payload.MsgType == "event" {
-		in.As(models.ChannelLogTypeEventReceive)
+		in.As(channels.KindEvent)
 
 		// subscribe event, trigger a new conversation
 		if payload.Event == "subscribe" {

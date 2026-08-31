@@ -194,15 +194,15 @@ var handleTestCases = []IncomingTestCase{
 		ExpectedExternalID:   "Ev0PV52K21",
 	},
 	{
-		// this route serves both messages and the verification handshake, so an event that's neither stays
-		// logged as the multi-purpose type it was registered as
+		// an event that's neither a message nor the verification handshake is never classified, so it keeps
+		// the kind the route was registered with rather than the handshake's own log type
 		Label:                "Receive bot message",
 		URL:                  receiveURL,
 		Headers:              map[string]string{},
 		Data:                 botMsg,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Ignoring request, no message",
-		ExpectedLogType:      models.ChannelLogTypeMultiReceive,
+		ExpectedLogType:      models.ChannelLogTypeReceive,
 	},
 }
 

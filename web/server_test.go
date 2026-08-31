@@ -85,7 +85,7 @@ func TestIncoming(t *testing.T) {
 	rt.Dynamo.Main.Flush()
 	stored := 0
 	for _, item := range dyntest.ScanAll(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table()) {
-		if strings.HasPrefix(item.Key.SK, "log#") && item.Data["type"] == "msg_receive" {
+		if strings.HasPrefix(item.Key.SK, "log#") && item.Data["type"] == "receive" {
 			stored++
 		}
 	}

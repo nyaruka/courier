@@ -164,7 +164,7 @@ func flushEvent(ctx context.Context, rt *runtime.Runtime, event *ChannelEvent) e
 	event.Channel_ = channel
 
 	// create log tho it won't be written
-	clog := NewChannelLog(ChannelLogTypeMsgReceive, channel, nil, nil)
+	clog := NewChannelLog(ChannelLogTypeReceive, channel, nil, nil)
 
 	// try to flush to our database
 	return writeChannelEventToDB(ctx, rt, event, clog)

@@ -17,10 +17,17 @@
 // aren't receiving anything at all: the GET verification handshakes, a chat widget's CORS preflight,
 // Firebase's contact registration.
 //
-// What a request is being handled as travels on the Received rather than on the channel log. It starts as
-// whatever the route was registered as, and a route serving more than one purpose says which with As(). That
-// one declaration decides both how the request is answered and what it's logged as, so the two can't disagree
-// - which they silently did, for as long as each was set separately.
+// What a request is being handled as travels on the Received as a Kind. It starts as whatever the route was
+// registered as, and a route serving more than one purpose says which with As(). That one declaration decides
+// both how the request is answered and what it's logged as, so the two can't disagree - which they silently
+// did, for as long as each was set separately.
+//
+// The two are derived from it separately, though, because they want different granularity. The response has
+// to be exact: a provider that demands its own body for a message and takes the standard JSON for a status
+// callback gets that by overriding RespondMsgs alone, which only works if the two kinds stay distinct here.
+// The log only wants a label a person can scan, and Kind.LogType is coarser to suit - everything about a
+// contact is one type, because a message and a channel event are not worth telling apart in a list when the
+// log's own request and response say which it was.
 //
 // Everything else in core/models is a handler's to use directly. Models owns the data - the types, the
 // constants and the database access - and handlers lean on it constantly, building a models.MsgIn, reading

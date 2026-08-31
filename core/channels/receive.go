@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/nyaruka/courier/v26/core/models"
-	"github.com/nyaruka/gocommon/svclogs"
 )
 
 // ReceiveFunc is how a handler receives an incoming request: it parses what the request contained into the
@@ -22,33 +21,33 @@ type ReceiveFunc func(context.Context, *models.Channel, *http.Request, *Received
 // AddReceive adds a route served by a receive function. Routes that need to own their whole response - a
 // verification handshake, a CORS preflight - use Add with a HandleFunc instead.
 //
-// The log type is what the route serves, and is where the batch starts out - so a route serving one purpose
-// names it, and a route serving several registers as ChannelLogTypeMultiReceive and narrows it with
-// Received.As once it knows which it's dealing with. Registering the multi-purpose type isn't a placeholder:
-// it's what a request that never got as far as being classified - one that failed to parse, or named an event
-// we don't handle - is left logged as.
-func (r *Routes) AddReceive(handler Handler, method string, action string, logType svclogs.Type, fn ReceiveFunc) {
-	r.Add(handler, method, action, logType, Receive(handler, fn))
+// The kind is what the route serves, and is where the batch starts out - so a route serving one purpose names
+// it, and a route serving several registers KindAny and narrows it with Received.As once it knows which it's
+// dealing with. KindAny isn't a placeholder: it's what a request that never got as far as being classified -
+// one that failed to parse, or named an event we don't handle - is left as.
+func (r *Routes) AddReceive(handler Handler, method string, action string, kind Kind, fn ReceiveFunc) {
+	r.Add(handler, method, action, kind.LogType(), Receive(handler, kind, fn))
 }
 
-// Receive adapts a ReceiveFunc into a HandleFunc. AddReceive is how routes normally get this; it's exported
-// for the rare route that wraps its handling in something else, like the chat widget's CORS headers.
+// Receive adapts a ReceiveFunc into a HandleFunc, for a route serving the given kind. AddReceive is how routes
+// normally get this; it's exported for the rare route that wraps its handling in something else, like the chat
+// widget's CORS headers.
 //
 // The lifecycle is two steps: write what the receive function parsed, then answer the request. They're
 // separate because they always both happen - even a request that ends in a parse error keeps the good
 // messages ahead of the failure, since a provider that batches several messages into one request won't send
 // them again just because a later one was malformed.
-func Receive(h Handler, fn ReceiveFunc) HandleFunc {
+func Receive(h Handler, kind Kind, fn ReceiveFunc) HandleFunc {
 	return func(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]Event, error) {
-		// the batch starts out as whatever the route was registered as, which the handler can change once it
-		// knows what it's actually dealing with
-		in := NewReceived(c).As(clog.Type)
+		// the batch starts out as whatever the route serves, which the handler can change once it knows what
+		// it's actually dealing with
+		in := NewReceived(c).As(kind)
 
 		ferr := fn(ctx, c, r, in, clog)
 
 		// whatever the handler worked out it was dealing with is what this gets logged as, however it turned
 		// out - a request we understood and then ignored is still a request of that kind
-		clog.Type = in.Kind()
+		clog.Type = in.Kind().LogType()
 
 		var results []WriteResult
 		if in.Len() > 0 {
@@ -105,7 +104,7 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 	events := AcceptedEvents(results)
 
 	switch in.Kind() {
-	case models.ChannelLogTypeMsgReceive:
+	case KindMsg:
 		msgs := make([]*models.MsgIn, 0, len(events))
 		for _, e := range events {
 			if m, ok := e.(*models.MsgIn); ok {
@@ -114,7 +113,7 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 		}
 		return h.RespondMsgs(ctx, w, msgs)
 
-	case models.ChannelLogTypeMsgStatus:
+	case KindStatus:
 		statuses := make([]*models.StatusUpdate, 0, len(events))
 		for _, e := range events {
 			if s, ok := e.(*models.StatusUpdate); ok {
@@ -123,7 +122,7 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 		}
 		return h.RespondStatuses(ctx, w, statuses)
 
-	case models.ChannelLogTypeEventReceive:
+	case KindEvent:
 		chEvents := make([]*models.ChannelEvent, 0, len(events))
 		for _, e := range events {
 			if ce, ok := e.(*models.ChannelEvent); ok {

@@ -45,10 +45,10 @@ var statusMapping = map[string]models.MsgStatus{
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
+	r.AddReceive(h, http.MethodPost, "receive", channels.KindMsg, h.receiveMsg)
 
 	statusHandler := handlers.NewExternalIDStatusHandler(statusMapping, "MsgId", "Status")
-	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, statusHandler)
+	r.AddReceive(h, http.MethodPost, "status", channels.KindStatus, statusHandler)
 	return nil
 }
 
@@ -135,7 +135,7 @@ func (h *handler) receiveMsg(ctx context.Context, c *models.Channel, r *http.Req
 
 	// if this a stop command, shortcut stopping that contact
 	if keyword == "Stop" {
-		in.As(models.ChannelLogTypeEventReceive)
+		in.As(channels.KindEvent)
 
 		stop := models.NewChannelEvent(c, models.EventTypeStopContact, urn, clog)
 		in.Event(stop)

@@ -194,7 +194,7 @@ func incomingCases() []IncomingTestCase {
 		},
 		{
 			Label:                "Subscribe Event",
-			ExpectedLogType:      models.ChannelLogTypeEventReceive,
+			ExpectedLogType:      models.ChannelLogTypeReceive,
 			URL:                  receiveURL,
 			Data:                 subscribeEvent,
 			ExpectedRespStatus:   200,
@@ -205,7 +205,7 @@ func incomingCases() []IncomingTestCase {
 		},
 		{
 			Label:                "Unsubscribe Event",
-			ExpectedLogType:      models.ChannelLogTypeEventReceive,
+			ExpectedLogType:      models.ChannelLogTypeReceive,
 			URL:                  receiveURL,
 			Data:                 unsubscribeEvent,
 			ExpectedRespStatus:   200,

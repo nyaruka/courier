@@ -42,10 +42,10 @@ type moForm struct {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.FormPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodPost, "callback", models.ChannelLogTypeMsgReceive, handlers.FormPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodPost, "delivery", models.ChannelLogTypeMsgStatus, handlers.FormPayload(h.receiveStatus))
-	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.FormPayload(h.receiveStatus))
+	r.AddReceive(h, http.MethodPost, "receive", channels.KindMsg, handlers.FormPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "callback", channels.KindMsg, handlers.FormPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "delivery", channels.KindStatus, handlers.FormPayload(h.receiveStatus))
+	r.AddReceive(h, http.MethodPost, "status", channels.KindStatus, handlers.FormPayload(h.receiveStatus))
 	return nil
 }
 

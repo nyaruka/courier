@@ -48,7 +48,7 @@ func newHandler() channels.Handler {
 
 // Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "receive", channels.KindMsg, handlers.JSONPayload(h.receiveMessage))
 	return nil
 }
 
@@ -76,7 +76,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 
 	// this is a start command, trigger a new conversation
 	if text == "/start" {
-		in.As(models.ChannelLogTypeEventReceive)
+		in.As(channels.KindEvent)
 		in.Event(models.NewChannelEvent(channel, models.EventTypeNewConversation, urn, clog).WithContactName(name).WithOccurredOn(date))
 		return nil
 	}

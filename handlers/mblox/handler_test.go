@@ -67,7 +67,7 @@ var (
 var testCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid",
-		ExpectedLogType:      models.ChannelLogTypeMsgReceive,
+		ExpectedLogType:      models.ChannelLogTypeReceive,
 		URL:                  receiveURL,
 		Data:                 validReceive,
 		ExpectedRespStatus:   200,
@@ -79,7 +79,7 @@ var testCases = []IncomingTestCase{
 	},
 	{
 		Label:                "Receive Missing Params",
-		ExpectedLogType:      models.ChannelLogTypeMsgReceive,
+		ExpectedLogType:      models.ChannelLogTypeReceive,
 		URL:                  receiveURL,
 		Data:                 missingParamsRecieve,
 		ExpectedRespStatus:   400,
@@ -117,10 +117,10 @@ var testCases = []IncomingTestCase{
 		ExpectedBodyContains: "missing one of 'batch_id' or 'status' in request body",
 	},
 	{
-		// this route serves both messages and statuses, so a payload that's neither stays logged as the
-		// multi-purpose type it was registered as
+		// a payload that's neither a message nor a status is never classified, so it keeps the kind the route
+		// was registered with - which logs as a receive rather than as this channel's status callbacks do
 		Label:                "Unknown Type",
-		ExpectedLogType:      models.ChannelLogTypeMultiReceive,
+		ExpectedLogType:      models.ChannelLogTypeReceive,
 		URL:                  receiveURL,
 		Data:                 `{"type": "mo_binary"}`,
 		ExpectedRespStatus:   400,
