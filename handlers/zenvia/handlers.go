@@ -38,8 +38,8 @@ func newHandler(channelType models.ChannelType, name string) channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
-	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.receiveStatus))
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.ReceiveJSON(h, h.receiveMessage))
+	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.ReceiveJSON(h, h.receiveStatus))
 	return nil
 }
 
@@ -76,26 +76,26 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Incoming, clog *models.ChannelLog) error {
 	if strings.ToUpper(payload.Type) != "MESSAGE" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unsupported event type: %s", payload.Type))
+		return fmt.Errorf("unsupported event type: %s", payload.Type)
 	}
 
 	// create our date from the timestamp
 	// 2017-05-03T06:04:45Z
 	date, err := time.Parse("2006-01-02T15:04:05Z", payload.Timestamp)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid date format: %s", payload.Timestamp))
+		return fmt.Errorf("invalid date format: %s", payload.Timestamp)
 	}
 
 	if strings.ToUpper(payload.Message.Direction) != "IN" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, not incoming messages")
+		return channels.Ignore("ignoring request, not incoming messages")
 	}
 
 	// create our URN
 	urn, err := urns.New(urns.WhatsApp, payload.Message.From)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid whatsapp id"))
+		return errors.New("invalid whatsapp id")
 	}
 
 	contactName := payload.Visitor.Name
@@ -130,10 +130,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		msg.WithAttachment(attachment)
 	}
 
-	// and finally write our message
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 var statusMapping = map[string]models.MsgStatus{
@@ -155,9 +153,9 @@ type statusPayload struct {
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, payload *statusPayload, in *channels.Incoming, clog *models.ChannelLog) error {
 	if strings.ToUpper(payload.Type) != "MESSAGE_STATUS" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unsupported event type: %s", payload.Type))
+		return fmt.Errorf("unsupported event type: %s", payload.Type)
 	}
 
 	msgStatus, found := statusMapping[strings.ToUpper(payload.MessageStatus.Code)]
@@ -167,9 +165,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 
 	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, payload.MessageID, msgStatus, clog)
-	in := channels.NewIncoming(channel)
 	in.Status(status)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type mtContent struct {

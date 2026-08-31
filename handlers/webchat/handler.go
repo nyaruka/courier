@@ -58,7 +58,7 @@ func newHandler() channels.Handler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "start", models.ChannelLogTypeChatStart, withCORS(h.start))
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, withCORS(handlers.JSONPayload(h, h.receive)))
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, withCORS(handlers.ReceiveJSON(h, h.receive)))
 
 	// the chat widget runs on arbitrary third-party websites, so both endpoints need CORS preflight support
 	r.Add(h, http.MethodOptions, "start", models.ChannelLogTypeUnknown, h.preflight)
@@ -221,26 +221,25 @@ type receivePayload struct {
 }
 
 // receive is our HTTP handler function for incoming messages
-func (h *handler) receive(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *receivePayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receive(ctx context.Context, channel *models.Channel, r *http.Request, payload *receivePayload, in *channels.Incoming, clog *models.ChannelLog) error {
 	urn, err := urns.NewFromParts(urns.WebChat.Prefix, payload.ChatID, nil, "")
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid chat id: %s", payload.ChatID))
+		return fmt.Errorf("invalid chat id: %s", payload.ChatID)
 	}
 
 	// chat IDs are only ever minted by the start endpoint, so a URN we've never seen is a bad request rather
 	// than a new contact
 	contact, err := models.GetContact(ctx, h.Runtime(), channel, urn, nil, "", false, clog)
 	if err != nil {
-		return nil, fmt.Errorf("error looking up contact: %w", err)
+		return fmt.Errorf("error looking up contact: %w", err)
 	}
 	if contact == nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown chat id: %s", payload.ChatID))
+		return fmt.Errorf("unknown chat id: %s", payload.ChatID)
 	}
 
 	msg := models.NewIncomingMsg(channel, urn, payload.Text, "", clog)
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 // msgOutEvent is the event published to the conversation's chat socket for an outgoing message. Chat socket

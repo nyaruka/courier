@@ -57,7 +57,7 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.ReceiveJSON(h, h.receiveMessage))
 	return nil
 }
 
@@ -114,13 +114,11 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Incoming, clog *models.ChannelLog) error {
 	err := h.validateSignature(channel, r)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	in := channels.NewIncoming(channel)
 
 	for _, lineEvent := range payload.Events {
 		if lineEvent.ReplyToken == "" || (lineEvent.Source.Type == "" && lineEvent.Source.UserID == "") || (lineEvent.Message.Type == "" && lineEvent.Message.ID == "") {
@@ -154,7 +152,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 		urn, err := urns.New(urns.Line, lineEvent.Source.UserID)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid line id"))
+			return errors.New("invalid line id")
 		}
 
 		msg := models.NewIncomingMsg(channel, urn, text, lineEvent.ReplyToken, clog).WithReceivedOn(date)
@@ -166,7 +164,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		in.Msg(msg)
 	}
 
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 
 }
 

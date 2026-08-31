@@ -45,23 +45,23 @@ func newHandler(channelType models.ChannelType, name string, validateSignatures 
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.ReceiveJSON(h, h.receiveMessage))
 	return nil
 }
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Incoming, clog *models.ChannelLog) error {
 	err := h.validateSignature(channel, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// no message? ignore this
 	if payload.Data.Message == nil || payload.Data.Message.ActorID == "" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
+		return channels.Ignore("Ignoring request, no message")
 	}
 
 	// something we sent? ignore this
 	if payload.Data.Message.ActorType == "agent" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, Agent Message")
+		return channels.Ignore("Ignoring request, Agent Message")
 	}
 
 	// create our date from the timestamp
@@ -72,7 +72,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	urnstring := fmt.Sprintf("%s/%s", payload.Data.Message.ChannelID, payload.Data.Message.ActorID)
 	urn, err = urns.New(urns.FreshChat, urnstring)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 	text := ""
 	mediaURL := ""
@@ -92,10 +92,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	if mediaURL != "" {
 		msg.WithAttachment(mediaURL)
 	}
-	// and finally write our message
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

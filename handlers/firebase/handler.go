@@ -50,7 +50,7 @@ func newHandler() channels.Handler {
 }
 
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.Receive(h, h.receiveMessage))
 	r.Add(h, http.MethodPost, "register", models.ChannelLogTypeEventReceive, h.registerContact)
 	return nil
 }
@@ -64,25 +64,25 @@ type receiveForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 	form := &receiveForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	date := time.Now().UTC()
 	if form.Date != "" {
 		date, err = time.Parse("2006-01-02T15:04:05.000", form.Date)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to parse date: %s", form.Date))
+			return fmt.Errorf("unable to parse date: %s", form.Date)
 		}
 	}
 
 	// create our URN
 	urn, err := urns.New(urns.Firebase, form.From)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// if a new auth token was provided, record that
@@ -94,10 +94,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 	// build our msg
 	dbMsg := models.NewIncomingMsg(channel, urn, form.Msg, "", clog).WithReceivedOn(date).WithContactName(form.Name).WithURNAuthTokens(authTokens)
 
-	// and finally write our message
-	in := channels.NewIncoming(channel)
 	in.Msg(dbMsg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type registerForm struct {

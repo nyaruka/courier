@@ -34,34 +34,33 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.Receive(h, h.receiveMessage))
 	return nil
 }
 
 // receiveMessage takes care of handling incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 	err := r.ParseForm()
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		return err
 	}
 
 	body := r.Form.Get("text")
 	from := r.Form.Get("from")
 	if from == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required field 'from'"))
+		return fmt.Errorf("missing required field 'from'")
 	}
 
 	// create our URN
 	urn, err := urns.ParsePhone(from, c.Country(), true, false)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		return err
 	}
 
 	// create and write the message
 	msg := models.NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
-	in := channels.NewIncoming(c)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 // WriteMsgSuccessResponse writes a success response for the messages

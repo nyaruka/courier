@@ -94,10 +94,10 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
-	r.Add(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, handlers.Receive(h, h.receiveMessage))
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.Receive(h, h.receiveMessage))
+	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.Receive(h, h.receiveStatus))
+	r.Add(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, handlers.Receive(h, h.receiveStatus))
 	return nil
 }
 
@@ -120,17 +120,17 @@ var statusMappings = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 	form := &statusForm{}
 	handlers.DecodeAndValidateForm(form, r)
 
 	if form.MessageID == "" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no messageId parameter, ignored")
+		return channels.Ignore("no messageId parameter, ignored")
 	}
 
 	msgStatus, found := statusMappings[form.Status]
 	if !found {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring unknown status report")
+		return channels.Ignore("ignoring unknown status report")
 	}
 
 	if form.ErrCode != 0 {
@@ -139,9 +139,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 
 	status := models.NewStatusUpdateByExternalID(channel, form.MessageID, msgStatus, clog)
 
-	in := channels.NewIncoming(channel)
 	in.Status(status)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type moForm struct {
@@ -152,25 +151,24 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 	form := &moForm{}
 	handlers.DecodeAndValidateForm(form, r)
 
 	if form.To == "" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no to parameter, ignored")
+		return channels.Ignore("no to parameter, ignored")
 	}
 
 	// create our URN
 	urn, err := urns.ParsePhone(form.From, channel.Country(), true, false)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// create and write the message
 	msg := models.NewIncomingMsg(channel, urn, form.Text, form.MessageID, clog)
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

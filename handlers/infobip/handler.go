@@ -33,8 +33,8 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
-	r.Add(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.statusMessage))
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.ReceiveJSON(h, h.receiveMessage))
+	r.Add(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, handlers.ReceiveJSON(h, h.statusMessage))
 	return nil
 }
 
@@ -57,19 +57,18 @@ type ibStatus struct {
 }
 
 // statusMessage is our HTTP handler function for status updates
-func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *models.ChannelLog) ([]channels.Event, error) {
-	in := channels.NewIncoming(channel)
+func (h *handler) statusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *statusPayload, in *channels.Incoming, clog *models.ChannelLog) error {
 
 	for _, s := range payload.Results {
 		msgStatus, found := statusMapping[s.Status.GroupName]
 		if !found {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", s.Status.GroupName))
+			return fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", s.Status.GroupName)
 		}
 
 		in.Status(models.NewStatusUpdateByExternalID(channel, s.MessageID, msgStatus, clog))
 	}
 
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type v3InboundPayload struct {
@@ -107,12 +106,11 @@ type v3InboundPrice struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages (both SMS and MMS)
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *v3InboundPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *v3InboundPayload, in *channels.Incoming, clog *models.ChannelLog) error {
 	if payload.MessageCount == 0 {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
+		return channels.Ignore("ignoring request, no message")
 	}
 
-	in := channels.NewIncoming(channel)
 	for _, infobipMessage := range payload.Results {
 		messageID := infobipMessage.MessageID
 		dateString := infobipMessage.ReceivedAt
@@ -120,7 +118,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		// create our URN
 		urn, err := urns.ParsePhone(infobipMessage.From, channel.Country(), true, false)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return err
 		}
 
 		// Check if this is an MMS message by looking at the Message field
@@ -160,7 +158,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 
 			date, err = time.Parse("2006-01-02T15:04:05.000-0700", dateString)
 			if err != nil {
-				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+				return err
 			}
 		}
 
@@ -172,7 +170,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		in.Msg(msg)
 	}
 
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type v3OutboundPayload struct {

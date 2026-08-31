@@ -34,9 +34,9 @@ func init() {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
-	r.Add(h, http.MethodPost, "sent", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.sentStatusMessage))
-	r.Add(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.deliveredStatusMessage))
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.ReceiveJSON(h, h.receiveMessage))
+	r.Add(h, http.MethodPost, "sent", models.ChannelLogTypeMsgStatus, handlers.ReceiveJSON(h, h.sentStatusMessage))
+	r.Add(h, http.MethodPost, "delivered", models.ChannelLogTypeMsgStatus, handlers.ReceiveJSON(h, h.deliveredStatusMessage))
 	return nil
 }
 
@@ -62,17 +62,16 @@ type sentStatusPayload struct {
 }
 
 // sentStatusMessage is our HTTP handler function for status updates
-func (h *handler) sentStatusMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *sentStatusPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) sentStatusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *sentStatusPayload, in *channels.Incoming, clog *models.ChannelLog) error {
 	msgStatus, found := statusMapping[payload.SentStatusCode]
 	if !found {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown sent status code '%d', must be one of 2, 101, 102, 103, 201, 202, 203, 204, 205, 207 or 301 ", payload.SentStatusCode))
+		return fmt.Errorf("unknown sent status code '%d', must be one of 2, 101, 102, 103, 201, 202, 203, 204, 205, 207 or 301 ", payload.SentStatusCode)
 	}
 
 	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, payload.CollerationID, msgStatus, clog)
-	in := channels.NewIncoming(channel)
 	in.Status(status)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type deliveredStatusPayload struct {
@@ -81,17 +80,16 @@ type deliveredStatusPayload struct {
 }
 
 // sentStatusMessage is our HTTP handler function for status updates
-func (h *handler) deliveredStatusMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *deliveredStatusPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) deliveredStatusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *deliveredStatusPayload, in *channels.Incoming, clog *models.ChannelLog) error {
 	msgStatus, found := statusMapping[payload.DeliveredStatusCode]
 	if !found {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown delivered status code '%d', must be 4 or 104", payload.DeliveredStatusCode))
+		return fmt.Errorf("unknown delivered status code '%d', must be 4 or 104", payload.DeliveredStatusCode)
 	}
 
 	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, payload.CollerationID, msgStatus, clog)
-	in := channels.NewIncoming(channel)
 	in.Status(status)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type moPayload struct {
@@ -103,21 +101,19 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Incoming, clog *models.ChannelLog) error {
 	date := time.Unix(0, int64(payload.Timestamp*1000000)).UTC()
 
 	// create our URN
 	urn, err := urns.ParsePhone(payload.From, channel.Country(), true, false)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 	// build our msg
 	msg := models.NewIncomingMsg(channel, urn, payload.Message, payload.ID, clog).WithReceivedOn(date.UTC())
 
-	// and finally write our message
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 
 }
 

@@ -45,7 +45,7 @@ func newHandler() channels.Handler {
 
 // Initialize implements channels.Handler
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.ReceiveJSON(h, h.receiveEvent))
 	return nil
 }
 
@@ -75,44 +75,41 @@ type moPayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Incoming, clog *models.ChannelLog) error {
 	if payload.Message != "" {
-		clog.Type = models.ChannelLogTypeMsgReceive
+		in.As(models.ChannelLogTypeMsgReceive)
 
 		date := time.Unix(payload.Created/1000, payload.Created%1000*1000000).UTC()
 		urn, err := urns.ParsePhone(payload.From, channel.Country(), true, false)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return err
 		}
 
 		// create and write the message
 		msg := models.NewIncomingMsg(channel, urn, payload.Message, "", clog).WithReceivedOn(date)
-		in := channels.NewIncoming(channel)
 		in.Msg(msg)
-		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+		return nil
 
 	} else {
-		clog.Type = models.ChannelLogTypeMsgStatus
+		in.As(models.ChannelLogTypeMsgStatus)
 
 		if payload.TransactionID == "" {
-			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "missing transactionId, ignored")
+			return channels.Ignore("missing transactionId, ignored")
 		}
 
 		msgStatus, found := statusMapping[payload.DeliveryStatus]
 		if !found {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
-				fmt.Errorf("unknown status '%s'", payload.DeliveryStatus))
+			return fmt.Errorf("unknown status '%s'", payload.DeliveryStatus)
 		}
 
 		if msgStatus == models.MsgStatusWired {
-			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no status changed, ignored")
+			return channels.Ignore("no status changed, ignored")
 		}
 
 		// write our status
 		status := models.NewStatusUpdateByExternalID(channel, payload.TransactionID, msgStatus, clog)
-		in := channels.NewIncoming(channel)
 		in.Status(status)
-		return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+		return nil
 	}
 }
 

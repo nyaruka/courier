@@ -88,8 +88,8 @@ func init() {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.Receive(h, h.receiveMessage))
+	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.Receive(h, h.receiveStatus))
 	return nil
 }
 
@@ -123,22 +123,22 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 	err := h.validateSignature(channel, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// get our params
 	form := &moForm{}
 	err = handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	urn, err := h.parseURN(channel, form.From, i18n.Country(form.FromCountry))
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	if form.Body != "" {
@@ -172,33 +172,32 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, w
 		mediaURL := r.PostForm.Get(fmt.Sprintf("MediaUrl%d", i))
 		msg.WithAttachment(mediaURL)
 	}
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 	err := h.validateSignature(channel, r)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// get our params
 	form := &statusForm{}
 	err = handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no msg status, ignoring")
+		return channels.Ignore("no msg status, ignoring")
 	}
 
 	msgStatus, found := statusMapping[form.MessageStatus]
 	if !found {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", form.MessageStatus))
+		return fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", form.MessageStatus)
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
 	if channel.BoolConfigForKey(configIgnoreDLRs, false) && msgStatus != models.MsgStatusFailed {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring non error delivery report")
+		return channels.Ignore("ignoring non error delivery report")
 	}
 
 	var status *models.StatusUpdate
@@ -209,14 +208,12 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 		status = models.NewStatusUpdateByExternalID(channel, form.MessageSID, msgStatus, clog)
 	}
 
-	in := channels.NewIncoming(channel)
-
 	errorCode, _ := strconv.ParseInt(form.ErrorCode, 10, 64)
 	if errorCode != 0 {
 		if errorCode == errorStopped {
 			urn, err := h.parseURN(channel, form.To, "")
 			if err != nil {
-				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+				return err
 			}
 
 			// the contact has asked to stop, which we record alongside the status that told us
@@ -230,7 +227,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w 
 
 	in.Status(status)
 
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {

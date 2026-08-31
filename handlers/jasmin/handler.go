@@ -34,8 +34,8 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
-	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.Receive(h, h.receiveMessage))
+	r.Add(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.Receive(h, h.receiveStatus))
 	return nil
 }
 
@@ -57,11 +57,11 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		return err
 	}
 
 	// prefer message_status when present; otherwise require either dlvrd or err to be set
@@ -74,13 +74,12 @@ func (h *handler) receiveStatus(ctx context.Context, c *models.Channel, w http.R
 	} else if form.Err == 1 {
 		reqStatus = models.MsgStatusFailed
 	} else {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("must have a known message_status or either dlvrd or err set to 1"))
+		return fmt.Errorf("must have a known message_status or either dlvrd or err set to 1")
 	}
 
 	status := models.NewStatusUpdateByExternalID(c, form.ID, reqStatus, clog)
-	in := channels.NewIncoming(c)
 	in.Status(status)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 type moForm struct {
@@ -92,18 +91,18 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 	// get our params
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		return err
 	}
 
 	// create our URN
 	urn, err := urns.ParsePhone(form.From, c.Country(), true, false)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		return err
 	}
 
 	// Decode from GSM7 if required
@@ -115,10 +114,8 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, w http.
 	// build our msg
 	msg := models.NewIncomingMsg(c, urn, text, form.ID, clog).WithReceivedOn(time.Now().UTC())
 
-	// and finally queue our message
-	in := channels.NewIncoming(c)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {

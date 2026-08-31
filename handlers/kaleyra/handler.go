@@ -43,8 +43,8 @@ func newHandler() channels.Handler {
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMsg)
-	r.Add(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
+	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, handlers.Receive(h, h.receiveMsg))
+	r.Add(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, handlers.Receive(h, h.receiveStatus))
 	return nil
 }
 
@@ -63,32 +63,32 @@ type moStatusForm struct {
 }
 
 // receiveMsg is our HTTP handler function for incoming messages
-func (h *handler) receiveMsg(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveMsg(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 	form := &moMsgForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// invalid type? ignore this
 	if form.Type != "text" && form.Type != "image" && form.Type != "video" && form.Type != "voice" && form.Type != "document" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, unknown message type")
+		return channels.Ignore("ignoring request, unknown message type")
 	}
 	// check empty content
 	if form.Body == "" && form.MediaURL == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or media"))
+		return errors.New("no text or media")
 	}
 
 	// build urn
 	urn, err := urns.New(urns.WhatsApp, form.From)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid whatsapp id"))
+		return errors.New("invalid whatsapp id")
 	}
 
 	// parse created_at timestamp
 	ts, err := strconv.ParseInt(form.CreatedAt, 10, 64)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid created_at: %s", form.CreatedAt))
+		return fmt.Errorf("invalid created_at: %s", form.CreatedAt)
 	}
 
 	// build msg
@@ -99,10 +99,8 @@ func (h *handler) receiveMsg(ctx context.Context, channel *models.Channel, w htt
 		msg.WithAttachment(form.MediaURL)
 	}
 
-	// write msg
-	in := channels.NewIncoming(channel)
 	in.Msg(msg)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 var statusMapping = map[string]models.MsgStatus{
@@ -113,29 +111,27 @@ var statusMapping = map[string]models.MsgStatus{
 }
 
 // receiveStatus is our HTTP handler function for outgoing messages statuses
-func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Incoming, clog *models.ChannelLog) error {
 	form := &moStatusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return err
 	}
 
 	// unknown status? ignore this
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("unknown status: %s", form.Status))
+		return channels.Ignore("unknown status: %s", form.Status)
 	}
 
 	// msg not found? ignore this
 	status := models.NewStatusUpdateByExternalID(channel, form.ID, msgStatus, clog)
 	if status == nil {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("ignoring request, message %s not found", form.ID))
+		return channels.Ignore("ignoring request, message %s not found", form.ID)
 	}
 
-	// write status
-	in := channels.NewIncoming(channel)
 	in.Status(status)
-	return handlers.WriteIncomingAndResponse(ctx, h, in, w, r, clog)
+	return nil
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
