@@ -48,8 +48,8 @@ var sigtestCases = []IncomingTestCase{
 		Headers:              map[string]string{"Content-Type": "application/json", "X-FreshChat-Signature": invalidSignature},
 		URL:                  receiveURL,
 		Data:                 validReceive,
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: `{"message":"Error","data":[{"type":"error","error":"unable to verify signature, crypto/rsa: verification error"}]}`,
+		ExpectedRespStatus:   401,
+		ExpectedBodyContains: `{"message":"Unauthorized","data":[{"type":"error","error":"unable to verify signature, crypto/rsa: verification error"}]}`,
 	},
 }
 

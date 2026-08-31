@@ -377,9 +377,16 @@ var handleTestCases = []IncomingTestCase{
 		Label:                "Receive Valid Message Invalid signature",
 		URL:                  receiveURL,
 		Data:                 receiveValidMessage,
-		ExpectedRespStatus:   400,
+		ExpectedRespStatus:   401,
 		ExpectedBodyContains: "invalid request signature",
 		PrepRequest:          addInvalidSignature,
+	},
+	{
+		Label:                "Receive Valid Message Missing signature",
+		URL:                  receiveURL,
+		Data:                 receiveValidMessage,
+		ExpectedRespStatus:   401,
+		ExpectedBodyContains: "missing request signature",
 	},
 }
 

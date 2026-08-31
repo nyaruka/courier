@@ -202,7 +202,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 	secret := channel.StringConfigForKey(models.ConfigSecret, "")
 
 	if !utils.SecretEqual(payload.SecretKey, secret) {
-		return errors.New("wrong secret key")
+		return channels.Unauthenticated(errors.New("wrong secret key"))
 	}
 	// check event type and decode body to correspondent struct
 	switch payload.Type {
