@@ -258,7 +258,7 @@ var testCases = []IncomingTestCase{
 		URL:                  statusURL,
 		Data:                 unknownStatus,
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: `unknown status 'foo', must be one of send, delivered, undelivered, failed`,
+		ExpectedBodyContains: `unknown status 'foo', must be one of 'delivered', 'failed', 'sent', 'undelivered'`,
 	},
 }
 

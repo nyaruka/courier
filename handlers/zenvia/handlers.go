@@ -36,7 +36,7 @@ func newHandler(channelType models.ChannelType, name string) channels.Handler {
 	return &handler{handlers.NewBaseHandler(channelType, name)}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
 	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h.receiveStatus))
@@ -75,7 +75,7 @@ type moPayload struct {
 	}
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
+// receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if strings.ToUpper(payload.Type) != "MESSAGE" {
 		return fmt.Errorf("unsupported event type: %s", payload.Type)
@@ -152,7 +152,7 @@ type statusPayload struct {
 	} `json:"messageStatus"`
 }
 
-// receiveStatus is our HTTP handler function for status updates
+// receiveStatus is our receive function for status updates
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, payload *statusPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if strings.ToUpper(payload.Type) != "MESSAGE_STATUS" {
 		return fmt.Errorf("unsupported event type: %s", payload.Type)
@@ -163,7 +163,6 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 		msgStatus = models.MsgStatusErrored
 	}
 
-	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, payload.MessageID, msgStatus, clog)
 	in.Status(status)
 	return nil

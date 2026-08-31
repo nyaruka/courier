@@ -369,7 +369,7 @@ func (e *ExpectedRequest) AssertMatches(t *testing.T, actual *http.Request, requ
 		}
 	}
 	if e.Path != "" {
-		assert.Equal(t, e.Path, actual.URL.Path, "patch mismatch for request %d", requestNum)
+		assert.Equal(t, e.Path, actual.URL.Path, "path mismatch for request %d", requestNum)
 	}
 	if e.Params != nil {
 		assert.Equal(t, e.Params, actual.URL.Query(), "URL params mismatch for request %d", requestNum)

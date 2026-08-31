@@ -3,7 +3,6 @@ package wavy
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -32,7 +31,7 @@ func init() {
 	channels.RegisterHandler(newHandler())
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
 	r.AddReceive(h, http.MethodPost, "sent", models.ChannelLogTypeMsgStatus, handlers.JSONPayload(h.sentStatusMessage))
@@ -61,14 +60,13 @@ type sentStatusPayload struct {
 	SentStatusCode int    `json:"sentStatusCode"   validate:"required"`
 }
 
-// sentStatusMessage is our HTTP handler function for status updates
+// sentStatusMessage is our receive function for status updates
 func (h *handler) sentStatusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *sentStatusPayload, in *channels.Received, clog *models.ChannelLog) error {
 	msgStatus, found := statusMapping[payload.SentStatusCode]
 	if !found {
-		return fmt.Errorf("unknown sent status code '%d', must be one of 2, 101, 102, 103, 201, 202, 203, 204, 205, 207 or 301 ", payload.SentStatusCode)
+		return handlers.UnknownStatusError(statusMapping, payload.SentStatusCode)
 	}
 
-	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, payload.CollerationID, msgStatus, clog)
 	in.Status(status)
 	return nil
@@ -79,14 +77,13 @@ type deliveredStatusPayload struct {
 	DeliveredStatusCode int    `json:"deliveredStatusCode"    validate:"required"`
 }
 
-// sentStatusMessage is our HTTP handler function for status updates
+// deliveredStatusMessage is our receive function for status updates
 func (h *handler) deliveredStatusMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *deliveredStatusPayload, in *channels.Received, clog *models.ChannelLog) error {
 	msgStatus, found := statusMapping[payload.DeliveredStatusCode]
 	if !found {
-		return fmt.Errorf("unknown delivered status code '%d', must be 4 or 104", payload.DeliveredStatusCode)
+		return handlers.UnknownStatusError(statusMapping, payload.DeliveredStatusCode)
 	}
 
-	// write our status
 	status := models.NewStatusUpdateByExternalID(channel, payload.CollerationID, msgStatus, clog)
 	in.Status(status)
 	return nil
@@ -100,7 +97,7 @@ type moPayload struct {
 	Timestamp int64  `json:"receivedAt"    validate:"required"`
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
+// receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	date := time.Unix(0, int64(payload.Timestamp*1000000)).UTC()
 

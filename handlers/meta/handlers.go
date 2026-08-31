@@ -75,7 +75,7 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeWebhookVerify, h.receiveVerify)
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h.receiveEvents))
@@ -117,9 +117,9 @@ func (h *handler) RedactValues(ch *models.Channel) []string {
 	return vals
 }
 
-// WriteRequestError writes the passed in error to our response writer
-func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
-	return channels.WriteError(w, http.StatusOK, err)
+// RespondError writes the passed in error to our response writer
+func (h *handler) RespondError(ctx context.Context, w http.ResponseWriter, err error) error {
+	return channels.RespondError(w, http.StatusOK, err)
 }
 
 // GetChannel returns the channel
@@ -172,13 +172,13 @@ func (h *handler) receiveVerify(ctx context.Context, channel *models.Channel, w 
 
 	// this isn't a subscribe verification, that's an error
 	if mode != "subscribe" {
-		return nil, channels.WriteAndLogRequestError(ctx, h, w, r, channel, fmt.Errorf("unknown request"))
+		return nil, channels.RespondRequestError(ctx, h, w, r, channel, fmt.Errorf("unknown request"))
 	}
 
 	// verify the token against our server facebook webhook secret, if the same return the challenge FB sent us
 	secret := r.URL.Query().Get("hub.verify_token")
 	if !utils.SecretEqual(secret, h.Runtime().Config.FacebookWebhookSecret) {
-		return nil, channels.WriteAndLogRequestError(ctx, h, w, r, channel, fmt.Errorf("token does not match secret"))
+		return nil, channels.RespondRequestError(ctx, h, w, r, channel, fmt.Errorf("token does not match secret"))
 	}
 	// and respond with the challenge token
 	_, err := fmt.Fprint(w, r.URL.Query().Get("hub.challenge"))
@@ -208,21 +208,14 @@ func (h *handler) resolveMediaURL(mediaID string, token string, clog *models.Cha
 	return mediaURL, err
 }
 
-// receiveEvents is our HTTP handler function for incoming messages and status updates
+// receiveEvents is our receive function for incoming messages and status updates
 func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *Notifications, in *channels.Received, clog *models.ChannelLog) error {
 	if err := h.validateSignature(r); err != nil {
 		return err
 	}
 
-	// is not a 'page' and 'instagram' object? ignore it
-	if payload.Object != "page" && payload.Object != "instagram" && payload.Object != "whatsapp_business_account" {
-		return channels.Ignore("ignoring request")
-	}
-
-	// no entries? ignore this request
-	if len(payload.Entry) == 0 {
-		return channels.Ignore("ignoring request, no entries")
-	}
+	// a payload with an unexpected object or no entries never gets here - GetChannel decodes the same body
+	// and fails the request first
 
 	// a failure here is in the payload itself, so asking for it again wouldn't get any further. The seam writes
 	// whatever was parsed ahead of it rather than dropping it.
@@ -659,8 +652,8 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg *models.MsgOut, res *
 		}
 	}
 
-	// if we got a user_id in the response, set it as a new URN on the send result so the backend
-	// can queue a contact_changed task to append it to the contact (unless it's the URN we sent to)
+	// if we got a user_id in the response, set it as a new URN on the send result so that send completion
+	// can queue a contact_changed task to append it to the contact (unless it is the URN we sent to)
 	if userID != "" {
 		userIDURN, err := urns.New(urns.WhatsApp, userID)
 		if err != nil {

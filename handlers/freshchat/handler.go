@@ -43,7 +43,7 @@ func newHandler(channelType models.ChannelType, name string, validateSignatures 
 	return &handler{handlers.NewBaseHandler(models.ChannelType("FC"), "FreshChat"), validateSignatures}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
 	return nil

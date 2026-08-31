@@ -32,7 +32,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("JS"), "Jasmin")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
@@ -56,7 +56,7 @@ var statusMapping = map[string]models.MsgStatus{
 	"DELIVRD": models.MsgStatusDelivered,
 }
 
-// receiveStatus is our HTTP handler function for status updates
+// receiveStatus is our receive function for status updates
 func (h *handler) receiveStatus(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -90,7 +90,7 @@ type moForm struct {
 	ID      string `name:"id"       validate:"required"`
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
+// receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	// get our params
 	form := &moForm{}
@@ -118,15 +118,15 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http
 	return nil
 }
 
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	return writeJasminACK(w)
 }
 
-func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
+func (h *handler) RespondStatuses(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
 	return writeJasminACK(w)
 }
 
-func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
+func (h *handler) RespondIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
 	return writeJasminACK(w)
 }
 

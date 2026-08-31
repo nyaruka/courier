@@ -65,7 +65,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("EX"), "External")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.AddReceive(h, http.MethodGet, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
@@ -136,7 +136,7 @@ func getFormField(form url.Values, defaultNames []string, name string) string {
 	return ""
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
+// receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	var err error
 
@@ -215,11 +215,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 	return nil
 }
 
-// WriteMsgSuccessResponse writes our response in TWIML format
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+// RespondMsgs writes the channel's configured MO response if it has one
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	moResponse := msgs[0].Channel().StringConfigForKey(configMOResponse, "")
 	if moResponse == "" {
-		return channels.WriteMsgSuccess(w, msgs)
+		return channels.RespondMsgs(w, msgs)
 	}
 	moResponseContentType := msgs[0].Channel().StringConfigForKey(configMOResponseContentType, "")
 	if moResponseContentType != "" {
@@ -248,7 +248,7 @@ var statusMappings = map[string]models.MsgStatus{
 	"delivered": models.MsgStatusDelivered,
 }
 
-// receiveStatus is our HTTP handler function for status updates
+// receiveStatus is our receive function for status updates
 func (h *handler) receiveStatus(ctx context.Context, statusString string, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)

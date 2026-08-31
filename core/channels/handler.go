@@ -17,7 +17,10 @@ type Event interface {
 	EventUUID() uuids.UUID
 }
 
-// HandleFunc is the interface handlers must satisfy to handle incoming requests.
+// HandleFunc is the raw form of a route: it owns the whole exchange, writing the response itself and
+// returning the events it created. Routes that receive events don't implement this directly - they register
+// a ReceiveFunc with AddReceive and the seam handles the exchange for them - so this is the form for routes
+// that aren't receiving anything: verification handshakes, CORS preflights, contact registration.
 // The server takes care of looking up the channel by UUID before passing it to this function.
 // Errors in format of the request or by the caller should be handled and logged internally. Errors in
 // execution or in courier itself should be passed back.
@@ -51,10 +54,10 @@ type Handler interface {
 	SendableEvents(*models.Channel) map[string]time.Duration
 	SendEvent(context.Context, *models.Channel, events.Event, *models.ChannelLog) error
 
-	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []*models.StatusUpdate) error
-	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []*models.MsgIn) error
-	WriteRequestError(context.Context, http.ResponseWriter, error) error
-	WriteRequestIgnored(context.Context, http.ResponseWriter, string) error
+	RespondStatuses(context.Context, http.ResponseWriter, []*models.StatusUpdate) error
+	RespondMsgs(context.Context, http.ResponseWriter, []*models.MsgIn) error
+	RespondError(context.Context, http.ResponseWriter, error) error
+	RespondIgnored(context.Context, http.ResponseWriter, string) error
 }
 
 // AttachmentRequestBuilder is the interface handlers which can allow a custom way to download attachment media for messages should satisfy

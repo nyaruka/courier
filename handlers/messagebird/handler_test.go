@@ -190,7 +190,7 @@ var defaultReceiveTestCases = []IncomingTestCase{
 		Label:                "Receive Invalid Status",
 		URL:                  statusBaseURL + "&status=expiryttd",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: `{"message":"Error","data":[{"type":"error","error":"unknown status 'expiryttd', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'"}]}`,
+		ExpectedBodyContains: `{"message":"Error","data":[{"type":"error","error":"unknown status 'expiryttd', must be one of 'buffered', 'delivered', 'delivery_failed', 'expired', 'scheduled', 'sent'"}]}`,
 	},
 }
 

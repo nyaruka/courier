@@ -1,15 +1,29 @@
 package handlers
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/gocommon/urns"
 )
+
+// UnknownStatusError creates the error for a status value that isn't in the given mapping, listing the values
+// that are - from the mapping itself, so the message can't drift from the map.
+func UnknownStatusError[K cmp.Ordered](statuses map[K]models.MsgStatus, value K) error {
+	vals := make([]string, 0, len(statuses))
+	for _, k := range slices.Sorted(maps.Keys(statuses)) {
+		vals = append(vals, fmt.Sprintf("'%v'", k))
+	}
+	return fmt.Errorf("unknown status '%v', must be one of %s", value, strings.Join(vals, ", "))
+}
 
 // NewTelReceiveHandler creates a new receive function given the passed in text and from fields
 func NewTelReceiveHandler(fromField string, bodyField string) channels.ReceiveFunc {
@@ -49,7 +63,7 @@ func NewExternalIDStatusHandler(statuses map[string]models.MsgStatus, externalID
 		s := r.Form.Get(statusField)
 		sValue, found := statuses[s]
 		if !found {
-			return fmt.Errorf("unknown status value '%s'", s)
+			return UnknownStatusError(statuses, s)
 		}
 
 		in.Status(models.NewStatusUpdateByExternalID(c, externalID, sValue, clog))

@@ -37,7 +37,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("I2"), "I2SMS", handlers.WithRedactConfigKeys(models.ConfigPassword, configChannelHash))}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receive)
 	return nil
@@ -140,8 +140,8 @@ func (h *handler) RedactValues(ch *models.Channel) []string {
 	}
 }
 
-// WriteMsgSuccessResponse writes a success response for the messages, i2SMS expects an empty body in our response
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+// RespondMsgs writes a success response for the messages, i2SMS expects an empty body in our response
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	w.Header().Add("Content-type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte{})

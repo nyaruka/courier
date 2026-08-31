@@ -38,7 +38,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("GL"), "Globe Labs", handlers.WithRedactConfigKeys(configPassphrase, configAppSecret))}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, handlers.JSONPayload(h.receiveMessage))
 	return nil
@@ -73,7 +73,7 @@ type moPayload struct {
 	} `json:"inboundSMSMessageList"`
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
+// receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if len(payload.InboundSMSMessageList.InboundSMSMessage) == 0 {
 		return channels.Ignore("no messages, ignored")

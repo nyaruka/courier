@@ -17,7 +17,7 @@ import (
 
 var defaultRedactConfigKeys = []string{models.ConfigAuthToken, models.ConfigAPIKey, models.ConfigSecret, models.ConfigPassword, models.ConfigSendAuthorization}
 
-// BaseHandler is the base class for most handlers, it just stored the runtime, name and channel type for the handler
+// BaseHandler is the base class for most handlers, holding the identity and options they're constructed with
 type BaseHandler struct {
 	channelType        models.ChannelType
 	name               string
@@ -164,24 +164,24 @@ func userAgent(version string) string {
 	return "Courier/" + version
 }
 
-// WriteStatusSuccessResponse writes a success response for the statuses
-func (h *BaseHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
-	return channels.WriteStatusSuccess(w, statuses)
+// RespondStatuses writes a success response for the statuses
+func (h *BaseHandler) RespondStatuses(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
+	return channels.RespondStatuses(w, statuses)
 }
 
-// WriteMsgSuccessResponse writes a success response for the messages
-func (h *BaseHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
-	return channels.WriteMsgSuccess(w, msgs)
+// RespondMsgs writes a success response for the messages
+func (h *BaseHandler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+	return channels.RespondMsgs(w, msgs)
 }
 
-// WriteRequestError writes the passed in error to our response writer
-func (h *BaseHandler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
-	return channels.WriteError(w, http.StatusBadRequest, err)
+// RespondError writes the passed in error to our response writer
+func (h *BaseHandler) RespondError(ctx context.Context, w http.ResponseWriter, err error) error {
+	return channels.RespondError(w, http.StatusBadRequest, err)
 }
 
-// WriteRequestIgnored writes an ignored payload to our response writer
-func (h *BaseHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
-	return channels.WriteIgnored(w, details)
+// RespondIgnored writes an ignored payload to our response writer
+func (h *BaseHandler) RespondIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
+	return channels.RespondIgnored(w, details)
 }
 
 // WithValkeyConn is a utility to execute some code with a valkey connection

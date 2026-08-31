@@ -115,7 +115,7 @@ var testCases = []IncomingTestCase{
 		URL:                  sentStatusURL,
 		Data:                 unknownSentStatus,
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "unknown sent status code",
+		ExpectedBodyContains: "unknown status '777'",
 	},
 	{
 		Label:                "Invalid JSON sent Status",
@@ -144,7 +144,7 @@ var testCases = []IncomingTestCase{
 		URL:                  deliveredStatusURL,
 		Data:                 unknownDeliveredStatus,
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "unknown delivered status code",
+		ExpectedBodyContains: "unknown status '777'",
 	},
 	{
 		Label:                "Invalid JSON delivered Statu",

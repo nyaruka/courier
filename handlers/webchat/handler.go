@@ -55,7 +55,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("WCH"), "WebChat", handlers.DisableChannelLogStorage())}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "start", models.ChannelLogTypeChatStart, withCORS(h.start))
 	r.Add(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, withCORS(channels.Receive(h, handlers.JSONPayload(h.receive))))
@@ -97,7 +97,7 @@ func withCORS(fn channels.HandleFunc) channels.HandleFunc {
 				// deliberately no allow-origin header on this response, so the embedding page's browser also
 				// blocks it from reading the error
 				channels.LogRequestError(r, channel, fmt.Errorf("origin not allowed: %s", origin))
-				return nil, channels.WriteError(w, http.StatusForbidden, fmt.Errorf("origin not allowed"))
+				return nil, channels.RespondError(w, http.StatusForbidden, fmt.Errorf("origin not allowed"))
 			}
 
 			// reflect the specific origin instead of * so only pages on allowed domains get readable responses
@@ -161,7 +161,7 @@ type startResponse struct {
 func (h *handler) start(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	if !h.allowStart(channel, r) {
 		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
-		return nil, channels.WriteError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
+		return nil, channels.RespondError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
 	}
 
 	// a chat ID is a bearer credential - possession is the only thing that identifies a webchat visitor - so it
@@ -220,7 +220,7 @@ type receivePayload struct {
 	Text string `json:"text" validate:"required,max=1000"`
 }
 
-// receive is our HTTP handler function for incoming messages
+// receive is our receive function for incoming messages
 func (h *handler) receive(ctx context.Context, channel *models.Channel, r *http.Request, payload *receivePayload, in *channels.Received, clog *models.ChannelLog) error {
 	urn, err := urns.NewFromParts(urns.WebChat.Prefix, payload.ChatID, nil, "")
 	if err != nil {

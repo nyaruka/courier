@@ -226,8 +226,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 	}
 }
 
-// verifyServer handles VK's callback verification
-
 // receiveMessage handles new message event
 func (h *handler) receiveMessage(channel *models.Channel, payload *moNewMessagePayload, in *channels.Received, clog *models.ChannelLog) error {
 	userId := payload.Object.Message.UserId
@@ -253,8 +251,8 @@ func (h *handler) receiveMessage(channel *models.Channel, payload *moNewMessageP
 	return nil
 }
 
-// WriteMsgSuccessResponse writes the body VK requires for a message it delivered
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+// RespondMsgs writes the body VK requires for a message it delivered
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	_, err := fmt.Fprint(w, responseIncomingMessage)
 	return err
 }

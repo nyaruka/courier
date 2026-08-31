@@ -61,8 +61,8 @@ func (f *Foreman) Stop() {
 	f.waitGroup.Wait()
 }
 
-// Assign is our main loop for the Foreman, it takes care of popping the next outgoing messages from our
-// backend and assigning them to workers
+// Assign is our main loop for the Foreman, it takes care of popping the next outgoing messages from the
+// queue and assigning them to workers
 func (f *Foreman) Assign() {
 	f.waitGroup.Add(1)
 	defer f.waitGroup.Done()

@@ -52,7 +52,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("TRN"), "Turn.io WhatsApp")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMultiReceive, handlers.JSONPayload(h.receiveEvents))
 
@@ -146,7 +146,7 @@ type eventsPayload struct {
 	} `json:"statuses"`
 }
 
-// receiveEvents is our HTTP handler function for incoming messages and status updates
+// receiveEvents is our receive function for incoming messages and status updates
 func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventsPayload, in *channels.Received, clog *models.ChannelLog) error {
 	// a failure here is in the payload itself, so asking for it again wouldn't get any further. The seam writes
 	// whatever was parsed ahead of it rather than dropping it.

@@ -34,7 +34,7 @@ func newHandler() channels.Handler {
 	return &handler{handlers.NewBaseHandler(models.ChannelType("MB"), "Mblox")}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeUnknown, handlers.JSONPayload(h.receiveEvent))
 	return nil
@@ -60,7 +60,7 @@ var statusMapping = map[string]models.MsgStatus{
 	"Expired":    models.MsgStatusFailed,
 }
 
-// receiveEvent is our HTTP handler function for incoming messages
+// receiveEvent is our receive function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventPayload, in *channels.Received, clog *models.ChannelLog) error {
 	if payload.Type == "recipient_delivery_report_sms" {
 		in.As(models.ChannelLogTypeMsgStatus)
@@ -71,7 +71,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel *models.Channel, r *
 
 		msgStatus, found := statusMapping[payload.Status]
 		if !found {
-			return fmt.Errorf(`unknown status '%s', must be one of 'Delivered', 'Dispatched', 'Aborted', 'Rejected', 'Failed'  or 'Expired'`, payload.Status)
+			return handlers.UnknownStatusError(statusMapping, payload.Status)
 		}
 
 		in.Status(models.NewStatusUpdateByExternalID(channel, payload.BatchID, msgStatus, clog))

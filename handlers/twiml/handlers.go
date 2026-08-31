@@ -86,7 +86,7 @@ func init() {
 	channels.RegisterHandler(newTWIMLHandler("SW", "SignalWire", false))
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.AddReceive(h, http.MethodPost, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
@@ -122,7 +122,7 @@ var statusMapping = map[string]models.MsgStatus{
 	"undelivered": models.MsgStatusFailed,
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
+// receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	err := h.validateSignature(channel, r)
 	if err != nil {
@@ -176,7 +176,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 	return nil
 }
 
-// receiveStatus is our HTTP handler function for status updates
+// receiveStatus is our receive function for status updates
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	err := h.validateSignature(channel, r)
 	if err != nil {
@@ -192,7 +192,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 
 	msgStatus, found := statusMapping[form.MessageStatus]
 	if !found {
-		return fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", form.MessageStatus)
+		return handlers.UnknownStatusError(statusMapping, form.MessageStatus)
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
@@ -641,16 +641,16 @@ func twCalculateSignature(url string, form url.Values, authToken string) ([]byte
 	return encoded, nil
 }
 
-// WriteMsgSuccessResponse writes our response in TWIML format
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+// RespondMsgs writes our response in TWIML format
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, `<?xml version="1.0" encoding="UTF-8"?><Response/>`)
 	return err
 }
 
-// WriteRequestIgnored writes our response in TWIML format
-func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
+// RespondIgnored writes our response in TWIML format
+func (h *handler) RespondIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?><!-- %s --><Response/>`, details)

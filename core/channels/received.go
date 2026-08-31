@@ -173,9 +173,9 @@ func AcceptedEvents(results []WriteResult) []Event {
 	return events
 }
 
-// WriteReceivedResponse writes the standard JSON response describing each part of what an incoming request
+// RespondReceived writes the standard JSON response describing each part of what an incoming request
 // contained. Handlers whose provider requires a particular response body write their own instead.
-func WriteReceivedResponse(w http.ResponseWriter, results []WriteResult) error {
+func RespondReceived(w http.ResponseWriter, results []WriteResult) error {
 	data := make([]any, 0, len(results))
 
 	for _, r := range results {
@@ -191,5 +191,5 @@ func WriteReceivedResponse(w http.ResponseWriter, results []WriteResult) error {
 		}
 	}
 
-	return WriteDataResponse(w, http.StatusOK, "Events Handled", data)
+	return RespondData(w, http.StatusOK, "Events Handled", data)
 }

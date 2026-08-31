@@ -73,22 +73,22 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 		var ignored *IgnoredRequest
 		if errors.As(ferr, &ignored) {
 			LogRequestIgnored(r, c, ignored.Details)
-			return h.WriteRequestIgnored(ctx, w, ignored.Details)
+			return h.RespondIgnored(ctx, w, ignored.Details)
 		}
 		var unauthenticated *UnauthenticatedRequest
 		if errors.As(ferr, &unauthenticated) {
 			LogRequestError(r, c, unauthenticated.Err)
-			return WriteDataResponse(w, http.StatusUnauthorized, "Unauthorized", []any{NewErrorData(unauthenticated.Err.Error())})
+			return RespondData(w, http.StatusUnauthorized, "Unauthorized", []any{NewErrorData(unauthenticated.Err.Error())})
 		}
 		LogRequestError(r, c, ferr)
-		return h.WriteRequestError(ctx, w, ferr)
+		return h.RespondError(ctx, w, ferr)
 	}
 
 	// a request we found nothing in is one we ignored, rather than one we handled emptily - which saves
 	// every handler that can parse its way to nothing from checking for it
 	if in.Len() == 0 {
 		LogRequestIgnored(r, c, "ignoring request, nothing to handle")
-		return h.WriteRequestIgnored(ctx, w, "ignoring request, nothing to handle")
+		return h.RespondIgnored(ctx, w, "ignoring request, nothing to handle")
 	}
 
 	// which response a written batch gets comes from what the request is being handled as: a receive answers
@@ -106,7 +106,7 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 				msgs = append(msgs, m)
 			}
 		}
-		return h.WriteMsgSuccessResponse(ctx, w, msgs)
+		return h.RespondMsgs(ctx, w, msgs)
 
 	case models.ChannelLogTypeMsgStatus:
 		statuses := make([]*models.StatusUpdate, 0, len(events))
@@ -115,7 +115,7 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 				statuses = append(statuses, s)
 			}
 		}
-		return h.WriteStatusSuccessResponse(ctx, w, statuses)
+		return h.RespondStatuses(ctx, w, statuses)
 
 	case models.ChannelLogTypeEventReceive:
 		chEvents := make([]*models.ChannelEvent, 0, len(events))
@@ -124,9 +124,9 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 				chEvents = append(chEvents, ce)
 			}
 		}
-		return WriteChannelEventsSuccess(w, chEvents)
+		return RespondEvents(w, chEvents)
 
 	default:
-		return WriteReceivedResponse(w, results)
+		return RespondReceived(w, results)
 	}
 }

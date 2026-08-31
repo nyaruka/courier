@@ -89,7 +89,7 @@ func newHandler(channelType models.ChannelType, name string, validateSignatures 
 	return &handler{handlers.NewBaseHandler(models.ChannelType("MBD"), "Messagebird"), validateSignatures}
 }
 
-// Initialize is called by the engine once everything is loaded
+// Initialize registers the routes this handler serves
 func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", models.ChannelLogTypeMsgReceive, h.receiveMessage)
 	r.AddReceive(h, http.MethodGet, "status", models.ChannelLogTypeMsgStatus, h.receiveStatus)
@@ -108,7 +108,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 
 	msgStatus, found := statusMapping[receivedStatus.Status]
 	if !found {
-		return fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", receivedStatus.Status)
+		return handlers.UnknownStatusError(statusMapping, receivedStatus.Status)
 	}
 
 	// if the message id was passed explicitely, use that
@@ -326,8 +326,8 @@ func (h *handler) validateSignature(c *models.Channel, r *http.Request) error {
 	return nil
 }
 
-// WriteMsgSuccessResponse writes a success response for the messages, MB expects an 'OK' body in our response
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+// RespondMsgs writes a success response for the messages, MB expects an 'OK' body in our response
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
 	w.Header().Add("Content-type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte("OK"))
