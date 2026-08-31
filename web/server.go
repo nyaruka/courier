@@ -237,8 +237,10 @@ func (s *Server) MountHandler(handler channels.Handler) error {
 
 func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc channels.HandleFunc, logType svclogs.Type) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
 		// stuff a few things in our context that help with logging
-		baseCtx := channels.WithRequestContext(r.Context(), r.URL.String(), time.Now())
+		baseCtx := channels.WithRequestContext(r.Context(), r.URL.String(), start)
 
 		// add a 30 second timeout to the request
 		ctx, cancel := context.WithTimeout(baseCtx, time.Second*30)
@@ -276,35 +278,48 @@ func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc chan
 
 		events, hErr := handlerFunc(ctx, channel, recorder.ResponseWriter, r, clog)
 
-		// if we received an error, write it out and report it
+		// an error from the handler here is courier's own - the seam answers request-level errors itself - so
+		// it's logged as an error above the response, rather than as the provider's problem
 		if hErr != nil {
 			slog.Error("error handling request", "error", hErr, "channel", channelUUID, "url", recorder.Trace.Request.URL.String())
-			channels.WriteAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, hErr)
+			handler.WriteRequestError(ctx, recorder.ResponseWriter, hErr)
 		}
 
 		// end recording of the request so that we have a response trace
 		if err := recorder.End(); err != nil {
 			slog.Error("error recording request", "error", err, "channel", channelUUID)
-			channels.WriteAndLogRequestError(ctx, handler, w, r, channel, err)
+			handler.WriteRequestError(ctx, w, err)
 		}
 
 		if channel != nil {
 			numMsgs, numStatuses, numEvents, numIgnored := 0, 0, 0, 0
 
+			debugLog := slog.Default().Enabled(ctx, slog.LevelDebug)
+			elapsedMS := float64(time.Since(start)) / float64(time.Millisecond)
+
 			for _, event := range events {
 				switch e := event.(type) {
 				case *models.MsgIn:
-					channels.LogMsgReceived(r, e)
+					if debugLog {
+						slog.Debug("msg received", "channel_uuid", channelUUID, "url", r.URL.String(), "elapsed_ms", elapsedMS,
+							"msg_uuid", e.UUID(), "msg_urn", e.URN().Identity(), "msg_text", e.Text(), "msg_attachments", e.Attachments())
+					}
 					if e.Duplicate_ {
 						numIgnored++
 					} else {
 						numMsgs++
 					}
 				case *models.StatusUpdate:
-					channels.LogMsgStatusReceived(r, e)
+					if debugLog {
+						slog.Debug("status updated", "channel_uuid", channelUUID, "url", r.URL.String(), "elapsed_ms", elapsedMS,
+							"status", e.Status(), "msg_external_id", e.ExternalIdentifier())
+					}
 					numStatuses++
 				case *models.ChannelEvent:
-					channels.LogChannelEventReceived(r, e)
+					if debugLog {
+						slog.Debug("event received", "channel_uuid", channelUUID, "url", r.URL.String(), "elapsed_ms", elapsedMS,
+							"event_type", e.EventType(), "event_urn", e.URN().Identity())
+					}
 					numEvents++
 				}
 			}
