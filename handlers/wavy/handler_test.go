@@ -163,7 +163,7 @@ var testCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	RunIncomingTestCases(t, testChannels, newHandler, testCases)
 }
 
 var outgoingCases = []OutgoingTestCase{
@@ -231,5 +231,5 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigUsername:  "user1",
 			models.ConfigAuthToken: "token",
 		})
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingCases, []string{"token"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, outgoingCases, []string{"token"}, nil)
 }

@@ -11,7 +11,6 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
-	. "github.com/nyaruka/courier/v26/handlers"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
@@ -1514,7 +1513,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 			configAccountSID:       "accountSID",
 			models.ConfigAuthToken: "authToken"})
 
-	twHandler := &handler{NewBaseHandler(models.ChannelType("T"), "Twilio"), true}
+	twHandler := newTWIMLHandler("T", "Twilio", true)(nil, channels.NewRoutes()).(*handler)
 	req, _ := twHandler.BuildAttachmentRequest(context.Background(), defaultChannel, "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=", req.Header.Get("Authorization"))
@@ -1526,7 +1525,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 			models.ConfigAuthToken: "authToken",
 			configSendURL:          "BASE_URL",
 		})
-	swHandler := &handler{NewBaseHandler(models.ChannelType("SW"), "SignalWire"), false}
+	swHandler := newTWIMLHandler("SW", "SignalWire", false)(nil, channels.NewRoutes()).(*handler)
 	req, _ = swHandler.BuildAttachmentRequest(context.Background(), swChannel, "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "", req.Header.Get("Authorization"))
@@ -1543,8 +1542,7 @@ func TestSendEvent(t *testing.T) {
 
 	s := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
-	h := newTWIMLHandler("TWA", "Twilio Whatsapp", true).(*handler)
-	s.MountHandler(h)
+	h := s.MountHandler(newTWIMLHandler("TWA", "Twilio Whatsapp", true)).(*handler)
 
 	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://messaging.twilio.com/v3/Indicators/Typing.json": {
@@ -1556,7 +1554,7 @@ func TestSendEvent(t *testing.T) {
 
 	// typing indicators are supported on Twilio WhatsApp channels but no other TWIML channel types
 	assert.Equal(t, map[string]time.Duration{events.TypeTypingStarted: 20 * time.Second}, h.SendableEvents(channel))
-	assert.Nil(t, newTWIMLHandler("T", "Twilio", true).(*handler).SendableEvents(channel))
+	assert.Nil(t, newTWIMLHandler("T", "Twilio", true)(nil, channels.NewRoutes()).(*handler).SendableEvents(channel))
 
 	channelRef := assets.NewChannelReference("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "Twilio Whatsapp")
 	typing := events.NewTypingStarted(events.DirectionOutgoing, channelRef, "whatsapp:12065551212", "SMabcdef1234567890abcdef1234567890")

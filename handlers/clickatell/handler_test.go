@@ -149,7 +149,7 @@ func TestIncoming(t *testing.T) {
 		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{models.ConfigAPIKey: "12345"}),
 	}
 
-	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
+	RunIncomingTestCases(t, chs, newHandler, incomingCases)
 }
 
 var successSendResponse = `{"messages":[{"apiMessageId":"id1002","accepted":true,"to":"12067799299","error":null}],"error":null}`
@@ -247,5 +247,5 @@ func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{models.ConfigAPIKey: "API-KEY"})
 
-	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"API-KEY"}, nil)
+	RunOutgoingTestCases(t, ch, newHandler, outgoingCases, []string{"API-KEY"}, nil)
 }

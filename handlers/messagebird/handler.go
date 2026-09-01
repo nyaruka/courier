@@ -21,6 +21,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -85,16 +86,13 @@ type handler struct {
 	validateSignatures bool
 }
 
-func newHandler(channelType models.ChannelType, name string, validateSignatures bool) channels.Handler {
-	return &handler{handlers.NewBaseHandler(models.ChannelType("MBD"), "Messagebird"), validateSignatures}
-}
-
-// Initialize registers the routes this handler serves
-func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, h.receiveMessage)
-	r.AddReceive(h, http.MethodGet, "status", channels.ReceiveKindStatus, h.receiveStatus)
-
-	return nil
+func newHandler(channelType models.ChannelType, name string, validateSignatures bool) channels.NewHandlerFunc {
+	return func(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+		h := &handler{handlers.NewBaseHandler(rt, channelType, name), validateSignatures}
+		r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, h.receiveMessage)
+		r.AddReceive(h, http.MethodGet, "status", channels.ReceiveKindStatus, h.receiveStatus)
+		return h
+	}
 }
 
 // this one decodes for itself rather than using FormPayload, because it answers a decode failure as ignored

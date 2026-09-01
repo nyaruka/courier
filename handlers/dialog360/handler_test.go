@@ -11,7 +11,6 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
-	. "github.com/nyaruka/courier/v26/handlers"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
@@ -378,7 +377,7 @@ func TestIncoming(t *testing.T) {
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {
-	d3CHandler := &handler{NewBaseHandler(models.ChannelType("D3C"), "360Dialog")}
+	d3CHandler := newWAHandler(models.ChannelType("D3C"), "360Dialog")(nil, channels.NewRoutes()).(*handler)
 	req, _ := d3CHandler.BuildAttachmentRequest(context.Background(), testChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "the-auth-token", req.Header.Get("D360-API-KEY"))
@@ -1054,8 +1053,7 @@ func TestSendEvent(t *testing.T) {
 
 	s := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
-	h := newWAHandler(models.ChannelType("D3C"), "360Dialog").(*handler)
-	s.MountHandler(h)
+	h := s.MountHandler(newWAHandler(models.ChannelType("D3C"), "360Dialog")).(*handler)
 
 	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://waba-v2.360dialog.io/messages": {

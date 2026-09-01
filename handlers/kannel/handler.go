@@ -11,6 +11,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
 	"golang.org/x/text/encoding/unicode"
@@ -31,22 +32,19 @@ const (
 )
 
 func init() {
-	channels.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler)
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() channels.Handler {
-	return &handler{handlers.NewBaseHandler(models.ChannelType("KN"), "Kannel")}
-}
+func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+	h := &handler{handlers.NewBaseHandler(rt, models.ChannelType("KN"), "Kannel")}
 
-// Initialize registers the routes this handler serves
-func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMessage))
 	r.AddReceive(h, http.MethodGet, "status", channels.ReceiveKindStatus, handlers.FormPayload(h.receiveStatus))
-	return nil
+	return h
 }
 
 type moForm struct {

@@ -131,8 +131,8 @@ var ignoreTestCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
-	RunIncomingTestCases(t, ignoreChannels, newHandler(), ignoreTestCases)
+	RunIncomingTestCases(t, testChannels, newHandler, handleTestCases)
+	RunIncomingTestCases(t, ignoreChannels, newHandler, ignoreTestCases)
 }
 
 var defaultSendTestCases = []OutgoingTestCase{
@@ -404,7 +404,7 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigSendURL: "http://example.com/send",
 		})
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
-	RunOutgoingTestCases(t, customParamsChannel, newHandler(), customParamsTestCases, []string{"Password"}, nil)
-	RunOutgoingTestCases(t, nationalChannel, newHandler(), nationalSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, customParamsChannel, newHandler, customParamsTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, nationalChannel, newHandler, nationalSendTestCases, []string{"Password"}, nil)
 }

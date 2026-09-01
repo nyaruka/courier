@@ -7,7 +7,6 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
-	. "github.com/nyaruka/courier/v26/handlers"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -816,11 +815,11 @@ var testCasesTurn = []IncomingTestCase{
 
 func TestIncoming(t *testing.T) {
 
-	RunIncomingTestCases(t, testChannels, newHandler(), testCasesTurn)
+	RunIncomingTestCases(t, testChannels, newHandler, testCasesTurn)
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {
-	waHandler := &handler{NewBaseHandler(models.ChannelType("TRN"), "WhatsApp")}
+	waHandler := newHandler(nil, channels.NewRoutes()).(*handler)
 	req, _ := waHandler.BuildAttachmentRequest(context.Background(), testChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer a123", req.Header.Get("Authorization"))
@@ -1860,9 +1859,9 @@ func TestWhatsAppOutgoing(t *testing.T) {
 	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TRN", "12345_ID", "", []string{urns.WhatsApp.Prefix},
 		map[string]any{models.ConfigAuthToken: "a123", "base_url": "https://example.org", "fb_namespace": "waba_namespace"})
 
-	RunOutgoingTestCases(t, channel, newHandler(), defaultSendTestCases, []string{"a123"}, nil)
+	RunOutgoingTestCases(t, channel, newHandler, defaultSendTestCases, []string{"a123"}, nil)
 	failedMediaCache.Clear()
-	RunOutgoingTestCases(t, channel, newHandler(), mediaCacheSendTestCases, []string{"a123"}, nil)
+	RunOutgoingTestCases(t, channel, newHandler, mediaCacheSendTestCases, []string{"a123"}, nil)
 	failedMediaCache.Clear()
 }
 

@@ -106,7 +106,7 @@ func TestIncoming(t *testing.T) {
 		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US", []string{urns.Phone.Prefix}, nil),
 	}
 
-	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
+	RunIncomingTestCases(t, chs, newHandler, incomingCases)
 }
 
 var outgoingCases = []OutgoingTestCase{
@@ -248,7 +248,7 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigSendURL:  "https://other.example.com/send",
 		})
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingCases, []string{"KEY"}, nil)
-	RunOutgoingTestCases(t, sharedChannel, newHandler(), sharedOutgoingCases, []string{"KEY"}, nil)
-	RunOutgoingTestCases(t, customSendURLChannel, newHandler(), customSendURLCases, []string{"KEY"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, outgoingCases, []string{"KEY"}, nil)
+	RunOutgoingTestCases(t, sharedChannel, newHandler, sharedOutgoingCases, []string{"KEY"}, nil)
+	RunOutgoingTestCases(t, customSendURLChannel, newHandler, customSendURLCases, []string{"KEY"}, nil)
 }

@@ -44,8 +44,7 @@ func TestRequestHTTP(t *testing.T) {
 
 	server := web.NewServer(rt)
 
-	h := handlers.NewBaseHandler("NX", "Test")
-	h.SetRuntime(server.Runtime())
+	h := handlers.NewBaseHandler(server.Runtime(), "NX", "Test")
 
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
 	resp, respBody, err := h.RequestHTTP(req, clog)

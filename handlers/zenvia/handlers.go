@@ -13,6 +13,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -32,15 +33,13 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler(channelType models.ChannelType, name string) channels.Handler {
-	return &handler{handlers.NewBaseHandler(channelType, name)}
-}
-
-// Initialize registers the routes this handler serves
-func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodPost, "status", channels.ReceiveKindStatus, handlers.JSONPayload(h.receiveStatus))
-	return nil
+func newHandler(channelType models.ChannelType, name string) channels.NewHandlerFunc {
+	return func(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+		h := &handler{handlers.NewBaseHandler(rt, channelType, name)}
+		r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))
+		r.AddReceive(h, http.MethodPost, "status", channels.ReceiveKindStatus, handlers.JSONPayload(h.receiveStatus))
+		return h
+	}
 }
 
 type moContent struct {

@@ -281,8 +281,7 @@ func TestFacebookDescribeURN(t *testing.T) {
 	defer fbGraph.Close()
 
 	channel := facebookTestChannels[0]
-	handler := newHandler("FBA", "Facebook")
-	web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(handler)
+	handler := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(newHandler("FBA", "Facebook"))
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -608,8 +607,7 @@ func TestFacebookSendEvent(t *testing.T) {
 
 	s := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
-	h := newHandler("FBA", "Facebook").(*handler)
-	s.MountHandler(h)
+	h := s.MountHandler(newHandler("FBA", "Facebook")).(*handler)
 
 	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://graph.facebook.com/v25.0/me/messages*": {
@@ -623,7 +621,7 @@ func TestFacebookSendEvent(t *testing.T) {
 	// typing events are supported on both Facebook and Instagram channels, including explicit stop
 	expected := map[string]time.Duration{events.TypeTypingStarted: 15 * time.Second, events.TypeTypingStopped: 0}
 	assert.Equal(t, expected, h.SendableEvents(channel))
-	assert.Equal(t, expected, newHandler("IG", "Instagram").(*handler).SendableEvents(channel))
+	assert.Equal(t, expected, newHandler("IG", "Instagram")(nil, channels.NewRoutes()).(*handler).SendableEvents(channel))
 
 	channelRef := assets.NewChannelReference("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "Facebook")
 
@@ -684,8 +682,7 @@ func TestSigning(t *testing.T) {
 func TestFacebookBuildAttachmentRequest(t *testing.T) {
 	s := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
-	handler := &handler{NewBaseHandler(models.ChannelType("FBA"), "Facebook", DisableUUIDRouting())}
-	s.MountHandler(handler)
+	handler := s.MountHandler(newHandler("FBA", "Facebook")).(*handler)
 	req, _ := handler.BuildAttachmentRequest(context.Background(), facebookTestChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, http.Header{}, req.Header)

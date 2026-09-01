@@ -863,7 +863,7 @@ func TestIncoming(t *testing.T) {
 		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "TG", "2020", "US", []string{urns.Telegram.Prefix}, map[string]any{"auth_token": "a123"}),
 	}
 
-	RunIncomingTestCases(t, chs, newHandler(), testCases)
+	RunIncomingTestCases(t, chs, newHandler, testCases)
 }
 
 var outgoingCases = []OutgoingTestCase{
@@ -1242,7 +1242,7 @@ func TestOutgoing(t *testing.T) {
 		map[string]any{models.ConfigAuthToken: "auth_token"},
 	)
 
-	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"auth_token"}, nil)
+	RunOutgoingTestCases(t, ch, newHandler, outgoingCases, []string{"auth_token"}, nil)
 }
 
 func TestSendEvent(t *testing.T) {
@@ -1252,8 +1252,7 @@ func TestSendEvent(t *testing.T) {
 
 	s := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
-	h := newHandler().(*handler)
-	s.MountHandler(h)
+	h := s.MountHandler(newHandler).(*handler)
 
 	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://api.telegram.org/botauth_token/sendChatAction": {

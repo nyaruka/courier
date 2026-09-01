@@ -137,7 +137,7 @@ func TestIncoming(t *testing.T) {
 		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CM", "2020", "MW", []string{urns.Phone.Prefix}, nil),
 	}
 
-	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
+	RunIncomingTestCases(t, chs, newHandler, incomingCases)
 }
 
 var outgoingCases = []OutgoingTestCase{
@@ -258,5 +258,5 @@ func TestOutgoing(t *testing.T) {
 	// mock time so we can have predictable MD5 hashes
 	dates.SetNowFunc(dates.NewFixedNow(time.Date(2018, 4, 11, 18, 24, 30, 123456000, time.UTC)))
 
-	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, ch, newHandler, outgoingCases, []string{"Password"}, nil)
 }

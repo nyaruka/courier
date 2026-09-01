@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/handlers/meta/whatsapp"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/core/events"
@@ -37,14 +38,12 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-func newWAHandler(channelType models.ChannelType, name string) channels.Handler {
-	return &handler{handlers.NewBaseHandler(channelType, name)}
-}
-
-// Initialize registers the routes this handler serves
-func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveAny))
-	return nil
+func newWAHandler(channelType models.ChannelType, name string) channels.NewHandlerFunc {
+	return func(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+		h := &handler{handlers.NewBaseHandler(rt, channelType, name)}
+		r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveAny))
+		return h
+	}
 }
 
 //	{

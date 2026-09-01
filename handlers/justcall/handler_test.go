@@ -263,7 +263,7 @@ var testCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	RunIncomingTestCases(t, testChannels, newHandler, testCases)
 }
 
 var defaultSendTestCases = []OutgoingTestCase{
@@ -406,5 +406,5 @@ var defaultSendTestCases = []OutgoingTestCase{
 func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JCL", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{models.ConfigAPIKey: "api_key", models.ConfigSecret: "api_secret"})
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"api_key", "api_secret"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{"api_key", "api_secret"}, nil)
 }

@@ -332,7 +332,7 @@ var testCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	RunIncomingTestCases(t, testChannels, newHandler, testCases)
 }
 
 var defaultSendTestCases = []OutgoingTestCase{
@@ -505,7 +505,7 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigUsername: "Username",
 		})
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
 
 	var transChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
 		[]string{urns.Phone.Prefix},
@@ -515,7 +515,7 @@ func TestOutgoing(t *testing.T) {
 			configTransliteration: "COLOMBIAN",
 		})
 
-	RunOutgoingTestCases(t, transChannel, newHandler(), transSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
+	RunOutgoingTestCases(t, transChannel, newHandler, transSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
 
 	var apiKeyChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
 		[]string{urns.Phone.Prefix},
@@ -523,5 +523,5 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigAPIKey: "test-api-key",
 		})
 
-	RunOutgoingTestCases(t, apiKeyChannel, newHandler(), apiKeySendTestCases, []string{"App test-api-key"}, nil)
+	RunOutgoingTestCases(t, apiKeyChannel, newHandler, apiKeySendTestCases, []string{"App test-api-key"}, nil)
 }

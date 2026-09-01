@@ -20,6 +20,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/core/events"
@@ -36,7 +37,7 @@ const (
 )
 
 func init() {
-	channels.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler)
 }
 
 type handler struct {
@@ -45,18 +46,15 @@ type handler struct {
 	fetchTokenMutex sync.Mutex
 }
 
-func newHandler() channels.Handler {
-	return &handler{
-		BaseHandler:     handlers.NewBaseHandler(models.ChannelType("WC"), "WeChat"),
+func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+	h := &handler{
+		BaseHandler:     handlers.NewBaseHandler(rt, models.ChannelType("WC"), "WeChat"),
 		fetchTokenMutex: sync.Mutex{},
 	}
-}
 
-// Initialize registers the routes this handler serves
-func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
 	r.AddReceive(h, http.MethodPost, "", channels.ReceiveKindMsg, handlers.XMLPayload(h.receiveMessage))
-	return nil
+	return h
 }
 
 type verifyForm struct {

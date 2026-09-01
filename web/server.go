@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -72,12 +71,8 @@ func (s *Server) Start() error {
 		return fmt.Errorf("error binding internal listener on %s: %w", internalAddr, err)
 	}
 
-	// mount the routes of every handler this instance serves
-	if err := s.mountChannelHandlers(); err != nil {
-		internetLn.Close()
-		internalLn.Close()
-		return err
-	}
+	// mount the routes of every handler compiled into this build
+	s.mountChannelHandlers()
 
 	// internet listener — exposes /c/*, /
 	internetRouter := chi.NewRouter()
@@ -198,41 +193,27 @@ type Server struct {
 	stopped   bool
 }
 
-// mounts the routes of every handler included by config, so that a request for one of its channels reaches it
-func (s *Server) mountChannelHandlers() error {
-	includes := s.rt.Config.IncludeChannels
-	excludes := s.rt.Config.ExcludeChannels
+// mounts the routes of every registered handler, so that a request for one of its channels reaches it
+func (s *Server) mountChannelHandlers() {
+	for _, newFn := range channels.RegisteredHandlerFuncs() {
+		handler := s.MountHandler(newFn)
 
-	for _, handler := range channels.RegisteredHandlers() {
-		channelType := string(handler.ChannelType())
-		if (includes == nil || slices.Contains(includes, channelType)) && (excludes == nil || !slices.Contains(excludes, channelType)) {
-			if err := s.MountHandler(handler); err != nil {
-				return err
-			}
-
-			slog.Info("handler initialized", "comp", "server", "handler", handler.ChannelName(), "handler_type", channelType)
-		}
+		slog.Info("handler initialized", "comp", "server", "handler", handler.ChannelName(), "handler_type", string(handler.ChannelType()))
 	}
-
-	return nil
 }
 
-// MountHandler initializes the given handler and mounts the routes it registers, marking it as one this instance
+// MountHandler constructs a handler and mounts the routes it registers, marking it as one this instance
 // serves. Tests use it to mount a single handler without starting the listeners.
-func (s *Server) MountHandler(handler channels.Handler) error {
-	handler.SetRuntime(s.rt)
-
+func (s *Server) MountHandler(newFn channels.NewHandlerFunc) channels.Handler {
 	routes := channels.NewRoutes()
-	if err := handler.Initialize(routes); err != nil {
-		return fmt.Errorf("error initializing handler %s: %w", handler.ChannelType(), err)
-	}
+	handler := newFn(s.rt, routes)
 
 	for _, route := range routes.All() {
 		s.addRoute(route)
 	}
 
 	channels.ActivateHandler(handler)
-	return nil
+	return handler
 }
 
 func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc channels.HandleFunc, logType svclogs.Type) http.HandlerFunc {

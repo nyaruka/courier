@@ -330,19 +330,19 @@ func TestIncoming(t *testing.T) {
 	slackServiceMock := buildMockSlackService(handleTestCases)
 	defer slackServiceMock.Close()
 
-	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
+	RunIncomingTestCases(t, testChannels, newHandler, handleTestCases)
 }
 
 func TestOutgoing(t *testing.T) {
-	RunOutgoingTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
+	RunOutgoingTestCases(t, testChannels[0], newHandler, defaultSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
 }
 
 func TestSendFiles(t *testing.T) {
-	RunOutgoingTestCases(t, testChannels[0], newHandler(), fileSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
+	RunOutgoingTestCases(t, testChannels[0], newHandler, fileSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
 }
 
 func TestVerification(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), []IncomingTestCase{
+	RunIncomingTestCases(t, testChannels, newHandler, []IncomingTestCase{
 		{Label: "Valid token", URL: receiveURL, ExpectedRespStatus: 200, ExpectedBodyContains: "challenge123",
 			Data:    `{"token":"one-long-verification-token","challenge":"challenge123","type":"url_verification"}`,
 			Headers: map[string]string{"content-type": "text/plain"},
@@ -415,8 +415,7 @@ func TestDescribeURN(t *testing.T) {
 	server := buildMockSlackService([]IncomingTestCase{})
 	defer server.Close()
 
-	handler := newHandler()
-	web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(handler)
+	handler := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(newHandler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 	urn, _ := urns.New(urns.Slack, "U012345")
 

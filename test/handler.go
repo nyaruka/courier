@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	channels.RegisterHandler(NewMockHandler())
+	channels.RegisterHandler(NewMockHandler)
 }
 
 type mockHandler struct {
@@ -25,12 +25,13 @@ type mockHandler struct {
 }
 
 // NewMockHandler returns a new mock handler
-func NewMockHandler() channels.Handler {
-	return &mockHandler{}
+func NewMockHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+	h := &mockHandler{rt: rt}
+	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeReceive, h.receiveMsg)
+	return h
 }
 
 func (h *mockHandler) Runtime() *runtime.Runtime             { return h.rt }
-func (h *mockHandler) SetRuntime(rt *runtime.Runtime)        { h.rt = rt }
 func (h *mockHandler) ChannelName() string                   { return "Mock Handler" }
 func (h *mockHandler) ChannelType() models.ChannelType       { return models.ChannelType("MCK") }
 func (h *mockHandler) UseChannelRouteUUID() bool             { return true }
@@ -39,12 +40,6 @@ func (h *mockHandler) RedactValues(*models.Channel) []string { return []string{"
 
 func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (*models.Channel, error) {
 	return models.GetChannel(ctx, "MCK", "e4bb1578-29da-4fa5-a214-9da19dd24230")
-}
-
-// Initialize registers the routes this handler serves
-func (h *mockHandler) Initialize(r *channels.Routes) error {
-	r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeReceive, h.receiveMsg)
-	return nil
 }
 
 // Send sends the given message, logging any HTTP calls or errors

@@ -28,8 +28,9 @@ type BaseHandler struct {
 }
 
 // NewBaseHandler returns a newly constructed BaseHandler with the passed in parameters
-func NewBaseHandler(channelType models.ChannelType, name string, options ...func(*BaseHandler)) BaseHandler {
+func NewBaseHandler(rt *runtime.Runtime, channelType models.ChannelType, name string, options ...func(*BaseHandler)) BaseHandler {
 	h := &BaseHandler{
+		rt:                 rt,
 		channelType:        channelType,
 		name:               name,
 		uuidChannelRouting: true,
@@ -60,11 +61,6 @@ func WithRedactConfigKeys(keys ...string) func(*BaseHandler) {
 	return func(s *BaseHandler) {
 		s.redactConfigKeys = keys
 	}
-}
-
-// SetRuntime gives the handler the runtime it should use, and is called before Initialize
-func (h *BaseHandler) SetRuntime(rt *runtime.Runtime) {
-	h.rt = rt
 }
 
 // Runtime returns the runtime instance on the BaseHandler

@@ -187,7 +187,7 @@ func TestIncoming(t *testing.T) {
 	WCAPI := buildMockWCAPI()
 	defer WCAPI.Close()
 
-	RunIncomingTestCases(t, testChannels, newHandler(), incomingCases())
+	RunIncomingTestCases(t, testChannels, newHandler, incomingCases())
 }
 
 // mocks the call to the WeChat API
@@ -245,8 +245,7 @@ func TestDescribeURN(t *testing.T) {
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 
 	s := web.NewServer(rt)
-	handler := newHandler().(*handler)
-	s.MountHandler(handler)
+	handler := s.MountHandler(newHandler).(*handler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 
 	tcs := []struct {
@@ -283,8 +282,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"access_token": "SESAME"}`)),
 		},
 	})
-	handler := newHandler().(*handler)
-	s.MountHandler(handler)
+	handler := s.MountHandler(newHandler).(*handler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 
 	// check that request has the fetched access token
@@ -321,8 +319,7 @@ func TestFetchAccessTokenThrottled(t *testing.T) {
 			httpx.NewMockResponse(429, nil, []byte(`{"errcode": 45009, "errmsg": "reach max api daily quota limit"}`)),
 		},
 	})
-	handler := newHandler().(*handler)
-	s.MountHandler(handler)
+	handler := s.MountHandler(newHandler).(*handler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 
 	// a rate limited token fetch is throttling rather than an empty token
@@ -437,7 +434,7 @@ func setupBackend(t *testing.T, rt *runtime.Runtime) {
 func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US", []string{urns.WeChat.Prefix}, map[string]any{configAppSecret: "secret123", configAppID: "app-id"})
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret123"}, setupBackend)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{"secret123"}, setupBackend)
 }
 
 func TestSendEvent(t *testing.T) {
@@ -459,8 +456,7 @@ func TestSendEvent(t *testing.T) {
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 
 	s := web.NewServer(rt)
-	h := newHandler().(*handler)
-	s.MountHandler(h)
+	h := s.MountHandler(newHandler).(*handler)
 
 	rt.HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://api.weixin.qq.com/cgi-bin/message/custom/typing*": {

@@ -297,12 +297,12 @@ var extReceiveTestCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
-	RunIncomingTestCases(t, testSOAPReceiveChannels, newHandler(), handleSOAPReceiveTestCases)
-	RunIncomingTestCases(t, gmChannels, newHandler(), gmTestCases)
-	RunIncomingTestCases(t, customChannels, newHandler(), customTestCases)
+	RunIncomingTestCases(t, testChannels, newHandler, handleTestCases)
+	RunIncomingTestCases(t, testSOAPReceiveChannels, newHandler, handleSOAPReceiveTestCases)
+	RunIncomingTestCases(t, gmChannels, newHandler, gmTestCases)
+	RunIncomingTestCases(t, customChannels, newHandler, customTestCases)
 
-	RunIncomingTestCases(t, extChannels, newHandler(), extReceiveTestCases)
+	RunIncomingTestCases(t, extChannels, newHandler, extReceiveTestCases)
 }
 
 var longSendTestCases = []OutgoingTestCase{
@@ -970,16 +970,16 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigSendMethod:  http.MethodPut,
 		})
 
-	RunOutgoingTestCases(t, getChannel, newHandler(), getSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil, nil)
-	RunOutgoingTestCases(t, postChannel, newHandler(), postSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, postChannelCustomContentType, newHandler(), postSendCustomContentTypeTestCases, nil, nil)
-	RunOutgoingTestCases(t, postSmartChannel, newHandler(), postSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil, nil)
-	RunOutgoingTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil, nil)
+	RunOutgoingTestCases(t, getChannel, newHandler, getSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, getSmartChannel, newHandler, getSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, getSmartChannel, newHandler, getSendSmartEncodingTestCases, nil, nil)
+	RunOutgoingTestCases(t, postChannel, newHandler, postSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, postChannelCustomContentType, newHandler, postSendCustomContentTypeTestCases, nil, nil)
+	RunOutgoingTestCases(t, postSmartChannel, newHandler, postSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, postSmartChannel, newHandler, postSendSmartEncodingTestCases, nil, nil)
+	RunOutgoingTestCases(t, jsonChannel, newHandler, jsonSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, xmlChannel, newHandler, xmlSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, xmlChannelWithResponseContent, newHandler, xmlSendWithResponseContentTestCases, nil, nil)
 
 	var getChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
@@ -1017,10 +1017,10 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
-	RunOutgoingTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, getChannel30StrLength, newHandler(), longSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, jsonChannel30IntLength, newHandler(), jsonLongSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, xmlChannel30IntLength, newHandler(), xmlLongSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, getChannel30IntLength, newHandler, longSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, getChannel30StrLength, newHandler, longSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, jsonChannel30IntLength, newHandler, jsonLongSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, xmlChannel30IntLength, newHandler, xmlLongSendTestCases, nil, nil)
 
 	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
@@ -1029,7 +1029,7 @@ func TestOutgoing(t *testing.T) {
 			"use_national":          true,
 			models.ConfigSendMethod: http.MethodGet})
 
-	RunOutgoingTestCases(t, nationalChannel, newHandler(), nationalGetSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, nationalChannel, newHandler, nationalGetSendTestCases, nil, nil)
 
 	var jsonChannelWithSendAuthorization = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		[]string{urns.Phone.Prefix},
@@ -1040,5 +1040,5 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigSendMethod:        http.MethodPost,
 			models.ConfigSendAuthorization: "Token ABCDEF",
 		})
-	RunOutgoingTestCases(t, jsonChannelWithSendAuthorization, newHandler(), jsonSendTestCases, []string{"Token ABCDEF"}, nil)
+	RunOutgoingTestCases(t, jsonChannelWithSendAuthorization, newHandler, jsonSendTestCases, []string{"Token ABCDEF"}, nil)
 }

@@ -97,7 +97,7 @@ func TestIncoming(t *testing.T) {
 		),
 	}
 
-	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
+	RunIncomingTestCases(t, chs, newHandler, incomingCases)
 }
 
 var sendTestCases = []OutgoingTestCase{
@@ -219,5 +219,5 @@ func TestOutgoing(t *testing.T) {
 		map[string]any{configAccountSID: "SID", configApiKey: "123456"},
 	)
 
-	RunOutgoingTestCases(t, ch, newHandler(), sendTestCases, []string{"123456"}, nil)
+	RunOutgoingTestCases(t, ch, newHandler, sendTestCases, []string{"123456"}, nil)
 }

@@ -414,9 +414,9 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigAuthToken: "Token",
 			"button_layout":        map[string]any{"bg_color": "#f7bb3f", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
 		})
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Token"}, nil)
-	RunOutgoingTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases, []string{"Token"}, nil)
-	RunOutgoingTestCases(t, buttonLayoutChannel, newHandler(), buttonLayoutSendTestCases, []string{"Token"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{"Token"}, nil)
+	RunOutgoingTestCases(t, invalidTokenChannel, newHandler, invalidTokenSendTestCases, []string{"Token"}, nil)
+	RunOutgoingTestCases(t, buttonLayoutChannel, newHandler, buttonLayoutSendTestCases, []string{"Token"}, nil)
 }
 
 var testChannels = []*models.Channel{
@@ -809,6 +809,6 @@ func addInvalidSignature(r *http.Request) {
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
-	RunIncomingTestCases(t, testChannelsWithWelcomeMessage, newHandler(), testWelcomeMessageCases)
+	RunIncomingTestCases(t, testChannels, newHandler, testCases)
+	RunIncomingTestCases(t, testChannelsWithWelcomeMessage, newHandler, testWelcomeMessageCases)
 }

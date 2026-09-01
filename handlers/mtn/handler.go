@@ -17,6 +17,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -27,7 +28,7 @@ var (
 )
 
 func init() {
-	channels.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler)
 }
 
 type handler struct {
@@ -36,17 +37,14 @@ type handler struct {
 	fetchTokenMutex sync.Mutex
 }
 
-func newHandler() channels.Handler {
-	return &handler{
-		BaseHandler:     handlers.NewBaseHandler(models.ChannelType("MTN"), "MTN Developer Portal"),
+func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+	h := &handler{
+		BaseHandler:     handlers.NewBaseHandler(rt, models.ChannelType("MTN"), "MTN Developer Portal"),
 		fetchTokenMutex: sync.Mutex{},
 	}
-}
 
-// Initialize implements channels.Handler
-func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveAny))
-	return nil
+	return h
 }
 
 var statusMapping = map[string]models.MsgStatus{

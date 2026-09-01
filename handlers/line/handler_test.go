@@ -8,7 +8,6 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
-	. "github.com/nyaruka/courier/v26/handlers"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
@@ -400,7 +399,7 @@ func addInvalidSignature(r *http.Request) {
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
+	RunIncomingTestCases(t, testChannels, newHandler, handleTestCases)
 }
 
 var defaultSendTestCases = []OutgoingTestCase{
@@ -707,11 +706,11 @@ func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US", []string{urns.Line.Prefix}, map[string]any{"auth_token": "AccessToken"})
 
-	RunOutgoingTestCases(t, ch, newHandler(), defaultSendTestCases, []string{"AccessToken"}, setupMedia)
+	RunOutgoingTestCases(t, ch, newHandler, defaultSendTestCases, []string{"AccessToken"}, setupMedia)
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {
-	lnHandler := &handler{NewBaseHandler(models.ChannelType("LN"), "Line")}
+	lnHandler := newHandler(nil, channels.NewRoutes()).(*handler)
 	req, _ := lnHandler.BuildAttachmentRequest(context.Background(), testChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer the-auth-token", req.Header.Get("Authorization"))
@@ -721,8 +720,7 @@ func TestSendEvent(t *testing.T) {
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US", []string{urns.Line.Prefix}, map[string]any{"auth_token": "AccessToken"})
 
 	s := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
-	h := newHandler().(*handler)
-	s.MountHandler(h)
+	h := s.MountHandler(newHandler).(*handler)
 
 	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://api.line.me/v2/bot/chat/loading/start": {

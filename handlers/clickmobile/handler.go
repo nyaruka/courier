@@ -13,6 +13,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
@@ -27,21 +28,19 @@ var (
 )
 
 func init() {
-	channels.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler)
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() channels.Handler {
-	return &handler{handlers.NewBaseHandler(models.ChannelType("CM"), "Click Mobile")}
-}
+func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+	h := &handler{handlers.NewBaseHandler(rt, models.ChannelType("CM"), "Click Mobile")}
 
-func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodGet, "receive", channels.ReceiveKindMsg, handlers.XMLPayload(h.receiveMessage))
 	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.XMLPayload(h.receiveMessage))
-	return nil
+	return h
 }
 
 //  <request>

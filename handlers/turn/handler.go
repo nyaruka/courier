@@ -20,6 +20,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/handlers/meta/whatsapp"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/cache"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
@@ -38,7 +39,7 @@ var (
 )
 
 func init() {
-	channels.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler)
 
 	failedMediaCache = cache.NewLocal[string, bool](nil, 15*time.Minute)
 	failedMediaCache.Start()
@@ -48,15 +49,11 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() channels.Handler {
-	return &handler{handlers.NewBaseHandler(models.ChannelType("TRN"), "Turn.io WhatsApp")}
-}
+func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+	h := &handler{handlers.NewBaseHandler(rt, models.ChannelType("TRN"), "Turn.io WhatsApp")}
 
-// Initialize registers the routes this handler serves
-func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveAny))
-
-	return nil
+	return h
 }
 
 //	{

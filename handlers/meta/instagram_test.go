@@ -11,7 +11,6 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
-	. "github.com/nyaruka/courier/v26/handlers"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
@@ -460,8 +459,7 @@ func TestInstagramDescribeURN(t *testing.T) {
 	defer fbGraph.Close()
 
 	channel := instgramTestChannels[0]
-	handler := newHandler("IG", "Instagram")
-	web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(handler)
+	handler := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(newHandler("IG", "Instagram"))
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -483,8 +481,7 @@ func TestInstagramDescribeURN(t *testing.T) {
 func TestInstagramBuildAttachmentRequest(t *testing.T) {
 	s := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
 
-	handler := &handler{NewBaseHandler(models.ChannelType("IG"), "Instagram", DisableUUIDRouting())}
-	s.MountHandler(handler)
+	handler := s.MountHandler(newHandler("IG", "Instagram")).(*handler)
 	req, _ := handler.BuildAttachmentRequest(context.Background(), facebookTestChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, http.Header{}, req.Header)

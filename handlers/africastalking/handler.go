@@ -12,6 +12,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -21,15 +22,21 @@ const configIsShared = "is_shared"
 var defaultSendURL = "https://api.africastalking.com/version1/messaging"
 
 func init() {
-	channels.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler)
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() channels.Handler {
-	return &handler{handlers.NewBaseHandler(models.ChannelType("AT"), "Africas Talking")}
+func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+	h := &handler{handlers.NewBaseHandler(rt, models.ChannelType("AT"), "Africas Talking")}
+
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "callback", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodPost, "delivery", channels.ReceiveKindStatus, handlers.FormPayload(h.receiveStatus))
+	r.AddReceive(h, http.MethodPost, "status", channels.ReceiveKindStatus, handlers.FormPayload(h.receiveStatus))
+	return h
 }
 
 type moForm struct {
@@ -38,15 +45,6 @@ type moForm struct {
 	From string `name:"from" validate:"required"`
 	To   string `name:"to"   validate:"required"`
 	Date string `name:"date" validate:"required"`
-}
-
-// Initialize registers the routes this handler serves
-func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodPost, "callback", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodPost, "delivery", channels.ReceiveKindStatus, handlers.FormPayload(h.receiveStatus))
-	r.AddReceive(h, http.MethodPost, "status", channels.ReceiveKindStatus, handlers.FormPayload(h.receiveStatus))
-	return nil
 }
 
 // receiveMessage is our receive function for incoming messages

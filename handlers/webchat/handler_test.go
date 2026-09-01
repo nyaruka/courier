@@ -98,7 +98,7 @@ func TestIncoming(t *testing.T) {
 	random.SetSecureSource(random.NewSeededSource(1234))
 	defer random.SetSecureSource(random.DefaultSecureSource)
 
-	RunIncomingTestCases(t, testChannels, newHandler(), incomingCases)
+	RunIncomingTestCases(t, testChannels, newHandler, incomingCases)
 }
 
 // webchat traffic is internal to the platform so its channel logs are never stored - each visitor request
@@ -114,7 +114,7 @@ func TestChannelLogsNotStored(t *testing.T) {
 
 	s := web.NewServer(rt)
 	testsuite.InsertChannel(t, rt, testChannels[0])
-	require.NoError(t, s.MountHandler(newHandler()))
+	s.MountHandler(newHandler)
 
 	// capture the in-memory logs of handled requests
 	var clogs []*models.ChannelLog
@@ -152,7 +152,7 @@ func TestStartRateLimit(t *testing.T) {
 	s := web.NewServer(rt)
 	testsuite.InsertChannel(t, rt, testChannels[0])
 	testsuite.InsertChannel(t, rt, test.NewMockChannel(otherChannelUUID, "WCH", "", "", []string{urns.WebChat.Prefix}, nil))
-	require.NoError(t, s.MountHandler(newHandler()))
+	s.MountHandler(newHandler)
 
 	startOn := func(chURL, ip string) *httptest.ResponseRecorder {
 		req, _ := http.NewRequest(http.MethodPost, "https://localhost"+chURL, strings.NewReader(`{}`))
@@ -202,7 +202,7 @@ func TestCORS(t *testing.T) {
 
 	s := web.NewServer(rt)
 	testsuite.InsertChannel(t, rt, testChannels[0])
-	require.NoError(t, s.MountHandler(newHandler()))
+	s.MountHandler(newHandler)
 
 	// preflights on both endpoints are answered without needing the channel
 	for _, path := range []string{startURL, receiveURL} {
@@ -244,7 +244,7 @@ func TestAllowedDomains(t *testing.T) {
 	testsuite.InsertChannel(t, rt, test.NewMockChannel(cfgChannelUUID, "WCH", "", "", []string{urns.WebChat.Prefix},
 		map[string]any{"allowed_domains": []string{"example.com", "localhost:3000"}},
 	))
-	require.NoError(t, s.MountHandler(newHandler()))
+	s.MountHandler(newHandler)
 
 	request := func(path, origin string) *httptest.ResponseRecorder {
 		req, _ := http.NewRequest(http.MethodPost, "https://localhost"+path, strings.NewReader(`{}`))
@@ -322,8 +322,7 @@ func TestOutgoing(t *testing.T) {
 	ch := testChannels[0]
 	testsuite.InsertChannel(t, rt, ch)
 
-	h := newHandler()
-	h.SetRuntime(rt)
+	h := newHandler(rt, channels.NewRoutes())
 
 	msg := &models.MsgOut{
 		OrgID_:       ch.OrgID(),

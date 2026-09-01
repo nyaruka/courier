@@ -90,7 +90,7 @@ var testCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	RunIncomingTestCases(t, testChannels, newHandler, testCases)
 }
 
 var sendTestCases = []OutgoingTestCase{
@@ -227,5 +227,5 @@ func TestOutgoing(t *testing.T) {
 			configAPITokenUser: "user1",
 			configAPIToken:     "sesame",
 		})
-	RunOutgoingTestCases(t, channel, newHandler(), sendTestCases, []string{httpx.BasicAuth("user1", "sesame")}, nil)
+	RunOutgoingTestCases(t, channel, newHandler, sendTestCases, []string{httpx.BasicAuth("user1", "sesame")}, nil)
 }

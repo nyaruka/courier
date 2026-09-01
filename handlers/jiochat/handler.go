@@ -20,6 +20,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
@@ -36,7 +37,7 @@ const (
 )
 
 func init() {
-	channels.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler)
 }
 
 type handler struct {
@@ -45,20 +46,17 @@ type handler struct {
 	fetchTokenMutex sync.Mutex
 }
 
-func newHandler() channels.Handler {
-	return &handler{
-		BaseHandler:     handlers.NewBaseHandler(models.ChannelType("JC"), "Jiochat"),
+func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+	h := &handler{
+		BaseHandler:     handlers.NewBaseHandler(rt, models.ChannelType("JC"), "Jiochat"),
 		fetchTokenMutex: sync.Mutex{},
 	}
-}
 
-// Initialize registers the routes this handler serves
-func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodGet, "", models.ChannelLogTypeWebhookVerify, h.VerifyURL)
 	r.AddReceive(h, http.MethodPost, "rcv/msg/message", channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveAny))
 	r.AddReceive(h, http.MethodPost, "rcv/event/menu", channels.ReceiveKindEvent, handlers.JSONPayload(h.receiveAny))
 	r.AddReceive(h, http.MethodPost, "rcv/event/follow", channels.ReceiveKindEvent, handlers.JSONPayload(h.receiveAny))
-	return nil
+	return h
 }
 
 type verifyForm struct {
