@@ -1,0 +1,196 @@
+[
+    {
+        "label": "Receive Message",
+        "url": "/c/wc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+        "data": "\n\t\u003cxml\u003e\n    \u003cToUserName\u003e\u003c![CDATA[12121212121212]]\u003e\u003c/ToUserName\u003e\n    \u003cFromUserName\u003e\u003c![CDATA[1234]]\u003e\u003c/FromUserName\u003e\n    \u003cCreateTime\u003e1518774424438\u003c/CreateTime\u003e\n    \u003cMsgType\u003e\u003c![CDATA[text]]\u003e\u003c/MsgType\u003e\n    \u003cContent\u003e\u003c![CDATA[Simple Message]]\u003e\u003c/Content\u003e\n    \u003cMsgId\u003e123456\u003c/MsgId\u003e\n\t\u003c/xml\u003e\n\t",
+        "http_mocks": {
+            "https://api.weixin.qq.com/cgi-bin/user/info*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "nickname": ""
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "wechat:1234",
+                "text": "Simple Message",
+                "external_id": "123456",
+                "created_on": "2025-12-17T22:05:03Z",
+                "received_on": "2018-02-16T09:47:04.438Z",
+                "log_uuids": [
+                    "019b2e58-5ac8-7000-b5ae-79147d8e44c7"
+                ]
+            }
+        ],
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://api.weixin.qq.com/cgi-bin/user/info?access_token=ACCESS_TOKEN&openid=1234"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing params",
+        "url": "/c/wc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+        "data": "\n\t\u003cxml\u003e\n    \u003cToUserName\u003e\u003c![CDATA[12121212121212]]\u003e\u003c/ToUserName\u003e\n    \u003cCreateTime\u003e1518774424438\u003c/CreateTime\u003e\n    \u003cMsgType\u003e\u003c![CDATA[text]]\u003e\u003c/MsgType\u003e\n    \u003cContent\u003e\u003c![CDATA[Simple Message]]\u003e\u003c/Content\u003e\n    \u003cMsgId\u003e123456\u003c/MsgId\u003e\n\t\u003c/xml\u003e\n\t",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "request XML doesn't match required schema: Key: 'moPayload.FromUsername' Error:Field validation for 'FromUsername' failed on the 'required' tag"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing params Event or MsgId",
+        "url": "/c/wc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+        "data": "\n\t\u003cxml\u003e\n    \u003cToUserName\u003e\u003c![CDATA[12121212121212]]\u003e\u003c/ToUserName\u003e\n    \u003cFromUserName\u003e\u003c![CDATA[1234]]\u003e\u003c/FromUserName\u003e\n    \u003cCreateTime\u003e1518774424438\u003c/CreateTime\u003e\n    \u003cMsgType\u003e\u003c![CDATA[text]]\u003e\u003c/MsgType\u003e\n    \u003cContent\u003e\u003c![CDATA[Simple Message]]\u003e\u003c/Content\u003e\n\t\u003c/xml\u003e\n\t",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing parameters, must have either 'MsgId' or 'Event'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Image",
+        "url": "/c/wc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+        "data": "\n\t\u003cxml\u003e\n    \u003cToUserName\u003e\u003c![CDATA[12121212121212]]\u003e\u003c/ToUserName\u003e\n    \u003cFromUserName\u003e\u003c![CDATA[1234]]\u003e\u003c/FromUserName\u003e\n    \u003cCreateTime\u003e1518774424438\u003c/CreateTime\u003e\n    \u003cMsgType\u003e\u003c![CDATA[image]]\u003e\u003c/MsgType\u003e\n\t\u003cMsgId\u003e123456\u003c/MsgId\u003e\n\t\u003cMediaId\u003e12\u003c/MediaId\u003e\n\t\u003c/xml\u003e\n\t",
+        "response": {
+            "status": 200
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "wechat:1234",
+                "text": "",
+                "attachments": [
+                    "https://api.weixin.qq.com/cgi-bin/media/get?media_id=12"
+                ],
+                "external_id": "123456",
+                "created_on": "2025-10-25T21:07:03Z",
+                "received_on": "2018-02-16T09:47:04.438Z",
+                "log_uuids": [
+                    "019a1d32-3508-7000-b7d0-e028ffc345b7"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Subscribe Event",
+        "url": "/c/wc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+        "data": "\n\t\u003cxml\u003e\n    \u003cToUserName\u003e\u003c![CDATA[12121212121212]]\u003e\u003c/ToUserName\u003e\n    \u003cFromUserName\u003e\u003c![CDATA[1234]]\u003e\u003c/FromUserName\u003e\n    \u003cCreateTime\u003e1518774424438\u003c/CreateTime\u003e\n    \u003cMsgType\u003e\u003c![CDATA[event]]\u003e\u003c/MsgType\u003e\n    \u003cEvent\u003e\u003c![CDATA[subscribe]]\u003e\u003c/Event\u003e\n\t\u003c/xml\u003e",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Event Accepted",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "event_type": "new_conversation",
+                        "urn": "wechat:1234",
+                        "received_on": "2025-11-01T00:27:04Z"
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "019a3ccf-7fd8-7000-8434-0112241fe79a",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "wechat:1234",
+                "event_type": "new_conversation",
+                "occurred_on": "2025-11-01T00:27:04Z",
+                "log_uuids": [
+                    "019a3ccf-7808-7000-a4ca-6c6a134bd543"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Unsubscribe Event",
+        "url": "/c/wc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+        "data": "\n\t\u003cxml\u003e\n    \u003cToUserName\u003e\u003c![CDATA[12121212121212]]\u003e\u003c/ToUserName\u003e\n    \u003cFromUserName\u003e\u003c![CDATA[1234]]\u003e\u003c/FromUserName\u003e\n    \u003cCreateTime\u003e1518774424438\u003c/CreateTime\u003e\n    \u003cMsgType\u003e\u003c![CDATA[event]]\u003e\u003c/MsgType\u003e\n    \u003cEvent\u003e\u003c![CDATA[unsubscribe]]\u003e\u003c/Event\u003e\n\t\u003c/xml\u003e",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "unknown event type"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Verify URL",
+        "url": "/c/wc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab?echostr=SUCCESS&nonce=nonce&signature=c732109514cdbe8786b2752c029ee83b1620ca40&timestamp=20180216094704",
+        "response": {
+            "status": 200,
+            "body": "SUCCESS"
+        },
+        "log": {
+            "type": "webhook_verify",
+            "errors": []
+        }
+    },
+    {
+        "label": "Verify URL Invalid signature",
+        "url": "/c/wc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab?echostr=SUCCESS&nonce=other&signature=c732109514cdbe8786b2752c029ee83b1620ca40&timestamp=20180216094704",
+        "response": {
+            "status": 400,
+            "body": "unknown request"
+        },
+        "log": {
+            "type": "webhook_verify",
+            "errors": []
+        }
+    }
+]

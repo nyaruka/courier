@@ -1,0 +1,411 @@
+[
+    {
+        "label": "Receive Valid text w Signature",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        "data": "receiver=18005551515\u0026body=Test+again\u0026date=1690386569\u0026date_utc=1690418969\u0026reference=1\u0026id=b6aae1b5dfb2427a8f7ea6a717ba31a9\u0026id=3b53c137369242138120d6b0b2122607\u0026recipient=18005551515\u0026originator=18885551515\u0026body=Test+3\u0026CreatedDatetime=2023-07-27T00%3A49%3A29%2B00%3A00",
+        "response": {
+            "status": 200,
+            "body": "OK"
+        },
+        "msgs": [
+            {
+                "uuid": "019aaa60-86a0-7000-b266-d2e1ad72c2e6",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+18885551515",
+                "text": "Test 3",
+                "external_id": "3b53c137369242138120d6b0b2122607",
+                "created_on": "2025-11-22T07:04:03Z",
+                "received_on": "2023-07-27T00:49:29Z",
+                "log_uuids": [
+                    "019aaa60-7ae8-7000-aca3-99074e53f73c"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid text w shortcode date",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        "data": "shortcode=51515\u0026message=Test+again\u0026date=1690386569\u0026date_utc=1690418969\u0026reference=1\u0026id=b6aae1b5dfb2427a8f7ea6a717ba31a9\u0026mid=3b53c137369242138120d6b0b2122607\u0026recipient=18005551515\u0026originator=18885551515\u0026body=Test+3\u0026receive_datetime=20230727004929",
+        "response": {
+            "status": 200,
+            "body": "OK"
+        },
+        "msgs": [
+            {
+                "uuid": "019aaa60-86a0-7000-b266-d2e1ad72c2e6",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+18885551515",
+                "text": "Test again",
+                "external_id": "3b53c137369242138120d6b0b2122607",
+                "created_on": "2025-11-24T14:47:03Z",
+                "received_on": "2023-07-27T00:49:29Z",
+                "log_uuids": [
+                    "019ab655-1688-7000-87f6-8507b11d9eaf"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid w image w Signature",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        "data": "receiver=18005551515\u0026message=Test+again\u0026date=1690386569\u0026date_utc=1690418969\u0026reference=1\u0026id=b6aae1b5dfb2427a8f7ea6a717ba31a9\u0026message_id=3b53c137369242138120d6b0b2122607\u0026recipient=18005551515\u0026originator=18885551515\u0026mediaURLs=https%3A%2F%2Ffoo.bar%2Fimage.jpg\u0026CreatedDatetime=2023-07-27T00%3A49%3A29%2B00%3A00",
+        "response": {
+            "status": 200,
+            "body": "OK"
+        },
+        "msgs": [
+            {
+                "uuid": "019a960f-6a40-7000-a953-51a42ea9fd65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+18885551515",
+                "text": "",
+                "attachments": [
+                    "https://foo.bar/image.jpg"
+                ],
+                "external_id": "b6aae1b5dfb2427a8f7ea6a717ba31a9",
+                "created_on": "2025-11-18T08:23:03Z",
+                "received_on": "2023-07-27T00:49:29Z",
+                "log_uuids": [
+                    "019a960f-5e88-7000-8d22-ff55109b03c5"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Bad JWT Signature",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "headers": {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Messagebird-Signature-Jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJNZXNzYWdlQmlyZCIsImp0aSI6ImU5MmNmMDc5LTM2MmQtNDgxMy1hYjQwLWJiZGQ5MzhiZGM2ZCIsIm5iZiI6MTY5MDMwNjMwNSwicGF5bG9hZF9oYXNoIjoiZDI0OGFiNWMwMDQyMmM1MTdkNTQwZTA4ODFjYjdiMmIxMmFkZWQ1MjIzNWZiNDk2YWNkZGFlZGI5Mzc2YmQ1ZSIsInVybF9oYXNoIjoiZDc5ZDVmYWM0ZWU5YmM5MTRhZDVjM2M4ZDk1NGFjZTk4ODI3YTFmMmE2ZmI3M2NlOTNmY2MxMmE3YWFiYzU0MyJ9.tVVFeSs_9Ri-po3VZiSDhUze0wPB2rUc7cysAVajoiY"
+        },
+        "data": "receiver=18005551515\u0026body=Test+again\u0026date=1690386569\u0026date_utc=1690418969\u0026reference=1\u0026id=b6aae1b5dfb2427a8f7ea6a717ba31a9\u0026id=3b53c137369242138120d6b0b2122607\u0026recipient=18005551515\u0026originator=18885551515\u0026body=Test+3\u0026CreatedDatetime=2023-07-27T00%3A49%3A29%2B00%3A00",
+        "unsigned": true,
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "token signature is invalid: signature is invalid"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing JWT Signature Header",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        "data": "receiver=18005551515\u0026body=Test+again\u0026date=1690386569\u0026date_utc=1690418969\u0026reference=1\u0026id=b6aae1b5dfb2427a8f7ea6a717ba31a9\u0026id=3b53c137369242138120d6b0b2122607\u0026recipient=18005551515\u0026originator=18885551515\u0026body=Test+3\u0026CreatedDatetime=2023-07-27T00%3A49%3A29%2B00%3A00",
+        "unsigned": true,
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing request signature"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid w Signature but non-matching body hash",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "headers": {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Messagebird-Signature-Jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJNZXNzYWdlQmlyZCIsImp0aSI6ImU5MmNmMDc5LTM2MmQtNDgxMy1hYjQwLWJiZGQ5MzhiZGM2ZCIsIm5iZiI6MTY5MDMwNjMwNSwicGF5bG9hZF9oYXNoIjoiMmI5ZTkwOGI5MGRiYzA0YzI5MzQzNzZiYTNlNTI0MzAyODUxNDUwMTY5ZWZjZWM0ZjFkMjIxMzViMjY3MDhlYyIsInVybF9oYXNoIjoiZDc5ZDVmYWM0ZWU5YmM5MTRhZDVjM2M4ZDk1NGFjZTk4ODI3YTFmMmE2ZmI3M2NlOTNmY2MxMmE3YWFiYzU0MyJ9.3EsXF_EbHqhmK20mlEqbMOor-RndMu3HWwa1z-UR4uo"
+        },
+        "data": "receiver=18005551515\u0026body=Test+again\u0026date=1690386569\u0026date_utc=1690418969\u0026reference=1\u0026id=b6aae1b5dfb2427a8f7ea6a717ba31a9\u0026id=3b53c137369242138120d6b0b2122607\u0026recipient=18005551515\u0026originator=18885551515\u0026body=Test+3\u0026CreatedDatetime=2023-07-27T00%3A49%3A29%2B00%3A00",
+        "unsigned": true,
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid request signature, signature doesn't match expected signature for body."
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Empty Body",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        "data": "originator=18885551515\u0026recipient=18005551515\u0026\u0026CreatedDatetime=2023-07-27T00%3A49%3A29%2B00%3A00",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "no text or media"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Valid",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?datacoding=plain&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&mccmnc=310010&messageLength=4&messagePartCount=1&ported=0&price%5Bamount%5D=0.000&price%5Bcurrency%5D=USD&recipient=18885551515&reference=019a0719-ac96-7eb9-a837-cac215164834&statusDatetime=2023-07-28T17%3A57%3A12%2B00%3A00&status=sent",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "S",
+                "log_uuid": "0199f028-0e48-7000-82fd-5b92b67a3e7e"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status- Stop Received",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?datacoding=plain&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&mccmnc=310010&messageLength=4&messagePartCount=1&ported=0&price%5Bamount%5D=0.000&price%5Bcurrency%5D=USD&recipient=18885551515&reference=019a0719-ac96-7eb9-a837-cac215164834&statusDatetime=2023-07-28T17%3A57%3A12%2B00%3A00&status=delivery_failed&statusErrorCode=103",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "F",
+                "log_uuid": "019a1d7d-47c8-7000-8243-66c97bc6108c"
+            }
+        ],
+        "events": [
+            {
+                "uuid": "019a1d7d-4f98-7000-b4b6-a2f4ebb580db",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+18885551515",
+                "event_type": "stop_contact",
+                "occurred_on": "2025-10-25T22:29:04Z",
+                "log_uuids": [
+                    "019a1d7d-47c8-7000-8243-66c97bc6108c"
+                ]
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": [
+                {
+                    "code": "external",
+                    "ext_code": "103",
+                    "message": "Contact has sent 'stop'"
+                }
+            ]
+        }
+    },
+    {
+        "label": "Receive Invalid Status",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?datacoding=plain&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&mccmnc=310010&messageLength=4&messagePartCount=1&ported=0&price%5Bamount%5D=0.000&price%5Bcurrency%5D=USD&recipient=18885551515&reference=019a0719-ac96-7eb9-a837-cac215164834&statusDatetime=2023-07-28T17%3A57%3A12%2B00%3A00&status=expiryttd",
+        "unsigned": true,
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown status 'expiryttd', must be one of 'buffered', 'delivered', 'delivery_failed', 'expired', 'scheduled', 'sent'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Missing",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?datacoding=plain&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&mccmnc=310010&messageLength=4&messagePartCount=1&ported=0&price%5Bamount%5D=0.000&price%5Bcurrency%5D=USD&recipient=18885551515&reference=019a0719-ac96-7eb9-a837-cac215164834&statusDatetime=2023-07-28T17%3A57%3A12%2B00%3A00",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "no msg status, ignoring"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status URL check",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "no msg status, ignoring"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status with unparseable datetime",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?datacoding=plain&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&mccmnc=310010&messageLength=4&messagePartCount=1&ported=0&price%5Bamount%5D=0.000&price%5Bcurrency%5D=USD&recipient=18885551515&reference=019a0719-ac96-7eb9-a837-cac215164834&statusDatetime=2023-07-28T17%3A57%3A12%2B00%3A00&status=sent&statusDatetime=garbage",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "S",
+                "log_uuid": "019af874-45e8-7000-92e5-a5929ed0bd71"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": [
+                {
+                    "code": "request_unparseable",
+                    "message": "Unable to parse request: schema: error converting value for \"statusDatetime\". Details: parsing time \"garbage\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"garbage\" as \"2006\"."
+                }
+            ]
+        }
+    },
+    {
+        "label": "Status with unparseable error code",
+        "url": "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?datacoding=plain&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&mccmnc=310010&messageLength=4&messagePartCount=1&ported=0&price%5Bamount%5D=0.000&price%5Bcurrency%5D=USD&recipient=18885551515&reference=019a0719-ac96-7eb9-a837-cac215164834&statusDatetime=2023-07-28T17%3A57%3A12%2B00%3A00&status=delivery_failed&statusErrorCode=nope",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "F",
+                "log_uuid": "019a51dd-2da8-7000-bfdc-5dbfebd7beb8"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": [
+                {
+                    "code": "request_unparseable",
+                    "message": "Unable to parse request: schema: error converting value for \"statusErrorCode\"."
+                }
+            ]
+        }
+    }
+]

@@ -1,0 +1,819 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "message",
+            "timestamp": 1481142112807,
+            "message_token": 4987381189870374000,
+            "sender": {
+                "id": "xy5/5y6O81+/kbWHpLhBoA==",
+                "name": "ET3"
+            },
+            "message": {
+                "text": "incoming msg",
+                "type": "text",
+                "tracking_data": "3055"
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "incoming msg",
+                        "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+                        "external_id": "4987381189870374000",
+                        "received_on": "2025-11-19T17:20:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+                "text": "incoming msg",
+                "external_id": "4987381189870374000",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2025-11-19T17:20:03Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ],
+                "contact_name": "ET3"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalid signature",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "headers": {
+            "X-Viber-Content-Signature": "invalidsig"
+        },
+        "data": {
+            "event": "message",
+            "timestamp": 1481142112807,
+            "message_token": 4987381189870374000,
+            "sender": {
+                "id": "xy5/5y6O81+/kbWHpLhBoA==",
+                "name": "ET3"
+            },
+            "message": {
+                "text": "incoming msg",
+                "type": "text",
+                "tracking_data": "3055"
+            }
+        },
+        "unsigned": true,
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid request signature: invalidsig"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalid JSON",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "invalid",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'i' looking for beginning of value"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalid URN",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "message",
+            "timestamp": 1481142112807,
+            "message_token": 4987381189870374000,
+            "sender": {
+                "id": "xy5/5$$**y6O81+/kbWHpLhBoA==",
+                "name": "ET3"
+            },
+            "message": {
+                "text": "incoming msg",
+                "type": "text",
+                "tracking_data": "3055"
+            }
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid viber id"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalid Message Type",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "message",
+            "timestamp": 1481142112807,
+            "message_token": 4987381189870374000,
+            "sender": {
+                "id": "xy5/5y6O81+/kbWHpLhBoA==",
+                "name": "ET3"
+            },
+            "message": {
+                "text": "incoming msg",
+                "type": "unknown",
+                "tracking_data": "3055"
+            }
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown message type: unknown"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Webhook validation",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "webhook",
+            "timestamp": 4987034606158369000,
+            "message_token": 1481059480858
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "webhook valid"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "webhook_verify",
+            "errors": []
+        }
+    },
+    {
+        "label": "Failed Status Report",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "failed",
+            "timestamp": 1457764197627,
+            "message_token": 4912661846655238145,
+            "user_id": "01234567890A=",
+            "desc": "failure description"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F",
+                        "external_id": "4912661846655238145"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "4912661846655238145",
+                "status": "F",
+                "log_uuid": "019b2291-85e8-7000-8229-cc3cb1affc3d"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Delivered Status Report",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "delivered",
+            "timestamp": 1457764197627,
+            "message_token": 4912661846655238145,
+            "user_id": "01234567890A=",
+            "desc": "failure description"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring delivered status"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Subcribe",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "subscribed",
+            "timestamp": 1457764197627,
+            "user": {
+                "id": "01234567890A=",
+                "name": "yarden",
+                "avatar": "http://avatar_url",
+                "country": "IL",
+                "language": "en",
+                "api_version": 1
+            },
+            "message_token": 4912661846655238145
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Event Accepted",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "event_type": "new_conversation",
+                        "urn": "viber:01234567890A=",
+                        "received_on": "2025-11-15T02:42:04Z"
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "019a8564-2078-7000-bc56-05577209d7b8",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "viber:01234567890A=",
+                "event_type": "new_conversation",
+                "occurred_on": "2025-11-15T02:42:04Z",
+                "log_uuids": [
+                    "019a8564-18a8-7000-a8e0-0129ad959be9"
+                ],
+                "contact_name": "yarden"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Subcribe Invalid URN",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "subscribed",
+            "timestamp": 1457764197627,
+            "user": {
+                "id": "012345678**$$90A=",
+                "name": "yarden",
+                "avatar": "http://avatar_url",
+                "country": "IL",
+                "language": "en",
+                "api_version": 1
+            },
+            "message_token": 4912661846655238145
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid viber id"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Unsubcribe",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "unsubscribed",
+            "timestamp": 1457764197627,
+            "user_id": "01234567890A=",
+            "message_token": 4912661846655238145
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Event Accepted",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "event_type": "stop_contact",
+                        "urn": "viber:01234567890A=",
+                        "received_on": "2025-10-15T13:37:04Z"
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "0199e816-a818-7000-a53f-c13f474d81c1",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "viber:01234567890A=",
+                "event_type": "stop_contact",
+                "occurred_on": "2025-10-15T13:37:04Z",
+                "log_uuids": [
+                    "0199e816-a048-7000-a6f1-155db847d07d"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Unsubcribe Invalid URN",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "unsubscribed",
+            "timestamp": 1457764197627,
+            "user_id": "012345678$$%**90A=",
+            "message_token": 4912661846655238145
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid viber id"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Conversation Started",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "conversation_started",
+            "timestamp": 1457764197627,
+            "message_token": 4912661846655238145,
+            "type": "open",
+            "context": "context information",
+            "user": {
+                "id": "xy5/5y6O81+/kbWHpLhBoA==",
+                "name": "yarden",
+                "avatar": "http://avatar_url",
+                "country": "IL",
+                "language": "en",
+                "api_version": 1
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignored conversation start"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Unexpected event",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "unexpected",
+            "timestamp": 4987034606158369000,
+            "message_token": 1481059480858
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not handled, unknown event: unexpected"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Message missing text",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "message",
+            "timestamp": 1481142112807,
+            "message_token": 4987381189870374000,
+            "sender": {
+                "id": "xy5/5y6O81+/kbWHpLhBoA==",
+                "name": "ET3"
+            },
+            "message": {
+                "type": "text",
+                "tracking_data": "3055"
+            }
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing text or media in message in request body"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Picture missing media",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "message",
+            "timestamp": 1481142112807,
+            "message_token": 4987381189870374000,
+            "sender": {
+                "id": "xy5/5y6O81+/kbWHpLhBoA==",
+                "name": "ET3"
+            },
+            "message": {
+                "type": "picture",
+                "tracking_data": "3055"
+            }
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing text or media in message in request body"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Video missing media",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "message",
+            "timestamp": 1481142112807,
+            "message_token": 4987381189870374000,
+            "sender": {
+                "id": "xy5/5y6O81+/kbWHpLhBoA==",
+                "name": "ET3"
+            },
+            "message": {
+                "type": "video",
+                "tracking_data": "3055"
+            }
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing text or media in message in request body"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid Contact receive",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "message",
+            "timestamp": 1481142112807,
+            "message_token": 4987381189870374000,
+            "sender": {
+                "id": "xy5/5y6O81+/kbWHpLhBoA==",
+                "name": "ET3"
+            },
+            "message": {
+                "text": "incoming msg",
+                "type": "contact",
+                "contact": {
+                    "name": "Alex",
+                    "phone_number": "+12067799191"
+                },
+                "tracking_data": "3055"
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "Alex: +12067799191",
+                        "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+                        "external_id": "4987381189870374000",
+                        "received_on": "2025-10-26T06:04:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+                "text": "Alex: +12067799191",
+                "external_id": "4987381189870374000",
+                "created_on": "2025-10-26T06:04:03Z",
+                "received_on": "2025-10-26T06:04:03Z",
+                "log_uuids": [
+                    "019a1f1d-d868-7000-be8d-72138693fb8f"
+                ],
+                "contact_name": "ET3"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid URL receive",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "message",
+            "timestamp": 1481142112807,
+            "message_token": 4987381189870374000,
+            "sender": {
+                "id": "xy5/5y6O81+/kbWHpLhBoA==",
+                "name": "ET3"
+            },
+            "message": {
+                "text": "incoming msg",
+                "type": "url",
+                "media": "http://foo.com/",
+                "tracking_data": "3055"
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "http://foo.com/",
+                        "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+                        "external_id": "4987381189870374000",
+                        "received_on": "2025-11-18T15:21:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+                "text": "http://foo.com/",
+                "external_id": "4987381189870374000",
+                "created_on": "2025-11-18T15:21:03Z",
+                "received_on": "2025-11-18T15:21:03Z",
+                "log_uuids": [
+                    "019a978e-0f48-7000-a387-cd92d80a6c7a"
+                ],
+                "contact_name": "ET3"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid Location receive",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "message",
+            "timestamp": 1481142112807,
+            "message_token": 4987381189870374000,
+            "sender": {
+                "id": "xy5/5y6O81+/kbWHpLhBoA==",
+                "name": "ET3"
+            },
+            "message": {
+                "text": "incoming msg",
+                "type": "location",
+                "location": {
+                    "lat": 1.2,
+                    "lon": -1.3
+                },
+                "tracking_data": "3055"
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "incoming msg",
+                        "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+                        "attachments": [
+                            "geo:1.200000,-1.300000"
+                        ],
+                        "external_id": "4987381189870374000",
+                        "received_on": "2025-12-15T02:33:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+                "text": "incoming msg",
+                "attachments": [
+                    "geo:1.200000,-1.300000"
+                ],
+                "external_id": "4987381189870374000",
+                "created_on": "2025-12-15T02:33:03Z",
+                "received_on": "2025-12-15T02:33:03Z",
+                "log_uuids": [
+                    "019b1fda-a348-7000-8c7b-fc2542e660a1"
+                ],
+                "contact_name": "ET3"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid Sticker",
+        "url": "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "event": "message",
+            "timestamp": 1481142112807,
+            "message_token": 4987381189870374000,
+            "sender": {
+                "id": "xy5/5y6O81+/kbWHpLhBoA==",
+                "name": "ET3"
+            },
+            "message": {
+                "text": "incoming msg",
+                "type": "sticker",
+                "sticker_id": "40133",
+                "tracking_data": "3055"
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "incoming msg",
+                        "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+                        "attachments": [
+                            "https://viber.github.io/docs/img/stickers/40133.png"
+                        ],
+                        "external_id": "4987381189870374000",
+                        "received_on": "2025-12-10T13:26:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+                "text": "incoming msg",
+                "attachments": [
+                    "https://viber.github.io/docs/img/stickers/40133.png"
+                ],
+                "external_id": "4987381189870374000",
+                "created_on": "2025-12-10T13:26:03Z",
+                "received_on": "2025-12-10T13:26:03Z",
+                "log_uuids": [
+                    "019b0870-ae28-7000-a0f3-eea1b2308f3d"
+                ],
+                "contact_name": "ET3"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

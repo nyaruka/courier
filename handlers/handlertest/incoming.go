@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/gocommon/httpx"
@@ -47,6 +48,9 @@ type IncomingOptions struct {
 
 	// NoInvalidChannelCheck skips the check that the first case's request is rejected if its channel doesn't exist
 	NoInvalidChannelCheck bool
+
+	// Setup is called with the runtime before any cases run
+	Setup func(*testing.T, *runtime.Runtime)
 }
 
 // returns the function to prepare the given case's request with, if any
@@ -98,6 +102,10 @@ func RunIncomingTests(t *testing.T, chs []*models.Channel, newFn channels.NewHan
 
 	// data: attachments are saved to storage as they're received so ensure the bucket exists
 	rt.S3.Client.CreateBucket(t.Context(), &s3.CreateBucketInput{Bucket: aws.String(rt.Config.S3AttachmentsBucket)})
+
+	if opts.Setup != nil {
+		opts.Setup(t, rt)
+	}
 
 	s := newServer(rt)
 

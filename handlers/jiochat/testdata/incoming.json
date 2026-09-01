@@ -1,0 +1,296 @@
+[
+    {
+        "label": "Receive Message",
+        "url": "/c/jc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/rcv/msg/message",
+        "data": {
+            "ToUsername": "12121212121212",
+            "FromUserName": "1234",
+            "CreateTime": 1518774424438,
+            "MsgType": "text",
+            "MsgId": "123456",
+            "Content": "Simple Message"
+        },
+        "http_mocks": {
+            "https://channels.jiochat.com/user/info.action*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "nickname": ""
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                        "text": "Simple Message",
+                        "urn": "jiochat:1234",
+                        "external_id": "123456",
+                        "received_on": "2018-02-16T09:47:04.438Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "jiochat:1234",
+                "text": "Simple Message",
+                "external_id": "123456",
+                "created_on": "2025-12-17T22:05:03Z",
+                "received_on": "2018-02-16T09:47:04.438Z",
+                "log_uuids": [
+                    "019b2e58-5ac8-7000-b5ae-79147d8e44c7"
+                ]
+            }
+        ],
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://channels.jiochat.com/user/info.action?openid=1234",
+                "headers": {
+                    "Authorization": "Bearer ACCESS_TOKEN"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/jc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/rcv/msg/message",
+        "data": {
+            "ToUsername": "1212121221212",
+            "FromUserName": "1234abc",
+            "CreateTime": 1518774424438,
+            "MsgType": "text",
+            "MsgId": "123456",
+            "Content": "Simple Message"
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid jiochat id"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing params",
+        "url": "/c/jc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/rcv/msg/message",
+        "data": {
+            "ToUsername": "12121212121212",
+            "CreateTime": 1518774424438,
+            "MsgType": "text",
+            "MsgId": "123456",
+            "Content": "Simple Message"
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "request JSON doesn't match required schema: Key: 'moPayload.FromUsername' Error:Field validation for 'FromUsername' failed on the 'required' tag"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing params Event or MsgId",
+        "url": "/c/jc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/rcv/msg/message",
+        "data": {
+            "ToUsername": "12121212121212",
+            "FromUserName": "1234",
+            "CreateTime": 1518774424438,
+            "MsgType": "text",
+            "Content": "Simple Message"
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing parameters, must have either 'MsgId' or 'Event'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Image",
+        "url": "/c/jc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/rcv/msg/message",
+        "data": {
+            "ToUsername": "12121212121212",
+            "FromUserName": "1234",
+            "CreateTime": 1518774424438,
+            "MsgType": "image",
+            "MsgId": "123456",
+            "MediaId": "12"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                        "text": "",
+                        "urn": "jiochat:1234",
+                        "attachments": [
+                            "https://channels.jiochat.com/media/download.action?media_id=12"
+                        ],
+                        "external_id": "123456",
+                        "received_on": "2018-02-16T09:47:04.438Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "jiochat:1234",
+                "text": "",
+                "attachments": [
+                    "https://channels.jiochat.com/media/download.action?media_id=12"
+                ],
+                "external_id": "123456",
+                "created_on": "2025-10-25T21:07:03Z",
+                "received_on": "2018-02-16T09:47:04.438Z",
+                "log_uuids": [
+                    "019a1d32-3508-7000-b7d0-e028ffc345b7"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Subscribe Event",
+        "url": "/c/jc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/rcv/msg/message",
+        "data": {
+            "ToUsername": "12121212121212",
+            "FromUserName": "1234",
+            "CreateTime": 1518774424438,
+            "MsgType": "event",
+            "Event": "subscribe"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Event Accepted",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "event_type": "new_conversation",
+                        "urn": "jiochat:1234",
+                        "received_on": "2025-11-01T00:27:04Z"
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "019a3ccf-7fd8-7000-8434-0112241fe79a",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "jiochat:1234",
+                "event_type": "new_conversation",
+                "occurred_on": "2025-11-01T00:27:04Z",
+                "log_uuids": [
+                    "019a3ccf-7808-7000-a4ca-6c6a134bd543"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Unsubscribe Event",
+        "url": "/c/jc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/rcv/msg/message",
+        "data": {
+            "ToUsername": "12121212121212",
+            "FromUserName": "1234",
+            "CreateTime": 1454119029,
+            "MsgType": "event",
+            "Event": "unsubscribe"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "unknown event type"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Verify URL",
+        "url": "/c/jc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/?echostr=SUCCESS&nonce=nonce&signature=c732109514cdbe8786b2752c029ee83b1620ca40&timestamp=20180216094704",
+        "response": {
+            "status": 200,
+            "body": "SUCCESS"
+        },
+        "log": {
+            "type": "webhook_verify",
+            "errors": []
+        }
+    },
+    {
+        "label": "Verify URL Invalid signature",
+        "url": "/c/jc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/?echostr=SUCCESS&nonce=other&signature=c732109514cdbe8786b2752c029ee83b1620ca40&timestamp=20180216094704",
+        "response": {
+            "status": 400,
+            "body": "unknown request"
+        },
+        "log": {
+            "type": "webhook_verify",
+            "errors": []
+        }
+    }
+]

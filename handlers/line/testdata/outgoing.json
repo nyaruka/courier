@@ -1,0 +1,1012 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "line:uabcdefghij"
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Simple Message"
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Long Send",
+        "msg": {
+            "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+            "urn": "line:uabcdefghij"
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"
+                        },
+                        {
+                            "type": "text",
+                            "text": "I need to keep adding more things to make it work"
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Audio Attachment",
+        "msg": {
+            "text": "My Audio!",
+            "urn": "line:uabcdefghij",
+            "attachments": [
+                "audio/mp3:http://mock.com/media/9a4c4415-a06c-4edd-ad5b-33ed0be6b306/test.mp3"
+            ]
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "audio",
+                            "originalContentUrl": "http://mock.com/media/d8f6d8bb-9dd0-4b34-98b8-f2e9e857f2b6/test.m4a",
+                            "duration": 200
+                        },
+                        {
+                            "type": "text",
+                            "text": "My Audio!"
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Video Attachment",
+        "msg": {
+            "text": "My Video!",
+            "urn": "line:uabcdefghij",
+            "attachments": [
+                "video/mp4:http://mock.com/media/55be7386-6851-406f-9c02-2b17bd05eb45/test.mp4"
+            ]
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "video",
+                            "originalContentUrl": "http://mock.com/media/55be7386-6851-406f-9c02-2b17bd05eb45/test.mp4",
+                            "previewImageUrl": "http://mock.com/media/2f8db4b2-e21c-4fe4-a049-4dbcecf83cf6/test.jpg"
+                        },
+                        {
+                            "type": "text",
+                            "text": "My Video!"
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Image Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "line:uabcdefghij",
+            "attachments": [
+                "image/jpeg:http://mock.com/media/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "image",
+                            "originalContentUrl": "http://mock.com/media/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+                            "previewImageUrl": "http://mock.com/media/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg"
+                        },
+                        {
+                            "type": "text",
+                            "text": "My pic!"
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Other Attachment",
+        "msg": {
+            "text": "My doc!",
+            "urn": "line:uabcdefghij",
+            "attachments": [
+                "application/pdf:http://mock.com/media/4b3a4a4e-2b4f-4bb1-9e0f-e19d17f0d0ea/test.pdf"
+            ]
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "http://mock.com/media/4b3a4a4e-2b4f-4bb1-9e0f-e19d17f0d0ea/test.pdf"
+                        },
+                        {
+                            "type": "text",
+                            "text": "My doc!"
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Reply Message",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "line:uabcdefghij",
+            "response_to_external_id": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA"
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/reply": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/reply",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Simple Message"
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "line:uabcdefghij",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "Yes"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Are you happy?",
+                            "quickReply": {
+                                "items": [
+                                    {
+                                        "type": "action",
+                                        "action": {
+                                            "type": "message",
+                                            "label": "Yes",
+                                            "text": "Yes"
+                                        }
+                                    },
+                                    {
+                                        "type": "action",
+                                        "action": {
+                                            "type": "message",
+                                            "label": "No",
+                                            "text": "No"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Location Action Quick Reply",
+        "msg": {
+            "text": "Where are you?",
+            "urn": "line:uabcdefghij",
+            "quick_replies": [
+                {
+                    "type": "location",
+                    "text": "Share Pin"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Where are you?",
+                            "quickReply": {
+                                "items": [
+                                    {
+                                        "type": "action",
+                                        "action": {
+                                            "type": "location",
+                                            "label": "Share Pin"
+                                        }
+                                    },
+                                    {
+                                        "type": "action",
+                                        "action": {
+                                            "type": "message",
+                                            "label": "No",
+                                            "text": "No"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "URI Action Quick Reply",
+        "msg": {
+            "text": "Read more?",
+            "urn": "line:uabcdefghij",
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit",
+                    "extra": "http://example.com"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Read more?",
+                            "quickReply": {
+                                "items": [
+                                    {
+                                        "type": "action",
+                                        "action": {
+                                            "type": "uri",
+                                            "label": "Visit",
+                                            "uri": "http://example.com"
+                                        }
+                                    },
+                                    {
+                                        "type": "action",
+                                        "action": {
+                                            "type": "message",
+                                            "label": "No",
+                                            "text": "No"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply, URI Action without a URL is dropped",
+        "msg": {
+            "text": "Read more?",
+            "urn": "line:uabcdefghij",
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Read more?",
+                            "quickReply": {
+                                "items": [
+                                    {
+                                        "type": "action",
+                                        "action": {
+                                            "type": "message",
+                                            "label": "No",
+                                            "text": "No"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type url is missing its extra value and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Quick Reply, unsupported types ignored",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "line:uabcdefghij",
+            "quick_replies": [
+                {
+                    "type": "form",
+                    "extra": "1234"
+                },
+                {
+                    "type": "text",
+                    "text": "Yes"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Are you happy?",
+                            "quickReply": {
+                                "items": [
+                                    {
+                                        "type": "action",
+                                        "action": {
+                                            "type": "message",
+                                            "label": "Yes",
+                                            "text": "Yes"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type form isn't supported by this channel and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Quick Reply Combined and Attachment",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "line:uabcdefghij",
+            "attachments": [
+                "image/jpeg:http://mock.com/media/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg"
+            ],
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "Yes"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "image",
+                            "originalContentUrl": "http://mock.com/media/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+                            "previewImageUrl": "http://mock.com/media/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg"
+                        },
+                        {
+                            "type": "text",
+                            "text": "Are you happy?",
+                            "quickReply": {
+                                "items": [
+                                    {
+                                        "type": "action",
+                                        "action": {
+                                            "type": "message",
+                                            "label": "Yes",
+                                            "text": "Yes"
+                                        }
+                                    },
+                                    {
+                                        "type": "action",
+                                        "action": {
+                                            "type": "message",
+                                            "label": "No",
+                                            "text": "No"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Long Message, Quick Reply Combined and Attachment",
+        "msg": {
+            "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+            "urn": "line:uabcdefghij",
+            "attachments": [
+                "image/jpeg:http://mock.com/media/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg"
+            ],
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "Yes"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ],
+            "response_to_external_id": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA"
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/reply": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/reply",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+                    "messages": [
+                        {
+                            "type": "image",
+                            "originalContentUrl": "http://mock.com/media/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+                            "previewImageUrl": "http://mock.com/media/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg"
+                        },
+                        {
+                            "type": "text",
+                            "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"
+                        },
+                        {
+                            "type": "text",
+                            "text": "I need to keep adding more things to make it work",
+                            "quickReply": {
+                                "items": [
+                                    {
+                                        "type": "action",
+                                        "action": {
+                                            "type": "message",
+                                            "label": "Yes",
+                                            "text": "Yes"
+                                        }
+                                    },
+                                    {
+                                        "type": "action",
+                                        "action": {
+                                            "type": "message",
+                                            "label": "No",
+                                            "text": "No"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Push Message If Invalid Reply",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "line:uabcdefghij",
+            "response_to_external_id": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA"
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ],
+            "https://api.line.me/v2/bot/message/reply": [
+                {
+                    "status": 400,
+                    "body": {
+                        "message": "Invalid reply token"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/reply",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Simple Message"
+                        }
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Simple Message"
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Invalid JSON response sending",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "line:uabcdefghij"
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 403,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Error Sending"
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response couldn't be parsed",
+            "loggable": true,
+            "log_error": {
+                "code": "response_unparseable",
+                "message": "Response could not be parsed in the expected format."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "line:uabcdefghij"
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 403,
+                    "body": {
+                        "message": "Failed to send messages"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Error Sending"
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "403",
+                "message": "Failed to send messages"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Connection Error",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "line:uabcdefghij"
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 503,
+                    "body": {
+                        "message": "Service unavailable"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Error Sending"
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "line:uabcdefghij"
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 429,
+                    "body": {
+                        "message": "You have reached your monthly limit."
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Error Sending"
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]
