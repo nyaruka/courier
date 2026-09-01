@@ -72,14 +72,16 @@ func Start(rt *runtime.Runtime) error {
 		return fmt.Errorf("error looking up system user: %w", err)
 	}
 
-	// create and start channel caches...
+	// create and start channel caches... the UUID cache also holds absence (see loadChannelByUUID) and its
+	// keys come from callback URLs, so it's bounded to stop a flood of unknown UUIDs growing it without limit.
+	// The address cache only ever holds channels that exist, so it's bounded by the channels themselves.
 	channelsByUUID = cache.NewLocal(func(ctx context.Context, uuid ChannelUUID) (*Channel, error) {
 		return loadChannelByUUID(ctx, rt, uuid)
-	}, time.Minute)
+	}, time.Minute, 10_000)
 	channelsByUUID.Start()
 	channelsByAddr = cache.NewLocal(func(ctx context.Context, addr ChannelAddress) (*Channel, error) {
 		return loadChannelByAddress(ctx, rt, addr)
-	}, time.Minute)
+	}, time.Minute, 0)
 	channelsByAddr.Start()
 
 	// create our spools and start their background flushing - their Start fails if a spool directory isn't
