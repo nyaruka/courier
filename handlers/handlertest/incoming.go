@@ -26,7 +26,7 @@ type IncomingCase struct {
 	Headers       map[string]string                `json:"headers,omitempty"`
 	Data          HTTPBody                         `json:"data,omitempty"`
 	MultipartForm map[string]string                `json:"multipart_form,omitempty"`
-	Prep          string                           `json:"prep,omitempty"` // name of a request prep function
+	Unsigned      bool                             `json:"unsigned,omitempty"` // don't sign this request even if the run signs requests
 	HTTPMocks     map[string][]*httpx.MockResponse `json:"http_mocks,omitempty"`
 
 	// the outcome, written by running with -update
@@ -40,12 +40,28 @@ type IncomingCase struct {
 
 // IncomingOptions are the options for running a file of incoming cases
 type IncomingOptions struct {
-	// PrepFuncs are the functions which cases can name in their prep field to modify the request before it's made,
-	// e.g. to sign it
-	PrepFuncs map[string]RequestPrepFunc
+	// Sign signs a request the way the provider would, for handlers which validate signatures. It's applied to
+	// every case's request except those marked unsigned, and sees the case's headers - which are then re-applied
+	// so that a case can override what it wrote, e.g. with an invalid signature.
+	Sign RequestPrepFunc
 
 	// NoInvalidChannelCheck skips the check that the first case's request is rejected if its channel doesn't exist
 	NoInvalidChannelCheck bool
+}
+
+// returns the function to prepare the given case's request with, if any
+func (o *IncomingOptions) signer(tc *IncomingCase) RequestPrepFunc {
+	if o.Sign == nil || tc.Unsigned {
+		return nil
+	}
+	return func(r *http.Request) {
+		o.Sign(r)
+
+		// the case's own headers win over anything the signer set
+		for k, v := range tc.Headers {
+			r.Header.Set(k, v)
+		}
+	}
 }
 
 // RunIncomingTests runs the incoming cases in the given file against the given channels
@@ -119,13 +135,7 @@ func RunIncomingTests(t *testing.T, chs []*models.Channel, newFn channels.NewHan
 				client.Transport = httpx.WithTraces(localOnlyTransport{http.DefaultTransport})
 			}
 
-			var prep RequestPrepFunc
-			if tc.Prep != "" {
-				prep = opts.PrepFuncs[tc.Prep]
-				require.NotNil(t, prep, "no prep function named '%s'", tc.Prep)
-			}
-
-			status, body := makeHandlerRequest(t, s, tc.URL, tc.Headers, string(tc.Data), tc.MultipartForm, prep)
+			status, body := makeHandlerRequest(t, s, tc.URL, tc.Headers, string(tc.Data), tc.MultipartForm, opts.signer(tc))
 
 			actual := *tc
 			actual.Response = &HandlerResponse{Status: status, Body: body}
@@ -173,7 +183,7 @@ func RunIncomingTests(t *testing.T, chs []*models.Channel, newFn channels.NewHan
 			models.FlushChannelCache()
 
 			validCase := cases[0]
-			status, body := makeHandlerRequest(t, s, validCase.URL, validCase.Headers, string(validCase.Data), validCase.MultipartForm, opts.PrepFuncs[validCase.Prep])
+			status, body := makeHandlerRequest(t, s, validCase.URL, validCase.Headers, string(validCase.Data), validCase.MultipartForm, opts.signer(validCase))
 			assert.Equal(t, 400, status, "status code mismatch")
 			assert.Contains(t, string(body), "channel not found")
 		})
