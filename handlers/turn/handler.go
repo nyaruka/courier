@@ -41,7 +41,7 @@ var (
 func init() {
 	channels.RegisterHandler(newHandler)
 
-	failedMediaCache = cache.NewLocal[string, bool](nil, 15*time.Minute)
+	failedMediaCache = cache.NewLocal[string, bool](nil, 15*time.Minute, 10_000)
 	failedMediaCache.Start()
 }
 
