@@ -1,0 +1,383 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/jcl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "data": {
+                "type": "sms",
+                "direction": "I",
+                "justcall_number": "2020",
+                "contact_name": "Sushant Tripathi",
+                "contact_number": "+385916242493",
+                "contact_email": "customer@gmail.com",
+                "is_contact": 1,
+                "content": "Hello there",
+                "signature": "35e89fc56b497xxxxxxxxxx8f7b27fe49d",
+                "datetime": "2020-12-03 13:35:13",
+                "delivery_status": "sent",
+                "requestid": "1229153",
+                "messageid": 26523491,
+                "is_mms": "0",
+                "mms": [],
+                "agent_name": "Sales JustCall",
+                "agent_id": 10636
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                        "text": "Hello there",
+                        "urn": "tel:+385916242493",
+                        "external_id": "26523491",
+                        "received_on": "2020-12-03T13:35:13Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+385916242493",
+                "text": "Hello there",
+                "external_id": "26523491",
+                "created_on": "2025-11-01T05:43:04Z",
+                "received_on": "2020-12-03T13:35:13Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Wrong Message Direction",
+        "url": "/c/jcl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "data": {
+                "type": "sms",
+                "direction": "O",
+                "justcall_number": "2020",
+                "contact_name": "Sushant Tripathi",
+                "contact_number": "+385916242493",
+                "contact_email": "customer@gmail.com",
+                "is_contact": 1,
+                "content": "Hello there",
+                "signature": "35e89fc56b497xxxxxxxxxx8f7b27fe49d",
+                "datetime": "2020-12-03 13:35:13",
+                "delivery_status": "sent",
+                "requestid": "1229153",
+                "messageid": 26523491,
+                "is_mms": "0",
+                "mms": [],
+                "agent_name": "Sales JustCall",
+                "agent_id": 10636
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "Ignoring request, no message"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Empty Message",
+        "url": "/c/jcl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "data": {
+                "type": "sms",
+                "direction": "I",
+                "justcall_number": "2020",
+                "contact_name": "Sushant Tripathi",
+                "contact_number": "+385916242493",
+                "contact_email": "customer@gmail.com",
+                "is_contact": 1,
+                "content": "",
+                "signature": "35e89fc56b497xxxxxxxxxx8f7b27fe49d",
+                "datetime": "2020-12-03 13:35:13",
+                "delivery_status": "sent",
+                "requestid": "1229153",
+                "messageid": 26523491,
+                "is_mms": "0",
+                "mms": [],
+                "agent_name": "Sales JustCall",
+                "agent_id": 10636
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                        "text": "",
+                        "urn": "tel:+385916242493",
+                        "external_id": "26523491",
+                        "received_on": "2020-12-03T13:35:13Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+385916242493",
+                "text": "",
+                "external_id": "26523491",
+                "created_on": "2025-11-12T23:44:04Z",
+                "received_on": "2020-12-03T13:35:13Z",
+                "log_uuids": [
+                    "019a7a74-69e8-7000-95c2-6b4be80c3dac"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Attachment Message",
+        "url": "/c/jcl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "data": {
+                "type": "sms",
+                "direction": "I",
+                "justcall_number": "2020",
+                "contact_name": "Sushant Tripathi",
+                "contact_number": "+385916242493",
+                "contact_email": "customer@gmail.com",
+                "is_contact": 1,
+                "content": "Hello there",
+                "signature": "35e89fc56b497xxxxxxxxxx8f7b27fe49d",
+                "datetime": "2020-12-03 13:35:13",
+                "delivery_status": "sent",
+                "requestid": "1229153",
+                "messageid": 26523491,
+                "is_mms": "1",
+                "mms": [
+                    {
+                        "media_url": "https://foo.bar/attachmentURL_Image",
+                        "content_type": "image/jpeg"
+                    }
+                ],
+                "agent_name": "Sales JustCall",
+                "agent_id": 10636
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                        "text": "Hello there",
+                        "urn": "tel:+385916242493",
+                        "attachments": [
+                            "https://foo.bar/attachmentURL_Image"
+                        ],
+                        "external_id": "26523491",
+                        "received_on": "2020-12-03T13:35:13Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+385916242493",
+                "text": "Hello there",
+                "attachments": [
+                    "https://foo.bar/attachmentURL_Image"
+                ],
+                "external_id": "26523491",
+                "created_on": "2025-12-04T01:28:04Z",
+                "received_on": "2020-12-03T13:35:13Z",
+                "log_uuids": [
+                    "019ae6f9-2ce8-7000-ba7b-282f9c1cbe98"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid status ",
+        "url": "/c/jcl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "data": {
+            "data": {
+                "type": "sms",
+                "direction": "O",
+                "justcall_number": "2020",
+                "contact_name": "Sushant Tripathi",
+                "contact_number": "+385916242493",
+                "contact_email": "customer@gmail.com",
+                "is_contact": 1,
+                "content": "Hello there",
+                "signature": "35e89fc56b497xxxxxxxxxx8f7b27fe49d",
+                "datetime": "2020-12-03 13:35:13",
+                "delivery_status": "sent",
+                "requestid": "1229153",
+                "messageid": 26523491,
+                "is_mms": "1",
+                "mms": [
+                    {
+                        "media_url": "https://foo.bar/attachmentURL_Image",
+                        "content_type": "image/jpeg"
+                    }
+                ],
+                "agent_name": "Sales JustCall",
+                "agent_id": 10636
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S",
+                        "external_id": "26523491"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "26523491",
+                "status": "S",
+                "log_uuid": "019af99e-bc28-7000-b22c-c5ceb301a716"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalid status direction",
+        "url": "/c/jcl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "data": {
+            "data": {
+                "type": "sms",
+                "direction": "I",
+                "justcall_number": "2020",
+                "contact_name": "Sushant Tripathi",
+                "contact_number": "+385916242493",
+                "contact_email": "customer@gmail.com",
+                "is_contact": 1,
+                "content": "Hello there",
+                "signature": "35e89fc56b497xxxxxxxxxx8f7b27fe49d",
+                "datetime": "2020-12-03 13:35:13",
+                "delivery_status": "sent",
+                "requestid": "1229153",
+                "messageid": 26523491,
+                "is_mms": "1",
+                "mms": [
+                    {
+                        "media_url": "https://foo.bar/attachmentURL_Image",
+                        "content_type": "image/jpeg"
+                    }
+                ],
+                "agent_name": "Sales JustCall",
+                "agent_id": 10636
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "Ignoring request, no message"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive unknown status direction",
+        "url": "/c/jcl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "data": {
+            "data": {
+                "type": "sms",
+                "direction": "O",
+                "justcall_number": "2020",
+                "contact_name": "Sushant Tripathi",
+                "contact_number": "+385916242493",
+                "contact_email": "customer@gmail.com",
+                "is_contact": 1,
+                "content": "Hello there",
+                "signature": "35e89fc56b497xxxxxxxxxx8f7b27fe49d",
+                "datetime": "2020-12-03 13:35:13",
+                "delivery_status": "foo",
+                "requestid": "1229153",
+                "messageid": 26523491,
+                "is_mms": "1",
+                "mms": [
+                    {
+                        "media_url": "https://foo.bar/attachmentURL_Image",
+                        "content_type": "image/jpeg"
+                    }
+                ],
+                "agent_name": "Sales JustCall",
+                "agent_id": 10636
+            }
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown status 'foo', must be one of 'delivered', 'failed', 'sent', 'undelivered'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]

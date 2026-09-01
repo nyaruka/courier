@@ -1,0 +1,247 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://bulk.startmobile.ua/clients.php": [
+                {
+                    "status": 200,
+                    "body": "<status date='Wed, 25 May 2016 17:29:56 +0300'><id>380502535130309161501</id><state>Accepted</state></status>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://bulk.startmobile.ua/clients.php",
+                "headers": {
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/xml; charset=utf8"
+                },
+                "body": "\u003cmessage\u003e\u003cservice id=\"single\" source=\"2020\" validity=\"+12 hours\"\u003e\u003c/service\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003cbody content-type=\"plain/text\" encoding=\"plain\"\u003eSimple Message ☺\u003c/body\u003e\u003c/message\u003e"
+            }
+        ],
+        "external_ids": [
+            "380502535130309161501"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Long Send",
+        "msg": {
+            "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://bulk.startmobile.ua/clients.php": [
+                {
+                    "status": 200,
+                    "body": "<status date='Wed, 25 May 2016 17:29:56 +0300'><id>380502535130309161501</id><state>Accepted</state></status>"
+                },
+                {
+                    "status": 200,
+                    "body": "<status date='Wed, 25 May 2016 17:29:56 +0300'><id>380502535130309161501</id><state>Accepted</state></status>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://bulk.startmobile.ua/clients.php",
+                "headers": {
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/xml; charset=utf8"
+                },
+                "body": "\u003cmessage\u003e\u003cservice id=\"single\" source=\"2020\" validity=\"+12 hours\"\u003e\u003c/service\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003cbody content-type=\"plain/text\" encoding=\"plain\"\u003eThis is a longer message than 160 characters and will cause us to split it into two separate parts, isn\u0026#39;t that right but it is even longer than before I say,\u003c/body\u003e\u003c/message\u003e"
+            },
+            {
+                "method": "POST",
+                "url": "https://bulk.startmobile.ua/clients.php",
+                "headers": {
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/xml; charset=utf8"
+                },
+                "body": "\u003cmessage\u003e\u003cservice id=\"single\" source=\"2020\" validity=\"+12 hours\"\u003e\u003c/service\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003cbody content-type=\"plain/text\" encoding=\"plain\"\u003eI need to keep adding more things to make it work\u003c/body\u003e\u003c/message\u003e"
+            }
+        ],
+        "external_ids": [
+            "380502535130309161501",
+            "380502535130309161501"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://bulk.startmobile.ua/clients.php": [
+                {
+                    "status": 200,
+                    "body": "<status date='Wed, 25 May 2016 17:29:56 +0300'><id>380502535130309161501</id><state>Accepted</state></status>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://bulk.startmobile.ua/clients.php",
+                "headers": {
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/xml; charset=utf8"
+                },
+                "body": "\u003cmessage\u003e\u003cservice id=\"single\" source=\"2020\" validity=\"+12 hours\"\u003e\u003c/service\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003cbody content-type=\"plain/text\" encoding=\"plain\"\u003eMy pic!\u0026#xA;https://foo.bar/image.jpg\u003c/body\u003e\u003c/message\u003e"
+            }
+        ],
+        "external_ids": [
+            "380502535130309161501"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Response",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://bulk.startmobile.ua/clients.php": [
+                {
+                    "status": 200,
+                    "body": "<error>This is an error</error>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://bulk.startmobile.ua/clients.php",
+                "headers": {
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/xml; charset=utf8"
+                },
+                "body": "\u003cmessage\u003e\u003cservice id=\"single\" source=\"2020\" validity=\"+12 hours\"\u003e\u003c/service\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003cbody content-type=\"plain/text\" encoding=\"plain\"\u003eSimple Message ☺\u003c/body\u003e\u003c/message\u003e"
+            }
+        ],
+        "error": {
+            "message": "response couldn't be parsed",
+            "loggable": true,
+            "log_error": {
+                "code": "response_unparseable",
+                "message": "Response could not be parsed in the expected format."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://bulk.startmobile.ua/clients.php": [
+                {
+                    "status": 401,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://bulk.startmobile.ua/clients.php",
+                "headers": {
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/xml; charset=utf8"
+                },
+                "body": "\u003cmessage\u003e\u003cservice id=\"single\" source=\"2020\" validity=\"+12 hours\"\u003e\u003c/service\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003cbody content-type=\"plain/text\" encoding=\"plain\"\u003eError Message\u003c/body\u003e\u003c/message\u003e"
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://bulk.startmobile.ua/clients.php": [
+                {
+                    "status": 429,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://bulk.startmobile.ua/clients.php",
+                "headers": {
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/xml; charset=utf8"
+                },
+                "body": "\u003cmessage\u003e\u003cservice id=\"single\" source=\"2020\" validity=\"+12 hours\"\u003e\u003c/service\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003cbody content-type=\"plain/text\" encoding=\"plain\"\u003eError Message\u003c/body\u003e\u003c/message\u003e"
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Response Unexpected",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://bulk.startmobile.ua/clients.php": [
+                {
+                    "status": 200,
+                    "body": "<status date='Wed, 25 May 2016 17:29:56 +0300'><id></id><state>Accepted</state></status>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://bulk.startmobile.ua/clients.php",
+                "headers": {
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/xml; charset=utf8"
+                },
+                "body": "\u003cmessage\u003e\u003cservice id=\"single\" source=\"2020\" validity=\"+12 hours\"\u003e\u003c/service\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003cbody content-type=\"plain/text\" encoding=\"plain\"\u003eSimple Message ☺\u003c/body\u003e\u003c/message\u003e"
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    }
+]

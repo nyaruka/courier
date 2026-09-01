@@ -1,0 +1,54 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "fcm:250788123123",
+            "urn_auth": "auth1"
+        },
+        "http_mocks": {
+            "https://fcm.googleapis.com/v1/projects/bar-project-id/messages:send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "name": "projects/bar-project-id/messages/123456-a"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://fcm.googleapis.com/v1/projects/bar-project-id/messages:send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer FCMToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": {
+                        "data": {
+                            "type": "rapidpro",
+                            "title": "FCMTitle",
+                            "message": "Simple Message",
+                            "message_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "session_status": ""
+                        },
+                        "notification": {
+                            "title": "FCMTitle",
+                            "body": "Simple Message"
+                        },
+                        "token": "auth1",
+                        "android": {
+                            "priority": "high"
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "123456-a"
+        ],
+        "log_errors": []
+    }
+]

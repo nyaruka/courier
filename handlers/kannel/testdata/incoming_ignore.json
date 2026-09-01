@@ -1,0 +1,112 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=Join&ts=1493735509&id=asdf-asdf&to=24453",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "Join",
+                        "urn": "tel:+2349067554729",
+                        "external_id": "asdf-asdf",
+                        "received_on": "2017-05-02T14:31:49Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "external_id": "asdf-asdf",
+                "created_on": "2025-11-01T05:43:03Z",
+                "received_on": "2017-05-02T14:31:49Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Write Status Delivered",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=1",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a06fa-467d-7786-b9cb-5b42177cd53f",
+                "status": "D",
+                "log_uuid": "019a28b5-4a28-7000-bc44-1a243fc5d08f"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Ignore Status Wired",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=4",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring sent report (message aready wired)"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Ignore Status Sent",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=8",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring sent report (message aready wired)"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]

@@ -1,0 +1,25 @@
+[
+    {
+        "label": "National Send",
+        "msg": {
+            "text": "success",
+            "urn": "tel:+250788383383",
+            "high_priority": true
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?dlr-mask=3&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&priority=1&text=success&to=788383383&username=Username"
+            }
+        ],
+        "log_errors": []
+    }
+]

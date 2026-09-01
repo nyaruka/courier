@@ -1,0 +1,375 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/bw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": [
+            {
+                "type": "message-received",
+                "time": "2016-09-14T18:20:16Z",
+                "description": "Incoming message received",
+                "to": "12345678902",
+                "message": {
+                    "id": "14762070468292kw2fuqty55yp2b2",
+                    "time": "2016-09-14T18:20:16Z",
+                    "to": [
+                        "+12345678902"
+                    ],
+                    "from": "+12065551234",
+                    "text": "hello world",
+                    "applicationId": "93de2206-9669-4e07-948d-329f4b722ee2",
+                    "media": [
+                        "https://messaging.bandwidth.com/api/v2/users/{accountId}/media/14762070468292kw2fuqty55yp2b2/0/bw.png"
+                    ],
+                    "owner": "+12345678902",
+                    "direction": "in",
+                    "segmentCount": 1
+                }
+            }
+        ],
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "hello world",
+                        "urn": "tel:+12065551234",
+                        "attachments": [
+                            "https://messaging.bandwidth.com/api/v2/users/{accountId}/media/14762070468292kw2fuqty55yp2b2/0/bw.png"
+                        ],
+                        "external_id": "14762070468292kw2fuqty55yp2b2",
+                        "received_on": "2016-09-14T18:20:16Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+12065551234",
+                "text": "hello world",
+                "attachments": [
+                    "https://messaging.bandwidth.com/api/v2/users/{accountId}/media/14762070468292kw2fuqty55yp2b2/0/bw.png"
+                ],
+                "external_id": "14762070468292kw2fuqty55yp2b2",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2016-09-14T18:20:16Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/bw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": [
+            {
+                "type": "message-received",
+                "time": "2016-09-14T18:20:16Z",
+                "description": "Incoming message received",
+                "to": "12345678902",
+                "message": {
+                    "id": "14762070468292kw2fuqty55yp2b2",
+                    "time": "2016-09-14T18:20:16Z",
+                    "to": [
+                        "+12345678902"
+                    ],
+                    "from": "MTN",
+                    "text": "hello world",
+                    "applicationId": "93de2206-9669-4e07-948d-329f4b722ee2",
+                    "media": [
+                        "https://messaging.bandwidth.com/api/v2/users/{accountId}/media/14762070468292kw2fuqty55yp2b2/0/bw.png"
+                    ],
+                    "owner": "+12345678902",
+                    "direction": "in",
+                    "segmentCount": 1
+                }
+            }
+        ],
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid Date Format",
+        "url": "/c/bw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": [
+            {
+                "type": "message-received",
+                "time": "2016-09-14 18:20:16",
+                "description": "Incoming message received",
+                "to": "12345678902",
+                "message": {
+                    "id": "14762070468292kw2fuqty55yp2b2",
+                    "time": "2016-09-14 18:20:16",
+                    "to": [
+                        "+12345678902"
+                    ],
+                    "from": "MTN",
+                    "text": "hello world",
+                    "applicationId": "93de2206-9669-4e07-948d-329f4b722ee2",
+                    "media": [
+                        "https://messaging.bandwidth.com/api/v2/users/{accountId}/media/14762070468292kw2fuqty55yp2b2/0/bw.png"
+                    ],
+                    "owner": "+12345678902",
+                    "direction": "in",
+                    "segmentCount": 1
+                }
+            }
+        ],
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid date format: 2016-09-14 18:20:16"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid Status",
+        "url": "/c/bw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": [
+            {
+                "time": "2020-06-25T18:42:36.979Z",
+                "type": "message-bla",
+                "to": "+15554443333",
+                "description": "Message is sending to carrier",
+                "message": {
+                    "id": "12345",
+                    "owner": "+15552221111",
+                    "applicationId": "cfd4fb83-7531-4acc-b471-42d0bb76a65c",
+                    "time": "2020-06-25T18:42:35.876Z",
+                    "segmentCount": 1,
+                    "direction": "out",
+                    "to": [
+                        "+15554443333"
+                    ],
+                    "from": "+15552221111",
+                    "text": "",
+                    "media": [
+                        "https://dev.bandwidth.com/images/bandwidth-logo.png"
+                    ],
+                    "tag": "v2 lab"
+                }
+            }
+        ],
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown status 'message-bla', must be one of 'message-delivered', 'message-failed', 'message-sending'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status sending",
+        "url": "/c/bw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": [
+            {
+                "time": "2020-06-25T18:42:36.979Z",
+                "type": "message-sending",
+                "to": "+15554443333",
+                "description": "Message is sending to carrier",
+                "message": {
+                    "id": "12345",
+                    "owner": "+15552221111",
+                    "applicationId": "cfd4fb83-7531-4acc-b471-42d0bb76a65c",
+                    "time": "2020-06-25T18:42:35.876Z",
+                    "segmentCount": 1,
+                    "direction": "out",
+                    "to": [
+                        "+15554443333"
+                    ],
+                    "from": "+15552221111",
+                    "text": "",
+                    "media": [
+                        "https://dev.bandwidth.com/images/bandwidth-logo.png"
+                    ],
+                    "tag": "v2 lab"
+                }
+            }
+        ],
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "S",
+                "log_uuid": "019b1efe-e948-7000-851a-7871f51b570b"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status delivered",
+        "url": "/c/bw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": [
+            {
+                "type": "message-delivered",
+                "time": "2016-09-14T18:20:16Z",
+                "description": "ok",
+                "to": "+12345678902",
+                "message": {
+                    "id": "12345",
+                    "time": "2016-09-14T18:20:16Z",
+                    "to": [
+                        "+12345678902"
+                    ],
+                    "from": "+12345678901",
+                    "text": "",
+                    "applicationId": "93de2206-9669-4e07-948d-329f4b722ee2",
+                    "owner": "+12345678902",
+                    "direction": "out",
+                    "segmentCount": 1
+                }
+            }
+        ],
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "D",
+                "log_uuid": "019aec9b-2188-7000-839b-efa547fbae9c"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status failed",
+        "url": "/c/bw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": [
+            {
+                "type": "message-failed",
+                "time": "2016-09-14T18:20:16Z",
+                "description": "forbidden to country",
+                "to": "+52345678903",
+                "errorCode": 4432,
+                "message": {
+                    "id": "14762070468292kw2fuqty55yp2b2",
+                    "time": "2016-09-14T18:20:16Z",
+                    "to": [
+                        "+12345678902",
+                        "+52345678903"
+                    ],
+                    "from": "+12345678901",
+                    "text": "",
+                    "applicationId": "93de2206-9669-4e07-948d-329f4b722ee2",
+                    "media": [
+                        "https://dev.bandwidth.com/images/bandwidth-logo.png"
+                    ],
+                    "owner": "+12345678901",
+                    "direction": "out",
+                    "segmentCount": 1
+                }
+            }
+        ],
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F",
+                        "external_id": "14762070468292kw2fuqty55yp2b2"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "14762070468292kw2fuqty55yp2b2",
+                "status": "F",
+                "log_uuid": "019a18bc-8b68-7000-9238-c408f59528dd"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": [
+                {
+                    "code": "external",
+                    "ext_code": "4432",
+                    "message": "forbidden to country"
+                }
+            ]
+        }
+    }
+]

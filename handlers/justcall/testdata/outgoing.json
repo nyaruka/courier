@@ -1,0 +1,287 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.justcall.io/v1/texts/new": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": "success",
+                        "message": "Text sent",
+                        "id": 12345
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.justcall.io/v1/texts/new",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "api_key:api_secret",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from": "2020",
+                    "to": "+250788383383",
+                    "body": "Simple Message"
+                }
+            }
+        ],
+        "external_ids": [
+            "12345"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Document",
+        "msg": {
+            "text": "This is some text.",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "application/pdf:https://foo.bar/document.pdf"
+            ]
+        },
+        "http_mocks": {
+            "https://api.justcall.io/v1/texts/new": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": "success",
+                        "message": "Text sent",
+                        "id": 12345
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.justcall.io/v1/texts/new",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "api_key:api_secret",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from": "2020",
+                    "to": "+250788383383",
+                    "body": "This is some text.",
+                    "media_url": "https://foo.bar/document.pdf"
+                }
+            }
+        ],
+        "external_ids": [
+            "12345"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "ID Error",
+        "msg": {
+            "text": "ID Error",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.justcall.io/v1/texts/new": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": "success"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.justcall.io/v1/texts/new",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "api_key:api_secret",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from": "2020",
+                    "to": "+250788383383",
+                    "body": "ID Error"
+                }
+            }
+        ],
+        "log_errors": [
+            {
+                "code": "response_value_missing",
+                "message": "Unable to find 'id' response."
+            }
+        ]
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.justcall.io/v1/texts/new": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": "fail"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.justcall.io/v1/texts/new",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "api_key:api_secret",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from": "2020",
+                    "to": "+250788383383",
+                    "body": "Error"
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error",
+        "msg": {
+            "text": "Error",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.justcall.io/v1/texts/new": [
+                {
+                    "status": 403,
+                    "body": {
+                        "status": "fail"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.justcall.io/v1/texts/new",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "api_key:api_secret",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from": "2020",
+                    "to": "+250788383383",
+                    "body": "Error"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.justcall.io/v1/texts/new": [
+                {
+                    "status": 429,
+                    "body": {
+                        "status": "fail"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.justcall.io/v1/texts/new",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "api_key:api_secret",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from": "2020",
+                    "to": "+250788383383",
+                    "body": "Error"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Connection",
+        "msg": {
+            "text": "Error",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.justcall.io/v1/texts/new": [
+                {
+                    "status": 500,
+                    "body": "Bad Gateway"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.justcall.io/v1/texts/new",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "api_key:api_secret",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from": "2020",
+                    "to": "+250788383383",
+                    "body": "Error"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    }
+]

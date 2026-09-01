@@ -1,0 +1,260 @@
+[
+    {
+        "label": "Plain send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+12067791234"
+        },
+        "http_mocks": {
+            "https://messaging.bandwidth.com/api/v2/users/accound-id/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "id": "55555"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://messaging.bandwidth.com/api/v2/users/accound-id/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "applicationId": "application-id",
+                    "to": [
+                        "+12067791234"
+                    ],
+                    "from": "2020",
+                    "text": "Simple Message ☺"
+                }
+            }
+        ],
+        "external_ids": [
+            "55555"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+12067791234",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://messaging.bandwidth.com/api/v2/users/accound-id/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "id": "55555"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://messaging.bandwidth.com/api/v2/users/accound-id/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "applicationId": "application-id",
+                    "to": [
+                        "+12067791234"
+                    ],
+                    "from": "2020",
+                    "text": "My pic!",
+                    "media": [
+                        "https://foo.bar/image.jpg"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "55555"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment no text",
+        "msg": {
+            "urn": "tel:+12067791234",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://messaging.bandwidth.com/api/v2/users/accound-id/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "id": "55555"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://messaging.bandwidth.com/api/v2/users/accound-id/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "applicationId": "application-id",
+                    "to": [
+                        "+12067791234"
+                    ],
+                    "from": "2020",
+                    "text": "",
+                    "media": [
+                        "https://foo.bar/image.jpg"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "55555"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "No External ID",
+        "msg": {
+            "text": "No External ID",
+            "urn": "tel:+12067791234"
+        },
+        "http_mocks": {
+            "https://messaging.bandwidth.com/api/v2/users/accound-id/messages": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://messaging.bandwidth.com/api/v2/users/accound-id/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "applicationId": "application-id",
+                    "to": [
+                        "+12067791234"
+                    ],
+                    "from": "2020",
+                    "text": "No External ID"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+12067791234"
+        },
+        "http_mocks": {
+            "https://messaging.bandwidth.com/api/v2/users/accound-id/messages": [
+                {
+                    "status": 401,
+                    "body": {
+                        "type": "request-validation",
+                        "description": "Your request could not be accepted"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://messaging.bandwidth.com/api/v2/users/accound-id/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "applicationId": "application-id",
+                    "to": [
+                        "+12067791234"
+                    ],
+                    "from": "2020",
+                    "text": "Error Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "request-validation",
+                "message": "Your request could not be accepted"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+12067791234"
+        },
+        "http_mocks": {
+            "https://messaging.bandwidth.com/api/v2/users/accound-id/messages": [
+                {
+                    "status": 429,
+                    "body": {
+                        "type": "request-validation",
+                        "description": "Your request could not be accepted"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://messaging.bandwidth.com/api/v2/users/accound-id/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "applicationId": "application-id",
+                    "to": [
+                        "+12067791234"
+                    ],
+                    "from": "2020",
+                    "text": "Error Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]

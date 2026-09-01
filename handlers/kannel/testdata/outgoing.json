@@ -1,0 +1,204 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Simple+Message&to=%2B250788383383&username=Username"
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?coding=2&dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=%26%3A&to=%2B250788383383&username=Username"
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send Mixed",
+        "msg": {
+            "text": "Hi ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?coding=2&dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=%00H%00i%00+%26%3A&to=%2B250788383383&username=Username"
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Smart Encoding",
+        "msg": {
+            "text": "Fancy “Smart” Quotes",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Fancy+%22Smart%22+Quotes&to=%2B250788383383&username=Username"
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Not Routable",
+        "msg": {
+            "text": "Not Routable",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 403,
+                    "body": "Not routable. Do not try again."
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Not+Routable&to=%2B250788383383&username=Username"
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Not Routable",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 429,
+                    "body": "Not routable. Do not try again."
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Not+Routable&to=%2B250788383383&username=Username"
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 401,
+                    "body": "1: Unknown channel"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Error+Message&to=%2B250788383383&username=Username"
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ],
+            "high_priority": true
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&priority=1&text=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&to=%2B250788383383&username=Username"
+            }
+        ],
+        "log_errors": []
+    }
+]

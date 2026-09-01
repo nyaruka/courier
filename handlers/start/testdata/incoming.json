@@ -1,0 +1,215 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/st/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003cmessage\u003e\n\t\u003cservice type=\"sms\" timestamp=\"1450450974\" auth=\"asdfasdf\" request_id=\"msg1\"/\u003e\n\t\u003cfrom\u003e+250788123123\u003c/from\u003e\n\t\u003cto\u003e1515\u003c/to\u003e\n\t\u003cbody content-type=\"content-type\" encoding=\"utf8\"\u003eHello World\u003c/body\u003e\n\t\u003c/message\u003e",
+        "response": {
+            "status": 200,
+            "body": "\u003canswer type=\"async\"\u003e\u003cstate\u003eAccepted\u003c/state\u003e\u003c/answer\u003e"
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+250788123123",
+                "text": "Hello World",
+                "external_id": "msg1",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2015-12-18T15:02:54Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Encoded",
+        "url": "/c/st/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003cmessage\u003e\u003cservice type='sms' timestamp='1450450974' auth='10c5cfa4d8111e8523681fdbacd32d0b' request_id='43473486'/\u003e\u003cfrom\u003e380501529999\u003c/from\u003e\u003cto\u003e4224\u003c/to\u003e\u003cbody\u003eКохання\u003c/body\u003e\u003c/message\u003e`",
+        "response": {
+            "status": 200,
+            "body": "\u003canswer type=\"async\"\u003e\u003cstate\u003eAccepted\u003c/state\u003e\u003c/answer\u003e"
+        },
+        "msgs": [
+            {
+                "uuid": "019a25f9-df60-7000-ae8d-5b4168dd6a29",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+380501529999",
+                "text": "Кохання",
+                "external_id": "43473486",
+                "created_on": "2025-10-27T14:02:03Z",
+                "received_on": "2015-12-18T15:02:54Z",
+                "log_uuids": [
+                    "019a25f9-d3a8-7000-8012-0e5db2181a39"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid with empty Text",
+        "url": "/c/st/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003cmessage\u003e\n\t\u003cservice type=\"sms\" timestamp=\"1450450974\" auth=\"asdfasdf\" request_id=\"msg1\"/\u003e\n\t\u003cfrom\u003e+250788123123\u003c/from\u003e\n\t\u003cto\u003e1515\u003c/to\u003e\n\t\u003cbody content-type=\"content-type\" encoding=\"utf8\"\u003e\u003c/body\u003e\n\t\u003c/message\u003e",
+        "response": {
+            "status": 200,
+            "body": "\u003canswer type=\"async\"\u003e\u003cstate\u003eAccepted\u003c/state\u003e\u003c/answer\u003e"
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+250788123123",
+                "text": "",
+                "external_id": "msg1",
+                "created_on": "2025-12-07T19:08:03Z",
+                "received_on": "2015-12-18T15:02:54Z",
+                "log_uuids": [
+                    "019afa36-b668-7000-bdbf-8bba403ffd4e"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid missing body",
+        "url": "/c/st/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003cmessage\u003e\n\t\u003cservice type=\"sms\" timestamp=\"1450450974\" auth=\"asdfasdf\" request_id=\"msg1\"/\u003e\n\t\u003cfrom\u003e+250788123123\u003c/from\u003e\n\t\u003cto\u003e1515\u003c/to\u003e\n\t\u003c/message\u003e",
+        "response": {
+            "status": 200,
+            "body": "\u003canswer type=\"async\"\u003e\u003cstate\u003eAccepted\u003c/state\u003e\u003c/answer\u003e"
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+250788123123",
+                "text": "",
+                "external_id": "msg1",
+                "created_on": "2025-11-07T21:32:03Z",
+                "received_on": "2015-12-18T15:02:54Z",
+                "log_uuids": [
+                    "019a603b-c468-7000-8fbe-6e07640aa4dc"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalidURN",
+        "url": "/c/st/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003cmessage\u003e\n\t\u003cservice type=\"sms\" timestamp=\"1450450974\" auth=\"asdfasdf\" request_id=\"msg1\"/\u003e\n\t\u003cfrom\u003eMTN\u003c/from\u003e\n\t\u003cto\u003e1515\u003c/to\u003e\n\t\u003cbody content-type=\"content-type\" encoding=\"utf8\"\u003eHello World\u003c/body\u003e\n\t\u003c/message\u003e",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive missing Request ID",
+        "url": "/c/st/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003cmessage\u003e\n\t\u003cservice type=\"sms\" timestamp=\"1450450974\" auth=\"asdfasdf\" /\u003e\n\t\u003cfrom\u003e+250788123123\u003c/from\u003e\n\t\u003cto\u003e1515\u003c/to\u003e\n\t\u003cbody content-type=\"content-type\" encoding=\"utf8\"\u003eHello World\u003c/body\u003e\n\t\u003c/message\u003e",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing parameters, must have 'request_id', 'to' and 'body'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive missing From",
+        "url": "/c/st/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003cmessage\u003e\n\t\u003cservice type=\"sms\" timestamp=\"1450450974\" auth=\"asdfasdf\" request_id=\"msg1\"/\u003e\n\t\u003cto\u003e1515\u003c/to\u003e\n\t\u003cbody content-type=\"content-type\" encoding=\"utf8\"\u003eHello World\u003c/body\u003e\n\t\u003c/message\u003e",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing parameters, must have 'request_id', 'to' and 'body'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive missing To",
+        "url": "/c/st/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003cmessage\u003e\n\t\u003cservice type=\"sms\" timestamp=\"1450450974\" auth=\"asdfasdf\" request_id=\"msg1\"/\u003e\n\t\u003cfrom\u003e+250788123123\u003c/from\u003e\n\t\u003cbody content-type=\"content-type\" encoding=\"utf8\"\u003eHello World\u003c/body\u003e\n\t\u003c/message\u003e",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing parameters, must have 'request_id', 'to' and 'body'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid XML",
+        "url": "/c/st/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request XML: EOF"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]
