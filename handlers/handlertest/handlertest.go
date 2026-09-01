@@ -169,7 +169,7 @@ func newServer(rt *runtime.Runtime) *web.Server {
 }
 
 // RunIncomingTestCases runs all the passed in tests cases for the passed in channel configurations
-func RunIncomingTestCases(t *testing.T, chs []*models.Channel, ctor channels.HandlerCtor, testCases []IncomingTestCase) {
+func RunIncomingTestCases(t *testing.T, chs []*models.Channel, newFn channels.NewHandlerFunc, testCases []IncomingTestCase) {
 	_, rt := testsuite.Runtime(t)
 
 	// state is reset once for the whole run rather than per case because handlers can carry state between
@@ -195,7 +195,7 @@ func RunIncomingTestCases(t *testing.T, chs []*models.Channel, ctor channels.Han
 		testsuite.InsertChannel(t, rt, ch)
 	}
 
-	s.MountHandler(ctor)
+	s.MountHandler(newFn)
 
 	// capture the events and channel logs of each handled request
 	var handledEvents []channels.Event
@@ -454,7 +454,7 @@ func (tc *OutgoingTestCase) Msg(ch *models.Channel) *models.MsgOut {
 }
 
 // RunOutgoingTestCases runs all the passed in test cases against the channel
-func RunOutgoingTestCases(t *testing.T, channel *models.Channel, ctor channels.HandlerCtor, testCases []OutgoingTestCase, checkRedacted []string, setup func(*testing.T, *runtime.Runtime)) {
+func RunOutgoingTestCases(t *testing.T, channel *models.Channel, newFn channels.NewHandlerFunc, testCases []OutgoingTestCase, checkRedacted []string, setup func(*testing.T, *runtime.Runtime)) {
 	ctx, rt := testsuite.Runtime(t)
 
 	testsuite.ResetDB(t, rt)
@@ -474,7 +474,7 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, ctor channels.H
 
 	s := newServer(rt)
 	testsuite.InsertChannel(t, rt, channel)
-	handler := s.MountHandler(ctor)
+	handler := s.MountHandler(newFn)
 
 	for _, tc := range testCases {
 		t.Run(tc.Label, func(t *testing.T) {

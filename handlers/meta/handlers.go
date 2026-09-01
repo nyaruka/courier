@@ -61,7 +61,7 @@ const (
 	payloadKey    = "payload"
 )
 
-func newHandler(channelType models.ChannelType, name string) channels.HandlerCtor {
+func newHandler(channelType models.ChannelType, name string) channels.NewHandlerFunc {
 	return func(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 		h := &handler{handlers.NewBaseHandler(rt, channelType, name, handlers.DisableUUIDRouting(), handlers.WithRedactConfigKeys(models.ConfigAuthToken))}
 		r.Add(h, http.MethodGet, "receive", models.ChannelLogTypeWebhookVerify, h.receiveVerify)

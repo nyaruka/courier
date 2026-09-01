@@ -40,7 +40,7 @@ type handler struct {
 	validateSignatures bool
 }
 
-func newHandler(channelType models.ChannelType, name string, validateSignatures bool) channels.HandlerCtor {
+func newHandler(channelType models.ChannelType, name string, validateSignatures bool) channels.NewHandlerFunc {
 	return func(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 		h := &handler{handlers.NewBaseHandler(rt, channelType, name), validateSignatures}
 		r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))

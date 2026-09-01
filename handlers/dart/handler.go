@@ -38,7 +38,7 @@ type handler struct {
 }
 
 // NewHandler returns a new DartMedia handler constructor ready to be registered
-func NewHandler(channelType string, name string, sendURL string, maxLength int) channels.HandlerCtor {
+func NewHandler(channelType string, name string, sendURL string, maxLength int) channels.NewHandlerFunc {
 	return func(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 		h := &handler{
 			handlers.NewBaseHandler(rt, models.ChannelType(channelType), name),

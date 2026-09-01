@@ -38,7 +38,7 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-func newWAHandler(channelType models.ChannelType, name string) channels.HandlerCtor {
+func newWAHandler(channelType models.ChannelType, name string) channels.NewHandlerFunc {
 	return func(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 		h := &handler{handlers.NewBaseHandler(rt, channelType, name)}
 		r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveAny))

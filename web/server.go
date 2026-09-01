@@ -195,8 +195,8 @@ type Server struct {
 
 // mounts the routes of every registered handler, so that a request for one of its channels reaches it
 func (s *Server) mountChannelHandlers() {
-	for _, ctor := range channels.RegisteredCtors() {
-		handler := s.MountHandler(ctor)
+	for _, newFn := range channels.RegisteredHandlerFuncs() {
+		handler := s.MountHandler(newFn)
 
 		slog.Info("handler initialized", "comp", "server", "handler", handler.ChannelName(), "handler_type", string(handler.ChannelType()))
 	}
@@ -204,9 +204,9 @@ func (s *Server) mountChannelHandlers() {
 
 // MountHandler constructs a handler and mounts the routes it registers, marking it as one this instance
 // serves. Tests use it to mount a single handler without starting the listeners.
-func (s *Server) MountHandler(ctor channels.HandlerCtor) channels.Handler {
+func (s *Server) MountHandler(newFn channels.NewHandlerFunc) channels.Handler {
 	routes := channels.NewRoutes()
-	handler := ctor(s.rt, routes)
+	handler := newFn(s.rt, routes)
 
 	for _, route := range routes.All() {
 		s.addRoute(route)

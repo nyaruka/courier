@@ -60,19 +60,19 @@ type AttachmentRequestBuilder interface {
 	BuildAttachmentRequest(context.Context, *models.Channel, string, *models.ChannelLog) (*http.Request, error)
 }
 
-// HandlerCtor constructs a handler with the runtime it should use, registering the routes it serves as it goes.
+// NewHandlerFunc constructs a handler with the runtime it should use, registering the routes it serves as it goes.
 // Handlers register one from their package init(), and the server invokes them all at startup once the runtime
 // exists.
-type HandlerCtor func(*runtime.Runtime, *Routes) Handler
+type NewHandlerFunc func(*runtime.Runtime, *Routes) Handler
 
 // RegisterHandler adds a new handler constructor, called by individual handler packages from init()
-func RegisterHandler(ctor HandlerCtor) {
-	registeredCtors = append(registeredCtors, ctor)
+func RegisterHandler(newFn NewHandlerFunc) {
+	registeredHandlerFuncs = append(registeredHandlerFuncs, newFn)
 }
 
-// RegisteredCtors returns the handler constructors compiled into this build, for the server to invoke at startup
-func RegisteredCtors() []HandlerCtor {
-	return registeredCtors
+// RegisteredHandlerFuncs returns the handler constructors compiled into this build, for the server to invoke at startup
+func RegisteredHandlerFuncs() []NewHandlerFunc {
+	return registeredHandlerFuncs
 }
 
 // ActivateHandler marks a constructed handler as one this instance is serving, making it available to lookups
@@ -92,7 +92,7 @@ func GetHandler(ct models.ChannelType) Handler {
 	return activeHandlers[ct]
 }
 
-var registeredCtors []HandlerCtor
+var registeredHandlerFuncs []NewHandlerFunc
 var activeHandlers = make(map[models.ChannelType]Handler)
 
 // Route is an HTTP route a channel handler serves, added during its initialization
