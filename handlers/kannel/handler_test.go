@@ -1,400 +1,42 @@
 package kannel
 
 import (
-	"net/url"
 	"testing"
-	"time"
 
-	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/gocommon/httpx"
-	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var testChannels = []*models.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", []string{urns.Phone.Prefix}, nil),
-}
-
-var ignoreChannels = []*models.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{"ignore_sent": true}),
-}
-
-var handleTestCases = []IncomingTestCase{
-	{
-		Label:                "Receive Valid Message",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=Join&ts=1493735509&id=asdf-asdf&to=24453",
-		Data:                 "empty",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "tel:+2349067554729",
-		ExpectedExternalID:   "asdf-asdf",
-		ExpectedDate:         time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC),
-	},
-	{
-		Label:                "Receive KI Message",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B68673076228&message=Join&ts=1493735509&id=asdf-asdf&to=24453",
-		Data:                 "empty",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "tel:+68673076228",
-		ExpectedExternalID:   "asdf-asdf",
-		ExpectedDate:         time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC),
-	},
-	{
-		Label:                "Receive Empty Message",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=&ts=1493735509&id=asdf-asdf&to=24453",
-		Data:                 "empty",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp(""),
-		ExpectedURN:          "tel:+2349067554729",
-		ExpectedExternalID:   "asdf-asdf",
-		ExpectedDate:         time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC),
-	},
-	{
-		Label:                "Receive No Params",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
-		Data:                 "empty",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "field 'sender' required",
-	},
-	{
-		Label:                "Invalid URN",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=MTN&message=Join&ts=1493735509&id=asdf-asdf&to=24453",
-		Data:                 "empty",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "not a possible number",
-	},
-	{
-		Label:                "Status No Params",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "field 'status' required"},
-	{
-		Label:                "Status Unknown",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=66",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "ignoring unknown status '66'",
-		ExpectedErrors:       []*svclogs.Error{models.ErrorExternal("dlr:66", "unknown delivery report status '66'")},
-	},
-	{
-		Label:                "Status Zero",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=0",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "field 'status' required",
-	},
-	{
-		Label:                "Status Valid by UUID",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=4",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a06fa-467d-7786-b9cb-5b42177cd53f", Status: models.MsgStatusSent}},
-	},
-}
-
-var ignoreTestCases = []IncomingTestCase{
-	{
-		Label:                "Receive Valid Message",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=Join&ts=1493735509&id=asdf-asdf&to=24453",
-		Data:                 "empty",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "tel:+2349067554729",
-		ExpectedExternalID:   "asdf-asdf",
-		ExpectedDate:         time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC),
-	},
-	{
-		Label:                "Write Status Delivered",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=1",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a06fa-467d-7786-b9cb-5b42177cd53f", Status: models.MsgStatusDelivered}},
-	},
-	{
-		Label:                "Ignore Status Wired",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=4",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `ignoring sent report`,
-	},
-	{
-		Label:                "Ignore Status Sent",
-		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=8",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `ignoring sent report`,
-	},
-}
-
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler, handleTestCases)
-	RunIncomingTestCases(t, ignoreChannels, newHandler, ignoreTestCases)
-}
+	chs := []*models.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", []string{urns.Phone.Prefix}, nil),
+	}
+	ignoreChs := []*models.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{"ignore_sent": true}),
+	}
 
-var defaultSendTestCases = []OutgoingTestCase{
-	{
-		Label:           "Plain Send",
-		MsgText:         "Simple Message",
-		MsgURN:          "tel:+250788383383",
-		MsgHighPriority: false,
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				"text":     {"Simple Message"},
-				"to":       {"+250788383383"},
-				"from":     {"2020"},
-				"dlr-mask": {"27"},
-				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
-				"username": {"Username"},
-				"password": {"Password"},
-			},
-		}},
-	},
-	{
-		Label:           "Unicode Send",
-		MsgText:         "☺",
-		MsgURN:          "tel:+250788383383",
-		MsgHighPriority: false,
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				// ☺ (U+263A) encoded as UTF-16BE bytes 0x26 0x3a, no charset param so kannel skips its recode
-				"text":     {string([]byte{0x26, 0x3a})},
-				"to":       {"+250788383383"},
-				"from":     {"2020"},
-				"coding":   {"2"},
-				"dlr-mask": {"27"},
-				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
-				"username": {"Username"},
-				"password": {"Password"},
-			},
-		}},
-	},
-	{
-		Label:           "Unicode Send Mixed",
-		MsgText:         "Hi ☺",
-		MsgURN:          "tel:+250788383383",
-		MsgHighPriority: false,
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				// "Hi ☺" encoded as UTF-16BE: H=0x0048 i=0x0069 space=0x0020 ☺=0x263a
-				"text":     {string([]byte{0x00, 0x48, 0x00, 0x69, 0x00, 0x20, 0x26, 0x3a})},
-				"to":       {"+250788383383"},
-				"from":     {"2020"},
-				"coding":   {"2"},
-				"dlr-mask": {"27"},
-				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
-				"username": {"Username"},
-				"password": {"Password"},
-			},
-		}},
-	},
-	{
-		Label:           "Smart Encoding",
-		MsgText:         "Fancy “Smart” Quotes",
-		MsgURN:          "tel:+250788383383",
-		MsgHighPriority: false,
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				"text":     {`Fancy "Smart" Quotes`},
-				"to":       {"+250788383383"},
-				"from":     {"2020"},
-				"dlr-mask": {"27"},
-				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
-				"username": {"Username"},
-				"password": {"Password"},
-			},
-		}},
-	},
-	{
-		Label:           "Not Routable",
-		MsgText:         "Not Routable",
-		MsgURN:          "tel:+250788383383",
-		MsgHighPriority: false,
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(403, nil, []byte(`Not routable. Do not try again.`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				"text":     {"Not Routable"},
-				"to":       {"+250788383383"},
-				"from":     {"2020"},
-				"dlr-mask": {"27"},
-				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
-				"username": {"Username"},
-				"password": {"Password"},
-			},
-		}},
-		ExpectedError: channels.ErrResponseStatus,
-	},
-	{
-		Label:           "Throttled",
-		MsgText:         "Not Routable",
-		MsgURN:          "tel:+250788383383",
-		MsgHighPriority: false,
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(429, nil, []byte(`Not routable. Do not try again.`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				"text":     {"Not Routable"},
-				"to":       {"+250788383383"},
-				"from":     {"2020"},
-				"dlr-mask": {"27"},
-				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
-				"username": {"Username"},
-				"password": {"Password"},
-			},
-		}},
-		ExpectedError: channels.ErrConnectionThrottled,
-	},
-	{
-		Label:           "Error Sending",
-		MsgText:         "Error Message",
-		MsgURN:          "tel:+250788383383",
-		MsgHighPriority: false,
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(401, nil, []byte(`1: Unknown channel`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				"text":     {"Error Message"},
-				"to":       {"+250788383383"},
-				"from":     {"2020"},
-				"dlr-mask": {"27"},
-				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
-				"username": {"Username"},
-				"password": {"Password"},
-			},
-		}},
-		ExpectedError: channels.ErrResponseStatus,
-	},
-
-	{
-		Label:           "Send Attachment",
-		MsgText:         "My pic!",
-		MsgURN:          "tel:+250788383383",
-		MsgHighPriority: true,
-		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				"text":     {"My pic!\nhttps://foo.bar/image.jpg"},
-				"to":       {"+250788383383"},
-				"from":     {"2020"},
-				"priority": {"1"},
-				"dlr-mask": {"27"},
-				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
-				"username": {"Username"},
-				"password": {"Password"},
-			},
-		}},
-	},
-}
-
-var customParamsTestCases = []OutgoingTestCase{
-	{
-		Label:           "Custom Params",
-		MsgText:         "Custom Params",
-		MsgURN:          "tel:+250788383383",
-		MsgHighPriority: true,
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(201, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				"text":     {"Custom Params"},
-				"to":       {"+250788383383"},
-				"from":     {"2020"},
-				"priority": {"1"},
-				"dlr-mask": {"27"},
-				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
-				"username": {"Username"},
-				"password": {"Password"},
-				"auth":     {"foo"},
-			},
-		}},
-	},
-}
-
-var nationalSendTestCases = []OutgoingTestCase{
-	{
-		Label:           "National Send",
-		MsgText:         "success",
-		MsgURN:          "tel:+250788383383",
-		MsgHighPriority: true,
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				"text":     {"success"},
-				"to":       {"788383383"},
-				"from":     {"2020"},
-				"priority": {"1"},
-				"dlr-mask": {"3"},
-				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%d"},
-				"username": {"Username"},
-				"password": {"Password"},
-			},
-		}},
-	},
+	RunIncomingTests(t, chs, newHandler, "testdata/incoming.json", nil)
+	RunIncomingTests(t, ignoreChs, newHandler, "testdata/incoming_ignore.json", nil)
 }
 
 func TestOutgoing(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+	defaultChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
 			"password":           "Password",
 			"username":           "Username",
 			models.ConfigSendURL: "http://example.com/send",
 		})
-
-	var customParamsChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+	customParamsChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
 			"password":           "Password",
 			"username":           "Username",
 			models.ConfigSendURL: "http://example.com/send?auth=foo",
 		})
-
-	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+	nationalChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
 			"password":           "Password",
@@ -404,7 +46,9 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigSendURL: "http://example.com/send",
 		})
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{"Password"}, nil)
-	RunOutgoingTestCases(t, customParamsChannel, newHandler, customParamsTestCases, []string{"Password"}, nil)
-	RunOutgoingTestCases(t, nationalChannel, newHandler, nationalSendTestCases, []string{"Password"}, nil)
+	opts := &OutgoingOptions{CheckRedacted: []string{"Password"}}
+
+	RunOutgoingTests(t, defaultChannel, newHandler, "testdata/outgoing.json", opts)
+	RunOutgoingTests(t, customParamsChannel, newHandler, "testdata/outgoing_custom_params.json", opts)
+	RunOutgoingTests(t, nationalChannel, newHandler, "testdata/outgoing_national.json", opts)
 }

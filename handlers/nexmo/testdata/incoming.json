@@ -1,0 +1,383 @@
+[
+    {
+        "label": "Valid Receive",
+        "url": "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=2349067554729&text=Join&messageId=external1",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019b3665-40a0-7000-8bcd-c31ca67be6db",
+                        "text": "Join",
+                        "urn": "tel:+2349067554729",
+                        "external_id": "external1",
+                        "received_on": "2025-12-19T11:36:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b3665-40a0-7000-8bcd-c31ca67be6db",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "external_id": "external1",
+                "created_on": "2025-12-19T11:36:03Z",
+                "received_on": "2025-12-19T11:36:03Z",
+                "log_uuids": [
+                    "019b3665-34e8-7000-b898-8bff401df0e1"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=MTN&text=Join&messageId=external1",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid Receive Post",
+        "url": "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "to=2020\u0026msisdn=2349067554729\u0026text=Join\u0026messageId=external1",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019b3665-40a0-7000-8bcd-c31ca67be6db",
+                        "text": "Join",
+                        "urn": "tel:+2349067554729",
+                        "external_id": "external1",
+                        "received_on": "2025-12-18T00:34:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b3665-40a0-7000-8bcd-c31ca67be6db",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "external_id": "external1",
+                "created_on": "2025-12-18T00:34:03Z",
+                "received_on": "2025-12-18T00:34:03Z",
+                "log_uuids": [
+                    "019b2ee0-c4a8-7000-8522-65847447bd1e"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive URL check",
+        "url": "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "no to parameter, ignored"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status URL check",
+        "url": "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "no messageId parameter, ignored"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status delivered",
+        "url": "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=delivered&err-code=0",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "external1"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "external1",
+                "status": "D",
+                "log_uuid": "019aec9b-2188-7000-839b-efa547fbae9c"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status expired",
+        "url": "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=expired&err-code=0",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F",
+                        "external_id": "external1"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "external1",
+                "status": "F",
+                "log_uuid": "019ae827-4ca8-7000-9cd9-3cd27b3f75fd"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status failed",
+        "url": "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=failed&err-code=6",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F",
+                        "external_id": "external1"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "external1",
+                "status": "F",
+                "log_uuid": "019a18bc-8b68-7000-9238-c408f59528dd"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": [
+                {
+                    "code": "external",
+                    "ext_code": "dlr:6",
+                    "message": "Anti-Spam Rejection"
+                }
+            ]
+        }
+    },
+    {
+        "label": "Status accepted",
+        "url": "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=accepted",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S",
+                        "external_id": "external1"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "external1",
+                "status": "S",
+                "log_uuid": "019ad092-4fe8-7000-b817-35b36b6ea5bb"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status buffered",
+        "url": "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=buffered",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S",
+                        "external_id": "external1"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "external1",
+                "status": "S",
+                "log_uuid": "019ad436-51a8-7000-a957-afde8bb8f26a"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status unexpected",
+        "url": "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=unexpected",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring unknown status report"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status with unparseable error code",
+        "url": "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=delivered&err-code=nope",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "external1"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "external1",
+                "status": "D",
+                "log_uuid": "019a51dd-2da8-7000-bfdc-5dbfebd7beb8"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": [
+                {
+                    "code": "request_unparseable",
+                    "message": "Unable to parse request: schema: error converting value for \"err-code\"."
+                }
+            ]
+        }
+    },
+    {
+        "label": "Receive with unparseable query string",
+        "url": "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=2349067554729&text=%zz",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "no to parameter, ignored"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": [
+                {
+                    "code": "request_unparseable",
+                    "message": "Unable to parse request: invalid URL escape \"%zz\"."
+                }
+            ]
+        }
+    }
+]

@@ -1,0 +1,558 @@
+[
+    {
+        "label": "Receive Valid MMS Message",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "from": "385916242493",
+                    "to": "385921004026",
+                    "receivedAt": "2016-10-06T09:28:39.220+0000",
+                    "message": [
+                        {
+                            "contentType": "text/plain",
+                            "value": "This is message text"
+                        },
+                        {
+                            "contentType": "image/jpeg",
+                            "url": "https://examplelink.com/123456"
+                        }
+                    ],
+                    "price": {
+                        "pricePerMessage": 0,
+                        "currency": "EUR"
+                    }
+                }
+            ],
+            "messageCount": 1,
+            "pendingMessageCount": 0
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a6819-fd08-7000-bc85-a318967991f1",
+                        "text": "This is message text",
+                        "urn": "tel:+385916242493",
+                        "attachments": [
+                            "image/jpeg:https://examplelink.com/123456"
+                        ],
+                        "external_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                        "received_on": "2016-10-06T09:28:39.22Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a6819-fd08-7000-bc85-a318967991f1",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+385916242493",
+                "text": "This is message text",
+                "attachments": [
+                    "image/jpeg:https://examplelink.com/123456"
+                ],
+                "external_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                "created_on": "2025-11-09T10:12:04Z",
+                "received_on": "2016-10-06T09:28:39.22Z",
+                "log_uuids": [
+                    "019a6819-ed68-7000-88af-4017144a935a"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid SMS Message",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "from": "385916242494",
+                    "to": "385921004027",
+                    "text": "This is an SMS message",
+                    "receivedAt": "2016-10-06T09:28:40.000+0000",
+                    "smsCount": 1,
+                    "price": {
+                        "pricePerMessage": 0,
+                        "currency": "EUR"
+                    }
+                }
+            ],
+            "messageCount": 1,
+            "pendingMessageCount": 0
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "0199deaa-45c8-7000-90c8-55a2a6198693",
+                        "text": "This is an SMS message",
+                        "urn": "tel:+385916242494",
+                        "external_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                        "received_on": "2016-10-06T09:28:40Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "0199deaa-45c8-7000-90c8-55a2a6198693",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+385916242494",
+                "text": "This is an SMS message",
+                "external_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                "created_on": "2025-10-13T17:42:04Z",
+                "received_on": "2016-10-06T09:28:40Z",
+                "log_uuids": [
+                    "0199deaa-3628-7000-a93a-68a77d945dfb"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive missing results key",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "unexpected": [
+                {
+                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "from": "385916242493",
+                    "to": "385921004026",
+                    "text": "QUIZ Correct answer is Paris",
+                    "cleanText": "Correct answer is Paris",
+                    "keyword": "QUIZ",
+                    "receivedAt": "2016-10-06T09:28:39.220+0000",
+                    "smsCount": 1,
+                    "price": {
+                        "pricePerMessage": 0,
+                        "currency": "EUR"
+                    },
+                    "callbackData": "callbackData"
+                }
+            ],
+            "messageCount": 1,
+            "pendingMessageCount": 0
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "request JSON doesn't match required schema: Key: 'v3InboundPayload.Results' Error:Field validation for 'Results' failed on the 'required' tag"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive missing text key",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "from": "385916242493",
+                    "to": "385921004026",
+                    "text": "",
+                    "cleanText": "Correct answer is Paris",
+                    "keyword": "QUIZ",
+                    "receivedAt": "2016-10-06T09:28:39.220+0000",
+                    "smsCount": 1,
+                    "price": {
+                        "pricePerMessage": 0,
+                        "currency": "EUR"
+                    },
+                    "callbackData": "callbackData"
+                }
+            ],
+            "messageCount": 1,
+            "pendingMessageCount": 0
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "from": "MTN",
+                    "to": "385921004026",
+                    "text": "QUIZ Correct answer is Paris",
+                    "cleanText": "Correct answer is Paris",
+                    "keyword": "QUIZ",
+                    "receivedAt": "2016-10-06T09:28:39.220+0000",
+                    "smsCount": 1,
+                    "price": {
+                        "pricePerMessage": 0,
+                        "currency": "EUR"
+                    },
+                    "callbackData": "callbackData"
+                }
+            ],
+            "messageCount": 1,
+            "pendingMessageCount": 0
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status report invalid JSON",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+        "data": "Invalid",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'I' looking for beginning of value"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status report missing results key",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+        "data": {
+            "deliveryReport": [
+                {
+                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "status": {
+                        "groupName": "DELIVERED"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "request JSON doesn't match required schema: Key: 'statusPayload.Results' Error:Field validation for 'Results' failed on the 'required' tag"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status delivered",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+        "data": {
+            "results": [
+                {
+                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "status": {
+                        "groupName": "DELIVERED"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                "status": "D",
+                "log_uuid": "019aec9b-2188-7000-839b-efa547fbae9c"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status rejected",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+        "data": {
+            "results": [
+                {
+                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "status": {
+                        "groupName": "REJECTED"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F",
+                        "external_id": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                "status": "F",
+                "log_uuid": "019accc3-4688-7000-b078-de4955006496"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status undeliverable",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+        "data": {
+            "results": [
+                {
+                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "status": {
+                        "groupName": "UNDELIVERABLE"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F",
+                        "external_id": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                "status": "F",
+                "log_uuid": "019a206d-d808-7000-bf39-ee5fd6e8c4d6"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status pending",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+        "data": {
+            "results": [
+                {
+                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "status": {
+                        "groupName": "PENDING"
+                    }
+                },
+                {
+                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "status": {
+                        "groupName": "PENDING"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S",
+                        "external_id": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                    },
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S",
+                        "external_id": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                "status": "S",
+                "log_uuid": "019a8750-a668-7000-85e2-192b9884d340"
+            },
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                "status": "S",
+                "log_uuid": "019a8750-a668-7000-85e2-192b9884d340"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status expired",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+        "data": {
+            "results": [
+                {
+                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "status": {
+                        "groupName": "EXPIRED"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S",
+                        "external_id": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                "status": "S",
+                "log_uuid": "019ae827-4ca8-7000-9cd9-3cd27b3f75fd"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status group name unexpected",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+        "data": {
+            "results": [
+                {
+                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "status": {
+                        "groupName": "UNEXPECTED"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown status 'UNEXPECTED', must be one of 'DELIVERED', 'EXPIRED', 'PENDING', 'REJECTED', 'UNDELIVERABLE'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]

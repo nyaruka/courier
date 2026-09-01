@@ -1,0 +1,284 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=Join&ts=1493735509&id=asdf-asdf&to=24453",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "Join",
+                        "urn": "tel:+2349067554729",
+                        "external_id": "asdf-asdf",
+                        "received_on": "2017-05-02T14:31:49Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "external_id": "asdf-asdf",
+                "created_on": "2025-11-01T05:43:03Z",
+                "received_on": "2017-05-02T14:31:49Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive KI Message",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B68673076228&message=Join&ts=1493735509&id=asdf-asdf&to=24453",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019b1290-9580-7000-9b3e-900013ff4580",
+                        "text": "Join",
+                        "urn": "tel:+68673076228",
+                        "external_id": "asdf-asdf",
+                        "received_on": "2017-05-02T14:31:49Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b1290-9580-7000-9b3e-900013ff4580",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+68673076228",
+                "text": "Join",
+                "external_id": "asdf-asdf",
+                "created_on": "2025-12-12T12:37:03Z",
+                "received_on": "2017-05-02T14:31:49Z",
+                "log_uuids": [
+                    "019b1290-89c8-7000-973b-9f7ccc696631"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Empty Message",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=&ts=1493735509&id=asdf-asdf&to=24453",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "",
+                        "urn": "tel:+2349067554729",
+                        "external_id": "asdf-asdf",
+                        "received_on": "2017-05-02T14:31:49Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "",
+                "external_id": "asdf-asdf",
+                "created_on": "2025-11-12T23:44:03Z",
+                "received_on": "2017-05-02T14:31:49Z",
+                "log_uuids": [
+                    "019a7a74-69e8-7000-95c2-6b4be80c3dac"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive No Params",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moForm.ID' Error:Field validation for 'ID' failed on the 'required' tag\nKey: 'moForm.TS' Error:Field validation for 'TS' failed on the 'required' tag\nKey: 'moForm.Sender' Error:Field validation for 'Sender' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'id' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'ts' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'sender' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=MTN&message=Join&ts=1493735509&id=asdf-asdf&to=24453",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status No Params",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'statusForm.UUID' Error:Field validation for 'UUID' failed on the 'uuid' tag\nKey: 'statusForm.Status' Error:Field validation for 'Status' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'uuid' uuid"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'status' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Unknown",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=66",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring unknown status '66'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": [
+                {
+                    "code": "external",
+                    "ext_code": "dlr:66",
+                    "message": "unknown delivery report status '66'"
+                }
+            ]
+        }
+    },
+    {
+        "label": "Status Zero",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=0",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'statusForm.Status' Error:Field validation for 'Status' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'status' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Valid by UUID",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd53f&status=4",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a06fa-467d-7786-b9cb-5b42177cd53f",
+                "status": "S",
+                "log_uuid": "019a9b16-99c8-7000-beac-d2a9322b5958"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]

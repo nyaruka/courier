@@ -1,0 +1,557 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "fcm:250788123123",
+            "urn_auth": "auth1"
+        },
+        "http_mocks": {
+            "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "name": "projects/foo-project-id/messages/123456-a"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer FCMToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": {
+                        "data": {
+                            "type": "rapidpro",
+                            "title": "FCMTitle",
+                            "message": "Simple Message",
+                            "message_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "session_status": ""
+                        },
+                        "token": "auth1",
+                        "android": {
+                            "priority": "high"
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "123456-a"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Long Message",
+        "msg": {
+            "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis augue vel placerat congue.\nEtiam nec tempus enim. Cras placerat at est vel suscipit. Duis quis faucibus metus, non elementum tortor.\nPellentesque posuere ullamcorper metus auctor venenatis. Proin eget hendrerit dui. Sed eget massa nec mauris consequat pretium.\nPraesent mattis arcu tortor, ac aliquet turpis tincidunt eu.\n\nFusce ut lacinia augue. Vestibulum felis nisi, porta ut est condimentum, condimentum volutpat libero.\nSuspendisse a elit venenatis, condimentum sem at, ultricies mauris. Morbi interdum sem id tempor tristique.\nUt tincidunt massa eu purus lacinia sodales a volutpat neque. Cras dolor quam, eleifend a rhoncus quis, sodales nec purus.\nVivamus justo dolor, gravida at quam eu, hendrerit rutrum justo. Sed hendrerit nisi vitae nisl ornare tristique.\nProin vulputate id justo non aliquet.\n\nDuis eu arcu pharetra, laoreet nunc at, pharetra sapien. Nulla eu libero diam.\nDonec euismod dapibus ligula, sit amet hendrerit neque vulputate ac.",
+            "urn": "fcm:250788123123",
+            "urn_auth": "auth1"
+        },
+        "http_mocks": {
+            "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "name": "projects/foo-project-id/messages/123456-a"
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {
+                        "name": "projects/foo-project-id/messages/123456-a"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer FCMToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": {
+                        "data": {
+                            "type": "rapidpro",
+                            "title": "FCMTitle",
+                            "message": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis augue vel placerat congue.\nEtiam nec tempus enim. Cras placerat at est vel suscipit. Duis quis faucibus metus, non elementum tortor.\nPellentesque posuere ullamcorper metus auctor venenatis. Proin eget hendrerit dui. Sed eget massa nec mauris consequat pretium.\nPraesent mattis arcu tortor, ac aliquet turpis tincidunt eu.\n\nFusce ut lacinia augue. Vestibulum felis nisi, porta ut est condimentum, condimentum volutpat libero.\nSuspendisse a elit venenatis, condimentum sem at, ultricies mauris. Morbi interdum sem id tempor tristique.\nUt tincidunt massa eu purus lacinia sodales a volutpat neque. Cras dolor quam, eleifend a rhoncus quis, sodales nec purus.\nVivamus justo dolor, gravida at quam eu, hendrerit rutrum justo. Sed hendrerit nisi vitae nisl ornare tristique.\nProin vulputate id justo non aliquet.\n\nDuis eu arcu pharetra, laoreet nunc at, pharetra sapien. Nulla eu libero diam.\nDonec euismod dapibus ligula, sit amet hendrerit neque vulput",
+                            "message_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "session_status": ""
+                        },
+                        "token": "auth1",
+                        "android": {
+                            "priority": "high"
+                        }
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer FCMToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": {
+                        "data": {
+                            "type": "rapidpro",
+                            "title": "FCMTitle",
+                            "message": "ate ac.",
+                            "message_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "session_status": ""
+                        },
+                        "token": "auth1",
+                        "android": {
+                            "priority": "high"
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "123456-a",
+            "123456-a"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "fcm:250788123123",
+            "urn_auth": "auth1",
+            "attachments": [
+                "image/jpeg:https://foo.bar"
+            ],
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "yes"
+                },
+                {
+                    "type": "text",
+                    "text": "no"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "name": "projects/foo-project-id/messages/123456-a"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer FCMToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": {
+                        "data": {
+                            "type": "rapidpro",
+                            "title": "FCMTitle",
+                            "message": "Simple Message\nhttps://foo.bar",
+                            "message_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "session_status": "",
+                            "quick_replies": "[\"yes\",\"no\"]"
+                        },
+                        "token": "auth1",
+                        "android": {
+                            "priority": "high"
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "123456-a"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error",
+        "msg": {
+            "text": "Error",
+            "urn": "fcm:250788123123",
+            "urn_auth": "auth1"
+        },
+        "http_mocks": {
+            "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "name": ""
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer FCMToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": {
+                        "data": {
+                            "type": "rapidpro",
+                            "title": "FCMTitle",
+                            "message": "Error",
+                            "message_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "session_status": ""
+                        },
+                        "token": "auth1",
+                        "android": {
+                            "priority": "high"
+                        }
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "No Multicast ID",
+        "msg": {
+            "text": "Error",
+            "urn": "fcm:250788123123",
+            "urn_auth": "auth1"
+        },
+        "http_mocks": {
+            "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "name": "blah"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer FCMToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": {
+                        "data": {
+                            "type": "rapidpro",
+                            "title": "FCMTitle",
+                            "message": "Error",
+                            "message_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "session_status": ""
+                        },
+                        "token": "auth1",
+                        "android": {
+                            "priority": "high"
+                        }
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Request Error",
+        "msg": {
+            "text": "Error",
+            "urn": "fcm:250788123123",
+            "urn_auth": "auth1"
+        },
+        "http_mocks": {
+            "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": [
+                {
+                    "status": 500,
+                    "body": {
+                        "error": "error"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer FCMToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": {
+                        "data": {
+                            "type": "rapidpro",
+                            "title": "FCMTitle",
+                            "message": "Error",
+                            "message_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "session_status": ""
+                        },
+                        "token": "auth1",
+                        "android": {
+                            "priority": "high"
+                        }
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error",
+            "urn": "fcm:250788123123",
+            "urn_auth": "auth1"
+        },
+        "http_mocks": {
+            "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": [
+                {
+                    "status": 429,
+                    "body": {
+                        "error": "error"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer FCMToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": {
+                        "data": {
+                            "type": "rapidpro",
+                            "title": "FCMTitle",
+                            "message": "Error",
+                            "message_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "session_status": ""
+                        },
+                        "token": "auth1",
+                        "android": {
+                            "priority": "high"
+                        }
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Response Missing Name",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "fcm:250788123123",
+            "urn_auth": "auth1"
+        },
+        "http_mocks": {
+            "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "missing_name": "projects/foo-project-id/messages/123456-a"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer FCMToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": {
+                        "data": {
+                            "type": "rapidpro",
+                            "title": "FCMTitle",
+                            "message": "Simple Message",
+                            "message_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "session_status": ""
+                        },
+                        "token": "auth1",
+                        "android": {
+                            "priority": "high"
+                        }
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Response Wrong Project",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "fcm:250788123123",
+            "urn_auth": "auth1"
+        },
+        "http_mocks": {
+            "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "name": "projects/not-our-project-id/messages/123456-a"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer FCMToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": {
+                        "data": {
+                            "type": "rapidpro",
+                            "title": "FCMTitle",
+                            "message": "Simple Message",
+                            "message_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "session_status": ""
+                        },
+                        "token": "auth1",
+                        "android": {
+                            "priority": "high"
+                        }
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Response Empty Message ID",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "fcm:250788123123",
+            "urn_auth": "auth1"
+        },
+        "http_mocks": {
+            "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "name": "projects/foo-project-id/messages/"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer FCMToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": {
+                        "data": {
+                            "type": "rapidpro",
+                            "title": "FCMTitle",
+                            "message": "Simple Message",
+                            "message_id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "session_status": ""
+                        },
+                        "token": "auth1",
+                        "android": {
+                            "priority": "high"
+                        }
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    }
+]

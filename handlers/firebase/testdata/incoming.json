@@ -1,0 +1,130 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/fcm/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": "from=12345\u0026date=2017-01-01T08:50:00.000\u0026fcm_token=token\u0026name=fred\u0026msg=hello+world",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                        "text": "hello world",
+                        "urn": "fcm:12345",
+                        "received_on": "2017-01-01T08:50:00Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "fcm:12345",
+                "text": "hello world",
+                "created_on": "2025-11-01T05:43:04Z",
+                "received_on": "2017-01-01T08:50:00Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ],
+                "contact_name": "fred",
+                "auth_tokens": {
+                    "default": "token"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid Date",
+        "url": "/c/fcm/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": "from=12345\u0026date=yo\u0026fcm_token=token\u0026name=fred\u0026msg=hello+world",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse date: yo"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Missing From",
+        "url": "/c/fcm/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": "date=2017-01-01T08:50:00.000\u0026fcm_token=token\u0026name=fred\u0026msg=hello+world",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'receiveForm.From' Error:Field validation for 'From' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'from' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Register",
+        "url": "/c/fcm/8eb23e93-5ecb-45ba-b726-3b064e0c568c/register",
+        "data": "urn=12345\u0026fcm_token=token\u0026name=fred",
+        "response": {
+            "status": 200,
+            "body": {
+                "contact_uuid": "f81d6621-2276-4452-a5f8-afba84f96e61"
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Missing URN",
+        "url": "/c/fcm/8eb23e93-5ecb-45ba-b726-3b064e0c568c/register",
+        "data": "fcm_token=token\u0026name=fred",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'registerForm.URN' Error:Field validation for 'URN' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'urn' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]
