@@ -45,14 +45,17 @@ type Message struct {
 	MediaURLs  []string `json:"mediaUrls,omitempty"`
 }
 
+// the decoder is configured to read `name` tags, so these have to be `name` rather than the `schema` that
+// gorilla/schema uses by default - tagged the other way they're inert, and the field names alone are what
+// the form gets matched against
 type ReceivedStatus struct {
-	ID              string    `schema:"id"`
-	Reference       string    `schema:"reference"`
-	Recipient       string    `schema:"recipient,required"`
-	Status          string    `schema:"status,required"`
-	StatusReason    string    `schema:"statusReason"`
-	StatusDatetime  time.Time `schema:"statusDatetime"`
-	StatusErrorCode int       `schema:"statusErrorCode"`
+	ID              string    `name:"id"`
+	Reference       string    `name:"reference"`
+	Recipient       string    `name:"recipient"`
+	Status          string    `name:"status"`
+	StatusReason    string    `name:"statusReason"`
+	StatusDatetime  time.Time `name:"statusDatetime"`
+	StatusErrorCode int       `name:"statusErrorCode"`
 }
 
 var statusMapping = map[string]models.MsgStatus{
@@ -95,11 +98,18 @@ func newHandler(channelType models.ChannelType, name string, validateSignatures 
 	}
 }
 
-// this one decodes for itself rather than using FormPayload, because it answers a decode failure as ignored
-// rather than as an error - which keeps a malformed status callback from being retried at us
+// this one decodes for itself rather than using FormPayload, because it tolerates a partial decode - a field
+// we can't convert costs us that field rather than the whole report, and the failure is recorded on the log
+// rather than answered. Answering it as an error instead would have MessageBird retry a body we can never
+// parse, and an endpoint that keeps failing is eventually paused at their end.
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	receivedStatus := &ReceivedStatus{}
 	if err := handlers.DecodeAndValidateForm(receivedStatus, r); err != nil {
+		clog.Error(models.ErrorRequestUnparseable(err))
+	}
+
+	// a callback carrying no status at all - a URL check, typically - is asking nothing of us
+	if receivedStatus.Status == "" {
 		return channels.Ignore("no msg status, ignoring")
 	}
 
