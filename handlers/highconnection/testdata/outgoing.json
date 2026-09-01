@@ -1,0 +1,198 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383",
+            "flow": {
+                "uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85",
+                "name": "Favorites"
+            }
+        },
+        "http_mocks": {
+            "https://highpushfastapi-v2.hcnx.eu/api*": [
+                {
+                    "status": 200,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=Simple+Message&to=%2B250788383383&user_data=Favorites"
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Plain Send without flow",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://highpushfastapi-v2.hcnx.eu/api*": [
+                {
+                    "status": 200,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=Simple+Message&to=%2B250788383383&user_data="
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "tel:+250788383383",
+            "flow": {
+                "uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85",
+                "name": "Favorites"
+            }
+        },
+        "http_mocks": {
+            "https://highpushfastapi-v2.hcnx.eu/api*": [
+                {
+                    "status": 200,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=%E2%98%BA&to=%2B250788383383&user_data=Favorites"
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Long Send",
+        "msg": {
+            "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+            "urn": "tel:+250788383383",
+            "flow": {
+                "uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85",
+                "name": "Favorites"
+            }
+        },
+        "http_mocks": {
+            "https://highpushfastapi-v2.hcnx.eu/api*": [
+                {
+                    "status": 200,
+                    "body": ""
+                },
+                {
+                    "status": 200,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=This+is+a+longer+message+than+160+characters+and+will+cause+us+to+split+it+into+two+separate+parts%2C+isn%27t+that+right+but+it+is+even+longer+than+before+I+say%2C&to=%2B250788383383&user_data=Favorites"
+            },
+            {
+                "method": "POST",
+                "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=I+need+to+keep+adding+more+things+to+make+it+work&to=%2B250788383383&user_data=Favorites"
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachement",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ],
+            "flow": {
+                "uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85",
+                "name": "Favorites"
+            }
+        },
+        "http_mocks": {
+            "https://highpushfastapi-v2.hcnx.eu/api*": [
+                {
+                    "status": 200,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&to=%2B250788383383&user_data=Favorites"
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://highpushfastapi-v2.hcnx.eu/api*": [
+                {
+                    "status": 403,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=Error+Sending&to=%2B250788383383&user_data="
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://highpushfastapi-v2.hcnx.eu/api*": [
+                {
+                    "status": 429,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=Error+Sending&to=%2B250788383383&user_data="
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]

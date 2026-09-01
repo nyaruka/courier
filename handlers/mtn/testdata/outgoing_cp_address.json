@@ -1,0 +1,43 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.mtn.com/v2/messages/sms/outbound": [
+                {
+                    "status": 201,
+                    "body": {
+                        "transactionId": "OzYDlvf3SQVc"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.mtn.com/v2/messages/sms/outbound",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer ACCESS_TOKEN",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "senderAddress": "2020",
+                    "receiverAddress": [
+                        "250788383383"
+                    ],
+                    "message": "Simple Message ☺",
+                    "clientCorrelator": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "cpAddress": "FOO"
+                }
+            }
+        ],
+        "external_ids": [
+            "OzYDlvf3SQVc"
+        ],
+        "log_errors": []
+    }
+]

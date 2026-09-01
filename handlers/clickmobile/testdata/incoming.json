@@ -1,0 +1,244 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003crequest\u003e\n\t\u003cshortCode\u003e2020\u003c/shortCode\u003e\n\t\u003cmobile\u003e265990099333\u003c/mobile\u003e\n\t\u003creferenceID\u003e1232434354\u003c/referenceID\u003e\n\t\u003ctext\u003eJoin\u003c/text\u003e\n\t\u003c/request\u003e",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "Join",
+                        "urn": "tel:+265990099333",
+                        "external_id": "1232434354",
+                        "received_on": "2025-11-01T05:43:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+265990099333",
+                "text": "Join",
+                "external_id": "1232434354",
+                "created_on": "2025-11-01T05:43:03Z",
+                "received_on": "2025-11-01T05:43:03Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003crequest\u003e\n\t\u003cshortCode\u003e2020\u003c/shortCode\u003e\n\t\u003cmobile\u003eMTN\u003c/mobile\u003e\n\t\u003creferenceID\u003e1232434354\u003c/referenceID\u003e\n\t\u003ctext\u003eJoin\u003c/text\u003e\n\t\u003c/request\u003e",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid with empty text",
+        "url": "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003crequest\u003e\n\t\u003cshortCode\u003e2020\u003c/shortCode\u003e\n\t\u003cmobile\u003e265990099333\u003c/mobile\u003e\n\t\u003creferenceID\u003e1232434354\u003c/referenceID\u003e\n\t\u003ctext\u003e\u003c/text\u003e\n\t\u003c/request\u003e",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "",
+                        "urn": "tel:+265990099333",
+                        "external_id": "1232434354",
+                        "received_on": "2025-11-13T19:08:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+265990099333",
+                "text": "",
+                "external_id": "1232434354",
+                "created_on": "2025-11-13T19:08:03Z",
+                "received_on": "2025-11-13T19:08:03Z",
+                "log_uuids": [
+                    "019a7e9e-1668-7000-8d03-e2fcce744cf3"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid missing text",
+        "url": "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003crequest\u003e\n\t\u003cshortCode\u003e2020\u003c/shortCode\u003e\n\t\u003cmobile\u003e265990099333\u003c/mobile\u003e\n\t\u003creferenceID\u003e1232434354\u003c/referenceID\u003e\n\t\u003c/request\u003e",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "",
+                        "urn": "tel:+265990099333",
+                        "external_id": "1232434354",
+                        "received_on": "2025-11-20T03:19:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+265990099333",
+                "text": "",
+                "external_id": "1232434354",
+                "created_on": "2025-11-20T03:19:03Z",
+                "received_on": "2025-11-20T03:19:03Z",
+                "log_uuids": [
+                    "019a9f45-c488-7000-8e09-bf873008f62a"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid missing referenceID",
+        "url": "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003crequest\u003e\n\t\u003cshortCode\u003e2020\u003c/shortCode\u003e\n\t\u003cmobile\u003e265990099333\u003c/mobile\u003e\n\t\u003ctext\u003eJoin\u003c/text\u003e\n\t\u003c/request\u003e",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a702f-10a0-7000-bfa6-e79b8de843cd",
+                        "text": "Join",
+                        "urn": "tel:+265990099333",
+                        "received_on": "2025-11-10T23:52:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a702f-10a0-7000-bfa6-e79b8de843cd",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+265990099333",
+                "text": "Join",
+                "created_on": "2025-11-10T23:52:03Z",
+                "received_on": "2025-11-10T23:52:03Z",
+                "log_uuids": [
+                    "019a702f-04e8-7000-8ed0-a3c65c1b035e"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing Shortcode",
+        "url": "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003crequest\u003e\n\t\u003cmobile\u003e265990099333\u003c/mobile\u003e\n\t\u003creferenceID\u003e1232434354\u003c/referenceID\u003e\n\t\u003ctext\u003eJoin\u003c/text\u003e\n\t\u003c/request\u003e",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing parameters, must have 'mobile' and 'shortcode'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing Mobile",
+        "url": "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003crequest\u003e\n\t\u003cshortCode\u003e2020\u003c/shortCode\u003e\n\t\u003creferenceID\u003e1232434354\u003c/referenceID\u003e\n\t\u003ctext\u003eJoin\u003c/text\u003e\n\t\u003c/request\u003e",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing parameters, must have 'mobile' and 'shortcode'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalid XML",
+        "url": "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request XML: EOF"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

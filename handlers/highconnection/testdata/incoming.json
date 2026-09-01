@@ -1,0 +1,211 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "FROM=+33610346460\u0026TO=5151\u0026MESSAGE=Hello+World\u0026RECEPTION_DATE=2015-04-02T14%3A26%3A06\u0026ID=123456",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                        "text": "Hello World",
+                        "urn": "tel:+33610346460",
+                        "external_id": "123456",
+                        "received_on": "2015-04-02T14:26:06Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+33610346460",
+                "text": "Hello World",
+                "external_id": "123456",
+                "created_on": "2025-11-01T05:43:04Z",
+                "received_on": "2015-04-02T14:26:06Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Message with accents",
+        "url": "/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "FROM=+33610346460\u0026TO=5151\u0026MESSAGE=je+suis+tr%E8s+satisfait+\u0026RECEPTION_DATE=2015-04-02T14%3A26%3A06\u0026ID=123123",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a4f37-bfc8-7000-8fe5-566776e2e92e",
+                        "text": "je suis très satisfait ",
+                        "urn": "tel:+33610346460",
+                        "external_id": "123123",
+                        "received_on": "2015-04-02T14:26:06Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a4f37-bfc8-7000-8fe5-566776e2e92e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+33610346460",
+                "text": "je suis très satisfait ",
+                "external_id": "123123",
+                "created_on": "2025-11-04T14:14:04Z",
+                "received_on": "2015-04-02T14:26:06Z",
+                "log_uuids": [
+                    "019a4f37-b028-7000-baa3-542b65b9cfa5"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "FROM=MTN\u0026TO=5151\u0026MESSAGE=Hello+World\u0026RECEPTION_DATE=2015-04-02T14%3A26%3A06",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Missing Params",
+        "url": "/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": " ",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moForm.To' Error:Field validation for 'To' failed on the 'required' tag\nKey: 'moForm.From' Error:Field validation for 'From' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'to' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'from' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid Date",
+        "url": "/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "FROM=+33610346460\u0026TO=5151\u0026MESSAGE=Hello+World\u0026RECEPTION_DATE=2015-04-02T14:26",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "parsing time \"2015-04-02T14:26\" as \"2006-01-02T15:04:05\": cannot parse \"\" as \":\""
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Missing Params",
+        "url": "/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'statusForm.RetID' Error:Field validation for 'RetID' failed on the 'uuid' tag\nKey: 'statusForm.Status' Error:Field validation for 'Status' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'retid' uuid"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'status' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Delivered",
+        "url": "/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?ret_id=019a0719-ac96-7eb9-a837-cac215164834&status=6",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "D",
+                "log_uuid": "0199f07e-1d88-7000-bf1c-2e310ab8165f"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]

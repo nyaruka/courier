@@ -1,0 +1,300 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "linkId=03090445075804249226\u0026text=Msg\u0026to=21512\u0026id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3\u0026date=2017-05-03T06%3A04%3A45Z\u0026from=%2B254791541111",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "Msg",
+                        "urn": "tel:+254791541111",
+                        "external_id": "ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3",
+                        "received_on": "2017-05-03T06:04:45Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+254791541111",
+                "text": "Msg",
+                "external_id": "ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2017-05-03T06:04:45Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid With Alt Date Format",
+        "url": "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "linkId=03090445075804249226\u0026text=Msg\u0026to=21512\u0026id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3\u0026date=2017-05-03+06%3A04%3A45\u0026from=%2B254791541111",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "Msg",
+                        "urn": "tel:+254791541111",
+                        "external_id": "ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3",
+                        "received_on": "2017-05-03T06:04:45Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+254791541111",
+                "text": "Msg",
+                "external_id": "ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3",
+                "created_on": "2025-12-03T20:24:03Z",
+                "received_on": "2017-05-03T06:04:45Z",
+                "log_uuids": [
+                    "019ae5e2-dae8-7000-849f-6875adbe9555"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Empty",
+        "url": "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moForm.ID' Error:Field validation for 'ID' failed on the 'required' tag\nKey: 'moForm.Text' Error:Field validation for 'Text' failed on the 'required' tag\nKey: 'moForm.From' Error:Field validation for 'From' failed on the 'required' tag\nKey: 'moForm.To' Error:Field validation for 'To' failed on the 'required' tag\nKey: 'moForm.Date' Error:Field validation for 'Date' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'id' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'text' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'from' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'to' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'date' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Missing Text",
+        "url": "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "linkId=03090445075804249226\u0026to=21512\u0026id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3\u0026date=2017-05-03T06%3A04%3A45Z\u0026from=%2B254791541111",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moForm.Text' Error:Field validation for 'Text' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'text' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "linkId=03090445075804249226\u0026text=Msg\u0026to=21512\u0026id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3\u0026date=2017-05-03T06%3A04%3A45Z\u0026from=MTN",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid Date",
+        "url": "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "linkId=03090445075804249226\u0026text=Msg\u0026to=21512\u0026id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3\u0026date=2017-05-03T06%3A04\u0026from=%2B254791541111",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid date format: 2017-05-03T06:04"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Invalid",
+        "url": "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7\u0026status=Borked",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown status 'Borked', must be one of 'Buffered', 'Expired', 'Failed', 'Rejected', 'Sent', 'Success'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Missing",
+        "url": "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'statusForm.Status' Error:Field validation for 'Status' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'status' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Success",
+        "url": "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7\u0026status=Success",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "ATXid_dda018a640edfcc5d2ce455de3e4a6e7"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "ATXid_dda018a640edfcc5d2ce455de3e4a6e7",
+                "status": "D",
+                "log_uuid": "019b3e8c-9be8-7000-bb83-ed6d4e1efde1"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Expired",
+        "url": "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7\u0026status=Expired",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F",
+                        "external_id": "ATXid_dda018a640edfcc5d2ce455de3e4a6e7"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "ATXid_dda018a640edfcc5d2ce455de3e4a6e7",
+                "status": "F",
+                "log_uuid": "019a7d44-04a8-7000-bc68-fa6121bd7c17"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]

@@ -1,0 +1,310 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://rest.clicksend.com/v3/sms/send": [
+                {
+                    "status": 200,
+                    "body": "{\n\t\"http_code\": 200,\n\t\"response_code\": \"SUCCESS\",\n\t\"response_msg\": \"Here are your data.\",\n\t\"data\": {\n\t  \"total_price\": 0.28,\n\t  \"total_count\": 2,\n\t  \"queued_count\": 2,\n\t  \"messages\": [\n\t\t{\n\t\t  \"direction\": \"out\",\n\t\t  \"date\": 1436871253,\n\t\t  \"to\": \"+61411111111\",\n\t\t  \"body\": \"Jelly liquorice marshmallow candy carrot cake 4Eyffjs1vL.\",\n\t\t  \"from\": \"sendmobile\",\n\t\t  \"schedule\": 1436874701,\n\t\t  \"message_id\": \"BF7AD270-0DE2-418B-B606-71D527D9C1AE\",\n\t\t  \"message_parts\": 1,\n\t\t  \"message_price\": 0.07,\n\t\t  \"custom_string\": \"this is a test\",\n\t\t  \"user_id\": 1,\n\t\t  \"subaccount_id\": 1,\n\t\t  \"country\": \"AU\",\n\t\t  \"carrier\": \"Telstra\",\n\t\t  \"status\": \"SUCCESS\"\n\t\t}\n\t]\n}"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://rest.clicksend.com/v3/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "to": "+250788383383",
+                            "from": "2020",
+                            "body": "Simple Message",
+                            "source": "courier"
+                        }
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "BF7AD270-0DE2-418B-B606-71D527D9C1AE"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://rest.clicksend.com/v3/sms/send": [
+                {
+                    "status": 200,
+                    "body": "{\n\t\"http_code\": 200,\n\t\"response_code\": \"SUCCESS\",\n\t\"response_msg\": \"Here are your data.\",\n\t\"data\": {\n\t  \"total_price\": 0.28,\n\t  \"total_count\": 2,\n\t  \"queued_count\": 2,\n\t  \"messages\": [\n\t\t{\n\t\t  \"direction\": \"out\",\n\t\t  \"date\": 1436871253,\n\t\t  \"to\": \"+61411111111\",\n\t\t  \"body\": \"Jelly liquorice marshmallow candy carrot cake 4Eyffjs1vL.\",\n\t\t  \"from\": \"sendmobile\",\n\t\t  \"schedule\": 1436874701,\n\t\t  \"message_id\": \"BF7AD270-0DE2-418B-B606-71D527D9C1AE\",\n\t\t  \"message_parts\": 1,\n\t\t  \"message_price\": 0.07,\n\t\t  \"custom_string\": \"this is a test\",\n\t\t  \"user_id\": 1,\n\t\t  \"subaccount_id\": 1,\n\t\t  \"country\": \"AU\",\n\t\t  \"carrier\": \"Telstra\",\n\t\t  \"status\": \"SUCCESS\"\n\t\t}\n\t]\n}"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://rest.clicksend.com/v3/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "to": "+250788383383",
+                            "from": "2020",
+                            "body": "☺",
+                            "source": "courier"
+                        }
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "BF7AD270-0DE2-418B-B606-71D527D9C1AE"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://rest.clicksend.com/v3/sms/send": [
+                {
+                    "status": 200,
+                    "body": "{\n\t\"http_code\": 200,\n\t\"response_code\": \"SUCCESS\",\n\t\"response_msg\": \"Here are your data.\",\n\t\"data\": {\n\t  \"total_price\": 0.28,\n\t  \"total_count\": 2,\n\t  \"queued_count\": 2,\n\t  \"messages\": [\n\t\t{\n\t\t  \"direction\": \"out\",\n\t\t  \"date\": 1436871253,\n\t\t  \"to\": \"+61411111111\",\n\t\t  \"body\": \"Jelly liquorice marshmallow candy carrot cake 4Eyffjs1vL.\",\n\t\t  \"from\": \"sendmobile\",\n\t\t  \"schedule\": 1436874701,\n\t\t  \"message_id\": \"BF7AD270-0DE2-418B-B606-71D527D9C1AE\",\n\t\t  \"message_parts\": 1,\n\t\t  \"message_price\": 0.07,\n\t\t  \"custom_string\": \"this is a test\",\n\t\t  \"user_id\": 1,\n\t\t  \"subaccount_id\": 1,\n\t\t  \"country\": \"AU\",\n\t\t  \"carrier\": \"Telstra\",\n\t\t  \"status\": \"SUCCESS\"\n\t\t}\n\t]\n}"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://rest.clicksend.com/v3/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "to": "+250788383383",
+                            "from": "2020",
+                            "body": "My pic!\nhttps://foo.bar/image.jpg",
+                            "source": "courier"
+                        }
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "BF7AD270-0DE2-418B-B606-71D527D9C1AE"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://rest.clicksend.com/v3/sms/send": [
+                {
+                    "status": 403,
+                    "body": [
+                        {
+                            "Response": "101"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://rest.clicksend.com/v3/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "to": "+250788383383",
+                            "from": "2020",
+                            "body": "Error Sending",
+                            "source": "courier"
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://rest.clicksend.com/v3/sms/send": [
+                {
+                    "status": 429,
+                    "body": [
+                        {
+                            "Response": "101"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://rest.clicksend.com/v3/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "to": "+250788383383",
+                            "from": "2020",
+                            "body": "Error Sending",
+                            "source": "courier"
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Failure Status",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://rest.clicksend.com/v3/sms/send": [
+                {
+                    "status": 200,
+                    "body": "{\n\t\"http_code\": 200,\n\t\"response_code\": \"SUCCESS\",\n\t\"response_msg\": \"Here are your data.\",\n\t\"data\": {\n\t  \"total_price\": 0.28,\n\t  \"total_count\": 2,\n\t  \"queued_count\": 2,\n\t  \"messages\": [\n\t\t{\n\t\t  \"direction\": \"out\",\n\t\t  \"date\": 1436871253,\n\t\t  \"to\": \"+61411111111\",\n\t\t  \"body\": \"Jelly liquorice marshmallow candy carrot cake 4Eyffjs1vL.\",\n\t\t  \"from\": \"sendmobile\",\n\t\t  \"schedule\": 1436874701,\n\t\t  \"message_id\": \"BF7AD270-0DE2-418B-B606-71D527D9C1AE\",\n\t\t  \"message_parts\": 1,\n\t\t  \"message_price\": 0.07,\n\t\t  \"custom_string\": \"this is a test\",\n\t\t  \"user_id\": 1,\n\t\t  \"subaccount_id\": 1,\n\t\t  \"country\": \"AU\",\n\t\t  \"carrier\": \"Telstra\",\n\t\t  \"status\": \"FAILURE\"\n\t\t}\n\t]\n}"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://rest.clicksend.com/v3/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "to": "+250788383383",
+                            "from": "2020",
+                            "body": "Error Sending",
+                            "source": "courier"
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Missing Message ID",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://rest.clicksend.com/v3/sms/send": [
+                {
+                    "status": 200,
+                    "body": "{\n\t\"http_code\": 200,\n\t\"response_code\": \"SUCCESS\",\n\t\"response_msg\": \"Here are your data.\",\n\t\"data\": {\n\t  \"total_price\": 0.28,\n\t  \"total_count\": 2,\n\t  \"queued_count\": 2,\n\t  \"messages\": [\n\t\t{\n\t\t  \"direction\": \"out\",\n\t\t  \"date\": 1436871253,\n\t\t  \"to\": \"+61411111111\",\n\t\t  \"body\": \"Jelly liquorice marshmallow candy carrot cake 4Eyffjs1vL.\",\n\t\t  \"from\": \"sendmobile\",\n\t\t  \"schedule\": 1436874701,\n\t\t  \"message_id\": \"\",\n\t\t  \"message_parts\": 1,\n\t\t  \"message_price\": 0.07,\n\t\t  \"custom_string\": \"this is a test\",\n\t\t  \"user_id\": 1,\n\t\t  \"subaccount_id\": 1,\n\t\t  \"country\": \"AU\",\n\t\t  \"carrier\": \"Telstra\",\n\t\t  \"status\": \"SUCCESS\"\n\t\t}\n\t]\n}"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://rest.clicksend.com/v3/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "to": "+250788383383",
+                            "from": "2020",
+                            "body": "Error Sending",
+                            "source": "courier"
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    }
+]

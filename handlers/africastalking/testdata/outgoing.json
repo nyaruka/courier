@@ -1,0 +1,268 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.africastalking.com/version1/messaging": [
+                {
+                    "status": 200,
+                    "body": {
+                        "SMSMessageData": {
+                            "Recipients": [
+                                {
+                                    "status": "Success",
+                                    "messageId": "1002"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.africastalking.com/version1/messaging",
+                "headers": {
+                    "Accept": "application/json",
+                    "Apikey": "KEY",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "message": [
+                        "Simple Message ☺"
+                    ],
+                    "to": [
+                        "+250788383383"
+                    ],
+                    "username": [
+                        "Username"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api.africastalking.com/version1/messaging": [
+                {
+                    "status": 200,
+                    "body": {
+                        "SMSMessageData": {
+                            "Recipients": [
+                                {
+                                    "status": "Success",
+                                    "messageId": "1002"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.africastalking.com/version1/messaging",
+                "headers": {
+                    "Accept": "application/json",
+                    "Apikey": "KEY",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "message": [
+                        "My pic!\nhttps://foo.bar/image.jpg"
+                    ],
+                    "to": [
+                        "+250788383383"
+                    ],
+                    "username": [
+                        "Username"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Explicit failed status",
+        "msg": {
+            "text": "Hi",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.africastalking.com/version1/messaging": [
+                {
+                    "status": 200,
+                    "body": {
+                        "SMSMessageData": {
+                            "Recipients": [
+                                {
+                                    "status": "Failed"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.africastalking.com/version1/messaging",
+                "headers": {
+                    "Accept": "application/json",
+                    "Apikey": "KEY",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "message": [
+                        "Hi"
+                    ],
+                    "to": [
+                        "+250788383383"
+                    ],
+                    "username": [
+                        "Username"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Missing status value",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.africastalking.com/version1/messaging": [
+                {
+                    "status": 401,
+                    "body": {
+                        "error": "failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.africastalking.com/version1/messaging",
+                "headers": {
+                    "Accept": "application/json",
+                    "Apikey": "KEY",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "message": [
+                        "Error Message"
+                    ],
+                    "to": [
+                        "+250788383383"
+                    ],
+                    "username": [
+                        "Username"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.africastalking.com/version1/messaging": [
+                {
+                    "status": 429,
+                    "body": {
+                        "error": "failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.africastalking.com/version1/messaging",
+                "headers": {
+                    "Accept": "application/json",
+                    "Apikey": "KEY",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "message": [
+                        "Error Message"
+                    ],
+                    "to": [
+                        "+250788383383"
+                    ],
+                    "username": [
+                        "Username"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]

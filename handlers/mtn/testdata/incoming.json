@@ -1,0 +1,279 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/mtn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "id": null,
+            "senderAddress": "242064661201",
+            "receiverAddress": "2020",
+            "message": "Hello there",
+            "created": 1678794364855,
+            "submittedDate": null
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "Hello there",
+                        "urn": "tel:+242064661201",
+                        "received_on": "2023-03-14T11:46:04.855Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+242064661201",
+                "text": "Hello there",
+                "created_on": "2025-11-01T05:43:03Z",
+                "received_on": "2023-03-14T11:46:04.855Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalid URN Message",
+        "url": "/c/mtn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "id": null,
+            "senderAddress": "foobar",
+            "receiverAddress": "2020",
+            "message": "Hello there",
+            "created": 1678794364855,
+            "submittedDate": null
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Status",
+        "url": "/c/mtn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "TransactionID": "rrt-58503",
+            "clientCorrelator": "string",
+            "deliveryStatus": "DeliveredToTerminal"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "rrt-58503"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "rrt-58503",
+                "status": "D",
+                "log_uuid": "019aa37d-2ca8-7000-a54f-2a9146cc6bd0"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid delivered Status",
+        "url": "/c/mtn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "TransactionID": "rrt-58503",
+            "clientCorrelator": "string",
+            "deliveryStatus": "DELIVRD"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "rrt-58503"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "rrt-58503",
+                "status": "D",
+                "log_uuid": "0199e065-53a8-7000-bfdc-e524a74ef28f"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive ignored Status",
+        "url": "/c/mtn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "TransactionID": "rrt-58503",
+            "clientCorrelator": "string",
+            "deliveryStatus": "MessageWaiting"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "no status changed, ignored"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive ignored Status, missing transaction ID",
+        "url": "/c/mtn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "TransactionID": null,
+            "clientCorrelator": "string",
+            "deliveryStatus": "EXPIRED"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "missing transactionId, ignored"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive expired Status",
+        "url": "/c/mtn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "TransactionID": "rrt-58503",
+            "clientCorrelator": "string",
+            "deliveryStatus": "EXPIRED"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F",
+                        "external_id": "rrt-58503"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "rrt-58503",
+                "status": "F",
+                "log_uuid": "019a6de4-2a88-7000-a130-dd871ad13a19"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive uknown Status",
+        "url": "/c/mtn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "TransactionID": "rrt-58503",
+            "clientCorrelator": "string",
+            "deliveryStatus": "blabla"
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown status 'blabla', must be one of 'DELIVRD', 'DeliveredToNetwork', 'DeliveredToTerminal', 'DeliveryImpossible', 'DeliveryNotificationNotSupported', 'DeliveryUncertain', 'EXPIRED', 'MessageWaiting'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalid JSON",
+        "url": "/c/mtn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "not json",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'o' in literal null (expecting 'u')"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

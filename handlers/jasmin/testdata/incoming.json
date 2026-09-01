@@ -1,0 +1,209 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "content=%05v%05nement\u0026coding=0\u0026From=2349067554729\u0026To=2349067554711\u0026id=1001",
+        "response": {
+            "status": 200,
+            "body": "ACK/Jasmin"
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "événement",
+                "external_id": "1001",
+                "created_on": "2025-11-01T05:43:03Z",
+                "received_on": "2025-11-01T05:43:05Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Missing To",
+        "url": "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "content=%05v%05nement\u0026coding=0\u0026From=2349067554729\u0026id=1001",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moForm.To' Error:Field validation for 'To' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'to' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "content=%05v%05nement\u0026coding=0\u0026From=MTN\u0026To=2349067554711\u0026id=1001",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Delivered",
+        "url": "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "id=external1\u0026dlvrd=1",
+        "response": {
+            "status": 200,
+            "body": "ACK/Jasmin"
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "external1",
+                "status": "D",
+                "log_uuid": "0199f07e-1d88-7000-bf1c-2e310ab8165f"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Delivered via message_status",
+        "url": "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "id=external1\u0026dlvrd=001\u0026message_status=DELIVRD",
+        "response": {
+            "status": 200,
+            "body": "ACK/Jasmin"
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "external1",
+                "status": "D",
+                "log_uuid": "019a0aa4-7388-7000-a286-7b7616b47782"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Accepted",
+        "url": "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "id=external1\u0026dlvrd=001\u0026message_status=ACCEPTD",
+        "response": {
+            "status": 200,
+            "body": "ACK/Jasmin"
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "external1",
+                "status": "S",
+                "log_uuid": "0199f9e1-5fe8-7000-8477-bb3db24c606e"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Failed",
+        "url": "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "id=external1\u0026err=1",
+        "response": {
+            "status": 200,
+            "body": "ACK/Jasmin"
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "external1",
+                "status": "F",
+                "log_uuid": "019ab73c-b768-7000-a62d-0aac2a54fb36"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Missing",
+        "url": "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "nothing",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'statusForm.ID' Error:Field validation for 'ID' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'id' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Unknown",
+        "url": "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "id=external1\u0026err=0\u0026dlvrd=0",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "must have a known message_status or either dlvrd or err set to 1"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]
