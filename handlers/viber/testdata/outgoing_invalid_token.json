@@ -1,0 +1,17 @@
+[
+    {
+        "label": "Invalid token",
+        "msg": {
+            "urn": ""
+        },
+        "error": {
+            "message": "channel config invalid",
+            "loggable": true,
+            "log_error": {
+                "code": "channel_config",
+                "message": "Channel configuration is missing required values."
+            }
+        },
+        "log_errors": []
+    }
+]

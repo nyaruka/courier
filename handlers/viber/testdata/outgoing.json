@@ -1,0 +1,989 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA=="
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "Simple Message",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Long Send",
+        "msg": {
+            "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA=="
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "I need to keep adding more things to make it work",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA=="
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "☺",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "Yes"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "Are you happy?",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "keyboard": {
+                        "Type": "keyboard",
+                        "DefaultHeight": false,
+                        "Buttons": [
+                            {
+                                "ActionType": "reply",
+                                "ActionBody": "Yes",
+                                "Text": "Yes",
+                                "TextSize": "regular",
+                                "Columns": "3"
+                            },
+                            {
+                                "ActionType": "reply",
+                                "ActionBody": "No",
+                                "Text": "No",
+                                "TextSize": "regular",
+                                "Columns": "3"
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply, Location Type",
+        "msg": {
+            "text": "Where Are you?",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+            "quick_replies": [
+                {
+                    "type": "location",
+                    "text": "Share Pin"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "Where Are you?",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "keyboard": {
+                        "Type": "keyboard",
+                        "DefaultHeight": false,
+                        "Buttons": [
+                            {
+                                "ActionType": "location-picker",
+                                "ActionBody": "Share Pin",
+                                "Text": "Share Pin",
+                                "TextSize": "regular",
+                                "Columns": "3"
+                            },
+                            {
+                                "ActionType": "reply",
+                                "ActionBody": "No",
+                                "Text": "No",
+                                "TextSize": "regular",
+                                "Columns": "3"
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply, unsupported types ignored",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+            "quick_replies": [
+                {
+                    "type": "form",
+                    "extra": "1234"
+                },
+                {
+                    "type": "text",
+                    "text": "Yes"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "Are you happy?",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "keyboard": {
+                        "Type": "keyboard",
+                        "DefaultHeight": false,
+                        "Buttons": [
+                            {
+                                "ActionType": "reply",
+                                "ActionBody": "Yes",
+                                "Text": "Yes",
+                                "TextSize": "regular",
+                                "Columns": "6"
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type form isn't supported by this channel and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Quick Reply, URL Type",
+        "msg": {
+            "text": "Read more?",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit",
+                    "extra": "http://example.com"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "Read more?",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "keyboard": {
+                        "Type": "keyboard",
+                        "DefaultHeight": false,
+                        "Buttons": [
+                            {
+                                "ActionType": "open-url",
+                                "ActionBody": "http://example.com",
+                                "Text": "Visit",
+                                "TextSize": "regular",
+                                "Columns": "3"
+                            },
+                            {
+                                "ActionType": "reply",
+                                "ActionBody": "No",
+                                "Text": "No",
+                                "TextSize": "regular",
+                                "Columns": "3"
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply, URL Type without a URL is dropped",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit"
+                },
+                {
+                    "type": "text",
+                    "text": "Yes"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "Are you happy?",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "keyboard": {
+                        "Type": "keyboard",
+                        "DefaultHeight": false,
+                        "Buttons": [
+                            {
+                                "ActionType": "reply",
+                                "ActionBody": "Yes",
+                                "Text": "Yes",
+                                "TextSize": "regular",
+                                "Columns": "6"
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type url is missing its extra value and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Quick Reply, only unsupported types means no keyboard",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+            "quick_replies": [
+                {
+                    "type": "form",
+                    "extra": "1234"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "Are you happy?",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type form isn't supported by this channel and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+            "attachments": [
+                "image/jpeg:https://localhost/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "My pic!",
+                    "type": "picture",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "media": "https://localhost/image.jpg"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Long Description with Attachment",
+        "msg": {
+            "text": "Text description is longer that 10 characters",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+            "attachments": [
+                "image/jpeg:https://localhost/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "type": "picture",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "media": "https://localhost/image.jpg"
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "Text description is longer that 10 characters",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment Video",
+        "msg": {
+            "text": "My video!",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+            "attachments": [
+                "video/mp4:https://localhost/video.mp4"
+            ]
+        },
+        "http_mocks": {
+            "*/video.mp4": [
+                {
+                    "status": 200,
+                    "headers": {
+                        "Content-Length": "12"
+                    },
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ],
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "HEAD",
+                "url": "https://localhost/video.mp4"
+            },
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "type": "video",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "media": "https://localhost/video.mp4",
+                    "size": 12
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "My video!",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment Audio",
+        "msg": {
+            "text": "My audio!",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA==",
+            "attachments": [
+                "audio/mp3:https://localhost/audio.mp3"
+            ]
+        },
+        "http_mocks": {
+            "*/audio.mp3": [
+                {
+                    "status": 200,
+                    "headers": {
+                        "Content-Length": "12"
+                    },
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ],
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 0,
+                        "status_message": "ok",
+                        "message_token": 4987381194038857789
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "HEAD",
+                "url": "https://localhost/audio.mp3"
+            },
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "type": "file",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "media": "https://localhost/audio.mp3",
+                    "size": 12,
+                    "file_name": "Audio"
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "My audio!",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Got non-0 response",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA=="
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 3,
+                        "status_message": "badData"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "Simple Message",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "3",
+                "message": "There is an error in the request itself (missing comma, brackets, etc.)"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Got general error response",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA=="
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": {
+                        "status": 99,
+                        "status_message": "General error"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "Simple Message",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "99",
+                "message": "General error"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Got Invalid JSON response",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA=="
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 200,
+                    "body": "invalidJSON"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "Simple Message",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "error": {
+            "message": "response couldn't be parsed",
+            "loggable": true,
+            "log_error": {
+                "code": "response_unparseable",
+                "message": "Response could not be parsed in the expected format."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA=="
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 401,
+                    "body": {
+                        "status": "5"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "Error Message",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "viber:xy5/5y6O81+/kbWHpLhBoA=="
+        },
+        "http_mocks": {
+            "https://chatapi.viber.com/pa/send_message": [
+                {
+                    "status": 429,
+                    "body": {
+                        "status": "5"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://chatapi.viber.com/pa/send_message",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "auth_token": "Token",
+                    "receiver": "xy5/5y6O81+/kbWHpLhBoA==",
+                    "text": "Error Message",
+                    "type": "text",
+                    "tracking_data": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]

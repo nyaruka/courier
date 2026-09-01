@@ -1,0 +1,693 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/ln/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "events": [
+                {
+                    "replyToken": "abcdefghij",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    },
+                    "message": {
+                        "id": "100001",
+                        "type": "text",
+                        "text": "Hello, world"
+                    }
+                },
+                {
+                    "replyToken": "abcdefghijklm",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    },
+                    "message": {
+                        "id": "100002",
+                        "type": "sticker",
+                        "packageId": "1",
+                        "stickerId": "1"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "Hello, world",
+                        "urn": "line:uabcdefghij",
+                        "external_id": "abcdefghij",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "line:uabcdefghij",
+                "text": "Hello, world",
+                "external_id": "abcdefghij",
+                "created_on": "2025-11-01T05:43:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Message Sticker First",
+        "url": "/c/ln/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "events": [
+                {
+                    "replyToken": "abcdefghijklm",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    },
+                    "message": {
+                        "id": "100002",
+                        "type": "sticker",
+                        "packageId": "1",
+                        "stickerId": "1"
+                    }
+                },
+                {
+                    "replyToken": "abcdefghij",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    },
+                    "message": {
+                        "id": "100001",
+                        "type": "text",
+                        "text": "Last event"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "Last event",
+                        "urn": "line:uabcdefghij",
+                        "external_id": "abcdefghij",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "line:uabcdefghij",
+                "text": "Last event",
+                "external_id": "abcdefghij",
+                "created_on": "2025-12-11T01:46:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019b0b16-2ba8-7000-b4e9-bf3a8e706876"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Image Message",
+        "url": "/c/ln/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "events": [
+                {
+                    "replyToken": "abcdefghij",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    },
+                    "message": {
+                        "id": "100001",
+                        "type": "image",
+                        "contentProvider": {
+                            "type": "line"
+                        }
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "",
+                        "urn": "line:uabcdefghij",
+                        "attachments": [
+                            "https://api-data.line.me/v2/bot/message/100001/content"
+                        ],
+                        "external_id": "abcdefghij",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "line:uabcdefghij",
+                "text": "",
+                "attachments": [
+                    "https://api-data.line.me/v2/bot/message/100001/content"
+                ],
+                "external_id": "abcdefghij",
+                "created_on": "2025-10-22T02:14:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019a09b1-d628-7000-a517-f58cbd766d99"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Video Message",
+        "url": "/c/ln/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "events": [
+                {
+                    "replyToken": "abcdefghij",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    },
+                    "message": {
+                        "id": "100001",
+                        "type": "video",
+                        "contentProvider": {
+                            "type": "line"
+                        }
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "",
+                        "urn": "line:uabcdefghij",
+                        "attachments": [
+                            "https://api-data.line.me/v2/bot/message/100001/content"
+                        ],
+                        "external_id": "abcdefghij",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "line:uabcdefghij",
+                "text": "",
+                "attachments": [
+                    "https://api-data.line.me/v2/bot/message/100001/content"
+                ],
+                "external_id": "abcdefghij",
+                "created_on": "2025-11-12T17:20:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019a7914-d9e8-7000-bdb0-d3168babc8e9"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Video External Message",
+        "url": "/c/ln/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "events": [
+                {
+                    "replyToken": "abcdefghij",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    },
+                    "message": {
+                        "id": "100001",
+                        "type": "video",
+                        "contentProvider": {
+                            "type": "external",
+                            "originalContentUrl": "https://example.com/original.mp4"
+                        }
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "",
+                        "urn": "line:uabcdefghij",
+                        "attachments": [
+                            "https://example.com/original.mp4"
+                        ],
+                        "external_id": "abcdefghij",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "line:uabcdefghij",
+                "text": "",
+                "attachments": [
+                    "https://example.com/original.mp4"
+                ],
+                "external_id": "abcdefghij",
+                "created_on": "2025-12-20T23:05:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019b3e02-5d48-7000-8c74-ecb586fef361"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Audio Message",
+        "url": "/c/ln/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "events": [
+                {
+                    "replyToken": "abcdefghij",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    },
+                    "message": {
+                        "id": "100001",
+                        "type": "audio",
+                        "contentProvider": {
+                            "type": "line"
+                        }
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "",
+                        "urn": "line:uabcdefghij",
+                        "attachments": [
+                            "https://api-data.line.me/v2/bot/message/100001/content"
+                        ],
+                        "external_id": "abcdefghij",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "line:uabcdefghij",
+                "text": "",
+                "attachments": [
+                    "https://api-data.line.me/v2/bot/message/100001/content"
+                ],
+                "external_id": "abcdefghij",
+                "created_on": "2025-11-10T05:33:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019a6c40-dac8-7000-bd06-ba7478d010ee"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Location Message",
+        "url": "/c/ln/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "events": [
+                {
+                    "replyToken": "abcdefghij",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    },
+                    "message": {
+                        "id": "100001",
+                        "type": "location",
+                        "title": "my location",
+                        "address": "Japan, 〒160-0004 Tokyo, Shinjuku City, Yotsuya, 1-chōme-6-1",
+                        "latitude": 35.687574,
+                        "longitude": 139.72922
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "my location",
+                        "urn": "line:uabcdefghij",
+                        "attachments": [
+                            "geo:35.687574,139.729220"
+                        ],
+                        "external_id": "abcdefghij",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "line:uabcdefghij",
+                "text": "my location",
+                "attachments": [
+                    "geo:35.687574,139.729220"
+                ],
+                "external_id": "abcdefghij",
+                "created_on": "2025-11-25T18:12:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019abc37-2168-7000-8b32-662daf3a4ab8"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing message",
+        "url": "/c/ln/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "events": [
+                {
+                    "replyToken": "abcdefghij",
+                    "type": "message",
+                    "timestamp": 1451617200000,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/ln/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "events": [
+                {
+                    "replyToken": "abcdefghij",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabc!!$$defghij"
+                    },
+                    "message": {
+                        "id": "100001",
+                        "type": "text",
+                        "text": "Hello, world"
+                    }
+                },
+                {
+                    "replyToken": "abcdefghijklm",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabc!!$$defghij"
+                    },
+                    "message": {
+                        "id": "100002",
+                        "type": "sticker",
+                        "packageId": "1",
+                        "stickerId": "1"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid line id"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "No event request",
+        "url": "/c/ln/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "events": []
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Message Invalid signature",
+        "url": "/c/ln/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "headers": {
+            "X-Line-Signature": "invalidsig"
+        },
+        "data": {
+            "events": [
+                {
+                    "replyToken": "abcdefghij",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    },
+                    "message": {
+                        "id": "100001",
+                        "type": "text",
+                        "text": "Hello, world"
+                    }
+                },
+                {
+                    "replyToken": "abcdefghijklm",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    },
+                    "message": {
+                        "id": "100002",
+                        "type": "sticker",
+                        "packageId": "1",
+                        "stickerId": "1"
+                    }
+                }
+            ]
+        },
+        "unsigned": true,
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid request signature"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Message Missing signature",
+        "url": "/c/ln/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "events": [
+                {
+                    "replyToken": "abcdefghij",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    },
+                    "message": {
+                        "id": "100001",
+                        "type": "text",
+                        "text": "Hello, world"
+                    }
+                },
+                {
+                    "replyToken": "abcdefghijklm",
+                    "type": "message",
+                    "timestamp": 1459991487970,
+                    "source": {
+                        "type": "user",
+                        "userId": "uabcdefghij"
+                    },
+                    "message": {
+                        "id": "100002",
+                        "type": "sticker",
+                        "packageId": "1",
+                        "stickerId": "1"
+                    }
+                }
+            ]
+        },
+        "unsigned": true,
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing request signature"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

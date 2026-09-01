@@ -1,0 +1,238 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "wechat:12345"
+        },
+        "http_mocks": {
+            "https://api.weixin.qq.com/cgi-bin/message/custom/send*": [
+                {
+                    "status": 200,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=ACCESS_TOKEN",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "msgtype": "text",
+                    "touser": "12345",
+                    "text": {
+                        "content": "Simple Message ☺"
+                    }
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Long Send",
+        "msg": {
+            "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+            "urn": "wechat:12345"
+        },
+        "http_mocks": {
+            "https://api.weixin.qq.com/cgi-bin/message/custom/send*": [
+                {
+                    "status": 200,
+                    "body": ""
+                },
+                {
+                    "status": 200,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=ACCESS_TOKEN",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "msgtype": "text",
+                    "touser": "12345",
+                    "text": {
+                        "content": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=ACCESS_TOKEN",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "msgtype": "text",
+                    "touser": "12345",
+                    "text": {
+                        "content": "I need to keep adding more things to make it work"
+                    }
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "wechat:12345",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api.weixin.qq.com/cgi-bin/message/custom/send*": [
+                {
+                    "status": 200,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=ACCESS_TOKEN",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "msgtype": "text",
+                    "touser": "12345",
+                    "text": {
+                        "content": "My pic!\nhttps://foo.bar/image.jpg"
+                    }
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "wechat:12345"
+        },
+        "http_mocks": {
+            "https://api.weixin.qq.com/cgi-bin/message/custom/send*": [
+                {
+                    "status": 401,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=ACCESS_TOKEN",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "msgtype": "text",
+                    "touser": "12345",
+                    "text": {
+                        "content": "Error Message"
+                    }
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Connection Error",
+        "msg": {
+            "text": "Error Message",
+            "urn": "wechat:12345"
+        },
+        "http_mocks": {
+            "https://api.weixin.qq.com/cgi-bin/message/custom/send*": [
+                {
+                    "status": 500,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=ACCESS_TOKEN",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "msgtype": "text",
+                    "touser": "12345",
+                    "text": {
+                        "content": "Error Message"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "wechat:12345"
+        },
+        "http_mocks": {
+            "https://api.weixin.qq.com/cgi-bin/message/custom/send*": [
+                {
+                    "status": 429,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=ACCESS_TOKEN",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "msgtype": "text",
+                    "touser": "12345",
+                    "text": {
+                        "content": "Error Message"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]
