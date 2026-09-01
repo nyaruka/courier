@@ -1,6 +1,7 @@
 package messagebird
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -191,6 +192,30 @@ var defaultReceiveTestCases = []IncomingTestCase{
 		URL:                  statusBaseURL + "&status=expiryttd",
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: `{"message":"Error","data":[{"type":"error","error":"unknown status 'expiryttd', must be one of 'buffered', 'delivered', 'delivery_failed', 'expired', 'scheduled', 'sent'"}]}`,
+	},
+	{
+		// a callback with no status at all is asking nothing of us, rather than naming a status we don't know
+		Label:                "Status Missing",
+		URL:                  statusBaseURL,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "no msg status, ignoring",
+	},
+	{
+		Label:                "Status URL check",
+		URL:                  "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "no msg status, ignoring",
+	},
+	{
+		// a field we can't convert costs us that field, not the whole report - note statusDatetime isn't even
+		// one we read, and used to be enough on its own to discard the status
+		Label:              "Status with unparseable datetime",
+		URL:                statusBaseURL + "&status=sent&statusDatetime=garbage",
+		ExpectedRespStatus: 200,
+		ExpectedStatuses:   []ExpectedStatus{{MsgUUID: "019a0719-ac96-7eb9-a837-cac215164834", Status: models.MsgStatusSent}},
+		ExpectedErrors: []*svclogs.Error{
+			models.ErrorRequestUnparseable(errors.New(`schema: error converting value for "statusDatetime". Details: parsing time "garbage" as "2006-01-02T15:04:05Z07:00": cannot parse "garbage" as "2006"`)),
+		},
 	},
 }
 
