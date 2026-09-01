@@ -1,0 +1,240 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api.transmitsms.com/send-sms.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": 19835,
+                        "recipients": 3,
+                        "cost": 1.0
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.transmitsms.com/send-sms.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "message": [
+                        "Simple Message ☺\nhttps://foo.bar/image.jpg"
+                    ],
+                    "to": [
+                        "250788383383"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "19835"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Invalid JSON",
+        "msg": {
+            "text": "Invalid JSON",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.transmitsms.com/send-sms.json": [
+                {
+                    "status": 200,
+                    "body": "not json"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.transmitsms.com/send-sms.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "message": [
+                        "Invalid JSON"
+                    ],
+                    "to": [
+                        "250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response couldn't be parsed",
+            "loggable": true,
+            "log_error": {
+                "code": "response_unparseable",
+                "message": "Response could not be parsed in the expected format."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Response",
+        "msg": {
+            "text": "Error Response",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.transmitsms.com/send-sms.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": 0
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.transmitsms.com/send-sms.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "message": [
+                        "Error Response"
+                    ],
+                    "to": [
+                        "250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.transmitsms.com/send-sms.json": [
+                {
+                    "status": 501,
+                    "body": "Bad Gateway"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.transmitsms.com/send-sms.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "message": [
+                        "Error Message"
+                    ],
+                    "to": [
+                        "250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.transmitsms.com/send-sms.json": [
+                {
+                    "status": 429,
+                    "body": "Bad Gateway"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.transmitsms.com/send-sms.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "message": [
+                        "Error Message"
+                    ],
+                    "to": [
+                        "250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]

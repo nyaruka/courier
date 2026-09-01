@@ -1,0 +1,88 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/nv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "headers": {
+            "Authorization": "sesame"
+        },
+        "data": "text=Msg\u0026from=18686846481",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "Msg",
+                        "urn": "tel:+18686846481",
+                        "received_on": "2025-11-19T17:20:05Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+18686846481",
+                "text": "Msg",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2025-11-19T17:20:05Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Missing Number",
+        "url": "/c/nv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "headers": {
+            "Authorization": "sesame"
+        },
+        "data": "text=Msg",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing required field 'from'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Missing Authorization",
+        "url": "/c/nv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "text=Msg\u0026from=18686846481",
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid Authorization header"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

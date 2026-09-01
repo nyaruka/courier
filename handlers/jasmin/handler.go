@@ -8,12 +8,12 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
 	"golang.org/x/text/encoding/unicode"
@@ -97,7 +97,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http
 	}
 
 	// build our msg
-	msg := models.NewIncomingMsg(c, urn, text, form.ID, clog).WithReceivedOn(time.Now().UTC())
+	msg := models.NewIncomingMsg(c, urn, text, form.ID, clog).WithReceivedOn(dates.Now().UTC())
 
 	in.Msg(msg)
 	return nil

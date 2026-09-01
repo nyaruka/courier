@@ -1,0 +1,149 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "mobile=%2B2349067554729\u0026message=Join",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "Join",
+                        "urn": "tel:+2349067554729",
+                        "received_on": "2025-11-01T05:43:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "created_on": "2025-11-01T05:43:03Z",
+                "received_on": "2025-11-01T05:43:03Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive No Message",
+        "url": "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "mobile=%2B2349067554729",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019af9bc-13e0-7000-973c-3620ab19cfd5",
+                        "text": "",
+                        "urn": "tel:+2349067554729",
+                        "received_on": "2025-12-07T16:54:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019af9bc-13e0-7000-973c-3620ab19cfd5",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "",
+                "created_on": "2025-12-07T16:54:03Z",
+                "received_on": "2025-12-07T16:54:03Z",
+                "log_uuids": [
+                    "019af9bc-0828-7000-aad7-5c6bcfe8b5ed"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalid URN",
+        "url": "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "mobile=MTN\u0026message=Join",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive No Params",
+        "url": "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "none",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moForm.Mobile' Error:Field validation for 'Mobile' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'mobile' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive No Sender",
+        "url": "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "message=Join",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moForm.Mobile' Error:Field validation for 'Mobile' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'mobile' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]
