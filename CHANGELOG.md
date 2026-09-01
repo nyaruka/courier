@@ -1,3 +1,10 @@
+v26.3.46 (2026-09-01)
+-------------------------
+ * Cache a channel's absence for lookups by UUID so a dead callback URL doesn't query per request
+ * Stop a MessageBird field we can't convert discarding the whole status report
+ * Record a Nexmo request we couldn't fully decode instead of discarding the error
+ * Replace handler SetRuntime/Initialize with runtime-aware constructors
+
 v26.3.45 (2026-08-31)
 -------------------------
  * Answer a failed signature check on an incoming request as unauthorized
