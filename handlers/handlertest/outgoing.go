@@ -140,6 +140,9 @@ func RunOutgoingTests(t *testing.T, ch *models.Channel, newFn channels.NewHandle
 	actuals := make([]*OutgoingCase, len(cases))
 
 	for i, tc := range cases {
+		// if the case aborts before its outcome is captured, the file keeps what it had for it
+		actuals[i] = tc
+
 		t.Run(tc.Label, func(t *testing.T) {
 			mockTimeAndUUIDs(t, tc.Label)
 
