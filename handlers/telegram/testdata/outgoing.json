@@ -1,0 +1,1446 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "telegram:12345"
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ],
+                    "text": [
+                        "Simple Message"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "telegram:12345",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "Yes"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"keyboard\":[[{\"text\":\"Yes\"},{\"text\":\"No\"}]],\"resize_keyboard\":true,\"one_time_keyboard\":true}"
+                    ],
+                    "text": [
+                        "Are you happy?"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply, request location",
+        "msg": {
+            "text": "Where Are you?",
+            "urn": "telegram:12345",
+            "quick_replies": [
+                {
+                    "type": "location",
+                    "text": "Send Location"
+                },
+                {
+                    "type": "text",
+                    "text": "Ignore"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"keyboard\":[[{\"text\":\"Send Location\",\"request_location\":true},{\"text\":\"Ignore\"}]],\"resize_keyboard\":true,\"one_time_keyboard\":false}"
+                    ],
+                    "text": [
+                        "Where Are you?"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply, form type opens Mini App",
+        "msg": {
+            "text": "Please register",
+            "urn": "telegram:12345",
+            "quick_replies": [
+                {
+                    "type": "form",
+                    "text": "Register",
+                    "extra": "https://example.com/form"
+                },
+                {
+                    "type": "text",
+                    "text": "Skip"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"keyboard\":[[{\"text\":\"Register\",\"web_app\":{\"url\":\"https://example.com/form\"}},{\"text\":\"Skip\"}]],\"resize_keyboard\":true,\"one_time_keyboard\":false}"
+                    ],
+                    "text": [
+                        "Please register"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply, form type without a URL is dropped",
+        "msg": {
+            "text": "Please register",
+            "urn": "telegram:12345",
+            "quick_replies": [
+                {
+                    "type": "form",
+                    "text": "Register"
+                },
+                {
+                    "type": "text",
+                    "text": "Skip"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"keyboard\":[[{\"text\":\"Skip\"}]],\"resize_keyboard\":true,\"one_time_keyboard\":true}"
+                    ],
+                    "text": [
+                        "Please register"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type form is missing its extra value and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Quick Reply, url types as inline keyboard link buttons",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "telegram:12345",
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit Us",
+                    "extra": "http://example.com"
+                },
+                {
+                    "type": "url",
+                    "extra": "http://example.com/more"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"inline_keyboard\":[[{\"text\":\"Visit Us\",\"url\":\"http://example.com\"},{\"text\":\"Open Link\",\"url\":\"http://example.com/more\"}]]}"
+                    ],
+                    "text": [
+                        "Are you happy?"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply, url type mixed with reply keyboard types is dropped",
+        "msg": {
+            "text": "Please register",
+            "urn": "telegram:12345",
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "extra": "http://example.com"
+                },
+                {
+                    "type": "form",
+                    "text": "Register",
+                    "extra": "https://example.com/form"
+                },
+                {
+                    "type": "text",
+                    "text": "Skip"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"keyboard\":[[{\"text\":\"Register\",\"web_app\":{\"url\":\"https://example.com/form\"}},{\"text\":\"Skip\"}]],\"resize_keyboard\":true,\"one_time_keyboard\":false}"
+                    ],
+                    "text": [
+                        "Please register"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type url isn't supported by this channel and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Quick Reply, url type with attachment",
+        "msg": {
+            "text": "Check this out",
+            "urn": "telegram:12345",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ],
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit",
+                    "extra": "http://example.com"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendPhoto": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendPhoto",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "caption": [
+                        "Check this out"
+                    ],
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "photo": [
+                        "https://foo.bar/image.jpg"
+                    ],
+                    "reply_markup": [
+                        "{\"inline_keyboard\":[[{\"text\":\"Visit\",\"url\":\"http://example.com\"}]]}"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply, unknown type dropped",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "telegram:12345",
+            "quick_replies": [
+                {
+                    "type": "video",
+                    "text": "Play"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ],
+                    "text": [
+                        "Are you happy?"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type video isn't supported by this channel and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Quick Reply, url types with invalid URLs are dropped",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "telegram:12345",
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit Us",
+                    "extra": "example.com/visit"
+                },
+                {
+                    "type": "url",
+                    "text": "Local",
+                    "extra": "http://localhost/visit"
+                },
+                {
+                    "type": "url",
+                    "text": "Spaced",
+                    "extra": "https://example.com/a page"
+                },
+                {
+                    "type": "url",
+                    "text": "Read More",
+                    "extra": "https://example.com/more"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"inline_keyboard\":[[{\"text\":\"Read More\",\"url\":\"https://example.com/more\"}]]}"
+                    ],
+                    "text": [
+                        "Are you happy?"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type url has an invalid URL and can't be sent: example.com/visit"
+            },
+            {
+                "code": "",
+                "message": "quick reply of type url has an invalid URL and can't be sent: http://localhost/visit"
+            },
+            {
+                "code": "",
+                "message": "quick reply of type url has an invalid URL and can't be sent: https://example.com/a page"
+            }
+        ]
+    },
+    {
+        "label": "Quick Reply, url type without a URL is dropped",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "telegram:12345",
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit Us"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ],
+                    "text": [
+                        "Are you happy?"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type url is missing its extra value and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Quick Reply, url type mixed with location is dropped",
+        "msg": {
+            "text": "Where are you?",
+            "urn": "telegram:12345",
+            "quick_replies": [
+                {
+                    "type": "location"
+                },
+                {
+                    "type": "url",
+                    "extra": "http://example.com"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"keyboard\":[[{\"text\":\"Send Location\",\"request_location\":true}]],\"resize_keyboard\":true,\"one_time_keyboard\":false}"
+                    ],
+                    "text": [
+                        "Where are you?"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type url isn't supported by this channel and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Quick Reply, url type with multiple attachments",
+        "msg": {
+            "text": "Check this out",
+            "urn": "telegram:12345",
+            "attachments": [
+                "application/pdf:https://foo.bar/doc1.pdf",
+                "application/pdf:https://foo.bar/document.pdf"
+            ],
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit",
+                    "extra": "http://example.com"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendDocument": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ],
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ],
+                    "text": [
+                        "Check this out"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendDocument",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "caption": [
+                        ""
+                    ],
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "document": [
+                        "https://foo.bar/doc1.pdf"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendDocument",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "caption": [
+                        ""
+                    ],
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "document": [
+                        "https://foo.bar/document.pdf"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"inline_keyboard\":[[{\"text\":\"Visit\",\"url\":\"http://example.com\"}]]}"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133",
+            "133",
+            "133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick Reply with multiple attachments",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "telegram:12345",
+            "attachments": [
+                "application/pdf:https://foo.bar/doc1.pdf",
+                "application/pdf:https://foo.bar/document.pdf"
+            ],
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "Yes"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendDocument": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ],
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ],
+                    "text": [
+                        "Are you happy?"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendDocument",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "caption": [
+                        ""
+                    ],
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "document": [
+                        "https://foo.bar/doc1.pdf"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendDocument",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "caption": [
+                        ""
+                    ],
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "document": [
+                        "https://foo.bar/document.pdf"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"keyboard\":[[{\"text\":\"Yes\"},{\"text\":\"No\"}]],\"resize_keyboard\":true,\"one_time_keyboard\":true}"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133",
+            "133",
+            "133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error",
+        "msg": {
+            "text": "Error",
+            "urn": "telegram:12345"
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 403,
+                    "body": {
+                        "ok": false,
+                        "error_code": 400,
+                        "description": "Bot domain invalid."
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ],
+                    "text": [
+                        "Error"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "400",
+                "message": "Bot domain invalid."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error",
+            "urn": "telegram:12345"
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 429,
+                    "body": {
+                        "ok": false,
+                        "error_code": 429,
+                        "description": "Too Many Requests: retry after 30",
+                        "parameters": {
+                            "retry_after": 30
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ],
+                    "text": [
+                        "Error"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Stopped Contact Code",
+        "msg": {
+            "text": "Stopped Contact",
+            "urn": "telegram:12345"
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 403,
+                    "body": {
+                        "ok": false,
+                        "error_code": 403,
+                        "description": "Forbidden: bot was blocked by the user"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ],
+                    "text": [
+                        "Stopped Contact"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "contact opted out",
+            "log_error": {
+                "code": "contact_stopped",
+                "message": "Contact has opted-out of messages from this channel."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Send Photo",
+        "msg": {
+            "text": "My pic!",
+            "urn": "telegram:12345",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendPhoto": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendPhoto",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "caption": [
+                        "My pic!"
+                    ],
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "photo": [
+                        "https://foo.bar/image.jpg"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Video",
+        "msg": {
+            "text": "My vid!",
+            "urn": "telegram:12345",
+            "attachments": [
+                "video/mpeg:https://foo.bar/video.mpeg"
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendVideo": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendVideo",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "caption": [
+                        "My vid!"
+                    ],
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ],
+                    "video": [
+                        "https://foo.bar/video.mpeg"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Audio",
+        "msg": {
+            "text": "My audio!",
+            "urn": "telegram:12345",
+            "attachments": [
+                "audio/mp3:https://foo.bar/audio.mp3"
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendAudio": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendAudio",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "audio": [
+                        "https://foo.bar/audio.mp3"
+                    ],
+                    "caption": [
+                        "My audio!"
+                    ],
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Document",
+        "msg": {
+            "text": "My document!",
+            "urn": "telegram:12345",
+            "attachments": [
+                "application/pdf:https://foo.bar/document.pdf"
+            ]
+        },
+        "http_mocks": {
+            "*/botauth_token/sendDocument": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 133
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendDocument",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "caption": [
+                        "My document!"
+                    ],
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "document": [
+                        "https://foo.bar/document.pdf"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Response Unexpected",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "telegram:12345"
+        },
+        "http_mocks": {
+            "*/botauth_token/sendMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "message_id": 0
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/botauth_token/sendMessage",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chat_id": [
+                        "12345"
+                    ],
+                    "parse_mode": [
+                        "Markdown"
+                    ],
+                    "reply_markup": [
+                        "{\"remove_keyboard\":true}"
+                    ],
+                    "text": [
+                        "Simple Message"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Unknown attachment type",
+        "msg": {
+            "text": "My foo!",
+            "urn": "telegram:12345",
+            "attachments": [
+                "unknown/foo:https://foo.bar/unknown.foo"
+            ]
+        },
+        "log_errors": [
+            {
+                "code": "media_unsupported",
+                "message": "Unsupported attachment media type: unknown/foo."
+            }
+        ]
+    }
+]

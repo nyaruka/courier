@@ -1,0 +1,1533 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 174114370,
+            "message": {
+                "message_id": 41,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "nicpottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "type": "private"
+                },
+                "date": 1454119029,
+                "text": "Hello World"
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "Hello World",
+                        "urn": "telegram:3527065#nicpottier",
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "telegram:3527065#nicpottier",
+                "text": "Hello World",
+                "external_id": "41",
+                "created_on": "2025-11-01T05:43:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ],
+                "contact_name": "Nic Pottier"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Start Message",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 174114370,
+            "message": {
+                "message_id": 41,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "nicpottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "type": "private"
+                },
+                "date": 1454119029,
+                "text": "/start"
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Event Accepted",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "event_type": "new_conversation",
+                        "urn": "telegram:3527065#nicpottier",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "019a234f-ca18-7000-9e4f-261efc0b0aab",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "telegram:3527065#nicpottier",
+                "event_type": "new_conversation",
+                "occurred_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a234f-c248-7000-a195-cbf888b99277"
+                ],
+                "contact_name": "Nic Pottier"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive No Params",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 174114370
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "Ignoring request, no message"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid JSON",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": "foo",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'o' in literal false (expecting 'a')"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Sticker",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 174114373,
+            "message": {
+                "message_id": 44,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "type": "private"
+                },
+                "date": 1454119668,
+                "sticker": {
+                    "width": 436,
+                    "height": 512,
+                    "thumb": {
+                        "file_id": "AAQDABNW--sqAAS6easb1s1rNdJYAAIC",
+                        "file_size": 2510,
+                        "width": 77,
+                        "height": 90
+                    },
+                    "file_id": "BQADAwADRQADyIsGAAHtBskMy6GoLAI",
+                    "file_size": 38440
+                }
+            }
+        },
+        "http_mocks": {
+            "https://api.telegram.org/bota123/getFile": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "file_path": "sticker.jpg"
+                        }
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019b3d77-47d0-7000-be8b-57688251fe73",
+                        "text": "",
+                        "urn": "telegram:3527065",
+                        "attachments": [
+                            "https://api.telegram.org/file/bota123/sticker.jpg"
+                        ],
+                        "external_id": "44",
+                        "received_on": "2016-01-30T02:07:48Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b3d77-47d0-7000-be8b-57688251fe73",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "telegram:3527065",
+                "text": "",
+                "attachments": [
+                    "https://api.telegram.org/file/bota123/sticker.jpg"
+                ],
+                "external_id": "44",
+                "created_on": "2025-12-20T20:33:05Z",
+                "received_on": "2016-01-30T02:07:48Z",
+                "log_uuids": [
+                    "019b3d77-3448-7000-a86c-4e7c79bc1501"
+                ],
+                "contact_name": "Nic Pottier"
+            }
+        ],
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/bota123/getFile",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "file_id": [
+                        "AAQDABNW--sqAAS6easb1s1rNdJYAAIC"
+                    ]
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Photo",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 900946525,
+            "message": {
+                "message_id": 85,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier",
+                    "type": "private"
+                },
+                "date": 1493843318,
+                "photo": [
+                    {
+                        "file_id": "AgADAQADtKcxG4LRUUQSQVUjfJIiiF8G6C8ABHsRSbk65AmUi3cBAAEC",
+                        "file_size": 1140,
+                        "width": 51,
+                        "height": 90
+                    },
+                    {
+                        "file_id": "AgADAQADtKcxG4LRUUQSQVUjfJIiiF8G6C8ABNEDQTuwtue6jXcBAAEC",
+                        "file_size": 12138,
+                        "width": 180,
+                        "height": 320
+                    },
+                    {
+                        "file_id": "AgADAQADtKcxG4LRUUQSQVUjfJIiiF8G6C8ABF8Fy2sccmWmjHcBAAEC",
+                        "file_size": 57833,
+                        "width": 450,
+                        "height": 800
+                    },
+                    {
+                        "file_id": "AgADAQADtKcxG4LRUUQSQVUjfJIiiF8G6C8ABA9NJzFdXskaincBAAEC",
+                        "file_size": 104737,
+                        "width": 720,
+                        "height": 1280
+                    }
+                ],
+                "caption": "Photo Caption"
+            }
+        },
+        "http_mocks": {
+            "https://api.telegram.org/bota123/getFile": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "file_path": "photo.jpg"
+                        }
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a1113-8fb0-7000-8224-9fc57cf21c8a",
+                        "text": "Photo Caption",
+                        "urn": "telegram:3527065#nicpottier",
+                        "attachments": [
+                            "https://api.telegram.org/file/bota123/photo.jpg"
+                        ],
+                        "external_id": "85",
+                        "received_on": "2017-05-03T20:28:38Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a1113-8fb0-7000-8224-9fc57cf21c8a",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "telegram:3527065#nicpottier",
+                "text": "Photo Caption",
+                "attachments": [
+                    "https://api.telegram.org/file/bota123/photo.jpg"
+                ],
+                "external_id": "85",
+                "created_on": "2025-10-23T12:38:05Z",
+                "received_on": "2017-05-03T20:28:38Z",
+                "log_uuids": [
+                    "019a1113-7c28-7000-a08a-3b5d6175c7b5"
+                ],
+                "contact_name": "Nic Pottier"
+            }
+        ],
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/bota123/getFile",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "file_id": [
+                        "AgADAQADtKcxG4LRUUQSQVUjfJIiiF8G6C8ABF8Fy2sccmWmjHcBAAEC"
+                    ]
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Video",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 900946526,
+            "message": {
+                "message_id": 86,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier",
+                    "type": "private"
+                },
+                "date": 1493843364,
+                "video": {
+                    "duration": 1,
+                    "width": 360,
+                    "height": 640,
+                    "mime_type": "video/mp4",
+                    "thumb": {
+                        "file_id": "AAQBABP2RvcvAATGjpC2zjwhKQ8xAAIC",
+                        "file_size": 1770,
+                        "width": 50,
+                        "height": 90
+                    },
+                    "file_id": "BAADAQADBgADgtFRRPFTAAHxLVw76wI",
+                    "file_size": 257507
+                }
+            }
+        },
+        "http_mocks": {
+            "https://api.telegram.org/bota123/getFile": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "file_path": "video.jpg"
+                        }
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019aa12e-bc50-7000-9f96-c026f03e323b",
+                        "text": "",
+                        "urn": "telegram:3527065#nicpottier",
+                        "attachments": [
+                            "https://api.telegram.org/file/bota123/video.jpg"
+                        ],
+                        "external_id": "86",
+                        "received_on": "2017-05-03T20:29:24Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019aa12e-bc50-7000-9f96-c026f03e323b",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "telegram:3527065#nicpottier",
+                "text": "",
+                "attachments": [
+                    "https://api.telegram.org/file/bota123/video.jpg"
+                ],
+                "external_id": "86",
+                "created_on": "2025-11-20T12:13:05Z",
+                "received_on": "2017-05-03T20:29:24Z",
+                "log_uuids": [
+                    "019aa12e-a8c8-7000-b40a-fcd8101b58c6"
+                ],
+                "contact_name": "Nic Pottier"
+            }
+        ],
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/bota123/getFile",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "file_id": [
+                        "BAADAQADBgADgtFRRPFTAAHxLVw76wI"
+                    ]
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Voice",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 900946531,
+            "message": {
+                "message_id": 91,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier",
+                    "type": "private"
+                },
+                "date": 1493844646,
+                "voice": {
+                    "duration": 1,
+                    "mime_type": "audio/ogg",
+                    "file_id": "AwADAQADCQADgtFRRGn8KrC-0D_MAg",
+                    "file_size": 4288
+                }
+            }
+        },
+        "http_mocks": {
+            "https://api.telegram.org/bota123/getFile": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "file_path": "voice.mp4"
+                        }
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a99ed-2170-7000-88f0-9944278de813",
+                        "text": "",
+                        "urn": "telegram:3527065#nicpottier",
+                        "attachments": [
+                            "https://api.telegram.org/file/bota123/voice.mp4"
+                        ],
+                        "external_id": "91",
+                        "received_on": "2017-05-03T20:50:46Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a99ed-2170-7000-88f0-9944278de813",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "telegram:3527065#nicpottier",
+                "text": "",
+                "attachments": [
+                    "https://api.telegram.org/file/bota123/voice.mp4"
+                ],
+                "external_id": "91",
+                "created_on": "2025-11-19T02:24:05Z",
+                "received_on": "2017-05-03T20:50:46Z",
+                "log_uuids": [
+                    "019a99ed-0de8-7000-a84f-29beb5e87414"
+                ],
+                "contact_name": "Nic Pottier"
+            }
+        ],
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/bota123/getFile",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "file_id": [
+                        "AwADAQADCQADgtFRRGn8KrC-0D_MAg"
+                    ]
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Document",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 900946532,
+            "message": {
+                "message_id": 92,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier",
+                    "type": "private"
+                },
+                "date": 1493845100,
+                "document": {
+                    "file_name": "TabFig2015prel.xls",
+                    "mime_type": "application/vnd.ms-excel",
+                    "file_id": "BQADAQADCgADgtFRRPrv9GQ95f8eAg",
+                    "file_size": 4540928
+                }
+            }
+        },
+        "http_mocks": {
+            "https://api.telegram.org/bota123/getFile": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {
+                            "file_path": "document.xls"
+                        }
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "0199e3eb-3290-7000-b42a-eea79e5e2cab",
+                        "text": "",
+                        "urn": "telegram:3527065#nicpottier",
+                        "attachments": [
+                            "https://api.telegram.org/file/bota123/document.xls"
+                        ],
+                        "external_id": "92",
+                        "received_on": "2017-05-03T20:58:20Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "0199e3eb-3290-7000-b42a-eea79e5e2cab",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "telegram:3527065#nicpottier",
+                "text": "",
+                "attachments": [
+                    "https://api.telegram.org/file/bota123/document.xls"
+                ],
+                "external_id": "92",
+                "created_on": "2025-10-14T18:11:05Z",
+                "received_on": "2017-05-03T20:58:20Z",
+                "log_uuids": [
+                    "0199e3eb-1f08-7000-afad-132ce06be6f5"
+                ],
+                "contact_name": "Nic Pottier"
+            }
+        ],
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/bota123/getFile",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "file_id": [
+                        "BQADAQADCgADgtFRRPrv9GQ95f8eAg"
+                    ]
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Location",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 900946534,
+            "message": {
+                "message_id": 94,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier",
+                    "type": "private"
+                },
+                "date": 1493845244,
+                "location": {
+                    "latitude": -2.890287,
+                    "longitude": -79.004333
+                }
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a0ac7-4980-7000-be6a-8c304baefdcb",
+                        "text": "",
+                        "urn": "telegram:3527065#nicpottier",
+                        "attachments": [
+                            "geo:-2.890287,-79.004333"
+                        ],
+                        "external_id": "94",
+                        "received_on": "2017-05-03T21:00:44Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a0ac7-4980-7000-be6a-8c304baefdcb",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "telegram:3527065#nicpottier",
+                "text": "",
+                "attachments": [
+                    "geo:-2.890287,-79.004333"
+                ],
+                "external_id": "94",
+                "created_on": "2025-10-22T07:17:03Z",
+                "received_on": "2017-05-03T21:00:44Z",
+                "log_uuids": [
+                    "019a0ac7-3dc8-7000-a6e2-f0ef19b99b7d"
+                ],
+                "contact_name": "Nic Pottier"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Venue",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 900946535,
+            "message": {
+                "message_id": 95,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier",
+                    "type": "private"
+                },
+                "date": 1493845520,
+                "location": {
+                    "latitude": -2.898944,
+                    "longitude": -79.006835
+                },
+                "venue": {
+                    "location": {
+                        "latitude": -2.898944,
+                        "longitude": -79.006835
+                    },
+                    "title": "Cuenca",
+                    "address": "Provincia del Azuay",
+                    "foursquare_id": "4c21facd9a67a59340acdb87"
+                }
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a15e8-6880-7000-92df-0adb139f6c31",
+                        "text": "Cuenca, Provincia del Azuay",
+                        "urn": "telegram:3527065#nicpottier",
+                        "attachments": [
+                            "geo:-2.898944,-79.006835"
+                        ],
+                        "external_id": "95",
+                        "received_on": "2017-05-03T21:05:20Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a15e8-6880-7000-92df-0adb139f6c31",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "telegram:3527065#nicpottier",
+                "text": "Cuenca, Provincia del Azuay",
+                "attachments": [
+                    "geo:-2.898944,-79.006835"
+                ],
+                "external_id": "95",
+                "created_on": "2025-10-24T11:09:03Z",
+                "received_on": "2017-05-03T21:05:20Z",
+                "log_uuids": [
+                    "019a15e8-5cc8-7000-b3bf-d4880597679e"
+                ],
+                "contact_name": "Nic Pottier"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Contact",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 900946536,
+            "message": {
+                "message_id": 96,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier",
+                    "type": "private"
+                },
+                "date": 1493845755,
+                "contact": {
+                    "phone_number": "0788531373",
+                    "first_name": "Adolf Taxi"
+                }
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "0199edcc-c4e0-7000-a102-cc6c154d2875",
+                        "text": "Adolf Taxi (0788531373)",
+                        "urn": "telegram:3527065#nicpottier",
+                        "external_id": "96",
+                        "received_on": "2017-05-03T21:09:15Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "0199edcc-c4e0-7000-a102-cc6c154d2875",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "telegram:3527065#nicpottier",
+                "text": "Adolf Taxi (0788531373)",
+                "external_id": "96",
+                "created_on": "2025-10-16T16:14:03Z",
+                "received_on": "2017-05-03T21:09:15Z",
+                "log_uuids": [
+                    "0199edcc-b928-7000-8b06-790312c8fec7"
+                ],
+                "contact_name": "Nic Pottier"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive WebApp Data",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 900946537,
+            "message": {
+                "message_id": 97,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier",
+                    "type": "private"
+                },
+                "date": 1493845755,
+                "web_app_data": {
+                    "data": "{\"first_name\": \"Bob\", \"age\": \"32\"}",
+                    "button_text": "Register"
+                }
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019aebc8-9b00-7000-9030-0028e8f1aa24",
+                        "text": "Register",
+                        "urn": "telegram:3527065#nicpottier",
+                        "external_id": "97",
+                        "received_on": "2017-05-03T21:09:15Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019aebc8-9b00-7000-9030-0028e8f1aa24",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "telegram:3527065#nicpottier",
+                "text": "Register",
+                "external_id": "97",
+                "created_on": "2025-12-04T23:53:03Z",
+                "received_on": "2017-05-03T21:09:15Z",
+                "log_uuids": [
+                    "019aebc8-8f48-7000-b394-dff9f4c8a70c"
+                ],
+                "contact_name": "Nic Pottier",
+                "payload": {
+                    "first_name": "Bob",
+                    "age": "32"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive WebApp Data non-JSON",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 900946538,
+            "message": {
+                "message_id": 98,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "username": "Nicpottier",
+                    "type": "private"
+                },
+                "date": 1493845755,
+                "web_app_data": {
+                    "data": "bob,32",
+                    "button_text": "Register"
+                }
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a257e-46c0-7000-bd67-9a6bc0cccd69",
+                        "text": "bob,32",
+                        "urn": "telegram:3527065#nicpottier",
+                        "external_id": "98",
+                        "received_on": "2017-05-03T21:09:15Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a257e-46c0-7000-bd67-9a6bc0cccd69",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "telegram:3527065#nicpottier",
+                "text": "bob,32",
+                "external_id": "98",
+                "created_on": "2025-10-27T11:47:03Z",
+                "received_on": "2017-05-03T21:09:15Z",
+                "log_uuids": [
+                    "019a257e-3b08-7000-8548-27a73b0d3c74"
+                ],
+                "contact_name": "Nic Pottier"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": [
+                {
+                    "code": "",
+                    "message": "web_app_data data is not a valid JSON object"
+                }
+            ]
+        }
+    },
+    {
+        "label": "Receive Empty",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 174114370
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "Ignoring request, no message"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid FileID",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 174114373,
+            "message": {
+                "message_id": 44,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "type": "private"
+                },
+                "date": 1454119668,
+                "sticker": {
+                    "width": 436,
+                    "height": 512,
+                    "thumb": {
+                        "file_id": "invalid",
+                        "file_size": 2510,
+                        "width": 77,
+                        "height": 90
+                    },
+                    "file_id": "BQADAwADRQADyIsGAAHtBskMy6GoLAI",
+                    "file_size": 38440
+                }
+            }
+        },
+        "http_mocks": {
+            "https://api.telegram.org/bota123/getFile": [
+                {
+                    "status": 400,
+                    "body": "unknown file id"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "unable to resolve file: unable to resolve file"
+                    }
+                ]
+            }
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/bota123/getFile",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "file_id": [
+                        "invalid"
+                    ]
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": [
+                {
+                    "code": "response_unparseable",
+                    "message": "Unable to parse response as JSON."
+                }
+            ]
+        }
+    },
+    {
+        "label": "Receive NoOk FileID",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 174114373,
+            "message": {
+                "message_id": 44,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "type": "private"
+                },
+                "date": 1454119668,
+                "sticker": {
+                    "width": 436,
+                    "height": 512,
+                    "thumb": {
+                        "file_id": "nook",
+                        "file_size": 2510,
+                        "width": 77,
+                        "height": 90
+                    },
+                    "file_id": "BQADAwADRQADyIsGAAHtBskMy6GoLAI",
+                    "file_size": 38440
+                }
+            }
+        },
+        "http_mocks": {
+            "https://api.telegram.org/bota123/getFile": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "unable to resolve file: file id 'nook' not present"
+                    }
+                ]
+            }
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/bota123/getFile",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "file_id": [
+                        "nook"
+                    ]
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalid JSON File response",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 174114373,
+            "message": {
+                "message_id": 44,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "type": "private"
+                },
+                "date": 1454119668,
+                "sticker": {
+                    "width": 436,
+                    "height": 512,
+                    "thumb": {
+                        "file_id": "invalidjson",
+                        "file_size": 2510,
+                        "width": 77,
+                        "height": 90
+                    },
+                    "file_id": "BQADAwADRQADyIsGAAHtBskMy6GoLAI",
+                    "file_size": 38440
+                }
+            }
+        },
+        "http_mocks": {
+            "https://api.telegram.org/bota123/getFile": [
+                {
+                    "status": 200,
+                    "body": "invalid"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "unable to resolve file: unable to resolve file"
+                    }
+                ]
+            }
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/bota123/getFile",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "file_id": [
+                        "invalidjson"
+                    ]
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": [
+                {
+                    "code": "response_unparseable",
+                    "message": "Unable to parse response as JSON."
+                }
+            ]
+        }
+    },
+    {
+        "label": "Receive error File response",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 174114373,
+            "message": {
+                "message_id": 44,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "type": "private"
+                },
+                "date": 1454119668,
+                "sticker": {
+                    "width": 436,
+                    "height": 512,
+                    "thumb": {
+                        "file_id": "error",
+                        "file_size": 2510,
+                        "width": 77,
+                        "height": 90
+                    },
+                    "file_id": "BQADAwADRQADyIsGAAHtBskMy6GoLAI",
+                    "file_size": 38440
+                }
+            }
+        },
+        "http_mocks": {
+            "https://api.telegram.org/bota123/getFile": [
+                {
+                    "status": 200,
+                    "body": {
+                        "error_code": 500,
+                        "description": "error loading file"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "unable to resolve file: unable to resolve file"
+                    }
+                ]
+            }
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/bota123/getFile",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "file_id": [
+                        "error"
+                    ]
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": [
+                {
+                    "code": "external",
+                    "ext_code": "500",
+                    "message": "error loading file"
+                }
+            ]
+        }
+    },
+    {
+        "label": "Receive NotOk FileID",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 174114373,
+            "message": {
+                "message_id": 44,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "type": "private"
+                },
+                "date": 1454119668,
+                "sticker": {
+                    "width": 436,
+                    "height": 512,
+                    "thumb": {
+                        "file_id": "notok",
+                        "file_size": 2510,
+                        "width": 77,
+                        "height": 90
+                    },
+                    "file_id": "BQADAwADRQADyIsGAAHtBskMy6GoLAI",
+                    "file_size": 38440
+                }
+            }
+        },
+        "http_mocks": {
+            "https://api.telegram.org/bota123/getFile": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": false,
+                        "result": {
+                            "file_path": "nothing"
+                        }
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "unable to resolve file: file id 'notok' not present"
+                    }
+                ]
+            }
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/bota123/getFile",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "file_id": [
+                        "notok"
+                    ]
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive No FileID",
+        "url": "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "update_id": 174114373,
+            "message": {
+                "message_id": 44,
+                "from": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier"
+                },
+                "chat": {
+                    "id": 3527065,
+                    "first_name": "Nic",
+                    "last_name": "Pottier",
+                    "type": "private"
+                },
+                "date": 1454119668,
+                "sticker": {
+                    "width": 436,
+                    "height": 512,
+                    "thumb": {
+                        "file_id": "nofile",
+                        "file_size": 2510,
+                        "width": 77,
+                        "height": 90
+                    },
+                    "file_id": "BQADAwADRQADyIsGAAHtBskMy6GoLAI",
+                    "file_size": 38440
+                }
+            }
+        },
+        "http_mocks": {
+            "https://api.telegram.org/bota123/getFile": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "result": {}
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "unable to resolve file: no 'result.file_path' in response"
+                    }
+                ]
+            }
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.telegram.org/bota123/getFile",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "file_id": [
+                        "nofile"
+                    ]
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

@@ -26,7 +26,6 @@ import (
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
-	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -84,8 +83,21 @@ type IncomingTestCase struct {
 	ExpectedLogType svclogs.Type
 }
 
-// utility method to make a request to a handler URL
+// utility method to make a request to a handler URL and check the response
 func testHandlerRequest(tb testing.TB, s *web.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBodyContains string, requestPrepFunc RequestPrepFunc) string {
+	status, body := makeHandlerRequest(tb, s, path, headers, data, multipartFormFields, requestPrepFunc)
+
+	assert.Equal(tb, expectedStatus, status, "status code mismatch")
+
+	if expectedBodyContains != "" {
+		assert.Contains(tb, string(body), expectedBodyContains)
+	}
+
+	return string(body)
+}
+
+// makes a request to a handler URL, returning the response status and body
+func makeHandlerRequest(tb testing.TB, s *web.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, requestPrepFunc RequestPrepFunc) (int, []byte) {
 	var req *http.Request
 	var err error
 	url := fmt.Sprintf("https://%s%s", s.Runtime().Config.Domain, path)
@@ -134,15 +146,7 @@ func testHandlerRequest(tb testing.TB, s *web.Server, path string, headers map[s
 	rr := httptest.NewRecorder()
 	s.Router().ServeHTTP(rr, req)
 
-	body := rr.Body.String()
-
-	assert.Equal(tb, expectedStatus, rr.Code, "status code mismatch")
-
-	if expectedBodyContains != "" {
-		assert.Contains(tb, body, expectedBodyContains)
-	}
-
-	return body
+	return rr.Code, rr.Body.Bytes()
 }
 
 // localOnlyTransport passes through requests to test servers on this host and rejects everything else
@@ -415,42 +419,23 @@ type OutgoingTestCase struct {
 
 // Msg creates the test message for this test case
 func (tc *OutgoingTestCase) Msg(ch *models.Channel) *models.MsgOut {
-	msgOrigin := models.MsgOriginFlow
-	if tc.MsgOrigin != "" {
-		msgOrigin = tc.MsgOrigin
+	m := &OutgoingMsg{
+		Text:                 tc.MsgText,
+		URN:                  urns.URN(tc.MsgURN),
+		URNAuth:              tc.MsgURNAuth,
+		Attachments:          tc.MsgAttachments,
+		QuickReplies:         tc.MsgQuickReplies,
+		Locale:               tc.MsgLocale,
+		Templating:           json.RawMessage(tc.MsgTemplating),
+		HighPriority:         tc.MsgHighPriority,
+		ResponseToExternalID: tc.MsgResponseToExternalID,
+		Flow:                 tc.MsgFlow,
+		UserID:               tc.MsgUserID,
+		Origin:               tc.MsgOrigin,
+		ContactLastSeenOn:    tc.MsgContactLastSeenOn,
+		ContactOtherURNs:     tc.MsgContactOtherURNs,
 	}
-
-	c := &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc", LastSeenOn: tc.MsgContactLastSeenOn, OtherURNs: tc.MsgContactOtherURNs}
-
-	m := &models.MsgOut{
-		OrgID_:                ch.OrgID(),
-		UUID_:                 "0191e180-7d60-7000-aded-7d8b151cbd5b",
-		Contact_:              c,
-		URN_:                  urns.URN(tc.MsgURN),
-		Text_:                 tc.MsgText,
-		HighPriority_:         tc.MsgHighPriority,
-		QuickReplies_:         tc.MsgQuickReplies,
-		ResponseToExternalID_: tc.MsgResponseToExternalID,
-		Origin_:               msgOrigin,
-		ChannelUUID_:          ch.UUID(),
-		Channel_:              ch,
-	}
-	m.Locale_ = tc.MsgLocale
-	m.UserID_ = tc.MsgUserID
-	m.Attachments_ = append(m.Attachments_, tc.MsgAttachments...)
-
-	if tc.MsgURNAuth != "" {
-		m.URNAuth_ = tc.MsgURNAuth
-	}
-	if tc.MsgTemplating != "" {
-		templating := &models.Templating{}
-		jsonx.MustUnmarshal([]byte(tc.MsgTemplating), templating)
-		m.Templating_ = templating
-	}
-	if tc.MsgFlow != nil {
-		m.Flow_ = tc.MsgFlow
-	}
-	return m
+	return m.build(ch)
 }
 
 // RunOutgoingTestCases runs all the passed in test cases against the channel
@@ -548,13 +533,23 @@ func contactQueueKey(ch *models.Channel, msg *models.MsgOut) string {
 // asserts which contact_changed task the completed send queued: expectedNewURN is empty for the cases where none
 // should be, which is what covers a send reporting a URN the contact already has.
 func assertContactChanged(t *testing.T, rt *runtime.Runtime, ch *models.Channel, msg *models.MsgOut, expectedNewURN urns.URN) {
+	expected := make([]urns.URN, 0, 1)
+	if expectedNewURN != "" {
+		expected = append(expected, expectedNewURN)
+	}
+
+	assert.Equal(t, expected, queuedContactChangedURNs(t, rt, ch, msg), "contact_changed tasks mismatch")
+}
+
+// returns the new URNs of the contact_changed tasks queued for the contact of the given message
+func queuedContactChangedURNs(t *testing.T, rt *runtime.Runtime, ch *models.Channel, msg *models.MsgOut) []urns.URN {
 	rc := rt.VK.Get()
 	defer rc.Close()
 
 	tasks, err := redis.Strings(rc.Do("LRANGE", contactQueueKey(ch, msg), 0, -1))
 	require.NoError(t, err)
 
-	actual := make([]urns.URN, 0, len(tasks))
+	newURNs := make([]urns.URN, 0, len(tasks))
 	for _, task := range tasks {
 		payload := &struct {
 			Type string `json:"type"`
@@ -567,16 +562,11 @@ func assertContactChanged(t *testing.T, rt *runtime.Runtime, ch *models.Channel,
 		require.NoError(t, json.Unmarshal([]byte(task), payload), "error unmarshaling queued task: %s", task)
 
 		if payload.Type == "contact_changed" {
-			actual = append(actual, payload.Task.NewURN.Value)
+			newURNs = append(newURNs, payload.Task.NewURN.Value)
 		}
 	}
 
-	expected := make([]urns.URN, 0, 1)
-	if expectedNewURN != "" {
-		expected = append(expected, expectedNewURN)
-	}
-
-	assert.Equal(t, expected, actual, "contact_changed tasks mismatch")
+	return newURNs
 }
 
 // asserts that the given channel log doesn't contain any of the given values
