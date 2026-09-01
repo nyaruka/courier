@@ -24,7 +24,7 @@ type IncomingCase struct {
 	Label         string                           `json:"label"`
 	URL           string                           `json:"url"`
 	Headers       map[string]string                `json:"headers,omitempty"`
-	Data          HTTPBody                         `json:"data,omitempty"`
+	Data          HTTPBody                         `json:"data,omitzero"`
 	MultipartForm map[string]string                `json:"multipart_form,omitempty"`
 	Unsigned      bool                             `json:"unsigned,omitempty"` // don't sign this request even if the run signs requests
 	HTTPMocks     map[string][]*httpx.MockResponse `json:"http_mocks,omitempty"`
@@ -135,10 +135,10 @@ func RunIncomingTests(t *testing.T, chs []*models.Channel, newFn channels.NewHan
 				client.Transport = httpx.WithTraces(localOnlyTransport{http.DefaultTransport})
 			}
 
-			status, body := makeHandlerRequest(t, s, tc.URL, tc.Headers, string(tc.Data), tc.MultipartForm, opts.signer(tc))
+			status, body := makeHandlerRequest(t, s, tc.URL, tc.Headers, string(tc.Data.Bytes()), tc.MultipartForm, opts.signer(tc))
 
 			actual := *tc
-			actual.Response = &HandlerResponse{Status: status, Body: body}
+			actual.Response = &HandlerResponse{Status: status, Body: NewHTTPBody(body)}
 			actual.Msgs, actual.Statuses, actual.Events, actual.Requests, actual.Log = nil, nil, nil, nil, nil
 
 			for _, event := range handledEvents {
@@ -183,7 +183,7 @@ func RunIncomingTests(t *testing.T, chs []*models.Channel, newFn channels.NewHan
 			models.FlushChannelCache()
 
 			validCase := cases[0]
-			status, body := makeHandlerRequest(t, s, validCase.URL, validCase.Headers, string(validCase.Data), validCase.MultipartForm, opts.signer(validCase))
+			status, body := makeHandlerRequest(t, s, validCase.URL, validCase.Headers, string(validCase.Data.Bytes()), validCase.MultipartForm, opts.signer(validCase))
 			assert.Equal(t, 400, status, "status code mismatch")
 			assert.Contains(t, string(body), "channel not found")
 		})

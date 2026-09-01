@@ -1,0 +1,221 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "text=Msg\u0026short_code=2020\u0026tstamp=2017-10-26T15:51:32.906335%2B00:00\u0026msisdn=254791541111",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "Msg",
+                        "urn": "tel:+254791541111",
+                        "received_on": "2017-10-26T15:51:32.906335Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+254791541111",
+                "text": "Msg",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2017-10-26T15:51:32.906335Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "text=Msg\u0026short_code=2020\u0026tstamp=2017-10-26T15:51:32.906335%2B00:00\u0026msisdn=MTN",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Empty",
+        "url": "/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moForm.MSISDN' Error:Field validation for 'MSISDN' failed on the 'required' tag\nKey: 'moForm.Text' Error:Field validation for 'Text' failed on the 'required' tag\nKey: 'moForm.ShortCode' Error:Field validation for 'ShortCode' failed on the 'required' tag\nKey: 'moForm.TStamp' Error:Field validation for 'TStamp' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'msisdn' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'text' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'shortcode' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'tstamp' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Missing Text",
+        "url": "/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "short_code=2020\u0026tstamp=2017-10-26T15:51:32.906335%2B00:00\u0026msisdn=254791541111",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moForm.Text' Error:Field validation for 'Text' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'text' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid TS",
+        "url": "/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "text=Msg\u0026short_code=2020\u0026tstamp=2017-10-26\u0026msisdn=254791541111",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid tstamp: 2017-10-26"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Invalid",
+        "url": "/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "uuid=019a0719-ac96-7eb9-a837-cac215164834\u0026status=Borked",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown status 'Borked', must be one of '1', '16', '2', '4', '8'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Missing",
+        "url": "/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "uuid=019a0719-ac96-7eb9-a837-cac215164834",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'statusForm.Status' Error:Field validation for 'Status' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'status' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Valid",
+        "url": "/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "uuid=019a0719-ac96-7eb9-a837-cac215164834\u0026status=1",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "D",
+                "log_uuid": "0199f028-0e48-7000-82fd-5b92b67a3e7e"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]

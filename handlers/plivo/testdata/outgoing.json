@@ -1,0 +1,290 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.plivo.com/v1/Account/AuthID/Message/": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_uuid": [
+                            "abc123"
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.plivo.com/v1/Account/AuthID/Message/",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "src": "2020",
+                    "dst": "250788383383",
+                    "text": "Simple Message ☺",
+                    "url": "https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+                    "method": "POST"
+                }
+            }
+        ],
+        "external_ids": [
+            "abc123"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Long Send",
+        "msg": {
+            "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.plivo.com/v1/Account/AuthID/Message/": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_uuid": [
+                            "abc123"
+                        ]
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {
+                        "message_uuid": [
+                            "abc123"
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.plivo.com/v1/Account/AuthID/Message/",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "src": "2020",
+                    "dst": "250788383383",
+                    "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,",
+                    "url": "https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+                    "method": "POST"
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.plivo.com/v1/Account/AuthID/Message/",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "src": "2020",
+                    "dst": "250788383383",
+                    "text": "I need to keep adding more things to make it work",
+                    "url": "https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+                    "method": "POST"
+                }
+            }
+        ],
+        "external_ids": [
+            "abc123",
+            "abc123"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api.plivo.com/v1/Account/AuthID/Message/": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_uuid": [
+                            "abc123"
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.plivo.com/v1/Account/AuthID/Message/",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "src": "2020",
+                    "dst": "250788383383",
+                    "text": "My pic!\nhttps://foo.bar/image.jpg",
+                    "url": "https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+                    "method": "POST"
+                }
+            }
+        ],
+        "external_ids": [
+            "abc123"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "No External Id",
+        "msg": {
+            "text": "No External ID",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.plivo.com/v1/Account/AuthID/Message/": [
+                {
+                    "status": 200,
+                    "body": {
+                        "missing": "OzYDlvf3SQVc"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.plivo.com/v1/Account/AuthID/Message/",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "src": "2020",
+                    "dst": "250788383383",
+                    "text": "No External ID",
+                    "url": "https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+                    "method": "POST"
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.plivo.com/v1/Account/AuthID/Message/": [
+                {
+                    "status": 401,
+                    "body": {
+                        "error": "failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.plivo.com/v1/Account/AuthID/Message/",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "src": "2020",
+                    "dst": "250788383383",
+                    "text": "Error Message",
+                    "url": "https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+                    "method": "POST"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.plivo.com/v1/Account/AuthID/Message/": [
+                {
+                    "status": 429,
+                    "body": {
+                        "error": "failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.plivo.com/v1/Account/AuthID/Message/",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "src": "2020",
+                    "dst": "250788383383",
+                    "text": "Error Message",
+                    "url": "https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+                    "method": "POST"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]

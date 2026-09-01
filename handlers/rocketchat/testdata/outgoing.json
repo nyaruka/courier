@@ -1,0 +1,289 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "rocketchat:direct:john.doe#john.doe"
+        },
+        "http_mocks": {
+            "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": [
+                {
+                    "status": 201,
+                    "body": {
+                        "id": "iNKE8a6k6cjbqWhWd"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
+                "headers": {
+                    "Authorization": "Token 123456789",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "user": "direct:john.doe",
+                    "bot": "rocket.cat",
+                    "text": "Simple Message"
+                }
+            }
+        ],
+        "external_ids": [
+            "iNKE8a6k6cjbqWhWd"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "urn": "rocketchat:livechat:onrMgdKbpX9Qqtvoi",
+            "attachments": [
+                "application/pdf:https://link.to/attachment.pdf"
+            ]
+        },
+        "http_mocks": {
+            "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": [
+                {
+                    "status": 201,
+                    "body": {
+                        "id": "iNKE8a6k6cjbqWhWd"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
+                "headers": {
+                    "Authorization": "Token 123456789",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "user": "livechat:onrMgdKbpX9Qqtvoi",
+                    "bot": "rocket.cat",
+                    "attachments": [
+                        {
+                            "type": "application/pdf",
+                            "url": "https://link.to/attachment.pdf"
+                        }
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "iNKE8a6k6cjbqWhWd"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Text And Attachment",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "rocketchat:direct:john.doe",
+            "attachments": [
+                "application/pdf:https://link.to/attachment.pdf"
+            ]
+        },
+        "http_mocks": {
+            "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": [
+                {
+                    "status": 201,
+                    "body": {
+                        "id": "iNKE8a6k6cjbqWhWd"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
+                "headers": {
+                    "Authorization": "Token 123456789",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "user": "direct:john.doe",
+                    "bot": "rocket.cat",
+                    "text": "Simple Message",
+                    "attachments": [
+                        {
+                            "type": "application/pdf",
+                            "url": "https://link.to/attachment.pdf"
+                        }
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "iNKE8a6k6cjbqWhWd"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unexcepted status response",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "rocketchat:direct:john.doe#john.doe"
+        },
+        "http_mocks": {
+            "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": [
+                {
+                    "status": 400,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
+                "headers": {
+                    "Authorization": "Token 123456789",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "user": "direct:john.doe",
+                    "bot": "rocket.cat",
+                    "text": "Simple Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "rocketchat:direct:john.doe#john.doe"
+        },
+        "http_mocks": {
+            "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": [
+                {
+                    "status": 429,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
+                "headers": {
+                    "Authorization": "Token 123456789",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "user": "direct:john.doe",
+                    "bot": "rocket.cat",
+                    "text": "Simple Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Connection Error",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "rocketchat:direct:john.doe#john.doe"
+        },
+        "http_mocks": {
+            "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": [
+                {
+                    "status": 500,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
+                "headers": {
+                    "Authorization": "Token 123456789",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "user": "direct:john.doe",
+                    "bot": "rocket.cat",
+                    "text": "Simple Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Response Unexpected",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "rocketchat:direct:john.doe#john.doe"
+        },
+        "http_mocks": {
+            "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": [
+                {
+                    "status": 201,
+                    "body": {
+                        "missing": "0"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
+                "headers": {
+                    "Authorization": "Token 123456789",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "user": "direct:john.doe",
+                    "bot": "rocket.cat",
+                    "text": "Simple Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    }
+]

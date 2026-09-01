@@ -1,0 +1,323 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "freshchat:0534f78-b6e9-4f79-8853-11cedfc1f35b/c8fddfaf-622a-4a0e-b060-4f3ccbeab606"
+        },
+        "http_mocks": {
+            "https://api.freshchat.com/v2/conversations": [
+                {
+                    "status": 200,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.freshchat.com/v2/conversations",
+                "headers": {
+                    "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "message_parts": [
+                                {
+                                    "text": {
+                                        "content": "Simple Message ☺"
+                                    }
+                                }
+                            ],
+                            "actor_id": "c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
+                            "actor_type": "agent"
+                        }
+                    ],
+                    "channel_id": "0534f78-b6e9-4f79-8853-11cedfc1f35b",
+                    "users": [
+                        {
+                            "id": "c8fddfaf-622a-4a0e-b060-4f3ccbeab606"
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send with text and image",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "freshchat:0534f78-b6e9-4f79-8853-11cedfc1f35b/c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
+            "attachments": [
+                "image:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api.freshchat.com/v2/conversations": [
+                {
+                    "status": 200,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.freshchat.com/v2/conversations",
+                "headers": {
+                    "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "message_parts": [
+                                {
+                                    "text": {
+                                        "content": "Simple Message ☺"
+                                    }
+                                },
+                                {
+                                    "image": {
+                                        "url": "https://foo.bar/image.jpg"
+                                    }
+                                }
+                            ],
+                            "actor_id": "c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
+                            "actor_type": "agent"
+                        }
+                    ],
+                    "channel_id": "0534f78-b6e9-4f79-8853-11cedfc1f35b",
+                    "users": [
+                        {
+                            "id": "c8fddfaf-622a-4a0e-b060-4f3ccbeab606"
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send with image only",
+        "msg": {
+            "urn": "freshchat:0534f78-b6e9-4f79-8853-11cedfc1f35b/c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
+            "attachments": [
+                "image/jpg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api.freshchat.com/v2/conversations": [
+                {
+                    "status": 200,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.freshchat.com/v2/conversations",
+                "headers": {
+                    "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "message_parts": [
+                                {
+                                    "image": {
+                                        "url": "https://foo.bar/image.jpg"
+                                    }
+                                }
+                            ],
+                            "actor_id": "c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
+                            "actor_type": "agent"
+                        }
+                    ],
+                    "channel_id": "0534f78-b6e9-4f79-8853-11cedfc1f35b",
+                    "users": [
+                        {
+                            "id": "c8fddfaf-622a-4a0e-b060-4f3ccbeab606"
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error sending",
+        "msg": {
+            "text": "Error",
+            "urn": "freshchat:0534f78-b6e9-4f79-8853-11cedfc1f35b/c8fddfaf-622a-4a0e-b060-4f3ccbeab606"
+        },
+        "http_mocks": {
+            "https://api.freshchat.com/v2/conversations": [
+                {
+                    "status": 400,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.freshchat.com/v2/conversations",
+                "headers": {
+                    "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "message_parts": [
+                                {
+                                    "text": {
+                                        "content": "Error"
+                                    }
+                                }
+                            ],
+                            "actor_id": "c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
+                            "actor_type": "agent"
+                        }
+                    ],
+                    "channel_id": "0534f78-b6e9-4f79-8853-11cedfc1f35b",
+                    "users": [
+                        {
+                            "id": "c8fddfaf-622a-4a0e-b060-4f3ccbeab606"
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error",
+            "urn": "freshchat:0534f78-b6e9-4f79-8853-11cedfc1f35b/c8fddfaf-622a-4a0e-b060-4f3ccbeab606"
+        },
+        "http_mocks": {
+            "https://api.freshchat.com/v2/conversations": [
+                {
+                    "status": 429,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.freshchat.com/v2/conversations",
+                "headers": {
+                    "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "message_parts": [
+                                {
+                                    "text": {
+                                        "content": "Error"
+                                    }
+                                }
+                            ],
+                            "actor_id": "c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
+                            "actor_type": "agent"
+                        }
+                    ],
+                    "channel_id": "0534f78-b6e9-4f79-8853-11cedfc1f35b",
+                    "users": [
+                        {
+                            "id": "c8fddfaf-622a-4a0e-b060-4f3ccbeab606"
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Connection Error",
+        "msg": {
+            "text": "Error",
+            "urn": "freshchat:0534f78-b6e9-4f79-8853-11cedfc1f35b/c8fddfaf-622a-4a0e-b060-4f3ccbeab606"
+        },
+        "http_mocks": {
+            "https://api.freshchat.com/v2/conversations": [
+                {
+                    "status": 500,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.freshchat.com/v2/conversations",
+                "headers": {
+                    "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "message_parts": [
+                                {
+                                    "text": {
+                                        "content": "Error"
+                                    }
+                                }
+                            ],
+                            "actor_id": "c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
+                            "actor_type": "agent"
+                        }
+                    ],
+                    "channel_id": "0534f78-b6e9-4f79-8853-11cedfc1f35b",
+                    "users": [
+                        {
+                            "id": "c8fddfaf-622a-4a0e-b060-4f3ccbeab606"
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    }
+]

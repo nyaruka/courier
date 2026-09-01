@@ -1,0 +1,230 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://202.43.169.11/APIhttpU/receive2waysms.php*": [
+                {
+                    "status": 200,
+                    "body": "000"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=Simple+Message&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Long Send",
+        "msg": {
+            "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://202.43.169.11/APIhttpU/receive2waysms.php*": [
+                {
+                    "status": 200,
+                    "body": "000"
+                },
+                {
+                    "status": 200,
+                    "body": "000"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=This+is+a+longer+message+than+160+characters+and+will+cause+us+to+split+it+into+two+separate+parts%2C+isn%27t+that+right+but+it+is+even+longer+than+before+I+say%2C&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            },
+            {
+                "method": "GET",
+                "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=I+need+to+keep+adding+more+things+to+make+it+work&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b.2&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "http://202.43.169.11/APIhttpU/receive2waysms.php*": [
+                {
+                    "status": 200,
+                    "body": "000"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://202.43.169.11/APIhttpU/receive2waysms.php*": [
+                {
+                    "status": 400,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=Error+Message&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://202.43.169.11/APIhttpU/receive2waysms.php*": [
+                {
+                    "status": 429,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=Error+Message&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Authentication Error",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://202.43.169.11/APIhttpU/receive2waysms.php*": [
+                {
+                    "status": 200,
+                    "body": "001"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=Simple+Message&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "001",
+                "message": "Authentication error."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Account Expired",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://202.43.169.11/APIhttpU/receive2waysms.php*": [
+                {
+                    "status": 200,
+                    "body": "101"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=Simple+Message&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "101",
+                "message": "Account expired or invalid parameters."
+            }
+        },
+        "log_errors": []
+    }
+]

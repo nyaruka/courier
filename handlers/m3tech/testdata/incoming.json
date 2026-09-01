@@ -1,0 +1,70 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?from=+923161909799&text=hello+world",
+        "data": " ",
+        "response": {
+            "status": 200,
+            "body": "SMS Accepted: 019a3df0-d240-7000-a841-50246e59817e"
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+923161909799",
+                "text": "hello world",
+                "created_on": "2025-11-01T05:43:03Z",
+                "received_on": "2025-11-01T05:43:05Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?from=MTN&text=hello+world",
+        "data": " ",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive No From",
+        "url": "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?text=hello",
+        "data": " ",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing required field 'from'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

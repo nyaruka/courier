@@ -1,0 +1,197 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?userid=testusr&password=test&original=6289881134560&sendto=2020&message=Msg&messageid=foo",
+        "response": {
+            "status": 200,
+            "body": "000"
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+6289881134560",
+                "text": "Msg",
+                "external_id": "foo",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2025-11-19T17:20:03Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid External ID",
+        "url": "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?userid=testusr&password=test&original=cmp-oodddqddwdwdcd&sendto=2020&message=Msg&messageid=bar",
+        "response": {
+            "status": 200,
+            "body": "000"
+        },
+        "msgs": [
+            {
+                "uuid": "019a969b-7da0-7000-ba39-cc51d81df68c",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "ext:cmp-oodddqddwdwdcd",
+                "text": "Msg",
+                "external_id": "bar",
+                "created_on": "2025-11-18T10:56:03Z",
+                "received_on": "2025-11-18T10:56:03Z",
+                "log_uuids": [
+                    "019a969b-71e8-7000-a123-36c8f54670b6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid",
+        "url": "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing required parameters original and sendto"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid Status",
+        "url": "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?status=10&messageid=019a0719-ac96-7eb9-a837-cac215164834",
+        "response": {
+            "status": 200,
+            "body": "000"
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "D",
+                "log_uuid": "019a9405-84c8-7000-a071-1bb56436b1db"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid Status With Part Suffix",
+        "url": "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?status=10&messageid=019a0719-ac96-7eb9-a837-cac215164834.2",
+        "response": {
+            "status": 200,
+            "body": "000"
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "D",
+                "log_uuid": "019a9c0f-9fc8-7000-aee2-3beacb9b6491"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Failed Status",
+        "url": "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?status=30&messageid=019a0719-ac96-7eb9-a837-cac215164834",
+        "response": {
+            "status": 200,
+            "body": "000"
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "F",
+                "log_uuid": "019aee08-6d28-7000-ba9a-8c34955ac51e"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing Status",
+        "url": "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?messageid=019a0719-ac96-7eb9-a837-cac215164834",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "parameters messageid and status should not be empty"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid Status",
+        "url": "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?status=foo&messageid=019a0719-ac96-7eb9-a837-cac215164834",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "parsing failed: status 'foo' is not an integer"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid Message ID",
+        "url": "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?status=10&messageid=abc",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "parsing failed: messageid 'abc' is not a UUID"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]

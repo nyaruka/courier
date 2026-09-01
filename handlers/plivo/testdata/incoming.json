@@ -1,0 +1,215 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "To=2020\u0026From=60124361111\u0026TotalRate=0\u0026Units=1\u0026Text=Hello\u0026TotalAmount=0\u0026Type=sms\u0026MessageUUID=abc1234",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "Hello",
+                        "urn": "tel:+60124361111",
+                        "external_id": "abc1234",
+                        "received_on": "2025-11-19T17:20:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+60124361111",
+                "text": "Hello",
+                "external_id": "abc1234",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2025-11-19T17:20:03Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "To=2020\u0026From=MTN\u0026TotalRate=0\u0026Units=1\u0026Text=Hello\u0026TotalAmount=0\u0026Type=sms\u0026MessageUUID=abc1234",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid Address Params",
+        "url": "/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "To=1515\u0026From=60124361111\u0026TotalRate=0\u0026Units=1\u0026Text=Hello\u0026TotalAmount=0\u0026Type=sms\u0026MessageUUID=abc1234",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid to number [1515], expecting [2020]"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing Params",
+        "url": "/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "From=60124361111\u0026TotalRate=0\u0026Units=1\u0026Text=Hello\u0026TotalAmount=0\u0026Type=sms\u0026MessageUUID=abc1234",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moForm.To' Error:Field validation for 'To' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'to' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid Status",
+        "url": "/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "MessageUUID=12345\u0026status=delivered\u0026To=%2B60124361111\u0026From=2020",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "D",
+                "log_uuid": "019a9405-84c8-7000-a071-1bb56436b1db"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Sent Status",
+        "url": "/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "ParentMessageUUID=12345\u0026status=sent\u0026MessageUUID=123\u0026To=%2B60124361111\u0026From=2020",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "S",
+                "log_uuid": "019a0d1a-5588-7000-8e77-de219ce504e4"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid Status Address",
+        "url": "/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "ParentMessageUUID=12345\u0026status=sent\u0026MessageUUID=123\u0026To=%2B60124361111\u0026From=1515",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid to number [1515], expecting [2020]"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Unkown Status",
+        "url": "/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "MessageUUID=12345\u0026status=UNKNOWN\u0026To=%2B60124361111\u0026From=2020",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring unknown status 'UNKNOWN'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]
