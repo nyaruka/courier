@@ -32,6 +32,13 @@ const (
 	ChannelLogTypeChatStart       svclogs.Type = "chat_start"
 )
 
+// ErrorRequestUnparseable is used when we couldn't fully decode an incoming request but carried on with what
+// we could read - the failure is recorded here rather than answered, so that it's visible without the provider
+// being told to retry a body we'll never be able to parse.
+func ErrorRequestUnparseable(err error) *svclogs.Error {
+	return &svclogs.Error{Code: "request_unparseable", Message: fmt.Sprintf("Unable to parse request: %s.", err)}
+}
+
 func ErrorResponseStatusCode() *svclogs.Error {
 	return &svclogs.Error{Code: "response_status_code", Message: "Unexpected response status code."}
 }

@@ -120,9 +120,13 @@ var statusMappings = map[string]models.MsgStatus{
 // receiveStatus is our receive function for status updates
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	// this one decodes for itself rather than using FormPayload, because it tolerates a partial decode - it
-	// checks the fields it needs below and ignores the request if they're missing
+	// checks the fields it needs below and ignores the request if they're missing. Answering a decode failure
+	// as an error instead would have Vonage retry a body we can never parse, once a minute for 24 hours, so
+	// the failure is recorded on the log rather than returned.
 	form := &statusForm{}
-	handlers.DecodeAndValidateForm(form, r)
+	if err := handlers.DecodeAndValidateForm(form, r); err != nil {
+		clog.Error(models.ErrorRequestUnparseable(err))
+	}
 
 	if form.MessageID == "" {
 		return channels.Ignore("no messageId parameter, ignored")
@@ -154,7 +158,9 @@ type moForm struct {
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, in *channels.Received, clog *models.ChannelLog) error {
 	// decodes for itself for the same reason as receiveStatus above
 	form := &moForm{}
-	handlers.DecodeAndValidateForm(form, r)
+	if err := handlers.DecodeAndValidateForm(form, r); err != nil {
+		clog.Error(models.ErrorRequestUnparseable(err))
+	}
 
 	if form.To == "" {
 		return channels.Ignore("no to parameter, ignored")

@@ -1,6 +1,7 @@
 package nexmo
 
 import (
+	"errors"
 	"net/url"
 	"testing"
 
@@ -111,6 +112,29 @@ var testCases = []IncomingTestCase{
 		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=unexpected",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "ignoring unknown status report",
+	},
+	{
+		// a field we can't convert doesn't cost us the rest of the report, but is recorded
+		Label:                "Status with unparseable error code",
+		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=delivered&err-code=nope",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "external1", Status: models.MsgStatusDelivered},
+		},
+		ExpectedErrors: []*svclogs.Error{
+			models.ErrorRequestUnparseable(errors.New(`schema: error converting value for "err-code"`)),
+		},
+	},
+	{
+		// a query string we can't parse at all leaves us with nothing to act on, but is still recorded
+		Label:                "Receive with unparseable query string",
+		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=2349067554729&text=%zz",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "no to parameter, ignored",
+		ExpectedErrors: []*svclogs.Error{
+			models.ErrorRequestUnparseable(errors.New(`invalid URL escape "%zz"`)),
+		},
 	},
 }
 
