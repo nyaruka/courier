@@ -7,6 +7,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -53,7 +54,7 @@ func NewChannelEvent(channel *Channel, eventType ChannelEventType, urn urns.URN,
 		ChannelUUID_: channel.UUID(),
 		URN_:         urn,
 		EventType_:   eventType,
-		OccurredOn_:  time.Now().In(time.UTC),
+		OccurredOn_:  dates.Now().In(time.UTC),
 		LogUUIDs:     []svclogs.UUID{clog.UUID},
 
 		Channel_: channel,

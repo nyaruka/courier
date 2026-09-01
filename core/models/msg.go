@@ -104,7 +104,7 @@ type MsgIn struct {
 
 // NewIncomingMsg creates a new incoming message
 func NewIncomingMsg(channel *Channel, urn urns.URN, text string, extID string, clog *ChannelLog) *MsgIn {
-	now := time.Now()
+	now := dates.Now()
 
 	return &MsgIn{
 		UUID_:        MsgUUID(uuids.NewV7()),
