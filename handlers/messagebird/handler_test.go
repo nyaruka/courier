@@ -217,6 +217,18 @@ var defaultReceiveTestCases = []IncomingTestCase{
 			models.ErrorRequestUnparseable(errors.New(`schema: error converting value for "statusDatetime". Details: parsing time "garbage" as "2006-01-02T15:04:05Z07:00": cannot parse "garbage" as "2006"`)),
 		},
 	},
+	{
+		// what's recovered is the report, not the field: the status is recorded, but an error code we
+		// couldn't convert is still not the one that says the contact stopped, so no event comes with it
+		Label:              "Status with unparseable error code",
+		URL:                statusBaseURL + "&status=delivery_failed&statusErrorCode=nope",
+		ExpectedRespStatus: 200,
+		ExpectedStatuses:   []ExpectedStatus{{MsgUUID: "019a0719-ac96-7eb9-a837-cac215164834", Status: models.MsgStatusFailed}},
+		ExpectedEvents:     nil,
+		ExpectedErrors: []*svclogs.Error{
+			models.ErrorRequestUnparseable(errors.New(`schema: error converting value for "statusErrorCode"`)),
+		},
+	},
 }
 
 func TestReceiving(t *testing.T) {
