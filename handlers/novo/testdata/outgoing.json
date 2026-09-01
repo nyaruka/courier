@@ -21,10 +21,7 @@
         "requests": [
             {
                 "method": "GET",
-                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=Simple+Message+%E2%98%BA&signature=29f1fe56b81979aaf9dfb693b91ad16c87a9303951f38abcc2794501da79fff0&to=18686846481",
-                "headers": {
-                    "User-Agent": "Courier/Dev"
-                }
+                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=Simple+Message+%E2%98%BA&signature=29f1fe56b81979aaf9dfb693b91ad16c87a9303951f38abcc2794501da79fff0&to=18686846481"
             }
         ],
         "log_errors": []
@@ -60,17 +57,11 @@
         "requests": [
             {
                 "method": "GET",
-                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=This+is+a+longer+message+than+160+characters+and+will+cause+us+to+split+it+into+two+separate+parts%2C+isn%27t+that+right+but+it+is+even+longer+than+before+I+say%2C&signature=974f711ede732846e4d4da9bc95bf9452ae2337d5452c7417a19ed4034afd197&to=18686846481",
-                "headers": {
-                    "User-Agent": "Courier/Dev"
-                }
+                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=This+is+a+longer+message+than+160+characters+and+will+cause+us+to+split+it+into+two+separate+parts%2C+isn%27t+that+right+but+it+is+even+longer+than+before+I+say%2C&signature=974f711ede732846e4d4da9bc95bf9452ae2337d5452c7417a19ed4034afd197&to=18686846481"
             },
             {
                 "method": "GET",
-                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=I+need+to+keep+adding+more+things+to+make+it+work&signature=d6251beaa3398cb00c9354fd2fa80cc14ff0d9d42f6d6d488ad0f51b0719d89b&to=18686846481",
-                "headers": {
-                    "User-Agent": "Courier/Dev"
-                }
+                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=I+need+to+keep+adding+more+things+to+make+it+work&signature=d6251beaa3398cb00c9354fd2fa80cc14ff0d9d42f6d6d488ad0f51b0719d89b&to=18686846481"
             }
         ],
         "log_errors": []
@@ -100,10 +91,7 @@
         "requests": [
             {
                 "method": "GET",
-                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&signature=77a0feaf9a39e593f3e87d8cd3798e8aeabc1646501df7331c8d3bc3a54277fb&to=18686846481",
-                "headers": {
-                    "User-Agent": "Courier/Dev"
-                }
+                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&signature=77a0feaf9a39e593f3e87d8cd3798e8aeabc1646501df7331c8d3bc3a54277fb&to=18686846481"
             }
         ],
         "log_errors": []
@@ -128,10 +116,7 @@
         "requests": [
             {
                 "method": "GET",
-                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=Invalid+Parameters&signature=4b640a668fd83223e38d429b15ea737ef58e1ab025b756baaca4743f3adb3f77&to=18686846481",
-                "headers": {
-                    "User-Agent": "Courier/Dev"
-                }
+                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=Invalid+Parameters&signature=4b640a668fd83223e38d429b15ea737ef58e1ab025b756baaca4743f3adb3f77&to=18686846481"
             }
         ],
         "error": {
@@ -163,10 +148,7 @@
         "requests": [
             {
                 "method": "GET",
-                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=Error+Response&signature=9fe49f073109de29f8c6d5108fd5719ee0b70c22cedb23fffdbabc8a99b9a0a9&to=18686846481",
-                "headers": {
-                    "User-Agent": "Courier/Dev"
-                }
+                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=Error+Response&signature=9fe49f073109de29f8c6d5108fd5719ee0b70c22cedb23fffdbabc8a99b9a0a9&to=18686846481"
             }
         ],
         "error": {
@@ -198,10 +180,7 @@
         "requests": [
             {
                 "method": "GET",
-                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=Error+Response&signature=9fe49f073109de29f8c6d5108fd5719ee0b70c22cedb23fffdbabc8a99b9a0a9&to=18686846481",
-                "headers": {
-                    "User-Agent": "Courier/Dev"
-                }
+                "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=Error+Response&signature=9fe49f073109de29f8c6d5108fd5719ee0b70c22cedb23fffdbabc8a99b9a0a9&to=18686846481"
             }
         ],
         "error": {

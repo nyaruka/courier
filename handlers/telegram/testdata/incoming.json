@@ -248,8 +248,7 @@
                 "method": "POST",
                 "url": "https://api.telegram.org/bota123/getFile",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "file_id": [
@@ -369,8 +368,7 @@
                 "method": "POST",
                 "url": "https://api.telegram.org/bota123/getFile",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "file_id": [
@@ -477,8 +475,7 @@
                 "method": "POST",
                 "url": "https://api.telegram.org/bota123/getFile",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "file_id": [
@@ -577,8 +574,7 @@
                 "method": "POST",
                 "url": "https://api.telegram.org/bota123/getFile",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "file_id": [
@@ -677,8 +673,7 @@
                 "method": "POST",
                 "url": "https://api.telegram.org/bota123/getFile",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "file_id": [
@@ -1123,8 +1118,7 @@
                 "method": "POST",
                 "url": "https://api.telegram.org/bota123/getFile",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "file_id": [
@@ -1201,8 +1195,7 @@
                 "method": "POST",
                 "url": "https://api.telegram.org/bota123/getFile",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "file_id": [
@@ -1274,8 +1267,7 @@
                 "method": "POST",
                 "url": "https://api.telegram.org/bota123/getFile",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "file_id": [
@@ -1355,8 +1347,7 @@
                 "method": "POST",
                 "url": "https://api.telegram.org/bota123/getFile",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "file_id": [
@@ -1439,8 +1430,7 @@
                 "method": "POST",
                 "url": "https://api.telegram.org/bota123/getFile",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "file_id": [
@@ -1515,8 +1505,7 @@
                 "method": "POST",
                 "url": "https://api.telegram.org/bota123/getFile",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "file_id": [

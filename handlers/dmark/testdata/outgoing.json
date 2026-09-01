@@ -23,8 +23,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Token Authy",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "dlr_url": [
@@ -70,8 +69,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Token Authy",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "dlr_url": [
@@ -121,8 +119,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Token Authy",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "dlr_url": [
@@ -172,8 +169,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Token Authy",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "dlr_url": [

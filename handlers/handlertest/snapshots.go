@@ -87,7 +87,8 @@ type HandlerLog struct {
 }
 
 // CapturedRequest is an HTTP request a handler made which was answered by a mock. A form encoded body is written as
-// its decoded values so that the file stays readable.
+// its decoded values so that the file stays readable. The User-Agent header is left out because every request
+// carries the same one and a change to it would otherwise touch every file.
 type CapturedRequest struct {
 	Method  string            `json:"method"`
 	URL     string            `json:"url"`
@@ -99,7 +100,9 @@ type CapturedRequest struct {
 func captureRequest(r *http.Request) *CapturedRequest {
 	c := &CapturedRequest{Method: r.Method, URL: r.URL.String(), Headers: make(map[string]string, len(r.Header))}
 	for k := range r.Header {
-		c.Headers[k] = r.Header.Get(k)
+		if k != "User-Agent" {
+			c.Headers[k] = r.Header.Get(k)
+		}
 	}
 
 	var body []byte

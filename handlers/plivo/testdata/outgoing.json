@@ -24,8 +24,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "src": "2020",
@@ -74,8 +73,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "src": "2020",
@@ -91,8 +89,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "src": "2020",
@@ -137,8 +134,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "src": "2020",
@@ -177,8 +173,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "src": "2020",
@@ -221,8 +216,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "src": "2020",
@@ -265,8 +259,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "src": "2020",

@@ -27,8 +27,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic dXNlcjE6cGFzczE=",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "from": [
@@ -69,8 +68,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic dXNlcjE6cGFzczE=",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "from": [
@@ -118,8 +116,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic dXNlcjE6cGFzczE=",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "from": [
@@ -164,8 +161,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic dXNlcjE6cGFzczE=",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "from": [
@@ -211,8 +207,7 @@
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic dXNlcjE6cGFzczE=",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "from": [
