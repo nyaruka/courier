@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"golang.org/x/oauth2/google"
@@ -33,7 +34,7 @@ var (
 )
 
 func init() {
-	channels.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler)
 }
 
 type handler struct {
@@ -42,17 +43,15 @@ type handler struct {
 	fetchTokenMutex sync.Mutex
 }
 
-func newHandler() channels.Handler {
-	return &handler{
-		BaseHandler:     handlers.NewBaseHandler(models.ChannelType("FCM"), "Firebase", handlers.WithRedactConfigKeys(configKey)),
+func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+	h := &handler{
+		BaseHandler:     handlers.NewBaseHandler(rt, models.ChannelType("FCM"), "Firebase", handlers.WithRedactConfigKeys(configKey)),
 		fetchTokenMutex: sync.Mutex{},
 	}
-}
 
-func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMessage))
 	r.Add(h, http.MethodPost, "register", models.ChannelLogTypeReceive, h.registerContact)
-	return nil
+	return h
 }
 
 type receiveForm struct {

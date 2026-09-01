@@ -365,7 +365,7 @@ func TestIncoming(t *testing.T) {
 	server := buildMockVKService()
 	defer server.Close()
 
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	RunIncomingTestCases(t, testChannels, newHandler, testCases)
 }
 
 func buildMockVKService() *httptest.Server {
@@ -391,8 +391,7 @@ func TestDescribeURN(t *testing.T) {
 	server := buildMockVKService()
 	defer server.Close()
 
-	handler := newHandler()
-	web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(handler)
+	handler := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(newHandler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 	urn, _ := urns.New(urns.VK, "123456789")
 	data := map[string]string{"name": "John Doe"}
@@ -651,15 +650,14 @@ var outgoingCases = []OutgoingTestCase{
 }
 
 func TestOutgoing(t *testing.T) {
-	RunOutgoingTestCases(t, testChannels[0], newHandler(), outgoingCases, []string{"token123xyz", "abc123xyz"}, nil)
+	RunOutgoingTestCases(t, testChannels[0], newHandler, outgoingCases, []string{"token123xyz", "abc123xyz"}, nil)
 }
 
 func TestSendEvent(t *testing.T) {
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VK", "2020", "US", []string{urns.VK.Prefix}, map[string]any{models.ConfigAuthToken: "token123xyz"})
 
 	s := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig()))
-	h := newHandler().(*handler)
-	s.MountHandler(h)
+	h := s.MountHandler(newHandler).(*handler)
 
 	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://api.vk.com/method/messages.setActivity.json*": {

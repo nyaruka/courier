@@ -28,11 +28,6 @@ type HandleFunc func(context.Context, *models.Channel, http.ResponseWriter, *htt
 
 // Handler is the interface all channel handlers must satisfy
 type Handler interface {
-	// SetRuntime is called before Initialize to give the handler the runtime it should use. Handlers embedding
-	// handlers.BaseHandler get it from there rather than implementing it themselves.
-	SetRuntime(*runtime.Runtime)
-
-	Initialize(*Routes) error
 	Runtime() *runtime.Runtime
 	ChannelType() models.ChannelType
 	ChannelName() string
@@ -65,9 +60,25 @@ type AttachmentRequestBuilder interface {
 	BuildAttachmentRequest(context.Context, *models.Channel, string, *models.ChannelLog) (*http.Request, error)
 }
 
-// RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized
-func RegisterHandler(handler Handler) {
-	registeredHandlers[handler.ChannelType()] = handler
+// HandlerCtor constructs a handler with the runtime it should use, registering the routes it serves as it goes.
+// Handlers register one from their package init(), and the server invokes them all at startup once the runtime
+// exists.
+type HandlerCtor func(*runtime.Runtime, *Routes) Handler
+
+// RegisterHandler adds a new handler constructor, called by individual handler packages from init()
+func RegisterHandler(ctor HandlerCtor) {
+	registeredCtors = append(registeredCtors, ctor)
+}
+
+// RegisteredCtors returns the handler constructors compiled into this build, for the server to invoke at startup
+func RegisteredCtors() []HandlerCtor {
+	return registeredCtors
+}
+
+// ActivateHandler marks a constructed handler as one this instance is serving, making it available to lookups
+// by channel type
+func ActivateHandler(handler Handler) {
+	activeHandlers[handler.ChannelType()] = handler
 
 	// handlers which can describe URNs are registered with the models package so contact creation can use them
 	if describer, ok := handler.(models.URNDescriber); ok {
@@ -75,32 +86,13 @@ func RegisterHandler(handler Handler) {
 	}
 }
 
-// GetHandler returns the handler for the passed in channel type, or nil if not found
+// GetHandler returns the handler this instance is serving for the given channel type, or nil if not found -
+// which is how sending fails fast for a channel this instance doesn't handle.
 func GetHandler(ct models.ChannelType) Handler {
-	return registeredHandlers[ct]
-}
-
-// RegisteredHandlers returns all the handlers compiled into this build, for the server to initialize
-func RegisteredHandlers() []Handler {
-	hs := make([]Handler, 0, len(registeredHandlers))
-	for _, h := range registeredHandlers {
-		hs = append(hs, h)
-	}
-	return hs
-}
-
-// ActivateHandler marks a handler as one this instance is serving, i.e. it was included by config and initialized
-func ActivateHandler(handler Handler) {
-	activeHandlers[handler.ChannelType()] = handler
-}
-
-// GetActiveHandler returns the handler this instance is serving for the given channel type, or nil if that channel
-// type isn't being served - which is how sending fails fast for a channel this instance doesn't handle.
-func GetActiveHandler(ct models.ChannelType) Handler {
 	return activeHandlers[ct]
 }
 
-var registeredHandlers = make(map[models.ChannelType]Handler)
+var registeredCtors []HandlerCtor
 var activeHandlers = make(map[models.ChannelType]Handler)
 
 // Route is an HTTP route a channel handler serves, added during its initialization

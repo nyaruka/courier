@@ -40,7 +40,7 @@ func TestIncoming(t *testing.T) {
 		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US", []string{urns.Phone.Prefix}, nil),
 	}
 
-	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
+	RunIncomingTestCases(t, chs, newHandler, incomingCases)
 }
 
 var outgoingCases = []OutgoingTestCase{
@@ -125,5 +125,5 @@ func TestOutgoing(t *testing.T) {
 			configChargingLevel:   "0",
 		})
 
-	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"pass1"}, nil)
+	RunOutgoingTestCases(t, ch, newHandler, outgoingCases, []string{"pass1"}, nil)
 }

@@ -96,7 +96,7 @@ var handleTestCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
+	RunIncomingTestCases(t, testChannels, newHandler, handleTestCases)
 }
 
 var defaultSendTestCases = []OutgoingTestCase{
@@ -265,5 +265,5 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigSendURL: "http://example.com/send",
 		})
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{"Password"}, nil)
 }

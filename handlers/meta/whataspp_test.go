@@ -7,7 +7,6 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
-	. "github.com/nyaruka/courier/v26/handlers"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
@@ -1350,8 +1349,7 @@ func TestWhatsAppOutgoing(t *testing.T) {
 
 func TestWhatsAppDescribeURN(t *testing.T) {
 	channel := whatsappTestChannels[0]
-	handler := newHandler("WAC", "Cloud API WhatsApp")
-	newServerWithWAC().MountHandler(handler)
+	handler := newServerWithWAC().MountHandler(newHandler("WAC", "Cloud API WhatsApp"))
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -1372,8 +1370,7 @@ func TestWhatsAppDescribeURN(t *testing.T) {
 
 func TestWhatsAppBuildAttachmentRequest(t *testing.T) {
 	s := newServerWithWAC()
-	handler := &handler{NewBaseHandler(models.ChannelType("WAC"), "WhatsApp Cloud", DisableUUIDRouting())}
-	s.MountHandler(handler)
+	handler := s.MountHandler(newHandler("WAC", "WhatsApp Cloud")).(*handler)
 	req, _ := handler.BuildAttachmentRequest(context.Background(), whatsappTestChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer wac_admin_system_user_token", req.Header.Get("Authorization"))
@@ -1396,8 +1393,7 @@ func TestWhatsAppSendEvent(t *testing.T) {
 	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
 	s := web.NewServer(runtime.NewTestRuntime(cfg))
 
-	h := newHandler("WAC", "WhatsApp Cloud").(*handler)
-	s.MountHandler(h)
+	h := s.MountHandler(newHandler("WAC", "WhatsApp Cloud")).(*handler)
 
 	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
 		"https://graph.facebook.com/12345_ID/messages": {

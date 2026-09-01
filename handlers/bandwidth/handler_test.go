@@ -6,7 +6,6 @@ import (
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
-	. "github.com/nyaruka/courier/v26/handlers"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -244,7 +243,7 @@ func TestIncoming(t *testing.T) {
 		),
 	}
 
-	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
+	RunIncomingTestCases(t, chs, newHandler, incomingCases)
 }
 
 var outgoingCases = []OutgoingTestCase{
@@ -383,7 +382,7 @@ func TestOutgoing(t *testing.T) {
 		map[string]any{models.ConfigUsername: "user1", models.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
 	)
 
-	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)
+	RunOutgoingTestCases(t, ch, newHandler, outgoingCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {
@@ -392,7 +391,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 		map[string]any{models.ConfigUsername: "user1", models.ConfigPassword: "pass1", configAccountID: "accound-id", configMsgApplicationID: "application-id"},
 	)
 
-	bwHandler := &handler{NewBaseHandler(models.ChannelType("BW"), "Bandwidth")}
+	bwHandler := newHandler(nil, channels.NewRoutes()).(*handler)
 	req, _ := bwHandler.BuildAttachmentRequest(context.Background(), ch, "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Basic dXNlcjE6cGFzczE=", req.Header.Get("Authorization"))

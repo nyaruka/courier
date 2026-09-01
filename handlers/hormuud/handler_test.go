@@ -68,7 +68,7 @@ var handleTestCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
+	RunIncomingTestCases(t, testChannels, newHandler, handleTestCases)
 }
 
 var sendTestCases = []OutgoingTestCase{
@@ -253,7 +253,7 @@ func TestOutgoing(t *testing.T) {
 		},
 	)
 
-	h := newHandler()
+	h := newHandler
 	RunOutgoingTestCases(t, defaultChannel, h, sendTestCases, []string{"sesame"}, nil)
 
 	// ensure the token cached by the previous cases is cleared so these cases fetch a new one

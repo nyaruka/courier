@@ -696,8 +696,7 @@ func TestDescribeURN(t *testing.T) {
 	defer fbGraph.Close()
 
 	channel := testChannels[0]
-	handler := newHandler()
-	web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(handler)
+	handler := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(newHandler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -717,7 +716,7 @@ func TestDescribeURN(t *testing.T) {
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	RunIncomingTestCases(t, testChannels, newHandler, testCases)
 }
 
 func TestVerify(t *testing.T) {
@@ -742,7 +741,7 @@ func TestVerify(t *testing.T) {
 	subscribeURL = server.URL
 	subscribeTimeout = time.Millisecond
 
-	RunIncomingTestCases(t, testChannels, newHandler(), []IncomingTestCase{
+	RunIncomingTestCases(t, testChannels, newHandler, []IncomingTestCase{
 		{
 			Label:              "Receive Message",
 			URL:                receiveURL,
@@ -987,5 +986,5 @@ func TestSending(t *testing.T) {
 	maxMsgLength = 100
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FB", "2020", "US", []string{urns.Facebook.Prefix}, map[string]any{models.ConfigAuthToken: "access_token"})
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"access_token"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{"access_token"}, nil)
 }

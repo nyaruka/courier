@@ -234,7 +234,7 @@ func TestIncoming(t *testing.T) {
 	JCAPI := buildMockJCAPI()
 	defer JCAPI.Close()
 
-	RunIncomingTestCases(t, testChannels, newHandler(), incomingCases())
+	RunIncomingTestCases(t, testChannels, newHandler, incomingCases())
 }
 
 // mocks the call to the Jiochat API
@@ -292,8 +292,7 @@ func TestDescribeURN(t *testing.T) {
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 
 	s := web.NewServer(rt)
-	handler := newHandler().(*handler)
-	s.MountHandler(handler)
+	handler := s.MountHandler(newHandler).(*handler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 
 	tcs := []struct {
@@ -330,8 +329,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"access_token": "SESAME"}`)),
 		},
 	})
-	handler := newHandler().(*handler)
-	s.MountHandler(handler)
+	handler := s.MountHandler(newHandler).(*handler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 
 	// check that request has the fetched access token
@@ -456,5 +454,5 @@ func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", []string{urns.JioChat.Prefix}, map[string]any{configAppSecret: "secret123", configAppID: "app-id"})
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret123"}, setupBackend)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{"secret123"}, setupBackend)
 }

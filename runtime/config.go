@@ -50,12 +50,6 @@ type Config struct {
 	LogLevel           slog.Level `help:"the logging level courier should use"`
 	Version            string     `help:"the version that will be used in request and response headers"`
 
-	// IncludeChannels is the list of channels to enable, empty means include all
-	IncludeChannels []string
-
-	// ExcludeChannels is the list of channels to exclude, empty means exclude none
-	ExcludeChannels []string
-
 	// parsed values that can't be set directly
 	DisallowedIPs      []net.IP
 	DisallowedNets     []*net.IPNet

@@ -41,7 +41,7 @@ func TestIncoming(t *testing.T) {
 		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CS", "2020", "US", []string{urns.Phone.Prefix}, nil),
 	}
 
-	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
+	RunIncomingTestCases(t, chs, newHandler, incomingCases)
 }
 
 const successResponse = `{
@@ -260,5 +260,5 @@ func TestOutgoing(t *testing.T) {
 		map[string]any{"username": "Aladdin", "password": "open sesame"},
 	)
 
-	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{httpx.BasicAuth("Aladdin", "open sesame")}, nil)
+	RunOutgoingTestCases(t, ch, newHandler, outgoingCases, []string{httpx.BasicAuth("Aladdin", "open sesame")}, nil)
 }

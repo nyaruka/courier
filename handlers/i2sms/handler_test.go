@@ -40,7 +40,7 @@ var testCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	RunIncomingTestCases(t, testChannels, newHandler, testCases)
 }
 
 var defaultSendTestCases = []OutgoingTestCase{
@@ -160,5 +160,5 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigPassword: "pass1",
 			configChannelHash:     "hash123",
 		})
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("user1", "pass1"), "hash123"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{httpx.BasicAuth("user1", "pass1"), "hash123"}, nil)
 }

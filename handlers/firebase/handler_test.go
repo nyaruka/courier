@@ -116,7 +116,7 @@ var testCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	RunIncomingTestCases(t, testChannels, newHandler, testCases)
 }
 
 var notificationSendTestCases = []OutgoingTestCase{
@@ -319,6 +319,6 @@ func setupBackend(t *testing.T, rt *runtime.Runtime) {
 
 func TestOutgoing(t *testing.T) {
 
-	RunOutgoingTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{}, setupBackend)
-	RunOutgoingTestCases(t, testChannels[1], newHandler(), notificationSendTestCases, []string{}, setupBackend)
+	RunOutgoingTestCases(t, testChannels[0], newHandler, sendTestCases, []string{}, setupBackend)
+	RunOutgoingTestCases(t, testChannels[1], newHandler, notificationSendTestCases, []string{}, setupBackend)
 }

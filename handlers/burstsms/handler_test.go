@@ -52,7 +52,7 @@ func TestIncoming(t *testing.T) {
 		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BS", "2020", "US", []string{urns.Phone.Prefix}, nil),
 	}
 
-	RunIncomingTestCases(t, chs, newHandler(), testCases)
+	RunIncomingTestCases(t, chs, newHandler, testCases)
 }
 
 var outgoingCases = []OutgoingTestCase{
@@ -165,5 +165,5 @@ func TestOutgoing(t *testing.T) {
 		map[string]any{models.ConfigUsername: "user1", models.ConfigPassword: "pass1"},
 	)
 
-	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)
+	RunOutgoingTestCases(t, ch, newHandler, outgoingCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -36,24 +37,22 @@ type handler struct {
 	maxLength int
 }
 
-// NewHandler returns a new DartMedia ready to be registered
-func NewHandler(channelType string, name string, sendURL string, maxLength int) channels.Handler {
-	return &handler{
-		handlers.NewBaseHandler(models.ChannelType(channelType), name),
-		sendURL,
-		maxLength,
+// NewHandler returns a new DartMedia handler constructor ready to be registered
+func NewHandler(channelType string, name string, sendURL string, maxLength int) channels.HandlerCtor {
+	return func(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+		h := &handler{
+			handlers.NewBaseHandler(rt, models.ChannelType(channelType), name),
+			sendURL,
+			maxLength,
+		}
+		r.AddReceive(h, http.MethodGet, "receive", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMessage))
+		r.AddReceive(h, http.MethodGet, "delivered", channels.ReceiveKindStatus, handlers.FormPayload(h.receiveStatus))
+		return h
 	}
 }
 
 func init() {
 	channels.RegisterHandler(NewHandler("DA", "DartMedia", sendURL, maxMsgLength))
-}
-
-// Initialize registers the routes this handler serves
-func (h *handler) Initialize(r *channels.Routes) error {
-	r.AddReceive(h, http.MethodGet, "receive", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMessage))
-	r.AddReceive(h, http.MethodGet, "delivered", channels.ReceiveKindStatus, handlers.FormPayload(h.receiveStatus))
-	return nil
 }
 
 type moForm struct {

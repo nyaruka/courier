@@ -79,7 +79,7 @@ var handleTestCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
+	RunIncomingTestCases(t, testChannels, newHandler, handleTestCases)
 }
 
 var defaultSendTestCases = []OutgoingTestCase{
@@ -203,5 +203,5 @@ func TestOutgoing(t *testing.T) {
 	// mock time so we can have predictable MD5 hashes
 	dates.SetNowFunc(dates.NewFixedNow(time.Date(2018, 4, 11, 18, 24, 30, 123456000, time.UTC)))
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password", "secret"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{"Password", "secret"}, nil)
 }

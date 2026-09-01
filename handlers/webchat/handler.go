@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/centrifugo"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -41,22 +42,19 @@ const (
 var chatIDChars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
 func init() {
-	channels.RegisterHandler(newHandler())
+	channels.RegisterHandler(newHandler)
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() channels.Handler {
+func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 	// webchat has no external provider - sends are publishes to our own realtime server and start/receive are
 	// our own public endpoints - so its channel logs would only describe internal infrastructure and aren't
 	// stored for users
-	return &handler{handlers.NewBaseHandler(models.ChannelType("WCH"), "WebChat", handlers.DisableChannelLogStorage())}
-}
+	h := &handler{handlers.NewBaseHandler(rt, models.ChannelType("WCH"), "WebChat", handlers.DisableChannelLogStorage())}
 
-// Initialize registers the routes this handler serves
-func (h *handler) Initialize(r *channels.Routes) error {
 	r.Add(h, http.MethodPost, "start", models.ChannelLogTypeChatStart, withCORS(h.start))
 
 	// this can't use AddReceive because the CORS headers have to wrap the seam rather than sit inside it, so
@@ -67,7 +65,7 @@ func (h *handler) Initialize(r *channels.Routes) error {
 	// the chat widget runs on arbitrary third-party websites, so both endpoints need CORS preflight support
 	r.Add(h, http.MethodOptions, "start", models.ChannelLogTypeUnknown, h.preflight)
 	r.Add(h, http.MethodOptions, "receive", models.ChannelLogTypeUnknown, h.preflight)
-	return nil
+	return h
 }
 
 // GetChannel returns the channel - except for CORS preflight requests, which don't need it and shouldn't

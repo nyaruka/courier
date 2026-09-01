@@ -83,7 +83,7 @@ func sendEvent(ctx context.Context, s *Server, r *http.Request) (*sendEventRespo
 		return nil, fmt.Errorf("error getting channel: %w", err)
 	}
 
-	handler := channels.GetActiveHandler(ch.ChannelType())
+	handler := channels.GetHandler(ch.ChannelType())
 	if handler == nil {
 		return &sendEventResponse{Supported: false}, nil
 	}

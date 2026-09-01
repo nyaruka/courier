@@ -115,7 +115,7 @@ var testCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	RunIncomingTestCases(t, testChannels, newHandler, testCases)
 }
 
 var defaultSendTestCases = []OutgoingTestCase{
@@ -268,5 +268,5 @@ func TestOutgoing(t *testing.T) {
 			configNexmoAppPrivateKey: "nexmo-app-private-key",
 		})
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"nexmo-api-secret", "nexmo-app-private-key"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{"nexmo-api-secret", "nexmo-app-private-key"}, nil)
 }

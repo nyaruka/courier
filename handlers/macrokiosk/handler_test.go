@@ -72,7 +72,7 @@ var incomingTestCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), incomingTestCases)
+	RunIncomingTestCases(t, testChannels, newHandler, incomingTestCases)
 }
 
 var outgoingTestCases = []OutgoingTestCase{
@@ -201,5 +201,5 @@ func TestOutgoing(t *testing.T) {
 		},
 	)
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler, outgoingTestCases, []string{"Password"}, nil)
 }

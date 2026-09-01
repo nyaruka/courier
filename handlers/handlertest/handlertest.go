@@ -169,7 +169,7 @@ func newServer(rt *runtime.Runtime) *web.Server {
 }
 
 // RunIncomingTestCases runs all the passed in tests cases for the passed in channel configurations
-func RunIncomingTestCases(t *testing.T, chs []*models.Channel, handler channels.Handler, testCases []IncomingTestCase) {
+func RunIncomingTestCases(t *testing.T, chs []*models.Channel, ctor channels.HandlerCtor, testCases []IncomingTestCase) {
 	_, rt := testsuite.Runtime(t)
 
 	// state is reset once for the whole run rather than per case because handlers can carry state between
@@ -195,10 +195,7 @@ func RunIncomingTestCases(t *testing.T, chs []*models.Channel, handler channels.
 		testsuite.InsertChannel(t, rt, ch)
 	}
 
-	// re-register the handler under test so that lookups by channel type - e.g. the URN describer used when
-	// creating a contact - resolve to this instance rather than the uninitialized one from its init()
-	channels.RegisterHandler(handler)
-	require.NoError(t, s.MountHandler(handler))
+	s.MountHandler(ctor)
 
 	// capture the events and channel logs of each handled request
 	var handledEvents []channels.Event
@@ -457,7 +454,7 @@ func (tc *OutgoingTestCase) Msg(ch *models.Channel) *models.MsgOut {
 }
 
 // RunOutgoingTestCases runs all the passed in test cases against the channel
-func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler channels.Handler, testCases []OutgoingTestCase, checkRedacted []string, setup func(*testing.T, *runtime.Runtime)) {
+func RunOutgoingTestCases(t *testing.T, channel *models.Channel, ctor channels.HandlerCtor, testCases []OutgoingTestCase, checkRedacted []string, setup func(*testing.T, *runtime.Runtime)) {
 	ctx, rt := testsuite.Runtime(t)
 
 	testsuite.ResetDB(t, rt)
@@ -477,7 +474,7 @@ func RunOutgoingTestCases(t *testing.T, channel *models.Channel, handler channel
 
 	s := newServer(rt)
 	testsuite.InsertChannel(t, rt, channel)
-	require.NoError(t, s.MountHandler(handler))
+	handler := s.MountHandler(ctor)
 
 	for _, tc := range testCases {
 		t.Run(tc.Label, func(t *testing.T) {

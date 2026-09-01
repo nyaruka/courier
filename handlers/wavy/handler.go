@@ -11,6 +11,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -23,21 +24,18 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() channels.Handler {
-	return &handler{handlers.NewBaseHandler(models.ChannelType("WV"), "Wavy")}
-}
+func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+	h := &handler{handlers.NewBaseHandler(rt, models.ChannelType("WV"), "Wavy")}
 
-func init() {
-	channels.RegisterHandler(newHandler())
-}
-
-// Initialize registers the routes this handler serves
-func (h *handler) Initialize(r *channels.Routes) error {
 	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))
 	r.AddReceive(h, http.MethodPost, "sent", channels.ReceiveKindStatus, handlers.JSONPayload(h.receiveSentStatus))
 	r.AddReceive(h, http.MethodPost, "delivered", channels.ReceiveKindStatus,
 		handlers.JSONPayload(h.receiveDeliveredStatus))
-	return nil
+	return h
+}
+
+func init() {
+	channels.RegisterHandler(newHandler)
 }
 
 var statusMapping = map[int]models.MsgStatus{
