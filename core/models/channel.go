@@ -264,14 +264,21 @@ SELECT
   JOIN orgs_org o ON c.org_id = o.id
  WHERE c.uuid = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
 
+// a channel that isn't there is loaded as a nil rather than as an error, so that the cache can hold it -
+// cache.Local doesn't remember a fetch that failed, and a provider still calling a deleted channel's URL
+// otherwise puts a query on the database for every request. GetChannel turns the nil back into
+// ErrChannelNotFound. A database error is still an error, so an outage isn't cached as absence.
 func loadChannelByUUID(ctx context.Context, rt *runtime.Runtime, uuid ChannelUUID) (*Channel, error) {
 	channel := &Channel{}
 	err := rt.DB.GetContext(ctx, channel, sqlSelectChannelFromUUID, uuid)
 
 	if err == sql.ErrNoRows {
-		return nil, ErrChannelNotFound
+		return nil, nil
 	}
-	return channel, err
+	if err != nil {
+		return nil, err
+	}
+	return channel, nil
 }
 
 const sqlSelectChannelFromAddress = `
@@ -292,14 +299,18 @@ SELECT
   JOIN orgs_org o ON c.org_id = o.id
  WHERE c.address = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
 
+// as above, absence is a nil rather than an error so that it can be cached
 func loadChannelByAddress(ctx context.Context, rt *runtime.Runtime, addr ChannelAddress) (*Channel, error) {
 	channel := &Channel{}
 	err := rt.DB.GetContext(ctx, channel, sqlSelectChannelFromAddress, addr)
 
 	if err == sql.ErrNoRows {
-		return nil, ErrChannelNotFound
+		return nil, nil
 	}
-	return channel, err
+	if err != nil {
+		return nil, err
+	}
+	return channel, nil
 }
 
 // GetChannel returns the channel with the passed in type and UUID. It reads through the channel cache created by
@@ -311,6 +322,9 @@ func GetChannel(ctx context.Context, typ ChannelType, uuid ChannelUUID) (*Channe
 	ch, err := channelsByUUID.GetOrFetch(timeout, uuid)
 	if err != nil {
 		return nil, err
+	}
+	if ch == nil {
+		return nil, ErrChannelNotFound
 	}
 
 	if typ != AnyChannelType && ch.ChannelType() != typ {
@@ -329,6 +343,9 @@ func GetChannelByAddress(ctx context.Context, typ ChannelType, address ChannelAd
 	ch, err := channelsByAddr.GetOrFetch(timeout, address)
 	if err != nil {
 		return nil, err
+	}
+	if ch == nil {
+		return nil, ErrChannelNotFound
 	}
 
 	if typ != AnyChannelType && ch.ChannelType() != typ {
