@@ -1,0 +1,204 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://smsapi1.dmarkmobile.com/sms/": [
+                {
+                    "status": 200,
+                    "body": {
+                        "type": "MT",
+                        "sms_id": "6b1c15d3-cba2-46f7-9a25-78265e58057d"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://smsapi1.dmarkmobile.com/sms/",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Token Authy",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "dlr_url": [
+                        "https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%s"
+                    ],
+                    "receiver": [
+                        "250788383383"
+                    ],
+                    "sender": [
+                        "2020"
+                    ],
+                    "text": [
+                        "Simple Message ☺"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "6b1c15d3-cba2-46f7-9a25-78265e58057d"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Invalid Body",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://smsapi1.dmarkmobile.com/sms/": [
+                {
+                    "status": 200,
+                    "body": {
+                        "error": "failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://smsapi1.dmarkmobile.com/sms/",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Token Authy",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "dlr_url": [
+                        "https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%s"
+                    ],
+                    "receiver": [
+                        "250788383383"
+                    ],
+                    "sender": [
+                        "2020"
+                    ],
+                    "text": [
+                        "Error Message"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://smsapi1.dmarkmobile.com/sms/": [
+                {
+                    "status": 401,
+                    "body": {
+                        "error": "failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://smsapi1.dmarkmobile.com/sms/",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Token Authy",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "dlr_url": [
+                        "https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%s"
+                    ],
+                    "receiver": [
+                        "250788383383"
+                    ],
+                    "sender": [
+                        "2020"
+                    ],
+                    "text": [
+                        "Error Message"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://smsapi1.dmarkmobile.com/sms/": [
+                {
+                    "status": 429,
+                    "body": {
+                        "error": "failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://smsapi1.dmarkmobile.com/sms/",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Token Authy",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "dlr_url": [
+                        "https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%s"
+                    ],
+                    "receiver": [
+                        "250788383383"
+                    ],
+                    "sender": [
+                        "2020"
+                    ],
+                    "text": [
+                        "Error Message"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]

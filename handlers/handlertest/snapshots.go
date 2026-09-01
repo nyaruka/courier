@@ -28,14 +28,29 @@ import (
 // The types below are the building blocks of those files.
 
 // HTTPBody is a request or response body. In test files a body which is a JSON object or array is written as
-// that JSON, and any other body is written as a string.
-type HTTPBody []byte
+// that JSON, and any other body is written as a string. A body can also be written as a string even though it's
+// JSON, which preserves its exact bytes - needed when a signature is calculated over them.
+type HTTPBody struct {
+	data   []byte
+	quoted bool // written as a string in the file
+}
+
+// NewHTTPBody creates a body from the given bytes
+func NewHTTPBody(data []byte) HTTPBody {
+	return HTTPBody{data: data}
+}
+
+// Bytes returns the bytes of this body
+func (b HTTPBody) Bytes() []byte { return b.data }
+
+// IsZero returns whether this body is empty, so that empty bodies are omitted from files
+func (b HTTPBody) IsZero() bool { return len(b.data) == 0 }
 
 func (b HTTPBody) MarshalJSON() ([]byte, error) {
-	if isJSONContainer(b) {
-		return b, nil
+	if !b.quoted && isJSONContainer(b.data) {
+		return b.data, nil
 	}
-	return json.Marshal(string(b))
+	return json.Marshal(string(b.data))
 }
 
 func (b *HTTPBody) UnmarshalJSON(data []byte) error {
@@ -44,11 +59,11 @@ func (b *HTTPBody) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(data, &s); err != nil {
 			return err
 		}
-		*b = HTTPBody(s)
+		*b = HTTPBody{data: []byte(s), quoted: true}
 	} else if bytes.Equal(data, []byte("null")) {
-		*b = nil
+		*b = HTTPBody{}
 	} else {
-		*b = HTTPBody(data)
+		*b = HTTPBody{data: data}
 	}
 	return nil
 }
@@ -62,7 +77,7 @@ func isJSONContainer(b []byte) bool {
 // HandlerResponse is how a handler answered a request
 type HandlerResponse struct {
 	Status int      `json:"status"`
-	Body   HTTPBody `json:"body,omitempty"`
+	Body   HTTPBody `json:"body,omitzero"`
 }
 
 // HandlerLog is the channel log a handler wrote, minus the timing and HTTP traces which aren't stable
@@ -78,7 +93,7 @@ type CapturedRequest struct {
 	URL     string            `json:"url"`
 	Headers map[string]string `json:"headers,omitempty"`
 	Form    url.Values        `json:"form,omitempty"`
-	Body    HTTPBody          `json:"body,omitempty"`
+	Body    HTTPBody          `json:"body,omitzero"`
 }
 
 func captureRequest(r *http.Request) *CapturedRequest {
@@ -95,7 +110,7 @@ func captureRequest(r *http.Request) *CapturedRequest {
 	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded") {
 		c.Form, _ = url.ParseQuery(string(body))
 	} else {
-		c.Body = body
+		c.Body = NewHTTPBody(body)
 	}
 	return c
 }

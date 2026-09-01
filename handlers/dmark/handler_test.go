@@ -1,183 +1,28 @@
 package dmark
 
 import (
-	"net/url"
 	"testing"
-	"time"
 
-	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var testChannels = []*models.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DK", "2020", "RW", []string{urns.Phone.Prefix}, nil),
-}
-
-const (
-	receiveURL = "/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-	statusURL  = "/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
-)
-
-var testCases = []IncomingTestCase{
-	{
-		Label:                "Receive Valid",
-		URL:                  receiveURL,
-		Data:                 "text=Msg&short_code=2020&tstamp=2017-10-26T15:51:32.906335%2B00:00&msisdn=254791541111",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Message Accepted",
-		ExpectedMsgText:      Sp("Msg"),
-		ExpectedURN:          "tel:+254791541111",
-		ExpectedDate:         time.Date(2017, 10, 26, 15, 51, 32, 906335000, time.UTC),
-	},
-	{
-		Label:                "Invalid URN",
-		URL:                  receiveURL,
-		Data:                 "text=Msg&short_code=2020&tstamp=2017-10-26T15:51:32.906335%2B00:00&msisdn=MTN",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "not a possible number",
-	},
-	{
-		Label:                "Receive Empty",
-		URL:                  receiveURL,
-		Data:                 "empty",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "field 'msisdn' required",
-	},
-	{
-		Label:                "Receive Missing Text",
-		URL:                  receiveURL,
-		Data:                 "short_code=2020&tstamp=2017-10-26T15:51:32.906335%2B00:00&msisdn=254791541111",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "field 'text' required",
-	},
-	{
-		Label:                "Receive Invalid TS",
-		URL:                  receiveURL,
-		Data:                 "text=Msg&short_code=2020&tstamp=2017-10-26&msisdn=254791541111",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "invalid tstamp",
-	},
-	{
-		Label:                "Status Invalid",
-		URL:                  statusURL,
-		Data:                 "uuid=019a0719-ac96-7eb9-a837-cac215164834&status=Borked",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "unknown status",
-	},
-	{
-		Label:                "Status Missing",
-		URL:                  statusURL,
-		Data:                 "uuid=019a0719-ac96-7eb9-a837-cac215164834",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "field 'status' required",
-	},
-	{
-		Label:                "Status Valid",
-		URL:                  statusURL,
-		Data:                 "uuid=019a0719-ac96-7eb9-a837-cac215164834&status=1",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a0719-ac96-7eb9-a837-cac215164834", Status: models.MsgStatusDelivered}},
-	},
-}
-
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler, testCases)
-}
+	chs := []*models.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DK", "2020", "RW", []string{urns.Phone.Prefix}, nil),
+	}
 
-var defaultSendTestCases = []OutgoingTestCase{
-	{
-		Label:   "Plain Send",
-		MsgText: "Simple Message ☺",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://smsapi1.dmarkmobile.com/sms/": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "type": "MT", "sms_id": "6b1c15d3-cba2-46f7-9a25-78265e58057d" }`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "Token Authy"},
-			Form: url.Values{
-				"text":     {"Simple Message ☺"},
-				"receiver": {"250788383383"},
-				"sender":   {"2020"},
-				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%s"},
-			},
-		}},
-		ExpectedExtIDs: []string{"6b1c15d3-cba2-46f7-9a25-78265e58057d"},
-	},
-	{
-		Label:   "Invalid Body",
-		MsgText: "Error Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://smsapi1.dmarkmobile.com/sms/": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "error": "failed" }`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "Token Authy"},
-			Form: url.Values{
-				"text":     {"Error Message"},
-				"receiver": {"250788383383"},
-				"sender":   {"2020"},
-				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%s"},
-			},
-		}},
-		ExpectedError: channels.ErrResponseContent,
-	},
-	{
-		Label:   "Error Sending",
-		MsgText: "Error Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://smsapi1.dmarkmobile.com/sms/": {
-				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "Token Authy"},
-			Form: url.Values{
-				"text":     {"Error Message"},
-				"receiver": {"250788383383"},
-				"sender":   {"2020"},
-				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%s"},
-			},
-		}},
-		ExpectedError: channels.ErrResponseStatus,
-	},
-	{
-		Label:   "Throttled",
-		MsgText: "Error Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://smsapi1.dmarkmobile.com/sms/": {
-				httpx.NewMockResponse(429, nil, []byte(`{ "error": "failed" }`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "Token Authy"},
-			Form: url.Values{
-				"text":     {"Error Message"},
-				"receiver": {"250788383383"},
-				"sender":   {"2020"},
-				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&status=%s"},
-			},
-		}},
-		ExpectedError: channels.ErrConnectionThrottled,
-	},
+	RunIncomingTests(t, chs, newHandler, "testdata/incoming.json", nil)
 }
 
 func TestOutgoing(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DK", "2020", "US",
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DK", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
 			models.ConfigAuthToken: "Authy",
 		})
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{"Authy"}, nil)
+	RunOutgoingTests(t, ch, newHandler, "testdata/outgoing.json", &OutgoingOptions{CheckRedacted: []string{"Authy"}})
 }

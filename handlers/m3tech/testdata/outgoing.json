@@ -1,0 +1,194 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": [
+                {
+                    "status": 200,
+                    "body": [
+                        {
+                            "Response": "0"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Simple+Message&SMSChannel=0&SMSType=0&Telco=0&UserId=Username",
+                "headers": {
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": [
+                {
+                    "status": 200,
+                    "body": [
+                        {
+                            "Response": "0"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=%E2%98%BA&SMSChannel=0&SMSType=7&Telco=0&UserId=Username",
+                "headers": {
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Smart Encoding",
+        "msg": {
+            "text": "Fancy “Smart” Quotes",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": [
+                {
+                    "status": 200,
+                    "body": [
+                        {
+                            "Response": "0"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Fancy+%22Smart%22+Quotes&SMSChannel=0&SMSType=0&Telco=0&UserId=Username",
+                "headers": {
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": [
+                {
+                    "status": 200,
+                    "body": [
+                        {
+                            "Response": "0"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&SMSChannel=0&SMSType=0&Telco=0&UserId=Username",
+                "headers": {
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": [
+                {
+                    "status": 403,
+                    "body": [
+                        {
+                            "Response": "101"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Error+Sending&SMSChannel=0&SMSType=0&Telco=0&UserId=Username",
+                "headers": {
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": [
+                {
+                    "status": 429,
+                    "body": [
+                        {
+                            "Response": "101"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Error+Sending&SMSChannel=0&SMSType=0&Telco=0&UserId=Username",
+                "headers": {
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]

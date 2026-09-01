@@ -1,179 +1,24 @@
 package m3tech
 
 import (
-	"net/url"
 	"testing"
 
-	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var testChannels = []*models.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "M3", "2020", "US", []string{urns.Phone.Prefix}, nil),
-}
-
-var handleTestCases = []IncomingTestCase{
-	{
-		Label:                "Receive Valid Message",
-		URL:                  "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?from=+923161909799&text=hello+world",
-		Data:                 " ",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "SMS Accepted",
-		ExpectedMsgText:      Sp("hello world"),
-		ExpectedURN:          "tel:+923161909799",
-	},
-	{
-		Label:                "Invalid URN",
-		URL:                  "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?from=MTN&text=hello+world",
-		Data:                 " ",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "not a possible number",
-	},
-	{
-		Label:                "Receive No From",
-		URL:                  "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?text=hello",
-		Data:                 " ",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "missing required field 'from'",
-	},
-}
-
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler, handleTestCases)
-}
+	chs := []*models.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "M3", "2020", "US", []string{urns.Phone.Prefix}, nil),
+	}
 
-var defaultSendTestCases = []OutgoingTestCase{
-	{
-		Label:   "Plain Send",
-		MsgText: "Simple Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": {
-				httpx.NewMockResponse(200, nil, []byte(`[{"Response": "0"}]`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				"MobileNo":    {"250788383383"},
-				"SMS":         {"Simple Message"},
-				"SMSChannel":  {"0"},
-				"AuthKey":     {"m3-Tech"},
-				"HandsetPort": {"0"},
-				"MsgHeader":   {"2020"},
-				"MsgId":       {"0191e180-7d60-7000-aded-7d8b151cbd5b"},
-				"Telco":       {"0"},
-				"SMSType":     {"0"},
-				"UserId":      {"Username"},
-				"Password":    {"Password"},
-			},
-		}},
-	},
-	{
-		Label:   "Unicode Send",
-		MsgText: "☺",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": {
-				httpx.NewMockResponse(200, nil, []byte(`[{"Response": "0"}]`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				"SMS":         {"☺"},
-				"MobileNo":    {"250788383383"},
-				"SMSChannel":  {"0"},
-				"AuthKey":     {"m3-Tech"},
-				"HandsetPort": {"0"},
-				"MsgHeader":   {"2020"},
-				"MsgId":       {"0191e180-7d60-7000-aded-7d8b151cbd5b"},
-				"Telco":       {"0"},
-				"SMSType":     {"7"},
-				"UserId":      {"Username"},
-				"Password":    {"Password"},
-			},
-		}},
-	},
-	{
-		Label:   "Smart Encoding",
-		MsgText: "Fancy “Smart” Quotes",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": {
-				httpx.NewMockResponse(200, nil, []byte(`[{"Response": "0"}]`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				"SMS":         {`Fancy "Smart" Quotes`},
-				"MobileNo":    {"250788383383"},
-				"SMSChannel":  {"0"},
-				"AuthKey":     {"m3-Tech"},
-				"HandsetPort": {"0"},
-				"MsgHeader":   {"2020"},
-				"MsgId":       {"0191e180-7d60-7000-aded-7d8b151cbd5b"},
-				"Telco":       {"0"},
-				"SMSType":     {"0"},
-				"UserId":      {"Username"},
-				"Password":    {"Password"},
-			},
-		}},
-	},
-	{
-		Label:          "Send Attachment",
-		MsgText:        "My pic!",
-		MsgURN:         "tel:+250788383383",
-		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": {
-				httpx.NewMockResponse(200, nil, []byte(`[{"Response": "0"}]`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Params: url.Values{
-				"SMS":         {"My pic!\nhttps://foo.bar/image.jpg"},
-				"MobileNo":    {"250788383383"},
-				"SMSChannel":  {"0"},
-				"AuthKey":     {"m3-Tech"},
-				"HandsetPort": {"0"},
-				"MsgHeader":   {"2020"},
-				"MsgId":       {"0191e180-7d60-7000-aded-7d8b151cbd5b"},
-				"Telco":       {"0"},
-				"SMSType":     {"0"},
-				"UserId":      {"Username"},
-				"Password":    {"Password"},
-			},
-		}},
-	},
-	{
-		Label:   "Error Sending",
-		MsgText: "Error Sending",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": {
-				httpx.NewMockResponse(403, nil, []byte(`[{"Response": "101"}]`)),
-			},
-		},
-		ExpectedError: channels.ErrResponseStatus,
-	},
-	{
-		Label:   "Throttled",
-		MsgText: "Error Sending",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": {
-				httpx.NewMockResponse(429, nil, []byte(`[{"Response": "101"}]`)),
-			},
-		},
-		ExpectedError: channels.ErrConnectionThrottled,
-	},
+	RunIncomingTests(t, chs, newHandler, "testdata/incoming.json", nil)
 }
 
 func TestOutgoing(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "M3", "2020", "US",
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "M3", "2020", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
 			"password": "Password",
@@ -181,5 +26,5 @@ func TestOutgoing(t *testing.T) {
 		},
 	)
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler, defaultSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTests(t, ch, newHandler, "testdata/outgoing.json", &OutgoingOptions{CheckRedacted: []string{"Password"}})
 }

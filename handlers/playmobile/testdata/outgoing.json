@@ -1,0 +1,271 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:99999999999"
+        },
+        "http_mocks": {
+            "http://example.com/broker-api/send": [
+                {
+                    "status": 200,
+                    "body": "Request is received"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/broker-api/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "recipient": "99999999999",
+                            "message-id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "sms": {
+                                "originator": "1122",
+                                "content": {
+                                    "text": "Simple Message"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Long Send",
+        "msg": {
+            "text": "This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, now, I need to keep adding more things to make it work",
+            "urn": "tel:99999999999"
+        },
+        "http_mocks": {
+            "http://example.com/broker-api/send": [
+                {
+                    "status": 200,
+                    "body": "Request is received"
+                },
+                {
+                    "status": 200,
+                    "body": "Request is received"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/broker-api/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "recipient": "99999999999",
+                            "message-id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "sms": {
+                                "originator": "1122",
+                                "content": {
+                                    "text": "This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, now,"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "http://example.com/broker-api/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "recipient": "99999999999",
+                            "message-id": "0191e180-7d60-7000-aded-7d8b151cbd5b.2",
+                            "sms": {
+                                "originator": "1122",
+                                "content": {
+                                    "text": "I need to keep adding more things to make it work"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+18686846481",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "http://example.com/broker-api/send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "recipient": "1122",
+                                "message-id": "2018-10-26-09-27-34",
+                                "sms": {
+                                    "originator": "99999999999",
+                                    "content": {
+                                        "text": "Incoming Valid Message"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/broker-api/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "recipient": "18686846481",
+                            "message-id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "sms": {
+                                "originator": "1122",
+                                "content": {
+                                    "text": "My pic!\nhttps://foo.bar/image.jpg"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error sending",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/broker-api/send": [
+                {
+                    "status": 400,
+                    "body": "not json"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/broker-api/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "recipient": "250788383383",
+                            "message-id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "sms": {
+                                "originator": "1122",
+                                "content": {
+                                    "text": "Error Sending"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/broker-api/send": [
+                {
+                    "status": 429,
+                    "body": "not json"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/broker-api/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Courier/Dev"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "recipient": "250788383383",
+                            "message-id": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                            "sms": {
+                                "originator": "1122",
+                                "content": {
+                                    "text": "Error Sending"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]

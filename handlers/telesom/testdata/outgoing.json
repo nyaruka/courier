@@ -1,0 +1,320 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+252788383383"
+        },
+        "http_mocks": {
+            "http://telesom.com/sendsms_other*": [
+                {
+                    "status": 200,
+                    "body": "<return>Success</return>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://telesom.com/sendsms_other",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "key": [
+                        "03EA5F12E10F46F9A6CD9DD057209061"
+                    ],
+                    "msg": [
+                        "Simple Message"
+                    ],
+                    "to": [
+                        "0788383383"
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "tel:+252788383383"
+        },
+        "http_mocks": {
+            "http://telesom.com/sendsms_other*": [
+                {
+                    "status": 200,
+                    "body": "<return>Success</return>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://telesom.com/sendsms_other",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "key": [
+                        "6BA942D46033A61ADC34B797C677A56F"
+                    ],
+                    "msg": [
+                        "☺"
+                    ],
+                    "to": [
+                        "0788383383"
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+252788383383"
+        },
+        "http_mocks": {
+            "http://telesom.com/sendsms_other*": [
+                {
+                    "status": 401,
+                    "body": "<return>error</return>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://telesom.com/sendsms_other",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "key": [
+                        "BB91F9C5EB3E7092DAD42A3513E37953"
+                    ],
+                    "msg": [
+                        "Error Message"
+                    ],
+                    "to": [
+                        "0788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+252788383383"
+        },
+        "http_mocks": {
+            "http://telesom.com/sendsms_other*": [
+                {
+                    "status": 429,
+                    "body": "<return>error</return>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://telesom.com/sendsms_other",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "key": [
+                        "270868A581F155F5271EE31A50E98C6D"
+                    ],
+                    "msg": [
+                        "Error Message"
+                    ],
+                    "to": [
+                        "0788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+252788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "http://telesom.com/sendsms_other*": [
+                {
+                    "status": 200,
+                    "body": "<return>Success</return>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://telesom.com/sendsms_other",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "key": [
+                        "029C543FDC742D36BAC425FF4914136B"
+                    ],
+                    "msg": [
+                        "My pic!\nhttps://foo.bar/image.jpg"
+                    ],
+                    "to": [
+                        "0788383383"
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Connection Error",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+252788383383"
+        },
+        "http_mocks": {
+            "http://telesom.com/sendsms_other*": [
+                {
+                    "status": 500,
+                    "body": "<return>error</return>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://telesom.com/sendsms_other",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "key": [
+                        "9EE66ED353E211C8BA61A32B6C5A72BF"
+                    ],
+                    "msg": [
+                        "Error Message"
+                    ],
+                    "to": [
+                        "0788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Response Unexpected",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+252788383383"
+        },
+        "http_mocks": {
+            "http://telesom.com/sendsms_other*": [
+                {
+                    "status": 200,
+                    "body": "<return>Missing</return>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://telesom.com/sendsms_other",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "key": [
+                        "2F6AA5267A850FF657ECB11181C75240"
+                    ],
+                    "msg": [
+                        "Simple Message"
+                    ],
+                    "to": [
+                        "0788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": [
+            {
+                "code": "",
+                "message": "Received invalid response content: <return>Missing</return>"
+            }
+        ]
+    }
+]

@@ -1,0 +1,250 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://smgw1.yo.co.ug:9100/sendsms*": [
+                {
+                    "status": 200,
+                    "body": "ybs_autocreate_status=OK"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://smgw1.yo.co.ug:9100/sendsms?destinations=250788383383&origin=2020&password=yo-password&sms_content=Simple+Message&ybsacctno=yo-username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Blacklisted",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://smgw1.yo.co.ug:9100/sendsms*": [
+                {
+                    "status": 200,
+                    "body": "ybs_autocreate_status=ERROR&ybs_autocreate_message=256794224665%3ABLACKLISTED"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://smgw1.yo.co.ug:9100/sendsms?destinations=250788383383&origin=2020&password=yo-password&sms_content=Simple+Message&ybsacctno=yo-username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "error": {
+            "message": "contact opted out",
+            "log_error": {
+                "code": "contact_stopped",
+                "message": "Contact has opted-out of messages from this channel."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Errored wrong authorization",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://smgw1.yo.co.ug:9100/sendsms*": [
+                {
+                    "status": 200,
+                    "body": "ybs_autocreate_status=ERROR&ybs_autocreate_message=YBS+AutoCreate+Subsystem%3A+Access+denied+due+to+wrong+authorization+code"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://smgw1.yo.co.ug:9100/sendsms?destinations=250788383383&origin=2020&password=yo-password&sms_content=Simple+Message&ybsacctno=yo-username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://smgw1.yo.co.ug:9100/sendsms*": [
+                {
+                    "status": 200,
+                    "body": "ybs_autocreate_status=OK"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://smgw1.yo.co.ug:9100/sendsms?destinations=250788383383&origin=2020&password=yo-password&sms_content=%E2%98%BA&ybsacctno=yo-username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://smgw1.yo.co.ug:9100/sendsms*": [
+                {
+                    "status": 401,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://smgw1.yo.co.ug:9100/sendsms?destinations=250788383383&origin=2020&password=yo-password&sms_content=Error+Message&ybsacctno=yo-username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://smgw1.yo.co.ug:9100/sendsms*": [
+                {
+                    "status": 429,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://smgw1.yo.co.ug:9100/sendsms?destinations=250788383383&origin=2020&password=yo-password&sms_content=Error+Message&ybsacctno=yo-username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Connection error",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://smgw1.yo.co.ug:9100/sendsms*": [
+                {
+                    "status": 500,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://smgw1.yo.co.ug:9100/sendsms?destinations=250788383383&origin=2020&password=yo-password&sms_content=Error+Message&ybsacctno=yo-username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "http://smgw1.yo.co.ug:9100/sendsms*": [
+                {
+                    "status": 200,
+                    "body": "ybs_autocreate_status=OK"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://smgw1.yo.co.ug:9100/sendsms?destinations=250788383383&origin=2020&password=yo-password&sms_content=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&ybsacctno=yo-username",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                }
+            }
+        ],
+        "log_errors": []
+    }
+]

@@ -1,0 +1,170 @@
+[
+    {
+        "label": "Receive Hello Msg",
+        "url": "/c/rc/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "headers": {
+            "Authorization": "Token 123456789"
+        },
+        "data": {
+            "user": {
+                "urn": "direct:john.doe",
+                "username": "john.doe",
+                "full_name": "John Doe"
+            },
+            "text": "Hello World"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019af5e0-3940-7000-a1c7-751687384d37",
+                        "text": "Hello World",
+                        "urn": "rocketchat:direct:john.doe#john.doe",
+                        "received_on": "2025-12-06T22:55:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019af5e0-3940-7000-a1c7-751687384d37",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "rocketchat:direct:john.doe#john.doe",
+                "text": "Hello World",
+                "created_on": "2025-12-06T22:55:03Z",
+                "received_on": "2025-12-06T22:55:03Z",
+                "log_uuids": [
+                    "019af5e0-2d88-7000-aedd-35a54a537bd1"
+                ],
+                "contact_name": "John Doe"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Attachment Msg",
+        "url": "/c/rc/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "headers": {
+            "Authorization": "Token 123456789"
+        },
+        "data": {
+            "user": {
+                "urn": "livechat:onrMgdKbpX9Qqtvoi",
+                "full_name": "John Doe"
+            },
+            "attachments": [
+                {
+                    "type": "image/jpg",
+                    "url": "https://link.to/image.jpg"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019aeebf-93e0-7000-9def-f4ee0aca01c6",
+                        "text": "",
+                        "urn": "rocketchat:livechat:onrMgdKbpX9Qqtvoi",
+                        "attachments": [
+                            "https://link.to/image.jpg"
+                        ],
+                        "received_on": "2025-12-05T13:42:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019aeebf-93e0-7000-9def-f4ee0aca01c6",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "rocketchat:livechat:onrMgdKbpX9Qqtvoi",
+                "text": "",
+                "attachments": [
+                    "https://link.to/image.jpg"
+                ],
+                "created_on": "2025-12-05T13:42:03Z",
+                "received_on": "2025-12-05T13:42:03Z",
+                "log_uuids": [
+                    "019aeebf-8828-7000-8fb3-f63f50520e04"
+                ],
+                "contact_name": "John Doe"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Don't Receive Empty Msg",
+        "url": "/c/rc/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "headers": {
+            "Authorization": "Token 123456789"
+        },
+        "data": {
+            "user": {
+                "urn": "direct:john.doe",
+                "username": "john.doe",
+                "full_name": "John Doe"
+            }
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "no text or attachment"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid Authorization",
+        "url": "/c/rc/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "headers": {
+            "Authorization": "123456789"
+        },
+        "data": {
+            "user": {
+                "urn": "direct:john.doe",
+                "username": "john.doe",
+                "full_name": "John Doe"
+            }
+        },
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid Authorization header"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

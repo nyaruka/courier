@@ -1,0 +1,97 @@
+[
+    {
+        "label": "Receive Valid w Sig",
+        "url": "/c/fc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "headers": {
+            "Content-Type": "application/json",
+            "X-FreshChat-Signature": "AhrmypOSWoewHG6LmIRuWjxyokuMDmPklrSU9p0gpUNjdSRCJzvpL6rjuTi5poV/ZLzWRWNM7X9yWjT5m9YFPshYrvigcd1ph4Ot2xmaJGYoUNJHijQccE6oDtDIp6i/8oLRafHgObQnGukZWPbP9OE5EiKz/VcsMP0Wv7hawI/sfIviM0w+6fNOKXWi0jDBH9ap1mj5CqOUOojni7OD5iYmIrjV/h33dyNmbvAta9E+trzcEhYqxfHIN4Z8R2FsatfRHWicoQ4PE5cQ8+UONVya8qr85nQ9w8N7Ql7yNg9fEViYG4/W/JnGEbPPEf8WrYtKzoVyuupDz4mVHdfKWg=="
+        },
+        "data": {
+            "actor": {
+                "actor_type": "user",
+                "actor_id": "882f3926-b292-414b-a411-96380db373cd"
+            },
+            "action": "message_create",
+            "action_time": "2019-06-21T17:43:20.875Z",
+            "data": {
+                "message": {
+                    "message_parts": [
+                        {
+                            "text": {
+                                "content": "Test 2"
+                            }
+                        }
+                    ],
+                    "app_id": "55b190fa-5d3c-45c4-bc49-74ddcfcf53d7",
+                    "actor_id": "882f3926-b292-414b-a411-96380db373cd",
+                    "id": "7a454fde-c720-4c97-a61d-0ffe70449eb6",
+                    "channel_id": "c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
+                    "conversation_id": "c327498e-f713-481e-8d83-0603e03d2521",
+                    "message_type": "normal",
+                    "actor_type": "user",
+                    "created_time": "2019-06-21T17:43:20.866Z"
+                }
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "0199f35b-7fa0-7000-bd07-740984d9a380",
+                        "text": "Test 2",
+                        "urn": "freshchat:c8fddfaf-622a-4a0e-b060-4f3ccbeab606/882f3926-b292-414b-a411-96380db373cd",
+                        "external_id": "7a454fde-c720-4c97-a61d-0ffe70449eb6",
+                        "received_on": "2019-06-21T17:43:20.866Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "0199f35b-7fa0-7000-bd07-740984d9a380",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "freshchat:c8fddfaf-622a-4a0e-b060-4f3ccbeab606/882f3926-b292-414b-a411-96380db373cd",
+                "text": "Test 2",
+                "external_id": "7a454fde-c720-4c97-a61d-0ffe70449eb6",
+                "created_on": "2025-10-17T18:08:03Z",
+                "received_on": "2019-06-21T17:43:20.866Z",
+                "log_uuids": [
+                    "0199f35b-73e8-7000-aa27-10d327c4ccbe"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Bad JSON",
+        "url": "/c/fc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "headers": {
+            "Content-Type": "application/json",
+            "X-FreshChat-Signature": "f7wMD1BBhcj60U0z3dCY519qmxQ8qfVUU212Dapw9vpZfRBfjjmukUK2GwbAb0Nc+TGQHxN4iP4WD+Y/mSx6f4bmkBsvCy3l4OCQ/FEK0y5R7f+GLLDhgbTh90MwuLDHhvxB5dxIeu59leL+4yO+l/8M3Tm48aQurVBi9IAlzFsMtc1S1CiRxsDUb/rD6IRekPa0pUAbkno9qJ/CGXh0kZMdsYzRkzZmKCs79OWrvU94ha0ptyt5wArfmD1oSzY3PjeL2w8LWDc0QV21H/Hvj42azIUqebiNRtZ2E+f34AfQsyfcPuy1k/6qLuYGOdU1uZidPuPcGpeSIm0GW6k9HQ=="
+        },
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'e' looking for beginning of value"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

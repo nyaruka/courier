@@ -1,0 +1,251 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/mk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "shortcode=2020\u0026from=%2B60124361111\u0026text=Hello\u0026msgid=abc1234\u0026time=2016-03-3019:33:06",
+        "response": {
+            "status": 200,
+            "body": "-1"
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+60124361111",
+                "text": "Hello",
+                "external_id": "abc1234",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2016-03-30T11:33:06Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid via GET",
+        "url": "/c/mk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?shortcode=2020&from=%2B60124361111&text=Hello&msgid=abc1234&time=2016-03-3019:33:06",
+        "response": {
+            "status": 200,
+            "body": "-1"
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+60124361111",
+                "text": "Hello",
+                "external_id": "abc1234",
+                "created_on": "2025-11-13T18:20:03Z",
+                "received_on": "2016-03-30T11:33:06Z",
+                "log_uuids": [
+                    "019a7e72-2468-7000-bd3d-694131f2fa9d"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Longcode",
+        "url": "/c/mk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "longcode=2020\u0026msisdn=%2B60124361111\u0026text=Hello\u0026msgid=abc1234\u0026time=2016-03-3019:33:06",
+        "response": {
+            "status": 200,
+            "body": "-1"
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+60124361111",
+                "text": "Hello",
+                "external_id": "abc1234",
+                "created_on": "2025-11-23T21:55:03Z",
+                "received_on": "2016-03-30T11:33:06Z",
+                "log_uuids": [
+                    "019ab2b6-9308-7000-9a9d-2bac66c15cf6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/mk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "shortcode=2020\u0026from=MTN\u0026text=Hello\u0026msgid=abc1234\u0026time=2016-03-3019:33:06",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing Params",
+        "url": "/c/mk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "from=%2B60124361111\u0026text=Hello\u0026msgid=abc1234\u0026time=2016-03-3019:33:06",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing shortcode, longcode, from or msisdn parameters"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid Params",
+        "url": "/c/mk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "longcode=2020\u0026from=%2B60124361111\u0026text=Hello\u0026msgid=abc1234\u0026time=2016-03-3019:33:06",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing shortcode, longcode, from or msisdn parameters"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid Address Params",
+        "url": "/c/mk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "shortcode=1515\u0026from=%2B60124361111\u0026text=Hello\u0026msgid=abc1234\u0026time=2016-03-3019:33:06",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid to number [1515], expecting [2020]"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid Status",
+        "url": "/c/mk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "msgid=12345\u0026status=ACCEPTED",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "S",
+                "log_uuid": "019a9405-84c8-7000-a071-1bb56436b1db"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Wired Status",
+        "url": "/c/mk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "msgid=12345\u0026status=PROCESSING",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "W",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "W",
+                "log_uuid": "019a64d1-7928-7000-9c20-45ffa890d6ae"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Unknown Status",
+        "url": "/c/mk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "msgid=12345\u0026status=UNKNOWN",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring unknown status 'UNKNOWN'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]
