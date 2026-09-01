@@ -1,0 +1,267 @@
+[
+    {
+        "label": "Receive Msg",
+        "url": "/c/kwa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?created_at=1603914166&type=text&from=14133881111&name=John%20Cruz&body=Hello%20World",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019af71e-d3c0-7000-b2b2-eea96c7030fd",
+                        "text": "Hello World",
+                        "urn": "whatsapp:14133881111",
+                        "received_on": "2020-10-28T19:42:46Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019af71e-d3c0-7000-b2b2-eea96c7030fd",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:14133881111",
+                "text": "Hello World",
+                "created_on": "2025-12-07T04:43:03Z",
+                "received_on": "2020-10-28T19:42:46Z",
+                "log_uuids": [
+                    "019af71e-c808-7000-b6b7-bcb65eb0a19b"
+                ],
+                "contact_name": "John Cruz"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Media",
+        "url": "/c/kwa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?created_at=1603914166&type=image&from=14133881111&name=John%20Cruz&media_url=https://link.to/image.jpg",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a99f9-eae0-7000-b4e9-af5e1faf0c88",
+                        "text": "",
+                        "urn": "whatsapp:14133881111",
+                        "attachments": [
+                            "https://link.to/image.jpg"
+                        ],
+                        "received_on": "2020-10-28T19:42:46Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a99f9-eae0-7000-b4e9-af5e1faf0c88",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:14133881111",
+                "text": "",
+                "attachments": [
+                    "https://link.to/image.jpg"
+                ],
+                "created_on": "2025-11-19T02:38:03Z",
+                "received_on": "2020-10-28T19:42:46Z",
+                "log_uuids": [
+                    "019a99f9-df28-7000-949a-601c2b56b42a"
+                ],
+                "contact_name": "John Cruz"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Empty",
+        "url": "/c/kwa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?created_at=1603914166&type=text&from=14133881111&name=John%20Cruz",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "no text or media"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid CreatedAt",
+        "url": "/c/kwa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?created_at=nottimestamp&type=text&from=14133881111&name=John%20Cruz&body=Hi",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid created_at: nottimestamp"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid Type",
+        "url": "/c/kwa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?created_at=1603914166&type=sticker&from=14133881111&name=John%20Cruz",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, unknown message type"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid From",
+        "url": "/c/kwa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?created_at=1603914166&type=text&from=notnumber&name=John%20Cruz&body=Hi",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid whatsapp id"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Blank From",
+        "url": "/c/kwa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moMsgForm.From' Error:Field validation for 'From' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'from' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Status",
+        "url": "/c/kwa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/status?id=58f86fab-85c5-4f7c-9b68-9c323248afc4%3A0&status=read",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "status": "R",
+                        "external_id": "58f86fab-85c5-4f7c-9b68-9c323248afc4:0"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "channel_id": 101,
+                "external_identifier": "58f86fab-85c5-4f7c-9b68-9c323248afc4:0",
+                "status": "R",
+                "log_uuid": "019aa37d-2ca8-7000-a54f-2a9146cc6bd0"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid Status",
+        "url": "/c/kwa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/status?id=58f86fab-85c5-4f7c-9b68-9c323248afc4%3A0&status=deleted",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "unknown status: deleted"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Blank status",
+        "url": "/c/kwa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/status",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moStatusForm.ID' Error:Field validation for 'ID' failed on the 'required' tag\nKey: 'moStatusForm.Status' Error:Field validation for 'Status' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'id' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'status' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]

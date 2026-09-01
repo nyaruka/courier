@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -87,14 +88,23 @@ type HandlerLog struct {
 }
 
 // CapturedRequest is an HTTP request a handler made which was answered by a mock. A form encoded body is written as
-// its decoded values so that the file stays readable. The User-Agent header is left out because every request
-// carries the same one and a change to it would otherwise touch every file.
+// its decoded values so that the file stays readable, and a multipart form as its values and files - with the
+// boundary dropped from its Content-Type header, because it's generated randomly for each request. The User-Agent
+// header is left out because every request carries the same one and a change to it would otherwise touch every file.
 type CapturedRequest struct {
-	Method  string            `json:"method"`
-	URL     string            `json:"url"`
-	Headers map[string]string `json:"headers,omitempty"`
-	Form    url.Values        `json:"form,omitempty"`
-	Body    HTTPBody          `json:"body,omitzero"`
+	Method  string                   `json:"method"`
+	URL     string                   `json:"url"`
+	Headers map[string]string        `json:"headers,omitempty"`
+	Form    url.Values               `json:"form,omitempty"`
+	Files   map[string]*CapturedFile `json:"files,omitempty"`
+	Body    HTTPBody                 `json:"body,omitzero"`
+}
+
+// CapturedFile is a file part of a multipart form request
+type CapturedFile struct {
+	Filename    string   `json:"filename"`
+	ContentType string   `json:"content_type,omitempty"`
+	Body        HTTPBody `json:"body,omitzero"`
 }
 
 func captureRequest(r *http.Request) *CapturedRequest {
@@ -110,9 +120,32 @@ func captureRequest(r *http.Request) *CapturedRequest {
 		body, _ = io.ReadAll(r.Body)
 	}
 
-	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded") {
+	mediaType, params, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+
+	switch mediaType {
+	case "application/x-www-form-urlencoded":
 		c.Form, _ = url.ParseQuery(string(body))
-	} else {
+	case "multipart/form-data":
+		c.Headers["Content-Type"] = mediaType
+
+		form, err := multipart.NewReader(bytes.NewReader(body), params["boundary"]).ReadForm(32 << 20)
+		if err != nil {
+			c.Body = NewHTTPBody(body) // not actually a multipart form so keep the raw body
+			break
+		}
+		c.Form = form.Value
+		c.Files = make(map[string]*CapturedFile, len(form.File))
+		for name, headers := range form.File {
+			f, _ := headers[0].Open()
+			data, _ := io.ReadAll(f)
+			f.Close()
+			c.Files[name] = &CapturedFile{
+				Filename:    headers[0].Filename,
+				ContentType: headers[0].Header.Get("Content-Type"),
+				Body:        NewHTTPBody(data),
+			}
+		}
+	default:
 		c.Body = NewHTTPBody(body)
 	}
 	return c

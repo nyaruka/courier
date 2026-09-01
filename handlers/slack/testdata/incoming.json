@@ -1,0 +1,403 @@
+[
+    {
+        "label": "Receive Hello Msg",
+        "url": "/c/sl/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "token": "one-long-verification-token",
+            "team_id": "T061EG9R6",
+            "api_app_id": "A0PNCHHK2",
+            "event": {
+                "type": "message",
+                "channel": "U0123ABCDEF",
+                "user": "U0123ABCDEF",
+                "text": "Hello World!",
+                "ts": "1355517523.000005",
+                "event_ts": "1355517523.000005",
+                "channel_type": "im"
+            },
+            "type": "event_callback",
+            "authed_teams": [
+                "T061EG9R6"
+            ],
+            "event_id": "Ev0PV52K21",
+            "event_time": 1355517523
+        },
+        "http_mocks": {
+            "*/users.info?*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "user": {
+                            "real_name": "dummy user"
+                        }
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019af5e0-3940-7000-a1c7-751687384d37",
+                        "text": "Hello World!",
+                        "urn": "slack:U0123ABCDEF",
+                        "external_id": "Ev0PV52K21",
+                        "received_on": "2012-12-14T20:38:43Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019af5e0-3940-7000-a1c7-751687384d37",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "slack:U0123ABCDEF",
+                "text": "Hello World!",
+                "external_id": "Ev0PV52K21",
+                "created_on": "2025-12-06T22:55:03Z",
+                "received_on": "2012-12-14T20:38:43Z",
+                "log_uuids": [
+                    "019af5e0-2d88-7000-aedd-35a54a537bd1"
+                ]
+            }
+        ],
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://slack.com/api/users.info?user=U0123ABCDEF",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive image file",
+        "url": "/c/sl/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "token": "Bwf82iq5kCEkHOzRQ7p4FqkQ",
+            "team_id": "T03CN5KTA6S",
+            "api_app_id": "A03FTC8MZ63",
+            "event": {
+                "type": "message",
+                "text": "",
+                "files": [
+                    {
+                        "id": "F03GTH43SSF",
+                        "mimetype": "image/jpeg",
+                        "url_private_download": "https://files.slack.com/files-pri/T03CN5KTA6S-F03GTH43SSF/download/batata.jpg",
+                        "permalink_public": "https://slack-files.com/T03CN5KTA6S-F03GTH43SSF-39fcf577f2"
+                    }
+                ],
+                "user": "U0123ABCDEF",
+                "channel": "U0123ABCDEF",
+                "channel_type": "im"
+            },
+            "type": "event_callback",
+            "event_id": "Ev0PV52K21",
+            "event_time": 1653417052
+        },
+        "http_mocks": {
+            "*/files.sharedPublicURL": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "error": "",
+                        "file": {
+                            "id": "F03GTH43SSF",
+                            "mimetype": "image/jpeg",
+                            "url_private_download": "https://files.slack.com/files-pri/T03CN5KTA6S-F03GTH43SSF/download/batata.jpg",
+                            "permalink_public": "https://slack-files.com/T03CN5KTA6S-F03GTH43SSF-39fcf577f2"
+                        }
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019af5e0-3940-7000-a1c7-751687384d37",
+                        "text": "",
+                        "urn": "slack:U0123ABCDEF",
+                        "attachments": [
+                            "https://files.slack.com/files-pri/T03CN5KTA6S-F03GTH43SSF/download/batata.jpg?pub_secret=39fcf577f2"
+                        ],
+                        "external_id": "Ev0PV52K21",
+                        "received_on": "2022-05-24T18:30:52Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019af5e0-3940-7000-a1c7-751687384d37",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "slack:U0123ABCDEF",
+                "text": "",
+                "attachments": [
+                    "https://files.slack.com/files-pri/T03CN5KTA6S-F03GTH43SSF/download/batata.jpg?pub_secret=39fcf577f2"
+                ],
+                "external_id": "Ev0PV52K21",
+                "created_on": "2025-10-27T06:23:05Z",
+                "received_on": "2022-05-24T18:30:52Z",
+                "log_uuids": [
+                    "019a2455-9988-7000-b4af-16c882ddae8f"
+                ]
+            }
+        ],
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.sharedPublicURL",
+                "headers": {
+                    "Authorization": "Bearer ",
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                "body": {
+                    "file": "F03GTH43SSF"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive audio file",
+        "url": "/c/sl/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "token": "Bwf82iq5kCEkHOzRQ7p4FqkQ",
+            "team_id": "T03CN5KTA6S",
+            "api_app_id": "A03FTC8MZ63",
+            "event": {
+                "type": "message",
+                "text": "",
+                "files": [
+                    {
+                        "id": "F03GWURCZL4",
+                        "mimetype": "audio/mpeg",
+                        "url_private_download": "https://files.slack.com/files-pri/T03CN5KTA6S-F03GWURCZL4/download/here_we_go_again.mp3",
+                        "permalink_public": "https://slack-files.com/T03CN5KTA6S-F03GWURCZL4-471020b300"
+                    }
+                ],
+                "user": "U0123ABCDEF",
+                "channel": "U0123ABCDEF",
+                "channel_type": "im"
+            },
+            "type": "event_callback",
+            "event_id": "Ev0PV52K21",
+            "event_time": 1653428835
+        },
+        "http_mocks": {
+            "*/files.sharedPublicURL": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "error": "",
+                        "file": {
+                            "id": "F03GWURCZL4",
+                            "mimetype": "audio/mpeg",
+                            "url_private_download": "https://files.slack.com/files-pri/T03CN5KTA6S-F03GWURCZL4/download/here_we_go_again.mp3",
+                            "permalink_public": "https://slack-files.com/T03CN5KTA6S-F03GWURCZL4-471020b300"
+                        }
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019af5e0-3940-7000-a1c7-751687384d37",
+                        "text": "",
+                        "urn": "slack:U0123ABCDEF",
+                        "attachments": [
+                            "https://files.slack.com/files-pri/T03CN5KTA6S-F03GWURCZL4/download/here_we_go_again.mp3?pub_secret=471020b300"
+                        ],
+                        "external_id": "Ev0PV52K21",
+                        "received_on": "2022-05-24T21:47:15Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019af5e0-3940-7000-a1c7-751687384d37",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "slack:U0123ABCDEF",
+                "text": "",
+                "attachments": [
+                    "https://files.slack.com/files-pri/T03CN5KTA6S-F03GWURCZL4/download/here_we_go_again.mp3?pub_secret=471020b300"
+                ],
+                "external_id": "Ev0PV52K21",
+                "created_on": "2025-11-20T23:26:05Z",
+                "received_on": "2022-05-24T21:47:15Z",
+                "log_uuids": [
+                    "019aa396-cf28-7000-bf9b-d44ce0b5ef41"
+                ]
+            }
+        ],
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.sharedPublicURL",
+                "headers": {
+                    "Authorization": "Bearer ",
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                "body": {
+                    "file": "F03GWURCZL4"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive video file (not allowed)",
+        "url": "/c/sl/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "token": "Bwf82iq5kCEkHOzRQ7p4FqkQ",
+            "team_id": "T03CN5KTA6S",
+            "api_app_id": "A03FTC8MZ63",
+            "event": {
+                "type": "message",
+                "text": "",
+                "files": [
+                    {
+                        "id": "F03GDSSMC79",
+                        "mimetype": "video/mp4",
+                        "url_private_download": "https://files.slack.com/files-pri/T03CN5KTA6S-F03GDSSMC79/download/walk_cycle_animation_sample.mp4",
+                        "permalink": "https://teste-apigrupo.slack.com/files/U0123ABCDEF/F03GDSSMC79/walk_cycle_animation_sample.mp4",
+                        "permalink_public": "https://slack-files.com/T03CN5KTA6S-F03GDSSMC79-805aa1d85f"
+                    }
+                ],
+                "user": "U0123ABCDEF",
+                "channel": "U0123ABCDEF",
+                "channel_type": "im"
+            },
+            "type": "event_callback",
+            "event_id": "Ev0PV52K21",
+            "event_time": 1653427243
+        },
+        "http_mocks": {
+            "*/files.sharedPublicURL": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": false,
+                        "error": "public_video_not_allowed"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019af5e0-3940-7000-a1c7-751687384d37",
+                        "text": "",
+                        "urn": "slack:U0123ABCDEF",
+                        "external_id": "Ev0PV52K21",
+                        "received_on": "2022-05-24T21:20:43Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019af5e0-3940-7000-a1c7-751687384d37",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "slack:U0123ABCDEF",
+                "text": "",
+                "external_id": "Ev0PV52K21",
+                "created_on": "2025-11-22T21:17:05Z",
+                "received_on": "2022-05-24T21:20:43Z",
+                "log_uuids": [
+                    "019aad6d-6cc8-7000-9158-d509552510c5"
+                ]
+            }
+        ],
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.sharedPublicURL",
+                "headers": {
+                    "Authorization": "Bearer ",
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                "body": {
+                    "file": "F03GDSSMC79"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive bot message",
+        "url": "/c/sl/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "data": {
+            "token": "one-long-verification-token",
+            "team_id": "T061EG9R6",
+            "api_app_id": "A0PNCHHK2",
+            "event": {
+                "type": "message",
+                "channel": "U0123ABCDEF",
+                "bot_id": "B0PNCHHK2",
+                "text": "Hello World!",
+                "ts": "1355517523.000005",
+                "event_ts": "1355517523.000005",
+                "channel_type": "im"
+            },
+            "type": "event_callback",
+            "event_id": "Ev0PV52K21",
+            "event_time": 1355517523
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "Ignoring request, no message"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

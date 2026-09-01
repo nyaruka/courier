@@ -1,0 +1,544 @@
+[
+    {
+        "label": "Send simple message",
+        "msg": {
+            "text": "Simple message",
+            "urn": "vk:123456789"
+        },
+        "http_mocks": {
+            "https://api.vk.com/method/messages.send.json?*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "response": 1
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=&message=Simple+message&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
+            }
+        ],
+        "external_ids": [
+            "1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send photo attachment",
+        "msg": {
+            "urn": "vk:123456789",
+            "attachments": [
+                "image/png:https://foo.bar/image.png"
+            ]
+        },
+        "http_mocks": {
+            "https://api.vk.com/method/messages.send.json*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "response": 1
+                    }
+                }
+            ],
+            "https://api.vk.com/method/photos.getMessagesUploadServer.json?access_token=token123xyz&v=5.103": [
+                {
+                    "status": 200,
+                    "body": {
+                        "response": {
+                            "upload_url": "https://api.vk.com/upload"
+                        }
+                    }
+                }
+            ],
+            "https://api.vk.com/method/photos.saveMessagesPhoto.json*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "response": [
+                            {
+                                "id": 1,
+                                "owner_id": 1901234
+                            }
+                        ]
+                    }
+                }
+            ],
+            "https://api.vk.com/upload": [
+                {
+                    "status": 200,
+                    "body": {
+                        "server": 109876,
+                        "photo": "...",
+                        "hash": "zxc987qwe"
+                    }
+                }
+            ],
+            "https://foo.bar/image.png": [
+                {
+                    "status": 200,
+                    "body": "bytes"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/photos.getMessagesUploadServer.json?access_token=token123xyz&v=5.103"
+            },
+            {
+                "method": "GET",
+                "url": "https://foo.bar/image.png"
+            },
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/upload",
+                "headers": {
+                    "Content-Type": "multipart/form-data"
+                },
+                "files": {
+                    "photo": {
+                        "filename": "photo.png",
+                        "content_type": "application/octet-stream",
+                        "body": "bytes"
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/photos.saveMessagesPhoto.json?access_token=token123xyz&hash=zxc987qwe&photo=...&server=109876&v=5.103"
+            },
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=photo1901234_1&message=&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
+            }
+        ],
+        "external_ids": [
+            "1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send photo and another attachment type",
+        "msg": {
+            "text": "Attachments",
+            "urn": "vk:123456789",
+            "attachments": [
+                "image/png:https://foo.bar/image.png",
+                "audio/mp3:https://foo.bar/audio.mp3"
+            ]
+        },
+        "http_mocks": {
+            "https://api.vk.com/method/messages.send.json*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "response": 1
+                    }
+                }
+            ],
+            "https://api.vk.com/method/photos.saveMessagesPhoto.json*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "response": [
+                            {
+                                "id": 1,
+                                "owner_id": 1901234
+                            }
+                        ]
+                    }
+                }
+            ],
+            "https://api.vk.com/upload": [
+                {
+                    "status": 200,
+                    "body": {
+                        "server": 109876,
+                        "photo": "...",
+                        "hash": "zxc987qwe"
+                    }
+                }
+            ],
+            "https://foo.bar/image.png": [
+                {
+                    "status": 200,
+                    "body": "bytes"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/image.png"
+            },
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/upload",
+                "headers": {
+                    "Content-Type": "multipart/form-data"
+                },
+                "files": {
+                    "photo": {
+                        "filename": "photo.png",
+                        "content_type": "application/octet-stream",
+                        "body": "bytes"
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/photos.saveMessagesPhoto.json?access_token=token123xyz&hash=zxc987qwe&photo=...&server=109876&v=5.103"
+            },
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=photo1901234_1&message=Attachments%0A%0Ahttps%3A%2F%2Ffoo.bar%2Faudio.mp3&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
+            }
+        ],
+        "external_ids": [
+            "1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send keyboard",
+        "msg": {
+            "text": "Send keyboard",
+            "urn": "vk:123456789",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "A"
+                },
+                {
+                    "type": "text",
+                    "text": "B"
+                },
+                {
+                    "type": "text",
+                    "text": "C"
+                },
+                {
+                    "type": "text",
+                    "text": "D"
+                },
+                {
+                    "type": "text",
+                    "text": "E"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://api.vk.com/method/messages.send.json?*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "response": 1
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=&keyboard=%7B%22one_time%22%3Atrue%2C%22buttons%22%3A%5B%5B%7B%22action%22%3A%7B%22type%22%3A%22text%22%2C%22label%22%3A%22A%22%2C%22payload%22%3A%22%5C%22A%5C%22%22%7D%2C%22color%22%3A%22primary%22%7D%2C%7B%22action%22%3A%7B%22type%22%3A%22text%22%2C%22label%22%3A%22B%22%2C%22payload%22%3A%22%5C%22B%5C%22%22%7D%2C%22color%22%3A%22primary%22%7D%2C%7B%22action%22%3A%7B%22type%22%3A%22text%22%2C%22label%22%3A%22C%22%2C%22payload%22%3A%22%5C%22C%5C%22%22%7D%2C%22color%22%3A%22primary%22%7D%2C%7B%22action%22%3A%7B%22type%22%3A%22text%22%2C%22label%22%3A%22D%22%2C%22payload%22%3A%22%5C%22D%5C%22%22%7D%2C%22color%22%3A%22primary%22%7D%2C%7B%22action%22%3A%7B%22type%22%3A%22text%22%2C%22label%22%3A%22E%22%2C%22payload%22%3A%22%5C%22E%5C%22%22%7D%2C%22color%22%3A%22primary%22%7D%5D%5D%2C%22inline%22%3Afalse%7D&message=Send+keyboard&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
+            }
+        ],
+        "external_ids": [
+            "1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send keyboard, unsupported types ignored",
+        "msg": {
+            "text": "Send keyboard",
+            "urn": "vk:123456789",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "A"
+                },
+                {
+                    "type": "form",
+                    "extra": "1234"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://api.vk.com/method/messages.send.json?*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "response": 1
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=&keyboard=%7B%22one_time%22%3Atrue%2C%22buttons%22%3A%5B%5B%7B%22action%22%3A%7B%22type%22%3A%22text%22%2C%22label%22%3A%22A%22%2C%22payload%22%3A%22%5C%22A%5C%22%22%7D%2C%22color%22%3A%22primary%22%7D%5D%5D%2C%22inline%22%3Afalse%7D&message=Send+keyboard&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
+            }
+        ],
+        "external_ids": [
+            "1"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type form isn't supported by this channel and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Send keyboard, location and URL types",
+        "msg": {
+            "text": "Send keyboard",
+            "urn": "vk:123456789",
+            "quick_replies": [
+                {
+                    "type": "location"
+                },
+                {
+                    "type": "url",
+                    "text": "Visit",
+                    "extra": "http://example.com"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://api.vk.com/method/messages.send.json?*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "response": 1
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=&keyboard=%7B%22one_time%22%3Atrue%2C%22buttons%22%3A%5B%5B%7B%22action%22%3A%7B%22type%22%3A%22location%22%2C%22payload%22%3A%22%5C%22Send+Location%5C%22%22%7D%7D%5D%2C%5B%7B%22action%22%3A%7B%22type%22%3A%22open_link%22%2C%22label%22%3A%22Visit%22%2C%22link%22%3A%22http%3A%2F%2Fexample.com%22%2C%22payload%22%3A%22%5C%22Visit%5C%22%22%7D%2C%22color%22%3A%22primary%22%7D%5D%5D%2C%22inline%22%3Afalse%7D&message=Send+keyboard&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
+            }
+        ],
+        "external_ids": [
+            "1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send keyboard, location type takes a row of its own",
+        "msg": {
+            "text": "Send keyboard",
+            "urn": "vk:123456789",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "A"
+                },
+                {
+                    "type": "location"
+                },
+                {
+                    "type": "text",
+                    "text": "B"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://api.vk.com/method/messages.send.json?*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "response": 1
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=&keyboard=%7B%22one_time%22%3Atrue%2C%22buttons%22%3A%5B%5B%7B%22action%22%3A%7B%22type%22%3A%22text%22%2C%22label%22%3A%22A%22%2C%22payload%22%3A%22%5C%22A%5C%22%22%7D%2C%22color%22%3A%22primary%22%7D%5D%2C%5B%7B%22action%22%3A%7B%22type%22%3A%22location%22%2C%22payload%22%3A%22%5C%22Send+Location%5C%22%22%7D%7D%5D%2C%5B%7B%22action%22%3A%7B%22type%22%3A%22text%22%2C%22label%22%3A%22B%22%2C%22payload%22%3A%22%5C%22B%5C%22%22%7D%2C%22color%22%3A%22primary%22%7D%5D%5D%2C%22inline%22%3Afalse%7D&message=Send+keyboard&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
+            }
+        ],
+        "external_ids": [
+            "1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send keyboard, URL type without a URL is dropped",
+        "msg": {
+            "text": "Send keyboard",
+            "urn": "vk:123456789",
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit"
+                },
+                {
+                    "type": "text",
+                    "text": "A"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://api.vk.com/method/messages.send.json?*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "response": 1
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=&keyboard=%7B%22one_time%22%3Atrue%2C%22buttons%22%3A%5B%5B%7B%22action%22%3A%7B%22type%22%3A%22text%22%2C%22label%22%3A%22A%22%2C%22payload%22%3A%22%5C%22A%5C%22%22%7D%2C%22color%22%3A%22primary%22%7D%5D%5D%2C%22inline%22%3Afalse%7D&message=Send+keyboard&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
+            }
+        ],
+        "external_ids": [
+            "1"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type url is missing its extra value and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Send keyboard, only unsupported types means no keyboard",
+        "msg": {
+            "text": "Send keyboard",
+            "urn": "vk:123456789",
+            "quick_replies": [
+                {
+                    "type": "form",
+                    "extra": "1234"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://api.vk.com/method/messages.send.json?*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "response": 1
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=&message=Send+keyboard&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
+            }
+        ],
+        "external_ids": [
+            "1"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type form isn't supported by this channel and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Connection Error",
+        "msg": {
+            "text": "Simple message",
+            "urn": "vk:123456789"
+        },
+        "http_mocks": {
+            "https://api.vk.com/method/messages.send.json?*": [
+                {
+                    "status": 500,
+                    "body": "Bad Gateway"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=&message=Simple+message&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Simple message",
+            "urn": "vk:123456789"
+        },
+        "http_mocks": {
+            "https://api.vk.com/method/messages.send.json?*": [
+                {
+                    "status": 429,
+                    "body": "Bad Gateway"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=&message=Simple+message&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Response unexpected",
+        "msg": {
+            "text": "Simple message",
+            "urn": "vk:123456789"
+        },
+        "http_mocks": {
+            "https://api.vk.com/method/messages.send.json?*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "missing": 1
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=&message=Simple+message&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    }
+]

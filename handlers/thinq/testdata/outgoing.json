@@ -1,0 +1,368 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+12067791234"
+        },
+        "http_mocks": {
+            "https://api.thinq.com/account/1234/product/origination/sms/send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "guid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.thinq.com/account/1234/product/origination/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6c2VzYW1l",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from_did": "2065551212",
+                    "to_did": "2067791234",
+                    "message": "Simple Message ☺"
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+12067791234",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api.thinq.com/account/1234/product/origination/mms/send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "guid": "1002"
+                    }
+                }
+            ],
+            "https://api.thinq.com/account/1234/product/origination/sms/send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "guid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.thinq.com/account/1234/product/origination/mms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6c2VzYW1l",
+                    "Content-Type": "multipart/form-data"
+                },
+                "form": {
+                    "from_did": [
+                        "2065551212"
+                    ],
+                    "media_url": [
+                        "https://foo.bar/image.jpg"
+                    ],
+                    "to_did": [
+                        "2067791234"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.thinq.com/account/1234/product/origination/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6c2VzYW1l",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from_did": "2065551212",
+                    "to_did": "2067791234",
+                    "message": "My pic!"
+                }
+            }
+        ],
+        "external_ids": [
+            "1002",
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Only Attachment",
+        "msg": {
+            "urn": "tel:+12067791234",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api.thinq.com/account/1234/product/origination/mms/send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "guid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.thinq.com/account/1234/product/origination/mms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6c2VzYW1l",
+                    "Content-Type": "multipart/form-data"
+                },
+                "form": {
+                    "from_did": [
+                        "2065551212"
+                    ],
+                    "media_url": [
+                        "https://foo.bar/image.jpg"
+                    ],
+                    "to_did": [
+                        "2067791234"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "No External ID",
+        "msg": {
+            "text": "No External ID",
+            "urn": "tel:+12067791234"
+        },
+        "http_mocks": {
+            "https://api.thinq.com/account/1234/product/origination/sms/send": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.thinq.com/account/1234/product/origination/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6c2VzYW1l",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from_did": "2065551212",
+                    "to_did": "2067791234",
+                    "message": "No External ID"
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": [
+            {
+                "code": "response_value_missing",
+                "message": "Unable to find 'guid' response."
+            }
+        ]
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+12067791234"
+        },
+        "http_mocks": {
+            "https://api.thinq.com/account/1234/product/origination/sms/send": [
+                {
+                    "status": 401,
+                    "body": {
+                        "error": "failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.thinq.com/account/1234/product/origination/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6c2VzYW1l",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from_did": "2065551212",
+                    "to_did": "2067791234",
+                    "message": "Error Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+12067791234"
+        },
+        "http_mocks": {
+            "https://api.thinq.com/account/1234/product/origination/sms/send": [
+                {
+                    "status": 429,
+                    "body": {
+                        "error": "failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.thinq.com/account/1234/product/origination/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6c2VzYW1l",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from_did": "2065551212",
+                    "to_did": "2067791234",
+                    "message": "Error Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Connection Error",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+12067791234"
+        },
+        "http_mocks": {
+            "https://api.thinq.com/account/1234/product/origination/sms/send": [
+                {
+                    "status": 500,
+                    "body": {
+                        "error": "failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.thinq.com/account/1234/product/origination/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6c2VzYW1l",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from_did": "2065551212",
+                    "to_did": "2067791234",
+                    "message": "Error Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Reponse Unexpected",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+12067791234"
+        },
+        "http_mocks": {
+            "https://api.thinq.com/account/1234/product/origination/sms/send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "missing": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.thinq.com/account/1234/product/origination/sms/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6c2VzYW1l",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "from_did": "2065551212",
+                    "to_did": "2067791234",
+                    "message": "Simple Message ☺"
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": [
+            {
+                "code": "response_value_missing",
+                "message": "Unable to find 'guid' response."
+            }
+        ]
+    }
+]
