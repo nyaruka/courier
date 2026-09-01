@@ -21,8 +21,7 @@
                 "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
                 "headers": {
                     "Authorization": "Token 123456789",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "direct:john.doe",
@@ -60,8 +59,7 @@
                 "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
                 "headers": {
                     "Authorization": "Token 123456789",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "livechat:onrMgdKbpX9Qqtvoi",
@@ -105,8 +103,7 @@
                 "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
                 "headers": {
                     "Authorization": "Token 123456789",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "direct:john.doe",
@@ -146,8 +143,7 @@
                 "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
                 "headers": {
                     "Authorization": "Token 123456789",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "direct:john.doe",
@@ -185,8 +181,7 @@
                 "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
                 "headers": {
                     "Authorization": "Token 123456789",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "direct:john.doe",
@@ -225,8 +220,7 @@
                 "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
                 "headers": {
                     "Authorization": "Token 123456789",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "direct:john.doe",
@@ -267,8 +261,7 @@
                 "url": "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message",
                 "headers": {
                     "Authorization": "Token 123456789",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "direct:john.doe",

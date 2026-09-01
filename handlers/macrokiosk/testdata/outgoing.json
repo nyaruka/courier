@@ -21,8 +21,7 @@
                 "url": "https://www.etracker.cc/bulksms/send",
                 "headers": {
                     "Accept": "application/json",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "Username",
@@ -68,8 +67,7 @@
                 "url": "https://www.etracker.cc/bulksms/send",
                 "headers": {
                     "Accept": "application/json",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "Username",
@@ -86,8 +84,7 @@
                 "url": "https://www.etracker.cc/bulksms/send",
                 "headers": {
                     "Accept": "application/json",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "Username",
@@ -131,8 +128,7 @@
                 "url": "https://www.etracker.cc/bulksms/send",
                 "headers": {
                     "Accept": "application/json",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "Username",
@@ -172,8 +168,7 @@
                 "url": "https://www.etracker.cc/bulksms/send",
                 "headers": {
                     "Accept": "application/json",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "Username",
@@ -215,8 +210,7 @@
                 "url": "https://www.etracker.cc/bulksms/send",
                 "headers": {
                     "Accept": "application/json",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "Username",
@@ -260,8 +254,7 @@
                 "url": "https://www.etracker.cc/bulksms/send",
                 "headers": {
                     "Accept": "application/json",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "user": "Username",

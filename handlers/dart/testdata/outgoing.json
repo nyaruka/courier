@@ -18,8 +18,7 @@
                 "method": "GET",
                 "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=Simple+Message&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 }
             }
         ],
@@ -48,16 +47,14 @@
                 "method": "GET",
                 "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=This+is+a+longer+message+than+160+characters+and+will+cause+us+to+split+it+into+two+separate+parts%2C+isn%27t+that+right+but+it+is+even+longer+than+before+I+say%2C&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 }
             },
             {
                 "method": "GET",
                 "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=I+need+to+keep+adding+more+things+to+make+it+work&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b.2&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 }
             }
         ],
@@ -85,8 +82,7 @@
                 "method": "GET",
                 "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 }
             }
         ],
@@ -111,8 +107,7 @@
                 "method": "GET",
                 "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=Error+Message&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 }
             }
         ],
@@ -144,8 +139,7 @@
                 "method": "GET",
                 "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=Error+Message&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 }
             }
         ],
@@ -178,8 +172,7 @@
                 "method": "GET",
                 "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=Simple+Message&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 }
             }
         ],
@@ -212,8 +205,7 @@
                 "method": "GET",
                 "url": "http://202.43.169.11/APIhttpU/receive2waysms.php?dcs=0&message=Simple+Message&messageid=0191e180-7d60-7000-aded-7d8b151cbd5b&original=2020&password=Password&sendto=250788383383&udhl=0&userid=Username",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 }
             }
         ],

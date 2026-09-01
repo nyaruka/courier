@@ -18,8 +18,7 @@
                 "method": "POST",
                 "url": "http://telesom.com/sendsms_other",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "from": [
@@ -58,8 +57,7 @@
                 "method": "POST",
                 "url": "http://telesom.com/sendsms_other",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "from": [
@@ -98,8 +96,7 @@
                 "method": "POST",
                 "url": "http://telesom.com/sendsms_other",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "from": [
@@ -145,8 +142,7 @@
                 "method": "POST",
                 "url": "http://telesom.com/sendsms_other",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "from": [
@@ -196,8 +192,7 @@
                 "method": "POST",
                 "url": "http://telesom.com/sendsms_other",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "from": [
@@ -236,8 +231,7 @@
                 "method": "POST",
                 "url": "http://telesom.com/sendsms_other",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "from": [
@@ -284,8 +278,7 @@
                 "method": "POST",
                 "url": "http://telesom.com/sendsms_other",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "from": [

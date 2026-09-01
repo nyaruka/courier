@@ -22,8 +22,7 @@
                 "method": "POST",
                 "url": "http://smail.smscentral.com.np/bp/ApiSms.php",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "content": [
@@ -66,8 +65,7 @@
                 "method": "POST",
                 "url": "http://smail.smscentral.com.np/bp/ApiSms.php",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "content": [
@@ -113,8 +111,7 @@
                 "method": "POST",
                 "url": "http://smail.smscentral.com.np/bp/ApiSms.php",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "content": [
@@ -155,8 +152,7 @@
                 "method": "POST",
                 "url": "http://smail.smscentral.com.np/bp/ApiSms.php",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "content": [
@@ -204,8 +200,7 @@
                 "method": "POST",
                 "url": "http://smail.smscentral.com.np/bp/ApiSms.php",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "content": [
@@ -254,8 +249,7 @@
                 "method": "POST",
                 "url": "http://smail.smscentral.com.np/bp/ApiSms.php",
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "content": [

@@ -19,8 +19,7 @@
                 "url": "https://api.freshchat.com/v2/conversations",
                 "headers": {
                     "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "messages": [
@@ -70,8 +69,7 @@
                 "url": "https://api.freshchat.com/v2/conversations",
                 "headers": {
                     "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "messages": [
@@ -125,8 +123,7 @@
                 "url": "https://api.freshchat.com/v2/conversations",
                 "headers": {
                     "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "messages": [
@@ -173,8 +170,7 @@
                 "url": "https://api.freshchat.com/v2/conversations",
                 "headers": {
                     "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "messages": [
@@ -228,8 +224,7 @@
                 "url": "https://api.freshchat.com/v2/conversations",
                 "headers": {
                     "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "messages": [
@@ -284,8 +279,7 @@
                 "url": "https://api.freshchat.com/v2/conversations",
                 "headers": {
                     "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/json"
                 },
                 "body": {
                     "messages": [

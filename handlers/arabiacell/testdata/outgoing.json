@@ -22,8 +22,7 @@
                 "url": "https://acsdp.arabiacell.net",
                 "headers": {
                     "Accept": "application/xml",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "chargingLevel": [
@@ -75,8 +74,7 @@
                 "url": "https://acsdp.arabiacell.net",
                 "headers": {
                     "Accept": "application/xml",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "chargingLevel": [
@@ -133,8 +131,7 @@
                 "url": "https://acsdp.arabiacell.net",
                 "headers": {
                     "Accept": "application/xml",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "chargingLevel": [
@@ -190,8 +187,7 @@
                 "url": "https://acsdp.arabiacell.net",
                 "headers": {
                     "Accept": "application/xml",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "chargingLevel": [
@@ -248,8 +244,7 @@
                 "url": "https://acsdp.arabiacell.net",
                 "headers": {
                     "Accept": "application/xml",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "Courier/Dev"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "chargingLevel": [

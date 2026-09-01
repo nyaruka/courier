@@ -20,10 +20,7 @@
         "requests": [
             {
                 "method": "GET",
-                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Simple+Message&SMSChannel=0&SMSType=0&Telco=0&UserId=Username",
-                "headers": {
-                    "User-Agent": "Courier/Dev"
-                }
+                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Simple+Message&SMSChannel=0&SMSType=0&Telco=0&UserId=Username"
             }
         ],
         "log_errors": []
@@ -49,10 +46,7 @@
         "requests": [
             {
                 "method": "GET",
-                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=%E2%98%BA&SMSChannel=0&SMSType=7&Telco=0&UserId=Username",
-                "headers": {
-                    "User-Agent": "Courier/Dev"
-                }
+                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=%E2%98%BA&SMSChannel=0&SMSType=7&Telco=0&UserId=Username"
             }
         ],
         "log_errors": []
@@ -78,10 +72,7 @@
         "requests": [
             {
                 "method": "GET",
-                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Fancy+%22Smart%22+Quotes&SMSChannel=0&SMSType=0&Telco=0&UserId=Username",
-                "headers": {
-                    "User-Agent": "Courier/Dev"
-                }
+                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Fancy+%22Smart%22+Quotes&SMSChannel=0&SMSType=0&Telco=0&UserId=Username"
             }
         ],
         "log_errors": []
@@ -110,10 +101,7 @@
         "requests": [
             {
                 "method": "GET",
-                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&SMSChannel=0&SMSType=0&Telco=0&UserId=Username",
-                "headers": {
-                    "User-Agent": "Courier/Dev"
-                }
+                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&SMSChannel=0&SMSType=0&Telco=0&UserId=Username"
             }
         ],
         "log_errors": []
@@ -139,10 +127,7 @@
         "requests": [
             {
                 "method": "GET",
-                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Error+Sending&SMSChannel=0&SMSType=0&Telco=0&UserId=Username",
-                "headers": {
-                    "User-Agent": "Courier/Dev"
-                }
+                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Error+Sending&SMSChannel=0&SMSType=0&Telco=0&UserId=Username"
             }
         ],
         "error": {
@@ -175,10 +160,7 @@
         "requests": [
             {
                 "method": "GET",
-                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Error+Sending&SMSChannel=0&SMSType=0&Telco=0&UserId=Username",
-                "headers": {
-                    "User-Agent": "Courier/Dev"
-                }
+                "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Error+Sending&SMSChannel=0&SMSType=0&Telco=0&UserId=Username"
             }
         ],
         "error": {
