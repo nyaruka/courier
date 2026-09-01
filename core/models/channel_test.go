@@ -45,7 +45,7 @@ func TestGetChannelCachesAbsence(t *testing.T) {
 	assert.ErrorIs(t, err, models.ErrChannelWrongType)
 }
 
-func TestGetChannelByAddressCachesAbsence(t *testing.T) {
+func TestGetChannelByAddressDoesntCacheAbsence(t *testing.T) {
 	ctx, rt := testsuite.Runtime(t)
 
 	ch := test.NewMockChannel("6b1e0f1e-d84e-4f4a-9e6e-9a48c4b8b5a2", "NX", "2021", "US", []string{urns.Phone.Prefix}, nil)
@@ -61,8 +61,12 @@ func TestGetChannelByAddressCachesAbsence(t *testing.T) {
 	_, err = models.GetChannelByAddress(ctx, "NX", models.ChannelAddress("2021"))
 	assert.ErrorIs(t, err, models.ErrChannelNotFound)
 
+	// an address is reused and is asked about by shared webhooks that carry it in the body, so absence at one
+	// isn't cached - a channel provisioned at an address we've already been asked about has to be visible at
+	// once rather than when an entry expires
 	rt.DB.MustExec(`UPDATE channels_channel SET is_active = TRUE WHERE uuid = $1`, ch.UUID())
 
-	_, err = models.GetChannelByAddress(ctx, "NX", models.ChannelAddress("2021"))
-	assert.ErrorIs(t, err, models.ErrChannelNotFound, "absence should have been served from the cache")
+	got, err = models.GetChannelByAddress(ctx, "NX", models.ChannelAddress("2021"))
+	assert.NoError(t, err, "absence should not have been cached")
+	assert.Equal(t, ch.UUID(), got.UUID())
 }

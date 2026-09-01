@@ -268,6 +268,11 @@ SELECT
 // cache.Local doesn't remember a fetch that failed, and a provider still calling a deleted channel's URL
 // otherwise puts a query on the database for every request. GetChannel turns the nil back into
 // ErrChannelNotFound. A database error is still an error, so an outage isn't cached as absence.
+//
+// Only lookups by UUID do this. A UUID names one channel for good - it's minted with the channel and no
+// other channel ever takes it - so once it's absent the only way back is the channel returning, which is
+// the same staleness as an edit to a channel already cached. An address is reused, and absence at one is
+// routine rather than terminal: see loadChannelByAddress.
 func loadChannelByUUID(ctx context.Context, rt *runtime.Runtime, uuid ChannelUUID) (*Channel, error) {
 	channel := &Channel{}
 	err := rt.DB.GetContext(ctx, channel, sqlSelectChannelFromUUID, uuid)
@@ -299,13 +304,16 @@ SELECT
   JOIN orgs_org o ON c.org_id = o.id
  WHERE c.address = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
 
-// as above, absence is a nil rather than an error so that it can be cached
+// unlike the lookup by UUID above, this one does NOT cache absence. Addresses are looked up from the body of
+// a shared webhook - Meta posts every page's events to one URL - so a request naming an address we have no
+// channel for is ordinary traffic rather than a dead callback, and the address is one a channel can later be
+// provisioned at. Caching that absence would leave a newly connected page invisible until the entry expired.
 func loadChannelByAddress(ctx context.Context, rt *runtime.Runtime, addr ChannelAddress) (*Channel, error) {
 	channel := &Channel{}
 	err := rt.DB.GetContext(ctx, channel, sqlSelectChannelFromAddress, addr)
 
 	if err == sql.ErrNoRows {
-		return nil, nil
+		return nil, ErrChannelNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -343,9 +351,6 @@ func GetChannelByAddress(ctx context.Context, typ ChannelType, address ChannelAd
 	ch, err := channelsByAddr.GetOrFetch(timeout, address)
 	if err != nil {
 		return nil, err
-	}
-	if ch == nil {
-		return nil, ErrChannelNotFound
 	}
 
 	if typ != AnyChannelType && ch.ChannelType() != typ {
