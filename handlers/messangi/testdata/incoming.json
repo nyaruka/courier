@@ -1,0 +1,61 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/mg/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "mo=Msg\u0026mobile=18765422035",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "Msg",
+                        "urn": "tel:+18765422035",
+                        "received_on": "2025-11-19T17:20:05Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+18765422035",
+                "text": "Msg",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2025-11-19T17:20:05Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Missing Number",
+        "url": "/c/mg/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "mo=Msg",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing required field 'mobile'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

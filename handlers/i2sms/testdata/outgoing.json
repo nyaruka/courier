@@ -1,0 +1,260 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://mx2.i2sms.net/mxapi.php": [
+                {
+                    "status": 200,
+                    "body": {
+                        "result": {
+                            "session_id": "5b8fc97d58795484819426"
+                        },
+                        "error_code": "00",
+                        "error_desc": "Success"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://mx2.i2sms.net/mxapi.php",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "action": [
+                        "send_single"
+                    ],
+                    "channel": [
+                        "hash123"
+                    ],
+                    "message": [
+                        "Simple Message ☺\nhttps://foo.bar/image.jpg"
+                    ],
+                    "mobile": [
+                        "250788383383"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "5b8fc97d58795484819426"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Invalid JSON",
+        "msg": {
+            "text": "Invalid XML",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://mx2.i2sms.net/mxapi.php": [
+                {
+                    "status": 200,
+                    "body": "not json"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://mx2.i2sms.net/mxapi.php",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "action": [
+                        "send_single"
+                    ],
+                    "channel": [
+                        "hash123"
+                    ],
+                    "message": [
+                        "Invalid XML"
+                    ],
+                    "mobile": [
+                        "250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response couldn't be parsed",
+            "loggable": true,
+            "log_error": {
+                "code": "response_unparseable",
+                "message": "Response could not be parsed in the expected format."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Response",
+        "msg": {
+            "text": "Error Response",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://mx2.i2sms.net/mxapi.php": [
+                {
+                    "status": 200,
+                    "body": {
+                        "result": {},
+                        "error_code": "10",
+                        "error_desc": "Failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://mx2.i2sms.net/mxapi.php",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "action": [
+                        "send_single"
+                    ],
+                    "channel": [
+                        "hash123"
+                    ],
+                    "message": [
+                        "Error Response"
+                    ],
+                    "mobile": [
+                        "250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "10",
+                "message": "Failed"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://mx2.i2sms.net/mxapi.php": [
+                {
+                    "status": 501,
+                    "body": "Bad Gateway"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://mx2.i2sms.net/mxapi.php",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "action": [
+                        "send_single"
+                    ],
+                    "channel": [
+                        "hash123"
+                    ],
+                    "message": [
+                        "Error Message"
+                    ],
+                    "mobile": [
+                        "250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://mx2.i2sms.net/mxapi.php": [
+                {
+                    "status": 429,
+                    "body": "Bad Gateway"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://mx2.i2sms.net/mxapi.php",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic dXNlcjE6cGFzczE=",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "action": [
+                        "send_single"
+                    ],
+                    "channel": [
+                        "hash123"
+                    ],
+                    "message": [
+                        "Error Message"
+                    ],
+                    "mobile": [
+                        "250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]

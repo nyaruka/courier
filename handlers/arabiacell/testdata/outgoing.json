@@ -1,0 +1,289 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://acsdp.arabiacell.net": [
+                {
+                    "status": 200,
+                    "body": "<response><code>204</code><text>MT is successfully sent</text><message_id>external1</message_id></response>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://acsdp.arabiacell.net",
+                "headers": {
+                    "Accept": "application/xml",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chargingLevel": [
+                        "0"
+                    ],
+                    "handlerType": [
+                        "send_msg"
+                    ],
+                    "messageBody": [
+                        "Simple Message ☺\nhttps://foo.bar/image.jpg"
+                    ],
+                    "msisdn": [
+                        "+250788383383"
+                    ],
+                    "password": [
+                        "pass1"
+                    ],
+                    "serviceId": [
+                        "service1"
+                    ],
+                    "userName": [
+                        "user1"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "external1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Invalid XML",
+        "msg": {
+            "text": "Invalid XML",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://acsdp.arabiacell.net": [
+                {
+                    "status": 200,
+                    "body": "not xml"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://acsdp.arabiacell.net",
+                "headers": {
+                    "Accept": "application/xml",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chargingLevel": [
+                        "0"
+                    ],
+                    "handlerType": [
+                        "send_msg"
+                    ],
+                    "messageBody": [
+                        "Invalid XML"
+                    ],
+                    "msisdn": [
+                        "+250788383383"
+                    ],
+                    "password": [
+                        "pass1"
+                    ],
+                    "serviceId": [
+                        "service1"
+                    ],
+                    "userName": [
+                        "user1"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response couldn't be parsed",
+            "loggable": true,
+            "log_error": {
+                "code": "response_unparseable",
+                "message": "Response could not be parsed in the expected format."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Response",
+        "msg": {
+            "text": "Error Response",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://acsdp.arabiacell.net": [
+                {
+                    "status": 200,
+                    "body": "<response><code>501</code><text>failure</text><message_id></message_id></response>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://acsdp.arabiacell.net",
+                "headers": {
+                    "Accept": "application/xml",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chargingLevel": [
+                        "0"
+                    ],
+                    "handlerType": [
+                        "send_msg"
+                    ],
+                    "messageBody": [
+                        "Error Response"
+                    ],
+                    "msisdn": [
+                        "+250788383383"
+                    ],
+                    "password": [
+                        "pass1"
+                    ],
+                    "serviceId": [
+                        "service1"
+                    ],
+                    "userName": [
+                        "user1"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://acsdp.arabiacell.net": [
+                {
+                    "status": 501,
+                    "body": "Bad Gateway"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://acsdp.arabiacell.net",
+                "headers": {
+                    "Accept": "application/xml",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chargingLevel": [
+                        "0"
+                    ],
+                    "handlerType": [
+                        "send_msg"
+                    ],
+                    "messageBody": [
+                        "Error Message"
+                    ],
+                    "msisdn": [
+                        "+250788383383"
+                    ],
+                    "password": [
+                        "pass1"
+                    ],
+                    "serviceId": [
+                        "service1"
+                    ],
+                    "userName": [
+                        "user1"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://acsdp.arabiacell.net": [
+                {
+                    "status": 429,
+                    "body": "Bad Gateway"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://acsdp.arabiacell.net",
+                "headers": {
+                    "Accept": "application/xml",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Courier/Dev"
+                },
+                "form": {
+                    "chargingLevel": [
+                        "0"
+                    ],
+                    "handlerType": [
+                        "send_msg"
+                    ],
+                    "messageBody": [
+                        "Error Message"
+                    ],
+                    "msisdn": [
+                        "+250788383383"
+                    ],
+                    "password": [
+                        "pass1"
+                    ],
+                    "serviceId": [
+                        "service1"
+                    ],
+                    "userName": [
+                        "user1"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]

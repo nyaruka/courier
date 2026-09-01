@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"net/url"
-	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier/v26/core/channels"
@@ -15,6 +14,7 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -71,7 +71,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http
 		return err
 	}
 
-	msg := models.NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
+	msg := models.NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(dates.Now().UTC())
 	in.Msg(msg)
 	return nil
 }

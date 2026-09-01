@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -98,7 +99,7 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http
 	}
 
 	dateString := payload.Data.Datetime
-	date := time.Now()
+	date := dates.Now()
 	var err error
 	if dateString != "" {
 		date, err = time.Parse("2006-01-02 15:04:05", dateString)

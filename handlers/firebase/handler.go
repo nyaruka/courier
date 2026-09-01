@@ -16,6 +16,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"golang.org/x/oauth2/google"
@@ -64,7 +65,7 @@ type receiveForm struct {
 
 // receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, form *receiveForm, in *channels.Received, clog *models.ChannelLog) error {
-	date := time.Now().UTC()
+	date := dates.Now().UTC()
 	if form.Date != "" {
 		var err error
 		date, err = time.Parse("2006-01-02T15:04:05.000", form.Date)
@@ -307,5 +308,5 @@ func (h *handler) fetchAccessToken(channel *models.Channel) (string, time.Durati
 		return "", 0, err
 	}
 
-	return token.AccessToken, token.Expiry.UTC().Sub(time.Now().UTC()), nil
+	return token.AccessToken, token.Expiry.UTC().Sub(dates.Now().UTC()), nil
 }

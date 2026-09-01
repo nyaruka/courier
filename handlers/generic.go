@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -43,7 +43,7 @@ func NewTelReceiveHandler(fromField string, bodyField string) channels.ReceiveFu
 			return err
 		}
 
-		in.Msg(models.NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(time.Now().UTC()))
+		in.Msg(models.NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(dates.Now().UTC()))
 		return nil
 	}
 }

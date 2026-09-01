@@ -17,6 +17,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
@@ -182,7 +183,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 	}
 
 	// if we have a date, parse it
-	date := time.Now()
+	date := dates.Now()
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {

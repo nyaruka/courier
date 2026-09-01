@@ -14,6 +14,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -148,7 +149,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 		}
 
 		// Parse date if provided
-		date := time.Now()
+		date := dates.Now()
 		if dateString != "" {
 			// The format for ReceivedAt is "yyyy-MM-dd'T'HH:mm:ss.SSS+0000"
 			// It is not RFC3339 Compliant

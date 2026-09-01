@@ -16,6 +16,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -68,7 +69,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 		dateString = form.Time
 	}
 
-	date := time.Now()
+	date := dates.Now()
 	if dateString != "" {
 		var err error
 		date, err = time.Parse(time.RFC3339Nano, dateString)
