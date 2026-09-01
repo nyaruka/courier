@@ -1,0 +1,250 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests": [
+                {
+                    "status": 200,
+                    "body": [
+                        {
+                            "Response": "0"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "address": "250788383383",
+                    "message": "Simple Message",
+                    "passphrase": "opensesame",
+                    "app_id": "12345",
+                    "app_secret": "mysecret"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests": [
+                {
+                    "status": 200,
+                    "body": [
+                        {
+                            "Response": "0"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "address": "250788383383",
+                    "message": "☺",
+                    "passphrase": "opensesame",
+                    "app_id": "12345",
+                    "app_secret": "mysecret"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests": [
+                {
+                    "status": 200,
+                    "body": [
+                        {
+                            "Response": "0"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "address": "250788383383",
+                    "message": "My pic!\nhttps://foo.bar/image.jpg",
+                    "passphrase": "opensesame",
+                    "app_id": "12345",
+                    "app_secret": "mysecret"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests": [
+                {
+                    "status": 403,
+                    "body": [
+                        {
+                            "Response": "101"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "address": "250788383383",
+                    "message": "Error Sending",
+                    "passphrase": "opensesame",
+                    "app_id": "12345",
+                    "app_secret": "mysecret"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests": [
+                {
+                    "status": 429,
+                    "body": [
+                        {
+                            "Response": "101"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "address": "250788383383",
+                    "message": "Error Sending",
+                    "passphrase": "opensesame",
+                    "app_id": "12345",
+                    "app_secret": "mysecret"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Connection Error",
+        "msg": {
+            "text": "Error",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests": [
+                {
+                    "status": 500,
+                    "body": [
+                        {
+                            "Response": "101"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "address": "250788383383",
+                    "message": "Error",
+                    "passphrase": "opensesame",
+                    "app_id": "12345",
+                    "app_secret": "mysecret"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    }
+]

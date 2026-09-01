@@ -1,0 +1,48 @@
+[
+    {
+        "label": "Error getting token",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://smsapi.hormuud.com/token": [
+                {
+                    "status": 400,
+                    "body": {
+                        "error": "invalid password"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://smsapi.hormuud.com/token",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Password": [
+                        "sesame"
+                    ],
+                    "Username": [
+                        "foo@bar.com"
+                    ],
+                    "grant_type": [
+                        "password"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    }
+]

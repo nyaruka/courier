@@ -1,0 +1,128 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?Sender=%2B2349067554729&MessageText=Join&TimeSent=20230418&&ShortCode=2020",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "Join",
+                        "urn": "tel:+2349067554729",
+                        "received_on": "2025-11-01T05:43:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "created_on": "2025-11-01T05:43:03Z",
+                "received_on": "2025-11-01T05:43:03Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Empty Message",
+        "url": "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?Sender=%2B2349067554729&MessageText=&TimeSent=20230418&&ShortCode=2020",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a7a74-75a0-7000-8c8f-6e2045f831a3",
+                        "text": "",
+                        "urn": "tel:+2349067554729",
+                        "received_on": "2025-11-12T23:44:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a7a74-75a0-7000-8c8f-6e2045f831a3",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "",
+                "created_on": "2025-11-12T23:44:03Z",
+                "received_on": "2025-11-12T23:44:03Z",
+                "log_uuids": [
+                    "019a7a74-69e8-7000-95c2-6b4be80c3dac"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive No Params",
+        "url": "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moPayload.Sender' Error:Field validation for 'Sender' failed on the 'required' tag\nKey: 'moPayload.ShortCode' Error:Field validation for 'ShortCode' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'sender' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'shortcode' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?Sender=bad&MessageText=Join&TimeSent=20230418&&ShortCode=2020",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

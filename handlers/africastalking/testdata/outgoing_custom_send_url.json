@@ -1,0 +1,55 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://other.example.com/send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "SMSMessageData": {
+                            "Recipients": [
+                                {
+                                    "status": "Success",
+                                    "messageId": "1002"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://other.example.com/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Apikey": "KEY",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "from": [
+                        "2020"
+                    ],
+                    "message": [
+                        "Simple Message ☺"
+                    ],
+                    "to": [
+                        "+250788383383"
+                    ],
+                    "username": [
+                        "Username"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    }
+]

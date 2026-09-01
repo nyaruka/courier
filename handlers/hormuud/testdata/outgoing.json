@@ -1,0 +1,349 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://smsapi.hormuud.com/api/SendSMS": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ResCode": "res",
+                        "ResMsg": "msg",
+                        "Data": {
+                            "MessageID": "msg1",
+                            "Description": "accepted"
+                        }
+                    }
+                }
+            ],
+            "https://smsapi.hormuud.com/token": [
+                {
+                    "status": 200,
+                    "body": {
+                        "access_token": "ghK_Wt4lshZhN"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://smsapi.hormuud.com/token",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Password": [
+                        "sesame"
+                    ],
+                    "Username": [
+                        "foo@bar.com"
+                    ],
+                    "grant_type": [
+                        "password"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://smsapi.hormuud.com/api/SendSMS",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer ghK_Wt4lshZhN",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "mobile": "250788383383",
+                    "message": "Simple Message",
+                    "senderid": "2020",
+                    "mType": -1,
+                    "eType": -1,
+                    "UDH": ""
+                }
+            }
+        ],
+        "external_ids": [
+            "msg1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://smsapi.hormuud.com/api/SendSMS": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ResCode": "res",
+                        "ResMsg": "msg",
+                        "Data": {
+                            "MessageID": "msg1",
+                            "Description": "accepted"
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://smsapi.hormuud.com/api/SendSMS",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer ghK_Wt4lshZhN",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "mobile": "250788383383",
+                    "message": "☺",
+                    "senderid": "2020",
+                    "mType": -1,
+                    "eType": -1,
+                    "UDH": ""
+                }
+            }
+        ],
+        "external_ids": [
+            "msg1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://smsapi.hormuud.com/api/SendSMS": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ResCode": "res",
+                        "ResMsg": "msg",
+                        "Data": {
+                            "MessageID": "msg1",
+                            "Description": "accepted"
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://smsapi.hormuud.com/api/SendSMS",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer ghK_Wt4lshZhN",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "mobile": "250788383383",
+                    "message": "My pic!\nhttps://foo.bar/image.jpg",
+                    "senderid": "2020",
+                    "mType": -1,
+                    "eType": -1,
+                    "UDH": ""
+                }
+            }
+        ],
+        "external_ids": [
+            "msg1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://smsapi.hormuud.com/api/SendSMS": [
+                {
+                    "status": 403,
+                    "body": [
+                        {
+                            "Response": "101"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://smsapi.hormuud.com/api/SendSMS",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer ghK_Wt4lshZhN",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "mobile": "250788383383",
+                    "message": "Error Sending",
+                    "senderid": "2020",
+                    "mType": -1,
+                    "eType": -1,
+                    "UDH": ""
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://smsapi.hormuud.com/api/SendSMS": [
+                {
+                    "status": 429,
+                    "body": [
+                        {
+                            "Response": "101"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://smsapi.hormuud.com/api/SendSMS",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer ghK_Wt4lshZhN",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "mobile": "250788383383",
+                    "message": "Error Sending",
+                    "senderid": "2020",
+                    "mType": -1,
+                    "eType": -1,
+                    "UDH": ""
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Connection Error",
+        "msg": {
+            "text": "Error",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://smsapi.hormuud.com/api/SendSMS": [
+                {
+                    "status": 500,
+                    "body": [
+                        {
+                            "Response": "101"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://smsapi.hormuud.com/api/SendSMS",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer ghK_Wt4lshZhN",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "mobile": "250788383383",
+                    "message": "Error",
+                    "senderid": "2020",
+                    "mType": -1,
+                    "eType": -1,
+                    "UDH": ""
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Null MessageID",
+        "msg": {
+            "text": "Hello",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://smsapi.hormuud.com/api/SendSMS": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ResCode": "res",
+                        "ResMsg": "msg",
+                        "Data": {
+                            "MessageID": "null",
+                            "Description": "accepted"
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://smsapi.hormuud.com/api/SendSMS",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer ghK_Wt4lshZhN",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "mobile": "250788383383",
+                    "message": "Hello",
+                    "senderid": "2020",
+                    "mType": -1,
+                    "eType": -1,
+                    "UDH": ""
+                }
+            }
+        ],
+        "log_errors": []
+    }
+]

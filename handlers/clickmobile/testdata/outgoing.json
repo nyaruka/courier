@@ -1,0 +1,288 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "code": "000",
+                        "desc": "Operation successful.",
+                        "data": {
+                            "new_record_id": "9"
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "app_id": "001-app",
+                    "org_id": "001-org",
+                    "user_id": "Username",
+                    "timestamp": "20251220030302",
+                    "auth_key": "f444616b3ce39cb2ffa0f5f46745d619",
+                    "operation": "send",
+                    "reference": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "message_type": "1",
+                    "src_address": "2020",
+                    "dst_address": "+250788383383",
+                    "message": "Simple Message"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "code": "000",
+                        "desc": "Operation successful.",
+                        "data": {
+                            "new_record_id": "9"
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "app_id": "001-app",
+                    "org_id": "001-org",
+                    "user_id": "Username",
+                    "timestamp": "20251116092602",
+                    "auth_key": "550fb4d4f45b856dc9ea4432c7888146",
+                    "operation": "send",
+                    "reference": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "message_type": "1",
+                    "src_address": "2020",
+                    "dst_address": "+250788383383",
+                    "message": "☺"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 401,
+                    "body": {
+                        "code": "001",
+                        "desc": "Database SQL Error"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "app_id": "001-app",
+                    "org_id": "001-org",
+                    "user_id": "Username",
+                    "timestamp": "20251210012302",
+                    "auth_key": "6ca050b60772fb64473ba0d241ba3ff8",
+                    "operation": "send",
+                    "reference": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "message_type": "1",
+                    "src_address": "2020",
+                    "dst_address": "+250788383383",
+                    "message": "Error Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 429,
+                    "body": {
+                        "code": "001",
+                        "desc": "Database SQL Error"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "app_id": "001-app",
+                    "org_id": "001-org",
+                    "user_id": "Username",
+                    "timestamp": "20251212024302",
+                    "auth_key": "51ab909fd1d01883393d39a193b4db7d",
+                    "operation": "send",
+                    "reference": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "message_type": "1",
+                    "src_address": "2020",
+                    "dst_address": "+250788383383",
+                    "message": "Error Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "code": "000",
+                        "desc": "Operation successful.",
+                        "data": {
+                            "new_record_id": "9"
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "app_id": "001-app",
+                    "org_id": "001-org",
+                    "user_id": "Username",
+                    "timestamp": "20251120134402",
+                    "auth_key": "4418075f23c38d83c65d18d94c888b02",
+                    "operation": "send",
+                    "reference": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "message_type": "1",
+                    "src_address": "2020",
+                    "dst_address": "+250788383383",
+                    "message": "My pic!\nhttps://foo.bar/image.jpg"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Response unexpected",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 200,
+                    "body": {
+                        "code": "001",
+                        "desc": "Database SQL Error"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "app_id": "001-app",
+                    "org_id": "001-org",
+                    "user_id": "Username",
+                    "timestamp": "20251213044502",
+                    "auth_key": "987096ca42dccbf2348990bd3081789a",
+                    "operation": "send",
+                    "reference": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "message_type": "1",
+                    "src_address": "2020",
+                    "dst_address": "+250788383383",
+                    "message": "Simple Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    }
+]

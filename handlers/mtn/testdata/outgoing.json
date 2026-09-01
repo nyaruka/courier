@@ -1,0 +1,216 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.mtn.com/v2/messages/sms/outbound": [
+                {
+                    "status": 201,
+                    "body": {
+                        "transactionId": "OzYDlvf3SQVc"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.mtn.com/v2/messages/sms/outbound",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer ACCESS_TOKEN",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "senderAddress": "2020",
+                    "receiverAddress": [
+                        "250788383383"
+                    ],
+                    "message": "Simple Message ☺",
+                    "clientCorrelator": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "external_ids": [
+            "OzYDlvf3SQVc"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api.mtn.com/v2/messages/sms/outbound": [
+                {
+                    "status": 201,
+                    "body": {
+                        "transactionId": "OzYDlvf3SQVc"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.mtn.com/v2/messages/sms/outbound",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer ACCESS_TOKEN",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "senderAddress": "2020",
+                    "receiverAddress": [
+                        "250788383383"
+                    ],
+                    "message": "My pic!\nhttps://foo.bar/image.jpg",
+                    "clientCorrelator": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "external_ids": [
+            "OzYDlvf3SQVc"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "No External Id",
+        "msg": {
+            "text": "No External ID",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.mtn.com/v2/messages/sms/outbound": [
+                {
+                    "status": 200,
+                    "body": {
+                        "statusCode": "0000"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.mtn.com/v2/messages/sms/outbound",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer ACCESS_TOKEN",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "senderAddress": "2020",
+                    "receiverAddress": [
+                        "250788383383"
+                    ],
+                    "message": "No External ID",
+                    "clientCorrelator": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "log_errors": [
+            {
+                "code": "response_value_missing",
+                "message": "Unable to find 'transactionId' response."
+            }
+        ]
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.mtn.com/v2/messages/sms/outbound": [
+                {
+                    "status": 401,
+                    "body": {
+                        "error": "failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.mtn.com/v2/messages/sms/outbound",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer ACCESS_TOKEN",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "senderAddress": "2020",
+                    "receiverAddress": [
+                        "250788383383"
+                    ],
+                    "message": "Error Message",
+                    "clientCorrelator": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.mtn.com/v2/messages/sms/outbound": [
+                {
+                    "status": 429,
+                    "body": {
+                        "error": "failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.mtn.com/v2/messages/sms/outbound",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer ACCESS_TOKEN",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "senderAddress": "2020",
+                    "receiverAddress": [
+                        "250788383383"
+                    ],
+                    "message": "Error Message",
+                    "clientCorrelator": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]

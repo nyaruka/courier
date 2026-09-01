@@ -1,0 +1,212 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/mb/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "id": "OzQ5UqIOdoY8",
+            "from": "12067799294",
+            "to": "18444651185",
+            "body": "Hello World",
+            "type": "mo_text",
+            "received_at": "2016-03-30T19:33:06.643Z"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "Hello World",
+                        "urn": "tel:+12067799294",
+                        "external_id": "OzQ5UqIOdoY8",
+                        "received_on": "2016-03-30T19:33:06.643Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+12067799294",
+                "text": "Hello World",
+                "external_id": "OzQ5UqIOdoY8",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2016-03-30T19:33:06.643Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Missing Params",
+        "url": "/c/mb/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "id": "OzQ5UqIOdoY8",
+            "to": "18444651185",
+            "body": "Hello World",
+            "type": "mo_text",
+            "received_at": "2016-03-30T19:33:06.643Z"
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/mb/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "id": "OzQ5UqIOdoY8",
+            "from": "MTN",
+            "to": "18444651185",
+            "body": "Hello World",
+            "type": "mo_text",
+            "received_at": "2016-03-30T19:33:06.643Z"
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Valid",
+        "url": "/c/mb/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "batch_id": "12345",
+            "status": "Delivered",
+            "type": "recipient_delivery_report_sms"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "D",
+                "log_uuid": "0199f028-0e48-7000-82fd-5b92b67a3e7e"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Unknown",
+        "url": "/c/mb/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "batch_id": "12345",
+            "status": "INVALID",
+            "type": "recipient_delivery_report_sms"
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown status 'INVALID', must be one of 'Aborted', 'Delivered', 'Dispatched', 'Expired', 'Failed', 'Rejected'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Missing Batch ID",
+        "url": "/c/mb/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "status": "Delivered",
+            "type": "recipient_delivery_report_sms"
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing one of 'batch_id' or 'status' in request body"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Unknown Type",
+        "url": "/c/mb/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "type": "mo_binary"
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not handled, unknown type: mo_binary"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

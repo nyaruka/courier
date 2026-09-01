@@ -1,0 +1,225 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://platform.clickatell.com/messages/http/send*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "apiMessageId": "id1002",
+                                "accepted": true,
+                                "to": "12067799299",
+                                "error": null
+                            }
+                        ],
+                        "error": null
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://platform.clickatell.com/messages/http/send?apiKey=API-KEY&content=Simple+Message&from=2020&to=250788383383",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        ],
+        "external_ids": [
+            "id1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "Unicode ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://platform.clickatell.com/messages/http/send*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "apiMessageId": "id1002",
+                                "accepted": true,
+                                "to": "12067799299",
+                                "error": null
+                            }
+                        ],
+                        "error": null
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://platform.clickatell.com/messages/http/send?apiKey=API-KEY&content=Unicode+%E2%98%BA&from=2020&to=250788383383",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        ],
+        "external_ids": [
+            "id1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://platform.clickatell.com/messages/http/send*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "apiMessageId": "id1002",
+                                "accepted": true,
+                                "to": "12067799299",
+                                "error": null
+                            }
+                        ],
+                        "error": null
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://platform.clickatell.com/messages/http/send?apiKey=API-KEY&content=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&from=2020&to=250788383383",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        ],
+        "external_ids": [
+            "id1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://platform.clickatell.com/messages/http/send*": [
+                {
+                    "status": 400,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://platform.clickatell.com/messages/http/send?apiKey=API-KEY&content=Error+Message&from=2020&to=250788383383",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://platform.clickatell.com/messages/http/send*": [
+                {
+                    "status": 429,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://platform.clickatell.com/messages/http/send?apiKey=API-KEY&content=Error+Message&from=2020&to=250788383383",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Response",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://platform.clickatell.com/messages/http/send*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [],
+                        "error": "Two-Way integration error - From number is not related to integration"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://platform.clickatell.com/messages/http/send?apiKey=API-KEY&content=Error+Message&from=2020&to=250788383383",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    }
+]

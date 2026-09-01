@@ -1,0 +1,165 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "Success \"External ID1\""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?coding=0&content=Simple+Message&dlr=yes&dlr-level=2&dlr-method=POST&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fjs%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&from=2020&password=Password&to=250788383383&username=Username"
+            }
+        ],
+        "external_ids": [
+            "External ID1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "Success \"External ID1\""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?coding=8&dlr=yes&dlr-level=2&dlr-method=POST&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fjs%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&from=2020&hex-content=263a&password=Password&to=250788383383&username=Username"
+            }
+        ],
+        "external_ids": [
+            "External ID1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Smart Encoding",
+        "msg": {
+            "text": "Fancy “Smart” Quotes",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "Success \"External ID1\""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?coding=0&content=Fancy+%22Smart%22+Quotes&dlr=yes&dlr-level=2&dlr-method=POST&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fjs%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&from=2020&password=Password&to=250788383383&username=Username"
+            }
+        ],
+        "external_ids": [
+            "External ID1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ],
+            "high_priority": true
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "Success \"External ID1\""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?coding=0&content=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&dlr=yes&dlr-level=2&dlr-method=POST&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fjs%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&from=2020&password=Password&to=250788383383&username=Username"
+            }
+        ],
+        "external_ids": [
+            "External ID1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 401,
+                    "body": "Failed Sending"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?coding=0&content=Error+Message&dlr=yes&dlr-level=2&dlr-method=POST&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fjs%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&from=2020&password=Password&to=250788383383&username=Username"
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 429,
+                    "body": "Failed Sending"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?coding=0&content=Error+Message&dlr=yes&dlr-level=2&dlr-method=POST&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fjs%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&from=2020&password=Password&to=250788383383&username=Username"
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    }
+]
