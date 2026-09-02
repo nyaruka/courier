@@ -196,10 +196,10 @@ func assertCase(t *testing.T, i int, label string, expected, actual any) {
 	}
 }
 
-// makes time and UUIDs deterministic for the duration of the given test. Both are derived from the case's label
-// rather than the run so far, so that the outcome of a case doesn't change when cases before it are added or
-// removed, and so that cases in the same file don't generate the same UUIDs - which the database would reject as
-// duplicates. Labels must therefore be unique within a file.
+// makes time, UUIDs and secure random values deterministic for the duration of the given test. All are derived from
+// the case's label rather than the run so far, so that the outcome of a case doesn't change when cases before it
+// are added or removed, and so that cases in the same file don't generate the same UUIDs - which the database
+// would reject as duplicates. Labels must therefore be unique within a file.
 func mockTimeAndRandomness(t *testing.T, label string) {
 	hash := fnv.New64a()
 	hash.Write([]byte(label))
@@ -218,7 +218,7 @@ func mockTimeAndRandomness(t *testing.T, label string) {
 	})
 }
 
-// checks that case labels are unique within a file, which the mocking of time and UUIDs depends on
+// checks that case labels are unique within a file, which the mocking of time and randomness depends on
 func requireUniqueLabels(t *testing.T, path string, labels []string) {
 	seen := make(map[string]bool, len(labels))
 	for _, label := range labels {
