@@ -130,7 +130,7 @@ func RunIncomingTests(t *testing.T, chs []*models.Channel, newFn channels.NewHan
 		actuals[i] = tc
 
 		t.Run(tc.Label, func(t *testing.T) {
-			mockTimeAndUUIDs(t, tc.Label)
+			mockTimeAndRandomness(t, tc.Label)
 
 			handledEvents = nil
 			handledLogs = nil
