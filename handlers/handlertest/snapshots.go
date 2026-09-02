@@ -18,6 +18,7 @@ import (
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/random"
 	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/stretchr/testify/require"
@@ -199,7 +200,7 @@ func assertCase(t *testing.T, i int, label string, expected, actual any) {
 // rather than the run so far, so that the outcome of a case doesn't change when cases before it are added or
 // removed, and so that cases in the same file don't generate the same UUIDs - which the database would reject as
 // duplicates. Labels must therefore be unique within a file.
-func mockTimeAndUUIDs(t *testing.T, label string) {
+func mockTimeAndRandomness(t *testing.T, label string) {
 	hash := fnv.New64a()
 	hash.Write([]byte(label))
 	seed := int64(hash.Sum64() & (1<<62 - 1)) // keep it positive
@@ -208,10 +209,12 @@ func mockTimeAndUUIDs(t *testing.T, label string) {
 	now := dates.NewSequentialNow(start, time.Second)
 	dates.SetNowFunc(now)
 	uuids.SetGenerator(uuids.NewSeededGenerator(seed, now))
+	random.SetSecureSource(random.NewSeededSource(seed))
 
 	t.Cleanup(func() {
 		dates.SetNowFunc(time.Now)
 		uuids.SetGenerator(uuids.DefaultGenerator)
+		random.SetSecureSource(random.DefaultSecureSource)
 	})
 }
 

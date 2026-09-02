@@ -144,7 +144,7 @@ func RunOutgoingTests(t *testing.T, ch *models.Channel, newFn channels.NewHandle
 		actuals[i] = tc
 
 		t.Run(tc.Label, func(t *testing.T) {
-			mockTimeAndUUIDs(t, tc.Label)
+			mockTimeAndRandomness(t, tc.Label)
 
 			require.NotNil(t, tc.Msg, "case has no msg")
 			msg := tc.Msg.build(ch)

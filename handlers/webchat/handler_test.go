@@ -30,75 +30,15 @@ const (
 	startURL    = "/c/wch/" + channelUUID + "/start"
 	receiveURL  = "/c/wch/" + channelUUID + "/receive"
 
-	testChatID = "vM0GGhDrqpTQefIEinK0up3C" // what the seeded secure source below generates
+	testChatID = "vM0GGhDrqpTQefIEinK0up3C" // what the secure source seeded below generates
 )
 
 var testChannels = []*models.Channel{
 	test.NewMockChannel(channelUUID, "WCH", "", "", []string{urns.WebChat.Prefix}, nil),
 }
 
-var incomingCases = []IncomingTestCase{
-	{
-		Label:                "Start Chat",
-		URL:                  startURL,
-		Data:                 `{}`,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `{"chat_id":"` + testChatID + `"}`,
-	},
-	{
-		Label:                "Receive Msg",
-		URL:                  receiveURL,
-		Data:                 `{"chat_id": "` + testChatID + `", "text": "Hello"}`,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Message Accepted",
-		ExpectedMsgText:      Sp("Hello"),
-		ExpectedURN:          urns.URN("webchat:" + testChatID),
-	},
-	{
-		Label:                "Receive Unknown Chat ID",
-		URL:                  receiveURL,
-		Data:                 `{"chat_id": "Xx3dE5fG7hJ9kL1mN3pQ5rXX", "text": "Hello"}`,
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "unknown chat id",
-	},
-	{
-		Label:                "Receive Invalid Chat ID",
-		URL:                  receiveURL,
-		Data:                 `{"chat_id": "not-a-chat-id!", "text": "Hello"}`,
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "invalid chat id",
-	},
-	{
-		Label:                "Receive Max Length Text",
-		URL:                  receiveURL,
-		Data:                 `{"chat_id": "` + testChatID + `", "text": "` + strings.Repeat("é", 1000) + `"}`,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Message Accepted",
-		ExpectedMsgText:      Sp(strings.Repeat("é", 1000)),
-		ExpectedURN:          urns.URN("webchat:" + testChatID),
-	},
-	{
-		Label:                "Receive Too Long Text",
-		URL:                  receiveURL,
-		Data:                 `{"chat_id": "` + testChatID + `", "text": "` + strings.Repeat("é", 1001) + `"}`,
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "Field validation for 'Text' failed on the 'max' tag",
-	},
-	{
-		Label:                "Receive Missing Text",
-		URL:                  receiveURL,
-		Data:                 `{"chat_id": "` + testChatID + `"}`,
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "Field validation for 'Text' failed on the 'required' tag",
-	},
-}
-
 func TestIncoming(t *testing.T) {
-	// seed chat ID generation so the started chat is the one the receive cases use
-	random.SetSecureSource(random.NewSeededSource(1234))
-	defer random.SetSecureSource(random.DefaultSecureSource)
-
-	RunIncomingTestCases(t, testChannels, newHandler, incomingCases)
+	RunIncomingTests(t, testChannels, newHandler, "testdata/incoming.json", nil)
 }
 
 // webchat traffic is internal to the platform so its channel logs are never stored - each visitor request
