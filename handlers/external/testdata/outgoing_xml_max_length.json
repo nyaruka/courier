@@ -1,0 +1,72 @@
+[
+    {
+        "label": "Send Long message XML",
+        "msg": {
+            "text": "This is a long message that will be longer than 30....... characters",
+            "urn": "tel:+250788383383",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "One"
+                },
+                {
+                    "type": "text",
+                    "text": "Two"
+                },
+                {
+                    "type": "text",
+                    "text": "Three"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                },
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                },
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Authorization": "Token ABCDEF",
+                    "Content-Type": "text/xml; charset=utf-8",
+                    "Foo": "bar"
+                },
+                "body": "\u003cmsg\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003ctext\u003eThis is a long message that\u003c/text\u003e\u003cfrom\u003e2020\u003c/from\u003e\u003cquick_replies\u003e\u003c/quick_replies\u003e\u003c/msg\u003e"
+            },
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Authorization": "Token ABCDEF",
+                    "Content-Type": "text/xml; charset=utf-8",
+                    "Foo": "bar"
+                },
+                "body": "\u003cmsg\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003ctext\u003ewill be longer than 30.......\u003c/text\u003e\u003cfrom\u003e2020\u003c/from\u003e\u003cquick_replies\u003e\u003c/quick_replies\u003e\u003c/msg\u003e"
+            },
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Authorization": "Token ABCDEF",
+                    "Content-Type": "text/xml; charset=utf-8",
+                    "Foo": "bar"
+                },
+                "body": "\u003cmsg\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003ctext\u003echaracters\u003c/text\u003e\u003cfrom\u003e2020\u003c/from\u003e\u003cquick_replies\u003e\u003citem\u003eOne\u003c/item\u003e\u003citem\u003eTwo\u003c/item\u003e\u003citem\u003eThree\u003c/item\u003e\u003c/quick_replies\u003e\u003c/msg\u003e"
+            }
+        ],
+        "log_errors": []
+    }
+]

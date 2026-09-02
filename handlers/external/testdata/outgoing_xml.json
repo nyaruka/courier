@@ -1,0 +1,156 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "PUT",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Content-Type": "text/xml; charset=utf-8"
+                },
+                "body": "\u003cmsg\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003ctext\u003eSimple Message\u003c/text\u003e\u003cfrom\u003e2020\u003c/from\u003e\u003cquick_replies\u003e\u003c/quick_replies\u003e\u003c/msg\u003e"
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "PUT",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Content-Type": "text/xml; charset=utf-8"
+                },
+                "body": "\u003cmsg\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003ctext\u003e☺\u003c/text\u003e\u003cfrom\u003e2020\u003c/from\u003e\u003cquick_replies\u003e\u003c/quick_replies\u003e\u003c/msg\u003e"
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 401,
+                    "body": "1: Unknown channel"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "PUT",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Content-Type": "text/xml; charset=utf-8"
+                },
+                "body": "\u003cmsg\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003ctext\u003eError Message\u003c/text\u003e\u003cfrom\u003e2020\u003c/from\u003e\u003cquick_replies\u003e\u003c/quick_replies\u003e\u003c/msg\u003e"
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "PUT",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Content-Type": "text/xml; charset=utf-8"
+                },
+                "body": "\u003cmsg\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003ctext\u003eMy pic!\u0026#xA;https://foo.bar/image.jpg\u003c/text\u003e\u003cfrom\u003e2020\u003c/from\u003e\u003cquick_replies\u003e\u003c/quick_replies\u003e\u003c/msg\u003e"
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Quick Replies",
+        "msg": {
+            "text": "Some message",
+            "urn": "tel:+250788383383",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "One"
+                },
+                {
+                    "type": "text",
+                    "text": "Two"
+                },
+                {
+                    "type": "text",
+                    "text": "Three"
+                }
+            ]
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "PUT",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Content-Type": "text/xml; charset=utf-8"
+                },
+                "body": "\u003cmsg\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003ctext\u003eSome message\u003c/text\u003e\u003cfrom\u003e2020\u003c/from\u003e\u003cquick_replies\u003e\u003citem\u003eOne\u003c/item\u003e\u003citem\u003eTwo\u003c/item\u003e\u003citem\u003eThree\u003c/item\u003e\u003c/quick_replies\u003e\u003c/msg\u003e"
+            }
+        ],
+        "log_errors": []
+    }
+]

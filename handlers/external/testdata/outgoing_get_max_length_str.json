@@ -1,0 +1,55 @@
+[
+    {
+        "label": "Long Send",
+        "msg": {
+            "text": "This is a long message that will be longer than 30....... characters",
+            "urn": "tel:+250788383383",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "One"
+                }
+            ]
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                },
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                },
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?to=%2B250788383383&text=This+is+a+long+message+that&from=2020",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            },
+            {
+                "method": "GET",
+                "url": "http://example.com/send?to=%2B250788383383&text=will+be+longer+than+30.......&from=2020",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            },
+            {
+                "method": "GET",
+                "url": "http://example.com/send?to=%2B250788383383&text=characters&from=2020&quick_reply=One",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        ],
+        "log_errors": []
+    }
+]

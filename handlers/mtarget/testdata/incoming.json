@@ -1,0 +1,264 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "Msisdn=+923161909799\u0026Content=hello+world\u0026Keyword=Default\u0026MsgId=foo",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "hello world",
+                        "urn": "tel:+923161909799",
+                        "external_id": "foo",
+                        "received_on": "2025-11-01T05:43:05Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+923161909799",
+                "text": "hello world",
+                "external_id": "foo",
+                "created_on": "2025-11-01T05:43:03Z",
+                "received_on": "2025-11-01T05:43:05Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "Msisdn=MTN\u0026Content=hello+world\u0026Keyword=Default",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Stop",
+        "url": "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "Msisdn=+923161909799\u0026Content=Stop\u0026Keyword=Stop",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Event Accepted",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "event_type": "stop_contact",
+                        "urn": "tel:+923161909799",
+                        "received_on": "2025-11-26T20:06:04Z"
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "019ac1c5-e3f8-7000-9b0b-af7021a28da6",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+923161909799",
+                "event_type": "stop_contact",
+                "occurred_on": "2025-11-26T20:06:04Z",
+                "log_uuids": [
+                    "019ac1c5-dc28-7000-9203-f9e59e2d98a9"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Missing From",
+        "url": "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "Content=hello\u0026Keyword=Default",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing required field 'Msisdn'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Part 2",
+        "url": "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "Msisdn=+923161909799\u0026Content=world\u0026Keyword=Default\u0026msglong.id=longmsg\u0026msglong.msgcount=2\u0026msglong.msgref=2",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "Message part received"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Part 1",
+        "url": "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "Msisdn=+923161909799\u0026Content=hello+\u0026Keyword=Default\u0026msglong.id=longmsg\u0026msglong.msgcount=2\u0026msglong.msgref=1",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a0bf2-aa20-7000-aea5-603301cad4c4",
+                        "text": "hello world",
+                        "urn": "tel:+923161909799",
+                        "received_on": "2025-10-22T12:44:05Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a0bf2-aa20-7000-aea5-603301cad4c4",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+923161909799",
+                "text": "hello world",
+                "created_on": "2025-10-22T12:44:03Z",
+                "received_on": "2025-10-22T12:44:05Z",
+                "log_uuids": [
+                    "019a0bf2-9e68-7000-93d2-d4e1615c1e90"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Delivered",
+        "url": "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "data": "MsgId=12a7ee90-50ce-11e7-80ae-00000a0a643c\u0026Status=3",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "12a7ee90-50ce-11e7-80ae-00000a0a643c"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12a7ee90-50ce-11e7-80ae-00000a0a643c",
+                "status": "D",
+                "log_uuid": "0199f07e-1d88-7000-bf1c-2e310ab8165f"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Failed",
+        "url": "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "data": "MsgId=12a7ee90-50ce-11e7-80ae-00000a0a643c\u0026Status=4",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F",
+                        "external_id": "12a7ee90-50ce-11e7-80ae-00000a0a643c"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12a7ee90-50ce-11e7-80ae-00000a0a643c",
+                "status": "F",
+                "log_uuid": "019ab73c-b768-7000-a62d-0aac2a54fb36"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Missing ID",
+        "url": "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "data": "status?Status=4",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing required field 'MsgId'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]

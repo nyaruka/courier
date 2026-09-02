@@ -1,0 +1,145 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?to=%2B250788383383&text=Simple+Message&from=2020",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?to=%2B250788383383&text=%E2%98%BA&from=2020",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 401,
+                    "body": "1: Unknown channel"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?to=%2B250788383383&text=Error+Message&from=2020",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 429,
+                    "body": "1: Unknown channel"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?to=%2B250788383383&text=Error+Message&from=2020",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?to=%2B250788383383&text=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&from=2020",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        ],
+        "log_errors": []
+    }
+]

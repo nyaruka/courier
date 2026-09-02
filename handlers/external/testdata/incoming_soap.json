@@ -1,0 +1,49 @@
+[
+    {
+        "label": "Receive Valid Post SOAP",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003csoapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:com=\"com.hero\"\u003e\u003csoapenv:Header/\u003e\u003csoapenv:Body\u003e\u003ccom:moRequest\u003e\u003csource\u003e2349067554729\u003c/source\u003e\u003ccontent\u003eJoin\u003c/content\u003e\u003c/com:moRequest\u003e\u003c/soapenv:Body\u003e\u003c/soapenv:Envelope\u003e",
+        "response": {
+            "status": 200,
+            "body": "\u003c?xml version=“1.0”?\u003e\u003creturn\u003e0\u003c/return\u003e"
+        },
+        "msgs": [
+            {
+                "uuid": "019ac445-dfe8-7000-8283-9d5d3b1a8512",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "created_on": "2025-11-27T07:45:04Z",
+                "received_on": "2025-11-27T07:45:03Z",
+                "log_uuids": [
+                    "019ac445-d048-7000-a97f-1e6be18b2ce2"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid SOAP",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003csoapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:com=\"com.hero\"\u003e\u003csoapenv:Header/\u003e\u003csoapenv:Body\u003e\u003c/soapenv:Body\u003e\u003c/soapenv:Envelope\u003e",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing from at: //source or text at: //content node"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

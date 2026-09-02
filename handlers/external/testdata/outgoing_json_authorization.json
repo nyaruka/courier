@@ -1,0 +1,190 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Authorization": "Token ABCDEF",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "+250788383383",
+                    "text": "Simple Message",
+                    "from": "2020",
+                    "quick_replies": []
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺ \"hi!\"",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Authorization": "Token ABCDEF",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "+250788383383",
+                    "text": "☺ \"hi!\"",
+                    "from": "2020",
+                    "quick_replies": []
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 401,
+                    "body": "1: Unknown channel"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Authorization": "Token ABCDEF",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "+250788383383",
+                    "text": "Error Message",
+                    "from": "2020",
+                    "quick_replies": []
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Authorization": "Token ABCDEF",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "+250788383383",
+                    "text": "My pic!\nhttps://foo.bar/image.jpg",
+                    "from": "2020",
+                    "quick_replies": []
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Quick Replies",
+        "msg": {
+            "text": "Some message",
+            "urn": "tel:+250788383383",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "One"
+                },
+                {
+                    "type": "text",
+                    "text": "Two"
+                },
+                {
+                    "type": "text",
+                    "text": "Three"
+                }
+            ]
+        },
+        "http_mocks": {
+            "http://example.com/send": [
+                {
+                    "status": 200,
+                    "body": "0: Accepted for delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/send",
+                "headers": {
+                    "Authorization": "Token ABCDEF",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "+250788383383",
+                    "text": "Some message",
+                    "from": "2020",
+                    "quick_replies": [
+                        "One",
+                        "Two",
+                        "Three"
+                    ]
+                }
+            }
+        ],
+        "log_errors": []
+    }
+]

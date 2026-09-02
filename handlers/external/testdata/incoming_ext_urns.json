@@ -1,0 +1,78 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                        "text": "Join",
+                        "urn": "ext:+2349067554729",
+                        "received_on": "2025-11-01T05:43:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "ext:+2349067554729",
+                "text": "Join",
+                "created_on": "2025-11-01T05:43:04Z",
+                "received_on": "2025-11-01T05:43:03Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Message trim spaces",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=+2349067554729&text=Join",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019b2881-5c08-7000-bbdd-7b9a2db54ca8",
+                        "text": "Join",
+                        "urn": "ext:2349067554729",
+                        "received_on": "2025-12-16T18:52:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b2881-5c08-7000-bbdd-7b9a2db54ca8",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "ext:2349067554729",
+                "text": "Join",
+                "created_on": "2025-12-16T18:52:04Z",
+                "received_on": "2025-12-16T18:52:03Z",
+                "log_uuids": [
+                    "019b2881-4c68-7000-9212-147762cb30d0"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]
