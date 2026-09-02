@@ -1,3 +1,9 @@
+v26.3.47 (2026-09-02)
+-------------------------
+ * Convert all handler tests to JSON case files under testdata/ and remove the legacy test runners
+ * Bound the channel-by-UUID and Turn failed media caches so unknown keys can't grow them without limit
+ * Update to latest gocommon
+
 v26.3.46 (2026-09-01)
 -------------------------
  * Cache a channel's absence for lookups by UUID so a dead callback URL doesn't query per request
