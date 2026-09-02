@@ -1,0 +1,126 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "whatsapp:250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Body": [
+                        "Simple Message ☺"
+                    ],
+                    "From": [
+                        "whatsapp:+12065551212"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "whatsapp:+250788383383"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788383383",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "body",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "external_id": "ext_id_revive_issue",
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "ContentSid": [
+                        "ext_id_revive_issue"
+                    ],
+                    "ContentVariables": [
+                        "{\"1\":\"Chef\",\"2\":\"tomorrow\"}"
+                    ],
+                    "From": [
+                        "whatsapp:+12065551212"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "whatsapp:+250788383383"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    }
+]

@@ -1,0 +1,1401 @@
+[
+    {
+        "label": "Receive Message FBA",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "text": "Hello World",
+                                "mid": "external_id"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019ac601-e3e0-7000-a096-e60c39a27069",
+                        "text": "Hello World",
+                        "urn": "facebook:5678",
+                        "external_id": "external_id",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019ac601-e3e0-7000-a096-e60c39a27069",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "facebook:5678",
+                "text": "Hello World",
+                "external_id": "external_id",
+                "created_on": "2025-11-27T15:50:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019ac601-d828-7000-aeec-0362a83262e8"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid Signature",
+        "url": "/c/fba/receive",
+        "headers": {
+            "X-Hub-Signature-256": "invalidsig"
+        },
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "text": "Hello World",
+                                "mid": "external_id"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid request signature, expected: 7817da5e042f8f835fd8ffc83f3734bd2d6d3f2e5053472742ed8a5bbb96e4ab got:  for body: '{\n            \"object\": \"page\",\n            \"entry\": [\n                {\n                    \"id\": \"1234567890\",\n                    \"messaging\": [\n                        {\n                            \"message\": {\n                                \"text\": \"Hello World\",\n                                \"mid\": \"external_id\"\n                            },\n                            \"recipient\": {\n                                \"id\": \"1234567890\"\n                            },\n                            \"sender\": {\n                                \"id\": \"5678\"\n                            },\n                            \"timestamp\": 1459991487970\n                        }\n                    ],\n                    \"time\": 1459991487970\n                }\n            ]\n        }'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "No Duplicate Receive Message",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "text": "Hello World",
+                                "mid": "external_id"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                },
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "text": "Hello World",
+                                "mid": "external_id"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019ac601-e3e0-7000-a096-e60c39a27069",
+                        "text": "Hello World",
+                        "urn": "facebook:5678",
+                        "external_id": "external_id",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019ac601-e3e0-7000-a096-e60c39a27069",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "facebook:5678",
+                "text": "Hello World",
+                "external_id": "external_id",
+                "created_on": "2025-12-18T21:25:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019b335a-17c8-7000-bfb9-035537d2e2fd"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Attachment",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "mid": "external_id",
+                                "attachments": [
+                                    {
+                                        "type": "image",
+                                        "payload": {
+                                            "url": "https://image-url/foo.png"
+                                        }
+                                    }
+                                ]
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019ac601-e3e0-7000-a096-e60c39a27069",
+                        "text": "",
+                        "urn": "facebook:5678",
+                        "attachments": [
+                            "https://image-url/foo.png"
+                        ],
+                        "external_id": "external_id",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019ac601-e3e0-7000-a096-e60c39a27069",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "facebook:5678",
+                "text": "",
+                "attachments": [
+                    "https://image-url/foo.png"
+                ],
+                "external_id": "external_id",
+                "created_on": "2025-11-27T10:51:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019ac4f0-1a08-7000-832d-8490e1b134c8"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Location",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "mid": "external_id",
+                                "attachments": [
+                                    {
+                                        "type": "location",
+                                        "payload": {
+                                            "coordinates": {
+                                                "lat": 1.2,
+                                                "long": -1.3
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019ac601-e3e0-7000-a096-e60c39a27069",
+                        "text": "",
+                        "urn": "facebook:5678",
+                        "attachments": [
+                            "geo:1.200000,-1.300000"
+                        ],
+                        "external_id": "external_id",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019ac601-e3e0-7000-a096-e60c39a27069",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "facebook:5678",
+                "text": "",
+                "attachments": [
+                    "geo:1.200000,-1.300000"
+                ],
+                "external_id": "external_id",
+                "created_on": "2025-10-22T07:17:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019a0ac7-3dc8-7000-a6e2-f0ef19b99b7d"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Thumbs Up",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "time": 1459991487970,
+                    "messaging": [
+                        {
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "timestamp": 1459991487970,
+                            "message": {
+                                "mid": "external_id",
+                                "attachments": [
+                                    {
+                                        "type": "image",
+                                        "payload": {
+                                            "sticker_id": 369239263222822,
+                                            "url": "https://scontent.xx.fbcdn.net/v/arst"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019ac601-e3e0-7000-a096-e60c39a27069",
+                        "text": "👍",
+                        "urn": "facebook:5678",
+                        "attachments": [
+                            "https://scontent.xx.fbcdn.net/v/arst"
+                        ],
+                        "external_id": "external_id",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019ac601-e3e0-7000-a096-e60c39a27069",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "facebook:5678",
+                "text": "👍",
+                "attachments": [
+                    "https://scontent.xx.fbcdn.net/v/arst"
+                ],
+                "external_id": "external_id",
+                "created_on": "2025-11-13T10:56:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019a7cdb-a5e8-7000-ac92-8ee66529c459"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive OptIn",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "optin": {
+                                "ref": "optin_ref"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "event_type": "referral",
+                        "urn": "facebook:5678",
+                        "received_on": "2016-04-07T01:11:27.97Z",
+                        "extra": {
+                            "referrer_id": "optin_ref"
+                        }
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "0199fa52-ee38-7000-8bbd-6a12ec3dbaf3",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "facebook:5678",
+                "event_type": "referral",
+                "extra": {
+                    "referrer_id": "optin_ref"
+                },
+                "occurred_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "0199fa52-e668-7000-9464-46bffc2939f6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Notification Messages OptIn",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "time": 1459991487970,
+                    "messaging": [
+                        {
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "timestamp": 1459991487970,
+                            "optin": {
+                                "type": "notification_messages",
+                                "payload": "3456",
+                                "notification_messages_token": "12345678901234567890",
+                                "notification_messages_frequency": "DAILY",
+                                "token_expiry_timestamp": 2145916800000,
+                                "user_token_status": "NOT_REFRESHED",
+                                "notification_messages_timezone": "UTC",
+                                "title": "Bird Facts"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring optin"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Get Started",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "postback": {
+                                "title": "postback title",
+                                "payload": "get_started"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "event_type": "new_conversation",
+                        "urn": "facebook:5678",
+                        "received_on": "2016-04-07T01:11:27.97Z",
+                        "extra": {
+                            "payload": "get_started",
+                            "title": "postback title"
+                        }
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "019b0c05-2758-7000-85f2-ee025a60b551",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "facebook:5678",
+                "event_type": "new_conversation",
+                "extra": {
+                    "payload": "get_started",
+                    "title": "postback title"
+                },
+                "occurred_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019b0c05-1f88-7000-8db3-f531a16cec70"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Referral Postback",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "postback": {
+                                "title": "postback title",
+                                "payload": "postback payload",
+                                "referral": {
+                                    "ref": "postback ref",
+                                    "source": "postback source",
+                                    "type": "postback type"
+                                }
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "event_type": "referral",
+                        "urn": "facebook:5678",
+                        "received_on": "2016-04-07T01:11:27.97Z",
+                        "extra": {
+                            "payload": "postback payload",
+                            "referrer_id": "postback ref",
+                            "source": "postback source",
+                            "title": "postback title",
+                            "type": "postback type"
+                        }
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "019a0862-c8b8-7000-ab74-ab0e11ccd517",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "facebook:5678",
+                "event_type": "referral",
+                "extra": {
+                    "payload": "postback payload",
+                    "referrer_id": "postback ref",
+                    "source": "postback source",
+                    "title": "postback title",
+                    "type": "postback type"
+                },
+                "occurred_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019a0862-c0e8-7000-a51e-023331919a59"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Postback Referral",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "postback": {
+                                "title": "postback title",
+                                "payload": "get_started",
+                                "referral": {
+                                    "ref": "postback ref",
+                                    "source": "postback source",
+                                    "type": "postback type",
+                                    "ad_id": "ad id"
+                                }
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "event_type": "referral",
+                        "urn": "facebook:5678",
+                        "received_on": "2016-04-07T01:11:27.97Z",
+                        "extra": {
+                            "ad_id": "ad id",
+                            "payload": "get_started",
+                            "referrer_id": "postback ref",
+                            "source": "postback source",
+                            "title": "postback title",
+                            "type": "postback type"
+                        }
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "019ab4b0-e438-7000-b56d-724534b83020",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "facebook:5678",
+                "event_type": "referral",
+                "extra": {
+                    "ad_id": "ad id",
+                    "payload": "get_started",
+                    "referrer_id": "postback ref",
+                    "source": "postback source",
+                    "title": "postback title",
+                    "type": "postback type"
+                },
+                "occurred_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019ab4b0-dc68-7000-ba58-4578337ad6a2"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Referral",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "referral": {
+                                "ref": "referral id",
+                                "ad_id": "ad id",
+                                "source": "referral source",
+                                "type": "referral type"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678",
+                                "user_ref": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "event_type": "referral",
+                        "urn": "facebook:5678",
+                        "received_on": "2016-04-07T01:11:27.97Z",
+                        "extra": {
+                            "ad_id": "ad id",
+                            "referrer_id": "referral id",
+                            "source": "referral source",
+                            "type": "referral type"
+                        }
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "019a54ea-2758-7000-a30c-d4ae0d6a9bd8",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "facebook:5678",
+                "event_type": "referral",
+                "extra": {
+                    "ad_id": "ad id",
+                    "referrer_id": "referral id",
+                    "source": "referral source",
+                    "type": "referral type"
+                },
+                "occurred_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019a54ea-1f88-7000-9ab1-dcbbaccac2a8"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Referral timestamp seconds",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "referral": {
+                                "ref": "referral id",
+                                "ad_id": "ad id",
+                                "source": "referral source",
+                                "type": "referral type"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678",
+                                "user_ref": "5678"
+                            },
+                            "timestamp": 1701599111
+                        }
+                    ],
+                    "time": 1701599116216
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "event_type": "referral",
+                        "urn": "facebook:5678",
+                        "received_on": "2023-12-03T10:25:11Z",
+                        "extra": {
+                            "ad_id": "ad id",
+                            "referrer_id": "referral id",
+                            "source": "referral source",
+                            "type": "referral type"
+                        }
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "019a0449-96f8-7000-bc9d-a8581a81ba8a",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "facebook:5678",
+                "event_type": "referral",
+                "extra": {
+                    "ad_id": "ad id",
+                    "referrer_id": "referral id",
+                    "source": "referral source",
+                    "type": "referral type"
+                },
+                "occurred_on": "2023-12-03T10:25:11Z",
+                "log_uuids": [
+                    "019a0449-8f28-7000-b5b0-ec7f66420978"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive unsupported reel attachment",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "mid": "external_id",
+                                "attachments": [
+                                    {
+                                        "type": "ig_reel",
+                                        "payload": {
+                                            "url": "/reel/123451234512345/",
+                                            "reel_video_id": 123451234512345
+                                        }
+                                    }
+                                ]
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive unsupported fallback attachment",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "mid": "external_id",
+                                "attachments": [
+                                    {
+                                        "type": "fallback",
+                                        "payload": {
+                                            "url": "My Documents/foo.doc",
+                                            "title": "Foo"
+                                        }
+                                    }
+                                ]
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive DLR",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "delivery": {
+                                "mids": [
+                                    "mid.1458668856218:ed81099e15d3f4f233"
+                                ],
+                                "watermark": 1458668856253,
+                                "seq": 37
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "status": "D",
+                        "external_id": "mid.1458668856218:ed81099e15d3f4f233"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "channel_id": 101,
+                "external_identifier": "mid.1458668856218:ed81099e15d3f4f233",
+                "status": "D",
+                "log_uuid": "019a42d2-7868-7000-b1ac-16f89cd00c69"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Different Page",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "text": "Hello World",
+                                "mid": "external_id"
+                            },
+                            "recipient": {
+                                "id": "1235"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Echo",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970,
+                            "message": {
+                                "is_echo": true,
+                                "mid": "qT7ywaK"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring echo"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Not Page",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "notpage",
+            "entry": [
+                {}
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "object expected 'page', 'instagram' or 'whatsapp_business_account', found notpage"
+                    }
+                ]
+            }
+        },
+        "log": null
+    },
+    {
+        "label": "No Entries",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": []
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "no entries found"
+                    }
+                ]
+            }
+        },
+        "log": null
+    },
+    {
+        "label": "No Messaging Entries",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Unknown Messaging Entry",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring unknown entry type"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Not JSON",
+        "url": "/c/fba/receive",
+        "data": "not JSON",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'o' in literal null (expecting 'u')"
+                    }
+                ]
+            }
+        },
+        "log": null
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/fba/receive",
+        "data": {
+            "object": "page",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "text": "Hello World",
+                                "mid": "external_id"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "abc5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid facebook id"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid Secret",
+        "url": "/c/fba/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": "yarchallenge"
+        },
+        "log": null
+    },
+    {
+        "label": "Verify No Mode",
+        "url": "/c/fba/receive",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown request"
+                    }
+                ]
+            }
+        },
+        "log": null
+    },
+    {
+        "label": "Verify No Secret",
+        "url": "/c/fba/receive?hub.mode=subscribe",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "token does not match secret"
+                    }
+                ]
+            }
+        },
+        "log": null
+    },
+    {
+        "label": "Invalid Secret",
+        "url": "/c/fba/receive?hub.mode=subscribe&hub.verify_token=blah",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "token does not match secret"
+                    }
+                ]
+            }
+        },
+        "log": null
+    }
+]

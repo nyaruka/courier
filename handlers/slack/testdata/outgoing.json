@@ -229,5 +229,128 @@
             }
         },
         "log_errors": []
+    },
+    {
+        "label": "Send Image",
+        "msg": {
+            "urn": "slack:U0123ABCDEF",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.png"
+            ]
+        },
+        "http_mocks": {
+            "*/files.upload": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "file": {
+                            "id": "F1L3SL4CK1D"
+                        }
+                    }
+                }
+            ],
+            "*/image.png": [
+                {
+                    "status": 200,
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/image.png"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.upload",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "multipart/form-data"
+                },
+                "form": {
+                    "channels": [
+                        "U0123ABCDEF"
+                    ],
+                    "filename": [
+                        "image.png"
+                    ]
+                },
+                "files": {
+                    "file": {
+                        "filename": "image.png",
+                        "content_type": "application/octet-stream",
+                        "body": "filetype... ...file bytes... ...end"
+                    }
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unexpected Response",
+        "msg": {
+            "urn": "slack:U0123ABCDEF",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.png"
+            ]
+        },
+        "http_mocks": {
+            "*/files.upload": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": false,
+                        "file": {
+                            "id": "F1L3SL4CK1D"
+                        }
+                    }
+                }
+            ],
+            "*/image.png": [
+                {
+                    "status": 200,
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/image.png"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.upload",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "multipart/form-data"
+                },
+                "form": {
+                    "channels": [
+                        "U0123ABCDEF"
+                    ],
+                    "filename": [
+                        "image.png"
+                    ]
+                },
+                "files": {
+                    "file": {
+                        "filename": "image.png",
+                        "content_type": "application/octet-stream",
+                        "body": "filetype... ...file bytes... ...end"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
     }
 ]

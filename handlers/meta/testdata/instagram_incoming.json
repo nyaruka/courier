@@ -1,0 +1,824 @@
+[
+    {
+        "label": "Receive Message",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "instagram",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "text": "Hello World",
+                                "mid": "external_id"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                        "text": "Hello World",
+                        "urn": "instagram:5678",
+                        "external_id": "external_id",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "instagram:5678",
+                "text": "Hello World",
+                "external_id": "external_id",
+                "created_on": "2025-12-17T22:05:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019b2e58-5ac8-7000-b5ae-79147d8e44c7"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid Signature",
+        "url": "/c/ig/receive",
+        "headers": {
+            "X-Hub-Signature-256": "invalidsig"
+        },
+        "data": {
+            "object": "instagram",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "text": "Hello World",
+                                "mid": "external_id"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid request signature, expected: 38694878be71208af22ed9a1caab6589ae12d902e343c0f7022c029fb2d1346f got:  for body: '{\n            \"object\": \"instagram\",\n            \"entry\": [\n                {\n                    \"id\": \"1234567890\",\n                    \"messaging\": [\n                        {\n                            \"message\": {\n                                \"text\": \"Hello World\",\n                                \"mid\": \"external_id\"\n                            },\n                            \"recipient\": {\n                                \"id\": \"1234567890\"\n                            },\n                            \"sender\": {\n                                \"id\": \"5678\"\n                            },\n                            \"timestamp\": 1459991487970\n                        }\n                    ],\n                    \"time\": 1459991487970\n                }\n            ]\n        }'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "No Duplicate Receive Message",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "instagram",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "text": "Hello World",
+                                "mid": "external_id"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                },
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "text": "Hello World",
+                                "mid": "external_id"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                        "text": "Hello World",
+                        "urn": "instagram:5678",
+                        "external_id": "external_id",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "instagram:5678",
+                "text": "Hello World",
+                "external_id": "external_id",
+                "created_on": "2025-12-18T21:25:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019b335a-17c8-7000-bfb9-035537d2e2fd"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Attachment",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "instagram",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "mid": "external_id",
+                                "attachments": [
+                                    {
+                                        "type": "image",
+                                        "payload": {
+                                            "url": "https://image-url/foo.png"
+                                        }
+                                    }
+                                ]
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                        "text": "",
+                        "urn": "instagram:5678",
+                        "attachments": [
+                            "https://image-url/foo.png"
+                        ],
+                        "external_id": "external_id",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "instagram:5678",
+                "text": "",
+                "attachments": [
+                    "https://image-url/foo.png"
+                ],
+                "external_id": "external_id",
+                "created_on": "2025-11-27T10:51:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019ac4f0-1a08-7000-832d-8490e1b134c8"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Like Heart",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "instagram",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "timestamp": 1459991487970,
+                            "message": {
+                                "mid": "external_id",
+                                "attachments": [
+                                    {
+                                        "type": "like_heart"
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                        "text": "❤️",
+                        "urn": "instagram:5678",
+                        "external_id": "external_id",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "instagram:5678",
+                "text": "❤️",
+                "external_id": "external_id",
+                "created_on": "2025-12-04T00:21:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019ae6bb-d5c8-7000-a783-1f33f9f4cba1"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Icebreaker Get Started",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "instagram",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "postback": {
+                                "title": "icebreaker question",
+                                "payload": "get_started"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "event_type": "new_conversation",
+                        "urn": "instagram:5678",
+                        "received_on": "2016-04-07T01:11:27.97Z",
+                        "extra": {
+                            "payload": "get_started",
+                            "title": "icebreaker question"
+                        }
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "019ad984-fdf8-7000-8e36-d02a6aab5a41",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "instagram:5678",
+                "event_type": "new_conversation",
+                "extra": {
+                    "payload": "get_started",
+                    "title": "icebreaker question"
+                },
+                "occurred_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019ad984-f628-7000-bc61-7df53541836a"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Different Page",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "instagram",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "text": "Hello World",
+                                "mid": "external_id"
+                            },
+                            "recipient": {
+                                "id": "1235"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Echo",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "instagram",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970,
+                            "message": {
+                                "is_echo": true,
+                                "mid": "qT7ywaK"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring echo"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "No Entries",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "instagram",
+            "entry": []
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "no entries found"
+                    }
+                ]
+            }
+        },
+        "log": null
+    },
+    {
+        "label": "Not Instagram",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "notinstagram",
+            "entry": [
+                {}
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "object expected 'page', 'instagram' or 'whatsapp_business_account', found notinstagram"
+                    }
+                ]
+            }
+        },
+        "log": null
+    },
+    {
+        "label": "No Messaging Entries",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "instagram",
+            "entry": [
+                {
+                    "id": "1234567890"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Unknown Messaging Entry",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "instagram",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring unknown entry type"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Not JSON",
+        "url": "/c/ig/receive",
+        "data": "not JSON",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'o' in literal null (expecting 'u')"
+                    }
+                ]
+            }
+        },
+        "log": null
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "instagram",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "text": "Hello World",
+                                "mid": "external_id"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "abc5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid instagram id"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Story Mention",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "instagram",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "messaging": [
+                        {
+                            "message": {
+                                "mid": "external_id",
+                                "attachments": [
+                                    {
+                                        "type": "story_mention",
+                                        "payload": {
+                                            "url": "https://story-url"
+                                        }
+                                    }
+                                ]
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "timestamp": 1459991487970
+                        }
+                    ],
+                    "time": 1459991487970
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring story_mention"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Message unsent",
+        "url": "/c/ig/receive",
+        "data": {
+            "object": "instagram",
+            "entry": [
+                {
+                    "id": "1234567890",
+                    "time": 1459991487970,
+                    "messaging": [
+                        {
+                            "sender": {
+                                "id": "5678"
+                            },
+                            "recipient": {
+                                "id": "1234567890"
+                            },
+                            "timestamp": 1569262485349,
+                            "message": {
+                                "mid": "external_id",
+                                "is_deleted": true
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "msg deleted"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid Secret",
+        "url": "/c/ig/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": "yarchallenge"
+        },
+        "log": null
+    },
+    {
+        "label": "Verify No Mode",
+        "url": "/c/ig/receive",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown request"
+                    }
+                ]
+            }
+        },
+        "log": null
+    },
+    {
+        "label": "Verify No Secret",
+        "url": "/c/ig/receive?hub.mode=subscribe",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "token does not match secret"
+                    }
+                ]
+            }
+        },
+        "log": null
+    },
+    {
+        "label": "Invalid Secret",
+        "url": "/c/ig/receive?hub.mode=subscribe&hub.verify_token=blah",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "token does not match secret"
+                    }
+                ]
+            }
+        },
+        "log": null
+    }
+]

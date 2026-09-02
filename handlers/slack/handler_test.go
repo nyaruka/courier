@@ -23,14 +23,12 @@ var testChannels = []*models.Channel{
 
 func TestIncoming(t *testing.T) {
 	RunIncomingTests(t, testChannels, newHandler, "testdata/incoming.json", nil)
-	RunIncomingTests(t, testChannels, newHandler, "testdata/incoming_verification.json", nil)
 }
 
 func TestOutgoing(t *testing.T) {
 	opts := &OutgoingOptions{CheckRedacted: []string{"xoxb-abc123", "one-long-verification-token"}}
 
 	RunOutgoingTests(t, testChannels[0], newHandler, "testdata/outgoing.json", opts)
-	RunOutgoingTests(t, testChannels[0], newHandler, "testdata/outgoing_files.json", opts)
 }
 
 func buildMockSlackService() *httptest.Server {
