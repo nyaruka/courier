@@ -1,0 +1,1543 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "contacts": [
+                {
+                    "profile": {
+                        "name": "Jerry Cooney"
+                    },
+                    "wa_id": "250788123123"
+                }
+            ],
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "text": {
+                        "body": "hello world"
+                    },
+                    "type": "text"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "hello world",
+                        "urn": "whatsapp:250788123123",
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "hello world",
+                "external_id": "41",
+                "created_on": "2025-11-01T05:43:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ],
+                "contact_name": "Jerry Cooney"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Message with valid bsuid",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "contacts": [
+                {
+                    "profile": {
+                        "name": "Jerry Cooney"
+                    },
+                    "wa_id": "250788123123"
+                }
+            ],
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "from_bsuid": "US.1234",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "text": {
+                        "body": "hello world"
+                    },
+                    "type": "text"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "hello world",
+                        "urn": "whatsapp:250788123123",
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "hello world",
+                "external_id": "41",
+                "created_on": "2025-11-05T09:14:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a534b-63a8-7000-9027-e46e4a15495d"
+                ],
+                "contact_name": "Jerry Cooney",
+                "new_urn": {
+                    "value": "whatsapp:US.1234",
+                    "action": "append"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Message from BSUID with no phone",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "contacts": [
+                {
+                    "profile": {
+                        "name": "Jerry Cooney"
+                    },
+                    "user_id": "US.1234"
+                }
+            ],
+            "messages": [
+                {
+                    "from_bsuid": "US.1234",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "text": {
+                        "body": "hello world"
+                    },
+                    "type": "text"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019aa176-1dc0-7000-b797-402748ffd7f6",
+                        "text": "hello world",
+                        "urn": "whatsapp:US.1234",
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019aa176-1dc0-7000-b797-402748ffd7f6",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:US.1234",
+                "text": "hello world",
+                "external_id": "41",
+                "created_on": "2025-11-20T13:31:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019aa176-1208-7000-b5aa-eae0eb05c2db"
+                ],
+                "contact_name": "Jerry Cooney"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Message with BSUID in from",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "contacts": [
+                {
+                    "profile": {
+                        "name": "Jerry Cooney"
+                    },
+                    "wa_id": "US.1234"
+                }
+            ],
+            "messages": [
+                {
+                    "from": "US.1234",
+                    "from_bsuid": "US.1234",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "text": {
+                        "body": "hello world"
+                    },
+                    "type": "text"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019aa176-1dc0-7000-b797-402748ffd7f6",
+                        "text": "hello world",
+                        "urn": "whatsapp:US.1234",
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019aa176-1dc0-7000-b797-402748ffd7f6",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:US.1234",
+                "text": "hello world",
+                "external_id": "41",
+                "created_on": "2025-11-12T07:17:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a76ec-c9c8-7000-b842-4303ce4bcdbe"
+                ],
+                "contact_name": "Jerry Cooney"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Message with no from or from_bsuid",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "contacts": [
+                {
+                    "profile": {
+                        "name": "Jerry Cooney"
+                    }
+                }
+            ],
+            "messages": [
+                {
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "text": {
+                        "body": "hello world"
+                    },
+                    "type": "text"
+                }
+            ]
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid whatsapp id"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Message with invalid bsuid, no new URN added",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "contacts": [
+                {
+                    "profile": {
+                        "name": "Jerry Cooney"
+                    },
+                    "wa_id": "250788123123"
+                }
+            ],
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "from_bsuid": "foo_bar",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "text": {
+                        "body": "hello world"
+                    },
+                    "type": "text"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "hello world",
+                        "urn": "whatsapp:250788123123",
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "hello world",
+                "external_id": "41",
+                "created_on": "2025-12-10T21:31:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019b0a2c-b608-7000-a019-b2b8984a52bf"
+                ],
+                "contact_name": "Jerry Cooney"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive duplicate valid message",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "text": {
+                        "body": "hello world"
+                    },
+                    "type": "text"
+                },
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "text": {
+                        "body": "hello world"
+                    },
+                    "type": "text"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "hello world",
+                        "urn": "whatsapp:250788123123",
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "hello world",
+                "external_id": "41",
+                "created_on": "2025-12-06T04:02:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019af1d2-e2a8-7000-9f83-f0f829e6436a"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid audio message",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "type": "audio",
+                    "audio": {
+                        "file": "/path/to/v1/media/41",
+                        "id": "41",
+                        "link": "https://example.org/v1/media/41",
+                        "mime_type": "text/plain",
+                        "sha256": "the-sha-signature"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "",
+                        "urn": "whatsapp:250788123123",
+                        "attachments": [
+                            "https://foo.bar/v1/media/41"
+                        ],
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "",
+                "attachments": [
+                    "https://foo.bar/v1/media/41"
+                ],
+                "external_id": "41",
+                "created_on": "2025-12-19T06:37:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019b3553-76c8-7000-a4a0-40ec52737c15"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid button message",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "type": "button",
+                    "button": {
+                        "payload": null,
+                        "text": "BUTTON1"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "BUTTON1",
+                        "urn": "whatsapp:250788123123",
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "BUTTON1",
+                "external_id": "41",
+                "created_on": "2025-12-07T03:23:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019af6d5-8a08-7000-80ce-e94f6246f755"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid document message",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "type": "document",
+                    "document": {
+                        "id": "41",
+                        "mime_type": "text/plain",
+                        "sha256": "the-sha-signature",
+                        "caption": "the caption",
+                        "filename": "filename.type"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "the caption",
+                        "urn": "whatsapp:250788123123",
+                        "attachments": [
+                            "https://foo.bar/v1/media/41"
+                        ],
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "the caption",
+                "attachments": [
+                    "https://foo.bar/v1/media/41"
+                ],
+                "external_id": "41",
+                "created_on": "2025-10-24T21:38:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a1828-3aa8-7000-b75b-ced5d63c5db1"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid image message",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "type": "image",
+                    "image": {
+                        "file": "/path/to/v1/media/41",
+                        "id": "41",
+                        "link": "https://example.org/v1/media/41",
+                        "mime_type": "text/plain",
+                        "sha256": "the-sha-signature",
+                        "caption": "the caption"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "the caption",
+                        "urn": "whatsapp:250788123123",
+                        "attachments": [
+                            "https://foo.bar/v1/media/41"
+                        ],
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "the caption",
+                "attachments": [
+                    "https://foo.bar/v1/media/41"
+                ],
+                "external_id": "41",
+                "created_on": "2025-12-21T03:18:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019b3ee9-fe28-7000-958f-43e9ce49d49c"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid interactive button message",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "interactive": {
+                        "button_reply": {
+                            "id": "0",
+                            "title": "BUTTON1"
+                        },
+                        "type": "button_reply"
+                    },
+                    "timestamp": "1454119029",
+                    "type": "interactive"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "BUTTON1",
+                        "urn": "whatsapp:250788123123",
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "BUTTON1",
+                "external_id": "41",
+                "created_on": "2025-12-14T16:07:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019b1d9d-8488-7000-b3e2-322cd60f4683"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid interactive list message",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "interactive": {
+                        "list_reply": {
+                            "id": "0",
+                            "title": "ROW1"
+                        },
+                        "type": "list_reply"
+                    },
+                    "timestamp": "1454119029",
+                    "type": "interactive"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "ROW1",
+                        "urn": "whatsapp:250788123123",
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "ROW1",
+                "external_id": "41",
+                "created_on": "2025-11-20T16:19:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019aa20f-e108-7000-b9b0-d62f95d95935"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid interactive flow reply message",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "interactive": {
+                        "nfm_reply": {
+                            "name": "flow",
+                            "body": "Sent",
+                            "response_json": "{\"flow_token\": \"fl0w+t0k3n\", \"age\": \"32\"}"
+                        },
+                        "type": "nfm_reply"
+                    },
+                    "timestamp": "1454119029",
+                    "type": "interactive"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "Sent",
+                        "urn": "whatsapp:250788123123",
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "Sent",
+                "external_id": "41",
+                "created_on": "2025-10-18T00:55:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "0199f4d0-1288-7000-97aa-08f2bca57dd1"
+                ],
+                "payload": {
+                    "flow_token": "fl0w+t0k3n",
+                    "age": "32"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive interactive flow reply message with non-object response JSON",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "interactive": {
+                        "nfm_reply": {
+                            "name": "flow",
+                            "body": "Sent",
+                            "response_json": "[1, 2]"
+                        },
+                        "type": "nfm_reply"
+                    },
+                    "timestamp": "1454119029",
+                    "type": "interactive"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "Sent",
+                        "urn": "whatsapp:250788123123",
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "Sent",
+                "external_id": "41",
+                "created_on": "2025-11-01T10:55:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a3f0e-6b88-7000-b2cc-1258fdff1c35"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive unsupported message type, no message written",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "type": "order"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive message with errors, logged and no message written",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "type": "unsupported",
+                    "errors": [
+                        {
+                            "code": 131051,
+                            "title": "Unsupported message type"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": [
+                {
+                    "code": "external",
+                    "ext_code": "131051",
+                    "message": "Unsupported message type"
+                }
+            ]
+        }
+    },
+    {
+        "label": "Receive valid location message",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "type": "location",
+                    "location": {
+                        "address": "some address",
+                        "latitude": 0.0,
+                        "longitude": 1.0,
+                        "name": "some name",
+                        "url": "https://example.org/"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "",
+                        "urn": "whatsapp:250788123123",
+                        "attachments": [
+                            "geo:0.000000,1.000000"
+                        ],
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "",
+                "attachments": [
+                    "geo:0.000000,1.000000"
+                ],
+                "external_id": "41",
+                "created_on": "2025-11-03T04:20:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a47f1-8168-7000-ac92-135a317d0213"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid video message",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "type": "video",
+                    "video": {
+                        "file": "/path/to/v1/media/41",
+                        "id": "41",
+                        "link": "https://example.org/v1/media/41",
+                        "mime_type": "text/plain",
+                        "sha256": "the-sha-signature",
+                        "caption": "the caption"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "the caption",
+                        "urn": "whatsapp:250788123123",
+                        "attachments": [
+                            "https://foo.bar/v1/media/41"
+                        ],
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "the caption",
+                "attachments": [
+                    "https://foo.bar/v1/media/41"
+                ],
+                "external_id": "41",
+                "created_on": "2025-10-24T01:20:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a13cd-1de8-7000-8326-abe921858e32"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid voice message",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "type": "voice",
+                    "voice": {
+                        "file": "/path/to/v1/media/41",
+                        "id": "41",
+                        "link": "https://example.org/v1/media/41",
+                        "mime_type": "text/plain",
+                        "sha256": "the-sha-signature"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "",
+                        "urn": "whatsapp:250788123123",
+                        "attachments": [
+                            "https://foo.bar/v1/media/41"
+                        ],
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "",
+                "attachments": [
+                    "https://foo.bar/v1/media/41"
+                ],
+                "external_id": "41",
+                "created_on": "2025-11-26T16:13:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019ac0f0-8ac8-7000-a6c2-7c69404c3fe6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive document message with missing file",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "type": "document",
+                    "document": {
+                        "mime_type": "text/plain",
+                        "sha256": "the-sha-signature",
+                        "caption": "the caption",
+                        "filename": "filename.type",
+                        "status": "undownloaded"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                        "text": "the caption",
+                        "urn": "whatsapp:250788123123",
+                        "external_id": "41",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "the caption",
+                "external_id": "41",
+                "created_on": "2025-10-22T11:10:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a0b9c-8f28-7000-a882-b0a2821d1b81"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive group message JSON, ignored",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "contacts": [
+                {
+                    "profile": {
+                        "name": "Jerry Cooney"
+                    },
+                    "wa_id": "250788123123"
+                }
+            ],
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "group_id": "999999999",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "text": {
+                        "body": "hello world, group message"
+                    },
+                    "type": "text"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring group message"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalid JSON",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": "not json",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'o' in literal null (expecting 'u')"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalid from",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "notnumber",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "text": {
+                        "body": "hello world"
+                    },
+                    "type": "text"
+                }
+            ]
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid whatsapp id"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive invalid timestamp",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "messages": [
+                {
+                    "from": "notnumber",
+                    "id": "41",
+                    "timestamp": "asdf",
+                    "text": {
+                        "body": "hello world"
+                    },
+                    "type": "text"
+                }
+            ]
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid timestamp: asdf"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid message ahead of an invalid one",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "contacts": [
+                {
+                    "profile": {
+                        "name": "Jerry Cooney"
+                    },
+                    "wa_id": "250788123123"
+                }
+            ],
+            "messages": [
+                {
+                    "from": "250788123123",
+                    "id": "41",
+                    "timestamp": "1454119029",
+                    "text": {
+                        "body": "hello world"
+                    },
+                    "type": "text"
+                },
+                {
+                    "from": "250788123123",
+                    "id": "42",
+                    "timestamp": "asdf",
+                    "text": {
+                        "body": "second message"
+                    },
+                    "type": "text"
+                }
+            ]
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid timestamp: asdf"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d240-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:250788123123",
+                "text": "hello world",
+                "external_id": "41",
+                "created_on": "2025-11-18T17:57:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a981c-e1c8-7000-9cc2-5ae1a76a2fb4"
+                ],
+                "contact_name": "Jerry Cooney"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive valid status",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "statuses": [
+                {
+                    "id": "9712A34B4A8B6AD50F",
+                    "status": "sent",
+                    "timestamp": "1518694700"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "status": "S",
+                        "external_id": "9712A34B4A8B6AD50F"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "channel_id": 101,
+                "external_identifier": "9712A34B4A8B6AD50F",
+                "status": "S",
+                "log_uuid": "019a75d3-b8a8-7000-b7ae-af700bfdb567"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive failed status with error message",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "statuses": [
+                {
+                    "id": "9712A34B4A8B6AD50F",
+                    "status": "failed",
+                    "timestamp": "1518694700",
+                    "errors": [
+                        {
+                            "code": 131014,
+                            "title": "Request for url https://URL.jpg failed with error: 404 (Not Found)"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "status": "F",
+                        "external_id": "9712A34B4A8B6AD50F"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "channel_id": 101,
+                "external_identifier": "9712A34B4A8B6AD50F",
+                "status": "F",
+                "log_uuid": "019a1710-13e8-7000-8efd-52e31b031b67"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": [
+                {
+                    "code": "external",
+                    "ext_code": "131014",
+                    "message": "Request for url https://URL.jpg failed with error: 404 (Not Found)"
+                }
+            ]
+        }
+    },
+    {
+        "label": "Receive invalid status",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "statuses": [
+                {
+                    "id": "9712A34B4A8B6AD50F",
+                    "status": "in_orbit",
+                    "timestamp": "1518694700"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "unknown status: in_orbit"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive ignore status",
+        "url": "/c/trn/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "statuses": [
+                {
+                    "id": "9712A34B4A8B6AD50F",
+                    "status": "deleted",
+                    "timestamp": "1518694700"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring status: deleted"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

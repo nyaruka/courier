@@ -1,0 +1,3382 @@
+[
+    {
+        "label": "Link Sending",
+        "msg": {
+            "text": "Link Sending https://link.com",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "preview_url": true,
+                    "text": {
+                        "body": "Link Sending https://link.com"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Plain Send with BSUID",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "bsuid:US.1234"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "recipient": "US.1234",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Plain Send with BSUID as whatsapp URN",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:US.1234"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "recipient": "US.1234",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "☺"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Field",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "errors": [
+                            {
+                                "title": "Error Sending",
+                                "code": 232
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "232",
+                "message": "Error Sending"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Field with details",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 400,
+                    "body": {
+                        "errors": [
+                            {
+                                "code": -1,
+                                "title": "Bad Request",
+                                "details": "Could not be parsed, invalid key"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "-1",
+                "message": "Bad Request: Could not be parsed, invalid key"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Field Retryable",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "errors": [
+                            {
+                                "title": "Media upload error",
+                                "code": 131053
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with retryable reason",
+            "retryable": true,
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "131053",
+                "message": "Media upload error"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Audio attachment but upload fails",
+        "msg": {
+            "text": "audio has no caption, sent as text",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "audio/mpeg:https://foo.bar/audio.mp3"
+            ]
+        },
+        "http_mocks": {
+            "*/v1/media": [
+                {
+                    "status": 200,
+                    "body": ""
+                }
+            ],
+            "https://foo.bar/audio.mp3": [
+                {
+                    "status": 200,
+                    "body": "data"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/audio.mp3"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/media",
+                "headers": {
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "text/plain; charset=utf-8"
+                },
+                "body": "data"
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with retryable reason",
+            "retryable": true,
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "media_upload_failed",
+                "message": "unable to upload media to WhatsApp"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Audio Send with link in text",
+        "msg": {
+            "text": "audio has no caption, sent as text with a https://example.com",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "audio/mpeg:https://foo.bar/audio2.mp3"
+            ]
+        },
+        "http_mocks": {
+            "*/v1/media": [
+                {
+                    "status": 201,
+                    "body": {
+                        "media": [
+                            {
+                                "id": "8a1b0c3d-1283-4b94-988d-7276bdec4de2"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "https://foo.bar/audio2.mp3": [
+                {
+                    "status": 200,
+                    "body": "data"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/audio2.mp3"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/media",
+                "headers": {
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "text/plain; charset=utf-8"
+                },
+                "body": "data"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "audio",
+                    "audio": {
+                        "id": "8a1b0c3d-1283-4b94-988d-7276bdec4de2"
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "preview_url": true,
+                    "text": {
+                        "body": "audio has no caption, sent as text with a https://example.com"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8",
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Document Send",
+        "msg": {
+            "text": "document caption",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "application/pdf:https://foo.bar/document.pdf"
+            ]
+        },
+        "http_mocks": {
+            "*/v1/media": [
+                {
+                    "status": 201,
+                    "body": {
+                        "media": [
+                            {
+                                "id": "1b2c3d4e-1283-4b94-988d-7276bdec4de2"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "https://foo.bar/document.pdf": [
+                {
+                    "status": 200,
+                    "body": "data"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/document.pdf"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/media",
+                "headers": {
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "text/plain; charset=utf-8"
+                },
+                "body": "data"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "document",
+                    "document": {
+                        "id": "1b2c3d4e-1283-4b94-988d-7276bdec4de2",
+                        "caption": "document caption",
+                        "filename": "document.pdf"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Document Send, document link",
+        "msg": {
+            "text": "document caption",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "document:https://foo.bar/document3.pdf"
+            ]
+        },
+        "http_mocks": {
+            "*/v1/media": [
+                {
+                    "status": 201,
+                    "body": {
+                        "media": [
+                            {
+                                "id": "2c3d4e5f-1283-4b94-988d-7276bdec4de2"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "https://foo.bar/document3.pdf": [
+                {
+                    "status": 200,
+                    "body": "data"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/document3.pdf"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/media",
+                "headers": {
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "text/plain; charset=utf-8"
+                },
+                "body": "data"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "document",
+                    "document": {
+                        "id": "2c3d4e5f-1283-4b94-988d-7276bdec4de2",
+                        "caption": "document caption",
+                        "filename": "document3.pdf"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Image Send",
+        "msg": {
+            "text": "image caption",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "*/v1/media": [
+                {
+                    "status": 201,
+                    "body": {
+                        "media": [
+                            {
+                                "id": "3d4e5f6a-1283-4b94-988d-7276bdec4de2"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "https://foo.bar/image.jpg": [
+                {
+                    "status": 200,
+                    "body": "data"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/image.jpg"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/media",
+                "headers": {
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "text/plain; charset=utf-8"
+                },
+                "body": "data"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "image",
+                    "image": {
+                        "id": "3d4e5f6a-1283-4b94-988d-7276bdec4de2",
+                        "caption": "image caption"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Video Send",
+        "msg": {
+            "text": "video caption",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "video/mp4:https://foo.bar/video.mp4"
+            ]
+        },
+        "http_mocks": {
+            "*/v1/media": [
+                {
+                    "status": 201,
+                    "body": {
+                        "media": [
+                            {
+                                "id": "4e5f6a7b-1283-4b94-988d-7276bdec4de2"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "https://foo.bar/video.mp4": [
+                {
+                    "status": 200,
+                    "body": "data"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/video.mp4"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/media",
+                "headers": {
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "text/plain; charset=utf-8"
+                },
+                "body": "data"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "video",
+                    "video": {
+                        "id": "4e5f6a7b-1283-4b94-988d-7276bdec4de2",
+                        "caption": "video caption"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788123123",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "body/text",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "namespace": "waba_namespace",
+                        "name": "revive_issue",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en_US"
+                        },
+                        "components": [
+                            {
+                                "type": "body",
+                                "parameters": [
+                                    {
+                                        "type": "text",
+                                        "text": "Chef"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "tomorrow"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send no variables",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788123123",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "namespace": "waba_namespace",
+                        "name": "revive_issue",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en_US"
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template no language",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788123123",
+            "locale": "eng-US",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "body/text",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ]
+            }
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "namespace": "waba_namespace",
+                        "name": "revive_issue",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en_US"
+                        },
+                        "components": [
+                            {
+                                "type": "body",
+                                "parameters": [
+                                    {
+                                        "type": "text",
+                                        "text": "Chef"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "tomorrow"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Namespace",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788123123",
+            "locale": "eng-US",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "namespace": "wa_template_namespace",
+                "components": [
+                    {
+                        "type": "body/text",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ]
+            }
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "namespace": "wa_template_namespace",
+                        "name": "revive_issue",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en_US"
+                        },
+                        "components": [
+                            {
+                                "type": "body",
+                                "parameters": [
+                                    {
+                                        "type": "text",
+                                        "text": "Chef"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "tomorrow"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Invalid Language",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788123123",
+            "locale": "bnt",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "body/text",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ]
+            }
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "namespace": "waba_namespace",
+                        "name": "revive_issue",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en"
+                        },
+                        "components": [
+                            {
+                                "type": "body",
+                                "parameters": [
+                                    {
+                                        "type": "text",
+                                        "text": "Chef"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "tomorrow"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send with image header",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788123123",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "header/media",
+                        "name": "header",
+                        "variables": {
+                            "1": 0
+                        }
+                    },
+                    {
+                        "type": "body/text",
+                        "name": "body",
+                        "variables": {
+                            "1": 1,
+                            "2": 2
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "image",
+                        "value": "image/jpeg:https://foo.bar/image.jpg"
+                    },
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "namespace": "waba_namespace",
+                        "name": "revive_issue",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en_US"
+                        },
+                        "components": [
+                            {
+                                "type": "header",
+                                "parameters": [
+                                    {
+                                        "type": "image",
+                                        "image": {
+                                            "link": "https://foo.bar/image.jpg"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "body",
+                                "parameters": [
+                                    {
+                                        "type": "text",
+                                        "text": "Chef"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "tomorrow"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send with video header",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788123123",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "header/media",
+                        "name": "header",
+                        "variables": {
+                            "1": 0
+                        }
+                    },
+                    {
+                        "type": "body/text",
+                        "name": "body",
+                        "variables": {
+                            "1": 1,
+                            "2": 2
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "video",
+                        "value": "video/mp4:https://foo.bar/video.mp4"
+                    },
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "namespace": "waba_namespace",
+                        "name": "revive_issue",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en_US"
+                        },
+                        "components": [
+                            {
+                                "type": "header",
+                                "parameters": [
+                                    {
+                                        "type": "video",
+                                        "video": {
+                                            "link": "https://foo.bar/video.mp4"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "body",
+                                "parameters": [
+                                    {
+                                        "type": "text",
+                                        "text": "Chef"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "tomorrow"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send with document header",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788123123",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "header/media",
+                        "name": "header",
+                        "variables": {
+                            "1": 0
+                        }
+                    },
+                    {
+                        "type": "body/text",
+                        "name": "body",
+                        "variables": {
+                            "1": 1,
+                            "2": 2
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "document",
+                        "value": "application/pdf:https://foo.bar/doc.pdf"
+                    },
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "namespace": "waba_namespace",
+                        "name": "revive_issue",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en_US"
+                        },
+                        "components": [
+                            {
+                                "type": "header",
+                                "parameters": [
+                                    {
+                                        "type": "document",
+                                        "document": {
+                                            "link": "https://foo.bar/doc.pdf",
+                                            "filename": "doc.pdf"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "body",
+                                "parameters": [
+                                    {
+                                        "type": "text",
+                                        "text": "Chef"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "tomorrow"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send with static body",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788123123",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "header/media",
+                        "name": "header",
+                        "variables": {
+                            "1": 0
+                        }
+                    },
+                    {
+                        "type": "body/text",
+                        "name": "body",
+                        "variables": {}
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "image",
+                        "value": "image/jpeg:https://foo.bar/image.jpg"
+                    }
+                ],
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "namespace": "waba_namespace",
+                        "name": "revive_issue",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en_US"
+                        },
+                        "components": [
+                            {
+                                "type": "header",
+                                "parameters": [
+                                    {
+                                        "type": "image",
+                                        "image": {
+                                            "link": "https://foo.bar/image.jpg"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "body",
+                                "parameters": null
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send with text header",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788123123",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "header/text",
+                        "name": "header",
+                        "variables": {
+                            "1": 0
+                        }
+                    },
+                    {
+                        "type": "body/text",
+                        "name": "body",
+                        "variables": {
+                            "1": 1,
+                            "2": 2
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Welcome"
+                    },
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "namespace": "waba_namespace",
+                        "name": "revive_issue",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en_US"
+                        },
+                        "components": [
+                            {
+                                "type": "header",
+                                "parameters": [
+                                    {
+                                        "type": "text",
+                                        "text": "Welcome"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "body",
+                                "parameters": [
+                                    {
+                                        "type": "text",
+                                        "text": "Chef"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "tomorrow"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send with button params",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788123123",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "name": "header",
+                        "type": "header/media",
+                        "variables": {
+                            "1": 0
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "type": "body/text",
+                        "variables": {
+                            "1": 1,
+                            "2": 2
+                        }
+                    },
+                    {
+                        "name": "button.0",
+                        "type": "button/quick_reply",
+                        "variables": {
+                            "1": 3
+                        }
+                    },
+                    {
+                        "name": "button.1",
+                        "type": "button/url",
+                        "variables": {
+                            "1": 4
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "image",
+                        "value": "image/jpeg:https://foo.bar/image.jpg"
+                    },
+                    {
+                        "type": "text",
+                        "value": "Ryan Lewis"
+                    },
+                    {
+                        "type": "text",
+                        "value": "niño"
+                    },
+                    {
+                        "type": "text",
+                        "value": "Sip"
+                    },
+                    {
+                        "type": "text",
+                        "value": "id00231"
+                    }
+                ],
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "namespace": "waba_namespace",
+                        "name": "revive_issue",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en_US"
+                        },
+                        "components": [
+                            {
+                                "type": "header",
+                                "parameters": [
+                                    {
+                                        "type": "image",
+                                        "image": {
+                                            "link": "https://foo.bar/image.jpg"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "body",
+                                "parameters": [
+                                    {
+                                        "type": "text",
+                                        "text": "Ryan Lewis"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "niño"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "button",
+                                "sub_type": "quick_reply",
+                                "index": "0",
+                                "parameters": [
+                                    {
+                                        "type": "payload",
+                                        "payload": "Sip"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "button",
+                                "sub_type": "url",
+                                "index": "1",
+                                "parameters": [
+                                    {
+                                        "type": "text",
+                                        "text": "id00231"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send ignores preview attachments and quick replies",
+        "msg": {
+            "text": "This is a test image template message to check if Rapidpro",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "image:https://foo.bar/image.jpg"
+            ],
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "Test"
+                },
+                {
+                    "type": "text",
+                    "text": "Another test"
+                }
+            ],
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "test_image_rapidpro"
+                },
+                "components": [
+                    {
+                        "name": "header",
+                        "type": "header/media",
+                        "variables": {
+                            "1": 0
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "image",
+                        "value": "image:https://foo.bar/image.jpg"
+                    }
+                ],
+                "language": "en"
+            }
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "namespace": "waba_namespace",
+                        "name": "test_image_rapidpro",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en"
+                        },
+                        "components": [
+                            {
+                                "type": "header",
+                                "parameters": [
+                                    {
+                                        "type": "image",
+                                        "image": {
+                                            "link": "https://foo.bar/image.jpg"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive Button Message Send",
+        "msg": {
+            "text": "Interactive Button Msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "BUTTON1"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "button",
+                        "body": {
+                            "text": "Interactive Button Msg"
+                        },
+                        "action": {
+                            "buttons": [
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "0",
+                                        "title": "BUTTON1"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive List QRs Extra Send",
+        "msg": {
+            "text": "Interactive List QRs Extra Msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "OPTION1",
+                    "extra": "This option is the most popular"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "list",
+                        "body": {
+                            "text": "Interactive List QRs Extra Msg"
+                        },
+                        "action": {
+                            "button": "Menu",
+                            "sections": [
+                                {
+                                    "rows": [
+                                        {
+                                            "id": "0",
+                                            "title": "OPTION1",
+                                            "description": "This option is the most popular"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive List QRs Extra Empty Send",
+        "msg": {
+            "text": "Interactive List QRs Extra Empty",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "OPTION1"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "button",
+                        "body": {
+                            "text": "Interactive List QRs Extra Empty"
+                        },
+                        "action": {
+                            "buttons": [
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "0",
+                                        "title": "OPTION1"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive List Message Send",
+        "msg": {
+            "text": "Interactive List Msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "ROW1"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW2"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW3",
+                    "extra": "Third description"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW4"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "list",
+                        "body": {
+                            "text": "Interactive List Msg"
+                        },
+                        "action": {
+                            "button": "Menu",
+                            "sections": [
+                                {
+                                    "rows": [
+                                        {
+                                            "id": "0",
+                                            "title": "ROW1"
+                                        },
+                                        {
+                                            "id": "1",
+                                            "title": "ROW2"
+                                        },
+                                        {
+                                            "id": "2",
+                                            "title": "ROW3",
+                                            "description": "Third description"
+                                        },
+                                        {
+                                            "id": "3",
+                                            "title": "ROW4"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive Button Message Send with attachment",
+        "msg": {
+            "text": "Interactive Button Msg",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image2.jpg"
+            ],
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "BUTTON1"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "button",
+                        "header": {
+                            "type": "image",
+                            "image": {
+                                "link": "https://foo.bar/image2.jpg"
+                            }
+                        },
+                        "body": {
+                            "text": "Interactive Button Msg"
+                        },
+                        "action": {
+                            "buttons": [
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "0",
+                                        "title": "BUTTON1"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive List Message Send with attachment",
+        "msg": {
+            "text": "Interactive List Msg",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image3.jpg"
+            ],
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "ROW1"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW2"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW3"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW4"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/media": [
+                {
+                    "status": 201,
+                    "body": {
+                        "media": [
+                            {
+                                "id": "6a7b8c9d-1283-4b94-988d-7276bdec4de2"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "https://foo.bar/image3.jpg": [
+                {
+                    "status": 200,
+                    "body": "data"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/image3.jpg"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/media",
+                "headers": {
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "text/plain; charset=utf-8"
+                },
+                "body": "data"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "image",
+                    "image": {
+                        "id": "6a7b8c9d-1283-4b94-988d-7276bdec4de2"
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "list",
+                        "body": {
+                            "text": "Interactive List Msg"
+                        },
+                        "action": {
+                            "button": "Menu",
+                            "sections": [
+                                {
+                                    "rows": [
+                                        {
+                                            "id": "0",
+                                            "title": "ROW1"
+                                        },
+                                        {
+                                            "id": "1",
+                                            "title": "ROW2"
+                                        },
+                                        {
+                                            "id": "2",
+                                            "title": "ROW3"
+                                        },
+                                        {
+                                            "id": "3",
+                                            "title": "ROW4"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8",
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive with location request",
+        "msg": {
+            "text": "Interactive send location",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "location"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "location_request_message",
+                        "body": {
+                            "text": "Interactive send location"
+                        },
+                        "action": {
+                            "name": "send_location"
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive with form",
+        "msg": {
+            "text": "Interactive form msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "form",
+                    "text": "Book now",
+                    "extra": "123456"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "flow",
+                        "body": {
+                            "text": "Interactive form msg"
+                        },
+                        "action": {
+                            "name": "flow",
+                            "parameters": {
+                                "flow_message_version": "3",
+                                "flow_id": "123456",
+                                "flow_cta": "Book now"
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive with form, with extra quick replies ignored and default CTA",
+        "msg": {
+            "text": "Interactive form msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "form",
+                    "extra": "123456"
+                },
+                {
+                    "type": "text",
+                    "text": "Yes"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "flow",
+                        "body": {
+                            "text": "Interactive form msg"
+                        },
+                        "action": {
+                            "name": "flow",
+                            "parameters": {
+                                "flow_message_version": "3",
+                                "flow_id": "123456",
+                                "flow_cta": "Open Form"
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type text can't be combined with a form quick reply and won't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Interactive with form missing form ID, sent as text",
+        "msg": {
+            "text": "Interactive form msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "form",
+                    "text": "Book now"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Interactive form msg"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type form is missing its extra value and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Interactive with URL button",
+        "msg": {
+            "text": "Interactive URL msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit",
+                    "extra": "https://example.com"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "cta_url",
+                        "body": {
+                            "text": "Interactive URL msg"
+                        },
+                        "action": {
+                            "name": "cta_url",
+                            "parameters": {
+                                "display_text": "Visit",
+                                "url": "https://example.com"
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive with URL button, with extra quick replies ignored and default display text",
+        "msg": {
+            "text": "Interactive URL msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "extra": "https://example.com"
+                },
+                {
+                    "type": "text",
+                    "text": "Yes"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "cta_url",
+                        "body": {
+                            "text": "Interactive URL msg"
+                        },
+                        "action": {
+                            "name": "cta_url",
+                            "parameters": {
+                                "display_text": "Open Link",
+                                "url": "https://example.com"
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type text can't be combined with a url quick reply and won't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Interactive with URL button, with attachment used as header",
+        "msg": {
+            "text": "Interactive URL msg",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image2.jpg"
+            ],
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit",
+                    "extra": "https://example.com"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "cta_url",
+                        "header": {
+                            "type": "image",
+                            "image": {
+                                "link": "https://foo.bar/image2.jpg"
+                            }
+                        },
+                        "body": {
+                            "text": "Interactive URL msg"
+                        },
+                        "action": {
+                            "name": "cta_url",
+                            "parameters": {
+                                "display_text": "Visit",
+                                "url": "https://example.com"
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive with URL button missing URL, sent as text",
+        "msg": {
+            "text": "Interactive URL msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Interactive URL msg"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type url is missing its extra value and can't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Error Channel Contact Pair limit hit",
+        "msg": {
+            "text": "Pair limit",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 403,
+                    "body": {
+                        "error": {
+                            "message": "(#131056) (Business Account, Consumer Account) pair rate limit hit",
+                            "code": 131056
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Pair limit"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Throttled",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 403,
+                    "body": {
+                        "error": {
+                            "message": "(#130429) Rate limit hit",
+                            "code": 130429
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Turn HTTP 429 Rate Limit Bucket",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 429,
+                    "headers": {
+                        "Content-Type": "application/json; charset=utf-8",
+                        "Retry-After": "1",
+                        "X-Ratelimit-Bucket": "text",
+                        "X-Ratelimit-Limit": "20",
+                        "X-Ratelimit-Remaining": "0",
+                        "X-Ratelimit-Reset": "1786331727.285"
+                    },
+                    "body": {
+                        "errors": [
+                            {
+                                "code": 429,
+                                "title": "Rate limit hit for bucket text",
+                                "details": "You are being rate limited by Turn. please read the documentation at https://whatsapp.turn.io/docs/"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Retryable",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 400,
+                    "body": {
+                        "error": {
+                            "message": "Media upload error",
+                            "code": 131053
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with retryable reason",
+            "retryable": true,
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "131053",
+                "message": "Media upload error"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 403,
+                    "body": {
+                        "error": {
+                            "message": "(#368) Temporarily blocked for policies violations",
+                            "code": 368
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "368",
+                "message": "(#368) Temporarily blocked for policies violations"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Message",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 403,
+                    "body": {
+                        "error": {
+                            "message": "Other error with message",
+                            "code": 0
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "0",
+                "message": "Other error with message"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Connection",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 500,
+                    "body": "Bad Gateway"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer a123",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    }
+]

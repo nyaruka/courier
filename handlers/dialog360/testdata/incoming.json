@@ -1,0 +1,2166 @@
+[
+    {
+        "label": "Receive Message WAC",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "text": {
+                                            "body": "Hello World"
+                                        },
+                                        "type": "text"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "Hello World",
+                        "urn": "whatsapp:5678",
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "Hello World",
+                "external_id": "external_id",
+                "created_on": "2025-11-06T18:56:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a5a86-95e8-7000-9196-3cae59922d38"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Message WAC with user_id",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher",
+                                            "username": "@kfisher"
+                                        },
+                                        "wa_id": "5678",
+                                        "user_id": "US.1234"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "from_user_id": "US.1234",
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "text": {
+                                            "body": "Hello World"
+                                        },
+                                        "type": "text"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "Hello World",
+                        "urn": "whatsapp:5678",
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "Hello World",
+                "external_id": "external_id",
+                "created_on": "2025-11-18T17:21:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a97fb-ec48-7000-a9e8-af8a4231ac65"
+                ],
+                "contact_name": "Kerry Fisher",
+                "new_urn": {
+                    "value": "whatsapp:US.1234",
+                    "action": "append"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Message WAC with invalid user_id, no new URN added",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher",
+                                            "username": "@kfisher"
+                                        },
+                                        "wa_id": "5678",
+                                        "user_id": "foo_bar"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "from_user_id": "foo_bar",
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "text": {
+                                            "body": "Hello World"
+                                        },
+                                        "type": "text"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "Hello World",
+                        "urn": "whatsapp:5678",
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "Hello World",
+                "external_id": "external_id",
+                "created_on": "2025-11-02T14:54:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a450f-9728-7000-9da6-869dbe75d91c"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Message WAC from BSUID with no phone",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher",
+                                            "username": "kfisher"
+                                        },
+                                        "user_id": "US.1234",
+                                        "parent_user_id": "US.ENT.5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from_user_id": "US.1234",
+                                        "from_parent_user_id": "US.ENT.5678",
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "text": {
+                                            "body": "Hello World"
+                                        },
+                                        "type": "text"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a1b5a-c1a0-7000-99a2-ff2efd8aa5fa",
+                        "text": "Hello World",
+                        "urn": "whatsapp:US.1234",
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a1b5a-c1a0-7000-99a2-ff2efd8aa5fa",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:US.1234",
+                "text": "Hello World",
+                "external_id": "external_id",
+                "created_on": "2025-10-25T12:32:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a1b5a-b5e8-7000-94ff-e6e2ea0a4051"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Message WAC with BSUID in from",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher",
+                                            "username": "kfisher"
+                                        },
+                                        "wa_id": "US.1234",
+                                        "user_id": "US.1234"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "US.1234",
+                                        "from_user_id": "US.1234",
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "text": {
+                                            "body": "Hello World"
+                                        },
+                                        "type": "text"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a1b5a-c1a0-7000-99a2-ff2efd8aa5fa",
+                        "text": "Hello World",
+                        "urn": "whatsapp:US.1234",
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a1b5a-c1a0-7000-99a2-ff2efd8aa5fa",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:US.1234",
+                "text": "Hello World",
+                "external_id": "external_id",
+                "created_on": "2025-10-31T09:22:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a3992-eaa8-7000-b8d2-92e214a7d91d"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Message WAC with no from or from_user_id",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        }
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "text": {
+                                            "body": "Hello World"
+                                        },
+                                        "type": "text"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "invalid whatsapp id"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Duplicate Valid Message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "text": {
+                                            "body": "Hello World"
+                                        },
+                                        "type": "text"
+                                    },
+                                    {
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "text": {
+                                            "body": "Hello World"
+                                        },
+                                        "type": "text"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "Hello World",
+                        "urn": "whatsapp:5678",
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "Hello World",
+                "external_id": "external_id",
+                "created_on": "2025-11-28T14:10:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019acacc-a6a8-7000-8ad8-bcbf7d9c839b"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Voice Message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "type": "voice",
+                                        "voice": {
+                                            "file": "/usr/local/wamedia/shared/463e/b7ec/ff4e4d9bb1101879cbd411b2",
+                                            "id": "id_voice",
+                                            "mime_type": "audio/ogg; codecs=opus",
+                                            "sha256": "fa9e1807d936b7cebe63654ea3a7912b1fa9479220258d823590521ef53b0710"
+                                        }
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/id_voice": [
+                {
+                    "status": 200,
+                    "body": {
+                        "url": "https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=id_voice"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "",
+                        "urn": "whatsapp:5678",
+                        "attachments": [
+                            "https://waba-v2.360dialog.io/whatsapp_business/attachments/?mid=id_voice"
+                        ],
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "",
+                "attachments": [
+                    "https://waba-v2.360dialog.io/whatsapp_business/attachments/?mid=id_voice"
+                ],
+                "external_id": "external_id",
+                "created_on": "2025-11-08T08:13:05Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a6286-9ec8-7000-b173-bb7a190df70a"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://waba-v2.360dialog.io/id_voice",
+                "headers": {
+                    "D360-Api-Key": "the-auth-token"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Button Message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "button": {
+                                            "payload": "No-Button-Payload",
+                                            "text": "No"
+                                        },
+                                        "context": {
+                                            "from": "5678",
+                                            "id": "gBGGFmkiWVVPAgkgQkwi7IORac0"
+                                        },
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "type": "button"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "No",
+                        "urn": "whatsapp:5678",
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "No",
+                "external_id": "external_id",
+                "created_on": "2025-11-14T03:55:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a8080-9208-7000-97b6-81d0879f82b4"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Document Message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "type": "document",
+                                        "document": {
+                                            "caption": "80skaraokesonglistartist",
+                                            "file": "/usr/local/wamedia/shared/fc233119-733f-49c-bcbd-b2f68f798e33",
+                                            "id": "id_document",
+                                            "mime_type": "application/pdf",
+                                            "sha256": "3b11fa6ef2bde1dd14726e09d3edaf782120919d06f6484f32d5d5caa4b8e"
+                                        }
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/id_document": [
+                {
+                    "status": 200,
+                    "body": {
+                        "url": "https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=id_document"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "80skaraokesonglistartist",
+                        "urn": "whatsapp:5678",
+                        "attachments": [
+                            "https://waba-v2.360dialog.io/whatsapp_business/attachments/?mid=id_document"
+                        ],
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "80skaraokesonglistartist",
+                "attachments": [
+                    "https://waba-v2.360dialog.io/whatsapp_business/attachments/?mid=id_document"
+                ],
+                "external_id": "external_id",
+                "created_on": "2025-11-03T08:18:05Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a48cb-66a8-7000-8ac3-e8c73d8b9d81"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://waba-v2.360dialog.io/id_document",
+                "headers": {
+                    "D360-Api-Key": "the-auth-token"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Image Message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "image": {
+                                            "file": "/usr/local/wamedia/shared/b1cf38-8734-4ad3-b4a1-ef0c10d0d683",
+                                            "id": "id_image",
+                                            "mime_type": "image/jpeg",
+                                            "sha256": "29ed500fa64eb55fc19dc4124acb300e5dcc54a0f822a301ae99944db",
+                                            "caption": "Check out my new phone!"
+                                        },
+                                        "timestamp": "1454119029",
+                                        "type": "image"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/id_image": [
+                {
+                    "status": 200,
+                    "body": {
+                        "url": "https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=id_image"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "Check out my new phone!",
+                        "urn": "whatsapp:5678",
+                        "attachments": [
+                            "https://waba-v2.360dialog.io/whatsapp_business/attachments/?mid=id_image"
+                        ],
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "Check out my new phone!",
+                "attachments": [
+                    "https://waba-v2.360dialog.io/whatsapp_business/attachments/?mid=id_image"
+                ],
+                "external_id": "external_id",
+                "created_on": "2025-10-22T02:14:05Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a09b1-d628-7000-a517-f58cbd766d99"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://waba-v2.360dialog.io/id_image",
+                "headers": {
+                    "D360-Api-Key": "the-auth-token"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Video Message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "video": {
+                                            "file": "/usr/local/wamedia/shared/b1cf38-8734-4ad3-b4a1-ef0c10d0d683",
+                                            "id": "id_video",
+                                            "mime_type": "image/jpeg",
+                                            "sha256": "29ed500fa64eb55fc19dc4124acb300e5dcc54a0f822a301ae99944db",
+                                            "caption": "Check out my new phone!"
+                                        },
+                                        "timestamp": "1454119029",
+                                        "type": "video"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/id_video": [
+                {
+                    "status": 200,
+                    "body": {
+                        "url": "https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=id_video"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "Check out my new phone!",
+                        "urn": "whatsapp:5678",
+                        "attachments": [
+                            "https://waba-v2.360dialog.io/whatsapp_business/attachments/?mid=id_video"
+                        ],
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "Check out my new phone!",
+                "attachments": [
+                    "https://waba-v2.360dialog.io/whatsapp_business/attachments/?mid=id_video"
+                ],
+                "external_id": "external_id",
+                "created_on": "2025-11-12T17:20:05Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a7914-d9e8-7000-bdb0-d3168babc8e9"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://waba-v2.360dialog.io/id_video",
+                "headers": {
+                    "D360-Api-Key": "the-auth-token"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Audio Message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "audio": {
+                                            "file": "/usr/local/wamedia/shared/b1cf38-8734-4ad3-b4a1-ef0c10d0d683",
+                                            "id": "id_audio",
+                                            "mime_type": "image/jpeg",
+                                            "sha256": "29ed500fa64eb55fc19dc4124acb300e5dcc54a0f822a301ae99944db",
+                                            "caption": "Check out my new phone!"
+                                        },
+                                        "timestamp": "1454119029",
+                                        "type": "audio"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/id_audio": [
+                {
+                    "status": 200,
+                    "body": {
+                        "url": "https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=id_audio"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "Check out my new phone!",
+                        "urn": "whatsapp:5678",
+                        "attachments": [
+                            "https://waba-v2.360dialog.io/whatsapp_business/attachments/?mid=id_audio"
+                        ],
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "Check out my new phone!",
+                "attachments": [
+                    "https://waba-v2.360dialog.io/whatsapp_business/attachments/?mid=id_audio"
+                ],
+                "external_id": "external_id",
+                "created_on": "2025-11-10T05:33:05Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a6c40-dac8-7000-bd06-ba7478d010ee"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://waba-v2.360dialog.io/id_audio",
+                "headers": {
+                    "D360-Api-Key": "the-auth-token"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Location Message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "location": {
+                                            "address": "Main Street Beach, Santa Cruz, CA",
+                                            "latitude": 0.0,
+                                            "longitude": 1.0,
+                                            "name": "Main Street Beach",
+                                            "url": "https://foursquare.com/v/4d7031d35b5df7744"
+                                        },
+                                        "timestamp": "1454119029",
+                                        "type": "location"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "",
+                        "urn": "whatsapp:5678",
+                        "attachments": [
+                            "geo:0.000000,1.000000"
+                        ],
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "",
+                "attachments": [
+                    "geo:0.000000,1.000000"
+                ],
+                "external_id": "external_id",
+                "created_on": "2025-11-25T18:12:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019abc37-2168-7000-8b32-662daf3a4ab8"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive group Message WAC, ignored",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "group_id": "555555555",
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "text": {
+                                            "body": "Hello World, group message"
+                                        },
+                                        "type": "text"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring group message"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid JSON",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": "not json",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'o' in literal null (expecting 'u')"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid FROM",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "bla"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "bla",
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "text": {
+                                            "body": "Hello World"
+                                        },
+                                        "type": "text"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "invalid whatsapp id"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid timestamp JSON",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "bla"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "bla",
+                                        "id": "external_id",
+                                        "timestamp": "asdf",
+                                        "text": {
+                                            "body": "Hello World"
+                                        },
+                                        "type": "text"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "invalid timestamp: asdf"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Message WAC with error message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "timestamp": "1454119029",
+                                        "text": {
+                                            "body": "Hello World"
+                                        },
+                                        "type": "unsupported",
+                                        "errors": [
+                                            {
+                                                "code": 131051,
+                                                "details": "Message type is not currently supported",
+                                                "title": "Unsupported message type"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": [
+                {
+                    "code": "external",
+                    "ext_code": "131051",
+                    "message": "Unsupported message type"
+                }
+            ]
+        }
+    },
+    {
+        "label": "Receive error message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "errors": [
+                                    {
+                                        "code": 0,
+                                        "title": "We were unable to authenticate the app user"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": [
+                {
+                    "code": "external",
+                    "ext_code": "0",
+                    "message": "We were unable to authenticate the app user"
+                }
+            ]
+        }
+    },
+    {
+        "label": "Receive Valid Status",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "statuses": [
+                                    {
+                                        "id": "external_id",
+                                        "recipient_id": "5678",
+                                        "status": "sent",
+                                        "timestamp": "1454119029",
+                                        "type": "message",
+                                        "conversation": {
+                                            "id": "CONVERSATION_ID",
+                                            "expiration_timestamp": 1454119029,
+                                            "origin": {
+                                                "type": "referral_conversion"
+                                            }
+                                        },
+                                        "pricing": {
+                                            "pricing_model": "CBP",
+                                            "billable": false,
+                                            "category": "referral_conversion"
+                                        }
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "status": "S",
+                        "external_id": "external_id"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "channel_id": 101,
+                "external_identifier": "external_id",
+                "status": "S",
+                "log_uuid": "019aa37d-2ca8-7000-a54f-2a9146cc6bd0"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Status with error message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "statuses": [
+                                    {
+                                        "id": "external_id",
+                                        "recipient_id": "5678",
+                                        "status": "failed",
+                                        "timestamp": "1454119029",
+                                        "type": "message",
+                                        "conversation": {
+                                            "id": "CONVERSATION_ID",
+                                            "expiration_timestamp": 1454119029,
+                                            "origin": {
+                                                "type": "referral_conversion"
+                                            }
+                                        },
+                                        "pricing": {
+                                            "pricing_model": "CBP",
+                                            "billable": false,
+                                            "category": "referral_conversion"
+                                        },
+                                        "errors": [
+                                            {
+                                                "code": 131014,
+                                                "title": "Request for url https://URL.jpg failed with error: 404 (Not Found)"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "status": "F",
+                        "external_id": "external_id"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "channel_id": 101,
+                "external_identifier": "external_id",
+                "status": "F",
+                "log_uuid": "019b0c47-0a88-7000-8fb6-e2f463cdb16e"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": [
+                {
+                    "code": "external",
+                    "ext_code": "131014",
+                    "message": "Request for url https://URL.jpg failed with error: 404 (Not Found)"
+                }
+            ]
+        }
+    },
+    {
+        "label": "Receive Invalid Status",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "statuses": [
+                                    {
+                                        "id": "external_id",
+                                        "recipient_id": "5678",
+                                        "status": "in_orbit",
+                                        "timestamp": "1454119029",
+                                        "type": "message",
+                                        "conversation": {
+                                            "id": "CONVERSATION_ID",
+                                            "expiration_timestamp": 1454119029,
+                                            "origin": {
+                                                "type": "referral_conversion"
+                                            }
+                                        },
+                                        "pricing": {
+                                            "pricing_model": "CBP",
+                                            "billable": false,
+                                            "category": "referral_conversion"
+                                        }
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "unknown status: in_orbit"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Ignore Status",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "statuses": [
+                                    {
+                                        "id": "external_id",
+                                        "recipient_id": "5678",
+                                        "status": "deleted",
+                                        "timestamp": "1454119029",
+                                        "type": "message",
+                                        "conversation": {
+                                            "id": "CONVERSATION_ID",
+                                            "expiration_timestamp": 1454119029,
+                                            "origin": {
+                                                "type": "referral_conversion"
+                                            }
+                                        },
+                                        "pricing": {
+                                            "pricing_model": "CBP",
+                                            "billable": false,
+                                            "category": "referral_conversion"
+                                        }
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring status: deleted"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Interactive Button Reply Message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "interactive": {
+                                            "type": "button_reply",
+                                            "button_reply": {
+                                                "id": "id_button_reply",
+                                                "title": "Yes"
+                                            }
+                                        },
+                                        "timestamp": "1454119029",
+                                        "type": "interactive"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "Yes",
+                        "urn": "whatsapp:5678",
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "Yes",
+                "external_id": "external_id",
+                "created_on": "2025-10-24T21:47:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019a1830-7808-7000-b26f-27a65486d1ba"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Interactive List Reply Message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "interactive": {
+                                            "type": "list_reply",
+                                            "list_reply": {
+                                                "id": "id_list_reply",
+                                                "title": "Yes"
+                                            }
+                                        },
+                                        "timestamp": "1454119029",
+                                        "type": "interactive"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "Yes",
+                        "urn": "whatsapp:5678",
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "Yes",
+                "external_id": "external_id",
+                "created_on": "2025-11-28T17:11:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019acb72-5c88-7000-a91c-11d2b81eda55"
+                ],
+                "contact_name": "Kerry Fisher"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Interactive Flow Reply Message",
+        "url": "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "8856996819413533",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "metadata": {
+                                    "display_phone_number": "+250 788 123 200",
+                                    "phone_number_id": "1234567890"
+                                },
+                                "contacts": [
+                                    {
+                                        "profile": {
+                                            "name": "Kerry Fisher"
+                                        },
+                                        "wa_id": "5678"
+                                    }
+                                ],
+                                "messages": [
+                                    {
+                                        "from": "5678",
+                                        "id": "external_id",
+                                        "interactive": {
+                                            "type": "nfm_reply",
+                                            "nfm_reply": {
+                                                "name": "flow",
+                                                "body": "Sent",
+                                                "response_json": "{\"flow_token\": \"fl0w+t0k3n\", \"first_name\": \"Bob\", \"age\": \"32\"}"
+                                            }
+                                        },
+                                        "timestamp": "1454119029",
+                                        "type": "interactive"
+                                    }
+                                ]
+                            },
+                            "field": "messages"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                        "msg_uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                        "text": "Sent",
+                        "urn": "whatsapp:5678",
+                        "external_id": "external_id",
+                        "received_on": "2016-01-30T01:57:09Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a5a86-a1a0-7000-961a-4146db29db12",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "whatsapp:5678",
+                "text": "Sent",
+                "external_id": "external_id",
+                "created_on": "2025-12-17T05:11:03Z",
+                "received_on": "2016-01-30T01:57:09Z",
+                "log_uuids": [
+                    "019b2ab8-0288-7000-8c19-1e19cf344dc6"
+                ],
+                "contact_name": "Kerry Fisher",
+                "payload": {
+                    "flow_token": "fl0w+t0k3n",
+                    "first_name": "Bob",
+                    "age": "32"
+                }
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]
