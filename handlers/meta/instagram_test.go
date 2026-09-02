@@ -22,7 +22,6 @@ var instgramTestChannels = []*models.Channel{
 
 func TestInstagramIncoming(t *testing.T) {
 	RunIncomingTests(t, instgramTestChannels, newHandler("IG", "Instagram"), "testdata/instagram_incoming.json", &IncomingOptions{Sign: addValidSignature, NoInvalidChannelCheck: true})
-	RunIncomingTests(t, instgramTestChannels, newHandler("IG", "Instagram"), "testdata/instagram_verify.json", &IncomingOptions{NoInvalidChannelCheck: true})
 }
 
 func TestInstagramOutgoing(t *testing.T) {

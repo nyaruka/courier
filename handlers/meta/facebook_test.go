@@ -31,7 +31,6 @@ var facebookTestChannels = []*models.Channel{
 
 func TestFacebookIncoming(t *testing.T) {
 	RunIncomingTests(t, facebookTestChannels, newHandler("FBA", "Facebook"), "testdata/facebook_incoming.json", &IncomingOptions{Sign: addValidSignature, NoInvalidChannelCheck: true})
-	RunIncomingTests(t, facebookTestChannels, newHandler("FBA", "Facebook"), "testdata/facebook_verify.json", &IncomingOptions{NoInvalidChannelCheck: true})
 }
 
 func TestFacebookDescribeURN(t *testing.T) {

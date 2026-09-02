@@ -1333,5 +1333,69 @@
             "type": "receive",
             "errors": []
         }
+    },
+    {
+        "label": "Valid Secret",
+        "url": "/c/fba/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": "yarchallenge"
+        },
+        "log": null
+    },
+    {
+        "label": "Verify No Mode",
+        "url": "/c/fba/receive",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown request"
+                    }
+                ]
+            }
+        },
+        "log": null
+    },
+    {
+        "label": "Verify No Secret",
+        "url": "/c/fba/receive?hub.mode=subscribe",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "token does not match secret"
+                    }
+                ]
+            }
+        },
+        "log": null
+    },
+    {
+        "label": "Invalid Secret",
+        "url": "/c/fba/receive?hub.mode=subscribe&hub.verify_token=blah",
+        "unsigned": true,
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "token does not match secret"
+                    }
+                ]
+            }
+        },
+        "log": null
     }
 ]

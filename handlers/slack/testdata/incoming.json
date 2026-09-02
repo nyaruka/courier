@@ -399,5 +399,53 @@
             "type": "receive",
             "errors": []
         }
+    },
+    {
+        "label": "Valid token",
+        "url": "/c/sl/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "headers": {
+            "content-type": "text/plain"
+        },
+        "data": {
+            "token": "one-long-verification-token",
+            "challenge": "challenge123",
+            "type": "url_verification"
+        },
+        "response": {
+            "status": 200,
+            "body": "challenge123"
+        },
+        "log": {
+            "type": "webhook_verify",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid token",
+        "url": "/c/sl/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+        "headers": {
+            "content-type": "text/plain"
+        },
+        "data": {
+            "token": "abc321",
+            "challenge": "challenge123",
+            "type": "url_verification"
+        },
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "wrong validation token for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c568c"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "webhook_verify",
+            "errors": []
+        }
     }
 ]

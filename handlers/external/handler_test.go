@@ -56,7 +56,6 @@ func TestOutgoing(t *testing.T) {
 		models.ConfigSendMethod: http.MethodGet,
 	})
 	RunOutgoingTests(t, getSmartChannel, newHandler, "testdata/outgoing_get_smart.json", nil)
-	RunOutgoingTests(t, getSmartChannel, newHandler, "testdata/outgoing_get_smart_encoding.json", nil)
 
 	postChannel := newChannel("US", phone, map[string]any{
 		models.ConfigSendURL:    "http://example.com/send",
@@ -80,7 +79,6 @@ func TestOutgoing(t *testing.T) {
 		models.ConfigSendMethod: http.MethodPost,
 	})
 	RunOutgoingTests(t, postSmartChannel, newHandler, "testdata/outgoing_post_smart.json", nil)
-	RunOutgoingTests(t, postSmartChannel, newHandler, "testdata/outgoing_post_smart_encoding.json", nil)
 
 	jsonChannel := newChannel("US", phone, map[string]any{
 		models.ConfigSendURL:     "http://example.com/send",
