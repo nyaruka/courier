@@ -4,18 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/web"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,14 +24,14 @@ import (
 // RequestPrepFunc is our type for a hook for tests to use before a request is fired in a test
 type RequestPrepFunc func(*http.Request)
 
-func makeHandlerRequest(tb testing.TB, s *web.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, requestPrepFunc RequestPrepFunc) (int, []byte) {
+func makeHandlerRequest(t *testing.T, s *web.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, requestPrepFunc RequestPrepFunc) (int, []byte) {
 	var req *http.Request
 	var err error
 	url := fmt.Sprintf("https://%s%s", s.Runtime().Config.Domain, path)
 
 	if data != "" {
 		req, err = http.NewRequest(http.MethodPost, url, strings.NewReader(data))
-		require.Nil(tb, err)
+		require.Nil(t, err)
 
 		// guess our content type
 		contentType := "application/x-www-form-urlencoded"
@@ -46,15 +46,15 @@ func makeHandlerRequest(tb testing.TB, s *web.Server, path string, headers map[s
 		bodyMultipartWriter := multipart.NewWriter(&body)
 		for k, v := range multipartFormFields {
 			fieldWriter, err := bodyMultipartWriter.CreateFormField(k)
-			require.Nil(tb, err)
+			require.Nil(t, err)
 			_, err = fieldWriter.Write([]byte(v))
-			require.Nil(tb, err)
+			require.Nil(t, err)
 		}
 		contentType := fmt.Sprintf("multipart/form-data;boundary=%v", bodyMultipartWriter.Boundary())
 		bodyMultipartWriter.Close()
 
 		req, err = http.NewRequest(http.MethodPost, url, bytes.NewReader(body.Bytes()))
-		require.Nil(tb, err)
+		require.Nil(t, err)
 		req.Header.Set("Content-Type", contentType)
 	} else {
 		req, err = http.NewRequest(http.MethodGet, url, nil)
@@ -64,7 +64,7 @@ func makeHandlerRequest(tb testing.TB, s *web.Server, path string, headers map[s
 		req.Header.Set(key, val)
 	}
 
-	require.Nil(tb, err)
+	require.Nil(t, err)
 
 	if requestPrepFunc != nil {
 		requestPrepFunc(req)
@@ -76,22 +76,37 @@ func makeHandlerRequest(tb testing.TB, s *web.Server, path string, headers map[s
 	return rr.Code, rr.Body.Bytes()
 }
 
-// localOnlyTransport passes through requests to test servers on this host and rejects everything else
-type localOnlyTransport struct {
-	http.RoundTripper
+// noNetworkTransport fails every request, so that a call a handler makes which its case hasn't mocked is caught here
+// rather than reaching a real API
+type noNetworkTransport struct{}
+
+func (t noNetworkTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	return nil, fmt.Errorf("handler tests can't make unmocked requests: %s %s", r.Method, r.URL)
 }
 
-func (t localOnlyTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	if host := r.URL.Hostname(); host != "localhost" && host != "127.0.0.1" && host != "::1" {
-		return nil, fmt.Errorf("handler tests can't make requests outside this host: %s", r.URL)
+// gives the runtime a single HTTP client, shared by all three of its clients so that a case's transport intercepts
+// every request a handler makes via any of them
+func installTestClient(rt *runtime.Runtime) *http.Client {
+	client := &http.Client{Transport: httpx.WithTraces(noNetworkTransport{}), Timeout: 30 * time.Second}
+	rt.HTTP.Default = client
+	rt.HTTP.Proxied = client
+	rt.HTTP.Attachments = client
+	return client
+}
+
+// gives the client the transport for a case: one answering with the case's mocks if it has any, and otherwise one
+// which fails every request. Tracing is wrapped around either, since that's what produces the channel logs.
+func setCaseTransport(client *http.Client, mocks map[string][]*httpx.MockResponse) *httpx.MocksTransport {
+	if len(mocks) == 0 {
+		client.Transport = httpx.WithTraces(noNetworkTransport{})
+		return nil
 	}
-	return t.RoundTripper.RoundTrip(r)
+	mockHTTP := httpx.WithMocks(nil, mocks)
+	client.Transport = httpx.WithTraces(mockHTTP)
+	return mockHTTP
 }
 
 func newServer(rt *runtime.Runtime) *web.Server {
-	// for benchmarks, log to null
-	log.SetOutput(io.Discard)
-
 	rt.Config.FacebookWebhookSecret = "fb_webhook_secret"
 	rt.Config.FacebookApplicationSecret = "fb_app_secret"
 	rt.Config.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
@@ -103,8 +118,8 @@ func contactQueueKey(ch *models.Channel, msg *models.MsgOut) string {
 	return fmt.Sprintf("c:%d:%d", ch.OrgID(), msg.Contact_.ID)
 }
 
-// asserts which contact_changed task the completed send queued: expectedNewURN is empty for the cases where none
-// should be, which is what covers a send reporting a URN the contact already has.
+// returns the new URNs of the contact_changed tasks queued for the contact of the given message, which is how a send
+// reporting a URN the contact already has can be seen to queue none
 func queuedContactChangedURNs(t *testing.T, rt *runtime.Runtime, ch *models.Channel, msg *models.MsgOut) []urns.URN {
 	rc := rt.VK.Get()
 	defer rc.Close()

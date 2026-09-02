@@ -24,11 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Handler test cases live in JSON files alongside the tests, each file holding the cases for one channel
-// configuration. A case is its inputs (the request or message, and any mocked HTTP responses) followed by what the
-// handler did with them, which is written by running the tests with -update and checked against on every other run.
-// The types below are the building blocks of those files.
-
 // HTTPBody is a request or response body. In test files a body which is a JSON object or array is written as
 // that JSON, and any other body is written as a string. A body can also be written as a string even though it's
 // JSON, which preserves its exact bytes - needed when a signature is calculated over them.

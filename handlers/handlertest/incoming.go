@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"slices"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -92,13 +91,7 @@ func RunIncomingTests(t *testing.T, chs []*models.Channel, newFn channels.NewHan
 	testsuite.ResetDB(t, rt)
 	testsuite.ResetValkey(t, rt)
 
-	// cases which mock HTTP get a mocking transport, and the rest fail anything leaving the host so that a handler
-	// which isn't pointed at a test server is caught here rather than calling a real channel API. Either way tracing
-	// stays wrapped around the transport since that's what produces the channel logs.
-	client := &http.Client{Transport: httpx.WithTraces(localOnlyTransport{http.DefaultTransport}), Timeout: 30 * time.Second}
-	rt.HTTP.Default = client
-	rt.HTTP.Proxied = client
-	rt.HTTP.Attachments = client
+	client := installTestClient(rt)
 
 	// data: attachments are saved to storage as they're received so ensure the bucket exists
 	rt.S3.Client.CreateBucket(t.Context(), &s3.CreateBucketInput{Bucket: aws.String(rt.Config.S3AttachmentsBucket)})
@@ -135,13 +128,7 @@ func RunIncomingTests(t *testing.T, chs []*models.Channel, newFn channels.NewHan
 			handledEvents = nil
 			handledLogs = nil
 
-			var mockHTTP *httpx.MocksTransport
-			if len(tc.HTTPMocks) > 0 {
-				mockHTTP = httpx.WithMocks(nil, tc.HTTPMocks)
-				client.Transport = httpx.WithTraces(mockHTTP)
-			} else {
-				client.Transport = httpx.WithTraces(localOnlyTransport{http.DefaultTransport})
-			}
+			mockHTTP := setCaseTransport(client, tc.HTTPMocks)
 
 			status, body := makeHandlerRequest(t, s, tc.URL, tc.Headers, string(tc.Data.Bytes()), tc.MultipartForm, opts.signer(tc))
 

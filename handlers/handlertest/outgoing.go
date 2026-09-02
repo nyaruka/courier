@@ -3,7 +3,6 @@ package handlertest
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"slices"
 	"testing"
 	"time"
@@ -121,13 +120,7 @@ func RunOutgoingTests(t *testing.T, ch *models.Channel, newFn channels.NewHandle
 	testsuite.ResetDB(t, rt)
 	testsuite.ResetValkey(t, rt)
 
-	// use a plain HTTP client so per-case mock transports can be installed, shared by all three clients so
-	// installing a mocking transport intercepts every request a handler makes via any of them. Tracing stays
-	// wrapped around whatever transport a case installs, since that's what produces the channel logs.
-	client := &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
-	rt.HTTP.Default = client
-	rt.HTTP.Proxied = client
-	rt.HTTP.Attachments = client
+	client := installTestClient(rt)
 
 	if opts.Setup != nil {
 		opts.Setup(t, rt)
@@ -155,14 +148,7 @@ func RunOutgoingTests(t *testing.T, ch *models.Channel, newFn channels.NewHandle
 			rc.Close()
 			require.NoError(t, err)
 
-			// reset to the default transport each case, then install a mocking transport when the case provides
-			// mocks - always inside tracing, which is what the handler's channel log is built from
-			var mockHTTP *httpx.MocksTransport
-			client.Transport = httpx.WithTraces(nil)
-			if len(tc.HTTPMocks) > 0 {
-				mockHTTP = httpx.WithMocks(nil, tc.HTTPMocks)
-				client.Transport = httpx.WithTraces(mockHTTP)
-			}
+			mockHTTP := setCaseTransport(client, tc.HTTPMocks)
 
 			clog := models.NewChannelLogForSend(msg, handler.RedactValues(ch))
 			sendCtx, cancel := context.WithTimeout(ctx, time.Millisecond*100)
@@ -179,8 +165,6 @@ func RunOutgoingTests(t *testing.T, ch *models.Channel, newFn channels.NewHandle
 			actual.NewURN = ""
 
 			if mockHTTP != nil {
-				client.Transport = httpx.WithTraces(nil)
-
 				assert.False(t, mockHTTP.HasUnused(), "unused HTTP mocks")
 
 				for _, r := range mockHTTP.Requests() {

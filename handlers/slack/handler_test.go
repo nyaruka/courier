@@ -2,8 +2,6 @@ package slack
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/core/models"
@@ -11,6 +9,7 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/web"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,25 +30,15 @@ func TestOutgoing(t *testing.T) {
 	RunOutgoingTests(t, testChannels[0], newHandler, "testdata/outgoing.json", opts)
 }
 
-func buildMockSlackService() *httptest.Server {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/users.info" {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"user":{"real_name":"dummy user"}}`))
-		}
-	}))
-
-	apiURL = server.URL
-
-	return server
-}
-
 func TestDescribeURN(t *testing.T) {
-	defer func(u string) { apiURL = u }(apiURL)
-	server := buildMockSlackService()
-	defer server.Close()
+	rt := runtime.NewTestRuntime(runtime.NewDefaultConfig())
+	rt.HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+		"https://slack.com/api/users.info?user=U012345": {
+			httpx.NewMockResponse(200, nil, []byte(`{"user":{"real_name":"dummy user"}}`)),
+		},
+	})
 
-	handler := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(newHandler)
+	handler := web.NewServer(rt).MountHandler(newHandler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 	urn, _ := urns.New(urns.Slack, "U012345")
 

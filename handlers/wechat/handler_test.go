@@ -3,8 +3,6 @@ package wechat
 import (
 	"context"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -35,58 +33,20 @@ func setupBackend(t *testing.T, rt *runtime.Runtime) {
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 }
 
-func buildMockWCAPI() *httptest.Server {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		accessToken := r.URL.Query().Get("access_token")
-		defer r.Body.Close()
-
-		// a request for an access token is the one request that doesn't carry one
-		if strings.HasSuffix(r.URL.Path, "/token") {
-			w.Write([]byte(`{"access_token": "ACCESS_TOKEN"}`))
-			return
-		}
-
-		if accessToken != "ACCESS_TOKEN" {
-			http.Error(w, "invalid file", http.StatusForbidden)
-			return
-		}
-
-		if strings.HasSuffix(r.URL.Path, "user/info") {
-			openID := r.URL.Query().Get("openid")
-
-			// user has a name
-			if strings.HasSuffix(openID, "KNOWN_OPEN_ID") {
-				w.Write([]byte(`{ "nickname": "John Doe"}`))
-				return
-			}
-
-			// no name
-			w.Write([]byte(`{ "nickname": ""}`))
-
-		}
-
-	}))
-	sendURL = server.URL
-
-	return server
-}
-
 func TestDescribeURN(t *testing.T) {
-	defer func(u string) { sendURL = u }(sendURL)
-	WCAPI := buildMockWCAPI()
-	defer WCAPI.Close()
-
 	_, rt := testsuite.Runtime(t)
 	testsuite.ResetValkey(t, rt)
+	setupBackend(t, rt)
 
-	// use a plain client so the handler can reach the mock API on localhost
-	rt.HTTP.Default = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
-	rt.HTTP.Proxied = rt.HTTP.Default
-
-	// ensure there's a cached access token
-	rc := rt.VK.Get()
-	defer rc.Close()
-	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+	// lookups are made with the cached access token
+	rt.HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+		"https://api.weixin.qq.com/cgi-bin/user/info?access_token=ACCESS_TOKEN&openid=abcdeKNOWN_OPEN_ID": {
+			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"nickname": "John Doe"}`)),
+		},
+		"https://api.weixin.qq.com/cgi-bin/user/info?access_token=ACCESS_TOKEN&openid=foo__NOT__KNOWN": {
+			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"nickname": ""}`)),
+		},
+	})
 
 	s := web.NewServer(rt)
 	handler := s.MountHandler(newHandler).(*handler)
@@ -102,7 +62,7 @@ func TestDescribeURN(t *testing.T) {
 
 	for _, tc := range tcs {
 		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn, clog)
-		assert.Equal(t, metadata, tc.expectedMetadata)
+		assert.Equal(t, tc.expectedMetadata, metadata)
 	}
 
 	AssertChannelLogRedaction(t, clog, []string{"secret123"})
@@ -111,14 +71,8 @@ func TestDescribeURN(t *testing.T) {
 func TestBuildAttachmentRequest(t *testing.T) {
 	_, rt := testsuite.Runtime(t)
 
-	// reset send URL
-	sendURL = "https://api.weixin.qq.com/cgi-bin"
-
 	// ensure that we start with no cached token
 	testsuite.ResetValkey(t, rt)
-
-	rt.HTTP.Default = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
-	rt.HTTP.Proxied = rt.HTTP.Default
 
 	s := web.NewServer(rt)
 	rt.HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
@@ -148,14 +102,8 @@ func TestBuildAttachmentRequest(t *testing.T) {
 func TestFetchAccessTokenThrottled(t *testing.T) {
 	_, rt := testsuite.Runtime(t)
 
-	// reset send URL
-	sendURL = "https://api.weixin.qq.com/cgi-bin"
-
 	// ensure that we start with no cached token
 	testsuite.ResetValkey(t, rt)
-
-	rt.HTTP.Default = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
-	rt.HTTP.Proxied = rt.HTTP.Default
 
 	s := web.NewServer(rt)
 	rt.HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
@@ -172,22 +120,11 @@ func TestFetchAccessTokenThrottled(t *testing.T) {
 }
 
 func TestSendEvent(t *testing.T) {
-	// other tests repoint sendURL at mock servers, so pin it for this test
-	defer func(u string) { sendURL = u }(sendURL)
-	sendURL = "https://api.weixin.qq.com/cgi-bin"
-
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US", []string{urns.WeChat.Prefix}, map[string]any{configAppSecret: "secret123", configAppID: "app-id"})
 
 	_, rt := testsuite.Runtime(t)
 	testsuite.ResetValkey(t, rt)
-
-	rt.HTTP.Default = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
-	rt.HTTP.Proxied = rt.HTTP.Default
-
-	// ensure there's a cached access token
-	rc := rt.VK.Get()
-	defer rc.Close()
-	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+	setupBackend(t, rt)
 
 	s := web.NewServer(rt)
 	h := s.MountHandler(newHandler).(*handler)
