@@ -1,0 +1,583 @@
+[
+    {
+        "label": "Receive Message",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "message_new",
+            "object": {
+                "message": {
+                    "id": 1,
+                    "date": 1580125800,
+                    "from_id": 123456,
+                    "text": "Hello World",
+                    "attachments": []
+                }
+            },
+            "secret": "abc123xyz"
+        },
+        "http_mocks": {
+            "https://api.vk.com/method/users.get.json*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "response": []
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": "ok"
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "vk:123456",
+                "text": "Hello World",
+                "external_id": "1",
+                "created_on": "2025-12-17T22:05:03Z",
+                "received_on": "2020-01-27T11:50:00Z",
+                "log_uuids": [
+                    "019b2e58-5ac8-7000-b5ae-79147d8e44c7"
+                ]
+            }
+        ],
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.vk.com/method/users.get.json?access_token=token123xyz&user_ids=123456&v=5.103"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Empty Message",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "message_new",
+            "object": {
+                "message": {
+                    "id": 1,
+                    "date": 1580125800,
+                    "from_id": 123456,
+                    "text": "",
+                    "attachments": []
+                }
+            },
+            "secret": "abc123xyz"
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "no text or attachment"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive First Photo Attachment",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "message_new",
+            "object": {
+                "message": {
+                    "id": 1,
+                    "date": 1580125800,
+                    "from_id": 123456,
+                    "text": "",
+                    "attachments": [
+                        {
+                            "type": "photo",
+                            "photo": {
+                                "sizes": [
+                                    {
+                                        "type": "s",
+                                        "url": "https://foo.bar/s-photo.jpg",
+                                        "width": 60,
+                                        "height": 75
+                                    },
+                                    {
+                                        "type": "m",
+                                        "url": "https://foo.bar/m-photo.jpg",
+                                        "width": 104,
+                                        "height": 130
+                                    },
+                                    {
+                                        "type": "x",
+                                        "url": "https://foo.bar/x-photo.jpg",
+                                        "width": 483,
+                                        "height": 604
+                                    },
+                                    {
+                                        "type": "y",
+                                        "url": "https://foo.bar/y-photo.jpg",
+                                        "width": 646,
+                                        "height": 807
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "graffiti",
+                            "graffiti": {
+                                "url": "https://foo.bar/graffiti.png"
+                            }
+                        }
+                    ]
+                }
+            },
+            "secret": "abc123xyz"
+        },
+        "response": {
+            "status": 200,
+            "body": "ok"
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "vk:123456",
+                "text": "",
+                "attachments": [
+                    "https://foo.bar/x-photo.jpg"
+                ],
+                "external_id": "1",
+                "created_on": "2025-11-25T18:13:03Z",
+                "received_on": "2020-01-27T11:50:00Z",
+                "log_uuids": [
+                    "019abc38-0bc8-7000-80c8-f9f0b35584cf"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive First Graffiti Attachment",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "message_new",
+            "object": {
+                "message": {
+                    "id": 1,
+                    "date": 1580125800,
+                    "from_id": 123456,
+                    "text": "",
+                    "attachments": [
+                        {
+                            "type": "graffiti",
+                            "graffiti": {
+                                "url": "https://foo.bar/graffiti.png"
+                            }
+                        },
+                        {
+                            "type": "audio_message",
+                            "audio_message": {
+                                "link_mp3": "https://foo.bar/audio.mp3"
+                            }
+                        }
+                    ]
+                }
+            },
+            "secret": "abc123xyz"
+        },
+        "response": {
+            "status": 200,
+            "body": "ok"
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "vk:123456",
+                "text": "",
+                "attachments": [
+                    "https://foo.bar/graffiti.png"
+                ],
+                "external_id": "1",
+                "created_on": "2025-10-14T20:37:03Z",
+                "received_on": "2020-01-27T11:50:00Z",
+                "log_uuids": [
+                    "0199e470-c9c8-7000-9548-25209be8b0b9"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive First Sticker Attachment",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "message_new",
+            "object": {
+                "message": {
+                    "id": 1,
+                    "date": 1580125800,
+                    "from_id": 123456,
+                    "text": "",
+                    "attachments": [
+                        {
+                            "type": "sticker",
+                            "sticker": {
+                                "images": [
+                                    {
+                                        "url": "https://foo.bar/64x64_sticker.png",
+                                        "width": 64,
+                                        "height": 64
+                                    },
+                                    {
+                                        "url": "https://foo.bar/128x128_sticker.png",
+                                        "width": 128,
+                                        "height": 128
+                                    },
+                                    {
+                                        "url": "https://foo.bar/256x256_sticker.png",
+                                        "width": 256,
+                                        "height": 256
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "graffiti",
+                            "graffiti": {
+                                "url": "https://foo.bar/graffiti.png"
+                            }
+                        }
+                    ]
+                }
+            },
+            "secret": "abc123xyz"
+        },
+        "response": {
+            "status": 200,
+            "body": "ok"
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "vk:123456",
+                "text": "",
+                "attachments": [
+                    "https://foo.bar/128x128_sticker.png"
+                ],
+                "external_id": "1",
+                "created_on": "2025-12-21T18:36:03Z",
+                "received_on": "2020-01-27T11:50:00Z",
+                "log_uuids": [
+                    "019b4232-7268-7000-a148-aa5daf53f265"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive First Audio Attachment",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "message_new",
+            "object": {
+                "message": {
+                    "id": 1,
+                    "date": 1580125800,
+                    "from_id": 123456,
+                    "text": "",
+                    "attachments": [
+                        {
+                            "type": "audio_message",
+                            "audio_message": {
+                                "link_mp3": "https://foo.bar/audio.mp3"
+                            }
+                        },
+                        {
+                            "type": "graffiti",
+                            "graffiti": {
+                                "url": "https://foo.bar/graffiti.png"
+                            }
+                        }
+                    ]
+                }
+            },
+            "secret": "abc123xyz"
+        },
+        "response": {
+            "status": 200,
+            "body": "ok"
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "vk:123456",
+                "text": "",
+                "attachments": [
+                    "https://foo.bar/audio.mp3"
+                ],
+                "external_id": "1",
+                "created_on": "2025-12-11T13:59:03Z",
+                "received_on": "2020-01-27T11:50:00Z",
+                "log_uuids": [
+                    "019b0db5-4088-7000-90c1-be05a044a5e6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive First Doc Attachment",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "message_new",
+            "object": {
+                "message": {
+                    "id": 1,
+                    "date": 1580125800,
+                    "from_id": 123456,
+                    "text": "",
+                    "attachments": [
+                        {
+                            "type": "doc",
+                            "doc": {
+                                "url": "https://foo.bar/doc.pdf"
+                            }
+                        },
+                        {
+                            "type": "audio_message",
+                            "audio_message": {
+                                "link_mp3": "https://foo.bar/audio.mp3"
+                            }
+                        }
+                    ]
+                }
+            },
+            "secret": "abc123xyz"
+        },
+        "response": {
+            "status": 200,
+            "body": "ok"
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "vk:123456",
+                "text": "",
+                "attachments": [
+                    "https://foo.bar/doc.pdf"
+                ],
+                "external_id": "1",
+                "created_on": "2025-11-01T13:31:03Z",
+                "received_on": "2020-01-27T11:50:00Z",
+                "log_uuids": [
+                    "019a3f9d-3e08-7000-b102-14353956531e"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Message Keyboard",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "message_new",
+            "object": {
+                "message": {
+                    "id": 1,
+                    "date": 1580125800,
+                    "from_id": 123456,
+                    "text": "Yes",
+                    "payload": "\"Yes\""
+                }
+            },
+            "secret": "abc123xyz"
+        },
+        "response": {
+            "status": 200,
+            "body": "ok"
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "vk:123456",
+                "text": "Yes",
+                "external_id": "1",
+                "created_on": "2025-11-24T10:46:03Z",
+                "received_on": "2020-01-27T11:50:00Z",
+                "log_uuids": [
+                    "019ab578-7228-7000-81b4-08cd3e5dbf4b"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Geolocation Attachment",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "message_new",
+            "object": {
+                "message": {
+                    "id": 1,
+                    "date": 1580125800,
+                    "from_id": 123456,
+                    "text": "",
+                    "attachments": [],
+                    "geo": {
+                        "coordinates": {
+                            "latitude": -9.652278,
+                            "longitude": -35.701095
+                        }
+                    }
+                }
+            },
+            "secret": "abc123xyz"
+        },
+        "response": {
+            "status": 200,
+            "body": "ok"
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+                "urn": "vk:123456",
+                "text": "",
+                "attachments": [
+                    "geo:-9.652278,-35.701095"
+                ],
+                "external_id": "1",
+                "created_on": "2025-11-30T04:53:03Z",
+                "received_on": "2020-01-27T11:50:00Z",
+                "log_uuids": [
+                    "019ad31b-6bc8-7000-a011-f4e0db12b35f"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid secret",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "some_event",
+            "object": {},
+            "secret": "abc123xyz"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, no message or server verification event"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing secret",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "some_event",
+            "object": {}
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "request JSON doesn't match required schema: Key: 'moPayload.SecretKey' Error:Field validation for 'SecretKey' failed on the 'required' tag"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid secret",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "some_event",
+            "object": {},
+            "secret": "0987654321"
+        },
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "wrong secret key"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Verify server",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "confirmation",
+            "secret": "abc123xyz"
+        },
+        "response": {
+            "status": 200,
+            "body": "a1b2c3"
+        },
+        "log": {
+            "type": "webhook_verify",
+            "errors": []
+        }
+    }
+]

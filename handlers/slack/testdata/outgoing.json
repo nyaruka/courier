@@ -1,0 +1,233 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "slack:U0123ABCDEF"
+        },
+        "http_mocks": {
+            "*/chat.postMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "channel": "U0123ABCDEF"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/chat.postMessage",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                "body": {
+                    "channel": "U0123ABCDEF",
+                    "text": "Simple Message"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "slack:U0123ABCDEF"
+        },
+        "http_mocks": {
+            "*/chat.postMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "channel": "U0123ABCDEF"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/chat.postMessage",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                "body": {
+                    "channel": "U0123ABCDEF",
+                    "text": "☺"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Text Auth Error",
+        "msg": {
+            "text": "Hello",
+            "urn": "slack:U0123ABCDEF"
+        },
+        "http_mocks": {
+            "*/chat.postMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": false,
+                        "error": "invalid_auth"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/chat.postMessage",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                "body": {
+                    "channel": "U0123ABCDEF",
+                    "text": "Hello"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "message": "invalid_auth"
+            }
+        },
+        "log_errors": [
+            {
+                "code": "",
+                "message": "invalid_auth"
+            }
+        ]
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Hello",
+            "urn": "slack:U0123ABCDEF"
+        },
+        "http_mocks": {
+            "*/chat.postMessage": [
+                {
+                    "status": 429,
+                    "body": {
+                        "ok": false,
+                        "error": "ratelimited"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/chat.postMessage",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                "body": {
+                    "channel": "U0123ABCDEF",
+                    "text": "Hello"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Response Missing OK",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "slack:U0123ABCDEF"
+        },
+        "http_mocks": {
+            "*/chat.postMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "channel": "U0123ABCDEF"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/chat.postMessage",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                "body": {
+                    "channel": "U0123ABCDEF",
+                    "text": "Simple Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Response Not OK",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "slack:U0123ABCDEF"
+        },
+        "http_mocks": {
+            "*/chat.postMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": false,
+                        "channel": "U0123ABCDEF"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/chat.postMessage",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                "body": {
+                    "channel": "U0123ABCDEF",
+                    "text": "Simple Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    }
+]

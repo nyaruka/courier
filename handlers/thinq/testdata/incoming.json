@@ -1,0 +1,239 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "message=hello+world\u0026from=2065551234\u0026type=sms\u0026to=2065551212",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "hello world",
+                        "urn": "tel:+12065551234",
+                        "received_on": "2025-11-19T17:20:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+12065551234",
+                "text": "hello world",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2025-11-19T17:20:03Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive No Params",
+        "url": "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": " ",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moForm.From' Error:Field validation for 'From' failed on the 'required' tag\nKey: 'moForm.To' Error:Field validation for 'To' failed on the 'required' tag\nKey: 'moForm.Type' Error:Field validation for 'Type' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'from' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'to' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'type' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive attachment as URL",
+        "url": "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "message=http://foo.bar/foo.png\u0026from=2065551234\u0026type=mms\u0026to=2065551212",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019b015d-d020-7000-bf98-9f52fc025bc2",
+                        "text": "",
+                        "urn": "tel:+12065551234",
+                        "attachments": [
+                            "http://foo.bar/foo.png"
+                        ],
+                        "received_on": "2025-12-09T04:28:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b015d-d020-7000-bf98-9f52fc025bc2",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+12065551234",
+                "text": "",
+                "attachments": [
+                    "http://foo.bar/foo.png"
+                ],
+                "created_on": "2025-12-09T04:28:03Z",
+                "received_on": "2025-12-09T04:28:03Z",
+                "log_uuids": [
+                    "019b015d-c468-7000-8895-a0379da49009"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive attachment as base64",
+        "url": "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "message=%2F9j%2F4AAQSkZJRgABAQAASABIAAD%2F4QCYRXhpZgAATU0AKgAAAAgABgEGAAMAAAABAAIAAAESAAMAAAABAAEAAAEaAAUAAAABAAAAVgEbAAUAAAABAAAAXgEoAAMAAAABAAIAAIdpAAQAAAABAAAAZgAAAAAAAABIAAAAAQAAAEgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAAAMigAwAEAAAAAQAAASwAAAAA%2F%2B0AOFBob3Rvc2hvcCAzLjAAOEJJTQQEAAAAAAAAOEJJTQQlAAAAAAAQ1B2M2Y8AsgTpgAmY7PhCfv%2FAABEIASwAyAMBIgACEQEDEQH%2FxAAfAAABBQEBAQEBAQAAAAAAAAAAAQIDBAUGBwgJCgv%2FxAC1EAACAQMDAgQDBQUEBAAAAX0BAgMABBEFEiExQQYTUWEHInEUMoGRoQgjQrHBFVLR8CQzYnKCCQoWFxgZGiUmJygpKjQ1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4eLj5OXm5%2Bjp6vHy8%2FT19vf4%2Bfr%2FxAAfAQADAQEBAQEBAQEBAAAAAAAAAQIDBAUGBwgJCgv%2FxAC1EQACAQIEBAMEBwUEBAABAncAAQIDEQQFITEGEkFRB2FxEyIygQgUQpGhscEJIzNS8BVictEKFiQ04SXxFxgZGiYnKCkqNTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqCg4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2dri4%2BTl5ufo6ery8%2FT19vf4%2Bfr%2F2wBDAAEBAQEBAQIBAQIDAgICAwQDAwMDBAYEBAQEBAYHBgYGBgYGBwcHBwcHBwcICAgICAgJCQkJCQsLCwsLCwsLCwv%2F2wBDAQICAgMDAwUDAwULCAYICwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwv%2F3QAEAA3%2F2gAMAwEAAhEDEQA%2FAP7CWiaM4bnmq06BgGPatqeJ1b5hg1nsuPpXTfuc67mC8Ub7sqMt196x5IZImIcV17QowwaoSxbflYZFN%2BQWOMuYGblKzTCR0NdtPEud3rWRKkYGDU37gc2MoeRmpndjgDFac9ujfNwB6VReHHG0n6UroHpuZzRKxJPelXeDg8%2B%2BanMfoaUybeCgNNVLdSeVEVR%2BVF%2FdFW2VWOen0qEqRyaOfrcEnfUhjEQHyc%2B9aMF0Y8A9BWTNHj5l71btNP1K4YRW0LsWPB2nFaqqr%2BYryvqbjaqHTa7A1mPcOx37OOlR3NreWkjRzxFdhIJ7cVXdioyBzR7ZWLNmO5wuCQPxprSq53Lgn1rnTIxqCWfZzk59qhzjbQDckR%2Bpxisya3J4Y5pkN87DDcgcDNTm4yc4qFJMDFubJVwNvBrGuNOkl4XtXa%2BclW1ihlHTBHpTaT3A8bl08xEzSDpzitJbAleCTmvTH0eGRdoGfbrVJtCZBuNZumLY8xuITGdh6HvVfy1%2Fz%2F8Arr0htFZ%2BCMfhTP7B%2Bv5VDiO1z%2F%2FQ%2Fsru03YNYr4DECumaEueazrmEv8AcAA9q6ZeRgrWOblk2jHSqDEnhjn61tTWzIdrciqn2Tj5OKlxbW4k%2FI5jUJmIwpwRxWOWZmzXZTW3O4gEDgVnvZow%2BU4NSqbfUE%2BpiRyqg2tSSKz4YdDVySAghMHJNayW0caYx%2BdNUu4O273OeSxSUnAwBUE1tHGMEgD16Vs3IEbYWuduZHbj7pp%2By7kylYT7PkZUg%2FSoGUqcGmLNJGeDmtW1h%2B2SKmcFjtqXSFGd3ax0mlQabZ2YhukSW4mIfk4KDHAB%2FnXv3gTUZZo0soAFQEgB1B6%2BlfH3iS%2Bb%2B3JWhY7VO0Y6ccV7T8L9RvI5kIcnkdea54yV2dnJyo%2BtYPA2i%2BYZ79BdOwx%2B8AwB7ADFfF3xa8Ep4L8Um1s%2F%2BPW6UzQ5H3RnBT%2FgJ6e2K%2FQGF%2FMhV%2FUA184%2FtI6UkmhWGu4%2F49pmiYjrtkGf5rWsdyJLTQ%2BNZF2darTAMnNSXNwQcfw1SRnIy3StuSJyqd3ZELeXj5c1eVljTLHH1rMZc9KdzmknFEtzb0N%2BGPfzWgYmU%2FKc1gW92Yhk9varYvXmI46Ucyexok9zR%2B0PEpY84p8eqN908%2FXmstLoN8uM1SecK2KOZWKOlNwj8rxTfMX%2B%2BK5U3jg80fbD%2Fn%2F9dR7r1Y07H%2F%2FR%2Fs73q%2FFI0PHyHBrjoruWNsscg101pdiVcV3JJM5b30Q65iBj3N2rGMgXKY6VvSDzFIPesG4tyrEHrSl3KMucASbumaxnmjjbaTn6VakBV8GqL2ys2R8ope0aAlaVBjnrTlPmD5KomzlDHJx6CrlvblTlRlsUKoybvsR3YCRFyORWbaWcd4xEgzV67gd33Dmm2aSW6kOv5U%2FaOxLj7yuUH02FGIOBj1qe0gS2meZDlYVZwfoOP1qC%2BaWWQ7eOeh7VVu5HtNBuGfrJhP61lVqWgzWnFcyVjza9llnuXlYgMWz0r6A%2BG5Hmxe9fPaHe4VuhNfRHw0HMYYY5ArzaG9z0KtraH3Rp%2FwDx5RD0Ufyrifiro39u%2FD%2FVLFVy6wmVP96L5h%2FKu20%2F%2Fjyi%2FwB0VYljSaNopBuVhgg9wetdRzH5SzRR4yDwfWqsaQlfk5xXSeJdDn0fWLzSJwQbaZ4uO4UkA%2FlisOKHyxggkflTcm9zntZmWUccuDirMFuSQzgHIrX8pNu39afHFjhBk0iuRlZbCMDeRlanEcYXGK0o1%2BTJqvJEc5Wgvk0KZhQn0phtYGO5hk1ZKleopCM0BypIw7y2VOQeKoeWv%2Bf%2FANdbVxAxXaPXtx%2FjVP7I%2FwDn%2FwDVQZH%2F0v7C5LabGFFTWi3MEu5hkGt0uoXCDFNXytp3Gu1baHI%2BhLFMHAB602QecvyqahOztxVuJ40%2BXmqSvowcjDutMQAMpOTn9KxkRoHZGFd%2BVVhWLqNosjZXj3ocEOLuYG6Mn5lzTobLzAGY4qlLDLvztIFWIppofkJyaSSKLM1sAvNY8ieW23rWvJchhljgVUe3VvmB5qJW2A5aa9k%2FtFdK02L7RdShn2s4RVVcZZic4Az6ZPasjxlOFhh0%2BJ1laPPmOgIXeeuAecemabrOoW1lrAmbMckYCiReuG4IPqK2dK07QfETCEXK%2Bc%2BSA3HTufSuOteXuo6qSUbN7nk0alpgQCDx1r6P%2BHybZUA9RVDTPAEdxKgjCSK5%2BQoc5x1r2%2Fwr4N%2BxFXIXGSox0zWdOm47m9SUZK575pX%2FACDYf9wVoVQsWEVqqSEDZxV%2BtTmPnv4ifCRPEOvPrVmTG1yBuYfMoZRjkdcH1FfMeu%2BGrrQdWk0i%2FjxKgBwOQQehHsa%2FR8gHg18n%2FGi2SPxlHORy1smPwLCgT7nzs2mSqAWXrUzWKDkj8q3576CIEZyax0vBKwRQAT70Ee0KwgjUYHSgRxk4q00co4Y5FVc46Ag%2B9Ow%2BdEL2ylsgVG1uFGSBUolYMX71C9zI4wVNWqbYnUQwFAcqMU7etUHLN904NR4m%2Fv1qsOyPa9z%2F0%2F7GW%2B0D7pJqEq5PINXWIVdzcDpQJDI20DjrmvVSR5%2FM7XHRW7qBjkH2qzCkitzxVqMKFwvFThlUVSstSLjUPOKlIDCq7zNnC4A9TTVmEZ2tWc5Jm1O6WpnXdud5PSsGWJ9%2B413QVJUOa4jWg8IAhHGM1g5amjdlcoTTZ%2BVelPE4YYPWuYEkwY7s9ea2LJHbHPXkVLdwTueOeN5WXWCi47VyOl6nPbPHMrEYic8fjW941b%2FicTE9Q38ga4GAboxJ3EB%2FWvIqS95npQhdJs9l8I%2BJ9Tgu9OaGRsGFm6445r3jwv4p1M2lipmbDXBJ5zzmvmDwwzC6sm7JA36ivZ%2FDDFI9OI%2F57H%2Bda05Mc4rax9b6Jrl1cw3Tu5JE6gdq9XhYs7Z64FeA%2BHSDbXjDtIP6171bkFyR3Vf5V0HNLcuV8s%2FH%2BKU6xYSIOHhcEjr8rf8A16%2Bpq%2BffjpDGRps7j%2FnqufT7tNbky2PkS9EuQSeOcCqCzyI3yj8a6e4jRXKe%2FwBaemjRzoMPtNdNtbnJLeyMm3vyRtk6%2B1aAdDhcHNTR6QsZ5bP1qpJB5UpCfMPUVcIXd2VFNLUSUKeAPzquYQxyePpTm8zPy9KqyrKTuJArRxQ0yCSHHfJqHyXpQhY9%2FwARineT%2Fn%2FIp80e4nFH%2F9T%2Bwt7n%2BHbmrUbFASozVIQ7eRVqJzEp4zmu72mtkcnIT%2FaHQ4ABFXllAHPJrHluB1YYqoLok42%2FrS5lbUTstzo%2FNgI4PNT%2FAGmLHeuVUluckj3qe2dosjPBovpoCd3sbjTNnis26j871zmrX7uRORmmCNR3NTG7LkrnPzacr8YP1qONTAgAGccVuyoVBdjms2V7O0t3up3CRIp3MxwAKpR6sza6pnzZ4wctqUjNxyx%2FSuHgLKjY6m2rtvGYV7p8fxeZ%2FKuPgiBSQN1W3AH414sviZ60HojuPDLf6Zbx%2Blv%2FAEr2jwtzDp3%2FAF3P868e8PRGO9tx6W9ew%2BEgsdrZEjOJxj8TW9OK6kSkz6P8Pfcvf94f1r3yy6D%2FAHF%2FlXgvhwBkvs9iDXvVl0H%2B4v8AKt7GJfr5%2B%2BP5ZdL06QHjznU%2Fiuf6V9A14h8ddPkvPDlrMgJENxuYgZABUjmhbiex8gzKzsGT2z9K6e2ulNqMfexXLzlYMY6moluVzz0%2BldXNpZHMla7Jb2%2Fl37ckD0qsl8xXB60XMsBXk5%2BlVomjddoGcc1caiSsS4t9Sys6nIPY4pktygXbWfJMYx8in6VCSW5%2FnV8yehWxqxIZst2FTfZl9f1rBe4kj%2B6D%2FSo%2Ftkvp%2Bv8A9apSS2Y%2BY%2F%2FV%2FsSidueQPrVd%2FvU75UNHmp3OM10qNnfcwbWxQmAzlulMjZWJA6irEvlnlWzmoEXYcoOK1UUtznldkxDIfeozOVODVad3A27j9azEaXz9rfd7UpISuup3Nu2%2BIMBipqx7fUIIo9j9qrz69bxnaDz%2BdPVI1Ula7ZvkBhg15t8QbCR7K0kgj86C3ukmuIv%2Beka9sd8HnFajeJ7dTtLnPpWfqWqQ6hEFDEMvRhUVI3i1cuE4p3PGPFULyytNGpKNvbPswrl7eL5Jt4yBCv6V7lFouvalFNLb2RvIo1yxhGWC%2BpXr%2BVYsGneG74lQ4jLHBH0rznR97c7VNNXMjQoWF5buf4revX%2FDNuv2SyfB5mz7ZzVPRvDOlPOJEuQCq7ADxxXrmg%2BFLaKGGJ7mNhE%2B%2FOe1bQpNbkyl2O98OxMZNQGOCRzXuNkoVI1H9wGuH0TT9NtmndZFKT4%2BXPIxXdQzW6RrhgcDHWtJIgu1BcQJcwtBKoZGGGB6EGsfWfFXhvw9bfa9cvobRDjBlcLknoAOp%2FCvC%2FGP7Quk2kUtj4QiNzc8gTSqVjU%2BoB5b9BWd9QeiuzwHxrp9ro%2Fii%2B0qIYSGVggJ6L1A%2FCuLdQrEDpTL3U5b26e6u5fMlkO5mY8knqTVUXII3E7RQ22zDqJJ5jcqaWIyKDk9aha4y2F5HqKcsqnrTTaF6FwoCc1GwwcCoxJHnk08yo52qc0KTvdg49xVALAE4zU%2FkL%2Fe%2FSqTCTOVNN%2Ffe1bRnoB%2F%2F9b%2Bv7duG5uKWOMswBpU8oZD5PpUyuWXbjGOK77%2FAHHDGLe4xoitQggnmo5LgqMH%2BVUvNahX6Cm0loWLkbnHtWZc3ax5RTz096bdai8ZAxye9ZcUvmSeYxJOazd7kX6D5pbqRxz8orJnErvyOa637Xa4wWGKmiitJRvUA4rKcraGkabfU4HyXpvmP2NegHT7Q9Fxn0rOfRl2nZwaz5pdxuDWpHpE3iiy0ubWNHneK3jO242Ej93g%2FeIHHXjkVxmkWOhvq1pa%2BHWjFtLcRxOFj3BFfl8D1%2FPBrVt%2FFWmeHfE1t4cmuP8ASNXY26wD%2FloCDz02%2FL159K9p0%2F4e6rceJpvEum2zvb%2BcCQxUJiKLaSuDnLuAcEcfjXBUclVTXXc9Gi70tdz5y%2F4RrXdJ8b6qW1CYWwlBig3ZEY%2BbAz6EY9K6T4pfEC3%2BGfhO01%2B9vTZQzSLCXdGJaRhuCLxkscHj2PpX0Bpnw11%2FUfHCarrEcCWs4FxP853rKuflCkYZW3ZOT1FfJP8AwVP03V5v2ar%2FAFCe1N1baTrGnvbw20jCVllV4S3y45BfcQTjAram3CMmh2c2rnAj9oLxrrNwlrod3fQQNhjOGij69BsbLH8q7K3%2BKfjNJLOFdcnd5JF3R3MmPMUH5gCMAMByMf8A6v5sPDGqatqWnPqXwji1BJrFkxJfXKI6yD5jk5BPYIOMV%2B0%2Fh%2Bbxl8X%2FAIQWC6BoV1qmtyLELlLTKQ29yFG5vMOAApzg5x70U63O9BzpOO59g%2BOfFelTeINTbxEq3LXFvHtmyd8TsuYz%2BIGRz14rYsiL0PeSyrO77CXTgElBnjtz2r89fjX8T9J%2BDHxph8J%2FEeG5%2B0aomnrbz2skUtu%2BFjjIkKyHy5FlG3ymG9i2UyM4%2B8PDPizwn4gdYdLuFimc4EEg8tyf9kHhv%2BAk1lh3KVWTlp2FiYxVOPJqX3tTK3XFK1qVOAc10tzapGDx8w4NZXlr%2Fn%2F9dd8o2POszIljk2kEY9KrxxXYbAU4rddQozVaWYw5bHAGc1Bav1MmdplG1jtNWbV1ABqo9w7nEhzUcjsWDHtTZRueenTml85KyYU8yPJJBz2qXyf9tvzpFqo10P%2FX%2FsPezjHU8U8Wg2Ha3zdq4%2BS%2BvY2wTjFRJrVwh3Yz9a6m9Ndjkclc6Ga1YMR3FZU0LKcoeD1FVpdbnk%2B6gWqIuLhjuOcevanqzNtW0HmzZn64qKS2kQc961UOV3ZyTyfrUF%2BG2ZHQVcYN7ktHOvA7cg%2FhVmDT78EGI5I5pwyw3Y49augTLyrDj2rP2BcZ6WIQ2oRuFctwOK6jWLS50PSIpdXGya4OQo%2FhQ9M%2B5%2FSrHhdLWTX7X%2B0sNECWYDjJUZH64re8XLFq80gmTeH%2BXOegrjxDcU4w3OrDR1U57HzLpdpHceNtT1%2B3ZX1MIq2jyDmJBjIjz90%2B9dJD%2B1b488J%2BOfD%2FAIJmsopINQnlt75zbOjRudvlOCAEIY7g2B7%2Btc34q8MeIPDPm61o6yXiINyrGQJAc9sg547V8%2FeL%2Fi6NTsNP0e6glgEV4txLLdgwsEgOCNrlQQdxBbdjtXjzrSornqXv5bM9aMFVfLC1vxR79%2B1bYfEOPwfcfFD4Va5NavaF5tVvtKl%2B1u0MRZiDCZo1%2BRXOSu5gijA4GfyP8Y%2FtT6frOjx%2BGPFvjq21K2Eqy%2BXreh3up4ZOBhWk2DHbuOxr7fk8a%2BH9TmutI0mCPT7C9VkurhLp42kDghlfZIu1SABhCc5weOa%2Bcdb%2FAGY%2F2XrmM3t1YggKCD9vvQmD%2FdAmGAPQVzvMedLVJ9dTpWC5Lp6oq%2FDb9sn4deAdHubfTNcsvOnk85F0rwbHGyoQAAstxPwevLZI9K39L%2FaL8VeM7NdKtr7Ubx9UnaaGS%2Bmjj2bT8wkhh%2BVRjASNXxt%2BY4JrE8J%2FAP8AZf0SUppuk6ZK7nI%2B0m7uyD7B58H8q%2BofCWk%2BHPB%2Bmtc%2BErCzs4sjaun6fFHLz1KkBnx%2FwIdaqGNdrLX0%2FXUU8JHq7ff%2FAJHj3if4J2fiXVbL4h%2BJLMXmvWMBW2uJm3JaFxyUXcRuCkgHJ25O3BJqp4T1zwh8NfDEngPxTfPql2kYeFCd0oIOSxIzsxkbSea9d12T4leK2%2By6Fpl0VZsFpkKjae5LbQMe2ateEP2Zdb0dZdW1iyM9zPydqcA%2BpJ5YjPGcAdqSpVJp%2BzvzPq9l6GUpwjbntyroupX%2BEv7R8w8TQfC74gTmQ6i7DSr6Q%2FPIwBbyJT%2Ff2glG74IPOM%2FVk94G%2FwBV%2Btfnb8b%2FAIZ3drBb6hFC8F3Z3Mc0Py4xJGwYHj6V9peENZ%2F4STw3Z66iECeMEj0YcH9RXq4arJfuqju0eXjILlVamvdOs3ySHYxJqcvIykL34qvGxQ7W6VbRopF%2BTjNdnocMZt6sgt1V2LHqORViON53%2Bcbe1IsbCQN2q6I2zlSDQaoWK3C8GpfJSpEDkYbrT9jUAf%2FQ%2FrPkMm%2Fkk1BHGJG2%2BprtbpLaIFzwQOgrIdoYo%2FtEan8eODXpezsec5FCaBYYyydvWs0ysR1J%2BtWFSe4bbCCQa2bHQWl%2BaXqOx4p6IVjLtGlSQhgee1bKxGXjGa6ZdGiQYPNRTWr27bVX5T6UJXeo9kc29v5a5YfnWXcxzEFwvA5NdiYBOMN0PXNXk021wFYdvSndLRBZs8rXVbm01u1l3FcZyO2K9FM8cg3w8BufzriPFtrbDUbR7fG47s1etzcFNsbbQO9fP4vERpVZuWx7WGw8qtOnGG%2Bv5m%2BWSRc5NeZeJNP8J6xeNHqcUEjKCpMkSuSDgkZI9QK6XVLxViIH317186a%2Fq0cU8mH2kkk8968utniW0LnrUcjnJ6yNm88HfDeN1E%2BnWDBeVJhQd888etLHP4Hs28u2jtY9vH7uNRx%2BAr5%2B13xWsZZxJjHBzmvGtY%2BISQMQkhK5rgnn6Wqpo9CHDs2rc7P0G0SGx8RXXk6cYiyjktgcV6pY%2BFY0ZY5JfOA6DOF%2FnX5ReFvjPPoOqpqcGJCpA64GM%2B1fXEf7VNtdaUIraALOQOY1JI9h0A%2BtXDiOja0lZky4YqJ6NteZ906P4%2B8MeGLyHSdThitpD3C5OD7mvR9W8e%2BCrW0a4aWNww5LHnHpX4v%2BIPip4j8V6hDcXrCMQPmPpnHue9d1p%2FibVNW1Kxtb258ya6ZRErdAGYJkD0B4JrmhxNNzajG66G1ThmMYJt6nuf7Q3iDw9faJcXVjaElxtiwM%2FM3AJ9s1wHwm%2B12PhuLTLgDNrtQ45ySoJ%2FXNZ%2FinxJpzSDR7Z0uwJY0Zv91i33e2QmRz9cYrofhtbxw6ROsZ35uHJY8Hn%2FPHtXs4TEe1xCl1seDj8O6eDcH3%2B89FkIZ80RSLDHvJwM96sKgUYFPEUbDYRXuHzLtokUPtiyyhduM1uWhLLlutZy2EMLed97FXIZWRgOdvWg1i2tzqViSfaqjHGKm%2Fsxvb86uaVfWdzGImGH9D3rb8uL%2B4KdjZarQ%2F%2F9H%2BsqS6md97HmtOEvdReWw4FUoQkUgYjI6Vq%2F2vbxEIyn8q9NzvscThY3rayjgwy9cV0sIgCfN1ri01GNo%2FlyBntV9NQkB%2BVjxzU8xfKuh04uMcLVOSaaU5AxWeNRuG%2BWTketXLe%2FQuFcdamTb6j5URzkLGQTgnjIrFuWu1Q8nHfFbt7cWoXhuciqksXmQ7lORTTSV7mcrtnlWo6jFL4j%2FshsA%2FZhcLk8nLlWOPQYH511E00VnaBiR0yO1eE%2FFa8uPD%2FwATdJvLZtsp0m66jIIW4i4I981yXif4janq2mtDpyiOVVO9N2M%2F7pPB%2BhIr8yz3iPB0sxq4KtPlmrNX2d108%2FL7j6%2Fh%2BnGcIqTS6eW%2Fc6fxp8QbGyD28UgDgEY718UfEn4k3Nneg3cnlI5Y7gf4a808YfGy88P629vr%2Bmz2oZwAbpWiLj1UsACD2xmvg74w%2FHjUvEWPsreSFDD%2B%2BPTA%2BtfG5lxHCKfIftOScHzqOLaun1PonxV8e7O0Z1JklK9CrAD8utfNOu%2FHC6ubiRoZjjPCHFfJGoeJtVumffITu75rz%2FUtemicqT8w7Zr5apnuJqarRH6BQ4NoRja2p9zWHx%2B1ezjWz0uH7Vqd9MltZwhPM3SyH%2B6CCcAHvzX0dpnxai1HR7mx8QvLp13bJOLmKB9kqvFncq9Pmx0GetfkP4d8VjSvEEHjHV7290%2BPTiRaNYRRSzy3EgKsF85hGoRCSWbOMjHPT23StaiuNRGpDWZvsl7ALy3u9WiBna5TAZXW3DL5oYdVwp6iu%2Bhjq7gqk%2Buy8u552K4Xw6k4U1a2t1du%2Fbtt87n6uWHxN03xFaK%2BkyLcMZUQeam17ZioABBAYSybuGxgJ93ljj6Ah1zw4dQ0qdHla40jW49Om3l4j9neMq2WGCMToMbT3JBzzX49eCf2gUbXbLxB8Rr2f%2B1rEhftW2NzfwDJSK4EjIGkgchopBzj5Wz3%2FRb9m%2F4V%2FtOfFXWIvE%2FgPQr1YHMEialqiNb28Rt2DxvG84GSpHHlo4I7c17OEzWk%2Fefz8rd%2B2vmfG55kMsLGU60lCKW7ej8k3a%2Bnlfurn17o%2BjHW47DWJY9olRgsZPJj52OTncdysw5529%2BTX1mnh5%2FDGkabplxD5M72%2FnyZHzHzGO3PvtAr1P4J%2Fsw6b8PFh1zxjdprOsLh%2FkTy7WJ%2FVUPLHP8AE3Hooqz8YYS3i3zB1%2Bzxg%2FgW%2FwAa%2Bi4a4ioYvNI4ShraLbfT5d%2Fy7H4tn1WLpuMHdJnjwzmk3eox%2BNMjV8lpBgmp1XdzX6cfHJ21FU4XPvUm8oPaoHIQ4pLjLxMi9TTsCkzQtZG3rNFwPUVqfa7r%2B8f8%2FjXFWU86MIJR8o6EVrb6mxaqH%2F%2FS%2Fq6LKvKSn86cgDNg96otEoOFbIpjztFxk10p6I5JK60N%2FwC0smFAyB%2FKpVuFf7v61hDUDs2FetNSff0pcy6FJJI6qK8lD4kxs7k1YTWG3kAZ9DXMrMDFtQ5FVQ00fIxTuZyqW0R2Z1CGXiY4ye9dLa3YCBc5HbHpXk4lnkO6tq2uJ9hYNgD0oS6C9qzxD49zwSfETRCp5bSr39JoP8a%2BL4Pir4U1fxZd%2BB1na01e2d42tbhSjyKgDFoz911KkNwcgHkCvpn406kJPHGiSI2dum3%2Bc8n%2FAFsBr8rPj14a8SXPiDVNc8Hzfbby1u5L9UsJSt1bMbERRh0DBmLOgOACCpwVPf8AnPxCwVGvn9aFWXLeEbPs7Lfy%2B7y1PfwVerTwsalNX1d1959zxXjiBrNwssJyPLlUSRj6KwI%2FSvMNR%2BAHwP8AFEskmseEdMDyMWaaCM28pJHrEyV8g2%2Fxl%2BM1n8KPG%2FiTW7uKC80a0e6t22RmaCVJJNyPDtGEMYQoWyxyTnpWwn7WHiHwvq%2BoabqmltfpYf2zcTSeaiOkemxwyBFAADBlmU5PzY46ivzt5TmcOaOHq35Xaylpsnpey6nr4fiqWFtKjUnTv2bXW3R%2BR73%2FAMMJfs3as5dNP1G1JBDCDUpSOfQSbwKpt%2FwSz%2FZu1n5jqniOEN%2FCt3CwH0JgJq14L%2Fau0WfW7vTPGWnyaSI4NLe2RWNxNcy6mjukaRoD8w8s9CeOTivrHR%2Fjn8Mh4V0nxdHqYltNamMNiY43eSeUKzMixgbyyqjllxldpz0ry6%2BLzrDyUWt9vci07q%2B%2FK76HuUvEDMt4Y%2BXzk79uuv3nzX4f%2FwCCMn7I1xqQvtUv%2FE90XILD%2B0ki4H%2FXOEH9a%2BvvAP8AwSb%2FAGGvDqxtJ4YvtXbof7S1W7uFwPVPMVT%2BVdZon7S%2FwhsNRt7HUNWSDeUQyyI6RJI8JuFjdyNqSmEGTy2w23qORXpFp%2B1n4Ngi0iLQ9G1jUbnX5oodNiFsLcXJuIHuImWSZkQK8cbHkgr%2FABBcisp5jn9VcuqVr%2FBGP48q6eexyVOO8bqpZhPV62m9fkn3%2FE9j%2BGP7KP7NvwhlFx8NvAmh6PLx%2B%2Bt7KLzeOh8xgzZ9819NR%2FN8x5wMV%2BdWs%2Ftda74i0IXvgHSmsLV9St9POp3R3xwv%2FaEVnMrrhU3MWcx7ZGBCkttOM%2Fonb5KdQfcdK0ax0Yx%2BuSe7VnK9rW83bc8WObxx9SUlNzaSbbvre9tXr0LW4g5r5i%2BMVndT%2BI%2FtEIJCxIOPxr6cBwcivnr4nzGPXWYv%2FwAs1%2BX86%2FUfCX3s83%2BxL9DjzT%2BA%2FVHh6RMyhXGCO9Sixj4aM49RVsru%2BYd6k8tFXMhxX9KSSufNPQwZoUkl8k%2FeHeppI1iGGPHqadqAKkMi9O%2F1pUSOdSZT06Cp9krXuLQPs8P94GjyI%2F71V5Ld424PBpvlv6n%2FAD%2BNN0V0YP0P%2F9P%2BqZd2TuqJpGAyRxWWDcRyhGY81OzsW28k%2BtdajpqcfPpY0BPBj5jiq%2F2h%2FNK449ayirRvvk756VOl66jHI%2BlaKmrEScnua0t1Oq42cCmwzyzrl%2BgqCOZ3AYHOfWriyCLDyEUOGtugKKe7L9nbPOcx9eeK2lGyNom6muba%2Fk8ny4SBk9vSnQXt55g8zpWsKK3E7LSJ8w%2FHmFLfxvoMi8CSx1BWH0eA1%2BS3xVuPHPw%2F%2BJ2s%2BN%2FD9vJAlyZ7x8RCSO%2BisrKNkiLc%2BWTIrgHIb2PFfrd%2B0ZJGPFnhmRDlvsuojH4wGvlzU41ui6TDcG4YHpiv5s8TMV9Vz%2Bo5RUouEU0%2FS%2Fn2R9RlWF9theRSs1K6f9ep8TTftL%2BHdXivPA%2FxF0B7u3cCz1Ga2Cz2rieRYUGxm8xlkMiDADY3EHgZrR1aH9m%2BLwVa%2FEpLK8Nlq97NYH7L5vmm51DFpLE8ZbI3sixsvQMoPGM16Brv7PHw818KbSB9NeMx7TZN5QIinW5UFMFT%2B9UE8ZPTpXL%2BJv2atR1f4RL8K9D1pvk1sawtzPHtkX%2FSjdNGphK7SGYqj9QMEgkZP548dl3NTdKpOleS5ld25er0v%2FXQ0q4LG%2B8pwjPR8rsr83RdNPPuWNA%2BEvwZ8eTw%2BItJ8USSzxixhRL1ot0MujtJEPOidUYnDvFKrYBHTDDNfYms%2FBPwv44%2BGtl8PheWMNnZSGaTFvGIiWDbWRY3QwlWbcjI4bI5Jya%2BI7r9knVtW8LaB4Z8zT1uNOmu7G7vVQ%2BZeaXqI%2F0ln3BiLh2CuTkguu7Izgdlov7NPxZs%2FAuiaLJYWGp3v2m4TUpIJEidoILdrazI8weWx27Wk3q2wklBuANYVqlKq4Thj7cstE0tLXs73XRaebXU8x0KkFKMsLo1ra%2Bu2lvX%2FM%2B6fAP7J%2Fw50G%2Fni1vVP7Ui1dIvtv8AaCxS3U1wLcWzSJMSGQzKAW2gnI%2BUjJr2XS9L%2BCHhbxb4Q%2BHPi%2Fxhf3uo%2BD4pNV0%2FzZESK1i06HyHa4eNFQERTYIchnBzjgEfm34E%2FZJ%2BO95ocq67pVidUGk%2BFreG6lv95W70afzLlw%2B1mXem1VYctjB4r7T8N%2Fsh%2FGK6sdP01dY03T2023122TUBHJPPcLrNws6u6HaFdAu1jvbJJZdvAHPXlRu%2Fb5ipdNLfy2vpzaa8rSs36I4IU6qX7nB2ej1v%2FNtrbXTmT1%2B8%2FRX4WeH%2FAIGeIdP1K98AWlvd2s15Ol3G6O0a3JcSygwzDEbM5EjYRdzYY819F2YCDZ6dK%2Ba%2F2fPhHJ8INF1XTn1H7edV1OfU2UReWkD3AXciZZnZcrkF2Zsnk19JQ5B9q8BTg68uSo5xvo3e7%2B%2Bx9NhKco0IupBQl1StZfcaNfOnxQQHxCT3Eaf1r6KU5GTXzD4w1yw13xRLPpU8dxaxDyi8Z3DzIyVYZ9mBB9xX7L4PxlLO27aezl%2BaOHNJL2Nr63OByOo61C7hxWjqDW8ke6FQMelYSyfujIi9O1f0zKHZHzjJLhHljKdMd6ox%2FuhiQgVPFeRyqGxjParbwBk3MM5qE2lqKMbspXEkJRWY5B9Kqedbe9XpY2xx90dqrcf3ay9pYbTR%2F9T%2Bpu8Yp%2B8AySahRty5Fcxe%2BKbZMC0jz7njmsaTxM2CCccdBXe423ORNLc7O5urjbny%2Bffn%2BlcZceIW8ww7cMOPxrkZvFmoNOQXIA45qhHrhYl1Ct71SstSXO518HiPWBcbG%2BZeOD2Bra1fVI2hRmkKheTg9681%2Ftm5HYH8K1k1a0mjEDxkZ69xTvdkpdzqbPXpIECRsHGMgHmkuPE9%2FImyMKh9RXLBIwd8dRsZIxkDPNPmkvQh3PJfi1fXd14m8PPdtuCRaiB65KRH%2BlfLHxO%2BKXgL4Vw2V98QdUh0uLVLn7NBJO21DKVLYJ6KMA8nivpb4tz%2BXrnhvJA3vfJz7wqf6V%2BGP%2FBSvUo%2FEvxG8C%2FC%2BS4WCGRnmldyFWNriRIVYk8ABd55r%2BfuO8qjmHE8MPUbUZQu2t0knr%2BB7%2BEzB4TLaleK95SSV9tWkfq3pGtaRrdhFqej3CXVvMMpNC4dGB9COK6%2BzIVRJ1r8KP2V%2FiZrfhf9m74reCdGuWtNQ8LpeX1nLEQDHuDLvXgj%2FWRlu4Oaj%2BGX%2FBSPx74M%2BD%2BoN41uE8Q%2BJ21AR2AmQQxx2YjVnknMYG7D7lUAAnvwCa%2FM8bwHjpVa1PCtS5JRir6NqSTT7Ws9dTvp8VYZQpyrpx5k33SabTXfppof0H6So8xQO9eyeGWLkRk4wep9K%2BBP2VPir8Ufib4ATxz8VtBtvDf2jElpFHM8kjwAZ8yRHVTHnqq5J28nHSvn63%2F4K7eAtK1y806HwjqN5bW88sMdzFcQBZkjcqsihiCFYDcAecGvkqfC2Y4ivVw%2BHp88qfxWasvnez%2BR04nPcHQpQrVpcqntdO%2Bm%2Blj%2BgLw4WEixHt6V79oa7UCEjPcV%2BbPwq%2Fah8P8Ajv8AZin%2FAGkvDVk7Q29hdXb2DyKJUltQ2%2BF3XcoYFcEjIr4w0H%2FgrJ%2B0D8Qbs6V8IPhtFdzgAkh7i%2BMYfoXWKNFUHoCzAZ71z4HhLMsZKrGlTS9m%2BWV5RXK%2FO7%2FI4sbxPgMLGnKpNvnV42Td18l%2Bdj%2BkCx2jaB%2Fk1geOvin8OPhXo7a98R9bs9FtFBO%2B7mWPdjsoJyx9gDX43fsWft6%2FtEfEr9paP4G%2FGvT7JBeLcqY4Lc281jNbp5m1sPIHGODnkEg57V8Q%2FtKanN8e%2Fjr8V%2FifBch7Hwy8UVsGI%2Ba3jmSz2pk9yJJMLya%2BmyfgqvHHSwmNmoxUVK8fevzS5Ultq3f7ux81mnG9OOCWJwdPmm5OKUtLcsXJt%2BSVuvXoz9rf2sP2z9W%2FZ%2B%2BJPgnwzo9jBc6TrIW%2F1C5clpPsYkWMrEBgA4bfuJP3duOcjmf2fNVt7%2FwFHfwSeZb3V3eTQvjh4ZJ3ZW%2BhBzXxbpFto%2F7VXi34G%2BHPFcm46l4O1XT53U4dLrTy0QkHqUdFb6da%2FQ34e%2FCi6%2BEPwr0H4f69cx3GoaXYpFPJCCI2kLMxK55wM4GfSv2%2Fw1oYTB4uGHStXcJc3mlOSv8AKyXzR42GxuLx2Lq4lu9DTl%2Futwpyt873OxutpB2YwfSsC5ZYbc7V46YFJb3whBtpXG3r%2BNWpI1u7Zt2duMgiv2yV73PURiWk9pHINwIHvzW35IuFAzgHkGshtPkMQZaorLd2%2BcEn2NYSfYE9TYkMocqMBexPQ1H%2B9%2FvJXPXmqXAlUclV5x6mof7am%2F54%2FrWTpfzMta9T%2F9X%2Bk6b7Nck3Ux8sg5IPANYcN7EZGilQNu6cdqW9vp2xbSoDt64wcfWubuLxV2zMuAO%2Be1ekcDepHrVvE26SUGPB%2FCuVkYRxB7JunBHY16BPdadqUQYMp3AfLXldzELe6aNH2bnIUdsUr9AZKNVuW%2BRjzVu2vXjG52wx64rmr9HjYiQgFTweorON3cRYdGHI7etDlpch%2BZ6KusXhYsrMB04NdLpepRHAvpeWOB%2BPSvH49RmcZZgT7VtWeoMWxPg9wM4JxTvbVgcx8YT9n8T%2BF5g2Q95eRAepNs5%2F9lr8mf2svgz8G%2Fiz8ZbT%2FhM9T1PTb1bOOO5lhi3WQjPmeSrysrLE5YMRnhgMHqK%2FU74yXBbVfCjuNudQkPPq9tMMV8i%2FF%2Fwl4zl1a91Twha2%2Bo2%2Br2DWV%2FbzSmKRNiyeXJF8rB2%2BcqUO3PBBGMH8F8Q8VLC5%2FCtTnyydJJO6XWXdNba%2BbPewGGjVwU6co3XPdrV9F2sz8ldP%2FZ1%2BJ%2FwG8a%2BJ9M0qzudb8Ka%2F4ev7CLU4EV1kEsPmRF1jJKEOpX7u05yOuK%2BQ%2FCHws8Xaj8NtV%2BMejEo3hW%2FtUuoJIyJIldRIsxDY4RwodWHTk8cV%2BpOrX3xg8B%2BK%2FDtl4m1Zd50zTo4%2FIja1bYJSrpMm9kZwcDK4BHavqfwd4yu9X8M%2FDHR9ft7XUYfHNjImrNPCC0xWz83tgfM2dwIIweMV4VTibFYaCquMajla8k2rqCbd01a7intZJ2srHmSyahWm6bcoJdH05mkrPsm0%2FwAzgte%2FbDsPEP7D%2Bp%2FEfTmW216eH%2Bx5YFPzQ6hcYjOAP4dpMinj5a%2FIj4Z6j8O9O8E%2BKdL8TxXD6ne21rHo7xKrRwSQSF3MhLAgOoCHAPFfq54j%2BC3wT1fUPEnhbwD8LJb%2FAEjw5cxpqj6ffHTy91FEH228O4CZo4pOSSoy2ASc17F8HbP9ifwlp1n4V8N%2BCRrdtevo88N5fRx3UpHiGZ4owWnO8LEyHch5UcLnpXn5XmmCy7DVnhcPUftJqdk4XinZxi2pNryT3T9TjzXB4jGVIPEVoJQi4396zeqbs0l01aejR4z%2FAME%2Ffiy3%2FClfiv8AALUZRi60G91fT1ZsElYjHcKo9hsf8TXzJ8G28LutwvivxRf%2BGrYxxYFhbTXD3QOcoRHJGihRzmQlTngZr%2BgP4V%2F8E3v2Z%2FBPiVvE2gWGoJPJFcwlX1CZovLulaORNuQNpViAO3HcA19MfDr%2FAIJ9%2Fsf%2BEJom07wJp0zQjCtdhrpuBwcys1eX%2Fr9lFCvia1CFT97yvRRXvJWe7a106Pqc9bg7Mq1KjSnKH7vmWrezs1su9%2BvY%2FG39hC28VaL8bdf%2BKXwdtdQ1XRvC%2Bjam7zeQDNN5sO2CFki3r50s20rGhJwua%2Bp%2F2Wf%2BCY%2Fjf4paLeeKv2gJtQ8Lzbitra%2BXEZ7h3TcZ5CSxRd7EbMK5weQDX7yeEfCvhzwlp6aT4VsbfTLVekNtGsMYOMZ2oAM%2B9ehW8YUgrXjVuO8VXqVKmFgqfMoq71klG77W1bfQ7cNwHhoRprFzc1FyfLtG8rL10SVtd%2FuPnP8AZ4%2FZR%2BGn7O3h2y0vQVfVNRs45kGpXgVpwtywkmWMABYkdwGKp17k1q%2FEUgeKmGMr5SAj25r6LA7mvnTx9cwL4qf7QBxGnOPrX3nhNiatfiCVatK8nTnd%2BriezjMLRw%2BEVGhFRiraI8k1CzhM8jxjZjseKyre8fesDNtUEg11l2bOSYs%2BYx71niDTlxIihnJzX9KSqI8Nx6oqSyqi715FYlxeSbwoHzN0yOK6UrBJGWXAX68VmPbNOwe3UZSsedA4vcx0WZMSFRu9DU%2F2u4%2F55x%2F5%2FCpruKeGJppiuV7A81h%2F2i39z%2FP5VF77Cimf%2F9b%2BhQzXlvPnaCGGCfX61i3t49wstk0ag%2Bo7VYvNWAlMCZDA8HHX2qtFdIi%2BZOuc5HHoa9PSx5q0INPso7NXmPVRt%2BgrL1URXDbZBkY69x71sPLB5BEEvLjqTg1zt6zBS8pBBzkmsZ%2BQHHXcDR7t7MVHINYL3rZ2RHp1zWzfzxRfuOzA15brEyO26GTY2OecHispVLaIrkdjqX1qGFN%2B8E5xitCPxRazEJCMn1zjn8q8A1HXVtyolyMZG71rHuPFH2CMXaMHAxwD6%2B1ONbqxK%2FQ9d%2BImsNPL4aiLblXWYuDyQDDMP60y%2FmR3bjJzjmvDfEXiizvJfDkqy4Zdatc546hxjH41c8d%2FFSw8GeKrfStaiVLS6iWQ3Bfb5ZLlfmB428dc8V%2FPfi3RnWzOgqau3T%2FKUj6vIa0adGbm9L%2Foj1C70DRtbiWHVbaG4UHOJEBwRyCM5rjPCH7N3wr8Ja1p2seGrOa0%2FsuZp7WBbiU28TtE0J2xsxVV2MRtUAdD2rtND1Cy1CMXEEvmI3RkO4fnXpenlVJPp0J7V%2BKVMViaMZU4zkk9GrtXv3R9HKhRqNTcU%2BzPFdS%2BA%2FiU%2BKNX8Q%2FDLxNN4aPiIK2pwrbxXMck6oIvtEfmYMc3lhVJyVO0ErkVS0%2F9iDULOeMfDfW7ewW0j8PR2q3sL3GG0K4ln3SFHQsZvMxxjacnnpX1hpA%2Bbe5AOAa9g8OHa8bL2%2FlWUeIcdRSjTmun2Y68u13a7tsr3stDzMVlGEqp88N79X1ve2ul76266nq%2FwktPHlpoCwfEa7sr3Ut7ky6fC8EOwn5RskeRsgdTu57AV9SaH1AxjdXhPh8gOmDn1xXu%2BhPukBBzx6YxXzVWfNNy0V%2B2i%2B46oJRSivx1PSbdQsQwMeldBbjsOe9YNnxGMmqXirxr4a8CaR%2Fbfie5FtbbwgO0uSx5wAuScAEn0AJNellsXL3VqzDETjCLnJ2S6vY749K%2BVvGmvRXHiK7k2cxvsUH0TjP41EPi94v8f%2BK4vCfg%2FSWghtbiN7uaV8HYhSQfMvCqykZByzHK4xk0fEqOGx8QNaqMqY05HByepr958IsPKOctS3dOX5xPmsZio4ik3T%2BFPe2%2FocOZU1HMypznp3p6wHbiMYX0rMivntCBbcZySSKkOoXcsgjmjxCwOWTO79K%2FpB0W3qeMrLcvraR%2BSYy%2Ft0psFlIkxS1lQgYPy%2F4U4mGeF5omJCj%2FAIFkVT%2FtCCaZRNG42kAyrxz%2BHatYYdXG0upo39paom%2B4XIJ6gc1l%2BXpH9xvyNbd%2FPb2CojbpA453cmsz%2B0dO%2FwCebf5%2FCtFQXYHK3Q%2F%2F1%2F3Bub%2B%2FMp8x%2FoR6VTfWLiNyZW4A9c1y7Xl1bROrMC5%2B7k81nyTPOWy%2BH64716KnZWSPKvua02rTMWk3dAcDtgVzv%2FCYSM5G7CjvnNcdrV3qlizyRrgk8E9K4k3k8pPmxhJDzuB6%2FWpakL2zO91fxWkjbY2LcYz9a8y1fWrXymhBO8dwe%2FvT77dGNrNg5x8oPJ9q4u%2Ft2EkgaImRgfmI9axlC50Qk3qzhvEOtzRxSPHIeSOD0ryC8%2BIc1ostqjkFTjP0r0fWdHuZYyso3KT0wRwa%2BdfHXhq70wm5jD889M1zTi0jtoxjLYNe%2BLtjoWs6Z4g1hvMtNKvILybyyGbbGSDx9CeK%2B59b0L4f%2FGbw5aai7Jf2k8Zktbq3b%2BFxjKsOo55ByPUV%2BUHiLQF1XTZbC4YkTqVPUMM%2F1r4z8P8A7VXxf%2FZS8XXVj4Om%2B2aWJi0um3mWtpCe64%2BaJj%2FeT6lWNfjniFllbF4qjUw8uWrGLt0TV9r99T9O4Z4YhjctrVYySlGWz2aa09NU9dvQ%2Fe3w%2FwDBPVfBNrZWvg65Nw8erx3zPcyNlYwkinIHDNlxnG3cB6iuvsPFPxf8HeIfEmsahZXeq2sOnSXVvARiEXMJGEiIBYo6klQAWG07%2FmIr4r%2BBv%2FBVL4C%2BN4ooPidDc%2BDbs8MbpTcWfAyWFxGDtX08xUNfqT8Pvih8L%2FiTpsep%2BANf07WoJFDK9ncxy5B9lOf0r8bzL6%2FQlJY7D8193bTo91ddOh52J4fq4e2koLp2ejXzPEvh%2FwDtY68sd%2FD4r02DUDp1xIJLmylEa%2BS92baDCPkkZKl3yAFJbtivoXwz%2B2T4LDTrcaPqCi1lW1k8vy5T9ofzcIqhtzAmFgGA2njsePVdK0PSrl2S6to2EyGNg0Ywyt2ORyD6Gtnwn8EPhna%2BJbrxOdMhe6vbaG1cOA0SxQBgqpGflTh2BIGSDzXi1sblM5SdTDOL6Wk%2FL0t1PDeEzCKShXTXmv6f4%2FM%2Bmvg5480f4keD7HxdoR%2F0e5DBQWViDGxQhtpIBBByOoPBAPFfVnhhshSevU183eCdH0XQdMTTdGt47a3QnakShVGSSeB6kkk9zX0X4UbLAIpOQOfYV8liHB1JeyVo3du9uh6VJTjCKm7y69j1u1UtGBkH37VkeLfB9r4302DSb2eSGCO5jnkEQXdIsfPlksDhWOMkYOOM815p8RP2jfgL8GLUP8V%2FF%2Bj6DuIVI727jjldj0Cx7t7E9gAa%2BAfi%2FwD8FcfhB4ThltfhDpt14huCGH226je2sIwv8R4MrjuMIAcckV6GAc6PLUlp1T%2Fy7nuZZwjmudN0sFhZTi9G7Wj85O0V95%2Bl3j7xz8Jv2bPhnfePfGt1BomhaVHl3PVmPCRoOWeRydqKMkk4r4t%2BGnxnn%2FaU%2BHel%2FGa3tDpSa4jzpalgzxxK7LGGIyC20Ddg4yTjiv5yP2lvjL8XP2ivESeL%2Fi14ll1WS1Lra2MR8iwgjkkAxDbqSoYxnO9i8hxjdg4r96%2F2b9Kk%2BH3wf8M%2BDy217bT4VZTwQzDcQR25Nf0l4LYelKpXxsbt8vLd9LtPS%2FodPH3An%2BruXUIYmalXqS1UfhjFJ6La%2BrV3btbu%2FpqTTryfZLEqsp%2B9ztIqpGolYpaMyvBkPG5y34eopLDWFLMJWD5UjB6GtS3TT5QrSAxn1B9a%2FfufqfkMqK3Rysd1fC4aGBfLjHU461oW2pQWkLfbw2WPHHpU9xok0MouLEqTnHuaq3TyQx%2BZOuz5sEjnH4VorbGEk1qyPVbhL63h8tjhXyfXFZ2yH%2B%2B9V%2Ftdxb3f2mXbPFnLFcZxV%2F8A4SXR%2FwDng3%2FfP%2F1q2itDJyV9T%2F%2FQ%2Fa248FwvE11AxlA6H2rGi8M3i3ImfgR%2Bp65r0KxzHMXjk3jvz0rbWF5MSBevavahTj0PKbVlY8Z1HSJ5lJePcD2A9a4m58OrGcQQ7D6EV9SvpIdfmOfT61DceE2eISOFG49RzRJLZAo6HxpKt9YMYzGdvbIp80%2BlTwbb%2FwCQngsp6fnX03c%2BDOrJHvOehri9Y8AaXdxbLyDaT3Tg1jyPuNXR82Xnh%2BxvEZbWdZAOmTgYPvXl%2BueD3ZntLtcAcAkcEeua%2Bmr74V3NuHmsdxUZwDXLSaVq1tC9pqcXmR7TgSLxn2rKolLc6aNdxep%2BefjP4Y6tprm7sot8IOTt549hX5Z%2FtP8Aw5%2Bz%2BJW8R2kZ8u5AMikZ2MOOM9jX9PGieBNL1TT5DGqzErkjpg%2BnNfHnxr%2FZ80LxNby2sse13BUZHRq%2BQ4gyP63C8PiR%2Bq8DcYRyutep8Ltf%2Fgn8zMWnWkB2uit3yetTWdna2N4NUsI1huQMCeIbJl%2Bki4cfga%2B7%2Fir%2BxL8QdDma%2B8Pw%2FaIDlgEycD3AyR9MV8b6r4N8Y6BcvbalYzRunByh4xX5Njsmx2Hk3OLt8z%2Brsi4uyTH04uM4qT72PU%2FC37Sf7QfgeMDwr421%2BzCkFQt%2FLMBj0WcyqB9BXqFl%2FwAFEf22dKXybD4k6wqjoWSzc4%2BrWxNfI%2F8AaMkUnlzL29MVVu7sTEPEo9DnrXgywybtUpp%2BqT%2FNH0FfK8mxEeZ0aUn3cYN%2FfZn2fH%2FwUy%2Fbjn%2F0aT4pa5Erf3FtI%2F1W1Brj%2FFP7Zn7U3jeMweI%2FiP4mv0OSc6pcQA57FYGiBHsRivkpbSZ5gIoyfoK6%2FT9F1aaNTFCw3HAyMZNaRwVKNuSml6JL8kefhctyyhJzhQpwt1UIxt80ixaX122tt4ilYtqLnc923zXDEADLSnLt%2FwACY17Vonxb8d6XMPI1CaQnorncDkY5z1rpfhZ%2BzL8VvG12k2n6VO6S7l3MhCEnjOTjge1frV%2Bzn%2FwTk0Hwzdx6%2FwDFIebcREOIsBl3f%2Fr617GE4PxeZzSnR93vJf5nj554iZPk9KTddSn%2FACxd35XtovmZH7C3wK8afFDVdP8Aid8Rrc23h7TTC1tBLndeSwj92xB52J1PrxX7zaZqSPIWkYJ%2Ftdj%2FAIV4xpGmW2g6fDo2iDyrW3ACRooIXHt1x%2BNdRZtdTyK8UfyEfMF5%2FSv2%2Fh3h%2FD5RhVh6EfXzZ%2FInG%2FGVfPsa8TX0itIrol%2Fn3Z79bzBoPkfZ3zXUabd3EsQSWQuoHVa8W0S6u7KPbOd8WeMn5hXo%2Bn3O395aMJNwzjnkD0r3La7Hwbqp6I6e%2FwBSuLWVJVztPC4ODuHr2qLUNeuinmIjS4%2BYqMDJHua5zW9WnghihRgrSEjJ9qy9MlE1zJZzyYVVJXHHzn%2BVXc56ktbHaJqlosQvnBiDAFlcZx%2BVL%2FwlGj%2F89V%2FI%2FwCFc35e4%2BR5rMrDG0460f2On9w%2FkP8ACrb8iND%2F0f30n8NC3Pn2hK4%2FhFWLO3njwsnzMB97HIr0BIkkwzDkd652fPnoVJG8nIHA4rpVWSdzz1qrksKO2E4ya6y2s2uI179sVy9lO6XP2fqvHX3rvbdRbS7Iuhx1561rGq2NRHppEPleWYwpPOazpfCVrOxZgeT0FeiaWqzrtkHXI%2FWujgs7d5%2FLcZG4j8q0v0KUU2eM%2FwDCBwBw4QSY7Y61y3ib4YpqkQ2W6BlBwMcc19V29hbNCZGGSCRTJLODyzkZxir5bxsNxVj4Jvfg%2FfWtiZoGZD328DFZaeCkurX%2ByvE0X2iJh%2B7cD5lP%2B91xX3u2mWZfJXO415trOj2EN3II0xjBH41kqSuJScXdHxzqv7PFtbTrNp0LyRSJkOo3EH0OPb0riNY%2FZF8M%2BKrGS18QWSSSMu7e6DIPYk4%2FSv0K8LEo80CHCnDcep613sGnWuxQw3Bicg85qatCm9GtD0cNjasUpQk0fhNrX%2FBNj4c6nqCX91pcEsHKNKqABfTIPPJrkIv%2BCV3wXur2SCa0jViQ4CnBUjrj2%2BlfvTrGj6daXG2CMKHbB9seleEeLLaM6o1qpZUhIK4Yjk4PPPPtXD%2FZmEqO8qa%2B49SPEmY0VaFaX3n5deHv%2BCX3wW0a%2FWa90v5A%2FMjDcuPb0%2Bma%2BpfDX7Gnws8JwGeDSLKdW%2BaNljHC9s8Z4NfVuhwiWcafOzSwuCSjncMjHIz0%2FCtPVYvs0ekFWLeZI0LbsHcoyRnjrxW0cvw1PWFNL5EVOJMfWi1UrSa7XZ4np%2Fw%2F0TRt0Wm2kUDL0CKAOR79Kvf8I1ujMcybC%2F7w16zLp1sZQpGfMLA%2B2D2pLSFbWVVj5DuQQ3OMA9M%2FSuuMVZWPJqYqpN%2B8zyJNJjtbgxCPk4Iz1x6f1rTtrGDcFIMcoOQVODXp10kUiqrxr8w545rMbS7K6JMiY2rjj0NPY5JXZUs7Wa3iNtcyLMQM4xkkH39abY3E9h81nKSAOUYYxV7SIxHD9lyWQPtG7kgH0p8lrBLKsUi5KLkNzuGP896b0Rn6HYD7BdWkEkiB%2FLcMSexNZGtacttt1G3VSsp%2B8MdaqeG7%2B4uJJLKQjZGwUepBPf1611moxxyaY1ow%2BQdMe9FtEym01c5GF0ndZpsF05HfGOlaX9oP%2FkVQsrGOO7ZEdwqoGxnuRWrtPqf8%2FhWkSUm%2Bv9fcf%2F%2FZ\u0026from=2065551234\u0026type=mms\u0026to=2065551212",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a6ec4-8420-7000-bf7d-62a10083f263",
+                        "text": "",
+                        "urn": "tel:+12065551234",
+                        "attachments": [
+                            "image/jpeg:http://localstack:4566/test-attachments/attachments/1/5c9d/9a24/5c9d9a24-6c1c-4216-834e-ae2a01c5c8c1.jpg"
+                        ],
+                        "received_on": "2025-11-10T17:16:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a6ec4-8420-7000-bf7d-62a10083f263",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+12065551234",
+                "text": "",
+                "attachments": [
+                    "image/jpeg:http://localstack:4566/test-attachments/attachments/1/5c9d/9a24/5c9d9a24-6c1c-4216-834e-ae2a01c5c8c1.jpg"
+                ],
+                "created_on": "2025-11-10T17:16:03Z",
+                "received_on": "2025-11-10T17:16:03Z",
+                "log_uuids": [
+                    "019a6ec4-7868-7000-b422-3d320c912da3"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Valid",
+        "url": "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "guid=1234\u0026status=DELIVRD",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "1234"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "1234",
+                "status": "D",
+                "log_uuid": "0199f028-0e48-7000-82fd-5b92b67a3e7e"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Invalid",
+        "url": "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "guid=1234\u0026status=UN",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown status 'UN', must be one of 'DELETED', 'DELIVRD', 'EXPIRED', 'REJECTD', 'UNDELIV', 'UNKNOWN'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Missing GUID",
+        "url": "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "status=DELIVRD",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'statusForm.GUID' Error:Field validation for 'GUID' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'guid' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]
