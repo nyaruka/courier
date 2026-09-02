@@ -133,6 +133,8 @@ func captureRequest(r *http.Request) *CapturedRequest {
 			c.Body = NewHTTPBody(body) // not actually a multipart form so keep the raw body
 			break
 		}
+		defer form.RemoveAll()
+
 		c.Form = form.Value
 		c.Files = make(map[string]*CapturedFile, len(form.File))
 		for name, headers := range form.File {
