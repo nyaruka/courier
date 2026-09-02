@@ -3,10 +3,7 @@ package jiochat
 import (
 	"context"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
@@ -30,58 +27,19 @@ func setupBackend(t *testing.T, rt *runtime.Runtime) {
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 }
 
-func buildMockJCAPI() *httptest.Server {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authorizationHeader := r.Header.Get("Authorization")
-		defer r.Body.Close()
-
-		// a request for an access token is the one request that doesn't carry one
-		if strings.HasSuffix(r.URL.Path, "auth/token.action") {
-			w.Write([]byte(`{"access_token": "ACCESS_TOKEN"}`))
-			return
-		}
-
-		if authorizationHeader != "Bearer ACCESS_TOKEN" {
-			http.Error(w, "invalid file", http.StatusForbidden)
-			return
-		}
-
-		if strings.HasSuffix(r.URL.Path, "user/info.action") {
-			openID := r.URL.Query().Get("openid")
-
-			// user has a name
-			if strings.HasSuffix(openID, "1337") {
-				w.Write([]byte(`{ "nickname": "John Doe"}`))
-				return
-			}
-
-			// no name
-			w.Write([]byte(`{ "nickname": ""}`))
-
-		}
-
-	}))
-	sendURL = server.URL
-
-	return server
-}
-
 func TestDescribeURN(t *testing.T) {
-	defer func(u string) { sendURL = u }(sendURL)
-	JCAPI := buildMockJCAPI()
-	defer JCAPI.Close()
-
 	_, rt := testsuite.Runtime(t)
 	testsuite.ResetValkey(t, rt)
+	setupBackend(t, rt)
 
-	// use a plain client so the handler can reach the mock API on localhost
-	rt.HTTP.Default = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
-	rt.HTTP.Proxied = rt.HTTP.Default
-
-	// ensure there's a cached access token
-	rc := rt.VK.Get()
-	defer rc.Close()
-	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+	rt.HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+		"https://channels.jiochat.com/user/info.action?openid=1337": {
+			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"nickname": "John Doe"}`)),
+		},
+		"https://channels.jiochat.com/user/info.action?openid=4567": {
+			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"nickname": ""}`)),
+		},
+	})
 
 	s := web.NewServer(rt)
 	handler := s.MountHandler(newHandler).(*handler)
@@ -97,8 +55,12 @@ func TestDescribeURN(t *testing.T) {
 
 	for _, tc := range tcs {
 		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn, clog)
-		assert.Equal(t, metadata, tc.expectedMetadata)
+		assert.Equal(t, tc.expectedMetadata, metadata)
 	}
+
+	// lookups are made with the cached access token
+	assert.Len(t, clog.HttpLogs, 2)
+	assert.Contains(t, clog.HttpLogs[0].Request, "Authorization: Bearer ACCESS_TOKEN")
 
 	AssertChannelLogRedaction(t, clog, []string{"secret123"})
 }
@@ -106,14 +68,8 @@ func TestDescribeURN(t *testing.T) {
 func TestBuildAttachmentRequest(t *testing.T) {
 	_, rt := testsuite.Runtime(t)
 
-	// reset send URL
-	sendURL = "https://channels.jiochat.com"
-
 	// ensure that we start with no cached token
 	testsuite.ResetValkey(t, rt)
-
-	rt.HTTP.Default = &http.Client{Transport: httpx.WithTraces(nil), Timeout: 30 * time.Second}
-	rt.HTTP.Proxied = rt.HTTP.Default
 
 	s := web.NewServer(rt)
 	rt.HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{

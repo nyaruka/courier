@@ -3,8 +3,6 @@ package meta
 import (
 	"context"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/core/models"
@@ -12,6 +10,7 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/web"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,12 +35,18 @@ func TestInstagramOutgoing(t *testing.T) {
 }
 
 func TestInstagramDescribeURN(t *testing.T) {
-	defer func(u string) { graphURL = u }(graphURL)
-	fbGraph := buildMockFBGraphIG()
-	defer fbGraph.Close()
+	rt := runtime.NewTestRuntime(runtime.NewDefaultConfig())
+	rt.HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+		"https://graph.facebook.com/1337?access_token=a123": {
+			httpx.NewMockResponse(200, nil, []byte(`{"name": "John Doe"}`)),
+		},
+		"https://graph.facebook.com/4567?access_token=a123": {
+			httpx.NewMockResponse(200, nil, []byte(`{"name": ""}`)),
+		},
+	})
 
 	channel := instgramTestChannels[0]
-	handler := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(newHandler("IG", "Instagram"))
+	handler := web.NewServer(rt).MountHandler(newHandler("IG", "Instagram"))
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -67,29 +72,4 @@ func TestInstagramBuildAttachmentRequest(t *testing.T) {
 	req, _ := handler.BuildAttachmentRequest(context.Background(), facebookTestChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, http.Header{}, req.Header)
-}
-
-// mocks the call to the Facebook graph API
-func buildMockFBGraphIG() *httptest.Server {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		accessToken := r.URL.Query().Get("access_token")
-		defer r.Body.Close()
-
-		// invalid auth token
-		if accessToken != "a123" {
-			http.Error(w, "invalid auth token", http.StatusForbidden)
-		}
-
-		// user has a name
-		if strings.HasSuffix(r.URL.Path, "1337") {
-			w.Write([]byte(`{ "name": "John Doe"}`))
-			return
-		}
-
-		// no name
-		w.Write([]byte(`{ "name": ""}`))
-	}))
-	graphURL = server.URL
-
-	return server
 }

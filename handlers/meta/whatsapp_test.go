@@ -73,16 +73,9 @@ func newServerWithWAC() *web.Server {
 }
 
 func TestWhatsAppSendEvent(t *testing.T) {
-	// other tests repoint graphURL at mock servers, so pin it for this test
-	defer func(u string) { graphURL = u }(graphURL)
-	graphURL = "https://graph.facebook.com/v25.0/"
-
 	channel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WAC", "12345_ID", "", []string{urns.WhatsApp.Prefix}, map[string]any{models.ConfigAuthToken: "a123"})
 
-	cfg := runtime.NewDefaultConfig()
-	cfg.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
-	s := web.NewServer(runtime.NewTestRuntime(cfg))
-
+	s := newServerWithWAC()
 	h := s.MountHandler(newHandler("WAC", "WhatsApp Cloud")).(*handler)
 
 	s.Runtime().HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{

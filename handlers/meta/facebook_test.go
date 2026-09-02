@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -34,12 +32,18 @@ func TestFacebookIncoming(t *testing.T) {
 }
 
 func TestFacebookDescribeURN(t *testing.T) {
-	defer func(u string) { graphURL = u }(graphURL)
-	fbGraph := buildMockFBGraphFBA()
-	defer fbGraph.Close()
+	rt := runtime.NewTestRuntime(runtime.NewDefaultConfig())
+	rt.HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+		"https://graph.facebook.com/1337?access_token=a123&fields=first_name%2Clast_name": {
+			httpx.NewMockResponse(200, nil, []byte(`{"first_name": "John", "last_name": "Doe"}`)),
+		},
+		"https://graph.facebook.com/4567?access_token=a123&fields=first_name%2Clast_name": {
+			httpx.NewMockResponse(200, nil, []byte(`{"first_name": "", "last_name": ""}`)),
+		},
+	})
 
 	channel := facebookTestChannels[0]
-	handler := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(newHandler("FBA", "Facebook"))
+	handler := web.NewServer(rt).MountHandler(newHandler("FBA", "Facebook"))
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, handler.RedactValues(channel))
 
 	tcs := []struct {
@@ -159,28 +163,4 @@ func addValidSignature(r *http.Request) {
 	body, _ := ReadBody(r, maxRequestBodyBytes)
 	sig, _ := fbCalculateSignature("fb_app_secret", body)
 	r.Header.Set(signatureHeader, fmt.Sprintf("sha256=%s", string(sig)))
-}
-
-// mocks the call to the Facebook graph API
-func buildMockFBGraphFBA() *httptest.Server {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		accessToken := r.URL.Query().Get("access_token")
-		defer r.Body.Close()
-
-		// invalid auth token
-		if accessToken != "a123" {
-			http.Error(w, "invalid auth token", http.StatusForbidden)
-		}
-
-		// user has a name
-		if strings.HasSuffix(r.URL.Path, "1337") {
-			w.Write([]byte(`{ "first_name": "John", "last_name": "Doe"}`))
-			return
-		}
-		// no name
-		w.Write([]byte(`{ "first_name": "", "last_name": ""}`))
-	}))
-	graphURL = server.URL
-
-	return server
 }

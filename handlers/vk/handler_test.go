@@ -2,9 +2,6 @@ package vk
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -41,30 +38,15 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTests(t, testChannels, newHandler, "testdata/incoming.json", nil)
 }
 
-func buildMockVKService() *httptest.Server {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, actionGetUser) {
-			userId := r.URL.Query()["user_ids"][0]
-
-			if userId == "123456789" {
-				_, _ = w.Write([]byte(`{"response": [{"id": 123456789, "first_name": "John", "last_name": "Doe"}]}`))
-				return
-			}
-			_, _ = w.Write([]byte(`{"response": []}`))
-		}
-	}))
-
-	apiBaseURL = server.URL
-
-	return server
-}
-
 func TestDescribeURN(t *testing.T) {
-	defer func(u string) { apiBaseURL = u }(apiBaseURL)
-	server := buildMockVKService()
-	defer server.Close()
+	rt := runtime.NewTestRuntime(runtime.NewDefaultConfig())
+	rt.HTTP.Default.Transport = test.MockTransport(map[string][]*httpx.MockResponse{
+		"https://api.vk.com/method/users.get.json?*": {
+			httpx.NewMockResponse(200, nil, []byte(`{"response": [{"id": 123456789, "first_name": "John", "last_name": "Doe"}]}`)),
+		},
+	})
 
-	handler := web.NewServer(runtime.NewTestRuntime(runtime.NewDefaultConfig())).MountHandler(newHandler)
+	handler := web.NewServer(rt).MountHandler(newHandler)
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, testChannels[0], nil, handler.RedactValues(testChannels[0]))
 	urn, _ := urns.New(urns.VK, "123456789")
 	data := map[string]string{"name": "John Doe"}
@@ -72,6 +54,8 @@ func TestDescribeURN(t *testing.T) {
 	describe, err := handler.(models.URNDescriber).DescribeURN(context.Background(), testChannels[0], urn, clog)
 	assert.Nil(t, err)
 	assert.Equal(t, data, describe)
+	assert.Len(t, clog.HttpLogs, 1)
+	assert.Contains(t, clog.HttpLogs[0].URL, "user_ids=123456789")
 
 	AssertChannelLogRedaction(t, clog, []string{"token123xyz", "abc123xyz"})
 }
