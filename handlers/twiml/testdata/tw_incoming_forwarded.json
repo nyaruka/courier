@@ -1,0 +1,32 @@
+[
+    {
+        "label": "Receive Forwarded Valid",
+        "url": "/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "headers": {
+            "X-Forwarded-Path": "/handlers/twilio/receive/8eb23e93-5ecb-45ba-b726-3b064e0c56ab"
+        },
+        "data": "ToCountry=US\u0026ToState=District+Of+Columbia\u0026SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026NumMedia=0\u0026ToCity=\u0026FromZip=01022\u0026SmsSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026FromState=MA\u0026SmsStatus=received\u0026FromCity=CHICOPEE\u0026Body=Msg\u0026FromCountry=US\u0026To=%2B12028831111\u0026ToZip=\u0026NumSegments=1\u0026MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026AccountSid=acctid\u0026From=%2B14133881111\u0026ApiVersion=2010-04-01",
+        "response": {
+            "status": 200,
+            "body": "\u003c?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\u003cResponse/\u003e"
+        },
+        "msgs": [
+            {
+                "uuid": "019a0c46-e4a0-7000-be7c-bf67e8e4975c",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+14133881111",
+                "text": "Msg",
+                "external_id": "SMe287d7109a5a925f182f0e07fe5b223b",
+                "created_on": "2025-10-22T14:16:03Z",
+                "received_on": "2025-10-22T14:16:03Z",
+                "log_uuids": [
+                    "019a0c46-d8e8-7000-bd3d-23f228810986"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

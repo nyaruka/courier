@@ -1,0 +1,782 @@
+[
+    {
+        "label": "Text only chat message",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "facebook:12345",
+            "origin": "chat"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": "mid.133"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "MESSAGE_TAG",
+                    "tag": "HUMAN_AGENT",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Simple Message"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "mid.133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Text only broadcast message",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "facebook:12345",
+            "origin": "broadcast"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": "mid.133"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Simple Message"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "mid.133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Text only broadcast with opt-in auth token",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "facebook:12345",
+            "urn_auth": "345678",
+            "origin": "broadcast"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": "mid.133"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "notification_messages_token": "345678"
+                    },
+                    "message": {
+                        "text": "Simple Message"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "mid.133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Text only flow response",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "facebook:12345",
+            "response_to_external_id": "23526",
+            "origin": "flow"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": "mid.133"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "RESPONSE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Simple Message"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "mid.133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick replies on a broadcast message",
+        "msg": {
+            "text": "Are you happy?",
+            "urn": "facebook:12345",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "Yes"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ],
+            "origin": "broadcast"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": "mid.133"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Are you happy?",
+                        "quick_replies": [
+                            {
+                                "title": "Yes",
+                                "payload": "Yes",
+                                "content_type": "text"
+                            },
+                            {
+                                "title": "No",
+                                "payload": "No",
+                                "content_type": "text"
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "mid.133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Message that exceeds max text length",
+        "msg": {
+            "text": "This is a long message which spans more than one part, what will actually be sent in the end if we exceed the max length?",
+            "urn": "facebook:12345",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "Yes"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": "mid.133"
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": "mid.133"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "This is a long message which spans more than one part, what will actually be sent in the end if"
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "we exceed the max length?",
+                        "quick_replies": [
+                            {
+                                "title": "Yes",
+                                "payload": "Yes",
+                                "content_type": "text"
+                            },
+                            {
+                                "title": "No",
+                                "payload": "No",
+                                "content_type": "text"
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "mid.133",
+            "mid.133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Image attachment",
+        "msg": {
+            "urn": "facebook:12345",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": "mid.133"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "attachment": {
+                            "type": "image",
+                            "payload": {
+                                "url": "https://foo.bar/image.jpg",
+                                "is_reusable": true
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "mid.133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Text, image attachment and quick replies",
+        "msg": {
+            "text": "This is some text.",
+            "urn": "facebook:12345",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ],
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "Yes"
+                },
+                {
+                    "type": "text",
+                    "text": "No"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": "mid.133"
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": "mid.133"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "attachment": {
+                            "type": "image",
+                            "payload": {
+                                "url": "https://foo.bar/image.jpg",
+                                "is_reusable": true
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "This is some text.",
+                        "quick_replies": [
+                            {
+                                "title": "Yes",
+                                "payload": "Yes",
+                                "content_type": "text"
+                            },
+                            {
+                                "title": "No",
+                                "payload": "No",
+                                "content_type": "text"
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "mid.133",
+            "mid.133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Document attachment",
+        "msg": {
+            "urn": "facebook:12345",
+            "attachments": [
+                "application/pdf:https://foo.bar/document.pdf"
+            ]
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": "mid.133"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "attachment": {
+                            "type": "file",
+                            "payload": {
+                                "url": "https://foo.bar/document.pdf",
+                                "is_reusable": true
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "mid.133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Document attachment, document link",
+        "msg": {
+            "urn": "facebook:12345",
+            "attachments": [
+                "document:https://foo.bar/document.pdf"
+            ]
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "message_id": "mid.133"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "attachment": {
+                            "type": "file",
+                            "payload": {
+                                "url": "https://foo.bar/document.pdf",
+                                "is_reusable": true
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "mid.133"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Response doesn't contain message id",
+        "msg": {
+            "text": "ID Error",
+            "urn": "facebook:12345"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "is_error": true
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "ID Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "response not expected values",
+            "loggable": true,
+            "log_error": {
+                "code": "response_unexpected",
+                "message": "Response doesn't match expected values."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Response status code is non-200",
+        "msg": {
+            "text": "Error",
+            "urn": "facebook:12345"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 403,
+                    "body": {
+                        "is_error": true
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error",
+            "urn": "facebook:12345"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 429,
+                    "body": {
+                        "is_error": true
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Response is invalid JSON",
+        "msg": {
+            "text": "Error",
+            "urn": "facebook:12345"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 200,
+                    "body": "bad json"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "response couldn't be parsed",
+            "loggable": true,
+            "log_error": {
+                "code": "response_unparseable",
+                "message": "Response could not be parsed in the expected format."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Response is channel specific error",
+        "msg": {
+            "text": "Error",
+            "urn": "facebook:12345"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "error": {
+                            "message": "The image size is too large.",
+                            "code": 36000
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Error"
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "36000",
+                "message": "The image size is too large."
+            }
+        },
+        "log_errors": []
+    }
+]

@@ -1,0 +1,51 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Body": [
+                        "Simple Message ☺"
+                    ],
+                    "MessagingServiceSid": [
+                        "messageServiceSID"
+                    ],
+                    "ShortenUrls": [
+                        "true"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "+250788383383"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    }
+]

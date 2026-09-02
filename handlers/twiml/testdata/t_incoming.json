@@ -1,0 +1,440 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "ToCountry=US\u0026ToState=District+Of+Columbia\u0026SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026NumMedia=0\u0026ToCity=\u0026FromZip=01022\u0026SmsSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026FromState=MA\u0026SmsStatus=received\u0026FromCity=CHICOPEE\u0026Body=Msg\u0026FromCountry=US\u0026To=%2B12028831111\u0026ToZip=\u0026NumSegments=1\u0026MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026AccountSid=acctid\u0026From=%2B14133881111\u0026ApiVersion=2010-04-01",
+        "response": {
+            "status": 200,
+            "body": "\u003c?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\u003cResponse/\u003e"
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+14133881111",
+                "text": "Msg",
+                "external_id": "SMe287d7109a5a925f182f0e07fe5b223b",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2025-11-19T17:20:03Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Button Ignored",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "ToCountry=US\u0026ToState=District+Of+Columbia\u0026SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026NumMedia=0\u0026ToCity=\u0026FromZip=01022\u0026SmsSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026FromState=MA\u0026SmsStatus=received\u0026FromCity=CHICOPEE\u0026Body=Msg\u0026ButtonText=Confirm\u0026FromCountry=US\u0026To=%2B12028831111\u0026ToZip=\u0026NumSegments=1\u0026MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026AccountSid=acctid\u0026From=%2B14133881111\u0026ApiVersion=2010-04-01",
+        "response": {
+            "status": 200,
+            "body": "\u003c?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\u003cResponse/\u003e"
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+14133881111",
+                "text": "Msg",
+                "external_id": "SMe287d7109a5a925f182f0e07fe5b223b",
+                "created_on": "2025-10-28T14:32:03Z",
+                "received_on": "2025-10-28T14:32:03Z",
+                "log_uuids": [
+                    "019a2b3b-a6e8-7000-bed6-8d9dbc14ba13"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid Signature",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "headers": {
+            "X-Twilio-Signature": "invalidsig"
+        },
+        "data": "ToCountry=US\u0026ToState=District+Of+Columbia\u0026SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026NumMedia=0\u0026ToCity=\u0026FromZip=01022\u0026SmsSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026FromState=MA\u0026SmsStatus=received\u0026FromCity=CHICOPEE\u0026Body=Msg\u0026FromCountry=US\u0026To=%2B12028831111\u0026ToZip=\u0026NumSegments=1\u0026MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026AccountSid=acctid\u0026From=%2B14133881111\u0026ApiVersion=2010-04-01",
+        "unsigned": true,
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid request signature"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Missing Signature",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "ToCountry=US\u0026ToState=District+Of+Columbia\u0026SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026NumMedia=0\u0026ToCity=\u0026FromZip=01022\u0026SmsSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026FromState=MA\u0026SmsStatus=received\u0026FromCity=CHICOPEE\u0026Body=Msg\u0026FromCountry=US\u0026To=%2B12028831111\u0026ToZip=\u0026NumSegments=1\u0026MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026AccountSid=acctid\u0026From=%2B14133881111\u0026ApiVersion=2010-04-01",
+        "unsigned": true,
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing request signature"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive No Params",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": " ",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'moForm.MessageSID' Error:Field validation for 'MessageSID' failed on the 'required' tag\nKey: 'moForm.AccountSID' Error:Field validation for 'AccountSID' failed on the 'required' tag\nKey: 'moForm.From' Error:Field validation for 'From' failed on the 'required' tag\nKey: 'moForm.To' Error:Field validation for 'To' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'messagesid' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'accountsid' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'from' required"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'to' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Media",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "ToCountry=US\u0026ToState=District+Of+Columbia\u0026SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026NumMedia=2\u0026ToCity=\u0026FromZip=01022\u0026SmsSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026FromState=MA\u0026SmsStatus=received\u0026FromCity=CHICOPEE\u0026FromCountry=US\u0026To=%2B12028831111\u0026ToZip=\u0026NumSegments=1\u0026MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026AccountSid=acctid\u0026From=%2B14133881111\u0026ApiVersion=2010-04-01\u0026MediaUrl0=cat.jpg\u0026MediaUrl1=dog.jpg",
+        "response": {
+            "status": 200,
+            "body": "\u003c?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\u003cResponse/\u003e"
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+14133881111",
+                "text": "",
+                "attachments": [
+                    "cat.jpg",
+                    "dog.jpg"
+                ],
+                "external_id": "SMe287d7109a5a925f182f0e07fe5b223b",
+                "created_on": "2025-11-19T02:38:03Z",
+                "received_on": "2025-11-19T02:38:03Z",
+                "log_uuids": [
+                    "019a99f9-df28-7000-949a-601c2b56b42a"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Media With Msg",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "ToCountry=US\u0026ToState=District+Of+Columbia\u0026SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026NumMedia=2\u0026ToCity=\u0026Body=Msg\u0026FromZip=01022\u0026SmsSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026FromState=MA\u0026SmsStatus=received\u0026FromCity=CHICOPEE\u0026FromCountry=US\u0026To=%2B12028831111\u0026ToZip=\u0026NumSegments=1\u0026MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026AccountSid=acctid\u0026From=%2B14133881111\u0026ApiVersion=2010-04-01\u0026MediaUrl0=cat.jpg\u0026MediaUrl1=dog.jpg",
+        "response": {
+            "status": 200,
+            "body": "\u003c?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\u003cResponse/\u003e"
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+14133881111",
+                "text": "Msg",
+                "attachments": [
+                    "cat.jpg",
+                    "dog.jpg"
+                ],
+                "external_id": "SMe287d7109a5a925f182f0e07fe5b223b",
+                "created_on": "2025-10-13T14:31:03Z",
+                "received_on": "2025-10-13T14:31:03Z",
+                "log_uuids": [
+                    "0199ddfb-5888-7000-aa55-c0f831965fea"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Base64",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": "ToCountry=US\u0026ToState=District+Of+Columbia\u0026SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026NumMedia=0\u0026ToCity=\u0026FromZip=01022\u0026SmsSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026FromState=MA\u0026SmsStatus=received\u0026FromCity=CHICOPEE\u0026Body=QmFubm9uIEV4cGxhaW5zIFRoZSBXb3JsZCAuLi4K4oCcVGhlIENhbXAgb2YgdGhlIFNhaW50c%2BKA\u0026FromCountry=US\u0026To=%2B12028831111\u0026ToZip=\u0026NumSegments=1\u0026MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026AccountSid=acctid\u0026From=%2B14133881111\u0026ApiVersion=2010-04-01",
+        "response": {
+            "status": 200,
+            "body": "\u003c?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\u003cResponse/\u003e"
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+14133881111",
+                "text": "Bannon Explains The World ...\n“The Camp of the Saints",
+                "external_id": "SMe287d7109a5a925f182f0e07fe5b223b",
+                "created_on": "2025-10-17T17:21:03Z",
+                "received_on": "2025-10-17T17:21:03Z",
+                "log_uuids": [
+                    "0199f330-6c48-7000-9cbf-56288848a6ae"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Stop contact",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "data": "ErrorCode=21610\u0026MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026MessageStatus=failed\u0026To=%2B12028831111",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F",
+                        "external_id": "SMe287d7109a5a925f182f0e07fe5b223b"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "SMe287d7109a5a925f182f0e07fe5b223b",
+                "status": "F",
+                "log_uuid": "019a40cf-0748-7000-8508-01d41354bd6c"
+            }
+        ],
+        "events": [
+            {
+                "uuid": "019a40cf-0f18-7000-8dbd-425264c03bf5",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+12028831111",
+                "event_type": "stop_contact",
+                "occurred_on": "2025-11-01T19:05:04Z",
+                "log_uuids": [
+                    "019a40cf-0748-7000-8508-01d41354bd6c"
+                ]
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": [
+                {
+                    "code": "external",
+                    "ext_code": "21610",
+                    "message": "Attempt to send to unsubscribed recipient"
+                }
+            ]
+        }
+    },
+    {
+        "label": "Status No Params",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "data": " ",
+        "response": {
+            "status": 200,
+            "body": "\u003c?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\u003c!-- no msg status, ignoring --\u003e\u003cResponse/\u003e"
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Invalid Status",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "data": "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026MessageStatus=huh",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown status 'huh', must be one of 'delivered', 'failed', 'queued', 'read', 'sent', 'undelivered'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Valid",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "data": "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026MessageStatus=delivered",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "SMe287d7109a5a925f182f0e07fe5b223b"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "SMe287d7109a5a925f182f0e07fe5b223b",
+                "status": "D",
+                "log_uuid": "0199f028-0e48-7000-82fd-5b92b67a3e7e"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status Read",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "data": "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026MessageStatus=read",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "R",
+                        "external_id": "SMe287d7109a5a925f182f0e07fe5b223b"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "SMe287d7109a5a925f182f0e07fe5b223b",
+                "status": "R",
+                "log_uuid": "019ac859-83c8-7000-88f8-5e0eb4574b2b"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status ID Valid",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=019a0719-ac96-7eb9-a837-cac215164834",
+        "data": "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026MessageStatus=delivered",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "D",
+                "log_uuid": "019b39b1-52a8-7000-ab93-b307ea9699db"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status ID Invalid",
+        "url": "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=asdf",
+        "data": "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026MessageStatus=delivered",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "SMe287d7109a5a925f182f0e07fe5b223b"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "SMe287d7109a5a925f182f0e07fe5b223b",
+                "status": "D",
+                "log_uuid": "019aea4d-8808-7000-9887-0c6f3bfe4bbc"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]

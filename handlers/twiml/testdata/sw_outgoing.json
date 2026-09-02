@@ -1,0 +1,373 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Body": [
+                        "Simple Message ☺"
+                    ],
+                    "From": [
+                        "2020"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "+250788383383"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Long Send",
+        "msg": {
+            "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Body": [
+                        "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"
+                    ],
+                    "From": [
+                        "2020"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "+250788383383"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Body": [
+                        "I need to keep adding more things to make it work"
+                    ],
+                    "From": [
+                        "2020"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "+250788383383"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002",
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 401,
+                    "body": {
+                        "error": "out of credits"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Body": [
+                        "Error Message"
+                    ],
+                    "From": [
+                        "2020"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "+250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Code",
+        "msg": {
+            "text": "Error Code",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 400,
+                    "body": {
+                        "code": 1001
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Body": [
+                        "Error Code"
+                    ],
+                    "From": [
+                        "2020"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "+250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "1001",
+                "message": "Service specific error: 1001."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Stopped Contact Code",
+        "msg": {
+            "text": "Stopped Contact",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 400,
+                    "body": {
+                        "code": 21610
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Body": [
+                        "Stopped Contact"
+                    ],
+                    "From": [
+                        "2020"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "+250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "contact opted out",
+            "log_error": {
+                "code": "contact_stopped",
+                "message": "Contact has opted-out of messages from this channel."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "No SID",
+        "msg": {
+            "text": "No SID",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Body": [
+                        "No SID"
+                    ],
+                    "From": [
+                        "2020"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "+250788383383"
+                    ]
+                }
+            }
+        ],
+        "log_errors": [
+            {
+                "code": "response_value_missing",
+                "message": "Unable to find 'sid' response."
+            }
+        ]
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Body": [
+                        "My pic!"
+                    ],
+                    "From": [
+                        "2020"
+                    ],
+                    "MediaUrl": [
+                        "https://foo.bar/image.jpg"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "+250788383383"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    }
+]

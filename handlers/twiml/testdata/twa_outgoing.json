@@ -1,0 +1,854 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "whatsapp:250788383383"
+        },
+        "http_mocks": {
+            "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Body": [
+                        "Simple Message ☺"
+                    ],
+                    "From": [
+                        "whatsapp:+12065551212"
+                    ],
+                    "MessagingServiceSid": [
+                        "messageServiceSID"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "whatsapp:+250788383383"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Plain Send with BSUID as whatsapp URN",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "whatsapp:US.1234"
+        },
+        "http_mocks": {
+            "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Body": [
+                        "Simple Message ☺"
+                    ],
+                    "From": [
+                        "whatsapp:+12065551212"
+                    ],
+                    "MessagingServiceSid": [
+                        "messageServiceSID"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "whatsapp:US.1234"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Plain Send with BSUID as bsuid URN",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "bsuid:US.1234"
+        },
+        "http_mocks": {
+            "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "Body": [
+                        "Simple Message ☺"
+                    ],
+                    "From": [
+                        "whatsapp:+12065551212"
+                    ],
+                    "MessagingServiceSid": [
+                        "messageServiceSID"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "whatsapp:US.1234"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788383383",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "body",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "external_id": "ext_id_revive_issue",
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "ContentSid": [
+                        "ext_id_revive_issue"
+                    ],
+                    "ContentVariables": [
+                        "{\"1\":\"Chef\",\"2\":\"tomorrow\"}"
+                    ],
+                    "From": [
+                        "whatsapp:+12065551212"
+                    ],
+                    "MessagingServiceSid": [
+                        "messageServiceSID"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "whatsapp:+250788383383"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send with BSUID as whatsapp URN",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:US.1234",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "body",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "external_id": "ext_id_revive_issue",
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "ContentSid": [
+                        "ext_id_revive_issue"
+                    ],
+                    "ContentVariables": [
+                        "{\"1\":\"Chef\",\"2\":\"tomorrow\"}"
+                    ],
+                    "From": [
+                        "whatsapp:+12065551212"
+                    ],
+                    "MessagingServiceSid": [
+                        "messageServiceSID"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "whatsapp:US.1234"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send no attachment",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788383383",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "body",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef: common resto"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "external_id": "ext_id_revive_issue",
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "ContentSid": [
+                        "ext_id_revive_issue"
+                    ],
+                    "ContentVariables": [
+                        "{\"1\":\"Chef: common resto\",\"2\":\"tomorrow\"}"
+                    ],
+                    "From": [
+                        "whatsapp:+12065551212"
+                    ],
+                    "MessagingServiceSid": [
+                        "messageServiceSID"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "whatsapp:+250788383383"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send with image",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788383383",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "header",
+                        "name": "header",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "image",
+                        "value": "image/jpeg:http://example.com/cat2.jpg"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "external_id": "ext_id_revive_issue",
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {
+                        "sid": "1002"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "ContentSid": [
+                        "ext_id_revive_issue"
+                    ],
+                    "ContentVariables": [
+                        "{\"1\":\"http://example.com/cat2.jpg\",\"2\":\"tomorrow\"}"
+                    ],
+                    "From": [
+                        "whatsapp:+12065551212"
+                    ],
+                    "MessagingServiceSid": [
+                        "messageServiceSID"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "whatsapp:+250788383383"
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "1002"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send missing external ID",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788383383",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "body",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "language": "en_US"
+            }
+        },
+        "error": {
+            "message": "message invalid",
+            "loggable": true,
+            "log_error": {
+                "code": "message_invalid",
+                "message": "Message is missing required values."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Code",
+        "msg": {
+            "text": "Error Code",
+            "urn": "whatsapp:250788383383",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "body",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "external_id": "ext_id_revive_issue",
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 400,
+                    "body": {
+                        "code": 1001
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "ContentSid": [
+                        "ext_id_revive_issue"
+                    ],
+                    "ContentVariables": [
+                        "{\"1\":\"Chef\",\"2\":\"tomorrow\"}"
+                    ],
+                    "From": [
+                        "whatsapp:+12065551212"
+                    ],
+                    "MessagingServiceSid": [
+                        "messageServiceSID"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "whatsapp:+250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "1001",
+                "message": "Service specific error: 1001."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Stopped Contact Code",
+        "msg": {
+            "text": "Stopped Contact",
+            "urn": "whatsapp:250788383383",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "body",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "external_id": "ext_id_revive_issue",
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 400,
+                    "body": {
+                        "code": 21610
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "ContentSid": [
+                        "ext_id_revive_issue"
+                    ],
+                    "ContentVariables": [
+                        "{\"1\":\"Chef\",\"2\":\"tomorrow\"}"
+                    ],
+                    "From": [
+                        "whatsapp:+12065551212"
+                    ],
+                    "MessagingServiceSid": [
+                        "messageServiceSID"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "whatsapp:+250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "contact opted out",
+            "log_error": {
+                "code": "contact_stopped",
+                "message": "Contact has opted-out of messages from this channel."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "No SID",
+        "msg": {
+            "text": "No SID",
+            "urn": "whatsapp:250788383383",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "body",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "external_id": "ext_id_revive_issue",
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "ContentSid": [
+                        "ext_id_revive_issue"
+                    ],
+                    "ContentVariables": [
+                        "{\"1\":\"Chef\",\"2\":\"tomorrow\"}"
+                    ],
+                    "From": [
+                        "whatsapp:+12065551212"
+                    ],
+                    "MessagingServiceSid": [
+                        "messageServiceSID"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "whatsapp:+250788383383"
+                    ]
+                }
+            }
+        ],
+        "log_errors": [
+            {
+                "code": "response_value_missing",
+                "message": "Unable to find 'sid' response."
+            }
+        ]
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "whatsapp:250788383383",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "body",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "external_id": "ext_id_revive_issue",
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": [
+                {
+                    "status": 401,
+                    "body": {
+                        "error": "out of credits"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "ContentSid": [
+                        "ext_id_revive_issue"
+                    ],
+                    "ContentVariables": [
+                        "{\"1\":\"Chef\",\"2\":\"tomorrow\"}"
+                    ],
+                    "From": [
+                        "whatsapp:+12065551212"
+                    ],
+                    "MessagingServiceSid": [
+                        "messageServiceSID"
+                    ],
+                    "StatusCallback": [
+                        "https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=0191e180-7d60-7000-aded-7d8b151cbd5b&action=callback"
+                    ],
+                    "To": [
+                        "whatsapp:+250788383383"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    }
+]
