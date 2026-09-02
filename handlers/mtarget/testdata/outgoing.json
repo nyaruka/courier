@@ -1,0 +1,214 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api-public.mtarget.fr/api-sms.json*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "results": [
+                            {
+                                "code": "0",
+                                "ticket": "externalID"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api-public.mtarget.fr/api-sms.json?allowunicode=true&msg=Simple+Message&msisdn=%2B250788383383&password=Password&serviceid=2020&username=Username"
+            }
+        ],
+        "external_ids": [
+            "externalID"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api-public.mtarget.fr/api-sms.json*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "results": [
+                            {
+                                "code": "0",
+                                "ticket": "externalID"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api-public.mtarget.fr/api-sms.json?allowunicode=true&msg=%E2%98%BA&msisdn=%2B250788383383&password=Password&serviceid=2020&username=Username"
+            }
+        ],
+        "external_ids": [
+            "externalID"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api-public.mtarget.fr/api-sms.json*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "results": [
+                            {
+                                "code": "0",
+                                "ticket": "externalID"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api-public.mtarget.fr/api-sms.json?allowunicode=true&msg=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&msisdn=%2B250788383383&password=Password&serviceid=2020&username=Username"
+            }
+        ],
+        "external_ids": [
+            "externalID"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api-public.mtarget.fr/api-sms.json*": [
+                {
+                    "status": 403,
+                    "body": {
+                        "results": [
+                            {
+                                "code": "3",
+                                "reason": "FAILED",
+                                "ticket": "null"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api-public.mtarget.fr/api-sms.json?allowunicode=true&msg=Error+Sending&msisdn=%2B250788383383&password=Password&serviceid=2020&username=Username"
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api-public.mtarget.fr/api-sms.json*": [
+                {
+                    "status": 429,
+                    "body": {
+                        "results": [
+                            {
+                                "code": "3",
+                                "reason": "FAILED",
+                                "ticket": "null"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api-public.mtarget.fr/api-sms.json?allowunicode=true&msg=Error+Sending&msisdn=%2B250788383383&password=Password&serviceid=2020&username=Username"
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Response",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api-public.mtarget.fr/api-sms.json*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "results": [
+                            {
+                                "code": "3",
+                                "reason": "FAILED",
+                                "ticket": "null"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api-public.mtarget.fr/api-sms.json?allowunicode=true&msg=Error+Sending&msisdn=%2B250788383383&password=Password&serviceid=2020&username=Username"
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "3",
+                "message": "FAILED"
+            }
+        },
+        "log_errors": []
+    }
+]

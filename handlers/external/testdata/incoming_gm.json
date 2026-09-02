@@ -1,0 +1,40 @@
+[
+    {
+        "label": "Receive Non Plus Message",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=2207222333&text=Join",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a650a-4c08-7000-813c-5f0054f68c99",
+                        "text": "Join",
+                        "urn": "tel:+2207222333",
+                        "received_on": "2025-11-08T19:56:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a650a-4c08-7000-813c-5f0054f68c99",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2207222333",
+                "text": "Join",
+                "created_on": "2025-11-08T19:56:04Z",
+                "received_on": "2025-11-08T19:56:03Z",
+                "log_uuids": [
+                    "019a650a-3c68-7000-beb4-508824851c03"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

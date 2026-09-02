@@ -1,0 +1,623 @@
+[
+    {
+        "label": "Receive Valid Message",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                        "text": "Join",
+                        "urn": "tel:+2349067554729",
+                        "received_on": "2025-11-01T05:43:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "created_on": "2025-11-01T05:43:04Z",
+                "received_on": "2025-11-01T05:43:03Z",
+                "log_uuids": [
+                    "019a3df0-c688-7000-aac1-d0d96ed17383"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Post",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "sender=%2B2349067554729\u0026text=Join",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                        "text": "Join",
+                        "urn": "tel:+2349067554729",
+                        "received_on": "2025-10-28T22:18:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "created_on": "2025-10-28T22:18:04Z",
+                "received_on": "2025-10-28T22:18:03Z",
+                "log_uuids": [
+                    "019a2ce6-49a8-7000-8ed8-c814f412c2ca"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Post multipart form",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "multipart_form": {
+            "sender": "2349067554729",
+            "text": "Join"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                        "text": "Join",
+                        "urn": "tel:+2349067554729",
+                        "received_on": "2025-11-17T21:28:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "created_on": "2025-11-17T21:28:04Z",
+                "received_on": "2025-11-17T21:28:03Z",
+                "log_uuids": [
+                    "019a93b7-b2e8-7000-a8f0-d57562257571"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid From",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&text=Join",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                        "text": "Join",
+                        "urn": "tel:+2349067554729",
+                        "received_on": "2025-11-08T21:04:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "created_on": "2025-11-08T21:04:04Z",
+                "received_on": "2025-11-08T21:04:03Z",
+                "log_uuids": [
+                    "019a6548-7de8-7000-b837-178187882754"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Country Parse",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=2349067554729&text=Join",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                        "text": "Join",
+                        "urn": "tel:+2349067554729",
+                        "received_on": "2025-11-19T08:51:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "created_on": "2025-11-19T08:51:04Z",
+                "received_on": "2025-11-19T08:51:03Z",
+                "log_uuids": [
+                    "019a9b4f-5d08-7000-b74c-ec9e0080d5ca"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Message With Date",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join&date=2017-06-23T12:30:00.500Z",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                        "text": "Join",
+                        "urn": "tel:+2349067554729",
+                        "received_on": "2017-06-23T12:30:00.5Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "created_on": "2025-10-29T10:23:04Z",
+                "received_on": "2017-06-23T12:30:00.5Z",
+                "log_uuids": [
+                    "019a2f7e-0b88-7000-9854-09ae5f93f47f"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Valid Message With Time",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join&time=2017-06-23T12:30:00Z",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                        "text": "Join",
+                        "urn": "tel:+2349067554729",
+                        "received_on": "2017-06-23T12:30:00Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a3df0-d628-7000-a841-50246e59817e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "text": "Join",
+                "created_on": "2025-12-07T04:02:04Z",
+                "received_on": "2017-06-23T12:30:00Z",
+                "log_uuids": [
+                    "019af6f9-3ea8-7000-a05e-c14f249cf2ce"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid URN",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=MTN&text=Join",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive No Params",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "must have one of 'sender' or 'from' set"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive No Sender",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?text=Join",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "must have one of 'sender' or 'from' set"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Invalid Date",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join&time=20170623T123000Z",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid date format, must be RFC 3339"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Failed No Params",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "parameters id or uuid should not be empty"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Failed Valid",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/?id=019a0719-ac96-7eb9-a837-cac215164834",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "F",
+                "log_uuid": "019ad424-0228-7000-952b-151632c35a86"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid Status",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/wired/",
+        "response": {
+            "status": 404,
+            "body": "404 page not found\n"
+        },
+        "log": null
+    },
+    {
+        "label": "Sent Valid",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/?id=019a0719-ac96-7eb9-a837-cac215164834",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "S",
+                "log_uuid": "019a624f-b048-7000-b88a-04e1e059d4ff"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Delivered Valid",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?id=019a0719-ac96-7eb9-a837-cac215164834",
+        "data": "nothing",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "D",
+                "log_uuid": "019b2f72-5648-7000-a7df-390823822520"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Delivered Valid Post",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+        "data": "id=019a0719-ac96-7eb9-a837-cac215164834",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a0719-ac96-7eb9-a837-cac215164834",
+                "status": "D",
+                "log_uuid": "019b1ff4-45c8-7000-9294-187f54f363bd"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Stopped Event",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=%2B2349067554729",
+        "data": "nothing",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Event Accepted",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "event_type": "stop_contact",
+                        "urn": "tel:+2349067554729",
+                        "received_on": "2025-10-18T17:18:04Z"
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "0199f854-10f8-7000-99d2-132fee1ff094",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "event_type": "stop_contact",
+                "occurred_on": "2025-10-18T17:18:04Z",
+                "log_uuids": [
+                    "0199f854-0928-7000-b1a0-3305ff75f44c"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Stopped Event Post",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/",
+        "data": "from=%2B2349067554729",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Event Accepted",
+                "data": [
+                    {
+                        "type": "event",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "event_type": "stop_contact",
+                        "urn": "tel:+2349067554729",
+                        "received_on": "2025-11-30T01:00:04Z"
+                    }
+                ]
+            }
+        },
+        "events": [
+            {
+                "uuid": "019ad246-2238-7000-a8c4-2bff4b2de0fa",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+2349067554729",
+                "event_type": "stop_contact",
+                "occurred_on": "2025-11-30T01:00:04Z",
+                "log_uuids": [
+                    "019ad246-1a68-7000-a8ce-9b39396f54ac"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Stopped Event Invalid URN",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=MTN",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Stopped event No Params",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "Key: 'stopContactForm.From' Error:Field validation for 'From' failed on the 'required' tag"
+                    },
+                    {
+                        "type": "error",
+                        "error": "field 'from' required"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

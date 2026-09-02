@@ -1,0 +1,61 @@
+[
+    {
+        "label": "Receive Custom Message",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from_number=12067799192&messageText=Join&timestamp=2017-06-23T12:30:00Z",
+        "data": "empty",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019b3e07-00c8-7000-841b-80131c303e5c",
+                        "text": "Join",
+                        "urn": "tel:+12067799192",
+                        "received_on": "2017-06-23T12:30:00Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b3e07-00c8-7000-841b-80131c303e5c",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+12067799192",
+                "text": "Join",
+                "created_on": "2025-12-20T23:10:04Z",
+                "received_on": "2017-06-23T12:30:00Z",
+                "log_uuids": [
+                    "019b3e06-f128-7000-a14b-f3a813d10e74"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Custom Missing",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sent_from=12067799192&messageText=Join",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "must have one of 'sender' or 'from' set"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

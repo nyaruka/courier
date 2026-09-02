@@ -2,1043 +2,160 @@ package external
 
 import (
 	"net/http"
-	"net/url"
 	"testing"
-	"time"
 
-	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
 	"github.com/nyaruka/courier/v26/test"
-	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 )
 
-const (
-	receiveURL = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-)
-
-var testChannels = []*models.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US", []string{urns.Phone.Prefix}, nil),
-}
-
-var gmChannels = []*models.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "GM", []string{urns.Phone.Prefix}, nil),
-}
-
-var handleTestCases = []IncomingTestCase{
-	{
-		Label:                "Receive Valid Message",
-		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join",
-		Data:                 "empty",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "tel:+2349067554729",
-	},
-	{
-		Label:                "Receive Valid Post",
-		URL:                  receiveURL,
-		Data:                 "sender=%2B2349067554729&text=Join",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "tel:+2349067554729",
-	},
-	{
-		Label:                "Receive Valid Post multipart form",
-		URL:                  receiveURL,
-		MultipartForm:        map[string]string{"sender": "2349067554729", "text": "Join"},
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "tel:+2349067554729",
-	},
-	{
-		Label:                "Receive Valid From",
-		URL:                  receiveURL + "?from=%2B2349067554729&text=Join",
-		Data:                 "empty",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "tel:+2349067554729",
-	},
-	{
-		Label:                "Receive Country Parse",
-		URL:                  receiveURL + "?from=2349067554729&text=Join",
-		Data:                 "empty",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "tel:+2349067554729",
-	},
-	{
-		Label:                "Receive Valid Message With Date",
-		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join&date=2017-06-23T12:30:00.500Z",
-		Data:                 "empty",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "tel:+2349067554729",
-		ExpectedDate:         time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC),
-	},
-	{
-		Label:                "Receive Valid Message With Time",
-		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join&time=2017-06-23T12:30:00Z",
-		Data:                 "empty",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "tel:+2349067554729",
-		ExpectedDate:         time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC),
-	},
-	{
-		Label:                "Invalid URN",
-		URL:                  receiveURL + "?sender=MTN&text=Join",
-		Data:                 "empty",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "not a possible number",
-	},
-	{
-		Label:                "Receive No Params",
-		URL:                  receiveURL,
-		Data:                 "empty",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "must have one of 'sender' or 'from' set",
-	},
-	{
-		Label:              "Receive No Sender",
-		URL:                receiveURL + "?text=Join",
-		Data:               "empty",
-		ExpectedRespStatus: 400, ExpectedBodyContains: "must have one of 'sender' or 'from' set",
-	},
-	{
-		Label:                "Receive Invalid Date",
-		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join&time=20170623T123000Z",
-		Data:                 "empty",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "invalid date format, must be RFC 3339",
-	},
-	{
-		Label:                "Failed No Params",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "parameters id or uuid should not be empty",
-	},
-	{
-		Label:                "Failed Valid",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/?id=019a0719-ac96-7eb9-a837-cac215164834",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"status":"F"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a0719-ac96-7eb9-a837-cac215164834", Status: models.MsgStatusFailed}},
-	},
-	{
-		Label:                "Invalid Status",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/wired/",
-		ExpectedRespStatus:   404,
-		ExpectedBodyContains: `page not found`,
-		NoLogsExpected:       true,
-	},
-	{
-		Label:                "Sent Valid",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/?id=019a0719-ac96-7eb9-a837-cac215164834",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"status":"S"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a0719-ac96-7eb9-a837-cac215164834", Status: models.MsgStatusSent}},
-	},
-	{
-		Label:                "Delivered Valid",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?id=019a0719-ac96-7eb9-a837-cac215164834",
-		Data:                 "nothing",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a0719-ac96-7eb9-a837-cac215164834", Status: models.MsgStatusDelivered}},
-	},
-	{
-		Label:                "Delivered Valid Post",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
-		Data:                 "id=019a0719-ac96-7eb9-a837-cac215164834",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"status":"D"`,
-		ExpectedStatuses:     []ExpectedStatus{{MsgUUID: "019a0719-ac96-7eb9-a837-cac215164834", Status: models.MsgStatusDelivered}},
-	},
-	{
-		Label:                "Stopped Event",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=%2B2349067554729",
-		Data:                 "nothing",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedEvents: []ExpectedEvent{
-			{Type: models.EventTypeStopContact, URN: "tel:+2349067554729"},
-		},
-	},
-	{
-		Label:                "Stopped Event Post",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/",
-		Data:                 "from=%2B2349067554729",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedEvents: []ExpectedEvent{
-			{Type: models.EventTypeStopContact, URN: "tel:+2349067554729"},
-		},
-	},
-	{
-		Label:                "Stopped Event Invalid URN",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=MTN",
-		Data:                 "empty",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "not a possible number",
-	},
-	{
-		Label:                "Stopped event No Params",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "field 'from' required",
-	},
-}
-
-var testSOAPReceiveChannels = []*models.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			configTextXPath:             "//content",
-			configFromXPath:             "//source",
-			configMOResponse:            "<?xml version=“1.0”?><return>0</return>",
-			configMOResponseContentType: "text/xml",
-		},
-	),
-}
-
-var handleSOAPReceiveTestCases = []IncomingTestCase{
-	{
-		Label:                "Receive Valid Post SOAP",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
-		Data:                 `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body><com:moRequest><source>2349067554729</source><content>Join</content></com:moRequest></soapenv:Body></soapenv:Envelope>`,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "<?xml version=“1.0”?><return>0</return>",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "tel:+2349067554729",
-	},
-	{
-		Label:                "Receive Invalid SOAP",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
-		Data:                 `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body></soapenv:Body></soapenv:Envelope>`,
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "missing from",
-	},
-}
-
-var gmTestCases = []IncomingTestCase{
-	{
-		Label:                "Receive Non Plus Message",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=2207222333&text=Join",
-		Data:                 "empty",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "tel:+2207222333",
-	},
-}
-
-var customChannels = []*models.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			configMOFromField: "from_number",
-			configMODateField: "timestamp",
-			configMOTextField: "messageText",
-		},
-	),
-}
-
-var customTestCases = []IncomingTestCase{
-	{
-		Label:                "Receive Custom Message",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from_number=12067799192&messageText=Join&timestamp=2017-06-23T12:30:00Z",
-		Data:                 "empty",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "tel:+12067799192",
-		ExpectedDate:         time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC),
-	},
-	{
-		Label:                "Receive Custom Missing",
-		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sent_from=12067799192&messageText=Join",
-		Data:                 "empty",
-		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "must have one of 'sender' or 'from' set",
-	},
-}
-
-var extChannels = []*models.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "GM", []string{urns.External.Prefix}, nil),
-}
-
-var extReceiveTestCases = []IncomingTestCase{
-	{
-		Label:                "Receive Valid Message",
-		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join",
-		Data:                 "empty",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "ext:+2349067554729",
-	},
-	{
-		Label:                "Receive Valid Message trim spaces",
-		URL:                  receiveURL + "?sender=+2349067554729&text=Join",
-		Data:                 "empty",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("Join"),
-		ExpectedURN:          "ext:2349067554729",
-	},
+func newChannel(country i18n.Country, schemes []string, config map[string]any) *models.Channel {
+	return test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", country, schemes, config)
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler, handleTestCases)
-	RunIncomingTestCases(t, testSOAPReceiveChannels, newHandler, handleSOAPReceiveTestCases)
-	RunIncomingTestCases(t, gmChannels, newHandler, gmTestCases)
-	RunIncomingTestCases(t, customChannels, newHandler, customTestCases)
+	phone := []string{urns.Phone.Prefix}
 
-	RunIncomingTestCases(t, extChannels, newHandler, extReceiveTestCases)
-}
+	RunIncomingTests(t, []*models.Channel{newChannel("US", phone, nil)}, newHandler, "testdata/incoming.json", nil)
 
-var longSendTestCases = []OutgoingTestCase{
-	{
-		Label:   "Long Send",
-		MsgText: "This is a long message that will be longer than 30....... characters", MsgURN: "tel:+250788383383",
-		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "One"}},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{
-			{
-				Params: url.Values{
-					"text": {"This is a long message that"},
-					"to":   {"+250788383383"},
-					"from": {"2020"},
-				},
-			},
-			{
-				Params: url.Values{
-					"text": {"will be longer than 30......."},
-					"to":   {"+250788383383"},
-					"from": {"2020"},
-				},
-			},
-			{
-				Params: url.Values{
-					"text":        {"characters"},
-					"to":          {"+250788383383"},
-					"from":        {"2020"},
-					"quick_reply": {"One"},
-				},
-			},
-		},
-	},
-}
+	soapChannel := newChannel("US", phone, map[string]any{
+		configTextXPath:             "//content",
+		configFromXPath:             "//source",
+		configMOResponse:            "<?xml version=“1.0”?><return>0</return>",
+		configMOResponseContentType: "text/xml",
+	})
+	RunIncomingTests(t, []*models.Channel{soapChannel}, newHandler, "testdata/incoming_soap.json", nil)
 
-var getSendSmartEncodingTestCases = []OutgoingTestCase{
-	{
-		Label:   "Smart Encoding",
-		MsgText: "Fancy “Smart” Quotes",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-			Params: url.Values{
-				"text": {`Fancy "Smart" Quotes`},
-				"to":   {"+250788383383"},
-				"from": {"2020"},
-			},
-		}},
-	},
-}
+	RunIncomingTests(t, []*models.Channel{newChannel("GM", phone, nil)}, newHandler, "testdata/incoming_gm.json", nil)
 
-var postSendSmartEncodingTestCases = []OutgoingTestCase{
-	{
-		Label:   "Smart Encoding",
-		MsgText: "Fancy “Smart” Quotes",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-			Form: url.Values{
-				"text": {`Fancy "Smart" Quotes`},
-				"to":   {"+250788383383"},
-				"from": {"2020"},
-			},
-		}},
-	},
-}
+	customFieldsChannel := newChannel("US", phone, map[string]any{
+		configMOFromField: "from_number",
+		configMODateField: "timestamp",
+		configMOTextField: "messageText",
+	})
+	RunIncomingTests(t, []*models.Channel{customFieldsChannel}, newHandler, "testdata/incoming_custom_fields.json", nil)
 
-var getSendTestCases = []OutgoingTestCase{
-	{
-		Label:   "Plain Send",
-		MsgText: "Simple Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-			Params: url.Values{
-				"text": {"Simple Message"},
-				"to":   {"+250788383383"},
-				"from": {"2020"},
-			},
-		}},
-	},
-	{
-		Label:   "Unicode Send",
-		MsgText: "☺", MsgURN: "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-			Params: url.Values{
-				"text": {"☺"},
-				"to":   {"+250788383383"},
-				"from": {"2020"},
-			},
-		}},
-	},
-	{
-		Label:   "Error Sending",
-		MsgText: "Error Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(401, nil, []byte(`1: Unknown channel`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-			Params: url.Values{
-				"text": {`Error Message`},
-				"to":   {"+250788383383"},
-				"from": {"2020"},
-			},
-		}},
-		ExpectedError: channels.ErrResponseStatus,
-	},
-	{
-		Label:   "Throttled",
-		MsgText: "Error Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(429, nil, []byte(`1: Unknown channel`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-			Params: url.Values{
-				"text": {`Error Message`},
-				"to":   {"+250788383383"},
-				"from": {"2020"},
-			},
-		}},
-		ExpectedError: channels.ErrConnectionThrottled,
-	},
-	{
-		Label:          "Send Attachment",
-		MsgText:        "My pic!",
-		MsgURN:         "tel:+250788383383",
-		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-			Params: url.Values{
-				"text": {"My pic!\nhttps://foo.bar/image.jpg"},
-				"to":   {"+250788383383"},
-				"from": {"2020"},
-			},
-		}},
-	},
-}
-
-var postSendTestCases = []OutgoingTestCase{
-	{
-		Label:   "Plain Send",
-		MsgText: "Simple Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-			Form: url.Values{
-				"text": {"Simple Message"},
-				"to":   {"+250788383383"},
-				"from": {"2020"},
-			},
-		}},
-	},
-	{
-		Label:   "Unicode Send",
-		MsgText: "☺",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-			Form: url.Values{
-				"text": {"☺"},
-				"to":   {"+250788383383"},
-				"from": {"2020"},
-			},
-		}},
-	},
-	{
-		Label:   "Error Sending",
-		MsgText: "Error Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(401, nil, []byte(`1: Unknown channel`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-			Form: url.Values{
-				"text": {`Error Message`},
-				"to":   {"+250788383383"},
-				"from": {"2020"},
-			},
-		}},
-		ExpectedError: channels.ErrResponseStatus,
-	},
-	{
-		Label:          "Send Attachment",
-		MsgText:        "My pic!",
-		MsgURN:         "tel:+250788383383",
-		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-			Form: url.Values{
-				"text": {"My pic!\nhttps://foo.bar/image.jpg"},
-				"to":   {"+250788383383"},
-				"from": {"2020"},
-			},
-		}},
-	},
-}
-
-var postSendCustomContentTypeTestCases = []OutgoingTestCase{
-	{
-		Label:   "Plain Send",
-		MsgText: "Simple Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
-			Form: url.Values{
-				"text": {"Simple Message"},
-				"to":   {"250788383383"},
-				"from": {"2020"},
-			},
-		}},
-	},
-}
-
-var jsonSendTestCases = []OutgoingTestCase{
-	{
-		Label:   "Plain Send",
-		MsgText: "Simple Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-			Body:    `{ "to":"+250788383383", "text":"Simple Message", "from":"2020", "quick_replies":[] }`,
-		}},
-	},
-	{
-		Label:   "Unicode Send",
-		MsgText: `☺ "hi!"`,
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-			Body:    `{ "to":"+250788383383", "text":"☺ \"hi!\"", "from":"2020", "quick_replies":[] }`,
-		}},
-	},
-	{
-		Label:   "Error Sending",
-		MsgText: "Error Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(401, nil, []byte(`1: Unknown channel`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-			Body:    `{ "to":"+250788383383", "text":"Error Message", "from":"2020", "quick_replies":[] }`,
-		}},
-		ExpectedError: channels.ErrResponseStatus,
-	},
-	{
-		Label:          "Send Attachment",
-		MsgText:        "My pic!",
-		MsgURN:         "tel:+250788383383",
-		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-			Body:    `{ "to":"+250788383383", "text":"My pic!\nhttps://foo.bar/image.jpg", "from":"2020", "quick_replies":[] }`,
-		}},
-	},
-	{
-		Label:           "Send Quick Replies",
-		MsgText:         "Some message",
-		MsgURN:          "tel:+250788383383",
-		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "One"}, {Type: "text", Text: "Two"}, {Type: "text", Text: "Three"}},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-			Body:    `{ "to":"+250788383383", "text":"Some message", "from":"2020", "quick_replies":["One","Two","Three"] }`,
-		}},
-	},
-}
-
-var jsonLongSendTestCases = []OutgoingTestCase{
-	{
-		Label:           "Send Long message JSON",
-		MsgText:         "This is a long message that will be longer than 30....... characters",
-		MsgURN:          "tel:+250788383383",
-		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "One"}, {Type: "text", Text: "Two"}, {Type: "text", Text: "Three"}},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{
-			{
-				Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-				Body:    `{ "to":"+250788383383", "text":"This is a long message that", "from":"2020", "quick_replies":[] }`,
-			},
-			{
-				Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-				Body:    `{ "to":"+250788383383", "text":"will be longer than 30.......", "from":"2020", "quick_replies":[] }`,
-			},
-			{
-				Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-				Body:    `{ "to":"+250788383383", "text":"characters", "from":"2020", "quick_replies":["One","Two","Three"] }`,
-			},
-		},
-	},
-}
-
-var xmlSendTestCases = []OutgoingTestCase{
-	{
-		Label:   "Plain Send",
-		MsgText: "Simple Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-			Body:    `<msg><to>+250788383383</to><text>Simple Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		}},
-	},
-	{
-		Label:   "Unicode Send",
-		MsgText: `☺`,
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-			Body:    `<msg><to>+250788383383</to><text>☺</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		}},
-	},
-	{
-		Label:   "Error Sending",
-		MsgText: "Error Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(401, nil, []byte(`1: Unknown channel`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-			Body:    `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		}},
-		ExpectedError: channels.ErrResponseStatus,
-	},
-	{
-		Label:          "Send Attachment",
-		MsgText:        "My pic!",
-		MsgURN:         "tel:+250788383383",
-		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-			Body:    `<msg><to>+250788383383</to><text>My pic!&#xA;https://foo.bar/image.jpg</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		}},
-	},
-	{
-		Label:           "Send Quick Replies",
-		MsgText:         "Some message",
-		MsgURN:          "tel:+250788383383",
-		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "One"}, {Type: "text", Text: "Two"}, {Type: "text", Text: "Three"}},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-			Body:    "<msg><to>+250788383383</to><text>Some message</text><from>2020</from><quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
-		}},
-	},
-}
-
-var xmlLongSendTestCases = []OutgoingTestCase{
-	{
-		Label:           "Send Long message XML",
-		MsgText:         "This is a long message that will be longer than 30....... characters",
-		MsgURN:          "tel:+250788383383",
-		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "One"}, {Type: "text", Text: "Two"}, {Type: "text", Text: "Three"}},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{
-			{
-				Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-				Body:    "<msg><to>+250788383383</to><text>This is a long message that</text><from>2020</from><quick_replies></quick_replies></msg>",
-			},
-			{
-				Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-				Body:    "<msg><to>+250788383383</to><text>will be longer than 30.......</text><from>2020</from><quick_replies></quick_replies></msg>",
-			},
-			{
-				Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-				Body:    "<msg><to>+250788383383</to><text>characters</text><from>2020</from><quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
-			},
-		},
-	},
-}
-
-var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
-	{
-		Label:   "Plain Send",
-		MsgText: "Simple Message",
-		MsgURN:  "tel:+250788383383",
-
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`<return>0</return>`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-			Body:    `<msg><to>+250788383383</to><text>Simple Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		}},
-	},
-	{
-		Label:   "Unicode Send",
-		MsgText: `☺`,
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`<return>0</return>`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-			Body:    `<msg><to>+250788383383</to><text>☺</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		}},
-	},
-	{
-		Label:   "Error Sending",
-		MsgText: "Error Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(401, nil, []byte(`<return>0</return>`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-			Body:    `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		}},
-		ExpectedError: channels.ErrResponseStatus,
-	},
-	{
-		Label:   "Error Sending with 200 status code",
-		MsgText: "Error Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`<return>1</return>`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-			Body:    `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		}},
-		ExpectedError: channels.ErrResponseContent,
-	},
-	{
-		Label:          "Send Attachment",
-		MsgText:        "My pic!",
-		MsgURN:         "tel:+250788383383",
-		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`<return>0</return>`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-			Body:    `<msg><to>+250788383383</to><text>My pic!&#xA;https://foo.bar/image.jpg</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		}},
-	},
-	{
-		Label:           "Send Quick Replies",
-		MsgText:         "Some message",
-		MsgURN:          "tel:+250788383383",
-		MsgQuickReplies: []models.QuickReply{{Type: "text", Text: "One"}, {Type: "text", Text: "Two"}, {Type: "text", Text: "Three"}},
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send": {
-				httpx.NewMockResponse(200, nil, []byte(`<return>0</return>`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-			Body:    `<msg><to>+250788383383</to><text>Some message</text><from>2020</from><quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>`,
-		}},
-	},
-}
-
-var nationalGetSendTestCases = []OutgoingTestCase{
-	{
-		Label:   "Plain Send",
-		MsgText: "Simple Message",
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/send*": {
-				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-			Params: url.Values{
-				"text": {"Simple Message"},
-				"to":   {"788383383"},
-				"from": {"2020"},
-			},
-		}},
-	},
+	extChannel := newChannel("GM", []string{urns.External.Prefix}, nil)
+	RunIncomingTests(t, []*models.Channel{extChannel}, newHandler, "testdata/incoming_ext_urns.json", nil)
 }
 
 func TestOutgoing(t *testing.T) {
-	var getChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			models.ConfigSendMethod: http.MethodGet})
+	phone := []string{urns.Phone.Prefix}
 
-	var getSmartChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			configEncoding:          encodingSmart,
-			models.ConfigSendMethod: http.MethodGet})
+	getChannel := newChannel("US", phone, map[string]any{
+		models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+		models.ConfigSendMethod: http.MethodGet,
+	})
+	RunOutgoingTests(t, getChannel, newHandler, "testdata/outgoing_get.json", nil)
 
-	var postChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigSendURL:    "http://example.com/send",
-			models.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			models.ConfigSendMethod: http.MethodPost})
+	getSmartChannel := newChannel("US", phone, map[string]any{
+		models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+		configEncoding:          encodingSmart,
+		models.ConfigSendMethod: http.MethodGet,
+	})
+	RunOutgoingTests(t, getSmartChannel, newHandler, "testdata/outgoing_get_smart.json", nil)
+	RunOutgoingTests(t, getSmartChannel, newHandler, "testdata/outgoing_get_smart_encoding.json", nil)
 
-	var postChannelCustomContentType = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigSendURL:     "http://example.com/send",
-			models.ConfigSendBody:    "to={{to_no_plus}}&text={{text}}&from={{from_no_plus}}{{quick_replies}}",
-			models.ConfigContentType: "application/x-www-form-urlencoded; charset=utf-8",
-			models.ConfigSendMethod:  http.MethodPost})
+	postChannel := newChannel("US", phone, map[string]any{
+		models.ConfigSendURL:    "http://example.com/send",
+		models.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+		models.ConfigSendMethod: http.MethodPost,
+	})
+	RunOutgoingTests(t, postChannel, newHandler, "testdata/outgoing_post.json", nil)
 
-	var postSmartChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigSendURL:    "http://example.com/send",
-			models.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			configEncoding:          encodingSmart,
-			models.ConfigSendMethod: http.MethodPost})
+	postContentTypeChannel := newChannel("US", phone, map[string]any{
+		models.ConfigSendURL:     "http://example.com/send",
+		models.ConfigSendBody:    "to={{to_no_plus}}&text={{text}}&from={{from_no_plus}}{{quick_replies}}",
+		models.ConfigContentType: "application/x-www-form-urlencoded; charset=utf-8",
+		models.ConfigSendMethod:  http.MethodPost,
+	})
+	RunOutgoingTests(t, postContentTypeChannel, newHandler, "testdata/outgoing_post_content_type.json", nil)
 
-	var jsonChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigSendURL:     "http://example.com/send",
-			models.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
-			models.ConfigContentType: contentJSON,
-			models.ConfigSendMethod:  http.MethodPost,
-			models.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
-		})
+	postSmartChannel := newChannel("US", phone, map[string]any{
+		models.ConfigSendURL:    "http://example.com/send",
+		models.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+		configEncoding:          encodingSmart,
+		models.ConfigSendMethod: http.MethodPost,
+	})
+	RunOutgoingTests(t, postSmartChannel, newHandler, "testdata/outgoing_post_smart.json", nil)
+	RunOutgoingTests(t, postSmartChannel, newHandler, "testdata/outgoing_post_smart_encoding.json", nil)
 
-	var xmlChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigSendURL:     "http://example.com/send",
-			models.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
-			models.ConfigContentType: contentXML,
-			models.ConfigSendMethod:  http.MethodPut,
-		})
+	jsonChannel := newChannel("US", phone, map[string]any{
+		models.ConfigSendURL:     "http://example.com/send",
+		models.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
+		models.ConfigContentType: contentJSON,
+		models.ConfigSendMethod:  http.MethodPost,
+		models.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
+	})
+	RunOutgoingTests(t, jsonChannel, newHandler, "testdata/outgoing_json.json", nil)
 
-	var xmlChannelWithResponseContent = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigSendURL:     "http://example.com/send",
-			models.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
-			configMTResponseCheck:    "<return>0</return>",
-			models.ConfigContentType: contentXML,
-			models.ConfigSendMethod:  http.MethodPut,
-		})
+	xmlChannel := newChannel("US", phone, map[string]any{
+		models.ConfigSendURL:     "http://example.com/send",
+		models.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
+		models.ConfigContentType: contentXML,
+		models.ConfigSendMethod:  http.MethodPut,
+	})
+	RunOutgoingTests(t, xmlChannel, newHandler, "testdata/outgoing_xml.json", nil)
 
-	RunOutgoingTestCases(t, getChannel, newHandler, getSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, getSmartChannel, newHandler, getSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, getSmartChannel, newHandler, getSendSmartEncodingTestCases, nil, nil)
-	RunOutgoingTestCases(t, postChannel, newHandler, postSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, postChannelCustomContentType, newHandler, postSendCustomContentTypeTestCases, nil, nil)
-	RunOutgoingTestCases(t, postSmartChannel, newHandler, postSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, postSmartChannel, newHandler, postSendSmartEncodingTestCases, nil, nil)
-	RunOutgoingTestCases(t, jsonChannel, newHandler, jsonSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, xmlChannel, newHandler, xmlSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, xmlChannelWithResponseContent, newHandler, xmlSendWithResponseContentTestCases, nil, nil)
+	xmlResponseCheckChannel := newChannel("US", phone, map[string]any{
+		models.ConfigSendURL:     "http://example.com/send",
+		models.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
+		configMTResponseCheck:    "<return>0</return>",
+		models.ConfigContentType: contentXML,
+		models.ConfigSendMethod:  http.MethodPut,
+	})
+	RunOutgoingTests(t, xmlResponseCheckChannel, newHandler, "testdata/outgoing_xml_response_check.json", nil)
 
-	var getChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigMaxLength:  30,
-			models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			models.ConfigSendMethod: http.MethodGet})
+	// max length can be configured as an int or a string
+	getMaxLengthChannel := newChannel("US", phone, map[string]any{
+		models.ConfigMaxLength:  30,
+		models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+		models.ConfigSendMethod: http.MethodGet,
+	})
+	RunOutgoingTests(t, getMaxLengthChannel, newHandler, "testdata/outgoing_get_max_length.json", nil)
 
-	var getChannel30StrLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigMaxLength:  "30",
-			models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			models.ConfigSendMethod: http.MethodGet})
+	getMaxLengthStrChannel := newChannel("US", phone, map[string]any{
+		models.ConfigMaxLength:  "30",
+		models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+		models.ConfigSendMethod: http.MethodGet,
+	})
+	RunOutgoingTests(t, getMaxLengthStrChannel, newHandler, "testdata/outgoing_get_max_length_str.json", nil)
 
-	var jsonChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigSendURL:     "http://example.com/send",
-			models.ConfigMaxLength:   30,
-			models.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
-			models.ConfigContentType: contentJSON,
-			models.ConfigSendMethod:  http.MethodPost,
-			models.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
-		})
+	jsonMaxLengthChannel := newChannel("US", phone, map[string]any{
+		models.ConfigSendURL:     "http://example.com/send",
+		models.ConfigMaxLength:   30,
+		models.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
+		models.ConfigContentType: contentJSON,
+		models.ConfigSendMethod:  http.MethodPost,
+		models.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
+	})
+	RunOutgoingTests(t, jsonMaxLengthChannel, newHandler, "testdata/outgoing_json_max_length.json", nil)
 
-	var xmlChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigSendURL:     "http://example.com/send",
-			models.ConfigMaxLength:   30,
-			models.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
-			models.ConfigContentType: contentXML,
-			models.ConfigSendMethod:  http.MethodPost,
-			models.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
-		})
+	xmlMaxLengthChannel := newChannel("US", phone, map[string]any{
+		models.ConfigSendURL:     "http://example.com/send",
+		models.ConfigMaxLength:   30,
+		models.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
+		models.ConfigContentType: contentXML,
+		models.ConfigSendMethod:  http.MethodPost,
+		models.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
+	})
+	RunOutgoingTests(t, xmlMaxLengthChannel, newHandler, "testdata/outgoing_xml_max_length.json", nil)
 
-	RunOutgoingTestCases(t, getChannel30IntLength, newHandler, longSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, getChannel30StrLength, newHandler, longSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, jsonChannel30IntLength, newHandler, jsonLongSendTestCases, nil, nil)
-	RunOutgoingTestCases(t, xmlChannel30IntLength, newHandler, xmlLongSendTestCases, nil, nil)
+	nationalChannel := newChannel("US", phone, map[string]any{
+		models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+		"use_national":          true,
+		models.ConfigSendMethod: http.MethodGet,
+	})
+	RunOutgoingTests(t, nationalChannel, newHandler, "testdata/outgoing_get_national.json", nil)
 
-	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
-			"use_national":          true,
-			models.ConfigSendMethod: http.MethodGet})
-
-	RunOutgoingTestCases(t, nationalChannel, newHandler, nationalGetSendTestCases, nil, nil)
-
-	var jsonChannelWithSendAuthorization = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		[]string{urns.Phone.Prefix},
-		map[string]any{
-			models.ConfigSendURL:           "http://example.com/send",
-			models.ConfigSendBody:          `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
-			models.ConfigContentType:       contentJSON,
-			models.ConfigSendMethod:        http.MethodPost,
-			models.ConfigSendAuthorization: "Token ABCDEF",
-		})
-	RunOutgoingTestCases(t, jsonChannelWithSendAuthorization, newHandler, jsonSendTestCases, []string{"Token ABCDEF"}, nil)
+	jsonAuthorizationChannel := newChannel("US", phone, map[string]any{
+		models.ConfigSendURL:           "http://example.com/send",
+		models.ConfigSendBody:          `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
+		models.ConfigContentType:       contentJSON,
+		models.ConfigSendMethod:        http.MethodPost,
+		models.ConfigSendAuthorization: "Token ABCDEF",
+	})
+	RunOutgoingTests(t, jsonAuthorizationChannel, newHandler, "testdata/outgoing_json_authorization.json", &OutgoingOptions{CheckRedacted: []string{"Token ABCDEF"}})
 }
