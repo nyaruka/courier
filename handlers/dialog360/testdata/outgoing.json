@@ -1,0 +1,2612 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Plain Send with BSUID",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "bsuid:US.1234"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "recipient": "US.1234",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Plain Send with BSUID as whatsapp URN",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:US.1234"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "recipient": "US.1234",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Plain Send with user_id in response",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "contacts": [
+                            {
+                                "input": "250788123123",
+                                "user_id": "US.1234"
+                            }
+                        ],
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": [],
+        "new_urn": "whatsapp:US.1234"
+    },
+    {
+        "label": "Send to BSUID with same user_id in response",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:US.1234"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "contacts": [
+                            {
+                                "input": "US.1234",
+                                "user_id": "US.1234"
+                            }
+                        ],
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "recipient": "US.1234",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Plain Send with user_id already on contact",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:250788123123",
+            "contact_other_urns": [
+                "whatsapp:US.1234"
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "contacts": [
+                            {
+                                "input": "250788123123",
+                                "user_id": "US.1234"
+                            }
+                        ],
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unicode Send",
+        "msg": {
+            "text": "☺",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "☺",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Audio Send",
+        "msg": {
+            "text": "audio caption",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "audio/mpeg:https://foo.bar/audio.mp3"
+            ]
+        },
+        "http_mocks": {
+            "*/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "audio",
+                    "audio": {
+                        "link": "https://foo.bar/audio.mp3"
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "audio caption",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8",
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Document Send",
+        "msg": {
+            "text": "document caption",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "application/pdf:https://foo.bar/document.pdf"
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "document",
+                    "document": {
+                        "link": "https://foo.bar/document.pdf",
+                        "caption": "document caption",
+                        "filename": "document.pdf"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Document Send, document link",
+        "msg": {
+            "text": "document caption",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "document:https://foo.bar/document.pdf"
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "document",
+                    "document": {
+                        "link": "https://foo.bar/document.pdf",
+                        "caption": "document caption",
+                        "filename": "document.pdf"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Image Send",
+        "msg": {
+            "text": "image caption",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "image",
+                    "image": {
+                        "link": "https://foo.bar/image.jpg",
+                        "caption": "image caption"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Video Send",
+        "msg": {
+            "text": "video caption",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "video/mp4:https://foo.bar/video.mp4"
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "video",
+                    "video": {
+                        "link": "https://foo.bar/video.mp4",
+                        "caption": "video caption"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788123123",
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "type": "body",
+                        "name": "body",
+                        "variables": {
+                            "1": 0,
+                            "2": 1
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "name": "revive_issue",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en_US"
+                        },
+                        "components": [
+                            {
+                                "type": "body",
+                                "parameters": [
+                                    {
+                                        "type": "text",
+                                        "text": "Chef"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "tomorrow"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Template Send with attachment",
+        "msg": {
+            "text": "templated message",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "image/jpeg:https://foo.bar/example.jpg"
+            ],
+            "locale": "eng",
+            "templating": {
+                "template": {
+                    "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3",
+                    "name": "revive_issue"
+                },
+                "components": [
+                    {
+                        "name": "header",
+                        "type": "header/media",
+                        "variables": {
+                            "1": 0
+                        }
+                    },
+                    {
+                        "type": "body/text",
+                        "name": "body",
+                        "variables": {
+                            "1": 1,
+                            "2": 2
+                        }
+                    }
+                ],
+                "variables": [
+                    {
+                        "type": "image",
+                        "value": "image/jpeg:https://foo.bar/image.jpg"
+                    },
+                    {
+                        "type": "text",
+                        "value": "Chef"
+                    },
+                    {
+                        "type": "text",
+                        "value": "tomorrow"
+                    }
+                ],
+                "language": "en_US"
+            }
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "template",
+                    "template": {
+                        "name": "revive_issue",
+                        "language": {
+                            "policy": "deterministic",
+                            "code": "en_US"
+                        },
+                        "components": [
+                            {
+                                "type": "header",
+                                "parameters": [
+                                    {
+                                        "type": "image",
+                                        "image": {
+                                            "link": "https://foo.bar/image.jpg"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "body",
+                                "parameters": [
+                                    {
+                                        "type": "text",
+                                        "text": "Chef"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "tomorrow"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive Button Message Send",
+        "msg": {
+            "text": "Interactive Button Msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "BUTTON1"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "button",
+                        "body": {
+                            "text": "Interactive Button Msg"
+                        },
+                        "action": {
+                            "buttons": [
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "0",
+                                        "title": "BUTTON1"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive List Message Send, QRs Extra",
+        "msg": {
+            "text": "Interactive List Msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "OPTION1",
+                    "extra": "This option is the most popular"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "list",
+                        "body": {
+                            "text": "Interactive List Msg"
+                        },
+                        "action": {
+                            "button": "Menu",
+                            "sections": [
+                                {
+                                    "rows": [
+                                        {
+                                            "id": "0",
+                                            "title": "OPTION1",
+                                            "description": "This option is the most popular"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive List Message Send, QRs Extra Empty",
+        "msg": {
+            "text": "Interactive QR Extra empty Msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "OPTION1"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "button",
+                        "body": {
+                            "text": "Interactive QR Extra empty Msg"
+                        },
+                        "action": {
+                            "buttons": [
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "0",
+                                        "title": "OPTION1"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive List Message Send",
+        "msg": {
+            "text": "Interactive List Msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "ROW1"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW2"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW3",
+                    "extra": "Third description"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW4"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "list",
+                        "body": {
+                            "text": "Interactive List Msg"
+                        },
+                        "action": {
+                            "button": "Menu",
+                            "sections": [
+                                {
+                                    "rows": [
+                                        {
+                                            "id": "0",
+                                            "title": "ROW1"
+                                        },
+                                        {
+                                            "id": "1",
+                                            "title": "ROW2"
+                                        },
+                                        {
+                                            "id": "2",
+                                            "title": "ROW3",
+                                            "description": "Third description"
+                                        },
+                                        {
+                                            "id": "3",
+                                            "title": "ROW4"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive List Message Send more than 10 QRs",
+        "msg": {
+            "text": "Interactive List Msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "ROW1"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW2"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW3"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW4"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW5"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW6"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW7"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW8"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW9"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW10"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW11"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW12"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "list",
+                        "body": {
+                            "text": "Interactive List Msg"
+                        },
+                        "action": {
+                            "button": "Menu",
+                            "sections": [
+                                {
+                                    "rows": [
+                                        {
+                                            "id": "0",
+                                            "title": "ROW1"
+                                        },
+                                        {
+                                            "id": "1",
+                                            "title": "ROW2"
+                                        },
+                                        {
+                                            "id": "2",
+                                            "title": "ROW3"
+                                        },
+                                        {
+                                            "id": "3",
+                                            "title": "ROW4"
+                                        },
+                                        {
+                                            "id": "4",
+                                            "title": "ROW5"
+                                        },
+                                        {
+                                            "id": "5",
+                                            "title": "ROW6"
+                                        },
+                                        {
+                                            "id": "6",
+                                            "title": "ROW7"
+                                        },
+                                        {
+                                            "id": "7",
+                                            "title": "ROW8"
+                                        },
+                                        {
+                                            "id": "8",
+                                            "title": "ROW9"
+                                        },
+                                        {
+                                            "id": "9",
+                                            "title": "ROW10"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "too many quick replies WhatsApp supports only up to 10 quick replies"
+            }
+        ]
+    },
+    {
+        "label": "Interactive List Message Send In Spanish",
+        "msg": {
+            "text": "Hola",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "ROW1"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW2"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW3"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW4"
+                }
+            ],
+            "locale": "spa"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "list",
+                        "body": {
+                            "text": "Hola"
+                        },
+                        "action": {
+                            "button": "Menú",
+                            "sections": [
+                                {
+                                    "rows": [
+                                        {
+                                            "id": "0",
+                                            "title": "ROW1"
+                                        },
+                                        {
+                                            "id": "1",
+                                            "title": "ROW2"
+                                        },
+                                        {
+                                            "id": "2",
+                                            "title": "ROW3"
+                                        },
+                                        {
+                                            "id": "3",
+                                            "title": "ROW4"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive Button Message Send with image attachment",
+        "msg": {
+            "text": "Interactive Button Msg",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ],
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "BUTTON1"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "button",
+                        "header": {
+                            "type": "image",
+                            "image": {
+                                "link": "https://foo.bar/image.jpg"
+                            }
+                        },
+                        "body": {
+                            "text": "Interactive Button Msg"
+                        },
+                        "action": {
+                            "buttons": [
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "0",
+                                        "title": "BUTTON1"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive Button Message Send with video attachment",
+        "msg": {
+            "text": "Interactive Button Msg",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "video/mp4:https://foo.bar/video.mp4"
+            ],
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "BUTTON1"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "button",
+                        "header": {
+                            "type": "video",
+                            "video": {
+                                "link": "https://foo.bar/video.mp4"
+                            }
+                        },
+                        "body": {
+                            "text": "Interactive Button Msg"
+                        },
+                        "action": {
+                            "buttons": [
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "0",
+                                        "title": "BUTTON1"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive Button Message Send with document attachment",
+        "msg": {
+            "text": "Interactive Button Msg",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "document/pdf:https://foo.bar/document.pdf"
+            ],
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "BUTTON1"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "button",
+                        "header": {
+                            "type": "document",
+                            "document": {
+                                "link": "https://foo.bar/document.pdf",
+                                "filename": "document.pdf"
+                            }
+                        },
+                        "body": {
+                            "text": "Interactive Button Msg"
+                        },
+                        "action": {
+                            "buttons": [
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "0",
+                                        "title": "BUTTON1"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive Button Message Send with audio attachment",
+        "msg": {
+            "text": "Interactive Button Msg",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "audio/mp3:https://foo.bar/audio.mp3"
+            ],
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "ROW1"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW2"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW3"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "audio",
+                    "audio": {
+                        "link": "https://foo.bar/audio.mp3"
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "button",
+                        "body": {
+                            "text": "Interactive Button Msg"
+                        },
+                        "action": {
+                            "buttons": [
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "0",
+                                        "title": "ROW1"
+                                    }
+                                },
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "1",
+                                        "title": "ROW2"
+                                    }
+                                },
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "2",
+                                        "title": "ROW3"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8",
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive List Message Send with attachment",
+        "msg": {
+            "text": "Interactive List Msg",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ],
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "ROW1"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW2"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW3"
+                },
+                {
+                    "type": "text",
+                    "text": "ROW4"
+                }
+            ]
+        },
+        "http_mocks": {
+            "*/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "image",
+                    "image": {
+                        "link": "https://foo.bar/image.jpg"
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "list",
+                        "body": {
+                            "text": "Interactive List Msg"
+                        },
+                        "action": {
+                            "button": "Menu",
+                            "sections": [
+                                {
+                                    "rows": [
+                                        {
+                                            "id": "0",
+                                            "title": "ROW1"
+                                        },
+                                        {
+                                            "id": "1",
+                                            "title": "ROW2"
+                                        },
+                                        {
+                                            "id": "2",
+                                            "title": "ROW3"
+                                        },
+                                        {
+                                            "id": "3",
+                                            "title": "ROW4"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8",
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive with location request",
+        "msg": {
+            "text": "Interactive send location",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "location"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "location_request_message",
+                        "body": {
+                            "text": "Interactive send location"
+                        },
+                        "action": {
+                            "name": "send_location"
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive with location request, with extra quick replies ignored",
+        "msg": {
+            "text": "Interactive send location",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "location"
+                },
+                {
+                    "type": "text",
+                    "text": "Yes"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "location_request_message",
+                        "body": {
+                            "text": "Interactive send location"
+                        },
+                        "action": {
+                            "name": "send_location"
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type text can't be combined with a location quick reply and won't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Interactive with location request, with attachment",
+        "msg": {
+            "text": "Interactive send location",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ],
+            "quick_replies": [
+                {
+                    "type": "location"
+                },
+                {
+                    "type": "text",
+                    "text": "Yes"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "image",
+                    "image": {
+                        "link": "https://foo.bar/image.jpg"
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "location_request_message",
+                        "body": {
+                            "text": "Interactive send location"
+                        },
+                        "action": {
+                            "name": "send_location"
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8",
+            "157b5e14568e8"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "quick reply of type text can't be combined with a location quick reply and won't be sent"
+            }
+        ]
+    },
+    {
+        "label": "Interactive with form",
+        "msg": {
+            "text": "Interactive form msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "form",
+                    "text": "Book now",
+                    "extra": "123456"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "flow",
+                        "body": {
+                            "text": "Interactive form msg"
+                        },
+                        "action": {
+                            "name": "flow",
+                            "parameters": {
+                                "flow_message_version": "3",
+                                "flow_id": "123456",
+                                "flow_cta": "Book now"
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Interactive with URL button",
+        "msg": {
+            "text": "Interactive URL msg",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "Visit",
+                    "extra": "https://example.com"
+                }
+            ]
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "cta_url",
+                        "body": {
+                            "text": "Interactive URL msg"
+                        },
+                        "action": {
+                            "name": "cta_url",
+                            "parameters": {
+                                "display_text": "Visit",
+                                "url": "https://example.com"
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Link Sending",
+        "msg": {
+            "text": "Link Sending https://link.com",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Link Sending https://link.com",
+                        "preview_url": true
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error Bad JSON",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 403,
+                    "body": "bad json"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "response couldn't be parsed",
+            "loggable": true,
+            "log_error": {
+                "code": "response_unparseable",
+                "message": "Response could not be parsed in the expected format."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 403,
+                    "body": {
+                        "error": {
+                            "message": "(#250012) some error",
+                            "code": 250012
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "250012",
+                "message": "(#250012) some error"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Channel Contact Pair limit hit",
+        "msg": {
+            "text": "Pair limit",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 403,
+                    "body": {
+                        "error": {
+                            "message": "(#131056) (Business Account, Consumer Account) pair rate limit hit",
+                            "code": 131056
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Pair limit",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Throttled",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 403,
+                    "body": {
+                        "error": {
+                            "message": "(#130429) Rate limit hit",
+                            "code": 130429
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error HTTP 429",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 429,
+                    "body": {
+                        "error": {
+                            "message": "Calls to this api have exceeded the rate limit",
+                            "code": 613
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Retryable",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 400,
+                    "body": {
+                        "error": {
+                            "message": "Media upload error",
+                            "code": 131053
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with retryable reason",
+            "retryable": true,
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "131053",
+                "message": "Media upload error"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Message",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 403,
+                    "body": {
+                        "error": {
+                            "message": "Other error with message",
+                            "code": 0
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "0",
+                "message": "Other error with message"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Connection",
+        "msg": {
+            "text": "Error",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "https://waba-v2.360dialog.io/messages": [
+                {
+                    "status": 500,
+                    "body": "Bad gateway"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://waba-v2.360dialog.io/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "D360-Api-Key": "the-auth-token"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Error",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    }
+]

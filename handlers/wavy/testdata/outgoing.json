@@ -1,0 +1,161 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api-messaging.movile.com/v1/send-sms": [
+                {
+                    "status": 200,
+                    "body": {
+                        "id": "external1"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api-messaging.movile.com/v1/send-sms",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authenticationtoken": "token",
+                    "Content-Type": "application/json",
+                    "Username": "user1"
+                },
+                "body": {
+                    "destination": "250788383383",
+                    "messageText": "Simple Message ☺\nhttps://foo.bar/image.jpg"
+                }
+            }
+        ],
+        "external_ids": [
+            "external1"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Error status 403",
+        "msg": {
+            "text": "Error Response",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api-messaging.movile.com/v1/send-sms": [
+                {
+                    "status": 403,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api-messaging.movile.com/v1/send-sms",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authenticationtoken": "token",
+                    "Content-Type": "application/json",
+                    "Username": "user1"
+                },
+                "body": {
+                    "destination": "250788383383",
+                    "messageText": "Error Response"
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Throttled",
+        "msg": {
+            "text": "Error Response",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api-messaging.movile.com/v1/send-sms": [
+                {
+                    "status": 429,
+                    "body": "Error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api-messaging.movile.com/v1/send-sms",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authenticationtoken": "token",
+                    "Content-Type": "application/json",
+                    "Username": "user1"
+                },
+                "body": {
+                    "destination": "250788383383",
+                    "messageText": "Error Response"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api-messaging.movile.com/v1/send-sms": [
+                {
+                    "status": 501,
+                    "body": "Bad Gateway"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api-messaging.movile.com/v1/send-sms",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authenticationtoken": "token",
+                    "Content-Type": "application/json",
+                    "Username": "user1"
+                },
+                "body": {
+                    "destination": "250788383383",
+                    "messageText": "Error Message"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    }
+]

@@ -1,0 +1,517 @@
+[
+    {
+        "label": "Receive Valid",
+        "url": "/c/zvw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "id": "string",
+            "timestamp": "2017-05-03T03:04:45Z",
+            "type": "MESSAGE",
+            "message": {
+                "id": "string",
+                "from": "254791541111",
+                "to": "2020",
+                "direction": "IN",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "Msg",
+                        "payload": "string"
+                    }
+                ],
+                "visitor": {
+                    "name": "Bob"
+                }
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "Msg",
+                        "urn": "whatsapp:254791541111",
+                        "external_id": "string",
+                        "received_on": "2017-05-03T03:04:45Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "whatsapp:254791541111",
+                "text": "Msg",
+                "external_id": "string",
+                "created_on": "2025-11-19T17:20:03Z",
+                "received_on": "2017-05-03T03:04:45Z",
+                "log_uuids": [
+                    "019a9d21-5de8-7000-a1e4-7638cffc03a6"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive file Valid",
+        "url": "/c/zvw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "id": "string",
+            "timestamp": "2017-05-03T03:04:45Z",
+            "type": "MESSAGE",
+            "message": {
+                "id": "string",
+                "from": "254791541111",
+                "to": "2020",
+                "direction": "IN",
+                "contents": [
+                    {
+                        "type": "file",
+                        "fileUrl": "https://foo.bar/v1/media/41"
+                    }
+                ],
+                "visitor": {
+                    "name": "Bob"
+                }
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "",
+                        "urn": "whatsapp:254791541111",
+                        "attachments": [
+                            "https://foo.bar/v1/media/41"
+                        ],
+                        "external_id": "string",
+                        "received_on": "2017-05-03T03:04:45Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "whatsapp:254791541111",
+                "text": "",
+                "attachments": [
+                    "https://foo.bar/v1/media/41"
+                ],
+                "external_id": "string",
+                "created_on": "2025-12-21T00:10:03Z",
+                "received_on": "2017-05-03T03:04:45Z",
+                "log_uuids": [
+                    "019b3e3d-dfa8-7000-9f46-6bdb5a063e59"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive location Valid",
+        "url": "/c/zvw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "id": "string",
+            "timestamp": "2017-05-03T03:04:45Z",
+            "type": "MESSAGE",
+            "message": {
+                "id": "string",
+                "from": "254791541111",
+                "to": "2020",
+                "direction": "IN",
+                "contents": [
+                    {
+                        "type": "location",
+                        "longitude": 1.0,
+                        "latitude": 0.0
+                    }
+                ],
+                "visitor": {
+                    "name": "Bob"
+                }
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "",
+                        "urn": "whatsapp:254791541111",
+                        "attachments": [
+                            "geo:0.000000,1.000000"
+                        ],
+                        "external_id": "string",
+                        "received_on": "2017-05-03T03:04:45Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "whatsapp:254791541111",
+                "text": "",
+                "attachments": [
+                    "geo:0.000000,1.000000"
+                ],
+                "external_id": "string",
+                "created_on": "2025-11-25T08:59:03Z",
+                "received_on": "2017-05-03T03:04:45Z",
+                "log_uuids": [
+                    "019aba3c-d808-7000-abaf-dfeea08a5b2e"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive multiple contents",
+        "url": "/c/zvw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "id": "string",
+            "timestamp": "2017-05-03T03:04:45Z",
+            "type": "MESSAGE",
+            "message": {
+                "id": "string",
+                "from": "254791541111",
+                "to": "2020",
+                "direction": "IN",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "Look at this"
+                    },
+                    {
+                        "type": "file",
+                        "fileUrl": "https://foo.bar/v1/media/41"
+                    },
+                    {
+                        "type": "location",
+                        "longitude": 1.0,
+                        "latitude": 0.0
+                    }
+                ],
+                "visitor": {
+                    "name": "Bob"
+                }
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                        "text": "Look at this",
+                        "urn": "whatsapp:254791541111",
+                        "attachments": [
+                            "https://foo.bar/v1/media/41",
+                            "geo:0.000000,1.000000"
+                        ],
+                        "external_id": "string",
+                        "received_on": "2017-05-03T03:04:45Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9d21-69a0-7000-85c5-5f26b6333b45",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "whatsapp:254791541111",
+                "text": "Look at this",
+                "attachments": [
+                    "https://foo.bar/v1/media/41",
+                    "geo:0.000000,1.000000"
+                ],
+                "external_id": "string",
+                "created_on": "2025-12-05T11:16:03Z",
+                "received_on": "2017-05-03T03:04:45Z",
+                "log_uuids": [
+                    "019aee39-dd68-7000-ac96-f65f4bf6c676"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Not JSON body",
+        "url": "/c/zvw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'e' looking for beginning of value"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Wrong JSON schema",
+        "url": "/c/zvw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {},
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "request JSON doesn't match required schema: Key: 'moPayload.Timestamp' Error:Field validation for 'Timestamp' failed on the 'required' tag\nKey: 'moPayload.Type' Error:Field validation for 'Type' failed on the 'required' tag\nKey: 'moPayload.Message.ID' Error:Field validation for 'ID' failed on the 'required' tag\nKey: 'moPayload.Message.From' Error:Field validation for 'From' failed on the 'required' tag\nKey: 'moPayload.Message.To' Error:Field validation for 'To' failed on the 'required' tag\nKey: 'moPayload.Message.Direction' Error:Field validation for 'Direction' failed on the 'required' tag\nKey: 'moPayload.Message.Contents' Error:Field validation for 'Contents' failed on the 'required' tag"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing field",
+        "url": "/c/zvw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "id": "string",
+            "timestamp": "2017-05-03T03:04:45Z",
+            "type": "MESSAGE",
+            "message": {
+                "id": "",
+                "from": "254791541111",
+                "to": "2020",
+                "direction": "IN",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "Msg",
+                        "payload": "string"
+                    }
+                ],
+                "visitor": {
+                    "name": "Bob"
+                }
+            }
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "request JSON doesn't match required schema: Key: 'moPayload.Message.ID' Error:Field validation for 'ID' failed on the 'required' tag"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Bad Date",
+        "url": "/c/zvw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "id": "string",
+            "timestamp": "2014-08-26T12:55:48.593-03:00",
+            "type": "MESSAGE",
+            "message": {
+                "id": "string",
+                "from": "254791541111",
+                "to": "2020",
+                "direction": "IN",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "Msg",
+                        "payload": "string"
+                    }
+                ],
+                "visitor": {
+                    "name": "Bob"
+                }
+            }
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid date format: 2014-08-26T12:55:48.593-03:00"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid Status",
+        "url": "/c/zvw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": {
+            "id": "string",
+            "type": "MESSAGE_STATUS",
+            "channel": "string",
+            "messageId": "hs765939216",
+            "messageStatus": {
+                "timestamp": "2021-03-12T12:15:31Z",
+                "code": "SENT"
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S",
+                        "external_id": "hs765939216"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "hs765939216",
+                "status": "S",
+                "log_uuid": "019a9405-84c8-7000-a071-1bb56436b1db"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Unkown Status",
+        "url": "/c/zvw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": {
+            "id": "string",
+            "type": "MESSAGE_STATUS",
+            "channel": "string",
+            "messageId": "hs765939216",
+            "messageStatus": {
+                "timestamp": "2021-03-12T12:15:31Z",
+                "code": "FOO"
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "E",
+                        "external_id": "hs765939216"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "hs765939216",
+                "status": "E",
+                "log_uuid": "019b346c-c048-7000-bb17-c4be63ae7ad3"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Not JSON body status",
+        "url": "/c/zvw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": "empty",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'e' looking for beginning of value"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Wrong JSON schema status",
+        "url": "/c/zvw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/",
+        "data": {},
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "request JSON doesn't match required schema: Key: 'statusPayload.Type' Error:Field validation for 'Type' failed on the 'required' tag"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]

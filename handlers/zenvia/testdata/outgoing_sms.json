@@ -1,0 +1,235 @@
+[
+    {
+        "label": "Plain Send",
+        "msg": {
+            "text": "Simple Message ☺",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.zenvia.com/v2/channels/sms/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "id": "55555"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.zenvia.com/v2/channels/sms/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "X-Api-Token": "zv-api-token"
+                },
+                "body": {
+                    "from": "2020",
+                    "to": "250788383383",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "Simple Message ☺"
+                        }
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "55555"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Long Send",
+        "msg": {
+            "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.zenvia.com/v2/channels/sms/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "id": "55555"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.zenvia.com/v2/channels/sms/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "X-Api-Token": "zv-api-token"
+                },
+                "body": {
+                    "from": "2020",
+                    "to": "250788383383",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"
+                        },
+                        {
+                            "type": "text",
+                            "text": "I need to keep adding more things to make it work"
+                        }
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "55555"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Attachment",
+        "msg": {
+            "text": "My pic!",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api.zenvia.com/v2/channels/sms/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "id": "55555"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.zenvia.com/v2/channels/sms/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "X-Api-Token": "zv-api-token"
+                },
+                "body": {
+                    "from": "2020",
+                    "to": "250788383383",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "My pic!\nhttps://foo.bar/image.jpg"
+                        }
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "55555"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "No External ID",
+        "msg": {
+            "text": "No External ID",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.zenvia.com/v2/channels/sms/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "code": "400",
+                        "message": "Validation error",
+                        "details": [
+                            {
+                                "code": "400",
+                                "path": "Error",
+                                "message": "Error description"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.zenvia.com/v2/channels/sms/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "X-Api-Token": "zv-api-token"
+                },
+                "body": {
+                    "from": "2020",
+                    "to": "250788383383",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "No External ID"
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Error Sending",
+        "msg": {
+            "text": "Error Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.zenvia.com/v2/channels/sms/messages": [
+                {
+                    "status": 401,
+                    "body": {
+                        "error": "failed"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.zenvia.com/v2/channels/sms/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "X-Api-Token": "zv-api-token"
+                },
+                "body": {
+                    "from": "2020",
+                    "to": "250788383383",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "Error Message"
+                        }
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
+    }
+]

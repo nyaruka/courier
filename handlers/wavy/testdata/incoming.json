@@ -1,0 +1,315 @@
+[
+    {
+        "label": "Receive Message",
+        "url": "/c/wv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {
+            "id": "external_id",
+            "subAccount": "iFoodMarketing",
+            "campaignAlias": "iFoodPromo",
+            "carrierId": 1,
+            "carrierName": "VIVO",
+            "source": "5516981562820",
+            "shortCode": "2020",
+            "messageText": "Eu quero pizza",
+            "receivedAt": 1459991487970,
+            "receivedDate": "2016-09-05T12:13:25Z",
+            "mt": {
+                "id": "8be584fd-2554-439b-9ba9-aab507278992",
+                "correlationId": "1876",
+                "username": "iFoodCS",
+                "email": "customer.support@ifood.com"
+            }
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                        "text": "Eu quero pizza",
+                        "urn": "tel:+5516981562820",
+                        "external_id": "external_id",
+                        "received_on": "2016-04-07T01:11:27.97Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b2e58-6680-7000-95a1-73253c68ee65",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+5516981562820",
+                "text": "Eu quero pizza",
+                "external_id": "external_id",
+                "created_on": "2025-12-17T22:05:03Z",
+                "received_on": "2016-04-07T01:11:27.97Z",
+                "log_uuids": [
+                    "019b2e58-5ac8-7000-b5ae-79147d8e44c7"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid JSON receive",
+        "url": "/c/wv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "blargh",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'b' looking for beginning of value"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing Keys receive",
+        "url": "/c/wv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": {},
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "request JSON doesn't match required schema: Key: 'moPayload.ID' Error:Field validation for 'ID' failed on the 'required' tag\nKey: 'moPayload.From' Error:Field validation for 'From' failed on the 'required' tag\nKey: 'moPayload.To' Error:Field validation for 'To' failed on the 'required' tag\nKey: 'moPayload.Message' Error:Field validation for 'Message' failed on the 'required' tag\nKey: 'moPayload.Timestamp' Error:Field validation for 'Timestamp' failed on the 'required' tag"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Sent Status Valid",
+        "url": "/c/wv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/",
+        "data": {
+            "id": "58b36497-fb0f-474c-9c35-20b184ac4227",
+            "correlationId": "12345",
+            "sentStatusCode": 2,
+            "sentStatus": "SENT_SUCCESS"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "S",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "S",
+                "log_uuid": "019b04c9-ed48-7000-966b-a4ceaa8be0f9"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Unknown Sent Status Valid",
+        "url": "/c/wv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/",
+        "data": {
+            "id": "58b36497-fb0f-474c-9c35-20b184ac4227",
+            "correlationId": "12345",
+            "sentStatusCode": 777,
+            "sentStatus": "Blabla"
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown status '777', must be one of '2', '4', '101', '102', '103', '104', '201', '202', '203', '204', '205', '207', '301'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid JSON sent Status",
+        "url": "/c/wv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/",
+        "data": "blargh",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'b' looking for beginning of value"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing Keys sent Status",
+        "url": "/c/wv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/",
+        "data": {},
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "request JSON doesn't match required schema: Key: 'sentStatusPayload.CollerationID' Error:Field validation for 'CollerationID' failed on the 'required' tag\nKey: 'sentStatusPayload.SentStatusCode' Error:Field validation for 'SentStatusCode' failed on the 'required' tag"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Delivered Status Valid",
+        "url": "/c/wv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+        "data": {
+            "id": "58b36497-fb0f-474c-9c35-20b184ac4227",
+            "correlationId": "12345",
+            "sentStatusCode ": 2,
+            "sentStatus": "SENT_SUCCESS ",
+            "deliveredStatusCode": 4,
+            "deliveredStatus": "DELIVERED_SUCCESS"
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "D",
+                "log_uuid": "019a0c47-c348-7000-81c3-1a9fe34002df"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Unknown Delivered Status Valid",
+        "url": "/c/wv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+        "data": {
+            "id": "58b36497-fb0f-474c-9c35-20b184ac4227",
+            "correlationId": "12345",
+            "sentStatusCode ": 2,
+            "sentStatus": "SENT_SUCCESS",
+            "deliveredStatusCode": 777,
+            "deliveredStatus": "BlaBal"
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unknown status '777', must be one of '2', '4', '101', '102', '103', '104', '201', '202', '203', '204', '205', '207', '301'"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid JSON delivered Status",
+        "url": "/c/wv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+        "data": "blargh",
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "unable to parse request JSON: invalid character 'b' looking for beginning of value"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing Keys delivered Status",
+        "url": "/c/wv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+        "data": {},
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "request JSON doesn't match required schema: Key: 'deliveredStatusPayload.CollerationID' Error:Field validation for 'CollerationID' failed on the 'required' tag\nKey: 'deliveredStatusPayload.DeliveredStatusCode' Error:Field validation for 'DeliveredStatusCode' failed on the 'required' tag"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    }
+]
