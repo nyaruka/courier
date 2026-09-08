@@ -26,7 +26,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
+const (
 	apiURL          = "https://api.freshchat.com/v2"
 	signatureHeader = "X-FreshChat-Signature"
 )

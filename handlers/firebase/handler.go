@@ -27,12 +27,11 @@ const (
 	configNotification    = "FCM_NOTIFICATION"
 	configKey             = "FCM_KEY"
 	configCredentialsFile = "FCM_CREDENTIALS_JSON"
+
+	sendURL = "https://fcm.googleapis.com/fcm/send"
 )
 
-var (
-	sendURL      = "https://fcm.googleapis.com/fcm/send"
-	maxMsgLength = 1024
-)
+var maxMsgLength = 1024
 
 func init() {
 	channels.RegisterHandler(newHandler)

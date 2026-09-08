@@ -15,8 +15,9 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 )
 
+const sendURL = "https://api.transmitsms.com/send-sms.json"
+
 var (
-	sendURL      = "https://api.transmitsms.com/send-sms.json"
 	maxMsgLength = 612
 	statusMap    = map[string]models.MsgStatus{
 		"delivered":   models.MsgStatusDelivered,

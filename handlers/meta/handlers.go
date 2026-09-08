@@ -29,14 +29,16 @@ import (
 )
 
 // Endpoints we hit
-var (
+const (
 	sendURL  = "https://graph.facebook.com/v25.0/me/messages"
 	graphURL = "https://graph.facebook.com/v25.0/"
 
 	signatureHeader = "X-Hub-Signature-256"
 
 	maxRequestBodyBytes int64 = 1024 * 1024
+)
 
+var (
 	// max for the body
 	maxMsgLength = 1000
 

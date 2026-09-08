@@ -18,11 +18,12 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	maxMsgLength    = 1152
+const (
 	whatsappSendURL = "https://api.zenvia.com/v2/channels/whatsapp/messages"
 	smsSendURL      = "https://api.zenvia.com/v2/channels/sms/messages"
 )
+
+var maxMsgLength = 1152
 
 func init() {
 	channels.RegisterHandler(newHandler("ZVW", "Zenvia WhatsApp"))

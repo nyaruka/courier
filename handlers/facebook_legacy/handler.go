@@ -22,13 +22,17 @@ import (
 )
 
 // Endpoints we hit
-var (
+const (
 	sendURL      = "https://graph.facebook.com/v3.3/me/messages"
 	subscribeURL = "https://graph.facebook.com/v3.3/me/subscribed_apps"
-	graphURL     = "https://graph.facebook.com/v3.3/"
 
 	// How long we want after the subscribe callback to register the page for events
 	subscribeTimeout = time.Second * 2
+)
+
+var (
+	// not a const because tests point it at a mock graph server
+	graphURL = "https://graph.facebook.com/v3.3/"
 
 	// Facebook API says 640 is max for the body
 	maxMsgLength = 640

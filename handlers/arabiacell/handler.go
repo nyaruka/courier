@@ -16,12 +16,11 @@ import (
 const (
 	configServiceID     = "service_id"
 	configChargingLevel = "charging_level"
+
+	sendURL = "https://acsdp.arabiacell.net"
 )
 
-var (
-	sendURL      = "https://acsdp.arabiacell.net"
-	maxMsgLength = 1530
-)
+var maxMsgLength = 1530
 
 func init() {
 	channels.RegisterHandler(newHandler)

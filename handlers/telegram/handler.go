@@ -25,7 +25,7 @@ import (
 	"github.com/nyaruka/goflow/core/events"
 )
 
-var apiURL = "https://api.telegram.org"
+const apiURL = "https://api.telegram.org"
 
 // see https://core.telegram.org/bots/api#sending-files
 var mediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{

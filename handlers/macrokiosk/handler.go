@@ -22,12 +22,11 @@ import (
 const (
 	configMacrokioskSenderID  = "macrokiosk_sender_id"
 	configMacrokioskServiceID = "macrokiosk_service_id"
+
+	sendURL = "https://www.etracker.cc/bulksms/send"
 )
 
-var (
-	sendURL      = "https://www.etracker.cc/bulksms/send"
-	maxMsgLength = 1600
-)
+var maxMsgLength = 1600
 
 func init() {
 	channels.RegisterHandler(newHandler)

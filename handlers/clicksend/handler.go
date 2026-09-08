@@ -14,10 +14,9 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 )
 
-var (
-	maxMsgLength = 1224
-	sendURL      = "https://rest.clicksend.com/v3/sms/send"
-)
+const sendURL = "https://rest.clicksend.com/v3/sms/send"
+
+var maxMsgLength = 1224
 
 func init() {
 	channels.RegisterHandler(newHandler)

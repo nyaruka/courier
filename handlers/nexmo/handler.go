@@ -24,11 +24,12 @@ const (
 	configNexmoAPISecret     = "nexmo_api_secret"
 	configNexmoAppID         = "nexmo_app_id"
 	configNexmoAppPrivateKey = "nexmo_app_private_key"
+
+	sendURL = "https://rest.nexmo.com/sms/json"
 )
 
 var (
 	maxMsgLength = 1600
-	sendURL      = "https://rest.nexmo.com/sms/json"
 	throttledRE  = regexp.MustCompile(`.*Throughput Rate Exceeded - please wait \[ (\d+) \] and retry.*`)
 
 	// https://developer.vonage.com/messaging/sms/guides/troubleshooting-sms#sms-api-error-codes

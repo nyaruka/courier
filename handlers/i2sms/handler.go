@@ -16,12 +16,11 @@ import (
 
 const (
 	configChannelHash = "channel_hash"
+
+	sendURL = "https://mx2.i2sms.net/mxapi.php"
 )
 
-var (
-	sendURL      = "https://mx2.i2sms.net/mxapi.php"
-	maxMsgLength = 640
-)
+var maxMsgLength = 640
 
 func init() {
 	channels.RegisterHandler(newHandler)

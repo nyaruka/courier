@@ -20,10 +20,9 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	maxMsgLength = 640
-	sendURL      = "https://platform.clickatell.com/messages/http/send"
-)
+const sendURL = "https://platform.clickatell.com/messages/http/send"
+
+var maxMsgLength = 640
 
 func init() {
 	channels.RegisterHandler(newHandler)

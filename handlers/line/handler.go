@@ -25,16 +25,17 @@ import (
 	"github.com/nyaruka/goflow/core/events"
 )
 
-var (
+const (
 	replySendURL = "https://api.line.me/v2/bot/message/reply"
 	pushSendURL  = "https://api.line.me/v2/bot/message/push"
 	loadingURL   = "https://api.line.me/v2/bot/chat/loading/start"
 	mediaDataURL = "https://api-data.line.me/v2/bot/message"
-	maxMsgLength = 2000
 	maxMsgSend   = 5
 
 	signatureHeader = "X-Line-Signature"
 )
+
+var maxMsgLength = 2000
 
 // see https://developers.line.biz/en/reference/messaging-api/#message-objects
 var mediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{

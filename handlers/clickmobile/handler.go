@@ -19,13 +19,14 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	sendURL      = "http://206.225.81.36/ucm_api/index.php"
-	maxMsgLength = 160
+const (
+	sendURL = "http://206.225.81.36/ucm_api/index.php"
 
 	configAppID = "app_id"
 	configOrgID = "org_id"
 )
+
+var maxMsgLength = 160
 
 func init() {
 	channels.RegisterHandler(newHandler)

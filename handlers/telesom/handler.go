@@ -18,10 +18,9 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	sendURL      = "http://telesom.com/sendsms"
-	maxMsgLength = 160
-)
+const sendURL = "http://telesom.com/sendsms"
+
+var maxMsgLength = 160
 
 func init() {
 	channels.RegisterHandler(newHandler)

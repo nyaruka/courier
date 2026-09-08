@@ -18,10 +18,9 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	sendURL      = "https://api.mblox.com/xms/v1"
-	maxMsgLength = 459
-)
+const sendURL = "https://api.mblox.com/xms/v1"
+
+var maxMsgLength = 459
 
 func init() {
 	channels.RegisterHandler(newHandler)

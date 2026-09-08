@@ -20,10 +20,9 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	sendURL      = "https://api.justcall.io/v1/texts/new"
-	maxMsgLength = 160
-)
+const sendURL = "https://api.justcall.io/v1/texts/new"
+
+var maxMsgLength = 160
 
 type handler struct {
 	handlers.BaseHandler

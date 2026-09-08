@@ -22,15 +22,13 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var apiURL = "https://slack.com/api"
-
 const (
+	apiURL = "https://slack.com/api"
+
 	configBotToken        = "bot_token"
 	configUserToken       = "user_token"
 	configValidationToken = "verification_token"
-)
 
-var (
 	ErrAlreadyPublic         = "already_public"
 	ErrPublicVideoNotAllowed = "public_video_not_allowed"
 )

@@ -18,7 +18,7 @@ POST /handlers/smscentral/receive/uuid/
 mobile=9779811781111&message=Msg
 */
 
-var sendURL = "http://smail.smscentral.com.np/bp/ApiSms.php"
+const sendURL = "http://smail.smscentral.com.np/bp/ApiSms.php"
 
 func init() {
 	channels.RegisterHandler(newHandler)

@@ -29,13 +29,16 @@ import (
 	"github.com/nyaruka/vkutil"
 )
 
-var (
-	// max for the body
-	maxMsgLength    = 4096
+const (
 	configNamespace = "fb_namespace"
 
 	mediaCacheKeyPattern = "turn_whatsapp_media_%s"
-	failedMediaCache     *cache.Local[string, bool]
+)
+
+var (
+	// max for the body
+	maxMsgLength     = 4096
+	failedMediaCache *cache.Local[string, bool]
 )
 
 func init() {

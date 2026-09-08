@@ -19,10 +19,9 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	maxMsgLength = 2048
-	sendURL      = "https://messaging.bandwidth.com/api/v2/users/%s/messages"
-)
+const sendURL = "https://messaging.bandwidth.com/api/v2/users/%s/messages"
+
+var maxMsgLength = 2048
 
 const (
 	configAccountID        = "account_id"

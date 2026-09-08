@@ -20,11 +20,12 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	maxMsgLength = 160
-	tokenURL     = "https://smsapi.hormuud.com/token"
-	sendURL      = "https://smsapi.hormuud.com/api/SendSMS"
+const (
+	tokenURL = "https://smsapi.hormuud.com/token"
+	sendURL  = "https://smsapi.hormuud.com/api/SendSMS"
 )
+
+var maxMsgLength = 160
 
 func init() {
 	channels.RegisterHandler(newHandler)
