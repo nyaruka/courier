@@ -1,3 +1,9 @@
+v26.3.48 (2026-09-08)
+-------------------------
+ * Make handler endpoint URLs and other fixed literals constants
+ * Use shared config key constants where handlers had declared their own
+ * Update from Go 1.26 to 1.27
+
 v26.3.47 (2026-09-02)
 -------------------------
  * Convert all handler tests to JSON case files under testdata/ and remove the legacy test runners
