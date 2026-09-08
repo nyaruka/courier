@@ -21,7 +21,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
+const (
 	apiHostURL      = "https://api.mtn.com"
 	configAPIHost   = "api_host"
 	configCPAddress = "cp_address"

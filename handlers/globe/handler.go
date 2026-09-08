@@ -16,10 +16,9 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	maxMsgLength = 160
-	sendURL      = "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/%s/requests"
-)
+const sendURL = "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/%s/requests"
+
+var maxMsgLength = 160
 
 const (
 	configPassphrase = "passphrase"

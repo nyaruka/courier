@@ -26,10 +26,9 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	sendURL      = "https://api.plivo.com/v1/Account/%s/Message/"
-	maxMsgLength = 1600
-)
+const sendURL = "https://api.plivo.com/v1/Account/%s/Message/"
+
+var maxMsgLength = 1600
 
 const (
 	configPlivoAuthID    = "PLIVO_AUTH_ID"

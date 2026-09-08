@@ -22,10 +22,9 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	maxMsgLength = 1600
-	sendURL      = "https://bulk.startmobile.ua/clients.php"
-)
+const sendURL = "https://bulk.startmobile.ua/clients.php"
+
+var maxMsgLength = 1600
 
 func init() {
 	channels.RegisterHandler(newHandler)

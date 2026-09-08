@@ -14,10 +14,9 @@ import (
 	"github.com/nyaruka/gocommon/gsm7"
 )
 
-var (
-	sendURL      = "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS"
-	maxMsgLength = 160
-)
+const sendURL = "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS"
+
+var maxMsgLength = 160
 
 func init() {
 	channels.RegisterHandler(newHandler)

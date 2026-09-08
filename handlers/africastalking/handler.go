@@ -19,7 +19,7 @@ import (
 
 const configIsShared = "is_shared"
 
-var defaultSendURL = "https://api.africastalking.com/version1/messaging"
+const defaultSendURL = "https://api.africastalking.com/version1/messaging"
 
 func init() {
 	channels.RegisterHandler(newHandler)

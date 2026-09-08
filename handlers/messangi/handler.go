@@ -21,12 +21,11 @@ const (
 	configPrivateKey = "private_key"
 	configInstanceId = "instance_id"
 	configCarrierId  = "carrier_id"
+
+	sendURL = "https://flow.messangi.me/mmc/rest/api/sendMT"
 )
 
-var (
-	maxMsgLength = 160
-	sendURL      = "https://flow.messangi.me/mmc/rest/api/sendMT"
-)
+var maxMsgLength = 160
 
 func init() {
 	channels.RegisterHandler(newHandler)

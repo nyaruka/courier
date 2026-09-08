@@ -24,11 +24,13 @@ import (
 
 const (
 	configViberWelcomeMessage = "welcome_message"
+	configButtonLayout        = "button_layout"
+
+	viberSignatureHeader = "X-Viber-Content-Signature"
+	sendURL              = "https://chatapi.viber.com/pa/send_message"
 )
 
 var (
-	viberSignatureHeader = "X-Viber-Content-Signature"
-	sendURL              = "https://chatapi.viber.com/pa/send_message"
 	maxMsgLength         = 7000
 	descriptionMaxLength = 512
 
@@ -333,7 +335,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	var keyboard *Keyboard
 
 	if len(qrs) > 0 {
-		buttonLayout := msg.Channel().ConfigForKey("button_layout", map[string]any{}).(map[string]any)
+		buttonLayout := msg.Channel().ConfigForKey(configButtonLayout, map[string]any{}).(map[string]any)
 		keyboard = NewKeyboardFromReplies(qrs, buttonLayout)
 	}
 

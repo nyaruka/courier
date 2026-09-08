@@ -18,10 +18,9 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	sendURL      = "https://api-public.mtarget.fr/api-sms.json"
-	maxMsgLength = 765
-)
+const sendURL = "https://api-public.mtarget.fr/api-sms.json"
+
+var maxMsgLength = 765
 
 func init() {
 	channels.RegisterHandler(newHandler)

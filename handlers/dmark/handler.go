@@ -16,10 +16,9 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	sendURL      = "https://smsapi1.dmarkmobile.com/sms/"
-	maxMsgLength = 453
-)
+const sendURL = "https://smsapi1.dmarkmobile.com/sms/"
+
+var maxMsgLength = 453
 
 func init() {
 	channels.RegisterHandler(newHandler)

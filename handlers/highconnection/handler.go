@@ -17,10 +17,9 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	sendURL      = "https://highpushfastapi-v2.hcnx.eu/api"
-	maxMsgLength = 1500
-)
+const sendURL = "https://highpushfastapi-v2.hcnx.eu/api"
+
+var maxMsgLength = 1500
 
 func init() {
 	channels.RegisterHandler(newHandler)

@@ -27,7 +27,7 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 )
 
-var (
+const (
 	smsURL                    = "https://rest.messagebird.com/messages"
 	mmsURL                    = "https://rest.messagebird.com/mms"
 	signatureHeader           = "Messagebird-Signature-Jwt"

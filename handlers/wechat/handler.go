@@ -26,10 +26,9 @@ import (
 	"github.com/nyaruka/goflow/core/events"
 )
 
-var (
-	sendURL      = "https://api.weixin.qq.com/cgi-bin"
-	maxMsgLength = 1600
-)
+const sendURL = "https://api.weixin.qq.com/cgi-bin"
+
+var maxMsgLength = 1600
 
 const (
 	configAppID     = "wechat_app_id"

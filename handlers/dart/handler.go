@@ -21,8 +21,9 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 )
 
+const sendURL = "http://202.43.169.11/APIhttpU/receive2waysms.php"
+
 var (
-	sendURL      = "http://202.43.169.11/APIhttpU/receive2waysms.php"
 	maxMsgLength = 160
 
 	errorCodes = map[string]string{

@@ -39,20 +39,19 @@ import (
 const (
 	configAccountSID          = "account_sid"
 	configMessagingServiceSID = "messaging_service_sid"
-	configSendURL             = "send_url"
-	configBaseURL             = "base_url"
 	configIgnoreDLRs          = "ignore_dlrs"
 	configLinkShortening      = "link_shortening"
 
 	signatureHeader     = "X-Twilio-Signature"
 	forwardedPathHeader = "X-Forwarded-Path"
-)
 
-var (
-	maxMsgLength  = 1600
 	twilioBaseURL = "https://api.twilio.com"
 
 	typingIndicatorURL = "https://messaging.twilio.com/v3/Indicators/Typing.json"
+)
+
+var (
+	maxMsgLength = 1600
 
 	//go:embed errors.json
 	errorCodes []byte
@@ -562,7 +561,7 @@ func (h *handler) baseURL(c *models.Channel) string {
 		return twilioBaseURL
 	}
 
-	return c.StringConfigForKey(configSendURL, c.StringConfigForKey(configBaseURL, ""))
+	return c.StringConfigForKey(models.ConfigSendURL, c.StringConfigForKey(models.ConfigBaseURL, ""))
 }
 
 // see https://www.twilio.com/docs/api/security

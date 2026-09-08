@@ -21,12 +21,11 @@ import (
 const (
 	configMerchantId     = "merchant_id"
 	configMerchantSecret = "merchant_secret"
+
+	sendURL = "http://novosmstools.com/novo_te/%s/sendSMS"
 )
 
-var (
-	maxMsgLength = 160
-	sendURL      = "http://novosmstools.com/novo_te/%s/sendSMS"
-)
+var maxMsgLength = 160
 
 func init() {
 	channels.RegisterHandler(newHandler)

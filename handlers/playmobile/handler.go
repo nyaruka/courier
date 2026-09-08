@@ -19,16 +19,12 @@ import (
 )
 
 const (
-	configBaseURL          = "base_url"
-	configUsername         = "username"
-	configPassword         = "password"
 	configIncomingPrefixes = "incoming_prefixes"
+
+	sendURL = "%s/broker-api/send"
 )
 
-var (
-	maxMsgLength = 640
-	sendURL      = "%s/broker-api/send"
-)
+var maxMsgLength = 640
 
 func init() {
 	channels.RegisterHandler(newHandler)
@@ -138,10 +134,10 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
-	username := msg.Channel().StringConfigForKey(configUsername, "")
-	password := msg.Channel().StringConfigForKey(configPassword, "")
+	username := msg.Channel().StringConfigForKey(models.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(models.ConfigPassword, "")
 	shortCode := msg.Channel().Address()
-	baseURL := msg.Channel().StringConfigForKey(configBaseURL, "")
+	baseURL := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "")
 	if username == "" || password == "" || shortCode == "" || baseURL == "" {
 		return channels.ErrChannelConfig
 	}

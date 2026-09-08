@@ -26,10 +26,9 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	sendURL      = "https://channels.jiochat.com"
-	maxMsgLength = 1600
-)
+const sendURL = "https://channels.jiochat.com"
+
+var maxMsgLength = 1600
 
 const (
 	configAppID     = "jiochat_app_id"

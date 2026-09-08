@@ -16,9 +16,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	sendURL = "https://api-messaging.movile.com/v1/send-sms"
-)
+const sendURL = "https://api-messaging.movile.com/v1/send-sms"
 
 type handler struct {
 	handlers.BaseHandler

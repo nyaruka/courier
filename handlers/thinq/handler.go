@@ -23,8 +23,8 @@ const configAPITokenUser = "api_token_user"
 const configAPIToken = "api_token"
 const maxMsgLength = 1600
 
-var sendURL = "https://api.thinq.com/account/%s/product/origination/sms/send"
-var sendMMSURL = "https://api.thinq.com/account/%s/product/origination/mms/send"
+const sendURL = "https://api.thinq.com/account/%s/product/origination/sms/send"
+const sendMMSURL = "https://api.thinq.com/account/%s/product/origination/mms/send"
 
 func init() {
 	channels.RegisterHandler(newHandler)

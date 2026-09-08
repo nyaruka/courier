@@ -25,7 +25,7 @@ import (
 	"github.com/nyaruka/goflow/core/events"
 )
 
-var (
+const (
 	// callback API events
 	eventTypeServerVerification = "confirmation"
 	eventTypeNewMessage         = "message_new"
