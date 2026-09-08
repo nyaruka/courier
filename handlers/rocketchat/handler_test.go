@@ -12,9 +12,9 @@ import (
 var testChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "RC", "1234", "",
 	[]string{urns.RocketChat.Prefix},
 	map[string]any{
-		configBaseURL:     "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c",
-		configSecret:      "123456789",
-		configBotUsername: "rocket.cat",
+		models.ConfigBaseURL: "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c",
+		models.ConfigSecret:  "123456789",
+		configBotUsername:    "rocket.cat",
 	},
 )
 

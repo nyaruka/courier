@@ -17,8 +17,6 @@ import (
 )
 
 const (
-	configBaseURL        = "base_url"
-	configSecret         = "secret"
 	configBotUsername    = "bot_username"
 	configAdminAuthToken = "admin_auth_token"
 	configAdminUserID    = "admin_user_id"
@@ -57,7 +55,7 @@ type moPayload struct {
 // receiveMessage is our receive function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *moPayload, in *channels.Received, clog *models.ChannelLog) error {
 	// check authorization
-	secret := channel.StringConfigForKey(configSecret, "")
+	secret := channel.StringConfigForKey(models.ConfigSecret, "")
 	if fmt.Sprintf("Token %s", secret) != r.Header.Get("Authorization") {
 		return channels.Unauthenticated(fmt.Errorf("invalid Authorization header"))
 	}
@@ -105,8 +103,8 @@ type mtPayload struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
-	baseURL := msg.Channel().StringConfigForKey(configBaseURL, "")
-	secret := msg.Channel().StringConfigForKey(configSecret, "")
+	baseURL := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "")
+	secret := msg.Channel().StringConfigForKey(models.ConfigSecret, "")
 	botUsername := msg.Channel().StringConfigForKey(configBotUsername, "")
 	if baseURL == "" || secret == "" || botUsername == "" {
 		return channels.ErrChannelConfig

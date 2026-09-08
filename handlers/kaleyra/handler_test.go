@@ -12,7 +12,7 @@ import (
 func newChannel() *models.Channel {
 	return test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "KWA", "250788383383", "",
 		[]string{urns.WhatsApp.Prefix},
-		map[string]any{configAccountSID: "SID", configApiKey: "123456"},
+		map[string]any{configAccountSID: "SID", models.ConfigAPIKey: "123456"},
 	)
 }
 

@@ -93,7 +93,7 @@ func TestOutgoing(t *testing.T) {
 		map[string]any{
 			configAccountSID:       "accountSID",
 			models.ConfigAuthToken: "authToken",
-			configSendURL:          "http://example.com/twiml_api/",
+			models.ConfigSendURL:   "http://example.com/twiml_api/",
 		})
 	RunOutgoingTests(t, twChannel, newTWIMLHandler("TW", "TwiML", true), "testdata/tw_outgoing.json", opts)
 
@@ -102,7 +102,7 @@ func TestOutgoing(t *testing.T) {
 		map[string]any{
 			configAccountSID:       "accountSID",
 			models.ConfigAuthToken: "authToken",
-			configSendURL:          "http://example.com/sigware_api/",
+			models.ConfigSendURL:   "http://example.com/sigware_api/",
 		})
 	RunOutgoingTests(t, swChannel, newTWIMLHandler("SW", "SignalWire", false), "testdata/sw_outgoing.json", opts)
 
@@ -111,7 +111,7 @@ func TestOutgoing(t *testing.T) {
 		map[string]any{
 			configAccountSID:       "accountSID",
 			models.ConfigAuthToken: "authToken",
-			configSendURL:          "http://example.com/sigware_api/",
+			models.ConfigSendURL:   "http://example.com/sigware_api/",
 		},
 	)
 	RunOutgoingTests(t, waChannel, newTWIMLHandler("T", "Twilio Whatsapp", true), "testdata/wa_outgoing.json", opts)
@@ -144,7 +144,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 		map[string]any{
 			configAccountSID:       "accountSID",
 			models.ConfigAuthToken: "authToken",
-			configSendURL:          "BASE_URL",
+			models.ConfigSendURL:   "BASE_URL",
 		})
 	swHandler := newTWIMLHandler("SW", "SignalWire", false)(nil, channels.NewRoutes()).(*handler)
 	req, _ = swHandler.BuildAttachmentRequest(context.Background(), swChannel, "https://example.org/v1/media/41", nil)

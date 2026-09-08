@@ -23,10 +23,7 @@ import (
 
 const (
 	configAccountSID = "account_sid"
-	configApiKey     = "api_key"
-)
 
-var (
 	baseURL = "https://api.kaleyra.io"
 )
 
@@ -116,7 +113,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
-	apiKey := msg.Channel().StringConfigForKey(configApiKey, "")
+	apiKey := msg.Channel().StringConfigForKey(models.ConfigAPIKey, "")
 
 	if accountSID == "" || apiKey == "" {
 		return channels.ErrChannelConfig
@@ -219,7 +216,7 @@ func (h *handler) newSendForm(channel *models.Channel, msgType, toContact string
 	statusURL := fmt.Sprintf("https://%s/c/kwa/%s/status", callbackDomain, channel.UUID())
 
 	return map[string]string{
-		"api-key":      channel.StringConfigForKey(configApiKey, ""),
+		"api-key":      channel.StringConfigForKey(models.ConfigAPIKey, ""),
 		"channel":      "WhatsApp",
 		"from":         channel.Address(),
 		"callback_url": statusURL,
