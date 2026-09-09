@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -318,9 +317,9 @@ func TestHistory(t *testing.T) {
 
 	// the conversation: a plain outgoing message, an outgoing one with attachments and quick replies, and an
 	// incoming reply
-	insertMsg("11f0a1d2-0000-7000-8000-000000000001", "O", "W", "V", "Hello", nil, nil, day.Add(11*time.Hour+1*time.Minute), testChannels[0], contactID, urnID)
-	insertMsg("11f0a1d2-0000-7000-8000-000000000002", "O", "W", "V", "Pick one", []string{"image/jpeg:https://example.com/cat.jpg"}, &quickReplies, day.Add(11*time.Hour+2*time.Minute), testChannels[0], contactID, urnID)
-	insertMsg("11f0a1d2-0000-7000-8000-000000000003", "I", "P", "V", "Hi there", nil, nil, day.Add(11*time.Hour+3*time.Minute), testChannels[0], contactID, urnID)
+	insertMsg("11f0a1d2-0000-7000-8000-200000000001", "O", "W", "V", "Hello", nil, nil, day.Add(11*time.Hour+1*time.Minute), testChannels[0], contactID, urnID)
+	insertMsg("11f0a1d2-0000-7000-8000-200000000002", "O", "W", "V", "Pick one", []string{"image/jpeg:https://example.com/cat.jpg"}, &quickReplies, day.Add(11*time.Hour+2*time.Minute), testChannels[0], contactID, urnID)
+	insertMsg("11f0a1d2-0000-7000-8000-200000000003", "I", "P", "V", "Hi there", nil, nil, day.Add(11*time.Hour+3*time.Minute), testChannels[0], contactID, urnID)
 
 	// a second chat URN belonging to the same contact, to check history is scoped to a conversation rather
 	// than a contact
@@ -343,30 +342,25 @@ func TestHistory(t *testing.T) {
 	assert.Equal(t, 200, rr.Code)
 	assert.JSONEq(t, `{
 		"events": [
-			{"type": "msg_in", "created_on": "2025-10-13T11:03:00Z", "msg_uuid": "11f0a1d2-0000-7000-8000-000000000003", "text": "Hi there"},
+			{"type": "msg_in", "created_on": "2025-10-13T11:03:00Z", "msg_uuid": "11f0a1d2-0000-7000-8000-200000000003", "text": "Hi there"},
 			{
 				"type": "msg_out",
 				"created_on": "2025-10-13T11:02:00Z",
-				"msg_uuid": "11f0a1d2-0000-7000-8000-000000000002",
+				"msg_uuid": "11f0a1d2-0000-7000-8000-200000000002",
 				"text": "Pick one",
 				"attachments": ["image/jpeg:https://example.com/cat.jpg"],
 				"quick_replies": [{"type": "text", "text": "Yes"}, {"type": "text", "text": "No"}]
 			},
-			{"type": "msg_out", "created_on": "2025-10-13T11:01:00Z", "msg_uuid": "11f0a1d2-0000-7000-8000-000000000001", "text": "Hello"}
+			{"type": "msg_out", "created_on": "2025-10-13T11:01:00Z", "msg_uuid": "11f0a1d2-0000-7000-8000-200000000001", "text": "Hello"}
 		]
 	}`, rr.Body.String())
 
-	// add enough older messages that the conversation no longer fits in one page - with Old 2, Old 3 and Old 4
-	// sharing a created_on that straddles the page boundary, to check the cursor's UUID tiebreak (Old 2 would be
-	// dropped by a timestamp-only cursor)
+	// add enough older messages - older UUIDs, since v7 UUID order is message order - that the conversation no
+	// longer fits in one page
 	oldUUIDs := make([]string, 25)
 	for i := range 25 {
 		oldUUIDs[i] = fmt.Sprintf("11f0a1d2-0000-7000-8000-1000000000%02d", i)
-		createdOn := day.Add(10*time.Hour + time.Duration(i)*time.Minute)
-		if i >= 2 && i <= 4 {
-			createdOn = day.Add(10*time.Hour + 4*time.Minute)
-		}
-		insertMsg(oldUUIDs[i], "I", "P", "V", fmt.Sprintf("Old %d", i), nil, nil, createdOn, testChannels[0], contactID, urnID)
+		insertMsg(oldUUIDs[i], "I", "P", "V", fmt.Sprintf("Old %d", i), nil, nil, day.Add(10*time.Hour+time.Duration(i)*time.Minute), testChannels[0], contactID, urnID)
 	}
 
 	type page struct {
@@ -378,7 +372,7 @@ func TestHistory(t *testing.T) {
 		Next string `json:"next"`
 	}
 
-	// the first page is the newest 25 messages, ending inside the tied group, with a cursor to the rest
+	// the first page is the newest 25 messages, with the oldest one's UUID as the cursor to the rest
 	rr = get("?chat_id=" + testChatID)
 	assert.Equal(t, 200, rr.Code)
 	p1 := &page{}
@@ -386,11 +380,10 @@ func TestHistory(t *testing.T) {
 	require.Len(t, p1.Events, 25)
 	assert.Equal(t, "Hi there", p1.Events[0].Text)
 	assert.Equal(t, "Old 3", p1.Events[24].Text)
-	assert.Equal(t, "2025-10-13T10:04:00Z|"+oldUUIDs[3], p1.Next)
+	assert.Equal(t, oldUUIDs[3], p1.Next)
 
-	// which fetches the remaining messages - including Old 2 from the tied group - and they don't fill a page
-	// so there's no further cursor
-	rr = get("?chat_id=" + testChatID + "&before=" + url.QueryEscape(p1.Next))
+	// which fetches the remaining messages, which don't fill a page so there's no further cursor
+	rr = get("?chat_id=" + testChatID + "&before=" + p1.Next)
 	assert.Equal(t, 200, rr.Code)
 	p2 := &page{}
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), p2))
@@ -407,8 +400,8 @@ func TestHistory(t *testing.T) {
 	rr = get("")
 	assert.Equal(t, 400, rr.Code)
 	assert.Contains(t, rr.Body.String(), "invalid chat id")
-	for _, before := range []string{"yesterday", "2025-10-13T10:04:00Z", "2025-10-13T10:04:00Z|nope"} {
-		rr = get("?chat_id=" + testChatID + "&before=" + url.QueryEscape(before))
+	for _, before := range []string{"yesterday", "11f0a1d2", "11f0a1d2-0000-7000-8000-10000000000x"} {
+		rr = get("?chat_id=" + testChatID + "&before=" + before)
 		assert.Equal(t, 400, rr.Code, before)
 		assert.Contains(t, rr.Body.String(), "invalid before parameter", before)
 	}

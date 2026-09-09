@@ -278,15 +278,14 @@ type historyResponse struct {
 func (h *handler) history(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	chatID := r.URL.Query().Get("chat_id")
 
-	var before *models.ChatCursor
+	// the paging cursor is a message UUID - v7, so UUID order is message order
+	var before models.MsgUUID
 	if v := r.URL.Query().Get("before"); v != "" {
-		ts, uuid, found := strings.Cut(v, "|")
-		t, err := time.Parse(time.RFC3339Nano, ts)
-		if !found || err != nil || !uuids.Is(uuid) {
+		if !uuids.Is(v) {
 			channels.LogRequestError(r, channel, fmt.Errorf("invalid before parameter: %s", v))
 			return nil, channels.RespondError(w, http.StatusBadRequest, fmt.Errorf("invalid before parameter"))
 		}
-		before = &models.ChatCursor{CreatedOn: t, UUID: models.MsgUUID(uuid)}
+		before = models.MsgUUID(v)
 	}
 
 	// validated before the throttle so malformed chat IDs can't mint valkey keys or share one empty-ID key
@@ -334,10 +333,9 @@ func (h *handler) history(ctx context.Context, channel *models.Channel, w http.R
 		}
 	}
 
-	// a full page may have older messages behind it, and its oldest item is the cursor to them
+	// a full page may have older messages behind it, and its oldest item's UUID is the cursor to them
 	if len(msgs) == historyPageSize {
-		last := msgs[len(msgs)-1]
-		resp.Next = fmt.Sprintf("%s|%s", last.CreatedOn.UTC().Format(time.RFC3339Nano), last.UUID)
+		resp.Next = string(msgs[len(msgs)-1].UUID)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
