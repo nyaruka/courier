@@ -313,7 +313,8 @@ func TestHistory(t *testing.T) {
 	}
 
 	day := time.Date(2025, 10, 13, 0, 0, 0, 0, time.UTC)
-	quickReplies := `[{"type": "text", "text": "Yes"}, {"type": "text", "text": "No"}]`
+	// includes a non-text quick reply which should be filtered out of the history event
+	quickReplies := `[{"type": "text", "text": "Yes"}, {"type": "text", "text": "No"}, {"type": "url", "text": "More", "extra": "https://example.com"}]`
 
 	// the conversation: a plain outgoing message, an outgoing one with attachments and quick replies, and an
 	// incoming reply
@@ -511,7 +512,8 @@ func TestOutgoing(t *testing.T) {
 		"text":       "Hello there",
 	}, decoded)
 
-	// a message with attachments and quick replies includes them in the event
+	// a message with attachments and quick replies includes them in the event - except non-text quick replies,
+	// which the widget doesn't render and are filtered out like any other unsupporting channel
 	msg.Attachments_ = []string{"image/jpeg:https://example.com/cat.jpg", "audio/mp3:https://example.com/hi.mp3"}
 	msg.QuickReplies_ = []models.QuickReply{{Type: "text", Text: "Yes"}, {Type: "url", Text: "More", Extra: "https://example.com"}}
 
@@ -530,7 +532,6 @@ func TestOutgoing(t *testing.T) {
 		"attachments": []any{"image/jpeg:https://example.com/cat.jpg", "audio/mp3:https://example.com/hi.mp3"},
 		"quick_replies": []any{
 			map[string]any{"type": "text", "text": "Yes"},
-			map[string]any{"type": "url", "text": "More", "extra": "https://example.com"},
 		},
 	}, decoded)
 

@@ -329,7 +329,7 @@ func (h *handler) history(ctx context.Context, channel *models.Channel, w http.R
 			MsgUUID:      m.UUID,
 			Text:         m.Text,
 			Attachments:  m.Attachments,
-			QuickReplies: m.QuickReplies,
+			QuickReplies: handlers.FilterQuickRepliesByType(m.QuickReplies, models.QuickReplyTypeText),
 		}
 	}
 
@@ -360,13 +360,14 @@ type msgEvent struct {
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	socket := models.ChatSocket(msg.Channel().UUID(), msg.URN().Path())
+	// the widget only renders text quick replies, so like any other channel we filter to what's supported
 	event := &msgEvent{
 		Type:         eventTypeMsgOut,
 		CreatedOn:    dates.Now(),
 		MsgUUID:      msg.UUID(),
 		Text:         msg.Text(),
 		Attachments:  msg.Attachments(),
-		QuickReplies: msg.QuickReplies(),
+		QuickReplies: handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText),
 	}
 
 	// like all socket publishes this is presence-aware and best-effort: if the visitor doesn't currently have
