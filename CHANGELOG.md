@@ -1,3 +1,9 @@
+v26.3.49 (2026-09-09)
+-------------------------
+ * Add history endpoint to webchat channels so clients can fetch recent messages
+ * Add enforcement of per-workspace contact limit with a default of 10 million
+ * Update to latest gocommon and goflow
+
 v26.3.48 (2026-09-08)
 -------------------------
  * Make handler endpoint URLs and other fixed literals constants
