@@ -22,6 +22,7 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/random"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 const (
@@ -31,13 +32,21 @@ const (
 	// empty or absent means unrestricted
 	configAllowedDomains = "allowed_domains"
 
-	// the type of the event published to a conversation's chat socket for each outgoing message
+	// the types of the message events a chat client sees - published to a conversation's chat socket for each
+	// outgoing message, and returned by the history endpoint for messages in both directions
 	eventTypeMsgOut = "msg_out"
+	eventTypeMsgIn  = "msg_in"
 
 	// how many chats a single IP can start on a channel per window - generous for a real visitor (who starts
 	// one chat, ever) while capping how fast anyone can mint contacts
 	startLimit       = 10
 	startLimitWindow = 60 // seconds
+
+	// how many messages a history request returns, and how many requests a single chat can make per window -
+	// enough for a reconnecting client to catch up without letting anyone hammer the database
+	historyPageSize    = 25
+	historyLimit       = 10
+	historyLimitWindow = 60 // seconds
 )
 
 var chatIDChars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
@@ -63,9 +72,12 @@ func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 	receive := channels.Receive(h, channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))
 	r.Add(h, http.MethodPost, "receive", channels.ReceiveKindMsg.LogType(), withCORS(receive))
 
-	// the chat widget runs on arbitrary third-party websites, so both endpoints need CORS preflight support
+	r.Add(h, http.MethodGet, "history", models.ChannelLogTypeChatHistory, withCORS(h.history))
+
+	// the chat widget runs on arbitrary third-party websites, so all the endpoints need CORS preflight support
 	r.Add(h, http.MethodOptions, "start", models.ChannelLogTypeUnknown, h.preflight)
 	r.Add(h, http.MethodOptions, "receive", models.ChannelLogTypeUnknown, h.preflight)
+	r.Add(h, http.MethodOptions, "history", models.ChannelLogTypeUnknown, h.preflight)
 	return h
 }
 
@@ -141,7 +153,7 @@ func originAllowed(origin string, domains []string) bool {
 // response, which does check them.
 func (h *handler) preflight(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	w.Header().Set("Access-Control-Max-Age", "86400")
 	w.WriteHeader(http.StatusNoContent)
@@ -190,8 +202,7 @@ func (h *handler) start(ctx context.Context, channel *models.Channel, w http.Res
 	return nil, nil
 }
 
-// allowStart checks the requesting IP against the channel's start rate limit, counting requests in a valkey key
-// whose TTL slides with each request and expires one window after the last
+// allowStart checks the requesting IP against the channel's start rate limit
 func (h *handler) allowStart(channel *models.Channel, r *http.Request) bool {
 	// the server's RealIP middleware has already resolved forwarded headers into RemoteAddr, which may or may
 	// not still carry a port
@@ -200,25 +211,29 @@ func (h *handler) allowStart(channel *models.Channel, r *http.Request) bool {
 		ip = host
 	}
 
-	key := fmt.Sprintf("chat-starts:%s|%s", channel.UUID(), ip)
+	return h.allow(fmt.Sprintf("chat-starts:%s|%s", channel.UUID(), ip), startLimit, startLimitWindow)
+}
 
+// allow checks a rate limit by counting requests in a valkey key whose TTL slides with each request and expires
+// one window after the last
+func (h *handler) allow(key string, limit, window int) bool {
 	rc := h.Runtime().VK.Get()
 	defer rc.Close()
 
 	count, err := redis.Int(rc.Do("INCR", key))
 	if err != nil {
-		// a valkey problem shouldn't stop visitors starting chats so proceed unthrottled
-		slog.Error("error checking chat start rate limit", "error", err, "key", key)
+		// a valkey problem shouldn't stop visitors using their chats so proceed unthrottled
+		slog.Error("error checking chat rate limit", "error", err, "key", key)
 		return true
 	}
 	// re-arm the TTL on every request rather than only the first: INCR + EXPIRE isn't atomic, and a key left
-	// behind by a lost EXPIRE would otherwise count forever and permanently block the IP. The result is a
-	// sliding window - continuous callers stay throttled, which is fine for a start-flood cap.
-	if _, err := rc.Do("EXPIRE", key, startLimitWindow); err != nil {
-		slog.Error("error setting chat start rate limit expiry", "error", err, "key", key)
+	// behind by a lost EXPIRE would otherwise count forever and permanently block the caller. The result is a
+	// sliding window - continuous callers stay throttled, which is fine for an abuse cap.
+	if _, err := rc.Do("EXPIRE", key, window); err != nil {
+		slog.Error("error setting chat rate limit expiry", "error", err, "key", key)
 	}
 
-	return count <= startLimit
+	return count <= limit
 }
 
 type receivePayload struct {
@@ -250,11 +265,91 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 	return nil
 }
 
-// msgOutEvent is the event published to the conversation's chat socket for an outgoing message. Chat socket
-// events are their own client-centric vocabulary rather than engine events, though the content fields keep
-// the same shapes as the engine's msg events - attachments as content-type:url strings, quick replies as
-// objects.
-type msgOutEvent struct {
+// historyResponse is the response to a history request: a page of message events, newest first, and - when the
+// page was full - the cursor that fetches the next page back
+type historyResponse struct {
+	Events []*msgEvent `json:"events"`
+	Next   string      `json:"next,omitempty"`
+}
+
+// history is our HTTP handler for a chat client fetching the recent messages in its conversation. Socket
+// publishes are dropped when the visitor doesn't have the chat open, so a client that reconnects calls this to
+// recover what it missed. Like receive, possession of the chat ID is what authenticates the caller.
+func (h *handler) history(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+	chatID := r.URL.Query().Get("chat_id")
+
+	// the paging cursor is a message UUID - v7, so UUID order is message order
+	var before models.MsgUUID
+	if v := r.URL.Query().Get("before"); v != "" {
+		if !uuids.Is(v) {
+			channels.LogRequestError(r, channel, fmt.Errorf("invalid before parameter: %s", v))
+			return nil, channels.RespondError(w, http.StatusBadRequest, fmt.Errorf("invalid before parameter"))
+		}
+		before = models.MsgUUID(v)
+	}
+
+	// validated before the throttle so malformed chat IDs can't mint valkey keys or share one empty-ID key
+	urn, err := urns.NewFromParts(urns.WebChat.Prefix, chatID, nil, "")
+	if err != nil {
+		channels.LogRequestError(r, channel, fmt.Errorf("invalid chat id: %s", chatID))
+		return nil, channels.RespondError(w, http.StatusBadRequest, fmt.Errorf("invalid chat id"))
+	}
+
+	// throttled per chat rather than per IP - a real client only needs a small burst at reconnect, and like
+	// start, anything distributed is left to edge protection
+	if !h.allow(fmt.Sprintf("chat-history:%s|%s", channel.UUID(), chatID), historyLimit, historyLimitWindow) {
+		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
+		return nil, channels.RespondError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
+	}
+
+	// like receive, a chat ID we've never minted is a bad request rather than an empty conversation
+	contact, err := models.GetContact(ctx, h.Runtime(), channel, urn, nil, "", false, clog)
+	if err != nil {
+		return nil, fmt.Errorf("error looking up contact: %w", err)
+	}
+	if contact == nil {
+		channels.LogRequestError(r, channel, fmt.Errorf("unknown chat id: %s", chatID))
+		return nil, channels.RespondError(w, http.StatusBadRequest, fmt.Errorf("unknown chat id"))
+	}
+
+	msgs, err := models.GetChatMsgs(ctx, h.Runtime().DB, channel, contact.URNID_, before, historyPageSize)
+	if err != nil {
+		return nil, fmt.Errorf("error loading chat messages: %w", err)
+	}
+
+	resp := &historyResponse{Events: make([]*msgEvent, len(msgs))}
+	for i, m := range msgs {
+		typ := eventTypeMsgOut
+		if m.Direction == models.MsgIncoming {
+			typ = eventTypeMsgIn
+		}
+		resp.Events[i] = &msgEvent{
+			Type:         typ,
+			CreatedOn:    m.CreatedOn.UTC(), // live events are stamped in UTC so history should look the same
+			MsgUUID:      m.UUID,
+			Text:         m.Text,
+			Attachments:  m.Attachments,
+			QuickReplies: handlers.FilterQuickRepliesByType(m.QuickReplies, models.QuickReplyTypeText),
+		}
+	}
+
+	// a full page may have older messages behind it, and its oldest item's UUID is the cursor to them
+	if len(msgs) == historyPageSize {
+		resp.Next = string(msgs[len(msgs)-1].UUID)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonx.MustMarshal(resp))
+	return nil, nil
+}
+
+// msgEvent is how a chat client sees a message: published to the conversation's chat socket as each outgoing
+// message is sent, and returned by the history endpoint for messages in both directions - one shape for the
+// client to parse whether a message arrives live or is fetched later. Chat events are their own client-centric
+// vocabulary rather than engine events, though the content fields keep the same shapes as the engine's msg
+// events - attachments as content-type:url strings, quick replies as objects.
+type msgEvent struct {
 	Type         string              `json:"type"`
 	CreatedOn    time.Time           `json:"created_on"`
 	MsgUUID      models.MsgUUID      `json:"msg_uuid"`
@@ -265,13 +360,14 @@ type msgOutEvent struct {
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
 	socket := models.ChatSocket(msg.Channel().UUID(), msg.URN().Path())
-	event := &msgOutEvent{
+	// the widget only renders text quick replies, so like any other channel we filter to what's supported
+	event := &msgEvent{
 		Type:         eventTypeMsgOut,
 		CreatedOn:    dates.Now(),
 		MsgUUID:      msg.UUID(),
 		Text:         msg.Text(),
 		Attachments:  msg.Attachments(),
-		QuickReplies: msg.QuickReplies(),
+		QuickReplies: handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText),
 	}
 
 	// like all socket publishes this is presence-aware and best-effort: if the visitor doesn't currently have

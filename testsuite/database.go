@@ -1,8 +1,6 @@
 package testsuite
 
 import (
-	"encoding/json"
-	"fmt"
 	"testing"
 	"time"
 
@@ -13,21 +11,6 @@ import (
 	"github.com/nyaruka/null/v3"
 	"github.com/stretchr/testify/require"
 )
-
-// QuickReplies is a slice of QuickReply that can be scanned from a nullable JSONB column.
-type QuickReplies []models.QuickReply
-
-func (qr *QuickReplies) Scan(value any) error {
-	if value == nil {
-		*qr = nil
-		return nil
-	}
-	b, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("failed to scan quick replies: expected []byte, got %T", value)
-	}
-	return json.Unmarshal(b, qr)
-}
 
 type DBMsg struct {
 	OrgID              models.OrgID         `db:"org_id"`
@@ -42,7 +25,7 @@ type DBMsg struct {
 	IsAndroid          bool                 `db:"is_android"`
 	Text               string               `db:"text"`
 	Attachments        pq.StringArray       `db:"attachments"`
-	QuickReplies       QuickReplies         `db:"quickreplies"`
+	QuickReplies       models.QuickReplies  `db:"quickreplies"`
 	Locale             null.String          `db:"locale"`
 	Templating         *models.Templating   `db:"templating"`
 	ExternalIdentifier null.String          `db:"external_identifier"`

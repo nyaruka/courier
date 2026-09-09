@@ -440,6 +440,42 @@ func DeleteMsgByExternalID(ctx context.Context, rt *runtime.Runtime, channel *Ch
 	return nil
 }
 
+// ChatMsg is a message loaded from the database for a chat client fetching its conversation history - just the
+// fields such a client needs to render it
+type ChatMsg struct {
+	UUID         MsgUUID        `db:"uuid"`
+	Direction    MsgDirection   `db:"direction"`
+	Text         string         `db:"text"`
+	Attachments  pq.StringArray `db:"attachments"`
+	QuickReplies QuickReplies   `db:"quickreplies"`
+	CreatedOn    time.Time      `db:"created_on"`
+}
+
+// filtering by URN rather than contact both scopes the query to a single conversation - a contact can hold more
+// than one chat URN - and is what makes it cheap, as the URN foreign key is indexed. Message UUIDs are v7 so
+// UUID order is message order, which is what makes them the paging key.
+const sqlSelectChatMsgs = `
+SELECT uuid, direction, text, attachments, quickreplies, created_on
+  FROM msgs_msg
+ WHERE contact_urn_id = $1 AND channel_id = $2 AND visibility = 'V' AND ($3::uuid IS NULL OR uuid < $3)
+ ORDER BY uuid DESC
+ LIMIT $4`
+
+// GetChatMsgs returns the visible messages in both directions between the given URN and channel, newest first,
+// optionally only those before the given message UUID.
+func GetChatMsgs(ctx context.Context, db *sqlx.DB, channel *Channel, urnID ContactURNID, before MsgUUID, limit int) ([]*ChatMsg, error) {
+	var beforeUUID *string
+	if before != "" {
+		beforeUUID = (*string)(&before)
+	}
+
+	msgs := make([]*ChatMsg, 0, limit)
+	if err := db.SelectContext(ctx, &msgs, sqlSelectChatMsgs, urnID, channel.ID(), beforeUUID, limit); err != nil {
+		return nil, err
+	}
+	return msgs, nil
+}
+
 type MsgOrigin string
 
 const (
@@ -460,6 +496,21 @@ type QuickReply struct {
 	Type  string `json:"type"            validate:"required"`
 	Text  string `json:"text,omitempty"`
 	Extra string `json:"extra,omitempty"`
+}
+
+// QuickReplies is a slice of quick replies that can be scanned from a nullable JSONB column
+type QuickReplies []QuickReply
+
+func (qr *QuickReplies) Scan(value any) error {
+	if value == nil {
+		*qr = nil
+		return nil
+	}
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("failed to scan quick replies: expected []byte, got %T", value)
+	}
+	return json.Unmarshal(b, qr)
 }
 
 // RequiresExtra returns whether quick replies of this type need an extra value - a form ID or a URL - to be sendable
