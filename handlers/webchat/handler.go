@@ -2,6 +2,7 @@ package webchat
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -175,6 +176,11 @@ func (h *handler) start(ctx context.Context, channel *models.Channel, w http.Res
 	}
 
 	if _, err := models.GetContact(ctx, h.Runtime(), channel, urn, nil, "", true, clog); err != nil {
+		var limitErr *models.LimitReachedError
+		if errors.As(err, &limitErr) {
+			channels.LogRequestError(r, channel, err)
+			return nil, channels.RespondError(w, http.StatusUnprocessableEntity, err)
+		}
 		return nil, fmt.Errorf("error creating contact: %w", err)
 	}
 

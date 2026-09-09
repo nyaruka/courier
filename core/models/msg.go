@@ -195,7 +195,9 @@ func InsertIncomingMsg(ctx context.Context, db *sqlx.DB, m *MsgIn, contact *Cont
 }
 
 // WriteMsg writes the passed in incoming message to the database, or spools it if the database is unavailable. If
-// the message is detected to be a duplicate of one already received, it's marked as such and not written.
+// the message is detected to be a duplicate of one already received, it's marked as such and not written. A message
+// from a new contact in a workspace at its contact limit is neither written nor spooled, and a LimitReachedError is
+// returned.
 func WriteMsg(ctx context.Context, rt *runtime.Runtime, msg *MsgIn, clog *ChannelLog) error {
 	// check if this message could be a duplicate and if so steal the original's UUID
 	if prevUUID := checkMsgAlreadyReceived(ctx, rt, msg); prevUUID != "" {
@@ -253,6 +255,12 @@ func writeMsg(ctx context.Context, rt *runtime.Runtime, m *MsgIn, clog *ChannelL
 		if dbutil.IsUniqueViolation(err) {
 			slog.Warn("duplicate incoming message detected, ignoring", "msg", m.UUID())
 			return nil
+		}
+
+		// a message from a new contact in a workspace at its contact limit can't be written now and won't be
+		// able to be written later either, so it isn't spooled - the caller decides what to tell the provider
+		if isLimitReached(err) {
+			return err
 		}
 
 		// if we failed, log and write to spool
@@ -325,6 +333,11 @@ func flushMsg(ctx context.Context, rt *runtime.Runtime, m *MsgIn) error {
 	if err != nil {
 		if dbutil.IsUniqueViolation(err) {
 			slog.Warn("duplicate incoming message detected, ignoring", "msg", m.UUID())
+			return nil
+		}
+		if isLimitReached(err) {
+			// the workspace filled up while this was spooled, and retrying won't help
+			slog.Warn("dropping spooled msg from new contact in workspace at contact limit", "msg", m.UUID())
 			return nil
 		}
 		return err // fail? oh well, we'll try again later

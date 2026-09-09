@@ -159,7 +159,11 @@ func contactForURN(ctx context.Context, rt *runtime.Runtime, org OrgID, channel 
 		return nil, nil
 	}
 
-	// didn't find it, we need to create it instead
+	// didn't find it, we need to create it instead - if the org has room for another contact
+	if err := checkContactLimit(ctx, rt, channel, clog); err != nil {
+		return nil, err
+	}
+
 	contact.OrgID_ = org
 	contact.UUID_ = ContactUUID(uuids.NewV4())
 	contact.CreatedOn_ = time.Now()
@@ -240,8 +244,72 @@ func contactForURN(ctx context.Context, rt *runtime.Runtime, org OrgID, channel 
 	contact.URNID_ = contactURN.ID
 
 	rt.Stats.RecordContactCreated()
+	contactCreated(org)
 
 	return contact, nil
+}
+
+const sqlSelectOrgContactCount = `
+SELECT COALESCE(SUM(c.count), 0)
+  FROM contacts_contactgroup g
+ INNER JOIN contacts_contactgroupcount c ON c.group_id = g.id
+ WHERE g.org_id = $1 AND g.group_type IN ('A', 'B', 'S', 'V')`
+
+// gets the total number of contacts in the given org by summing the squashed counts of its status groups, which are
+// maintained by database triggers. Counts are stored as deltas which are periodically squashed so we have to sum them.
+func getOrgContactCount(ctx context.Context, rt *runtime.Runtime, orgID OrgID) (int, error) {
+	var count int
+	if err := rt.DB.GetContext(ctx, &count, sqlSelectOrgContactCount, orgID); err != nil {
+		return 0, fmt.Errorf("error getting contact count for org #%d: %w", orgID, err)
+	}
+	return count, nil
+}
+
+// orgContactLimit returns the effective contact limit for the org which owns the given channel, which is the
+// org's own limit if it has one, and otherwise the configured default. Zero or less means no limit.
+func orgContactLimit(rt *runtime.Runtime, channel *Channel) int {
+	limit := channel.OrgContactLimit()
+	if limit == NoLimit {
+		limit = rt.Config.DefaultContactLimit
+	}
+	return limit
+}
+
+// checks that the org which owns the given channel has room to create another contact
+func checkContactLimit(ctx context.Context, rt *runtime.Runtime, channel *Channel, clog *ChannelLog) error {
+	limit := orgContactLimit(rt, channel)
+	if limit <= 0 {
+		return nil
+	}
+
+	count, err := contactCounts.GetOrFetch(ctx, channel.OrgID())
+	if err != nil {
+		return fmt.Errorf("error getting contact count: %w", err)
+	}
+
+	if count.Load() >= int64(limit) {
+		clog.Error(ErrorContactLimitReached(limit))
+		return &LimitReachedError{Limit: "contacts", Max: limit}
+	}
+
+	return nil
+}
+
+// FlushContactCounts clears the cached contact counts - used in tests after contacts or their counts are modified
+// in the database. It's a no-op if the cache hasn't been created, i.e. Start hasn't been called.
+func FlushContactCounts() {
+	if contactCounts != nil {
+		contactCounts.Clear()
+	}
+}
+
+// records that a contact was created in the given org so that our cached count doesn't let a burst of new contacts
+// run away past the org's limit before the count is next reloaded. Only orgs whose count is already cached - i.e.
+// those with a limit being enforced - are updated, as the count is only ever read for those.
+func contactCreated(orgID OrgID) {
+	if count := contactCounts.Get(orgID); count != nil {
+		count.Add(1)
+	}
 }
 
 // contactForMsg resolves the contact for an incoming message. Normally that's a lookup by (or creation from) the

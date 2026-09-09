@@ -19,6 +19,7 @@ import (
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
 	"github.com/nyaruka/gocommon/centrifugo"
 	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/random"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
@@ -332,4 +333,31 @@ func TestOutgoing(t *testing.T) {
 	// a publish failure is returned as a send error
 	rt.Centrifugo.Client.(*centrifugo.MockClient).SetError(errors.New("boom"))
 	assert.EqualError(t, send(), "error publishing message event: boom")
+}
+
+func TestStartAtContactLimit(t *testing.T) {
+	_, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	defer testsuite.ResetDB(t, rt)
+
+	// org 1 has one contact so record a count for it and cap the org at that
+	rt.DB.MustExec(`INSERT INTO contacts_contactgroupcount(group_id, count, is_squashed) VALUES(1, 1, TRUE)`)
+	rt.DB.MustExec(`UPDATE orgs_org SET limits = '{"contacts": 1}' WHERE id = 1`)
+	models.FlushChannelCache()
+	models.FlushContactCounts()
+
+	s := web.NewServer(rt)
+	testsuite.InsertChannel(t, rt, testChannels[0])
+	s.MountHandler(newHandler)
+
+	req, _ := http.NewRequest(http.MethodPost, "https://localhost"+startURL, strings.NewReader(`{}`))
+	rr := httptest.NewRecorder()
+	s.Router().ServeHTTP(rr, req)
+
+	// a visitor can't start a chat because there's no room for their contact
+	assert.Equal(t, 422, rr.Code)
+	assert.JSONEq(t, `{"message":"Error","data":[{"type":"error","error":"workspace has reached its limit of 1 contacts"}]}`, rr.Body.String())
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contact WHERE org_id = 1`).Returns(1)
 }

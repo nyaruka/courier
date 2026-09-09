@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -115,6 +116,11 @@ func (h *handler) registerContact(ctx context.Context, channel *models.Channel, 
 	// create our contact
 	contact, err := models.GetContact(ctx, h.Runtime(), channel, urn, map[string]string{"default": form.FCMToken}, form.Name, true, clog)
 	if err != nil {
+		var limitErr *models.LimitReachedError
+		if errors.As(err, &limitErr) {
+			channels.LogRequestError(r, channel, err)
+			return nil, channels.RespondError(w, http.StatusUnprocessableEntity, err)
+		}
 		return nil, err
 	}
 

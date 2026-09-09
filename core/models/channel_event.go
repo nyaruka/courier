@@ -103,6 +103,12 @@ func WriteChannelEvent(ctx context.Context, rt *runtime.Runtime, event *ChannelE
 
 	err := writeChannelEventToDB(timeout, rt, event, clog)
 
+	// an event from a new contact in a workspace at its contact limit can't be written now and won't be able to be
+	// written later either, so it isn't spooled - the caller decides what to tell the provider
+	if isLimitReached(err) {
+		return err
+	}
+
 	// failed writing, write to our spool instead
 	if err != nil {
 		slog.Error("error writing channel event to db", "error", err, "channel", event.ChannelUUID_, "event_type", event.EventType_)
@@ -168,7 +174,13 @@ func flushEvent(ctx context.Context, rt *runtime.Runtime, event *ChannelEvent) e
 	clog := NewChannelLog(ChannelLogTypeReceive, channel, nil, nil)
 
 	// try to flush to our database
-	return writeChannelEventToDB(ctx, rt, event, clog)
+	err = writeChannelEventToDB(ctx, rt, event, clog)
+	if isLimitReached(err) {
+		// the workspace filled up while this was spooled, and retrying won't help
+		slog.Warn("dropping spooled channel event from new contact in workspace at contact limit", "event", event.UUID_)
+		return nil
+	}
+	return err
 }
 
 // InsertChannelEvent inserts the passed in channel event into the database
