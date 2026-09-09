@@ -451,20 +451,35 @@ type ChatMsg struct {
 	CreatedOn    time.Time      `db:"created_on"`
 }
 
+// ChatCursor is a position in a conversation's history for paging: the created_on and UUID of the oldest
+// message of the page before. The UUID tiebreak is what keeps paging stable when messages share a created_on -
+// a page boundary falling inside such a group would otherwise drop the rest of it - and it's the UUID rather
+// than the row id because UUIDs are what chat clients already see.
+type ChatCursor struct {
+	CreatedOn time.Time
+	UUID      MsgUUID
+}
+
 // filtering by URN rather than contact both scopes the query to a single conversation - a contact can hold more
 // than one chat URN - and is what makes it cheap, as the URN foreign key is indexed
 const sqlSelectChatMsgs = `
 SELECT uuid, direction, text, attachments, quickreplies, created_on
   FROM msgs_msg
- WHERE contact_urn_id = $1 AND channel_id = $2 AND visibility = 'V' AND ($3::timestamptz IS NULL OR created_on < $3)
- ORDER BY created_on DESC, id DESC
- LIMIT $4`
+ WHERE contact_urn_id = $1 AND channel_id = $2 AND visibility = 'V' AND ($3::timestamptz IS NULL OR (created_on, uuid) < ($3, $4::uuid))
+ ORDER BY created_on DESC, uuid DESC
+ LIMIT $5`
 
-// GetChatMsgs returns the visible messages in both directions between the given URN and channel, newest first.
-// Passing the created_on of the oldest message from a previous page as before is how callers page further back.
-func GetChatMsgs(ctx context.Context, db *sqlx.DB, channel *Channel, urnID ContactURNID, before *time.Time, limit int) ([]*ChatMsg, error) {
+// GetChatMsgs returns the visible messages in both directions between the given URN and channel, newest first,
+// optionally only those before the given cursor.
+func GetChatMsgs(ctx context.Context, db *sqlx.DB, channel *Channel, urnID ContactURNID, before *ChatCursor, limit int) ([]*ChatMsg, error) {
+	var beforeOn *time.Time
+	beforeUUID := MsgUUID("00000000-0000-0000-0000-000000000000") // unused without a cursor but must still cast as a UUID
+	if before != nil {
+		beforeOn, beforeUUID = &before.CreatedOn, before.UUID
+	}
+
 	msgs := make([]*ChatMsg, 0, limit)
-	if err := db.SelectContext(ctx, &msgs, sqlSelectChatMsgs, urnID, channel.ID(), before, limit); err != nil {
+	if err := db.SelectContext(ctx, &msgs, sqlSelectChatMsgs, urnID, channel.ID(), beforeOn, beforeUUID, limit); err != nil {
 		return nil, err
 	}
 	return msgs, nil

@@ -22,6 +22,7 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/random"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 const (
@@ -277,27 +278,29 @@ type historyResponse struct {
 func (h *handler) history(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
 	chatID := r.URL.Query().Get("chat_id")
 
-	var before *time.Time
+	var before *models.ChatCursor
 	if v := r.URL.Query().Get("before"); v != "" {
-		t, err := time.Parse(time.RFC3339Nano, v)
-		if err != nil {
+		ts, uuid, found := strings.Cut(v, "|")
+		t, err := time.Parse(time.RFC3339Nano, ts)
+		if !found || err != nil || !uuids.Is(uuid) {
 			channels.LogRequestError(r, channel, fmt.Errorf("invalid before parameter: %s", v))
 			return nil, channels.RespondError(w, http.StatusBadRequest, fmt.Errorf("invalid before parameter"))
 		}
-		before = &t
+		before = &models.ChatCursor{CreatedOn: t, UUID: models.MsgUUID(uuid)}
 	}
 
-	// throttled per chat rather than per IP - the endpoint is only useful with a valid chat ID, and this also
-	// caps the contact lookups below that requests with invented chat IDs can cause
-	if !h.allow(fmt.Sprintf("chat-history:%s|%s", channel.UUID(), chatID), historyLimit, historyLimitWindow) {
-		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
-		return nil, channels.RespondError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
-	}
-
+	// validated before the throttle so malformed chat IDs can't mint valkey keys or share one empty-ID key
 	urn, err := urns.NewFromParts(urns.WebChat.Prefix, chatID, nil, "")
 	if err != nil {
 		channels.LogRequestError(r, channel, fmt.Errorf("invalid chat id: %s", chatID))
 		return nil, channels.RespondError(w, http.StatusBadRequest, fmt.Errorf("invalid chat id"))
+	}
+
+	// throttled per chat rather than per IP - a real client only needs a small burst at reconnect, and like
+	// start, anything distributed is left to edge protection
+	if !h.allow(fmt.Sprintf("chat-history:%s|%s", channel.UUID(), chatID), historyLimit, historyLimitWindow) {
+		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
+		return nil, channels.RespondError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
 	}
 
 	// like receive, a chat ID we've never minted is a bad request rather than an empty conversation
@@ -331,9 +334,10 @@ func (h *handler) history(ctx context.Context, channel *models.Channel, w http.R
 		}
 	}
 
-	// a full page may have older messages behind it, and its oldest item's timestamp is the cursor to them
+	// a full page may have older messages behind it, and its oldest item is the cursor to them
 	if len(msgs) == historyPageSize {
-		resp.Next = msgs[len(msgs)-1].CreatedOn.UTC().Format(time.RFC3339Nano)
+		last := msgs[len(msgs)-1]
+		resp.Next = fmt.Sprintf("%s|%s", last.CreatedOn.UTC().Format(time.RFC3339Nano), last.UUID)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
