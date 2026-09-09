@@ -1,15 +1,19 @@
 package webchat
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gomodule/redigo/redis"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier/v26/core/channels"
@@ -33,6 +37,7 @@ const (
 	startURL    = "/c/wch/" + channelUUID + "/start"
 	receiveURL  = "/c/wch/" + channelUUID + "/receive"
 	historyURL  = "/c/wch/" + channelUUID + "/history"
+	uploadURL   = "/c/wch/" + channelUUID + "/upload"
 
 	testChatID = "vM0GGhDrqpTQefIEinK0up3C" // what the secure source seeded below generates
 )
@@ -149,7 +154,7 @@ func TestCORS(t *testing.T) {
 	s.MountHandler(newHandler)
 
 	// preflights on all the endpoints are answered without needing the channel
-	for _, path := range []string{startURL, receiveURL, historyURL} {
+	for _, path := range []string{startURL, receiveURL, historyURL, uploadURL} {
 		req, _ := http.NewRequest(http.MethodOptions, "https://localhost"+path, nil)
 		rr := httptest.NewRecorder()
 		s.Router().ServeHTTP(rr, req)
@@ -453,6 +458,155 @@ func TestHistoryRateLimit(t *testing.T) {
 	require.NoError(t, err)
 	assert.Greater(t, ttl, 0)
 	assert.LessOrEqual(t, ttl, historyLimitWindow)
+}
+
+// makeUpload posts a multipart upload request - a nil file omits the file part entirely
+func makeUpload(t *testing.T, s *web.Server, chatID string, file []byte) *httptest.ResponseRecorder {
+	t.Helper()
+
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	require.NoError(t, mw.WriteField("chat_id", chatID))
+	if file != nil {
+		fw, err := mw.CreateFormFile("file", "upload.bin")
+		require.NoError(t, err)
+		_, err = fw.Write(file)
+		require.NoError(t, err)
+	}
+	require.NoError(t, mw.Close())
+
+	req, _ := http.NewRequest(http.MethodPost, "https://localhost"+uploadURL, bytes.NewReader(body.Bytes()))
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	rr := httptest.NewRecorder()
+	s.Router().ServeHTTP(rr, req)
+	return rr
+}
+
+func TestUpload(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	random.SetSecureSource(random.NewSeededSource(1234))
+	defer random.SetSecureSource(random.DefaultSecureSource)
+
+	s := web.NewServer(rt)
+	testsuite.InsertChannel(t, rt, testChannels[0])
+	s.MountHandler(newHandler)
+
+	// uploads are saved to attachment storage so ensure the bucket exists
+	rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(rt.Config.S3AttachmentsBucket)})
+
+	// start a chat to mint the test chat ID and the contact behind it
+	req, _ := http.NewRequest(http.MethodPost, "https://localhost"+startURL, strings.NewReader(`{}`))
+	rr := httptest.NewRecorder()
+	s.Router().ServeHTTP(rr, req)
+	require.Equal(t, 200, rr.Code)
+
+	testJPG := test.ReadFile("../../test/testdata/test.jpg")
+
+	// a valid upload returns the stored attachment as a content-type:url value, typed by sniffing the bytes
+	// and stored under this channel's workspace
+	rr = makeUpload(t, s, testChatID, testJPG)
+	assert.Equal(t, 200, rr.Code)
+	resp := &struct {
+		Attachment string `json:"attachment"`
+	}{}
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), resp))
+	prefix := "image/jpeg:http://localstack:4566/test-attachments/attachments/1/"
+	assert.True(t, strings.HasPrefix(resp.Attachment, prefix), resp.Attachment)
+	assert.True(t, strings.HasSuffix(resp.Attachment, ".jpg"), resp.Attachment)
+
+	// whose URL serves back exactly what was uploaded
+	storageURL := strings.TrimPrefix(resp.Attachment, "image/jpeg:")
+	key := strings.TrimPrefix(storageURL, "http://localstack:4566/"+rt.Config.S3AttachmentsBucket+"/")
+	contentType, body, err := rt.S3.GetObject(ctx, rt.Config.S3AttachmentsBucket, key)
+	require.NoError(t, err)
+	assert.Equal(t, "image/jpeg", contentType)
+	assert.Equal(t, testJPG, body)
+
+	// and whose attachment value the receive endpoint accepts on a message with no text
+	req, _ = http.NewRequest(http.MethodPost, "https://localhost"+receiveURL,
+		strings.NewReader(`{"chat_id": "`+testChatID+`", "attachments": ["`+resp.Attachment+`"]}`))
+	rr = httptest.NewRecorder()
+	s.Router().ServeHTTP(rr, req)
+	assert.Equal(t, 200, rr.Code)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE direction = 'I' AND text = '' AND attachments[1] = $1`, resp.Attachment).Returns(1)
+
+	// a recognized but disallowed file type is rejected, with the CORS header still on the error so the
+	// widget can read it
+	zip := append([]byte{0x50, 0x4b, 0x03, 0x04}, make([]byte, 100)...)
+	rr = makeUpload(t, s, testChatID, zip)
+	assert.Equal(t, 400, rr.Code)
+	assert.Contains(t, rr.Body.String(), "unsupported file type")
+	assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+
+	// as is a file whose type can't be recognized at all
+	rr = makeUpload(t, s, testChatID, []byte("just some text"))
+	assert.Equal(t, 400, rr.Code)
+	assert.Contains(t, rr.Body.String(), "unsupported file type")
+
+	// an oversize upload is cut off rather than buffered
+	rr = makeUpload(t, s, testChatID, make([]byte, maxUploadBytes+uploadFormOverheadBytes+1))
+	assert.Equal(t, 413, rr.Code)
+	assert.Contains(t, rr.Body.String(), "upload too large")
+
+	// a chat ID we never minted is a bad request, as is a malformed one or a request with no file part
+	rr = makeUpload(t, s, "xxxxxhDrqpTQefIEinK0up3C", testJPG)
+	assert.Equal(t, 400, rr.Code)
+	assert.Contains(t, rr.Body.String(), "unknown chat id")
+
+	rr = makeUpload(t, s, "not-a-chat-id!", testJPG)
+	assert.Equal(t, 400, rr.Code)
+	assert.Contains(t, rr.Body.String(), "invalid chat id")
+
+	rr = makeUpload(t, s, testChatID, nil)
+	assert.Equal(t, 400, rr.Code)
+	assert.Contains(t, rr.Body.String(), "missing file part")
+}
+
+func TestUploadRateLimit(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	random.SetSecureSource(random.NewSeededSource(1234))
+	defer random.SetSecureSource(random.DefaultSecureSource)
+
+	s := web.NewServer(rt)
+	testsuite.InsertChannel(t, rt, testChannels[0])
+	s.MountHandler(newHandler)
+
+	rt.S3.Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(rt.Config.S3AttachmentsBucket)})
+
+	req, _ := http.NewRequest(http.MethodPost, "https://localhost"+startURL, strings.NewReader(`{}`))
+	rr := httptest.NewRecorder()
+	s.Router().ServeHTTP(rr, req)
+	require.Equal(t, 200, rr.Code)
+
+	testJPG := test.ReadFile("../../test/testdata/test.jpg")
+
+	// a chat can upload up to the limit of files within the window...
+	for i := range uploadLimit {
+		assert.Equal(t, 200, makeUpload(t, s, testChatID, testJPG).Code, "upload %d", i)
+	}
+
+	// ...then gets throttled, with the CORS header still on the error so the widget can read it
+	rr = makeUpload(t, s, testChatID, testJPG)
+	assert.Equal(t, 429, rr.Code)
+	assert.Contains(t, rr.Body.String(), "rate limit exceeded")
+	assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+
+	// but other chats aren't affected - the limit is per chat (an unknown one just fails its lookup)
+	assert.Equal(t, 400, makeUpload(t, s, "xxxxxhDrqpTQefIEinK0up3C", testJPG).Code)
+
+	// and the count expires with the window
+	vc := rt.VK.Get()
+	defer vc.Close()
+	ttl, err := redis.Int(vc.Do("TTL", "chat-uploads:"+channelUUID+"|"+testChatID))
+	require.NoError(t, err)
+	assert.Greater(t, ttl, 0)
+	assert.LessOrEqual(t, ttl, uploadLimitWindow)
 }
 
 // sends don't make HTTP requests so the framework's outgoing cases don't fit - instead we test the socket
