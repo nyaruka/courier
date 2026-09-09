@@ -8,6 +8,7 @@ import (
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetChannelCachesAbsence(t *testing.T) {
@@ -69,4 +70,31 @@ func TestGetChannelByAddressDoesntCacheAbsence(t *testing.T) {
 	got, err = models.GetChannelByAddress(ctx, "NX", models.ChannelAddress("2021"))
 	assert.NoError(t, err, "absence should not have been cached")
 	assert.Equal(t, ch.UUID(), got.UUID())
+}
+
+func TestChannelOrgContactLimit(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+
+	defer testsuite.ResetDB(t, rt)
+
+	// the test org has no limits set
+	ch, err := models.GetChannel(ctx, "KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	require.NoError(t, err)
+	assert.Equal(t, models.NoLimit, ch.OrgContactLimit())
+
+	// other limit types don't count
+	rt.DB.MustExec(`UPDATE orgs_org SET limits = '{"fields": 250}' WHERE id = 1`)
+	models.FlushChannelCache()
+
+	ch, err = models.GetChannel(ctx, "KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	require.NoError(t, err)
+	assert.Equal(t, models.NoLimit, ch.OrgContactLimit())
+
+	rt.DB.MustExec(`UPDATE orgs_org SET limits = '{"fields": 250, "contacts": 1000}' WHERE id = 1`)
+	models.FlushChannelCache()
+
+	ch, err = models.GetChannel(ctx, "KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	require.NoError(t, err)
+	assert.Equal(t, 1000, ch.OrgContactLimit())
 }

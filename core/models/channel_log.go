@@ -64,6 +64,10 @@ func ErrorMediaUnresolveable(contentType string) *svclogs.Error {
 	return &svclogs.Error{Code: "media_unresolveable", Message: fmt.Sprintf("Unable to find version of %s attachment compatible with channel.", contentType)}
 }
 
+func ErrorContactLimitReached(limit int) *svclogs.Error {
+	return &svclogs.Error{Code: "contact_limit_reached", Message: fmt.Sprintf("Workspace has reached its limit of %d contacts so no new contact could be created.", limit)}
+}
+
 func ErrorAttachmentNotDecodable() *svclogs.Error {
 	return &svclogs.Error{Code: "attachment_not_decodable", Message: "Unable to decode embedded attachment data."}
 }

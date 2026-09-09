@@ -11,6 +11,7 @@ CREATE TABLE orgs_org (
     name character varying(128) NOT NULL,
     language character varying(64),
     config jsonb NOT NULL,
+    limits jsonb NOT NULL,
     is_anon boolean NOT NULL
 );
 
@@ -45,6 +46,23 @@ CREATE TABLE contacts_contact (
     created_by_id integer references users_user(id),
     modified_by_id integer references users_user(id),
     org_id integer NOT NULL references orgs_org(id) on delete cascade
+);
+
+DROP TABLE IF EXISTS contacts_contactgroup CASCADE;
+CREATE TABLE contacts_contactgroup (
+    id serial primary key,
+    uuid uuid NOT NULL UNIQUE,
+    name character varying(64) NOT NULL,
+    group_type character varying(1) NOT NULL,
+    org_id integer NOT NULL references orgs_org(id) on delete cascade
+);
+
+DROP TABLE IF EXISTS contacts_contactgroupcount CASCADE;
+CREATE TABLE contacts_contactgroupcount (
+    id serial primary key,
+    count integer NOT NULL,
+    is_squashed boolean NOT NULL,
+    group_id integer NOT NULL references contacts_contactgroup(id) on delete cascade
 );
 
 DROP TABLE IF EXISTS contacts_contacturn CASCADE;

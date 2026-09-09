@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/nyaruka/courier/v26/runtime"
@@ -20,6 +21,9 @@ const (
 
 	// our timeout for looking up channels and contacts
 	fetchTimeout = time.Second * 20
+
+	// how long we cache an org's contact count for when enforcing its contact limit
+	contactCountTTL = time.Second * 10
 )
 
 // state used by the read and write paths, initialized by Start
@@ -28,6 +32,9 @@ var (
 
 	channelsByUUID *cache.Local[ChannelUUID, *Channel]
 	channelsByAddr *cache.Local[ChannelAddress, *Channel]
+
+	// contact counts by org, only consulted when creating a contact in an org with a contact limit
+	contactCounts *cache.Local[OrgID, *atomic.Int64]
 
 	// spools of items which couldn't be written to the database and will be retried later
 	msgSpool    *spools.Spool[*MsgIn]
@@ -84,6 +91,20 @@ func Start(rt *runtime.Runtime) error {
 	}, time.Minute, 0)
 	channelsByAddr.Start()
 
+	// contact counts are read from the squashed group counts rather than counted live, and cached briefly per org
+	// so that a burst of new contacts doesn't put a query on the database for each one. That makes the count
+	// approximate at the boundary of a limit by up to the TTL, which is fine for enforcing a ceiling.
+	contactCounts = cache.NewLocal(func(ctx context.Context, orgID OrgID) (*atomic.Int64, error) {
+		count, err := getOrgContactCount(ctx, rt, orgID)
+		if err != nil {
+			return nil, err
+		}
+		c := &atomic.Int64{}
+		c.Store(int64(count))
+		return c, nil
+	}, contactCountTTL, 0)
+	contactCounts.Start()
+
 	// create our spools and start their background flushing - their Start fails if a spool directory isn't
 	// writable so a misconfigured spool volume can't silently drop items during database outages
 	msgSpool = spools.New(path.Join(rt.Config.SpoolDir, "msgs"), 30*time.Second, spools.MarshalJSON, spools.UnmarshalJSON,
@@ -127,6 +148,10 @@ func Stop() {
 	if channelsByAddr != nil {
 		channelsByAddr.Stop()
 		channelsByAddr = nil
+	}
+	if contactCounts != nil {
+		contactCounts.Stop()
+		contactCounts = nil
 	}
 
 	// stop our batched status writer and wait for it to flush fully

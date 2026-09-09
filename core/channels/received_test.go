@@ -2,6 +2,7 @@ package channels_test
 
 import (
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/core/channels"
@@ -135,4 +136,58 @@ func TestWriteReceived(t *testing.T) {
 	events := channels.AcceptedEvents(results)
 	require.Len(t, events, 1)
 	assert.Equal(t, "first", events[0].(*models.MsgIn).Text())
+}
+
+func TestWriteReceivedAtContactLimit(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	defer testsuite.ResetDB(t, rt)
+
+	// org 1 has one contact (tel:+12067799192) so record a count for it and cap the org at that
+	rt.DB.MustExec(`INSERT INTO contacts_contactgroupcount(group_id, count, is_squashed) VALUES(1, 1, TRUE)`)
+	rt.DB.MustExec(`UPDATE orgs_org SET limits = '{"contacts": 1}' WHERE id = 1`)
+	models.FlushChannelCache()
+	models.FlushContactCounts()
+
+	ch, err := models.GetChannel(ctx, "KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	require.NoError(t, err)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, ch, nil, nil)
+
+	// a message and an event from a new contact are dropped as ignored, and the rest of the batch is still written
+	in := channels.NewReceived(ch)
+	in.Msg(models.NewIncomingMsg(ch, "tel:+12067799192", "from existing", "ext1", clog))
+	in.Msg(models.NewIncomingMsg(ch, "tel:+12065551212", "from new", "ext2", clog))
+	in.Status(models.NewStatusUpdateByExternalID(ch, "ext3", models.MsgStatusDelivered, clog))
+	in.Event(models.NewChannelEvent(ch, models.EventTypeStopContact, "tel:+12065551313", clog))
+
+	results, err := channels.WriteReceived(ctx, rt, in, clog)
+	assert.NoError(t, err)
+	require.Len(t, results, 4)
+	assert.Equal(t, channels.OutcomeWritten, results[0].Outcome)
+	assert.Equal(t, channels.OutcomeIgnored, results[1].Outcome)
+	assert.Equal(t, "workspace at contact limit", results[1].Details)
+	assert.Nil(t, results[1].Event)
+	assert.Equal(t, channels.OutcomeWritten, results[2].Outcome)
+	assert.Equal(t, channels.OutcomeIgnored, results[3].Outcome)
+	assert.Equal(t, "workspace at contact limit", results[3].Details)
+
+	// the dropped items aren't events we accepted
+	assert.Len(t, channels.AcceptedEvents(results), 2)
+
+	// and they weren't written to the database or spooled for retry - a retry can't succeed
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'from existing'`).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'from new'`).Returns(0)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM channels_channelevent`).Returns(0)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contact WHERE org_id = 1`).Returns(1)
+	for _, dir := range []string{"msgs", "events"} {
+		spooled, err := filepath.Glob(filepath.Join(rt.Config.SpoolDir, dir, "*.jsonl"))
+		require.NoError(t, err)
+		assert.Empty(t, spooled, "unexpected spooled %s", dir)
+	}
+
+	// the refusals are recorded on the channel log
+	require.Len(t, clog.Errors, 2)
+	assert.Equal(t, "contact_limit_reached", clog.Errors[0].Code)
 }

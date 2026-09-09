@@ -50,6 +50,8 @@ type Config struct {
 	LogLevel           slog.Level `help:"the logging level courier should use"`
 	Version            string     `help:"the version that will be used in request and response headers"`
 
+	DefaultContactLimit int `help:"the maximum number of contacts a workspace can have, when not set on the workspace itself, zero means no limit"`
+
 	// parsed values that can't be set directly
 	DisallowedIPs      []net.IP
 	DisallowedNets     []*net.IPNet
@@ -90,6 +92,8 @@ func NewDefaultConfig() *Config {
 		MaxWorkers:         32,
 		LogLevel:           slog.LevelWarn,
 		Version:            "Dev",
+
+		DefaultContactLimit: 50_000_000,
 	}
 }
 

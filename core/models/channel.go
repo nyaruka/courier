@@ -135,6 +135,7 @@ type Channel struct {
 	Role_        string         `db:"role"`
 
 	OrgConfig_ null.Map[any] `db:"org_config"`
+	OrgLimits_ null.Map[int] `db:"org_limits"`
 	OrgIsAnon_ bool          `db:"org_is_anon"`
 }
 
@@ -201,6 +202,17 @@ func (c *Channel) OrgConfigForKey(key string, defaultValue any) any {
 	return value
 }
 
+// OrgContactLimit returns the maximum number of contacts the org which owns this channel can have, or NoLimit if it
+// isn't set. Most workspaces don't have explicit limits and rely on defaults, but those live in the database layer's
+// settings which we deliberately don't try to read here - so it's up to the caller to fall back to the equivalent
+// courier config setting. The limits column can hold other limit types but contacts is the only one courier enforces.
+func (c *Channel) OrgContactLimit() int {
+	if v, ok := c.OrgLimits_["contacts"]; ok {
+		return v
+	}
+	return NoLimit
+}
+
 // StringConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
 func (c *Channel) StringConfigForKey(key string, defaultValue string) string {
 	val := c.ConfigForKey(key, defaultValue)
@@ -259,6 +271,7 @@ SELECT
 	c.config,
 	c.role,
 	o.config AS org_config,
+	o.limits AS org_limits,
 	o.is_anon AS org_is_anon
   FROM channels_channel c
   JOIN orgs_org o ON c.org_id = o.id
@@ -299,6 +312,7 @@ SELECT
 	c.config,
 	c.role,
 	o.config AS org_config,
+	o.limits AS org_limits,
 	o.is_anon AS org_is_anon
   FROM channels_channel c
   JOIN orgs_org o ON c.org_id = o.id

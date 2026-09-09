@@ -5,8 +5,17 @@ INSERT INTO users_user("id", "email", "first_name") VALUES
               
 /* Org with id 1 */
 DELETE FROM orgs_org;
-INSERT INTO orgs_org("id", "name", "language", "is_anon", "config")
-              VALUES(1, 'Test Org', 'eng', FALSE, '{ "CHATBASE_API_KEY": "cak" }');
+INSERT INTO orgs_org("id", "name", "language", "is_anon", "config", "limits")
+              VALUES(1, 'Test Org', 'eng', FALSE, '{ "CHATBASE_API_KEY": "cak" }', '{}');
+
+/* Status groups with ids 1, 2, 3, 4 - counts are maintained by triggers in the real database so tests insert their own */
+DELETE FROM contacts_contactgroup;
+INSERT INTO contacts_contactgroup("id", "uuid", "name", "group_type", "org_id")
+                           VALUES(1, 'd8a4b4ef-5b0d-4b3d-a1e3-0c2f1a7f2c01', 'Active', 'A', 1),
+                                 (2, 'd8a4b4ef-5b0d-4b3d-a1e3-0c2f1a7f2c02', 'Blocked', 'B', 1),
+                                 (3, 'd8a4b4ef-5b0d-4b3d-a1e3-0c2f1a7f2c03', 'Stopped', 'S', 1),
+                                 (4, 'd8a4b4ef-5b0d-4b3d-a1e3-0c2f1a7f2c04', 'Archived', 'V', 1);
+DELETE FROM contacts_contactgroupcount;
 
 /* Channel with id 10, 11, 12 */
 DELETE FROM channels_channel;
