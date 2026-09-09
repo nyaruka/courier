@@ -56,6 +56,12 @@ const (
 	uploadLimit       = 5
 	uploadLimitWindow = 60 // seconds
 
+	// how many uploads a single IP can make on a channel per window - a backstop above the per-chat limit
+	// (so visitors sharing a NAT aren't broken) that a caller can't reset by rotating chat IDs. It also
+	// bounds upload memory per source: the worst case is this many bodies buffered per IP per window.
+	uploadIPLimit       = 10
+	uploadIPLimitWindow = 60 // seconds
+
 	// slack on the request body cap for the multipart framing and fields around the file itself
 	uploadFormOverheadBytes = 64 * 1024
 )
@@ -65,6 +71,13 @@ var chatIDChars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01
 // the media types a visitor may upload - the same kinds of media the platform handles on other channels.
 // Entries ending in / allow a whole family of types.
 var allowedUploadTypes = []string{"image/", "audio/", "video/", "application/pdf"}
+
+// uploadTypeAllowed returns whether the given media type is one visitors may upload
+func uploadTypeAllowed(mime string) bool {
+	return mime != "" && slices.ContainsFunc(allowedUploadTypes, func(a string) bool {
+		return mime == a || (strings.HasSuffix(a, "/") && strings.HasPrefix(mime, a))
+	})
+}
 
 func init() {
 	channels.RegisterHandler(newHandler)
@@ -224,14 +237,17 @@ func (h *handler) start(ctx context.Context, channel *models.Channel, w http.Res
 
 // allowStart checks the requesting IP against the channel's start rate limit
 func (h *handler) allowStart(channel *models.Channel, r *http.Request) bool {
-	// the server's RealIP middleware has already resolved forwarded headers into RemoteAddr, which may or may
-	// not still carry a port
+	return h.allow(fmt.Sprintf("chat-starts:%s|%s", channel.UUID(), requestIP(r)), startLimit, startLimitWindow)
+}
+
+// requestIP returns the requesting IP. The server's RealIP middleware has already resolved forwarded headers
+// into RemoteAddr, which may or may not still carry a port.
+func requestIP(r *http.Request) string {
 	ip := r.RemoteAddr
 	if host, _, err := net.SplitHostPort(ip); err == nil {
 		ip = host
 	}
-
-	return h.allow(fmt.Sprintf("chat-starts:%s|%s", channel.UUID(), ip), startLimit, startLimitWindow)
+	return ip
 }
 
 // allow checks a rate limit by counting requests in a valkey key whose TTL slides with each request and expires
@@ -272,11 +288,13 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 		return fmt.Errorf("invalid chat id: %s", payload.ChatID)
 	}
 
-	// attachments may only reference files uploaded to this channel's own storage - accepting arbitrary URLs
-	// would let anyone use the platform as a fetch proxy, and attach content we never vetted
+	// attachments may only reference files uploaded to the channel workspace's own attachment storage -
+	// accepting arbitrary URLs would let anyone use the platform as a fetch proxy, and attach content we
+	// never vetted - and may only carry the media types the upload endpoint allows, since the type label
+	// here is client-supplied and is what's stored on the message
 	prefix := h.uploadURLPrefix(channel)
 	for _, att := range payload.Attachments {
-		if _, u := handlers.SplitAttachment(att); !strings.HasPrefix(u, prefix) {
+		if ct, u := handlers.SplitAttachment(att); !uploadTypeAllowed(ct) || !strings.HasPrefix(u, prefix) {
 			return fmt.Errorf("invalid attachment: %s", att)
 		}
 	}
@@ -307,6 +325,15 @@ type uploadResponse struct {
 // and the visitor gets back its content-type:url attachment value, to be referenced in a subsequent message to
 // the receive endpoint. Like receive, possession of the chat ID is what authenticates the caller.
 func (h *handler) upload(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
+	// the per-chat throttle below can't run until the form is parsed, so on its own it lets a caller buffer
+	// bodies freely by rotating chat IDs. This per-IP cap doesn't need the body, so it runs first and a
+	// throttled request is rejected before anything is buffered. Like start, distributed floods are left to
+	// edge protection.
+	if !h.allow(fmt.Sprintf("chat-uploads-ip:%s|%s", channel.UUID(), requestIP(r)), uploadIPLimit, uploadIPLimitWindow) {
+		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
+		return nil, channels.RespondError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
+	}
+
 	// cap the body before parsing so an oversize upload is cut off rather than buffered in full
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes+uploadFormOverheadBytes)
 
@@ -362,9 +389,7 @@ func (h *handler) upload(ctx context.Context, channel *models.Channel, w http.Re
 	// the content type comes from sniffing the bytes rather than trusting the client's declared type - an
 	// unrecognized file is rejected along with recognized-but-disallowed types
 	fileType, _ := filetype.Match(data)
-	if fileType == filetype.Unknown || !slices.ContainsFunc(allowedUploadTypes, func(a string) bool {
-		return fileType.MIME.Value == a || (strings.HasSuffix(a, "/") && strings.HasPrefix(fileType.MIME.Value, a))
-	}) {
+	if fileType == filetype.Unknown || !uploadTypeAllowed(fileType.MIME.Value) {
 		channels.LogRequestError(r, channel, fmt.Errorf("unsupported file type"))
 		return nil, channels.RespondError(w, http.StatusBadRequest, fmt.Errorf("unsupported file type"))
 	}

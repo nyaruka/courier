@@ -460,8 +460,8 @@ func TestHistoryRateLimit(t *testing.T) {
 	assert.LessOrEqual(t, ttl, historyLimitWindow)
 }
 
-// makeUpload posts a multipart upload request - a nil file omits the file part entirely
-func makeUpload(t *testing.T, s *web.Server, chatID string, file []byte) *httptest.ResponseRecorder {
+// makeUpload posts a multipart upload request from the given IP - a nil file omits the file part entirely
+func makeUpload(t *testing.T, s *web.Server, chatID, ip string, file []byte) *httptest.ResponseRecorder {
 	t.Helper()
 
 	var body bytes.Buffer
@@ -477,6 +477,7 @@ func makeUpload(t *testing.T, s *web.Server, chatID string, file []byte) *httpte
 
 	req, _ := http.NewRequest(http.MethodPost, "https://localhost"+uploadURL, bytes.NewReader(body.Bytes()))
 	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.RemoteAddr = ip
 	rr := httptest.NewRecorder()
 	s.Router().ServeHTTP(rr, req)
 	return rr
@@ -507,7 +508,7 @@ func TestUpload(t *testing.T) {
 
 	// a valid upload returns the stored attachment as a content-type:url value, typed by sniffing the bytes
 	// and stored under this channel's workspace
-	rr = makeUpload(t, s, testChatID, testJPG)
+	rr = makeUpload(t, s, testChatID, "41.23.45.66:1234", testJPG)
 	assert.Equal(t, 200, rr.Code)
 	resp := &struct {
 		Attachment string `json:"attachment"`
@@ -536,31 +537,31 @@ func TestUpload(t *testing.T) {
 	// a recognized but disallowed file type is rejected, with the CORS header still on the error so the
 	// widget can read it
 	zip := append([]byte{0x50, 0x4b, 0x03, 0x04}, make([]byte, 100)...)
-	rr = makeUpload(t, s, testChatID, zip)
+	rr = makeUpload(t, s, testChatID, "41.23.45.66:1234", zip)
 	assert.Equal(t, 400, rr.Code)
 	assert.Contains(t, rr.Body.String(), "unsupported file type")
 	assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
 
 	// as is a file whose type can't be recognized at all
-	rr = makeUpload(t, s, testChatID, []byte("just some text"))
+	rr = makeUpload(t, s, testChatID, "41.23.45.66:1234", []byte("just some text"))
 	assert.Equal(t, 400, rr.Code)
 	assert.Contains(t, rr.Body.String(), "unsupported file type")
 
 	// an oversize upload is cut off rather than buffered
-	rr = makeUpload(t, s, testChatID, make([]byte, maxUploadBytes+uploadFormOverheadBytes+1))
+	rr = makeUpload(t, s, testChatID, "41.23.45.66:1234", make([]byte, maxUploadBytes+uploadFormOverheadBytes+1))
 	assert.Equal(t, 413, rr.Code)
 	assert.Contains(t, rr.Body.String(), "upload too large")
 
 	// a chat ID we never minted is a bad request, as is a malformed one or a request with no file part
-	rr = makeUpload(t, s, "xxxxxhDrqpTQefIEinK0up3C", testJPG)
+	rr = makeUpload(t, s, "xxxxxhDrqpTQefIEinK0up3C", "41.23.45.66:1234", testJPG)
 	assert.Equal(t, 400, rr.Code)
 	assert.Contains(t, rr.Body.String(), "unknown chat id")
 
-	rr = makeUpload(t, s, "not-a-chat-id!", testJPG)
+	rr = makeUpload(t, s, "not-a-chat-id!", "41.23.45.66:1234", testJPG)
 	assert.Equal(t, 400, rr.Code)
 	assert.Contains(t, rr.Body.String(), "invalid chat id")
 
-	rr = makeUpload(t, s, testChatID, nil)
+	rr = makeUpload(t, s, testChatID, "41.23.45.66:1234", nil)
 	assert.Equal(t, 400, rr.Code)
 	assert.Contains(t, rr.Body.String(), "missing file part")
 }
@@ -588,25 +589,42 @@ func TestUploadRateLimit(t *testing.T) {
 
 	// a chat can upload up to the limit of files within the window...
 	for i := range uploadLimit {
-		assert.Equal(t, 200, makeUpload(t, s, testChatID, testJPG).Code, "upload %d", i)
+		assert.Equal(t, 200, makeUpload(t, s, testChatID, "41.23.45.67:1234", testJPG).Code, "upload %d", i)
 	}
 
 	// ...then gets throttled, with the CORS header still on the error so the widget can read it
-	rr = makeUpload(t, s, testChatID, testJPG)
+	rr = makeUpload(t, s, testChatID, "41.23.45.67:1234", testJPG)
 	assert.Equal(t, 429, rr.Code)
 	assert.Contains(t, rr.Body.String(), "rate limit exceeded")
 	assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
 
-	// but other chats aren't affected - the limit is per chat (an unknown one just fails its lookup)
-	assert.Equal(t, 400, makeUpload(t, s, "xxxxxhDrqpTQefIEinK0up3C", testJPG).Code)
+	// the per-chat limit follows the chat, not the caller's IP
+	assert.Equal(t, 429, makeUpload(t, s, testChatID, "41.23.45.68:1234", testJPG).Code)
 
-	// and the count expires with the window
+	// but other chats aren't affected - the limit is per chat (an unknown one just fails its lookup)
+	assert.Equal(t, 400, makeUpload(t, s, "xxxxxhDrqpTQefIEinK0up3C", "41.23.45.67:1234", testJPG).Code)
+
+	// rotating chat IDs doesn't evade limiting - the per-IP cap counts every request from a source however
+	// it labels itself
+	for i := range uploadIPLimit {
+		chatID := fmt.Sprintf("xxxxxhDrqpTQefIEinK0u%03d", i) // format-valid but never minted
+		assert.Equal(t, 400, makeUpload(t, s, chatID, "41.23.45.69:1234", testJPG).Code, "rotation %d", i)
+	}
+	rr = makeUpload(t, s, "xxxxxhDrqpTQefIEinK0u999", "41.23.45.69:1234", testJPG)
+	assert.Equal(t, 429, rr.Code)
+	assert.Contains(t, rr.Body.String(), "rate limit exceeded")
+
+	// and both counts expire with their windows
 	vc := rt.VK.Get()
 	defer vc.Close()
 	ttl, err := redis.Int(vc.Do("TTL", "chat-uploads:"+channelUUID+"|"+testChatID))
 	require.NoError(t, err)
 	assert.Greater(t, ttl, 0)
 	assert.LessOrEqual(t, ttl, uploadLimitWindow)
+	ttl, err = redis.Int(vc.Do("TTL", "chat-uploads-ip:"+channelUUID+"|41.23.45.69"))
+	require.NoError(t, err)
+	assert.Greater(t, ttl, 0)
+	assert.LessOrEqual(t, ttl, uploadIPLimitWindow)
 }
 
 // sends don't make HTTP requests so the framework's outgoing cases don't fit - instead we test the socket

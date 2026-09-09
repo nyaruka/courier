@@ -333,6 +333,32 @@
         }
     },
     {
+        "label": "Receive Disallowed Attachment Type",
+        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "data": {
+            "chat_id": "O1Gyh3pYRcVrMOgtKn1XNuq9",
+            "attachments": [
+                "text/html:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/15a2ee5e.jpg"
+            ]
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid attachment: text/html:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/15a2ee5e.jpg"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
         "label": "Receive Too Long Text",
         "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
         "data": {
