@@ -93,7 +93,7 @@ func NewDefaultConfig() *Config {
 		LogLevel:           slog.LevelWarn,
 		Version:            "Dev",
 
-		DefaultContactLimit: 50_000_000,
+		DefaultContactLimit: 10_000_000,
 	}
 }
 
