@@ -145,6 +145,220 @@
         }
     },
     {
+        "label": "Receive Msg With Attachments",
+        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "data": {
+            "chat_id": "O1Gyh3pYRcVrMOgtKn1XNuq9",
+            "text": "Look at this",
+            "attachments": [
+                "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/15a2ee5e.jpg"
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71",
+                        "msg_uuid": "019b272f-83c0-7000-a8c9-43262b4d8314",
+                        "text": "Look at this",
+                        "urn": "webchat:O1Gyh3pYRcVrMOgtKn1XNuq9",
+                        "attachments": [
+                            "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/15a2ee5e.jpg"
+                        ],
+                        "received_on": "2025-12-16T12:43:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019b272f-83c0-7000-a8c9-43262b4d8314",
+                "channel_uuid": "0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71",
+                "urn": "webchat:O1Gyh3pYRcVrMOgtKn1XNuq9",
+                "text": "Look at this",
+                "attachments": [
+                    "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/15a2ee5e.jpg"
+                ],
+                "created_on": "2025-12-16T12:43:03Z",
+                "received_on": "2025-12-16T12:43:03Z",
+                "log_uuids": [
+                    "019b272f-7808-7000-9105-9014fe7b3012"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Attachment Only Msg",
+        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "data": {
+            "chat_id": "O1Gyh3pYRcVrMOgtKn1XNuq9",
+            "attachments": [
+                "application/pdf:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/15a2ee5e.pdf"
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71",
+                        "msg_uuid": "019a9916-dde0-7000-b027-ecfd777af453",
+                        "text": "",
+                        "urn": "webchat:O1Gyh3pYRcVrMOgtKn1XNuq9",
+                        "attachments": [
+                            "application/pdf:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/15a2ee5e.pdf"
+                        ],
+                        "received_on": "2025-11-18T22:30:03Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a9916-dde0-7000-b027-ecfd777af453",
+                "channel_uuid": "0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71",
+                "urn": "webchat:O1Gyh3pYRcVrMOgtKn1XNuq9",
+                "text": "",
+                "attachments": [
+                    "application/pdf:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/15a2ee5e.pdf"
+                ],
+                "created_on": "2025-11-18T22:30:03Z",
+                "received_on": "2025-11-18T22:30:03Z",
+                "log_uuids": [
+                    "019a9916-d228-7000-b957-a0e81ef52389"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive External Attachment URL",
+        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "data": {
+            "chat_id": "O1Gyh3pYRcVrMOgtKn1XNuq9",
+            "text": "sneaky",
+            "attachments": [
+                "image/jpeg:https://example.com/cat.jpg"
+            ]
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid attachment: image/jpeg:https://example.com/cat.jpg"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Other Workspace Attachment URL",
+        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "data": {
+            "chat_id": "O1Gyh3pYRcVrMOgtKn1XNuq9",
+            "attachments": [
+                "image/jpeg:http://localstack:4566/test-attachments/attachments/2/15a2/ee5e/15a2ee5e.jpg"
+            ]
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid attachment: image/jpeg:http://localstack:4566/test-attachments/attachments/2/15a2/ee5e/15a2ee5e.jpg"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Too Many Attachments",
+        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "data": {
+            "chat_id": "O1Gyh3pYRcVrMOgtKn1XNuq9",
+            "attachments": [
+                "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/1.jpg",
+                "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/2.jpg",
+                "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/3.jpg",
+                "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/4.jpg",
+                "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/5.jpg",
+                "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/6.jpg",
+                "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/7.jpg",
+                "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/8.jpg",
+                "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/9.jpg",
+                "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/10.jpg",
+                "image/jpeg:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/11.jpg"
+            ]
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "request JSON doesn't match required schema: Key: 'receivePayload.Attachments' Error:Field validation for 'Attachments' failed on the 'max' tag"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Receive Disallowed Attachment Type",
+        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "data": {
+            "chat_id": "O1Gyh3pYRcVrMOgtKn1XNuq9",
+            "attachments": [
+                "text/html:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/15a2ee5e.jpg"
+            ]
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid attachment: text/html:http://localstack:4566/test-attachments/attachments/1/15a2/ee5e/15a2ee5e.jpg"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
         "label": "Receive Too Long Text",
         "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
         "data": {
@@ -181,7 +395,7 @@
                 "data": [
                     {
                         "type": "error",
-                        "error": "request JSON doesn't match required schema: Key: 'receivePayload.Text' Error:Field validation for 'Text' failed on the 'required' tag"
+                        "error": "request JSON doesn't match required schema: Key: 'receivePayload.Text' Error:Field validation for 'Text' failed on the 'required_without' tag"
                     }
                 ]
             }
