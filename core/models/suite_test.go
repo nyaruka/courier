@@ -1580,6 +1580,48 @@ func (ts *ModelsTestSuite) TestSpools() {
 	assertdb.Query(ts.T(), ts.rt.DB, `SELECT count(*) FROM channels_channelevent WHERE extra::jsonb->>'ref_id' = 'spool-flush'`).Returns(1)
 }
 
+func (ts *ModelsTestSuite) TestSpoolsAtContactLimit() {
+	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, nil)
+	urn := urns.URN("tel:+12065559999") // not an existing contact
+
+	// drain anything left over from previous tests so we can assert absolute sizes
+	ts.NoError(models.MsgSpool().Flush())
+	ts.NoError(models.EventSpool().Flush())
+
+	// cap the org at its current number of contacts, as if it filled up while these items were spooled
+	var numContacts int
+	ts.NoError(ts.rt.DB.Get(&numContacts, `SELECT count(*) FROM contacts_contact WHERE org_id = 1`))
+	ts.rt.DB.MustExec(`INSERT INTO contacts_contactgroupcount(group_id, count, is_squashed) VALUES(1, $1, TRUE)`, numContacts)
+	ts.rt.DB.MustExec(`UPDATE orgs_org SET limits = '{"contacts": ` + fmt.Sprint(numContacts) + `}' WHERE id = 1`)
+	models.FlushChannelCache()
+	models.FlushContactCounts()
+
+	defer func() {
+		ts.rt.DB.MustExec(`UPDATE orgs_org SET limits = '{}' WHERE id = 1`)
+		ts.rt.DB.MustExec(`DELETE FROM contacts_contactgroupcount`)
+		models.FlushChannelCache()
+		models.FlushContactCounts()
+	}()
+
+	// a spooled msg from a new contact is dropped by the flush rather than failed and retried forever
+	msg := models.NewIncomingMsg(channel, urn, "spool-limit-test", "spool-limit-ext1", clog)
+	ts.NoError(models.MsgSpool().Add([]*models.MsgIn{msg}))
+	ts.NoError(models.MsgSpool().Flush())
+	ts.Equal(0, models.MsgSpool().Size())
+	assertdb.Query(ts.T(), ts.rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'spool-limit-test'`).Returns(0)
+
+	// likewise a spooled channel event from a new contact
+	event := models.NewChannelEvent(channel, models.EventTypeReferral, urn, clog).WithExtra(map[string]string{"ref_id": "spool-limit"})
+	ts.NoError(models.EventSpool().Add([]*models.ChannelEvent{event}))
+	ts.NoError(models.EventSpool().Flush())
+	ts.Equal(0, models.EventSpool().Size())
+	assertdb.Query(ts.T(), ts.rt.DB, `SELECT count(*) FROM channels_channelevent WHERE extra::jsonb->>'ref_id' = 'spool-limit'`).Returns(0)
+
+	// and no contact was created for either
+	assertdb.Query(ts.T(), ts.rt.DB, `SELECT count(*) FROM contacts_contacturn WHERE identity = $1`, string(urn)).Returns(0)
+}
+
 func TestModelsSuite(t *testing.T) {
 	suite.Run(t, new(ModelsTestSuite))
 }
