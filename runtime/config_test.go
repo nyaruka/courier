@@ -1,13 +1,10 @@
 package runtime_test
 
 import (
-	"flag"
-	"log/slog"
 	"net"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/runtime"
-	"github.com/nyaruka/ezconf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,34 +18,6 @@ var invalidConfigTestCases = []struct {
 	{config: &runtime.Config{DB: "postgres://courier:courier@postgres:5432/courier", Valkey: ":foo"}, expectedError: "Field validation for 'Valkey' failed on the 'url' tag"},
 	{config: &runtime.Config{DB: "postgres://courier:courier@postgres:5432/courier", Valkey: "redis://valkey:6379/15"}, expectedError: "Field validation for 'Valkey' failed on the 'startswith=valkey:|startswith=valkeys:' tag"},
 	{config: &runtime.Config{DB: "postgres://temba:temba@postgres/temba?sslmode=disable", Valkey: "valkey://valkey:6379/15", SendProxyURL: "not-a-url"}, expectedError: "Field validation for 'SendProxyURL' failed on the 'http_url' tag"},
-}
-
-func TestLoadConfig(t *testing.T) {
-	// caller can customize the base config..
-	base := runtime.NewDefaultConfig()
-	base.Domain = "example.com"
-	base.DisallowedNetworks = append(base.DisallowedNetworks, `192.0.2.0/24`)
-	base.LogLevel = slog.LevelError
-
-	cfg, err := runtime.LoadConfig(base, `--log-level=warn`)
-	assert.NoError(t, err)
-	assert.Equal(t, "example.com", cfg.Domain)
-	assert.Contains(t, cfg.DisallowedNetworks, `192.0.2.0/24`)
-	assert.Equal(t, slog.LevelWarn, cfg.LogLevel)
-
-	// but explicitly set values still take precedence
-	base = runtime.NewDefaultConfig()
-	base.Domain = "example.com"
-	base.DisallowedNetworks = append(base.DisallowedNetworks, `192.0.2.0/24`)
-
-	cfg, err = runtime.LoadConfig(base, `--domain=temba.io`)
-	assert.NoError(t, err)
-	assert.Equal(t, "temba.io", cfg.Domain)
-	assert.Contains(t, cfg.DisallowedNetworks, `192.0.2.0/24`)
-
-	// invalid values are rejected
-	_, err = runtime.LoadConfig(runtime.NewDefaultConfig(), `--disallowed-networks="127.0.0.1`)
-	assert.Error(t, err)
 }
 
 func TestConfigParse(t *testing.T) {
@@ -86,12 +55,4 @@ func TestConfigParse(t *testing.T) {
 	cfg = runtime.NewDefaultConfig()
 	cfg.Valkey = "valkeys://valkey:6379/15"
 	assert.NoError(t, cfg.Parse())
-}
-
-func TestLoadConfigHelp(t *testing.T) {
-	// asking for usage comes back as the ErrHelp sentinel rather than exiting the process, so that the caller can
-	// show usage and exit cleanly instead of reporting a config failure
-	_, err := runtime.LoadConfig(runtime.NewDefaultConfig(), `--help`)
-	assert.ErrorIs(t, err, ezconf.ErrHelp)
-	assert.ErrorIs(t, err, flag.ErrHelp)
 }

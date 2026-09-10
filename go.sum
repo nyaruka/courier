@@ -116,8 +116,8 @@ github.com/naoina/go-stringutil v0.1.0 h1:rCUeRUHjBjGTSHl0VC00jUPLz8/F9dDzYI70Hz
 github.com/naoina/go-stringutil v0.1.0/go.mod h1:XJ2SJL9jCtBh+P9q5btrd/Ylo8XwT/h1USek5+NqSA0=
 github.com/naoina/toml v0.1.1 h1:PT/lllxVVN0gzzSqSlHEmP8MJB4MY2U7STGxiouV4X8=
 github.com/naoina/toml v0.1.1/go.mod h1:NBIhNtsFMo3G2szEBne+bO4gS192HuIYRqfvOWb4i1E=
-github.com/nyaruka/ezconf v0.7.0 h1:wrGi8JTm/QvRs8nHeVpAsXgQ91aBwAxG3AasNuTNGQ0=
-github.com/nyaruka/ezconf v0.7.0/go.mod h1:o+Cb7iDSYIeg+YEDrY9yP7kIDCBXS+fRrEpcgI0zUwE=
+github.com/nyaruka/ezconf v0.8.0 h1:0MIQDp7H4/FjATUz/6jrOJ+QMjptnksBWKvUzRI2INE=
+github.com/nyaruka/ezconf v0.8.0/go.mod h1:o+Cb7iDSYIeg+YEDrY9yP7kIDCBXS+fRrEpcgI0zUwE=
 github.com/nyaruka/gocommon v1.95.0 h1:QwPx+GOKcApDhgn5BpAZE6rhY2YqdfjNAQz6GKYXNwQ=
 github.com/nyaruka/gocommon v1.95.0/go.mod h1:Gum3xr5L9ouQZbfHDwgPxpQ3YQKo0ueHticWW/Bp3UY=
 github.com/nyaruka/goflow v0.293.4 h1:VlW1W54gYR9QlVC0w/tm15AL5Gj3RYvmzsb1Ewobc+I=

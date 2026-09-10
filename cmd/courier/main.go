@@ -68,5 +68,7 @@ var (
 )
 
 func main() {
-	cmd.Run(cmd.Service(runtime.NewDefaultConfig(), version, date, cmd.LogHandler()))
+	cfg := runtime.NewDefaultConfig()
+	cmd.LoadConfig(cfg)
+	cmd.Run(cmd.Service(cfg, version, date, cmd.LogHandler()))
 }
