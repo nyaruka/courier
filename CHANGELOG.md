@@ -1,3 +1,9 @@
+v26.3.50 (2026-09-10)
+-------------------------
+ * Only ever move message status forward so out of order status updates can't undo one that already landed
+ * Make the contact creation and received message checks replaceable by deployments
+ * Add inbound attachment support to webchat channels
+
 v26.3.49 (2026-09-09)
 -------------------------
  * Add history endpoint to webchat channels so clients can fetch recent messages
