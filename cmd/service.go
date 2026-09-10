@@ -24,9 +24,9 @@ import (
 const shutdownTimeout = 90 * time.Second
 
 // Service starts the courier service, blocks until a termination signal is received, then stops it. The config
-// must already be loaded and parsed, e.g. with runtime.LoadConfig, so that an app built on top of courier can load
-// its own config struct embedding runtime.Config and pass the embedded value here. All logging is sent to the given
-// handler, e.g. LogHandler(), whose level is set from the config.
+// must already be loaded, e.g. with LoadConfig - an app built on top of courier with settings of its own loads its
+// struct embedding runtime.Config and passes the embedded value here. All logging is sent to the given handler,
+// e.g. LogHandler(), whose level is set from the config.
 func Service(cfg *runtime.Config, version, date string, logHandler slog.Handler) error {
 	cfg.Version = version
 

@@ -1,14 +1,12 @@
 package runtime
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"net"
 	"net/url"
 
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/ezconf"
 	"github.com/nyaruka/gocommon/httpx"
 )
 
@@ -97,32 +95,8 @@ func NewDefaultConfig() *Config {
 	}
 }
 
-// LoadConfig loads configuration from a config file, environment variables and command line args, on top of the
-// given base config, e.g. NewDefaultConfig().
-func LoadConfig(cfg *Config, args ...string) (*Config, error) {
-	loader := ezconf.NewLoader(cfg, "courier", "Courier - A fast message broker for SMS and IP messages", []string{"config.toml"})
-	if len(args) > 0 { // allow tests to pass in args
-		loader.SetArgs(args...)
-	}
-	if err := loader.Load(); err != nil {
-		// Load never writes to stdout or stderr itself, so a request for usage comes back as ErrHelp for us to
-		// act on here, where we still have the loader to show it with. The sentinel is passed up so that the
-		// caller can tell an explicit -help from a genuine config failure.
-		if errors.Is(err, ezconf.ErrHelp) {
-			loader.Usage()
-		}
-		return nil, err
-	}
-
-	if err := cfg.Parse(); err != nil {
-		return nil, fmt.Errorf("invalid config: %w", err)
-	}
-
-	return cfg, nil
-}
-
 // Parse validates the config and fills in the values which can't be used in the form they're configured in. It's
-// called by LoadConfig, and a config built by other means (e.g. NewDefaultConfig in a test) must be parsed before
+// called by cmd.LoadConfig, and a config built by other means (e.g. NewDefaultConfig in a test) must be parsed before
 // being handed to NewRuntime - the values it fills in have no meaningful zero value, so skipping it would silently
 // leave the SSRF blocklist empty rather than fail.
 func (c *Config) Parse() error {
