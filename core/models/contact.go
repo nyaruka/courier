@@ -159,8 +159,8 @@ func contactForURN(ctx context.Context, rt *runtime.Runtime, org OrgID, channel 
 		return nil, nil
 	}
 
-	// didn't find it, we need to create it instead - if the org has room for another contact
-	if err := checkContactLimit(ctx, rt, channel, clog); err != nil {
+	// didn't find it, we need to create it instead - if the creation check allows it
+	if err := ContactCreationCheck(ctx, rt, channel, urn, clog); err != nil {
 		return nil, err
 	}
 
@@ -275,8 +275,16 @@ func orgContactLimit(rt *runtime.Runtime, channel *Channel) int {
 	return limit
 }
 
-// checks that the org which owns the given channel has room to create another contact
-func checkContactLimit(ctx context.Context, rt *runtime.Runtime, channel *Channel, clog *ChannelLog) error {
+// ContactCreationCheck is called before a contact is created for a URN received on a channel, and can refuse the
+// creation by returning a LimitReachedError - which callers treat as a refusal to be reported rather than a failure
+// to be retried, and which should be recorded on the channel log so that the workspace can see it. The default
+// enforces the workspace's contact limit. Deployments can replace it to apply their own policies as well, e.g. from
+// main before starting the service.
+var ContactCreationCheck = CheckContactLimit
+
+// CheckContactLimit is the default contact creation check: it refuses the creation if the workspace which owns the
+// given channel has reached its contact limit, recording that on the channel log.
+func CheckContactLimit(ctx context.Context, rt *runtime.Runtime, channel *Channel, urn urns.URN, clog *ChannelLog) error {
 	limit := orgContactLimit(rt, channel)
 	if limit <= 0 {
 		return nil

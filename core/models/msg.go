@@ -194,15 +194,32 @@ func InsertIncomingMsg(ctx context.Context, db *sqlx.DB, m *MsgIn, contact *Cont
 	return err
 }
 
-// WriteMsg writes the passed in incoming message to the database, or spools it if the database is unavailable. If
-// the message is detected to be a duplicate of one already received, it's marked as such and not written. A message
-// from a new contact in a workspace at its contact limit is neither written nor spooled, and a LimitReachedError is
+// IncomingMsgCheck is called before a received message is written. It can mark the message as a duplicate of one
+// already received, which is then reported as such rather than written again, or refuse it by returning a
+// LimitReachedError - which callers treat like a refused contact creation: reported rather than retried, and to be
+// recorded on the channel log so that the workspace can see it. The default detects duplicates. Deployments can
+// replace it to apply their own policies as well, e.g. from main before starting the service.
+var IncomingMsgCheck = CheckDuplicateMsg
+
+// CheckDuplicateMsg is the default incoming message check: it marks the given message as a duplicate if it's one
+// we've already received, giving it the original's UUID.
+func CheckDuplicateMsg(ctx context.Context, rt *runtime.Runtime, m *MsgIn, clog *ChannelLog) error {
+	if prevUUID := checkMsgAlreadyReceived(ctx, rt, m); prevUUID != "" {
+		m.UUID_ = prevUUID
+		m.Duplicate_ = true
+	}
+	return nil
+}
+
+// WriteMsg writes the passed in incoming message to the database, or spools it if the database is unavailable. A
+// message the incoming message check marks as a duplicate isn't written again, and one it refuses - or one from a
+// new contact in a workspace at its contact limit - is neither written nor spooled, and a LimitReachedError is
 // returned.
 func WriteMsg(ctx context.Context, rt *runtime.Runtime, msg *MsgIn, clog *ChannelLog) error {
-	// check if this message could be a duplicate and if so steal the original's UUID
-	if prevUUID := checkMsgAlreadyReceived(ctx, rt, msg); prevUUID != "" {
-		msg.UUID_ = prevUUID
-		msg.Duplicate_ = true
+	if err := IncomingMsgCheck(ctx, rt, msg, clog); err != nil {
+		return err
+	}
+	if msg.Duplicate_ {
 		return nil
 	}
 

@@ -1,11 +1,18 @@
 package models_test
 
 import (
+	"context"
 	"encoding/json"
+	"path/filepath"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/courier/v26/testsuite"
+	"github.com/nyaruka/gocommon/dbutil/assertdb"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMsgOut(t *testing.T) {
@@ -135,4 +142,59 @@ func TestQuickRepliesToRows(t *testing.T) {
 		rows := models.QuickRepliesToRows(tc.replies, tc.maxRows, tc.maxRowRunes, tc.paddingRunes)
 		assert.Equal(t, tc.expected, rows, "rows mismatch for replies %v", tc.replies)
 	}
+}
+
+func TestIncomingMsgCheck(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	defer testsuite.ResetDB(t, rt)
+
+	ch, err := models.GetChannel(ctx, "KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	require.NoError(t, err)
+
+	// a deployment can replace the check with its own policy on top of the default
+	defer func() { models.IncomingMsgCheck = models.CheckDuplicateMsg }()
+	models.IncomingMsgCheck = func(ctx context.Context, rt *runtime.Runtime, m *models.MsgIn, clog *models.ChannelLog) error {
+		if err := models.CheckDuplicateMsg(ctx, rt, m, clog); err != nil || m.Duplicate_ {
+			return err
+		}
+		if m.Text() == "spam" {
+			clog.Error(&svclogs.Error{Code: "test_refused", Message: "Refused by test."})
+			return &models.LimitReachedError{Limit: "test messages", Max: 1}
+		}
+		return nil
+	}
+
+	writeMsg := func(text, externalID string) (*models.MsgIn, *models.ChannelLog, error) {
+		clog := models.NewChannelLog(models.ChannelLogTypeReceive, ch, nil, nil)
+		msg := models.NewIncomingMsg(ch, "tel:+12067799192", text, externalID, clog)
+		return msg, clog, models.WriteMsg(ctx, rt, msg, clog)
+	}
+
+	// a message the check allows is written
+	msg, clog, err := writeMsg("hello", "ext1")
+	require.NoError(t, err)
+	assert.False(t, msg.Duplicate_)
+	assert.Len(t, clog.Errors, 0)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'hello'`).Returns(1)
+
+	// the default still marks a redelivery of it as a duplicate
+	dup, clog, err := writeMsg("hello", "ext1")
+	require.NoError(t, err)
+	assert.True(t, dup.Duplicate_)
+	assert.Equal(t, msg.UUID(), dup.UUID())
+	assert.Len(t, clog.Errors, 0)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'hello'`).Returns(1)
+
+	// and one the check refuses is neither written nor spooled, with the refusal reported as a limit being reached
+	_, clog, err = writeMsg("spam", "ext2")
+	assert.EqualError(t, err, "workspace has reached its limit of 1 test messages")
+	require.Len(t, clog.Errors, 1)
+	assert.Equal(t, "test_refused", clog.Errors[0].Code)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'spam'`).Returns(0)
+	spooled, err := filepath.Glob(filepath.Join(rt.Config.SpoolDir, "msgs", "*.jsonl"))
+	require.NoError(t, err)
+	assert.Empty(t, spooled)
 }

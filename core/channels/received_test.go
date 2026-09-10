@@ -1,15 +1,18 @@
 package channels_test
 
 import (
+	"context"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -167,11 +170,11 @@ func TestWriteReceivedAtContactLimit(t *testing.T) {
 	require.Len(t, results, 4)
 	assert.Equal(t, channels.OutcomeWritten, results[0].Outcome)
 	assert.Equal(t, channels.OutcomeIgnored, results[1].Outcome)
-	assert.Equal(t, "workspace at contact limit", results[1].Details)
+	assert.Equal(t, "workspace has reached its limit of 1 contacts", results[1].Details)
 	assert.Nil(t, results[1].Event)
 	assert.Equal(t, channels.OutcomeWritten, results[2].Outcome)
 	assert.Equal(t, channels.OutcomeIgnored, results[3].Outcome)
-	assert.Equal(t, "workspace at contact limit", results[3].Details)
+	assert.Equal(t, "workspace has reached its limit of 1 contacts", results[3].Details)
 
 	// the dropped items aren't events we accepted
 	assert.Len(t, channels.AcceptedEvents(results), 2)
@@ -190,4 +193,52 @@ func TestWriteReceivedAtContactLimit(t *testing.T) {
 	// the refusals are recorded on the channel log
 	require.Len(t, clog.Errors, 2)
 	assert.Equal(t, "contact_limit_reached", clog.Errors[0].Code)
+}
+
+func TestWriteReceivedRefusedMsg(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	defer testsuite.ResetDB(t, rt)
+
+	// a deployment's incoming message check can refuse a message
+	defer func() { models.IncomingMsgCheck = models.CheckDuplicateMsg }()
+	models.IncomingMsgCheck = func(ctx context.Context, rt *runtime.Runtime, m *models.MsgIn, clog *models.ChannelLog) error {
+		if m.Text() == "spam" {
+			clog.Error(&svclogs.Error{Code: "test_refused", Message: "Refused by test."})
+			return &models.LimitReachedError{Limit: "test messages", Max: 1}
+		}
+		return models.CheckDuplicateMsg(ctx, rt, m, clog)
+	}
+
+	ch, err := models.GetChannel(ctx, "KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	require.NoError(t, err)
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, ch, nil, nil)
+
+	in := channels.NewReceived(ch)
+	in.Msg(models.NewIncomingMsg(ch, "tel:+12067799192", "hello", "ext1", clog))
+	in.Msg(models.NewIncomingMsg(ch, "tel:+12067799192", "spam", "ext2", clog))
+	in.Msg(models.NewIncomingMsg(ch, "tel:+12067799192", "hello", "ext1", clog)) // redelivery of the first
+	in.Msg(models.NewIncomingMsg(ch, "tel:+12065551212", "from another", "ext3", clog))
+
+	results, err := channels.WriteReceived(ctx, rt, in, clog)
+	assert.NoError(t, err)
+	require.Len(t, results, 4)
+
+	// the refused message is dropped as ignored, and the rest of the batch is still written or deduplicated
+	assert.Equal(t, channels.OutcomeWritten, results[0].Outcome)
+	assert.Equal(t, channels.OutcomeIgnored, results[1].Outcome)
+	assert.Equal(t, "workspace has reached its limit of 1 test messages", results[1].Details)
+	assert.Nil(t, results[1].Event)
+	assert.Equal(t, channels.OutcomeDuplicate, results[2].Outcome)
+	assert.Equal(t, channels.OutcomeWritten, results[3].Outcome)
+
+	assert.Len(t, channels.AcceptedEvents(results), 3)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE text IN ('hello', 'from another')`).Returns(2)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'spam'`).Returns(0)
+
+	// the refusal is recorded on the channel log
+	require.Len(t, clog.Errors, 1)
+	assert.Equal(t, "test_refused", clog.Errors[0].Code)
 }
