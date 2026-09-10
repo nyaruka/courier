@@ -1,12 +1,16 @@
 package models_test
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/core/models"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null/v3"
 	"github.com/stretchr/testify/assert"
@@ -144,4 +148,56 @@ func TestContactLimit(t *testing.T) {
 	models.FlushContactCounts()
 	_, clog, err = getContact(ch, "tel:+12065554444")
 	assertLimitReached(clog, err, 4)
+}
+
+func TestContactCreationCheck(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+
+	defer testsuite.ResetDB(t, rt)
+
+	ch, err := models.GetChannel(ctx, "KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	require.NoError(t, err)
+
+	// a deployment can replace the check with its own policy, which is consulted only when a contact would be created
+	var checked []urns.URN
+	defer func() { models.ContactCreationCheck = models.CheckContactLimit }()
+	models.ContactCreationCheck = func(ctx context.Context, rt *runtime.Runtime, channel *models.Channel, urn urns.URN, clog *models.ChannelLog) error {
+		checked = append(checked, urn)
+		if urn.Path() == "+12065552222" {
+			clog.Error(&svclogs.Error{Code: "test_refused", Message: "Refused by test."})
+			return &models.LimitReachedError{Limit: "test contacts", Max: 1}
+		}
+		return nil
+	}
+
+	getContact := func(urn urns.URN) (*models.Contact, *models.ChannelLog, error) {
+		clog := models.NewChannelLog(models.ChannelLogTypeReceive, ch, nil, nil)
+		contact, err := models.GetContact(ctx, rt, ch, urn, nil, "", true, clog)
+		return contact, clog, err
+	}
+
+	// an existing contact is returned without the check being consulted
+	contact, clog, err := getContact("tel:+12067799192")
+	require.NoError(t, err)
+	assert.Equal(t, models.ContactID(100), contact.ID_)
+	assert.Len(t, clog.Errors, 0)
+	assert.Empty(t, checked)
+
+	// a new contact the check allows is created
+	contact, clog, err = getContact("tel:+12065551111")
+	require.NoError(t, err)
+	assert.True(t, contact.IsNew_)
+	assert.Len(t, clog.Errors, 0)
+	assert.Equal(t, []urns.URN{"tel:+12065551111"}, checked)
+
+	// and one it refuses isn't, with the refusal reported as a limit being reached
+	contact, clog, err = getContact("tel:+12065552222")
+	var limitErr *models.LimitReachedError
+	require.True(t, errors.As(err, &limitErr))
+	assert.EqualError(t, err, "workspace has reached its limit of 1 test contacts")
+	assert.Nil(t, contact)
+	require.Len(t, clog.Errors, 1)
+	assert.Equal(t, "test_refused", clog.Errors[0].Code)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contacturn WHERE identity = 'tel:+12065552222'`).Returns(0)
 }

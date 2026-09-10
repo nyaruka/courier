@@ -112,12 +112,8 @@ func (i *Received) Len() int { return len(i.items) }
 // Channel returns the channel the request this describes was for
 func (i *Received) Channel() *models.Channel { return i.channel }
 
-// what the response says for a message the provider deleted, and for an item dropped because the workspace is
-// at its contact limit
-const (
-	msgDeletedInfo   = "msg deleted"
-	contactLimitInfo = "workspace at contact limit"
-)
+// what the response says for a message the provider deleted
+const msgDeletedInfo = "msg deleted"
 
 // Outcome is what became of a single item of an incoming request
 type Outcome string
@@ -186,13 +182,13 @@ func WriteReceived(ctx context.Context, rt *runtime.Runtime, in *Received, clog 
 		}
 
 		if err != nil {
-			// a message or event from a new contact in a workspace that's at its contact limit is dropped rather
-			// than failed: the provider can't do anything about it and retrying won't help, so it's answered
-			// as ignored and the rest of the batch is still written. It's recorded on the channel log so that
-			// the drop is visible to the workspace.
+			// a message or event from a new contact that the contact creation check refused - a workspace at its
+			// contact limit - is dropped rather than failed: the provider can't do anything about it and retrying
+			// won't help, so it's answered as ignored and the rest of the batch is still written. The check
+			// records the refusal on the channel log so that the drop is visible to the workspace.
 			var limitErr *models.LimitReachedError
 			if errors.As(err, &limitErr) {
-				results = append(results, WriteResult{Details: contactLimitInfo, Outcome: OutcomeIgnored})
+				results = append(results, WriteResult{Details: limitErr.Error(), Outcome: OutcomeIgnored})
 				continue
 			}
 

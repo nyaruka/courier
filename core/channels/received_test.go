@@ -167,11 +167,11 @@ func TestWriteReceivedAtContactLimit(t *testing.T) {
 	require.Len(t, results, 4)
 	assert.Equal(t, channels.OutcomeWritten, results[0].Outcome)
 	assert.Equal(t, channels.OutcomeIgnored, results[1].Outcome)
-	assert.Equal(t, "workspace at contact limit", results[1].Details)
+	assert.Equal(t, "workspace has reached its limit of 1 contacts", results[1].Details)
 	assert.Nil(t, results[1].Event)
 	assert.Equal(t, channels.OutcomeWritten, results[2].Outcome)
 	assert.Equal(t, channels.OutcomeIgnored, results[3].Outcome)
-	assert.Equal(t, "workspace at contact limit", results[3].Details)
+	assert.Equal(t, "workspace has reached its limit of 1 contacts", results[3].Details)
 
 	// the dropped items aren't events we accepted
 	assert.Len(t, channels.AcceptedEvents(results), 2)
