@@ -300,7 +300,9 @@ func TestStatusTransitions(t *testing.T) {
 	for _, tc := range tcs {
 		desc := fmt.Sprintf("%s -> %s", tc.from, tc.write)
 
-		rt.DB.MustExec(`UPDATE msgs_msg SET status = $1::varchar, error_count = $2, failed_reason = NULL, next_attempt = NULL, log_uuids = '{}',
+		// an errored message is awaiting a retry
+		rt.DB.MustExec(`UPDATE msgs_msg SET status = $1::varchar, error_count = $2, failed_reason = NULL, log_uuids = '{}',
+			next_attempt = CASE WHEN $1::varchar = 'E' THEN NOW() ELSE NULL END,
 			sent_on = CASE WHEN $1::varchar IN ('W', 'S', 'D', 'R') THEN NOW() ELSE NULL END WHERE uuid = $3`, tc.from, tc.fromErrors, msgUUID)
 
 		changes, err := models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
@@ -323,8 +325,9 @@ func TestStatusTransitions(t *testing.T) {
 			assert.Len(t, changes, 0, desc)
 		}
 
-		// an errored attempt that was recorded schedules a retry, a rejected one doesn't
-		retryScheduled := tc.write == "E" && tc.errors > tc.fromErrors
+		// a message is awaiting a retry exactly whilst it's errored - an errored attempt that was recorded schedules one,
+		// a rejected one doesn't, and moving on to any other status (including failing on the last attempt) clears it
+		retryScheduled := tc.status == "E"
 
 		assertdb.Query(t, rt.DB, `SELECT status, error_count, COALESCE(failed_reason, '') AS failed_reason, sent_on IS NOT NULL AS sent_on, 
 			next_attempt IS NOT NULL AS retry, array_length(log_uuids, 1) AS logs FROM msgs_msg WHERE uuid = $1`, msgUUID).

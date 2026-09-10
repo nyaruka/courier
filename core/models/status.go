@@ -327,6 +327,14 @@ const sqlIsErrorAttempt = `(s.status = 'E' AND msgs_msg.status NOT IN ('D', 'R',
 // non-visible - if that ever changes, a deleted message needs its own folder rather than one derived from status.
 // the self join on msgs_msg exists only to return the status the message had before the update, so that updates
 // that turned out not to change it aren't reported as changes.
+//
+// next_attempt is only ever set whilst a message is awaiting a retry - errored here, or initializing when mailroom
+// requeues it - and cleared as soon as it moves on. It's what the index on messages awaiting a retry is on, so a
+// message that's been sent or failed can't be left in it. That also means that once a message is wired, the updates
+// that follow (sent, delivered, read, and updates that only add to the log) only touch columns that no index
+// references, so postgres can apply them as heap-only tuple updates without touching any index at all. Keep it that
+// way: an assignment that writes an unchanged value doesn't count, but one that changes an indexed column - folder,
+// external_identifier, next_attempt - after a message is wired would cost every status update on the table.
 var sqlUpdateMsgByUUID = fmt.Sprintf(`
 UPDATE msgs_msg SET 
 	status = %[1]s,
@@ -336,7 +344,7 @@ UPDATE msgs_msg SET
 		ELSE 'O' -- initializing, queued or errored 
 		END,
 	error_count = CASE WHEN %[2]s THEN msgs_msg.error_count + 1 ELSE msgs_msg.error_count END,
-	next_attempt = CASE WHEN %[2]s THEN NOW() + (5 * (msgs_msg.error_count+1) * interval '1 minutes') ELSE msgs_msg.next_attempt END,
+	next_attempt = CASE WHEN (%[1]s) = 'E' THEN NOW() + (5 * (msgs_msg.error_count+1) * interval '1 minutes') ELSE NULL END,
 	failed_reason = CASE WHEN %[2]s AND msgs_msg.error_count >= 2 THEN 'E' ELSE msgs_msg.failed_reason END,
 	sent_on = CASE WHEN (%[1]s) IN ('W', 'S', 'D', 'R') THEN COALESCE(msgs_msg.sent_on, NOW()) ELSE NULL END,
 	external_identifier = CASE WHEN s.external_identifier != '' THEN s.external_identifier ELSE msgs_msg.external_identifier END,
