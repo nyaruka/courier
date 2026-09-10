@@ -14,6 +14,13 @@ import (
 	"github.com/nyaruka/gocommon/aws/cwatch"
 )
 
+// ExtraMetrics is called each time metrics are reported, and any metrics it returns are sent along with the standard
+// set - in the same request, so with the same namespace and deployment dimension. The advanced flag is whether
+// reporting is at the advanced level, so that it can gate its own metrics the way the standard set does. The default
+// returns nothing. Deployments can replace it to report metrics of their own, e.g. from main before starting the
+// service.
+var ExtraMetrics = func(ctx context.Context, rt *runtime.Runtime, advanced bool) []cwtypes.MetricDatum { return nil }
+
 // startMetricsReporter reports our metrics to cloudwatch on the given interval until stopped
 func startMetricsReporter(rt *runtime.Runtime, interval time.Duration, stop chan bool, wg *sync.WaitGroup) {
 	wg.Add(1)
@@ -56,7 +63,8 @@ func reportMetrics(ctx context.Context, rt *runtime.Runtime, dbWaitDuration, red
 		return 0, nil
 	}
 
-	metrics := rt.Stats.Extract().ToMetrics(rt.Config.MetricsReporting == "advanced")
+	advanced := rt.Config.MetricsReporting == "advanced"
+	metrics := rt.Stats.Extract().ToMetrics(advanced)
 
 	// get queue sizes
 	rc := rt.VK.Get()
@@ -113,6 +121,9 @@ func reportMetrics(ctx context.Context, rt *runtime.Runtime, dbWaitDuration, red
 		cwatch.Datum("PostgresSpooledItems", float64(statusSpoolSize), cwtypes.StandardUnitCount, cwatch.Dimension("SpoolName", "statuses")),
 		cwatch.Datum("PostgresSpooledItems", float64(eventSpoolSize), cwtypes.StandardUnitCount, cwatch.Dimension("SpoolName", "events")),
 	)
+
+	// followed by whatever the deployment adds
+	metrics = append(metrics, ExtraMetrics(ctx, rt, advanced)...)
 
 	if err := rt.CW.Send(ctx, metrics...); err != nil {
 		return 0, fmt.Errorf("error sending metrics: %w", err)
