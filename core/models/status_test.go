@@ -2,6 +2,7 @@ package models_test
 
 import (
 	"cmp"
+	"fmt"
 	"sort"
 	"testing"
 	"time"
@@ -117,7 +118,7 @@ func TestWriteStatusUpdates(t *testing.T) {
 			"external_identifier": "new-long-external-id",
 		})
 
-	// write another errored status for message 2
+	// write another errored status for message 2 - it's still errored so that isn't a change in status
 	changes, err = models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
 		{
 			ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
@@ -128,15 +129,11 @@ func TestWriteStatusUpdates(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	if assert.Len(t, changes, 1) {
-		assert.Equal(t, models.MsgUUID("0199df10-10dc-7e6e-834b-3d959ece93b2"), changes[0].MsgUUID)
-		assert.Equal(t, models.MsgStatus("E"), changes[0].MsgStatus)
-		assert.Equal(t, "", string(changes[0].FailedReason))
-	}
+	assert.Len(t, changes, 0)
 
-	// still errored so still in the outbox
-	assertdb.Query(t, rt.DB, `SELECT status, folder FROM msgs_msg WHERE uuid = '0199df10-10dc-7e6e-834b-3d959ece93b2'`).
-		Columns(map[string]any{"status": "E", "folder": "O"})
+	// still errored so still in the outbox, but the attempt was counted
+	assertdb.Query(t, rt.DB, `SELECT status, folder, error_count FROM msgs_msg WHERE uuid = '0199df10-10dc-7e6e-834b-3d959ece93b2'`).
+		Columns(map[string]any{"status": "E", "folder": "O", "error_count": int64(2)})
 
 	// write yet another errored status for message 2 - this should flip it to failed
 	changes, err = models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
@@ -231,4 +228,185 @@ func TestStatusChanges(t *testing.T) {
 			},
 		},
 	}, marshaled2)
+}
+
+func TestStatusTransitions(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+
+	defer testsuite.ResetDB(t, rt)
+
+	const msgUUID = models.MsgUUID("0199df0f-9f82-7689-b02d-f34105991321") // message 1
+
+	tcs := []struct {
+		from         models.MsgStatus
+		fromErrors   int
+		write        models.MsgStatus
+		status       models.MsgStatus
+		errors       int
+		failedReason string
+		sentOn       bool
+		changed      bool
+	}{
+		// queued or wired moves on to anything
+		{from: "Q", write: "W", status: "W", sentOn: true, changed: true},
+		{from: "Q", write: "F", status: "F", sentOn: false, changed: true},
+		{from: "W", write: "S", status: "S", sentOn: true, changed: true},
+		{from: "W", write: "D", status: "D", sentOn: true, changed: true},
+		{from: "W", write: "R", status: "R", sentOn: true, changed: true},
+		{from: "W", write: "F", status: "F", sentOn: false, changed: true},
+		{from: "W", write: "E", status: "E", errors: 1, sentOn: false, changed: true},
+		{from: "W", write: "W", status: "W", sentOn: true, changed: false},
+
+		// sent doesn't go back to wired
+		{from: "S", write: "W", status: "S", sentOn: true, changed: false},
+		{from: "S", write: "S", status: "S", sentOn: true, changed: false},
+		{from: "S", write: "D", status: "D", sentOn: true, changed: true},
+		{from: "S", write: "R", status: "R", sentOn: true, changed: true},
+		{from: "S", write: "F", status: "F", sentOn: false, changed: true},
+		{from: "S", write: "E", status: "E", errors: 1, sentOn: false, changed: true},
+
+		// delivered only moves on to read or failed
+		{from: "D", write: "W", status: "D", sentOn: true, changed: false},
+		{from: "D", write: "S", status: "D", sentOn: true, changed: false},
+		{from: "D", write: "D", status: "D", sentOn: true, changed: false},
+		{from: "D", write: "E", status: "D", sentOn: true, changed: false},
+		{from: "D", write: "R", status: "R", sentOn: true, changed: true},
+		{from: "D", write: "F", status: "F", sentOn: false, changed: true},
+
+		// read is terminal
+		{from: "R", write: "W", status: "R", sentOn: true, changed: false},
+		{from: "R", write: "S", status: "R", sentOn: true, changed: false},
+		{from: "R", write: "D", status: "R", sentOn: true, changed: false},
+		{from: "R", write: "E", status: "R", sentOn: true, changed: false},
+		{from: "R", write: "F", status: "R", sentOn: true, changed: false},
+
+		// failed is terminal
+		{from: "F", write: "W", status: "F", sentOn: false, changed: false},
+		{from: "F", write: "S", status: "F", sentOn: false, changed: false},
+		{from: "F", write: "D", status: "F", sentOn: false, changed: false},
+		{from: "F", write: "R", status: "F", sentOn: false, changed: false},
+		{from: "F", write: "E", status: "F", sentOn: false, changed: false},
+
+		// errored is retried so moves on to anything, and fails once the attempt limit is reached
+		{from: "E", fromErrors: 1, write: "W", status: "W", errors: 1, sentOn: true, changed: true},
+		{from: "E", fromErrors: 1, write: "S", status: "S", errors: 1, sentOn: true, changed: true},
+		{from: "E", fromErrors: 1, write: "D", status: "D", errors: 1, sentOn: true, changed: true},
+		{from: "E", fromErrors: 1, write: "F", status: "F", errors: 1, sentOn: false, changed: true},
+		{from: "E", fromErrors: 1, write: "E", status: "E", errors: 2, sentOn: false, changed: false},
+		{from: "E", fromErrors: 2, write: "E", status: "F", errors: 3, failedReason: "E", sentOn: false, changed: true},
+		{from: "E", fromErrors: 2, write: "W", status: "W", errors: 2, sentOn: true, changed: true},
+	}
+
+	for _, tc := range tcs {
+		desc := fmt.Sprintf("%s -> %s", tc.from, tc.write)
+
+		rt.DB.MustExec(`UPDATE msgs_msg SET status = $1::varchar, error_count = $2, failed_reason = NULL, next_attempt = NULL, log_uuids = '{}',
+			sent_on = CASE WHEN $1::varchar IN ('W', 'S', 'D', 'R') THEN NOW() ELSE NULL END WHERE uuid = $3`, tc.from, tc.fromErrors, msgUUID)
+
+		changes, err := models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
+			{
+				ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
+				ChannelID_:   10,
+				MsgUUID_:     msgUUID,
+				Status_:      tc.write,
+				LogUUID:      "019a6e53-e1e8-7df7-a264-ce2372824e1d",
+			},
+		})
+		assert.NoError(t, err, desc)
+
+		if tc.changed {
+			if assert.Len(t, changes, 1, desc) {
+				assert.Equal(t, tc.status, changes[0].MsgStatus, desc)
+				assert.Equal(t, tc.failedReason, string(changes[0].FailedReason), desc)
+			}
+		} else {
+			assert.Len(t, changes, 0, desc)
+		}
+
+		// an errored attempt that was recorded schedules a retry, a rejected one doesn't
+		retryScheduled := tc.write == "E" && tc.errors > tc.fromErrors
+
+		assertdb.Query(t, rt.DB, `SELECT status, error_count, COALESCE(failed_reason, '') AS failed_reason, sent_on IS NOT NULL AS sent_on, 
+			next_attempt IS NOT NULL AS retry, array_length(log_uuids, 1) AS logs FROM msgs_msg WHERE uuid = $1`, msgUUID).
+			Columns(map[string]any{
+				"status":        string(tc.status),
+				"error_count":   int64(tc.errors),
+				"failed_reason": tc.failedReason,
+				"sent_on":       tc.sentOn,
+				"retry":         retryScheduled,
+				"logs":          int64(1), // log is recorded on the message even if it didn't change its status
+			}, desc)
+	}
+}
+
+func TestWriteStatusUpdatesSameMsg(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+
+	defer testsuite.ResetDB(t, rt)
+
+	const msgUUID = models.MsgUUID("0199df0f-9f82-7689-b02d-f34105991321") // message 1
+
+	rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL, log_uuids = '{}' WHERE uuid = $1`, msgUUID)
+
+	// a failed callback from the provider overtakes the sender's wired write and both land in the same batch
+	changes, err := models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
+		{
+			ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
+			ChannelID_:   10,
+			MsgUUID_:     msgUUID,
+			Status_:      models.MsgStatusFailed,
+			LogUUID:      "019a6e53-e1e8-7df7-a264-ce2372824e1d",
+		},
+		{
+			ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
+			ChannelID_:   10,
+			MsgUUID_:     msgUUID,
+			Status_:      models.MsgStatusWired,
+			LogUUID:      "019a6e54-671f-789a-bbb1-31cddd66c681",
+		},
+	})
+	assert.NoError(t, err)
+	if assert.Len(t, changes, 1) {
+		assert.Equal(t, models.MsgStatusFailed, changes[0].MsgStatus)
+	}
+
+	// message is failed and both updates are recorded on it
+	assertdb.Query(t, rt.DB, `SELECT status, sent_on IS NOT NULL AS sent_on, array_to_string(log_uuids, ',') AS logs FROM msgs_msg WHERE uuid = $1`, msgUUID).
+		Columns(map[string]any{
+			"status":  "F",
+			"sent_on": false,
+			"logs":    "019a6e53-e1e8-7df7-a264-ce2372824e1d,019a6e54-671f-789a-bbb1-31cddd66c681",
+		})
+
+	rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL, log_uuids = '{}' WHERE uuid = $1`, msgUUID)
+
+	// sent and delivered callbacks landing in the same batch are each applied in turn
+	changes, err = models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
+		{
+			ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
+			ChannelID_:   10,
+			MsgUUID_:     msgUUID,
+			Status_:      models.MsgStatusSent,
+			LogUUID:      "019a6e53-e1e8-7df7-a264-ce2372824e1d",
+		},
+		{
+			ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
+			ChannelID_:   10,
+			MsgUUID_:     msgUUID,
+			Status_:      models.MsgStatusDelivered,
+			LogUUID:      "019a6e54-671f-789a-bbb1-31cddd66c681",
+		},
+	})
+	assert.NoError(t, err)
+	if assert.Len(t, changes, 2) {
+		assert.Equal(t, models.MsgStatusSent, changes[0].MsgStatus)
+		assert.Equal(t, models.MsgStatusDelivered, changes[1].MsgStatus)
+	}
+
+	assertdb.Query(t, rt.DB, `SELECT status, sent_on IS NOT NULL AS sent_on, array_to_string(log_uuids, ',') AS logs FROM msgs_msg WHERE uuid = $1`, msgUUID).
+		Columns(map[string]any{
+			"status":  "D",
+			"sent_on": true,
+			"logs":    "019a6e53-e1e8-7df7-a264-ce2372824e1d,019a6e54-671f-789a-bbb1-31cddd66c681",
+		})
 }
