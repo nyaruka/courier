@@ -1,3 +1,8 @@
+v26.3.51 (2026-09-10)
+-------------------------
+ * Make the metrics reporter extendable by deployments and recover from panics so a failing hook only loses its own metrics for the period
+ * Move config loading into cmd.LoadConfig so apps built on top of courier can embed the runtime config
+
 v26.3.50 (2026-09-10)
 -------------------------
  * Only ever move message status forward so out of order status updates can't undo one that already landed
