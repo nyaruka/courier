@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -13,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
 	"github.com/h2non/filetype"
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
@@ -250,26 +248,10 @@ func requestIP(r *http.Request) string {
 	return ip
 }
 
-// allow checks a rate limit by counting requests in a valkey key whose TTL slides with each request and expires
-// one window after the last
+// allow checks a rate limit on the given key, failing open so that a valkey problem doesn't stop visitors using
+// their chats
 func (h *handler) allow(key string, limit, window int) bool {
-	rc := h.Runtime().VK.Get()
-	defer rc.Close()
-
-	count, err := redis.Int(rc.Do("INCR", key))
-	if err != nil {
-		// a valkey problem shouldn't stop visitors using their chats so proceed unthrottled
-		slog.Error("error checking chat rate limit", "error", err, "key", key)
-		return true
-	}
-	// re-arm the TTL on every request rather than only the first: INCR + EXPIRE isn't atomic, and a key left
-	// behind by a lost EXPIRE would otherwise count forever and permanently block the caller. The result is a
-	// sliding window - continuous callers stay throttled, which is fine for an abuse cap.
-	if _, err := rc.Do("EXPIRE", key, window); err != nil {
-		slog.Error("error setting chat rate limit expiry", "error", err, "key", key)
-	}
-
-	return count <= limit
+	return channels.AllowRate(h.Runtime(), key, limit, window)
 }
 
 type receivePayload struct {
