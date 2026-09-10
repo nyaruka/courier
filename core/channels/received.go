@@ -182,10 +182,10 @@ func WriteReceived(ctx context.Context, rt *runtime.Runtime, in *Received, clog 
 		}
 
 		if err != nil {
-			// a message or event from a new contact that the contact creation check refused - a workspace at its
-			// contact limit - is dropped rather than failed: the provider can't do anything about it and retrying
-			// won't help, so it's answered as ignored and the rest of the batch is still written. The check
-			// records the refusal on the channel log so that the drop is visible to the workspace.
+			// a message or event refused by one of the checks in models - from a new contact in a workspace at
+			// its contact limit, say - is dropped rather than failed: the provider can't do anything about it and
+			// retrying won't help, so it's answered as ignored and the rest of the batch is still written. The
+			// check records the refusal on the channel log so that the drop is visible to the workspace.
 			var limitErr *models.LimitReachedError
 			if errors.As(err, &limitErr) {
 				results = append(results, WriteResult{Details: limitErr.Error(), Outcome: OutcomeIgnored})
