@@ -87,4 +87,18 @@ func TestReportMetrics(t *testing.T) {
 	rt.Config.MetricsReporting = "off"
 	assert.Equal(t, 0, report())
 	assert.Equal(t, 2, calls)
+
+	// a panic in the hook loses its metrics for the period but not the standard set, and is reported
+	rt.Config.MetricsReporting = "basic"
+	ExtraMetrics = func(context.Context, *runtime.Runtime, bool) []cwtypes.MetricDatum { panic("boom") }
+
+	var panicked any
+	runtime.PanicHandler = func(val any, tags map[string]string) {
+		panicked = val
+		assert.Equal(t, map[string]string{"comp": "metrics"}, tags)
+	}
+	defer func() { runtime.PanicHandler = runtime.LogPanic }()
+
+	assert.Equal(t, standard, report())
+	assert.Equal(t, "boom", panicked)
 }
