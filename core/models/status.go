@@ -294,18 +294,39 @@ func resolveStatusUpdateByExternalIdentifier(ctx context.Context, rt *runtime.Ru
 	return rows.Err()
 }
 
-// the expression which computes the new status of a message, referenced twice in the update statement below - once to
-// write the status itself, and once to derive the folder that status puts the message in. it lives here as a single
-// constant so that the two can't drift apart.
+// the expression which computes the new status of a message from its current status and the one being written. It's
+// referenced several times in the update statement below - to write the status itself and to derive the folder and
+// sent_on that go with it - and lives here as a single constant so they can't drift apart.
+//
+// Status updates arrive out of order - a provider's callback can overtake the sender's own wired write, and sent and
+// delivered callbacks often land within the same batch window - so a message's status only ever moves forward:
+//
+//   - failed and read are terminal
+//   - delivered only moves on to read, or to failed for providers that report that way
+//   - sent doesn't go back to wired
+//   - an errored send attempt is recorded against anything short of delivery, and flips the message to failed once
+//     the attempt limit is reached
+//
+// An update that would move a message backwards leaves the status as it is, but is still recorded on the message's
+// log so it can be seen in the channel log history.
 const sqlNewMsgStatus = `CASE 
-		WHEN s.status = 'E' 
-		THEN CASE WHEN error_count >= 2 OR msgs_msg.status = 'F' THEN 'F' ELSE 'E' END 
+		WHEN msgs_msg.status IN ('F', 'R') THEN msgs_msg.status
+		WHEN msgs_msg.status = 'D' AND s.status NOT IN ('R', 'F') THEN 'D'
+		WHEN msgs_msg.status = 'S' AND s.status = 'W' THEN 'S'
+		WHEN s.status = 'E' THEN CASE WHEN msgs_msg.error_count >= 2 THEN 'F' ELSE 'E' END
 		ELSE s.status 
 		END`
+
+// whether the update being written is an errored send attempt that the message will record, i.e. one that advances
+// its error count and schedules a retry - an errored attempt reported against an already delivered, read or failed
+// message doesn't.
+const sqlIsErrorAttempt = `(s.status = 'E' AND msgs_msg.status NOT IN ('D', 'R', 'F'))`
 
 // the craziness below lets us update our status to 'F' and schedule retries without knowing anything about the message.
 // the folder derivation assumes the message is visible, which holds because nothing makes an outgoing message
 // non-visible - if that ever changes, a deleted message needs its own folder rather than one derived from status.
+// the self join on msgs_msg exists only to return the status the message had before the update, so that updates
+// that turned out not to change it aren't reported as changes.
 var sqlUpdateMsgByUUID = fmt.Sprintf(`
 UPDATE msgs_msg SET 
 	status = %[1]s,
@@ -314,20 +335,55 @@ UPDATE msgs_msg SET
 		WHEN 'F' THEN 'X' 
 		ELSE 'O' -- initializing, queued or errored 
 		END,
-	error_count = CASE WHEN s.status = 'E' THEN error_count + 1 ELSE error_count END,
-	next_attempt = CASE WHEN s.status = 'E' THEN NOW() + (5 * (error_count+1) * interval '1 minutes') ELSE next_attempt END,
-	failed_reason = CASE WHEN error_count >= 2 THEN 'E' ELSE failed_reason END,
-	sent_on = CASE WHEN s.status IN ('W', 'S', 'D', 'R') THEN COALESCE(sent_on, NOW()) ELSE NULL END,
+	error_count = CASE WHEN %[2]s THEN msgs_msg.error_count + 1 ELSE msgs_msg.error_count END,
+	next_attempt = CASE WHEN %[2]s THEN NOW() + (5 * (msgs_msg.error_count+1) * interval '1 minutes') ELSE msgs_msg.next_attempt END,
+	failed_reason = CASE WHEN %[2]s AND msgs_msg.error_count >= 2 THEN 'E' ELSE msgs_msg.failed_reason END,
+	sent_on = CASE WHEN (%[1]s) IN ('W', 'S', 'D', 'R') THEN COALESCE(msgs_msg.sent_on, NOW()) ELSE NULL END,
 	external_identifier = CASE WHEN s.external_identifier != '' THEN s.external_identifier ELSE msgs_msg.external_identifier END,
 	modified_on = NOW(),
-	log_uuids = array_append(log_uuids, s.log_uuid)
+	log_uuids = array_append(msgs_msg.log_uuids, s.log_uuid)
     FROM 
         (VALUES(:msg_uuid::uuid, :channel_id::int, :status, :external_identifier, :log_uuid::uuid)) AS s(msg_uuid, channel_id, status, external_identifier, log_uuid),
-        contacts_contact c
-    WHERE msgs_msg.uuid = s.msg_uuid AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O' AND c.id = msgs_msg.contact_id
-RETURNING msgs_msg.uuid AS msg_uuid, msgs_msg.status AS msg_status, msgs_msg.failed_reason, c.uuid AS contact_uuid, msgs_msg.org_id`, sqlNewMsgStatus)
+        contacts_contact c,
+        msgs_msg old
+    WHERE msgs_msg.uuid = s.msg_uuid AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O' AND c.id = msgs_msg.contact_id AND old.id = msgs_msg.id
+RETURNING msgs_msg.uuid AS msg_uuid, msgs_msg.status AS msg_status, msgs_msg.failed_reason, c.uuid AS contact_uuid, msgs_msg.org_id, msgs_msg.status IS DISTINCT FROM old.status AS changed`, sqlNewMsgStatus, sqlIsErrorAttempt)
 
+// WriteStatusUpdates writes the given status updates to the database and returns the resulting changes in message
+// status. Updates which don't change a message's status - because it's already moved past them - aren't returned.
 func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*StatusUpdate) ([]*StatusChange, error) {
+	changes := make([]*StatusChange, 0, len(statuses))
+
+	// a single bulk update can only apply one update per message - postgres silently drops the others - so updates for
+	// the same message are written in successive rounds, each holding at most one per message, in the order queued
+	for len(statuses) > 0 {
+		round := make([]*StatusUpdate, 0, len(statuses))
+		rest := make([]*StatusUpdate, 0)
+		seen := make(map[MsgUUID]bool, len(statuses))
+
+		for _, s := range statuses {
+			if seen[s.MsgUUID_] {
+				rest = append(rest, s)
+			} else {
+				seen[s.MsgUUID_] = true
+				round = append(round, s)
+			}
+		}
+
+		roundChanges, err := writeStatusUpdateRound(ctx, rt, round)
+		if err != nil {
+			return nil, err
+		}
+
+		changes = append(changes, roundChanges...)
+		statuses = rest
+	}
+
+	return changes, nil
+}
+
+// writes a set of status updates, containing at most one per message, as a single bulk update
+func writeStatusUpdateRound(ctx context.Context, rt *runtime.Runtime, statuses []*StatusUpdate) ([]*StatusChange, error) {
 	// rewrite query as a bulk operation
 	query, args, err := dbutil.BulkSQL(rt.DB, sqlUpdateMsgByUUID, statuses)
 	if err != nil {
@@ -343,12 +399,19 @@ func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*St
 	changes := make([]*StatusChange, 0, len(statuses))
 
 	for rows.Next() {
-		sc := &StatusChange{CreatedOn: time.Now()}
-		if err := rows.StructScan(&sc); err != nil {
+		row := &struct {
+			StatusChange
+			Changed bool `db:"changed"`
+		}{StatusChange: StatusChange{CreatedOn: time.Now()}}
+
+		if err := rows.StructScan(row); err != nil {
 			return nil, fmt.Errorf("error scanning status change: %w", err)
 		}
 
-		changes = append(changes, sc)
+		if row.Changed {
+			sc := row.StatusChange
+			changes = append(changes, &sc)
+		}
 	}
 
 	return changes, nil

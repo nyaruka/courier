@@ -475,6 +475,19 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 	ts.Equal("evt#0199df0f-9f82-7689-b02d-f34105991321#sts", history[0].SK)
 	ts.Equal("failed", history[0].Data["status"])
 
+	// failed is terminal so a late WIRED is recorded on the message but doesn't change its status
+	clog6 := updateStatusByExtID("ext1", models.MsgStatusWired)
+
+	m = testsuite.ReadDBMsg(ts.T(), ts.rt, "0199df0f-9f82-7689-b02d-f34105991321")
+	ts.Equal(models.MsgStatusFailed, m.Status)
+	ts.Equal(null.String("X"), m.Folder)
+	ts.Nil(m.SentOn)
+	ts.Equal([]string{string(clog5.UUID), string(clog6.UUID)}, []string(m.LogUUIDs))
+	ts.Len(getHistoryItems(), 0)
+
+	// put test message back into queued state
+	ts.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL WHERE id = $1`, 10000)
+
 	now = time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)
 
