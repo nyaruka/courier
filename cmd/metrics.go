@@ -58,7 +58,17 @@ func startMetricsReporter(rt *runtime.Runtime, interval time.Duration, stop chan
 	}()
 }
 
-func reportMetrics(ctx context.Context, rt *runtime.Runtime, dbWaitDuration, redisWaitDuration *time.Duration) (int, error) {
+// reportMetrics sends the metrics for the period to cloudwatch, returning how many were sent. Reporting is a
+// best-effort side task, so a panic anywhere in it - the deployment's hook included - is reported and returned as an
+// error, costing a period of metrics rather than the process.
+func reportMetrics(ctx context.Context, rt *runtime.Runtime, dbWaitDuration, redisWaitDuration *time.Duration) (count int, err error) {
+	defer func() {
+		if panicVal := recover(); panicVal != nil {
+			runtime.PanicHandler(panicVal, map[string]string{"comp": "metrics"})
+			count, err = 0, fmt.Errorf("panic reporting metrics: %v", panicVal)
+		}
+	}()
+
 	if rt.Config.MetricsReporting == "off" {
 		return 0, nil
 	}
@@ -123,24 +133,11 @@ func reportMetrics(ctx context.Context, rt *runtime.Runtime, dbWaitDuration, red
 	)
 
 	// followed by whatever the deployment adds
-	metrics = append(metrics, extraMetrics(ctx, rt, advanced)...)
+	metrics = append(metrics, ExtraMetrics(ctx, rt, advanced)...)
 
 	if err := rt.CW.Send(ctx, metrics...); err != nil {
 		return 0, fmt.Errorf("error sending metrics: %w", err)
 	}
 
 	return len(metrics), nil
-}
-
-// extraMetrics calls the deployment's hook, recovering from a panic in it so that a faulty hook only loses its own
-// metrics for the period rather than taking the process down
-func extraMetrics(ctx context.Context, rt *runtime.Runtime, advanced bool) (metrics []cwtypes.MetricDatum) {
-	defer func() {
-		if panicVal := recover(); panicVal != nil {
-			runtime.PanicHandler(panicVal, map[string]string{"comp": "metrics"})
-			metrics = nil
-		}
-	}()
-
-	return ExtraMetrics(ctx, rt, advanced)
 }

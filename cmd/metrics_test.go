@@ -88,7 +88,8 @@ func TestReportMetrics(t *testing.T) {
 	assert.Equal(t, 0, report())
 	assert.Equal(t, 2, calls)
 
-	// a panic in the hook loses its metrics for the period but not the standard set, and is reported
+	// a panic anywhere in the reporter - the hook included - is reported and returned as an error rather than
+	// escaping, so it costs a period of metrics rather than the process
 	rt.Config.MetricsReporting = "basic"
 	ExtraMetrics = func(context.Context, *runtime.Runtime, bool) []cwtypes.MetricDatum { panic("boom") }
 
@@ -99,6 +100,10 @@ func TestReportMetrics(t *testing.T) {
 	}
 	defer func() { runtime.PanicHandler = runtime.LogPanic }()
 
-	assert.Equal(t, standard, report())
+	client.sent = nil
+	count, err := reportMetrics(ctx, rt, &dbWait, &redisWait)
+	assert.EqualError(t, err, "panic reporting metrics: boom")
+	assert.Equal(t, 0, count)
+	assert.Nil(t, client.sent)
 	assert.Equal(t, "boom", panicked)
 }
