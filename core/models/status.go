@@ -427,8 +427,15 @@ type StatusChange struct {
 	CreatedOn    time.Time
 }
 
+// how long a non-terminal status item is kept in the history table. A message's status changes are written as
+// separate items - one per status - because they can be committed by different instances and arrive at the table out
+// of order, so overwriting a single item could leave it showing an older status. Readers reduce the items to the
+// message's latest state, and once this window has passed and a message has no status items left, treat it as sent.
+// Read and failed are kept forever because they're the terminal states a message can't leave.
+const dynamoStatusTTL = 90 * 24 * time.Hour
+
 func (s *StatusChange) DynamoKey() dynamo.Key {
-	return dynamo.Key{PK: fmt.Sprintf("con#%s", s.ContactUUID), SK: fmt.Sprintf("evt#%s#sts", s.MsgUUID)}
+	return dynamo.Key{PK: fmt.Sprintf("con#%s", s.ContactUUID), SK: fmt.Sprintf("evt#%s#sts#%s", s.MsgUUID, s.MsgStatus)}
 }
 
 func (s *StatusChange) MarshalDynamo() (*dynamo.Item, error) {
@@ -440,7 +447,14 @@ func (s *StatusChange) MarshalDynamo() (*dynamo.Item, error) {
 		data["reason"] = reason
 	}
 
-	return &dynamo.Item{Key: s.DynamoKey(), OrgID: int(s.OrgID), Data: data}, nil
+	item := &dynamo.Item{Key: s.DynamoKey(), OrgID: int(s.OrgID), Data: data}
+
+	if s.MsgStatus != MsgStatusRead && s.MsgStatus != MsgStatusFailed {
+		ttl := s.CreatedOn.Add(dynamoStatusTTL)
+		item.TTL = &ttl
+	}
+
+	return item, nil
 }
 
 // the client facing names of the statuses, as used in both history items and published events
