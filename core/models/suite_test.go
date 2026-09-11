@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -512,6 +513,16 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 	ts.True(m.ModifiedOn.After(now))
 	ts.True(m.SentOn.Equal(sentOn)) // no change
 	ts.Equal(m.ExternalIdentifier, null.String("ext1"))
+
+	// each status is its own history item so the WIRED item is still there alongside the SENT one
+	history = getHistoryItems()
+	ts.Len(history, 2)
+	sks := []string{history[0].SK, history[1].SK}
+	slices.Sort(sks)
+	ts.Equal([]string{
+		"evt#0199df0f-9f82-7689-b02d-f34105991321#sts#S",
+		"evt#0199df0f-9f82-7689-b02d-f34105991321#sts#W",
+	}, sks)
 
 	// put test outgoing messages back into queued state
 	ts.rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL WHERE id IN ($1, $2)`, 10002, 10001)
