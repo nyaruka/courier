@@ -3,35 +3,3 @@
 [![Build Status](https://github.com/nyaruka/courier/workflows/CI/badge.svg)](https://github.com/nyaruka/courier/actions?query=workflow%3ACI)
 
 Messaging gateway service for [RapidPro](https://rapidpro.io) and [TextIt](https://textit.com).
-
-## Configuration
-
-The service uses a tiered configuration system, each option takes precendence over the ones above it:
-
- 1. The configuration file
- 2. Environment variables starting with `COURIER_` 
- 3. Command line parameters
-
-We recommend running courier with no changes to the configuration and no parameters, using only
-environment variables to configure it. You can use `% courier --help` to see a list of the
-environment variables and parameters and for more details on each option.
-
- * `COURIER_DOMAIN`: The root domain which courier is exposed as (e.g. `textit.in`)
- * `COURIER_SPOOL_DIR`: A local path where courier can spool files if the database is down, should be writable. (e.g. `/home/courier/spool`)
- * `COURIER_DB`: Details parameters used to connect to the Postgres RapidPro database (e.g. `postgres://textit:fooman@rds.courier.io/5432/textit`)
- * `COURIER_VALKEY`: Details parameters to use to connect to Valkey RapidPro database (e.g. `valkey://valkey.courier.io:6379/13`). Use the `valkeys://` scheme for a TLS connection, and include a username to authenticate with an ACL user (e.g. `valkeys://user:pass@valkey.courier.io:6379/13`)
- * `COURIER_AUTH_TOKEN`: authentication token to require for requests from Mailroom
-
-### AWS services:
-
-The AWS region and credentials are resolved via the standard AWS SDK default chain — the `AWS_REGION`
-(or `AWS_DEFAULT_REGION`) environment variable, the instance/task IAM role, the
-`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` environment variables, and the shared config/credentials
-files. There is no built-in default region, so `AWS_REGION` (or `AWS_DEFAULT_REGION`) must be set.
-
- * `COURIER_S3_ATTACHMENTS_BUCKET`: name of your S3 bucket (e.g. `rp-attachments`)
-
-### Logging and error reporting:
-
- * `COURIER_DEPLOYMENT_ID`: used for metrics reporting
- * `COURIER_LOG_LEVEL`: logging level to use
