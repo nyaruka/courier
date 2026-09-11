@@ -427,12 +427,21 @@ type StatusChange struct {
 	CreatedOn    time.Time
 }
 
-// how long a non-terminal status item is kept in the history table. A message's status changes are written as
-// separate items - one per status - because they can be committed by different instances and arrive at the table out
-// of order, so overwriting a single item could leave it showing an older status. Readers reduce the items to the
-// message's latest state, and once this window has passed and a message has no status items left, treat it as sent.
-// Read and failed are kept forever because they're the terminal states a message can't leave.
-const dynamoStatusTTL = 90 * 24 * time.Hour
+// how long each status item is kept in the history table. A message's status changes are written as separate items
+// - one per status - because they can be committed by different instances and arrive at the table out of order, so
+// overwriting a single item could leave it showing an older status. Readers reduce the items to the message's latest
+// state and treat a message with no status items as sent, so expiring an item can only ever under-claim what happened
+// to a message. Failed is the exception - a message that never reached the contact would be shown as sent - so failed
+// items are kept forever. Read is the most common terminal state so keeping it for a year rather than forever is the
+// bulk of the saving.
+var dynamoStatusTTLs = map[MsgStatus]time.Duration{
+	MsgStatusWired:     90 * 24 * time.Hour,
+	MsgStatusSent:      90 * 24 * time.Hour,
+	MsgStatusDelivered: 90 * 24 * time.Hour,
+	MsgStatusErrored:   90 * 24 * time.Hour,
+	MsgStatusRead:      365 * 24 * time.Hour,
+	MsgStatusFailed:    0, // forever
+}
 
 func (s *StatusChange) DynamoKey() dynamo.Key {
 	return dynamo.Key{PK: fmt.Sprintf("con#%s", s.ContactUUID), SK: fmt.Sprintf("evt#%s#sts#%s", s.MsgUUID, s.MsgStatus)}
@@ -449,8 +458,8 @@ func (s *StatusChange) MarshalDynamo() (*dynamo.Item, error) {
 
 	item := &dynamo.Item{Key: s.DynamoKey(), OrgID: int(s.OrgID), Data: data}
 
-	if s.MsgStatus != MsgStatusRead && s.MsgStatus != MsgStatusFailed {
-		ttl := s.CreatedOn.Add(dynamoStatusTTL)
+	if d := dynamoStatusTTLs[s.MsgStatus]; d > 0 {
+		ttl := s.CreatedOn.Add(d)
 		item.TTL = &ttl
 	}
 

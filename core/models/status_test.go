@@ -178,7 +178,8 @@ func TestWriteStatusUpdates(t *testing.T) {
 
 func TestStatusChanges(t *testing.T) {
 	createdOn := time.Date(2025, 11, 10, 16, 14, 30, 123456789, time.UTC)
-	ttl := createdOn.Add(90 * 24 * time.Hour)
+	ttl90 := createdOn.Add(90 * 24 * time.Hour)
+	ttl365 := createdOn.Add(365 * 24 * time.Hour)
 
 	// every status is written as its own item, keyed by the status code, so they can never overwrite each other
 	change1 := &models.StatusChange{
@@ -193,7 +194,7 @@ func TestStatusChanges(t *testing.T) {
 
 	item1, err := change1.MarshalDynamo()
 	assert.NoError(t, err)
-	assert.Equal(t, &ttl, item1.TTL)
+	assert.Equal(t, &ttl90, item1.TTL)
 
 	marshaled1, err := attributevalue.MarshalMap(item1)
 	assert.NoError(t, err)
@@ -242,14 +243,14 @@ func TestStatusChanges(t *testing.T) {
 		},
 	}, marshaled2)
 
-	// non-terminal statuses expire, terminal ones don't
-	for status, expiring := range map[models.MsgStatus]bool{
-		models.MsgStatusWired:     true,
-		models.MsgStatusSent:      true,
-		models.MsgStatusDelivered: true,
-		models.MsgStatusErrored:   true,
-		models.MsgStatusRead:      false,
-		models.MsgStatusFailed:    false,
+	// sent-ish statuses expire after 90 days, read after a year, failed never
+	for status, expected := range map[models.MsgStatus]*time.Time{
+		models.MsgStatusWired:     &ttl90,
+		models.MsgStatusSent:      &ttl90,
+		models.MsgStatusDelivered: &ttl90,
+		models.MsgStatusErrored:   &ttl90,
+		models.MsgStatusRead:      &ttl365,
+		models.MsgStatusFailed:    nil,
 	} {
 		change := &models.StatusChange{
 			ContactUUID: "a984069d-0008-4d8c-a772-b14a8a6acccc",
@@ -263,12 +264,7 @@ func TestStatusChanges(t *testing.T) {
 
 		item, err := change.MarshalDynamo()
 		assert.NoError(t, err)
-
-		if expiring {
-			assert.Equal(t, &ttl, item.TTL, "status %s", status)
-		} else {
-			assert.Nil(t, item.TTL, "status %s", status)
-		}
+		assert.Equal(t, expected, item.TTL, "status %s", status)
 	}
 }
 

@@ -397,7 +397,7 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 	ts.Equal("con#a984069d-0008-4d8c-a772-b14a8a6acccc", history[0].PK)
 	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#W", history[0].SK)
 	ts.Equal("wired", history[0].Data["status"])
-	ts.NotNil(history[0].TTL) // wired isn't terminal so expires
+	ts.NotNil(history[0].TTL) // sent-ish statuses expire
 
 	sentOn := *m.SentOn
 
@@ -450,7 +450,7 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 	ts.Equal("con#a984069d-0008-4d8c-a772-b14a8a6acccc", history[0].PK)
 	ts.Equal("evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#R", history[0].SK)
 	ts.Equal("read", history[0].Data["status"])
-	ts.Nil(history[0].TTL) // read is terminal so kept forever
+	ts.NotNil(history[0].TTL) // read expires too, just later
 
 	// no change for incoming messages
 	updateStatusByUUID("0199df10-9519-7fe2-a29c-c890d1713673", models.MsgStatusSent, "")
@@ -476,7 +476,7 @@ func (ts *ModelsTestSuite) TestMsgStatus() {
 	ts.Equal("con#a984069d-0008-4d8c-a772-b14a8a6acccc", history[0].PK)
 	ts.Equal("evt#0199df0f-9f82-7689-b02d-f34105991321#sts#F", history[0].SK)
 	ts.Equal("failed", history[0].Data["status"])
-	ts.Nil(history[0].TTL) // failed is terminal so kept forever
+	ts.Nil(history[0].TTL) // failed is kept forever
 
 	// failed is terminal so a late WIRED is recorded on the message but doesn't change its status
 	clog6 := updateStatusByExtID("ext1", models.MsgStatusWired)
