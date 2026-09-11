@@ -10,17 +10,9 @@ import (
 )
 
 // LoadConfig loads configuration from a config file, environment variables and command line args, on top of the
-// given base config, e.g. runtime.NewDefaultConfig(). An app built on top of courier with settings of its own can
-// instead pass a struct which embeds runtime.Config, whose own fields are then loaded from the same sources and
-// validated alongside the embedded ones, e.g.
-//
-//	type Config struct {
-//		runtime.Config
-//		SentryDSN string `validate:"omitempty,url" help:"the Sentry DSN to report errors to"`
-//	}
-//
-// If the config can't be loaded, the error is logged and the process exits. If usage was requested with -help, it's
-// shown and the process exits cleanly.
+// given base config, e.g. runtime.NewDefaultConfig(), or a struct which embeds it. If the config can't be loaded,
+// the error is logged and the process exits. If usage was requested with -help, it's shown and the process exits
+// cleanly.
 func LoadConfig(cfg interface{ Parse() error }) {
 	Run(loadConfig(cfg, os.Args[1:]))
 }
