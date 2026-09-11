@@ -1,13 +1,8 @@
 # 🛫 Courier
 
-[![tag](https://img.shields.io/github/tag/nyaruka/courier.svg)](https://github.com/nyaruka/courier/releases)
 [![Build Status](https://github.com/nyaruka/courier/workflows/CI/badge.svg)](https://github.com/nyaruka/courier/actions?query=workflow%3ACI)
 
 Messaging gateway service for [RapidPro](https://rapidpro.io) and [TextIt](https://textit.com).
-
-## Deploying
-
-It compiles to a binary and can find bundles for each platform in the [releases directory](https://github.com/nyaruka/courier/releases).
 
 ## Configuration
 
