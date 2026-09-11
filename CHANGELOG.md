@@ -1,3 +1,8 @@
+v26.3.52 (2026-09-11)
+-------------------------
+ * Write each message status change to the history table as its own item
+ * Update to latest gocommon and goflow
+
 v26.3.51 (2026-09-10)
 -------------------------
  * Make the metrics reporter extendable by deployments and recover from panics so a failing hook only loses its own metrics for the period
