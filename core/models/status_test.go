@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/testsuite"
+	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/stretchr/testify/assert"
 )
@@ -176,23 +177,32 @@ func TestWriteStatusUpdates(t *testing.T) {
 }
 
 func TestStatusChanges(t *testing.T) {
+	createdOn := time.Date(2025, 11, 10, 16, 14, 30, 123456789, time.UTC)
+	ttl90 := createdOn.Add(90 * 24 * time.Hour)
+	ttl365 := createdOn.Add(365 * 24 * time.Hour)
+
+	// every status is written as its own item, keyed by the status code, so they can never overwrite each other
 	change1 := &models.StatusChange{
 		ContactUUID: "a984069d-0008-4d8c-a772-b14a8a6acccc",
 		MsgUUID:     "0199df10-10dc-7e6e-834b-3d959ece93b2",
 		MsgStatus:   models.MsgStatusSent,
 		OrgID:       1,
-		CreatedOn:   time.Date(2025, 11, 10, 16, 14, 30, 123456789, time.UTC),
+		CreatedOn:   createdOn,
 	}
+
+	assert.Equal(t, dynamo.Key{PK: "con#a984069d-0008-4d8c-a772-b14a8a6acccc", SK: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#S"}, change1.DynamoKey())
 
 	item1, err := change1.MarshalDynamo()
 	assert.NoError(t, err)
+	assert.Equal(t, &ttl90, item1.TTL)
 
 	marshaled1, err := attributevalue.MarshalMap(item1)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]types.AttributeValue{
 		"PK":    &types.AttributeValueMemberS{Value: "con#a984069d-0008-4d8c-a772-b14a8a6acccc"},
-		"SK":    &types.AttributeValueMemberS{Value: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts"},
+		"SK":    &types.AttributeValueMemberS{Value: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#S"},
 		"OrgID": &types.AttributeValueMemberN{Value: "1"},
+		"TTL":   &types.AttributeValueMemberN{Value: "1770567270"},
 		"Data": &types.AttributeValueMemberM{
 			Value: map[string]types.AttributeValue{
 				"created_on": &types.AttributeValueMemberS{Value: "2025-11-10T16:14:30.123456789Z"},
@@ -201,24 +211,28 @@ func TestStatusChanges(t *testing.T) {
 		},
 	}, marshaled1)
 
+	// failed is terminal so its item is kept forever
 	change2 := &models.StatusChange{
 		ContactUUID:  "a984069d-0008-4d8c-a772-b14a8a6acccc",
 		MsgUUID:      "0199df10-10dc-7e6e-834b-3d959ece93b2",
 		MsgStatus:    models.MsgStatusFailed,
 		FailedReason: "E",
 		OrgID:        1,
-		CreatedOn:    time.Date(2025, 11, 10, 16, 14, 30, 123456789, time.UTC),
+		CreatedOn:    createdOn,
 	}
+
+	assert.Equal(t, dynamo.Key{PK: "con#a984069d-0008-4d8c-a772-b14a8a6acccc", SK: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#F"}, change2.DynamoKey())
 
 	item2, err := change2.MarshalDynamo()
 	assert.NoError(t, err)
+	assert.Nil(t, item2.TTL)
 
 	marshaled2, err := attributevalue.MarshalMap(item2)
 	assert.NoError(t, err)
 
 	assert.Equal(t, map[string]types.AttributeValue{
 		"PK":    &types.AttributeValueMemberS{Value: "con#a984069d-0008-4d8c-a772-b14a8a6acccc"},
-		"SK":    &types.AttributeValueMemberS{Value: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts"},
+		"SK":    &types.AttributeValueMemberS{Value: "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#F"},
 		"OrgID": &types.AttributeValueMemberN{Value: "1"},
 		"Data": &types.AttributeValueMemberM{
 			Value: map[string]types.AttributeValue{
@@ -228,6 +242,30 @@ func TestStatusChanges(t *testing.T) {
 			},
 		},
 	}, marshaled2)
+
+	// sent-ish statuses expire after 90 days, read after a year, failed never
+	for status, expected := range map[models.MsgStatus]*time.Time{
+		models.MsgStatusWired:     &ttl90,
+		models.MsgStatusSent:      &ttl90,
+		models.MsgStatusDelivered: &ttl90,
+		models.MsgStatusErrored:   &ttl90,
+		models.MsgStatusRead:      &ttl365,
+		models.MsgStatusFailed:    nil,
+	} {
+		change := &models.StatusChange{
+			ContactUUID: "a984069d-0008-4d8c-a772-b14a8a6acccc",
+			MsgUUID:     "0199df10-10dc-7e6e-834b-3d959ece93b2",
+			MsgStatus:   status,
+			OrgID:       1,
+			CreatedOn:   createdOn,
+		}
+
+		assert.Equal(t, "evt#0199df10-10dc-7e6e-834b-3d959ece93b2#sts#"+string(status), change.DynamoKey().SK, "status %s", status)
+
+		item, err := change.MarshalDynamo()
+		assert.NoError(t, err)
+		assert.Equal(t, expected, item.TTL, "status %s", status)
+	}
 }
 
 func TestStatusTransitions(t *testing.T) {
