@@ -1,3 +1,8 @@
+v26.3.53 (2026-09-14)
+-------------------------
+ * Clear next_attempt whenever a message is no longer errored
+ * Update to latest goflow
+
 v26.3.52 (2026-09-11)
 -------------------------
  * Write each message status change to the history table as its own item
