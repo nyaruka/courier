@@ -19,7 +19,7 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/nyaruka/ezconf v0.8.0
 	github.com/nyaruka/gocommon v1.95.1
-	github.com/nyaruka/goflow v0.293.5
+	github.com/nyaruka/goflow v0.293.6
 	github.com/nyaruka/null/v3 v3.1.0
 	github.com/nyaruka/vkutil v0.24.0
 	github.com/sergi/go-diff v1.4.0
