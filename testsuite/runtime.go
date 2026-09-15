@@ -54,8 +54,8 @@ func NewRuntime(t *testing.T) *runtime.Runtime {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "tembatemba")
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	// configure S3 to use a localstack instance
-	cfg.S3Endpoint = "http://localstack:4566"
+	// configure S3 to use the dev stack's S3 (SeaweedFS)
+	cfg.S3Endpoint = "http://s3:8333"
 	cfg.S3AttachmentsBucket = "test-attachments"
 	cfg.S3PathStyle = true
 	cfg.DynamoEndpoint = "http://dynamodb:8000"

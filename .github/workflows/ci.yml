@@ -28,12 +28,14 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-      localstack:
-        image: localstack/localstack:4.14
+      s3:
+        image: chrislusf/seaweedfs:4.47
         env:
-          SERVICES: s3
+          AWS_ACCESS_KEY_ID: root
+          AWS_SECRET_ACCESS_KEY: tembatemba
         ports:
-          - 4566:4566
+          - 8333:8333
+        options: --health-cmd "curl -f http://localhost:8333/status" --health-interval 5s --health-timeout 2s --health-retries 10
       dynamodb:
         image: amazon/dynamodb-local:3.3.1
         ports:
