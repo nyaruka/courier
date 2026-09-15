@@ -322,7 +322,7 @@ func TestFetchAttachment(t *testing.T) {
 
 	statusCode, respBody = submit(`{"channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "url": "http://mock.com/media/hello.jpg"}`, "sesame")
 	assert.Equal(t, 200, statusCode)
-	assert.JSONEq(t, `{"attachment": {"content_type": "image/jpeg", "url": "http://localstack:4566/test-attachments/attachments/1/f884/4b62/f8844b62-b014-4975-9a98-cfcce3019710.jpg", "size": 17301}, "log_uuid": "0191e180-7d60-7000-8e0f-6b2abe4360d8"}`, string(respBody))
+	assert.JSONEq(t, `{"attachment": {"content_type": "image/jpeg", "url": "http://s3:8333/test-attachments/attachments/1/f884/4b62/f8844b62-b014-4975-9a98-cfcce3019710.jpg", "size": 17301}, "log_uuid": "0191e180-7d60-7000-8e0f-6b2abe4360d8"}`, string(respBody))
 
 	// if fetching attachment from channel returns non-200, return unavailable attachment so caller doesn't retry
 	statusCode, respBody = submit(`{"channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "url": "http://mock.com/media/hello.mp3"}`, "sesame")

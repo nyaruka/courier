@@ -130,7 +130,7 @@
                         "text": "",
                         "urn": "tel:+12065551234",
                         "attachments": [
-                            "image/jpeg:http://localstack:4566/test-attachments/attachments/1/5c9d/9a24/5c9d9a24-6c1c-4216-834e-ae2a01c5c8c1.jpg"
+                            "image/jpeg:http://s3:8333/test-attachments/attachments/1/5c9d/9a24/5c9d9a24-6c1c-4216-834e-ae2a01c5c8c1.jpg"
                         ],
                         "received_on": "2025-11-10T17:16:03Z"
                     }
@@ -144,7 +144,7 @@
                 "urn": "tel:+12065551234",
                 "text": "",
                 "attachments": [
-                    "image/jpeg:http://localstack:4566/test-attachments/attachments/1/5c9d/9a24/5c9d9a24-6c1c-4216-834e-ae2a01c5c8c1.jpg"
+                    "image/jpeg:http://s3:8333/test-attachments/attachments/1/5c9d/9a24/5c9d9a24-6c1c-4216-834e-ae2a01c5c8c1.jpg"
                 ],
                 "created_on": "2025-11-10T17:16:03Z",
                 "received_on": "2025-11-10T17:16:03Z",

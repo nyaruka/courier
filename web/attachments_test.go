@@ -14,10 +14,12 @@ import (
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/courier/v26/web"
+	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFetchAndStoreAttachment(t *testing.T) {
@@ -61,7 +63,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	att, err := web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello.jpg", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "image/jpeg", att.ContentType)
-	assert.Equal(t, "http://localstack:4566/test-attachments/attachments/1/f884/4b62/f8844b62-b014-4975-9a98-cfcce3019710.jpg", att.URL)
+	assert.Equal(t, "http://s3:8333/test-attachments/attachments/1/f884/4b62/f8844b62-b014-4975-9a98-cfcce3019710.jpg", att.URL)
 	assert.Equal(t, 17301, att.Size)
 
 	assert.Len(t, clog.HttpLogs, 1)
@@ -70,7 +72,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	att, err = web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello2", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "image/jpeg", att.ContentType)
-	assert.Equal(t, "http://localstack:4566/test-attachments/attachments/1/d4bb/9822/d4bb9822-7160-4af3-b92b-40dae35f038b.jpg", att.URL)
+	assert.Equal(t, "http://s3:8333/test-attachments/attachments/1/d4bb/9822/d4bb9822-7160-4af3-b92b-40dae35f038b.jpg", att.URL)
 	assert.Equal(t, 17301, att.Size)
 
 	assert.Len(t, clog.HttpLogs, 2)
@@ -93,17 +95,19 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	att, err = web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello3", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "image/jpeg", att.ContentType)
-	assert.Equal(t, "http://localstack:4566/test-attachments/attachments/1/e527/3bef/e5273bef-6a8d-421f-8920-17713634b9f5.jpg", att.URL)
+	assert.Equal(t, "http://s3:8333/test-attachments/attachments/1/e527/3bef/e5273bef-6a8d-421f-8920-17713634b9f5.jpg", att.URL)
 	assert.Equal(t, 17301, att.Size)
 
 	att, err = web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello7", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "application/octet-stream", att.ContentType)
-	assert.Equal(t, "http://localstack:4566/test-attachments/attachments/1/f879/21a1/f87921a1-0484-4660-9955-f9b28b006b78", att.URL)
+	assert.Equal(t, "http://s3:8333/test-attachments/attachments/1/f879/21a1/f87921a1-0484-4660-9955-f9b28b006b78", att.URL)
 	assert.Equal(t, 11, att.Size)
 
 	// an actual error on our part (e.g. storage unavailable) should be returned as an error
-	rt.Config.S3AttachmentsBucket = "does-not-exist"
+	unavailable, err := s3x.NewService(ctx, "http://localhost:1", true)
+	require.NoError(t, err)
+	rt.S3 = unavailable
 
 	att, err = web.FetchAndStoreAttachment(ctx, rt, mockChannel, "http://mock.com/media/hello.txt", clog)
 	assert.Error(t, err)

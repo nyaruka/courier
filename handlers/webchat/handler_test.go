@@ -514,13 +514,13 @@ func TestUpload(t *testing.T) {
 		Attachment string `json:"attachment"`
 	}{}
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), resp))
-	prefix := "image/jpeg:http://localstack:4566/test-attachments/attachments/1/"
+	prefix := "image/jpeg:http://s3:8333/test-attachments/attachments/1/"
 	assert.True(t, strings.HasPrefix(resp.Attachment, prefix), resp.Attachment)
 	assert.True(t, strings.HasSuffix(resp.Attachment, ".jpg"), resp.Attachment)
 
 	// whose URL serves back exactly what was uploaded
 	storageURL := strings.TrimPrefix(resp.Attachment, "image/jpeg:")
-	key := strings.TrimPrefix(storageURL, "http://localstack:4566/"+rt.Config.S3AttachmentsBucket+"/")
+	key := strings.TrimPrefix(storageURL, "http://s3:8333/"+rt.Config.S3AttachmentsBucket+"/")
 	contentType, body, err := rt.S3.GetObject(ctx, rt.Config.S3AttachmentsBucket, key)
 	require.NoError(t, err)
 	assert.Equal(t, "image/jpeg", contentType)
