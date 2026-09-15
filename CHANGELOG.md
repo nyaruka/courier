@@ -1,3 +1,7 @@
+v26.3.54 (2026-09-15)
+-------------------------
+ * Run tests against SeaweedFS instead of localstack
+
 v26.3.53 (2026-09-14)
 -------------------------
  * Clear next_attempt whenever a message is no longer errored
