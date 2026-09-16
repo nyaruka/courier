@@ -1,7 +1,8 @@
 DELETE FROM users_user;
-INSERT INTO users_user("id", "email", "first_name") VALUES
-                      (1, 'system', 'System'), 
-                      (2, 'bob@textit.com', 'Bob');
+INSERT INTO users_user("id", "uuid", "email", "first_name", "last_name", "avatar") VALUES
+                      (1, 'e8d8d7a6-8b0c-4c6e-9a3f-0c1d2e3f4a5b', 'system', 'System', '', NULL),
+                      (2, 'c7c5c4a2-1b2c-4d3e-8f9a-0b1c2d3e4f5a', 'bob@textit.com', 'Bob', 'McBob', 'avatars/2_profile.jpg'),
+                      (3, 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d', 'ann@textit.com', 'Ann', '', NULL);
               
 /* Org with id 1 */
 DELETE FROM orgs_org;

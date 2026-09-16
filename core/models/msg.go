@@ -466,16 +466,40 @@ type ChatMsg struct {
 	Attachments  pq.StringArray `db:"attachments"`
 	QuickReplies QuickReplies   `db:"quickreplies"`
 	CreatedOn    time.Time      `db:"created_on"`
+
+	// the user who sent an outgoing message, if it was sent by one rather than by a flow - joined in nullable
+	// columns since most messages have no sender, see Sender
+	UserID_        sql.NullInt64  `db:"user_id"`
+	UserUUID_      sql.NullString `db:"user_uuid"`
+	UserFirstName_ sql.NullString `db:"user_first_name"`
+	UserLastName_  sql.NullString `db:"user_last_name"`
+	UserAvatar_    sql.NullString `db:"user_avatar"`
+}
+
+// Sender returns the user who sent the message, or nil if it wasn't sent by a user
+func (m *ChatMsg) Sender() *User {
+	if !m.UserID_.Valid {
+		return nil
+	}
+	return &User{
+		ID_:        UserID(m.UserID_.Int64),
+		UUID_:      UserUUID(m.UserUUID_.String),
+		FirstName_: m.UserFirstName_.String,
+		LastName_:  m.UserLastName_.String,
+		Avatar_:    m.UserAvatar_,
+	}
 }
 
 // filtering by URN rather than contact both scopes the query to a single conversation - a contact can hold more
 // than one chat URN - and is what makes it cheap, as the URN foreign key is indexed. Message UUIDs are v7 so
 // UUID order is message order, which is what makes them the paging key.
 const sqlSelectChatMsgs = `
-SELECT uuid, direction, text, attachments, quickreplies, created_on
-  FROM msgs_msg
- WHERE contact_urn_id = $1 AND channel_id = $2 AND visibility = 'V' AND ($3::uuid IS NULL OR uuid < $3)
- ORDER BY uuid DESC
+SELECT m.uuid, m.direction, m.text, m.attachments, m.quickreplies, m.created_on,
+       u.id AS user_id, u.uuid AS user_uuid, u.first_name AS user_first_name, u.last_name AS user_last_name, u.avatar AS user_avatar
+  FROM msgs_msg m
+  LEFT JOIN users_user u ON u.id = m.created_by_id
+ WHERE m.contact_urn_id = $1 AND m.channel_id = $2 AND m.visibility = 'V' AND ($3::uuid IS NULL OR m.uuid < $3)
+ ORDER BY m.uuid DESC
  LIMIT $4`
 
 // GetChatMsgs returns the visible messages in both directions between the given URN and channel, newest first,

@@ -1,8 +1,11 @@
 DROP TABLE IF EXISTS users_user CASCADE;
 CREATE TABLE users_user (
     id serial primary key,
+    uuid uuid NOT NULL UNIQUE,
     email character varying(254) NOT NULL UNIQUE,
-    first_name character varying(150) NOT NULL
+    first_name character varying(150) NOT NULL,
+    last_name character varying(150) NOT NULL,
+    avatar character varying(100)
 );
 
 DROP TABLE IF EXISTS orgs_org CASCADE;

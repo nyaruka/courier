@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -459,6 +460,7 @@ func (h *handler) history(ctx context.Context, channel *models.Channel, w http.R
 			Text:         m.Text,
 			Attachments:  m.Attachments,
 			QuickReplies: handlers.FilterQuickRepliesByType(m.QuickReplies, models.QuickReplyTypeText),
+			User:         h.msgUser(m.Sender()),
 		}
 	}
 
@@ -485,6 +487,39 @@ type msgEvent struct {
 	Text         string              `json:"text"`
 	Attachments  []string            `json:"attachments,omitempty"`
 	QuickReplies []models.QuickReply `json:"quick_replies,omitempty"`
+
+	// who sent an outgoing message, when it was a user rather than a flow - so the chat can show them
+	User *msgUser `json:"user,omitempty"`
+}
+
+// msgUser is a message's sender as the chat shows them - the same shape as the user references on the
+// platform's own contact history events, so the widget renders them the way the app does
+type msgUser struct {
+	UUID   models.UserUUID `json:"uuid"`
+	Name   string          `json:"name"`
+	Avatar string          `json:"avatar,omitempty"`
+}
+
+// msgUser converts a user to how a chat event shows them, or nil for no user
+func (h *handler) msgUser(user *models.User) *msgUser {
+	if user == nil {
+		return nil
+	}
+	return &msgUser{UUID: user.UUID(), Name: user.Name(), Avatar: user.AvatarURL(h.Runtime())}
+}
+
+// sender looks up the user who sent a message, if it was sent by one. Attribution is best-effort: a lookup
+// that fails is logged and the message still goes out, just unattributed.
+func (h *handler) sender(ctx context.Context, msg *models.MsgOut) *msgUser {
+	if msg.UserID() == models.NilUserID {
+		return nil
+	}
+	user, err := models.GetUser(ctx, msg.UserID())
+	if err != nil {
+		slog.Error("error looking up message sender", "error", err, "msg_uuid", msg.UUID())
+		return nil
+	}
+	return h.msgUser(user)
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
@@ -497,6 +532,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		Text:         msg.Text(),
 		Attachments:  msg.Attachments(),
 		QuickReplies: handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText),
+		User:         h.sender(ctx, msg),
 	}
 
 	// like all socket publishes this is presence-aware and best-effort: if the visitor doesn't currently have

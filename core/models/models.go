@@ -33,6 +33,9 @@ var (
 	channelsByUUID *cache.Local[ChannelUUID, *Channel]
 	channelsByAddr *cache.Local[ChannelAddress, *Channel]
 
+	// users by id, for attributing the messages they send on channels that show the sender (e.g. webchat)
+	usersByID *cache.Local[UserID, *User]
+
 	// contact counts by org, only consulted when creating a contact in an org with a contact limit
 	contactCounts *cache.Local[OrgID, *atomic.Int64]
 
@@ -91,6 +94,13 @@ func Start(rt *runtime.Runtime) error {
 	}, time.Minute, 0)
 	channelsByAddr.Start()
 
+	// users change rarely and there are few of them, so a short TTL keeps a renamed user or new avatar from
+	// showing stale for long without putting a query on the database for every message they send
+	usersByID = cache.NewLocal(func(ctx context.Context, id UserID) (*User, error) {
+		return loadUser(ctx, rt, id)
+	}, time.Minute, 10_000)
+	usersByID.Start()
+
 	// contact counts are read from the squashed group counts rather than counted live, and cached briefly per org
 	// so that a burst of new contacts doesn't put a query on the database for each one. That makes the count
 	// approximate at the boundary of a limit by up to the TTL, which is fine for enforcing a ceiling.
@@ -148,6 +158,10 @@ func Stop() {
 	if channelsByAddr != nil {
 		channelsByAddr.Stop()
 		channelsByAddr = nil
+	}
+	if usersByID != nil {
+		usersByID.Stop()
+		usersByID = nil
 	}
 	if contactCounts != nil {
 		contactCounts.Stop()

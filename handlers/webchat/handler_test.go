@@ -327,6 +327,10 @@ func TestHistory(t *testing.T) {
 	insertMsg("11f0a1d2-0000-7000-8000-200000000002", "O", "W", "V", "Pick one", []string{"image/jpeg:https://example.com/cat.jpg"}, &quickReplies, day.Add(11*time.Hour+2*time.Minute), testChannels[0], contactID, urnID)
 	insertMsg("11f0a1d2-0000-7000-8000-200000000003", "I", "P", "V", "Hi there", nil, nil, day.Add(11*time.Hour+3*time.Minute), testChannels[0], contactID, urnID)
 
+	// messages sent by users carry their sender - Bob has an avatar, Ann doesn't
+	rt.DB.MustExec(`UPDATE msgs_msg SET created_by_id = 2 WHERE uuid = '11f0a1d2-0000-7000-8000-200000000001'`)
+	rt.DB.MustExec(`UPDATE msgs_msg SET created_by_id = 3 WHERE uuid = '11f0a1d2-0000-7000-8000-200000000002'`)
+
 	// a second chat URN belonging to the same contact, to check history is scoped to a conversation rather
 	// than a contact
 	var otherURNID int64
@@ -355,9 +359,16 @@ func TestHistory(t *testing.T) {
 				"msg_uuid": "11f0a1d2-0000-7000-8000-200000000002",
 				"text": "Pick one",
 				"attachments": ["image/jpeg:https://example.com/cat.jpg"],
-				"quick_replies": [{"type": "text", "text": "Yes"}, {"type": "text", "text": "No"}]
+				"quick_replies": [{"type": "text", "text": "Yes"}, {"type": "text", "text": "No"}],
+				"user": {"uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "name": "Ann"}
 			},
-			{"type": "msg_out", "created_on": "2025-10-13T11:01:00Z", "msg_uuid": "11f0a1d2-0000-7000-8000-200000000001", "text": "Hello"}
+			{
+				"type": "msg_out",
+				"created_on": "2025-10-13T11:01:00Z",
+				"msg_uuid": "11f0a1d2-0000-7000-8000-200000000001",
+				"text": "Hello",
+				"user": {"uuid": "c7c5c4a2-1b2c-4d3e-8f9a-0b1c2d3e4f5a", "name": "Bob McBob", "avatar": "http://s3:8333/test-default/avatars/2_profile.jpg"}
+			}
 		]
 	}`, rr.Body.String())
 
@@ -684,6 +695,37 @@ func TestOutgoing(t *testing.T) {
 		"text":       "Hello there",
 	}, decoded)
 
+	// a message sent by a user - rather than a flow - carries who they are, with an avatar when they have one
+	msg.UserID_ = 2
+	require.NoError(t, send())
+	sent = testsuite.CentrifugoHistory(t, rt, socket)
+	require.Len(t, sent, 2)
+	decoded = map[string]any{}
+	require.NoError(t, json.Unmarshal(sent[1], &decoded))
+	assert.Equal(t, map[string]any{
+		"uuid":   "c7c5c4a2-1b2c-4d3e-8f9a-0b1c2d3e4f5a",
+		"name":   "Bob McBob",
+		"avatar": "http://s3:8333/test-default/avatars/2_profile.jpg",
+	}, decoded["user"])
+
+	msg.UserID_ = 3
+	require.NoError(t, send())
+	sent = testsuite.CentrifugoHistory(t, rt, socket)
+	require.Len(t, sent, 3)
+	decoded = map[string]any{}
+	require.NoError(t, json.Unmarshal(sent[2], &decoded))
+	assert.Equal(t, map[string]any{"uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "name": "Ann"}, decoded["user"])
+
+	// a user we don't know leaves the message unattributed rather than failing the send
+	msg.UserID_ = 999
+	require.NoError(t, send())
+	sent = testsuite.CentrifugoHistory(t, rt, socket)
+	require.Len(t, sent, 4)
+	decoded = map[string]any{}
+	require.NoError(t, json.Unmarshal(sent[3], &decoded))
+	assert.NotContains(t, decoded, "user")
+	msg.UserID_ = models.NilUserID
+
 	// a message with attachments and quick replies includes them in the event - except non-text quick replies,
 	// which the widget doesn't render and are filtered out like any other unsupporting channel
 	msg.Attachments_ = []string{"image/jpeg:https://example.com/cat.jpg", "audio/mp3:https://example.com/hi.mp3"}
@@ -692,10 +734,10 @@ func TestOutgoing(t *testing.T) {
 	require.NoError(t, send())
 
 	sent = testsuite.CentrifugoHistory(t, rt, socket)
-	require.Len(t, sent, 2)
+	require.Len(t, sent, 5)
 
 	decoded = map[string]any{}
-	require.NoError(t, json.Unmarshal(sent[1], &decoded))
+	require.NoError(t, json.Unmarshal(sent[4], &decoded))
 	assert.Equal(t, map[string]any{
 		"type":        "msg_out",
 		"created_on":  "2025-10-13T11:20:30Z",
