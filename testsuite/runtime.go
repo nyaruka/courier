@@ -57,6 +57,7 @@ func NewRuntime(t *testing.T) *runtime.Runtime {
 	// configure S3 to use the dev stack's S3 (SeaweedFS)
 	cfg.S3Endpoint = "http://s3:8333"
 	cfg.S3AttachmentsBucket = "test-attachments"
+	cfg.S3PublicBucket = "test-default"
 	cfg.S3PathStyle = true
 	cfg.DynamoEndpoint = "http://dynamodb:8000"
 	cfg.DynamoTablePrefix = "Test"
