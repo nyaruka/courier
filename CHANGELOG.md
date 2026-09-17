@@ -1,3 +1,7 @@
+v26.3.55 (2026-09-17)
+-------------------------
+ * Add the sender to webchat chat events
+
 v26.3.54 (2026-09-15)
 -------------------------
  * Run tests against SeaweedFS instead of localstack
