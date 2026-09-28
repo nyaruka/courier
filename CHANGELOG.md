@@ -1,3 +1,7 @@
+v26.3.56 (2026-09-28)
+-------------------------
+ * Make AllowRate a fixed window by only setting a key's expiry when it has none
+
 v26.3.55 (2026-09-17)
 -------------------------
  * Add the sender to webchat chat events
