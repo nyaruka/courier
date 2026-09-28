@@ -1,3 +1,7 @@
+v26.3.57 (2026-09-28)
+-------------------------
+ * Claim test valkey databases per test with assertvk.ClaimDB, coordinating with other projects' tests
+
 v26.3.56 (2026-09-28)
 -------------------------
  * Make AllowRate a fixed window by only setting a key's expiry when it has none
