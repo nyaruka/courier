@@ -46,7 +46,7 @@ func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
 func NewRuntime(t *testing.T) *runtime.Runtime {
 	cfg := runtime.NewDefaultConfig()
 	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
-	cfg.Valkey = assertvk.TestDSN() // this binary's own database - see valkey.go
+	cfg.Valkey = assertvk.ClaimDB(t).URL // this test's own database - see valkey.go
 	cfg.MediaDomain = "nyaruka.s3.com"
 
 	// AWS credentials and region are resolved from the standard SDK default chain, so export them as
@@ -100,7 +100,11 @@ func ResetDB(t *testing.T, rt *runtime.Runtime) {
 }
 
 func ResetValkey(t *testing.T, rt *runtime.Runtime) {
-	assertvk.FlushDB()
+	r := rt.VK.Get()
+	defer r.Close()
+
+	_, err := r.Do("FLUSHDB")
+	require.NoError(t, err)
 }
 
 // CentrifugoHistory returns the JSON payloads published to the given Centrifugo channel, oldest first. The runtime's
