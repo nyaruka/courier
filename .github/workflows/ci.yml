@@ -17,6 +17,9 @@ jobs:
     services:
       valkey:
         image: valkey/valkey:8.1-alpine
+        env:
+          # enough databases for test claims to be coordinated (see testsuite/valkey.go)
+          VALKEY_EXTRA_FLAGS: --databases 64
         ports:
           - 6379:6379
       postgres:
