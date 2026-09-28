@@ -3,7 +3,6 @@ package testsuite
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"os"
 	"path"
@@ -48,7 +47,7 @@ func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
 func NewRuntime(t *testing.T) *runtime.Runtime {
 	cfg := runtime.NewDefaultConfig()
 	cfg.DB = dbTestDSN
-	cfg.Valkey = fmt.Sprintf(vkTestDSNFormat, slotVKDB(claimSlot(t))) // this binary's own database - see slot.go
+	cfg.Valkey = ValkeyURL(t)
 	cfg.MediaDomain = "nyaruka.s3.com"
 
 	// AWS credentials and region are resolved from the standard SDK default chain, so export them as

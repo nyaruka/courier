@@ -2,32 +2,44 @@ package queue_test
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/vkutil/assertvk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func getPool() *redis.Pool {
+func getPool(t *testing.T) *redis.Pool {
+	url := testsuite.ValkeyURL(t)
+
 	redisPool := &redis.Pool{
-		Wait:        true,                   // makes callers wait for a connection
-		MaxActive:   5,                      // only open this many concurrent connections at once
-		MaxIdle:     2,                      // only keep up to 2 idle
-		IdleTimeout: 240 * time.Second,      // how long to wait before reaping a connection
-		Dial:        assertvk.TestDB().Dial, // this binary's own database
+		Wait:        true,              // makes callers wait for a connection
+		MaxActive:   5,                 // only open this many concurrent connections at once
+		MaxIdle:     2,                 // only keep up to 2 idle
+		IdleTimeout: 240 * time.Second, // how long to wait before reaping a connection
+		Dial: func() (redis.Conn, error) {
+			return redis.DialURL(url)
+		},
 	}
-	assertvk.FlushDB()
+	conn := redisPool.Get()
+	defer conn.Close()
+
+	_, err := conn.Do("FLUSHDB")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return redisPool
 }
 
 func TestLua(t *testing.T) {
-	rp := getPool()
+	rp := getPool(t)
 	rc := rp.Get()
 	defer rc.Close()
 
@@ -156,7 +168,7 @@ func TestLua(t *testing.T) {
 }
 
 func TestTPSCost(t *testing.T) {
-	rp := getPool()
+	rp := getPool(t)
 	rc := rp.Get()
 	defer rc.Close()
 
@@ -193,7 +205,7 @@ func TestTPSCost(t *testing.T) {
 
 func TestThrottle(t *testing.T) {
 	assert := assert.New(t)
-	pool := getPool()
+	pool := getPool(t)
 	conn := pool.Get()
 	defer conn.Close()
 

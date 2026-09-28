@@ -71,6 +71,11 @@ func claimSlot(t *testing.T) int {
 	return slot
 }
 
+// ValkeyURL returns the URL of this test binary's own valkey database
+func ValkeyURL(t *testing.T) string {
+	return fmt.Sprintf(vkTestDSNFormat, slotVKDB(claimSlot(t)))
+}
+
 // slotVKDB returns the valkey database number for the given slot
 func slotVKDB(slot int) int {
 	return slotVKDBBase + slot
