@@ -2,7 +2,6 @@ package queue_test
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"testing"
 	"time"
@@ -14,34 +13,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getPool() *redis.Pool {
+func getPool(t *testing.T) *redis.Pool {
 	redisPool := &redis.Pool{
-		Wait:        true,              // makes callers wait for a connection
-		MaxActive:   5,                 // only open this many concurrent connections at once
-		MaxIdle:     2,                 // only keep up to 2 idle
-		IdleTimeout: 240 * time.Second, // how long to wait before reaping a connection
-		Dial: func() (redis.Conn, error) {
-			conn, err := redis.Dial("tcp", "valkey:6379")
-			if err != nil {
-				return nil, err
-			}
-			_, err = conn.Do("SELECT", 0)
-			return conn, err
-		},
+		Wait:        true,                            // makes callers wait for a connection
+		MaxActive:   5,                               // only open this many concurrent connections at once
+		MaxIdle:     2,                               // only keep up to 2 idle
+		IdleTimeout: 240 * time.Second,               // how long to wait before reaping a connection
+		Dial:        assertvk.ClaimDB(t).Pool().Dial, // this test's own database - see setup_test.go
 	}
-	conn := redisPool.Get()
-	defer conn.Close()
-
-	_, err := conn.Do("FLUSHDB")
-	if err != nil {
-		log.Fatal(err)
-	}
+	t.Cleanup(func() { redisPool.Close() }) // before the database is released
 
 	return redisPool
 }
 
 func TestLua(t *testing.T) {
-	rp := getPool()
+	rp := getPool(t)
 	rc := rp.Get()
 	defer rc.Close()
 
@@ -170,7 +156,7 @@ func TestLua(t *testing.T) {
 }
 
 func TestTPSCost(t *testing.T) {
-	rp := getPool()
+	rp := getPool(t)
 	rc := rp.Get()
 	defer rc.Close()
 
@@ -207,7 +193,7 @@ func TestTPSCost(t *testing.T) {
 
 func TestThrottle(t *testing.T) {
 	assert := assert.New(t)
-	pool := getPool()
+	pool := getPool(t)
 	conn := pool.Get()
 	defer conn.Close()
 

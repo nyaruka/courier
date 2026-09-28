@@ -13,6 +13,7 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
 	"github.com/nyaruka/gocommon/centrifugo"
+	"github.com/nyaruka/vkutil/assertvk"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,7 +46,7 @@ func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
 func NewRuntime(t *testing.T) *runtime.Runtime {
 	cfg := runtime.NewDefaultConfig()
 	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
-	cfg.Valkey = "valkey://valkey:6379/0"
+	cfg.Valkey = assertvk.ClaimDB(t).URL // this test's own database - see valkey.go
 	cfg.MediaDomain = "nyaruka.s3.com"
 
 	// AWS credentials and region are resolved from the standard SDK default chain, so export them as
