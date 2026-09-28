@@ -32,4 +32,21 @@ func TestAllowRate(t *testing.T) {
 	require.NoError(t, err)
 	assert.Greater(t, ttl, 0)
 	assert.LessOrEqual(t, ttl, 60)
+
+	// which later requests don't extend
+	_, err = rc.Do("EXPIRE", "test-limit:a", 30)
+	require.NoError(t, err)
+	channels.AllowRate(rt, "test-limit:a", 3, 60)
+	ttl, err = redis.Int(rc.Do("TTL", "test-limit:a"))
+	require.NoError(t, err)
+	assert.LessOrEqual(t, ttl, 30)
+
+	// but a key left without a TTL gets one on its next request
+	_, err = rc.Do("PERSIST", "test-limit:a")
+	require.NoError(t, err)
+	channels.AllowRate(rt, "test-limit:a", 3, 60)
+	ttl, err = redis.Int(rc.Do("TTL", "test-limit:a"))
+	require.NoError(t, err)
+	assert.Greater(t, ttl, 30)
+	assert.LessOrEqual(t, ttl, 60)
 }
