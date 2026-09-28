@@ -3,6 +3,7 @@ package testsuite
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"os"
 	"path"
@@ -22,6 +23,8 @@ func testdataPath(file string) string {
 	_, thisFile, _, _ := goruntime.Caller(0)
 	return path.Join(path.Dir(thisFile), "testdata", file)
 }
+
+const dbTestDSN = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
 
 // Runtime returns a runtime for the test environment with the runtime and models layer started - what most
 // tests want.
@@ -44,8 +47,8 @@ func Runtime(t *testing.T) (context.Context, *runtime.Runtime) {
 // like the server which own that lifecycle themselves.
 func NewRuntime(t *testing.T) *runtime.Runtime {
 	cfg := runtime.NewDefaultConfig()
-	cfg.DB = "postgres://courier_test:temba@postgres:5432/courier_test?sslmode=disable"
-	cfg.Valkey = "valkey://valkey:6379/0"
+	cfg.DB = dbTestDSN
+	cfg.Valkey = fmt.Sprintf(vkTestDSNFormat, slotVKDB(claimSlot(t))) // this binary's own database - see slot.go
 	cfg.MediaDomain = "nyaruka.s3.com"
 
 	// AWS credentials and region are resolved from the standard SDK default chain, so export them as

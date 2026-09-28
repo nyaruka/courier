@@ -2,7 +2,6 @@ package queue_test
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"testing"
 	"time"
@@ -16,26 +15,13 @@ import (
 
 func getPool() *redis.Pool {
 	redisPool := &redis.Pool{
-		Wait:        true,              // makes callers wait for a connection
-		MaxActive:   5,                 // only open this many concurrent connections at once
-		MaxIdle:     2,                 // only keep up to 2 idle
-		IdleTimeout: 240 * time.Second, // how long to wait before reaping a connection
-		Dial: func() (redis.Conn, error) {
-			conn, err := redis.Dial("tcp", "valkey:6379")
-			if err != nil {
-				return nil, err
-			}
-			_, err = conn.Do("SELECT", 0)
-			return conn, err
-		},
+		Wait:        true,                   // makes callers wait for a connection
+		MaxActive:   5,                      // only open this many concurrent connections at once
+		MaxIdle:     2,                      // only keep up to 2 idle
+		IdleTimeout: 240 * time.Second,      // how long to wait before reaping a connection
+		Dial:        assertvk.TestDB().Dial, // this binary's own database
 	}
-	conn := redisPool.Get()
-	defer conn.Close()
-
-	_, err := conn.Do("FLUSHDB")
-	if err != nil {
-		log.Fatal(err)
-	}
+	assertvk.FlushDB()
 
 	return redisPool
 }
