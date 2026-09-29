@@ -1,3 +1,6 @@
+## v26.3.58 (2026-09-29)
+ * Update to latest phonenumbers
+
 ## v26.3.57 (2026-09-28)
  * Claim test valkey databases per test with assertvk.ClaimDB, coordinating with other projects' tests
 
