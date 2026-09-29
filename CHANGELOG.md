@@ -1,121 +1,98 @@
-v26.3.57 (2026-09-28)
--------------------------
+## v26.3.57 (2026-09-28)
  * Claim test valkey databases per test with assertvk.ClaimDB, coordinating with other projects' tests
 
-v26.3.56 (2026-09-28)
--------------------------
+## v26.3.56 (2026-09-28)
  * Make AllowRate a fixed window by only setting a key's expiry when it has none
 
-v26.3.55 (2026-09-17)
--------------------------
+## v26.3.55 (2026-09-17)
  * Add the sender to webchat chat events
 
-v26.3.54 (2026-09-15)
--------------------------
+## v26.3.54 (2026-09-15)
  * Run tests against SeaweedFS instead of localstack
 
-v26.3.53 (2026-09-14)
--------------------------
+## v26.3.53 (2026-09-14)
  * Clear next_attempt whenever a message is no longer errored
  * Update to latest goflow
 
-v26.3.52 (2026-09-11)
--------------------------
+## v26.3.52 (2026-09-11)
  * Write each message status change to the history table as its own item
  * Update to latest gocommon and goflow
 
-v26.3.51 (2026-09-10)
--------------------------
+## v26.3.51 (2026-09-10)
  * Make the metrics reporter extendable by deployments and recover from panics so a failing hook only loses its own metrics for the period
  * Move config loading into cmd.LoadConfig so apps built on top of courier can embed the runtime config
 
-v26.3.50 (2026-09-10)
--------------------------
+## v26.3.50 (2026-09-10)
  * Only ever move message status forward so out of order status updates can't undo one that already landed
  * Make the contact creation and received message checks replaceable by deployments
  * Add inbound attachment support to webchat channels
 
-v26.3.49 (2026-09-09)
--------------------------
+## v26.3.49 (2026-09-09)
  * Add history endpoint to webchat channels so clients can fetch recent messages
  * Add enforcement of per-workspace contact limit with a default of 10 million
  * Update to latest gocommon and goflow
 
-v26.3.48 (2026-09-08)
--------------------------
+## v26.3.48 (2026-09-08)
  * Make handler endpoint URLs and other fixed literals constants
  * Use shared config key constants where handlers had declared their own
  * Update from Go 1.26 to 1.27
 
-v26.3.47 (2026-09-02)
--------------------------
+## v26.3.47 (2026-09-02)
  * Convert all handler tests to JSON case files under testdata/ and remove the legacy test runners
  * Bound the channel-by-UUID and Turn failed media caches so unknown keys can't grow them without limit
  * Update to latest gocommon
 
-v26.3.46 (2026-09-01)
--------------------------
+## v26.3.46 (2026-09-01)
  * Cache a channel's absence for lookups by UUID so a dead callback URL doesn't query per request
  * Stop a MessageBird field we can't convert discarding the whole status report
  * Record a Nexmo request we couldn't fully decode instead of discarding the error
  * Replace handler SetRuntime/Initialize with runtime-aware constructors
 
-v26.3.45 (2026-08-31)
--------------------------
+## v26.3.45 (2026-08-31)
  * Answer a failed signature check on an incoming request as unauthorized
  * Separate what an incoming request is answered as from what it's logged as
  * Share the WhatsApp payload parser between Cloud API and 360dialog handlers
  * Simplify channel receive route registration and request payload parsing
  * Update dependencies
 
-v26.3.44 (2026-08-31)
--------------------------
+## v26.3.44 (2026-08-31)
  * Include attachments and quick replies in webchat msg_out events
  * Add maximum text length to webchat receive endpoint
  * Combine multiple contents in an incoming Zenvia payload into a single message
  * Update dependencies
 
-v26.3.43 (2026-08-27)
--------------------------
+## v26.3.43 (2026-08-27)
  * Don't store channel logs for channel types whose traffic is internal to the platform
  * Update dependencies
 
-v26.3.42 (2026-08-27)
--------------------------
+## v26.3.42 (2026-08-27)
  * Enforce allowed domains for webchat channels
  * Fix log type of Kannel status report logs
 
-v26.3.41 (2026-08-26)
--------------------------
+## v26.3.41 (2026-08-26)
  * Add WebChat channel type
  * Rate limit webchat chat starts per IP per channel
 
-v26.3.40 (2026-08-25)
--------------------------
+## v26.3.40 (2026-08-25)
  * Write msgs_msg.folder when creating incoming messages and updating outgoing message statuses
 
-v26.3.39 (2026-08-25)
--------------------------
+## v26.3.39 (2026-08-25)
  * Replace built-in Sentry integration with hooks for wrapping applications
 
-v26.3.38 (2026-08-19)
--------------------------
+## v26.3.38 (2026-08-19)
  * Fix pop script to correctly charge tps_cost of queued messages
 
-v26.3.37 (2026-08-18)
--------------------------
+## v26.3.37 (2026-08-18)
  * Remove orphaned per-channel rate limit checks from queue pop script
 
-v26.3.36 (2026-08-18)
--------------------------
+## v26.3.36 (2026-08-18)
  * Update dependencies
  * Add tests for malformed form extra cases
  * Support flow_action, flow_action_payload and flow_token when sending WhatsApp Flows
  * Consolidate WhatsApp send response parsing into a shared helper
  * Remove disabled WhatsApp legacy handler
 
-v26.3.35 (2026-08-12)
--------------------------
+## v26.3.35 (2026-08-12)
  * Parse derived config values once in Config.Parse rather than at each use site
  * Switch to Business Source License 1.1
  * Bring Turn handler to parity with other WhatsApp handlers
@@ -132,24 +109,20 @@ v26.3.35 (2026-08-12)
  * Add utils.DoTraced so the trace-and-drain pattern lives in one place
  * Use shared svclogs package and context-scoped HTTP tracing
 
-v26.3.34 (2026-08-12)
--------------------------
+## v26.3.34 (2026-08-12)
  * Resolve testsuite fixture paths relative to the package source
 
-v26.3.33 (2026-08-12)
--------------------------
+## v26.3.33 (2026-08-12)
  * Move the HTTP server into web, the sender into core/sender and the channel handler contract into core/channels
  * Replace the Backend interface with models functions taking a runtime
  * Include Twilio and MessageBird stop contact events in request logs and incoming metrics
 
-v26.3.32 (2026-08-11)
--------------------------
+## v26.3.32 (2026-08-11)
  * Stop using the same structs for incoming msg and channel event database rows and spool files
  * Replace the Msg and ChannelEvent interfaces with their concrete types
  * Replace the StatusUpdate and Contact interfaces with their concrete types
 
-v26.3.31 (2026-08-11)
--------------------------
+## v26.3.31 (2026-08-11)
  * Fix Play Mobile incoming prefix stripping never being applied for channels loaded from the database
  * Replace the Channel interface with the concrete channel model type
  * Fail Turn sends when media can't be uploaded instead of falling back to a link
@@ -158,307 +131,243 @@ v26.3.31 (2026-08-11)
  * Retry transient failures on the LINE batched send and WeChat token fetch
  * Move ChannelLog into core/models so model code can own channel log writes
 
-v26.3.30 (2026-08-10)
--------------------------
+## v26.3.30 (2026-08-10)
  * Don't make Telegram keyboards single use when they contain form or location buttons
  * Treat Turn HTTP 429 rate limits as throttled so messages retry
  * Update GitHub actions to versions that run on Node.js 24
 
-v26.3.29 (2026-08-06)
--------------------------
+## v26.3.29 (2026-08-06)
  * Use inline keyboards for Telegram url quick replies, falling back to reply keyboards for the rest
  * Clear any previous reply keyboard before sending an inline keyboard
  * Drop url quick replies with invalid URLs instead of failing the send
  * Add shared helper for filtering quick replies that require an extra value
 
-v26.3.28 (2026-08-05)
--------------------------
+## v26.3.28 (2026-08-05)
  * Handle WhatsApp message webhooks where the sender has no phone number
  * Match incoming WhatsApp messages to existing contacts by BSUID when the phone number is new
 
-v26.3.27 (2026-08-05)
--------------------------
+## v26.3.27 (2026-08-05)
  * Remove creation of optin/optout channel events and sending of optin request messages
 
-v26.3.26 (2026-08-05)
--------------------------
+## v26.3.26 (2026-08-05)
  * Save incoming WhatsApp BSUIDs as secondary whatsapp URNs
 
-v26.3.25 (2026-08-04)
--------------------------
+## v26.3.25 (2026-08-04)
  * Support sending to WhatsApp BSUIDs held as whatsapp URNs
 
-v26.3.24 (2026-08-03)
--------------------------
+## v26.3.24 (2026-08-03)
  * Allow cmd entry points to take customized config defaults
 
-v26.3.23 (2026-07-30)
--------------------------
+## v26.3.23 (2026-07-30)
  * Keep captions and interactive message bodies within WhatsApp's 1024 char limit
  * Increase max message length to 4096 for WhatsApp Cloud
 
-v26.3.22 (2026-07-30)
--------------------------
+## v26.3.22 (2026-07-30)
  * Ignore quick replies of types a channel doesn't support, logging a channel error for each one dropped
  * Add support for sending url quick replies on Line, Viber and VK, and location quick replies on VK
  * Add support for sending form quick replies as Telegram Mini App buttons
 
-v26.3.21 (2026-07-28)
--------------------------
+## v26.3.21 (2026-07-28)
  * Add support for sending url quick replies as WhatsApp CTA URL button messages
 
-v26.3.20 (2026-07-28)
--------------------------
+## v26.3.20 (2026-07-28)
  * Add support for sending form quick replies as WhatsApp flow messages
  * Update FB graph API version to v25.0
 
-v26.3.19 (2026-07-27)
--------------------------
+## v26.3.19 (2026-07-27)
  * Update to vkutil v0.22.0 and gocommon v1.92.0 which now provides the fair queue as queues.FairV2
 
-v26.3.18 (2026-07-27)
--------------------------
+## v26.3.18 (2026-07-27)
  * Add support for WhatsApp flow (nfm) replies with structured payloads passed to mailroom
 
-v26.3.17 (2026-07-23)
--------------------------
+## v26.3.17 (2026-07-23)
  * Add typing event support to LINE, VK and WeChat channels
  * Remove CHP channel handler
  * Update to latest goflow and gocommon
 
-v26.3.16 (2026-07-22)
--------------------------
+## v26.3.16 (2026-07-22)
  * Add typing event support to 360Dialog and Twilio WhatsApp channels
 
-v26.3.15 (2026-07-22)
--------------------------
+## v26.3.15 (2026-07-22)
  * Add typing event support to Facebook and Instagram channels
  * Update goflow to v0.284.0
 
-v26.3.14 (2026-07-21)
--------------------------
+## v26.3.14 (2026-07-21)
  * Log and ignore unknown Kannel delivery report statuses instead of marking messages as failed
  * Update dependencies
 
-v26.3.13 (2026-07-20)
--------------------------
+## v26.3.13 (2026-07-20)
  * Update to gocommon v1.89.7
 
-v26.3.12 (2026-07-16)
--------------------------
+## v26.3.12 (2026-07-16)
  * Remove internal channel info endpoint since capability is exercised per event send instead of queried up front
 
-v26.3.11 (2026-07-16)
--------------------------
+## v26.3.11 (2026-07-16)
  * Rework chat action sending into event sending which uses goflow engine events as its vocabulary
  * Drop support for mark_read as standalone action since WhatsApp typing indicators already mark messages as read
 
-v26.3.10 (2026-07-15)
--------------------------
+## v26.3.10 (2026-07-15)
  * Throttle sustained chat actions to their declared interval so callers don't need to know per-channel cadences
  * Stop building darwin release binaries
 
-v26.3.9 (2026-07-14)
--------------------------
+## v26.3.9 (2026-07-14)
  * Add support for sending chat actions (typing indicators, read receipts) via new internal endpoint, implemented for Telegram and WhatsApp Cloud
  * Add internal endpoint to get channel info such as supported chat actions
  * Replace unmaintained patrickmn/go-cache with gocommon's cache.Local
 
-v26.3.8 (2026-07-14)
--------------------------
+## v26.3.8 (2026-07-14)
  * Update to latest goflow
  * Use goflow's msg_status_changed event instead of hand-rolled struct
 
-v26.3.7 (2026-07-09)
--------------------------
+## v26.3.7 (2026-07-09)
  * Update to latest gocommon
 
-v26.3.6 (2026-07-08)
--------------------------
+## v26.3.6 (2026-07-08)
  * Update to gocommon 1.89.3 and use region from s3x.Service
 
-v26.3.5 (2026-07-07)
--------------------------
+## v26.3.5 (2026-07-07)
  * Update to gocommon v1.88.0 and rework Postgres spools on generic spool package
  * Exit hard if graceful shutdown exceeds 90 seconds
 
-v26.3.4 (2026-07-06)
--------------------------
+## v26.3.4 (2026-07-06)
  * Remove InstanceID config setting
  * Publish instance level metrics without a Host dimension
  * Remove app node registry
 
-v26.3.3 (2026-07-06)
--------------------------
+## v26.3.3 (2026-07-06)
  * Rename PublicAddress/PublicPort config to InternetAddress/InternetPort
  * Change default internal address to bind all interfaces
  * Update to gocommon v1.86.2
  * Fail startup if spool directories aren't writable
  * Add Centrifugo client to runtime
 
-v26.3.2 (2026-07-02)
--------------------------
+## v26.3.2 (2026-07-02)
  * Support sending WhatsApp messages by BSUID URN
 
-v26.3.1 (2026-07-01)
--------------------------
+## v26.3.1 (2026-07-01)
  * Update dependencies
 
-v26.3.0 (2026-07-01)
--------------------------
+## v26.3.0 (2026-07-01)
  * Resolve AWS credentials and region from the standard SDK default chain
  * Bump CLA Assistant action to v2.6.1 to fix Node 24 incompatibility
 
-v26.2.1 (2026-06-16)
--------------------------
+## v26.2.1 (2026-06-16)
  * Retry WhatsApp Cloud media upload errors (131053) instead of failing them
 
-v26.2.0 (2026-06-15)
--------------------------
+## v26.2.0 (2026-06-15)
  * Update dependencies
  * Handle throttling and bare-message errors consistently across WhatsApp Cloud send paths
 
-v26.1.48 (2026-06-04)
--------------------------
+## v26.1.48 (2026-06-04)
  * Update to gocommon v1.83.0
 
-v26.1.47 (2026-06-04)
--------------------------
+## v26.1.47 (2026-06-04)
  * Update to gocommon v1.82.0 (phonenumbers v2)
 
-v26.1.46 (2026-06-03)
--------------------------
+## v26.1.46 (2026-06-03)
  * Update gocommon to v1.81.1 and adopt httpx transport middleware
 
-v26.1.45 (2026-06-02)
--------------------------
+## v26.1.45 (2026-06-02)
  * Merge pull request #1030 from nyaruka/fix-kannel-omit-charset
  * Don't send charset param for kannel unicode - body is already UTF-16BE
  * Revert "Don't send charset param for kannel unicode - body is already UTF-16BE"
  * Don't send charset param for kannel unicode - body is already UTF-16BE
 
-v26.1.44 (2026-06-02)
--------------------------
+## v26.1.44 (2026-06-02)
  * Merge pull request #1029 from nyaruka/fix-kannel-unicode-charset
  * Send kannel unicode messages as UTF-16BE to avoid charset recode errors
 
-v26.1.43 (2026-06-02)
--------------------------
+## v26.1.43 (2026-06-02)
  * Merge pull request #1028 from nyaruka/fix-charset-KN
  * Fix kannel charset parameter
  * Only run code review when PR is opened
 
-v26.1.42 (2026-06-01)
--------------------------
+## v26.1.42 (2026-06-01)
  * Update phonenumbers to v1.8.0
 
-v26.1.41 (2026-05-26)
--------------------------
+## v26.1.41 (2026-05-26)
  * Update default cloudwatch namespace to Courier
  * Route external channel send URLs through optional outbound HTTP proxy
 
-v26.1.40 (2026-05-25)
--------------------------
+## v26.1.40 (2026-05-25)
  * Update gocommon to v1.80.1
  * Fix DisallowedNetworks defaults blocking all outgoing IPv4 traffic
 
-v26.1.39 (2026-05-25)
--------------------------
+## v26.1.39 (2026-05-25)
  * Expand default DisallowedNetworks (full loopback, IPv4-mapped IPv6, ULA, CGNAT, and more)
 
-v26.1.38 (2026-05-25)
--------------------------
+## v26.1.38 (2026-05-25)
  * Update dependencies
  * Remove SQ (shaqodoon) channel type
  * Trim handler User-Agent to avoid leaking build details
  * Remove BL (bongolive) channel type
  * Remove KN insecure HTTP requests
 
-v26.1.37 (2026-05-19)
--------------------------
+## v26.1.37 (2026-05-19)
  * Serve health response at / on both listeners
 
-v26.1.36 (2026-05-19)
--------------------------
+## v26.1.36 (2026-05-19)
  * Remove index and status endpoints from public listener
 
-v26.1.35 (2026-05-18)
--------------------------
+## v26.1.35 (2026-05-18)
  * Remove backward-compat /ci/ route from public listener
 
-v26.1.34 (2026-05-18)
--------------------------
+## v26.1.34 (2026-05-18)
  * Remove old test channel handler
 
-v26.1.33 (2026-05-18)
--------------------------
+## v26.1.33 (2026-05-18)
  * Expose internal endpoint on separate listener port, add /ping
 
-v26.1.32 (2026-05-14)
--------------------------
+## v26.1.32 (2026-05-14)
  * Remove plaintext HTTP webhook logging
 
-v26.1.31 (2026-05-13)
--------------------------
+## v26.1.31 (2026-05-13)
  * Log warning when /c/* webhook arrives over plaintext HTTP
 
-v26.1.30 (2026-05-12)
--------------------------
+## v26.1.30 (2026-05-12)
  * Drop deprecated /c/_fetch-attachment endpoint
 
-v26.1.29 (2026-05-11)
--------------------------
+## v26.1.29 (2026-05-11)
  * Properly support BSUID for TRN channels
 
-v26.1.28 (2026-05-07)
--------------------------
+## v26.1.28 (2026-05-07)
  * Don't count duplicated messages for incoming message metrics
 
-v26.1.27 (2026-04-28)
--------------------------
+## v26.1.27 (2026-04-28)
  * Update dependencies
  * Sort WhatsApp template component variables numerically
 
-v26.1.26 (2026-04-23)
--------------------------
+## v26.1.26 (2026-04-23)
  * Save BSUID URN for TRN channels on incoming messages
  * Support receiving for BSUID on Twilio Whatsapp
 
-v26.1.25 (2026-04-16)
--------------------------
+## v26.1.25 (2026-04-16)
  * Merge pull request #999 from nyaruka/d3c-bsuid
  * Save BSUID URN for D3C channels
 
-v26.1.24 (2026-04-08)
--------------------------
+## v26.1.24 (2026-04-08)
  * Update dependencies
 
-v26.1.23 (2026-04-07)
--------------------------
+## v26.1.23 (2026-04-07)
  * Include channel_id in contact_changed tasks
 
-v26.1.22 (2026-04-07)
--------------------------
+## v26.1.22 (2026-04-07)
  * Use NamedExecContext for incoming msg and channel event inserts
  * Move incoming message insert into core/models
  * Move ChannelEvent struct and insert into core/models
 
-v26.1.21 (2026-04-02)
--------------------------
+## v26.1.21 (2026-04-02)
  * Skip queuing contact_changed task when contact already has the URN
  * Add BSUID URN support for outgoing WhatsApp messages
 
-v26.1.20 (2026-04-01)
--------------------------
+## v26.1.20 (2026-04-01)
  * Update to latest phonenumbers
  * Support WhatsApp user_id as secondary URN using BSUID scheme
 
-v26.1.19 (2026-03-31)
--------------------------
+## v26.1.19 (2026-03-31)
  * Fix goreleaser
 
-v26.1.18 (2026-03-31)
--------------------------
+## v26.1.18 (2026-03-31)
  * Remove channel log policy feature so all channel logs are always persisted
  * Add new_urn support to incoming messages for mailroom msg_received task
  * Bump valkey from 8.0 to 8.1 in CI
@@ -466,26 +375,21 @@ v26.1.18 (2026-03-31)
  * Bump github.com/buger/jsonparser from 1.1.1 to 1.1.2
  * Update from Go 1.25 to 1.26
 
-v26.1.17 (2026-03-23)
--------------------------
+## v26.1.17 (2026-03-23)
  * Remove support for Facebook referral URNs, no longer used
 
-v26.1.16 (2026-03-11)
--------------------------
+## v26.1.16 (2026-03-11)
  * Make whatsapp legacy handler a noop
 
-v26.1.15 (2026-03-10)
--------------------------
+## v26.1.15 (2026-03-10)
  * Defer to mailroom to set URN affinity
 
-v26.1.14 (2026-03-04)
--------------------------
+## v26.1.14 (2026-03-04)
  * Merge pull request #975 from nyaruka/allow-AT-config-send-url
  * Allow using configured URL for AT channels
  * Dev reorg
 
-v26.1.13 (2026-02-19)
--------------------------
+## v26.1.13 (2026-02-19)
  * Merge pull request #974 from nyaruka/adjust-JS-status-handler
  * Fix JS encoding to use UTF16 encoder
  * Apply suggestions from code review
@@ -494,1367 +398,1061 @@ v26.1.13 (2026-02-19)
  * Add CLAUDE.md
  * Tweak devcontainer configuration
 
-v26.1.12 (2026-02-18)
--------------------------
+## v26.1.12 (2026-02-18)
  * Add support for sending unicode text for JS channel as hex-content parameter
 
-v26.1.11 (2026-02-12)
--------------------------
+## v26.1.11 (2026-02-12)
  * Remove log for timestamp from meta FBA and IG
 
-v26.1.10 (2026-02-11)
--------------------------
+## v26.1.10 (2026-02-11)
  * Support location request quick replies for Viber and LINE
  * Update phonenumbers
  * Make processing incoming Whatsapp messages more dry
 
-v26.1.9 (2026-02-04)
--------------------------
+## v26.1.9 (2026-02-04)
  * Make telegram location handling same as whatsapp
 
-v26.1.8 (2026-02-04)
--------------------------
+## v26.1.8 (2026-02-04)
  * Fix to always set text for request location keyboard button
 
-v26.1.7 (2026-02-04)
--------------------------
+## v26.1.7 (2026-02-04)
  * Support sending location requests for WhatsApp and Telegram channels
 
-v26.1.6 (2026-02-04)
--------------------------
+## v26.1.6 (2026-02-04)
  * Add type to quick replies
  * Ignore group message for whatsapp channels
 
-v26.1.5 (2026-01-20)
--------------------------
+## v26.1.5 (2026-01-20)
  * Resolve by external_identifier for status updates
 
-v26.1.4 (2026-01-13)
--------------------------
+## v26.1.4 (2026-01-13)
  * Remove ChannelEvent.created_on field
 
-v26.1.3 (2026-01-13)
--------------------------
+## v26.1.3 (2026-01-13)
  * Support updating the external_identifier field for outgoing messages and support for deleting by that field
 
-v26.1.2 (2026-01-12)
--------------------------
+## v26.1.2 (2026-01-12)
  * Start writing external identifier field for incoming messages
 
-v26.1.1 (2026-01-08)
--------------------------
+## v26.1.1 (2026-01-08)
  * Update phonenumbers dependency
  * Add warning for incoming messages unique constraint violation
 
-v26.1.0 (2026-01-07)
--------------------------
+## v26.1.0 (2026-01-07)
  * Ignore 'null' external IDs on hormuud channels
  * Test against valkey 8 and postgresql 17
 
-v26.0.1 (2026-01-05)
--------------------------
+## v26.0.1 (2026-01-05)
  * Update dependencies
  * Update to a recent FB graph API version
 
-v26.0.0 (2026-01-05)
--------------------------
+## v26.0.0 (2026-01-05)
  * Add devcontainer configuration
 
-v10.3.35 (2025-12-08)
--------------------------
+## v10.3.35 (2025-12-08)
  * Switch to localstack for tests and CI
  * Remove ID from incoming messages and events
 
-v10.3.34 (2025-12-02)
--------------------------
+## v10.3.34 (2025-12-02)
  * Queue event handling tasks with the event UUID
 
-v10.3.33 (2025-12-02)
--------------------------
+## v10.3.33 (2025-12-02)
  * Switch to using msg UUID for fetch attachment requests
 
-v10.3.32 (2025-11-26)
--------------------------
+## v10.3.32 (2025-11-26)
  * Fix variable shadowing
  * Adjust TRN sending handler
 
-v10.3.31 (2025-11-20)
--------------------------
+## v10.3.31 (2025-11-20)
  * Add back support to save TRN msg external ID
 
-v10.3.30 (2025-11-19)
--------------------------
+## v10.3.30 (2025-11-19)
  * Do not write external ID for TRN
  * Adjust FCM channel with old integration to not log issue with config
 
-v10.3.29 (2025-11-17)
--------------------------
+## v10.3.29 (2025-11-17)
  * Update to latest gocommon that simplifies DynamoDB usage
 
-v10.3.28 (2025-11-14)
--------------------------
+## v10.3.28 (2025-11-14)
  * Tweak format of status tags
 
-v10.3.27 (2025-11-13)
--------------------------
+## v10.3.27 (2025-11-13)
  * Add support for de-duping history items
 
-v10.3.26 (2025-11-13)
--------------------------
+## v10.3.26 (2025-11-13)
  * Write single status tag for status changes
  * Remove RR channel type
 
-v10.3.25 (2025-11-11)
--------------------------
+## v10.3.25 (2025-11-11)
  * Stop writing message status tags.. now we're leaning toward writing these as real events
 
-v10.3.24 (2025-11-10)
--------------------------
+## v10.3.24 (2025-11-10)
  * Start writing msg event status tags to DynamoDB
  * Remove msg id on outgoing messages completely
  * Remove support for server API keys for FCM channels
  * Add TRN channel type
 
-v10.3.23 (2025-11-06)
--------------------------
+## v10.3.23 (2025-11-06)
  * Remove DS handler
  * Infobip updated for SMS v3
 
-v10.3.22 (2025-10-27)
--------------------------
+## v10.3.22 (2025-10-27)
  * Remove support for status updates using message ID
  * Fix twiml channel status updates via explicit UUID
 
-v10.3.21 (2025-10-27)
--------------------------
+## v10.3.21 (2025-10-27)
  * Update deps
  * Use msg UUID for status callback for more channel types
 
-v10.3.20 (2025-10-21)
--------------------------
+## v10.3.20 (2025-10-21)
  * Allow message status updates with no message id
  * Fix error messages from channel handlers
 
-v10.3.19 (2025-10-21)
--------------------------
+## v10.3.19 (2025-10-21)
  * Re-organize creation of incoming messages
  * Support status callback with msg UUID for KN and CHP channels
 
-v10.3.18 (2025-10-20)
--------------------------
+## v10.3.18 (2025-10-20)
  * Tweak valkey usage during message popping
  * Fix validation of msg payloads with templates
 
-v10.3.17 (2025-10-20)
--------------------------
+## v10.3.17 (2025-10-20)
  * Add validation of msg out payloads
  * Read contact from contact field on message send payloads
 
-v10.3.16 (2025-10-14)
--------------------------
+## v10.3.16 (2025-10-14)
  * Rework message status updates to be by message UUID
 
-v10.3.15 (2025-10-13)
--------------------------
+## v10.3.15 (2025-10-13)
  * Revert switch to pgx
 
-v10.3.14 (2025-10-13)
--------------------------
+## v10.3.14 (2025-10-13)
  * Switch from lib/pq to jackc/pgx/stdlib
 
-v10.3.13 (2025-10-10)
--------------------------
+## v10.3.13 (2025-10-10)
  * Update dependencies including latest phonenumbers
  * Switch to vinovest/sqlx fork of jmoiron/sqlx
 
-v10.3.12 (2025-10-06)
--------------------------
+## v10.3.12 (2025-10-06)
  * Use msg UUID in delete task payloads
 
-v10.3.11 (2025-10-03)
--------------------------
+## v10.3.11 (2025-10-03)
  * Update dependencies
  * Bump to go 1.25
  * Rework URN DB functions to take context
 
-v10.3.10 (2025-08-29)
--------------------------
+## v10.3.10 (2025-08-29)
  * Fix panic in telegram handler
  * More refactoring of things out of rapidpro package
 
-v10.3.9 (2025-08-14)
--------------------------
+## v10.3.9 (2025-08-14)
  * Allow metrics reporting to be off, basic or advanced
 
-v10.3.8 (2025-08-12)
--------------------------
+## v10.3.8 (2025-08-12)
  * Update deps
  * Expose fetch attachment endpoint with new /ci/ prefix for internal endpoints
 
-v10.3.7 (2025-08-05)
--------------------------
+## v10.3.7 (2025-08-05)
  * Twewak metric name
 
-v10.3.6 (2025-08-05)
--------------------------
+## v10.3.6 (2025-08-05)
  * Update to latest gocommon
  * Add runtime package and move config and services into it
 
-v10.3.5 (2025-08-04)
--------------------------
+## v10.3.5 (2025-08-04)
  * Update to latest gocommon
 
-v10.3.4 (2025-08-04)
--------------------------
+## v10.3.4 (2025-08-04)
  * Cleanup startup and shutdown logging
  * Add same check for improper shutdowns as mailroom
  * Update to latest gocommon
 
-v10.3.3 (2025-07-31)
--------------------------
+## v10.3.3 (2025-07-31)
  * Update to latest vkutil that adds ids to tasks
 
-v10.3.2 (2025-07-30)
--------------------------
+## v10.3.2 (2025-07-30)
  * Add new DynamoDB writer and spool for channel logs
  * Handle deactivated users on Telgram as stopped contacts
 
-v10.3.1 (2025-07-28)
--------------------------
+## v10.3.1 (2025-07-28)
  * Update deps including phonenumbers
  * Queue to new mailroom realtime queue
 
-v10.3.0 (2025-07-08)
--------------------------
+## v10.3.0 (2025-07-08)
  * Update to latest vkutil
 
-v10.2.0 (2025-07-01)
--------------------------
+## v10.2.0 (2025-07-01)
  * Update dependencies
 
-v10.1.35 (2025-06-20)
--------------------------
+## v10.1.35 (2025-06-20)
  * Update deps (includes go-chi security fix)
 
-v10.1.34 (2025-06-18)
--------------------------
+## v10.1.34 (2025-06-18)
  * Rename valkey cloudwatch metrics
 
-v10.1.33 (2025-06-17)
--------------------------
+## v10.1.33 (2025-06-17)
  * Update deps
  * Remove temporary logging
 
-v10.1.32 (2025-06-16)
--------------------------
+## v10.1.32 (2025-06-16)
  * Temporary logging
 
-v10.1.31 (2025-06-13)
--------------------------
+## v10.1.31 (2025-06-13)
  * Update name of valkey config var
 
-v10.1.30 (2025-06-12)
--------------------------
+## v10.1.30 (2025-06-12)
  * Clearer log messages and errors relating to writing and queuing messages
 
-v10.1.29 (2025-06-12)
--------------------------
+## v10.1.29 (2025-06-12)
  * Update to latest redisx which is now vkutil
  * Pass context to the task queueing
 
-v10.1.28 (2025-06-11)
--------------------------
+## v10.1.28 (2025-06-11)
  * Give OnSendComplete more logging and time
 
-v10.1.27 (2025-06-10)
--------------------------
+## v10.1.27 (2025-06-10)
  * Update to latest redisx which requires use of context
 
-v10.1.26 (2025-06-03)
--------------------------
+## v10.1.26 (2025-06-03)
  * Stop writing channel logs to database and add is_error data field
  * Update to latest gocommon
 
-v10.1.25 (2025-05-27)
--------------------------
+## v10.1.25 (2025-05-27)
  * Tweak clog dynamo format.. again
 
-v10.1.24 (2025-05-27)
--------------------------
+## v10.1.24 (2025-05-27)
  * Tweak encoding of http logs in channel logs written to DynamoDB
 
-v10.1.23 (2025-05-27)
--------------------------
+## v10.1.23 (2025-05-27)
  * Start writing channel logs to new DynamoDB table
 
-v10.1.22 (2025-05-15)
--------------------------
+## v10.1.22 (2025-05-15)
  * Remove Facebook topics which are no longer a thing
  * Add quick replies support for chip
 
-v10.1.21 (2025-05-07)
--------------------------
+## v10.1.21 (2025-05-07)
  * Fix MessageBird handler for shortcode messages
 
-v10.1.20 (2025-05-05)
--------------------------
+## v10.1.20 (2025-05-05)
  * Switch to v7 UUIDs for messages
  * Update dependencies
 
-v10.1.19 (2025-04-08)
--------------------------
+## v10.1.19 (2025-04-08)
  * Rename config for BW messaging application ID
  * Update to latest gocommon
 
-v10.1.18 (2025-03-21)
--------------------------
+## v10.1.18 (2025-03-21)
  * Update dependencies including phonenumbers
  * Fix panic from legacy whatsapp handler with bad interactive message payload
 
-v10.1.17 (2025-03-18)
--------------------------
+## v10.1.17 (2025-03-18)
  * Tweak handling of panics
  * Use constant time comparison to check more secret strings
 
-v10.1.16 (2025-03-18)
--------------------------
+## v10.1.16 (2025-03-18)
  * Use constant time comparison to check chip secret
  * Add support for config to shorten URL for TMS
 
-v10.1.15 (2025-03-05)
--------------------------
+## v10.1.15 (2025-03-05)
  * Support sending quick reply extra as list option description for Whatsapp
  * Use go 1.24
 
-v10.1.14 (2025-02-26)
--------------------------
+## v10.1.14 (2025-02-26)
  * Updated handler for MessageBird
 
-v10.1.13 (2025-02-24)
--------------------------
+## v10.1.13 (2025-02-24)
  * Lookup system user via email instead of username
 
-v10.1.12 (2025-02-21)
--------------------------
+## v10.1.12 (2025-02-21)
  * Stop writing contactfire.extra
 
-v10.1.11 (2025-02-20)
--------------------------
+## v10.1.11 (2025-02-20)
  * Model quick replies as structs instead of strings
 
-v10.1.10 (2025-02-17)
--------------------------
+## v10.1.10 (2025-02-17)
  * Use system user for new contacts
 
-v10.1.9 (2025-02-14)
--------------------------
+## v10.1.9 (2025-02-14)
  * Add channel event UUID and start writing that
 
-v10.1.8 (2025-02-05)
--------------------------
+## v10.1.8 (2025-02-05)
  * Use new ctask names
 
-v10.1.7 (2025-02-04)
--------------------------
+## v10.1.7 (2025-02-04)
  * Simplify contact fire inserted for timeouts
 
-v10.1.6 (2025-02-03)
--------------------------
+## v10.1.6 (2025-02-03)
  * Start using new session field on queued messages
 
-v10.1.5 (2025-01-28)
--------------------------
+## v10.1.5 (2025-01-28)
  * Insert contact fire for session timeout
 
-v10.1.4 (2025-01-28)
--------------------------
+## v10.1.4 (2025-01-28)
  * Fix initialization of sentry
 
-v10.1.3 (2025-01-27)
--------------------------
+## v10.1.3 (2025-01-27)
  * Use session_modified_on instead of session_wait_started_on to gate timeout updates
 
-v10.1.2 (2025-01-14)
--------------------------
+## v10.1.2 (2025-01-14)
  * Rename ErrResponseUnexpectedUnlogged to ErrResponseContent
  * Do not log response check error after 200 status
 
-v10.1.1 (2025-01-09)
--------------------------
+## v10.1.1 (2025-01-09)
  * Do not log EX MT response check error
 
-v10.1.0 (2025-01-08)
--------------------------
+## v10.1.0 (2025-01-08)
  * Udpate deps including phonenumbers
 
-v10.0.0 (2025-01-07)
--------------------------
+## v10.0.0 (2025-01-07)
  * Update README.md
 
-v9.3.44 (2024-12-19)
--------------------------
+## v9.3.44 (2024-12-19)
  * Remove previously added aggregated versions of channel type specific metrics because apparently we don't need them
 
-v9.3.43 (2024-12-19)
--------------------------
+## v9.3.43 (2024-12-19)
  * Send metrics without channel type as well
 
-v9.3.42 (2024-12-18)
--------------------------
+## v9.3.42 (2024-12-18)
  * Fix integer rounding in duration metrics
 
-v9.3.41 (2024-12-18)
--------------------------
+## v9.3.41 (2024-12-18)
  * Tweak metric reporter so all errors are logged
 
-v9.3.40 (2024-12-18)
--------------------------
+## v9.3.40 (2024-12-18)
  * Fix duration metrics
 
-v9.3.39 (2024-12-18)
--------------------------
+## v9.3.39 (2024-12-18)
  * Make backend responsible for reporting its own metrics
 
-v9.3.38 (2024-12-18)
--------------------------
+## v9.3.38 (2024-12-18)
  * Refactor metrics so that everything is sent from Heartbeat in the backend
  * Send metrics to cloudwatch
 
-v9.3.37 (2024-12-16)
--------------------------
+## v9.3.37 (2024-12-16)
  * Revert "Fail messages when we hit contact pair limit"
 
-v9.3.36 (2024-12-16)
--------------------------
+## v9.3.36 (2024-12-16)
  * Merge pull request #812 from nyaruka/fail-contact-pair-limit
  * Fail messages when we hit contact pair limit
 
-v9.3.35 (2024-12-12)
--------------------------
+## v9.3.35 (2024-12-12)
  * Simplify JPE and JFIF extensions to be saved as JPG
  * Update Facebook API version to v18.0
 
-v9.3.34 (2024-12-06)
--------------------------
+## v9.3.34 (2024-12-06)
  * Fix WA template document  name
 
-v9.3.33 (2024-12-04)
--------------------------
+## v9.3.33 (2024-12-04)
  * Add support for document send with link when attachment type is document
  * Remove TWT channel type
 
-v9.3.32 (2024-11-25)
--------------------------
+## v9.3.32 (2024-11-25)
  * Make all WAC Throttling Errors return courier.ErrConnectionThrottled
  * TST handler should error sends with msg text \error
 
-v9.3.31 (2024-11-18)
--------------------------
+## v9.3.31 (2024-11-18)
  * Add dummy handler type for load testing
 
-v9.3.30 (2024-11-15)
--------------------------
+## v9.3.30 (2024-11-15)
  * Update deps (inc latest phonenumbers)
 
-v9.3.29 (2024-11-12)
--------------------------
+## v9.3.29 (2024-11-12)
  * Include redis pool active/idle counts in heartbeat stats
  * Bump redis pool size to 64
 
-v9.3.28 (2024-11-11)
--------------------------
+## v9.3.28 (2024-11-11)
  * More closing of redis connections and logging of errors
 
-v9.3.27 (2024-11-06)
--------------------------
+## v9.3.27 (2024-11-06)
  * Agressively close redis connections
 
-v9.3.26 (2024-11-05)
--------------------------
+## v9.3.26 (2024-11-05)
  * Use redisx.NewIntervalSet to track sent message ids
  * Mark as sent in redis any message send that does result in status errored
  * Remove request for redis connection that wasn't being used in D360 handler
 
-v9.3.25 (2024-11-04)
--------------------------
+## v9.3.25 (2024-11-04)
  * Tweak healthcheck for redis to timeout after a second
  * Don't set next attempt for incoming messages
  * Log error when marking queue job for outgoing message complete fails
 
-v9.3.24 (2024-10-21)
--------------------------
+## v9.3.24 (2024-10-21)
  * Ignore reels as attachments on FB channels
 
-v9.3.23 (2024-10-16)
--------------------------
+## v9.3.23 (2024-10-16)
  * Update deps including phonenumbers to get latest metadata
 
-v9.3.22 (2024-10-09)
--------------------------
+## v9.3.22 (2024-10-09)
  * Ignore reels as attachments on FBA/IG channels
 
-v9.3.21 (2024-10-09)
--------------------------
+## v9.3.21 (2024-10-09)
  * Better error logging for attachment requests
 
-v9.3.20 (2024-09-20)
--------------------------
+## v9.3.20 (2024-09-20)
  * Ignore */* as an attachment content type
 
-v9.3.19 (2024-09-18)
--------------------------
+## v9.3.19 (2024-09-18)
  * Stop writing channel logs to S3
 
-v9.3.18 (2024-09-12)
--------------------------
+## v9.3.18 (2024-09-12)
  * Use 'tasks:handler' queue name instead of 'handler'
 
-v9.3.17 (2024-09-12)
--------------------------
+## v9.3.17 (2024-09-12)
  * Write all channel logs to DynamoDB
 
-v9.3.16 (2024-09-11)
--------------------------
+## v9.3.16 (2024-09-11)
  * Use ordered v7 UUIDs for channel logs
 
-v9.3.15 (2024-09-11)
--------------------------
+## v9.3.15 (2024-09-11)
  * Add dynamodb support to backend
 
-v9.3.14 (2024-09-10)
--------------------------
+## v9.3.14 (2024-09-10)
  * Update TS channel type to use POST requests
 
-v9.3.13 (2024-09-09)
--------------------------
+## v9.3.13 (2024-09-09)
  * Never save attachments with empty content type
 
-v9.3.12 (2024-09-09)
--------------------------
+## v9.3.12 (2024-09-09)
  * Update to go 1.23
  * Tidy up getting FCM credentials
 
-v9.3.11 (2024-09-04)
--------------------------
+## v9.3.11 (2024-09-04)
  * Use quick replies dumps of the options list and pass that as a string to FCM data
 
-v9.3.10 (2024-08-29)
--------------------------
+## v9.3.10 (2024-08-29)
  * No quick replies support for new FCM
  * Cleanup unused variables
 
-v9.3.9 (2024-08-28)
--------------------------
+## v9.3.9 (2024-08-28)
  * Fix FCM message struct and token source initialization
 
-v9.3.8 (2024-08-26)
--------------------------
+## v9.3.8 (2024-08-26)
  * Merge pull request #773 from nyaruka/fix-FCM-fetch-token
  * Adjust converting auth config to JSON
 
-v9.3.7 (2024-08-26)
--------------------------
+## v9.3.7 (2024-08-26)
  * Merge pull request #772 from nyaruka/fix-FCM-fetch-token
  * Adjust FCM JSON config for getting token
 
-v9.3.6 (2024-08-22)
--------------------------
+## v9.3.6 (2024-08-22)
  * Fix context used during backend startup
 
-v9.3.5 (2024-08-22)
--------------------------
+## v9.3.5 (2024-08-22)
  * Update to aws-sdk-go-v2
 
-v9.3.4 (2024-08-07)
--------------------------
+## v9.3.4 (2024-08-07)
  * Fix FCM authentication config retrieve to expect map[string]string
  * Remove old code no longer used
 
-v9.3.3 (2024-08-02)
--------------------------
+## v9.3.3 (2024-08-02)
  * Update to latest gocommon
 
-v9.3.2 (2024-07-29)
--------------------------
+## v9.3.2 (2024-07-29)
  * Replace storage usage for logs
 
-v9.3.1 (2024-07-29)
--------------------------
+## v9.3.1 (2024-07-29)
  * Switch to s3x for attachments to get correct urls when using minio
  * Update FCM handler to use google auth to generate bearer tokens
 
-v9.3.0 (2024-07-25)
--------------------------
+## v9.3.0 (2024-07-25)
  * Support minio for local dev enviroment and CI
  * Update AWS/S3 configs
 
-v9.2.1 (2024-07-23)
--------------------------
+## v9.2.1 (2024-07-23)
  * Fix unnecessarily writing send channel logs to the database
 
-v9.2.0 (2024-07-17)
--------------------------
+## v9.2.0 (2024-07-17)
  * Update README
 
-v9.1.53 (2024-07-15)
--------------------------
+## v9.1.53 (2024-07-15)
  * Update deps
 
-v9.1.52 (2024-07-10)
--------------------------
+## v9.1.52 (2024-07-10)
  * Start writing msgs_msg.is_android
 
-v9.1.51 (2024-07-01)
--------------------------
+## v9.1.51 (2024-07-01)
  * Update deps
 
-v9.1.50 (2024-06-20)
--------------------------
+## v9.1.50 (2024-06-20)
  * Update chi library
 
-v9.1.49 (2024-06-17)
--------------------------
+## v9.1.49 (2024-06-17)
  * Adjust WA template to be send if present even when we have attachments
 
-v9.1.48 (2024-06-14)
--------------------------
+## v9.1.48 (2024-06-14)
  * Fix legacy WA components parameters
 
-v9.1.47 (2024-06-10)
--------------------------
+## v9.1.47 (2024-06-10)
  * Support template component types header/* and body/*
 
-v9.1.46 (2024-06-07)
--------------------------
+## v9.1.46 (2024-06-07)
  * Make sure TWA channels send the set messaging service SID when sending messages
 
-v9.1.45 (2024-06-06)
--------------------------
+## v9.1.45 (2024-06-06)
  * Adjust attachment variables for TWA templates
 
-v9.1.44 (2024-06-06)
--------------------------
+## v9.1.44 (2024-06-06)
  * Use split attachments for templates media attachment for consistency with messages attachments
 
-v9.1.43 (2024-06-04)
--------------------------
+## v9.1.43 (2024-06-04)
  * Update slog-multi
 
-v9.1.42 (2024-06-03)
--------------------------
+## v9.1.42 (2024-06-03)
  * Update deps
  * Replace incorrect usages of ErrFailedWithReason
  * Add support for sending Twilio content templates
  * Use std library errors everywhere
 
-v9.1.41 (2024-05-29)
--------------------------
+## v9.1.41 (2024-05-29)
  * Add attachment support for chip
 
-v9.1.40 (2024-05-29)
--------------------------
+## v9.1.40 (2024-05-29)
  * Set content-type header in chip handler
 
-v9.1.39 (2024-05-29)
--------------------------
+## v9.1.39 (2024-05-29)
  * Fix hoormund bug so we don't ignore errors from fetching tokens
  * Add test to make sure URN are normalized for EX channel with non phone schemes
  * Allow sender ID tel urns on twilio channels
 
-v9.1.38 (2024-05-09)
--------------------------
+## v9.1.38 (2024-05-09)
  * Fix ext urns creation so we trigger normalization
 
-v9.1.37 (2024-05-09)
--------------------------
+## v9.1.37 (2024-05-09)
  * Update to latest gocommon
 
-v9.1.36 (2024-05-09)
--------------------------
+## v9.1.36 (2024-05-09)
  * Update to latest gocommon
 
-v9.1.35 (2024-05-09)
--------------------------
+## v9.1.35 (2024-05-09)
  * Fix HM token expiration timeout
 
-v9.1.34 (2024-05-08)
--------------------------
+## v9.1.34 (2024-05-08)
  * Update gocommon
 
-v9.1.33 (2024-05-08)
--------------------------
+## v9.1.33 (2024-05-08)
  * Update to latest gocommon and trust urns.ParsePhone for phone number parsing
 
-v9.1.32 (2024-05-07)
--------------------------
+## v9.1.32 (2024-05-07)
  * Update to new gocommon with urns changes
 
-v9.1.31 (2024-04-29)
--------------------------
+## v9.1.31 (2024-04-29)
  * Add support for read msg status
 
-v9.1.30 (2024-04-26)
--------------------------
+## v9.1.30 (2024-04-26)
  * Use filetype package to check file content for application/octet-stream content type header
 
-v9.1.29 (2024-04-26)
--------------------------
+## v9.1.29 (2024-04-26)
  * Prioritize the content-type header for attachments response for mimetype detection
 
-v9.1.28 (2024-04-22)
--------------------------
+## v9.1.28 (2024-04-22)
  * Support retrying failed messages for rate limit on Twilio WhatsApp
 
-v9.1.27 (2024-04-22)
--------------------------
+## v9.1.27 (2024-04-22)
  * Update deps
 
-v9.1.26 (2024-04-17)
--------------------------
+## v9.1.26 (2024-04-17)
  * Use variables in templating instead of params
 
-v9.1.25 (2024-04-17)
--------------------------
+## v9.1.25 (2024-04-17)
  * Read templating from new msg field instead of metadata
  * Update test data schema inline with recent RP changes
 
-v9.1.24 (2024-04-08)
--------------------------
+## v9.1.24 (2024-04-08)
  * Stop writing Msg.queued_on
 
-v9.1.23 (2024-04-03)
--------------------------
+## v9.1.23 (2024-04-03)
  * Adjust legacy WA channel handler to use templating components
 
-v9.1.22 (2024-04-02)
--------------------------
+## v9.1.22 (2024-04-02)
  * Start writing status field on channel events as P
 
-v9.1.21 (2024-03-28)
--------------------------
+## v9.1.21 (2024-03-28)
  * Queue all channel events to mailroom as a single task type
 
-v9.1.20 (2024-03-28)
--------------------------
+## v9.1.20 (2024-03-28)
  * Update payloads for tasks queued to mailroom
 
-v9.1.19 (2024-03-20)
--------------------------
+## v9.1.19 (2024-03-20)
  * Use component name to find button index
 
-v9.1.18 (2024-03-20)
--------------------------
+## v9.1.18 (2024-03-20)
  * Update to use templating components with type
 
-v9.1.17 (2024-03-15)
--------------------------
+## v9.1.17 (2024-03-15)
  * Fix WA templating generation and add tests
  * Fix max length for D3C
 
-v9.1.16 (2024-03-15)
--------------------------
+## v9.1.16 (2024-03-15)
  * Make parameter with type url to be sent as url buttons in WA handler
 
-v9.1.15 (2024-03-14)
--------------------------
+## v9.1.15 (2024-03-14)
  * Update deps
 
-v9.1.14 (2024-03-12)
--------------------------
+## v9.1.14 (2024-03-12)
  * Remove S3 region is media hostname before matching the media domain
  * Unresolveable media should create channel log error
 
-v9.1.13 (2024-03-07)
--------------------------
+## v9.1.13 (2024-03-07)
  * Return error with line attachments issues
  * Update to chi v5 and go 1.22
 
-v9.1.12 (2024-02-29)
--------------------------
+## v9.1.12 (2024-02-29)
  * Replace use of deprecated test fields
  * Rework WA handler to new send, remove channel legacy handler
 
-v9.1.11 (2024-02-28)
--------------------------
+## v9.1.11 (2024-02-28)
  * Rework more send methods
 
-v9.1.10 (2024-02-26)
--------------------------
+## v9.1.10 (2024-02-26)
  * Rework more handlers send methods
 
-v9.1.9 (2024-02-23)
--------------------------
+## v9.1.9 (2024-02-23)
  * Rework more send methods
 
-v9.1.8 (2024-02-21)
--------------------------
+## v9.1.8 (2024-02-21)
  * Rework more handler sends
 
-v9.1.7 (2024-02-20)
--------------------------
+## v9.1.7 (2024-02-20)
  * Rework more handlers to new send method and improve tests
 
-v9.1.6 (2024-02-14)
--------------------------
+## v9.1.6 (2024-02-14)
  * Rework Telgram, Yo and Zenvia handlers to new send method
 
-v9.1.5 (2024-02-05)
--------------------------
+## v9.1.5 (2024-02-05)
  * Use markdown formatting for Telegram messages
  * Update temba-chat handler to support multiple events per request and channel secrets
 
-v9.1.4 (2024-02-05)
--------------------------
+## v9.1.4 (2024-02-05)
  * Support MarkdownV2 text formatting styles
  * Tweak experimental temba-chat handler
 
-v9.1.3 (2024-01-25)
--------------------------
+## v9.1.3 (2024-01-25)
  * Remove mailgun handler and revert change from user ids to user ref objects
  * Simplify channel loading and caching
 
-v9.1.2 (2024-01-23)
--------------------------
+## v9.1.2 (2024-01-23)
  * Add optional user email and name to queued messages
  * Add mailgun handler
 
-v9.1.1 (2024-01-17)
--------------------------
+## v9.1.1 (2024-01-17)
  * Standardize startup code with other services
  * Drop support for variables field in templating metadata
  * Update to latest ezconf which has builtin support for slog.Level
  * Use redisx.NewPool
 
-v9.1.0 (2024-01-15)
--------------------------
+## v9.1.0 (2024-01-15)
  * Add support for chat_started event on tembachat handler
  * Use latest gocommon
  * Add support for templating params instead of variables
 
-v9.0.1 (2024-01-08)
--------------------------
+## v9.0.1 (2024-01-08)
  * Fix sending bandwidth MMS without text
 
-v9.0.0 (2024-01-05)
--------------------------
+## v9.0.0 (2024-01-05)
  * Bump golang.org/x/crypto from 0.16.0 to 0.17.0
 
-v8.3.32 (2023-12-12)
--------------------------
+## v8.3.32 (2023-12-12)
  * Update deps
 
-v8.3.31 (2023-12-06)
--------------------------
+## v8.3.31 (2023-12-06)
  * Use language value in templating metadata instead of trying to match
 
-v8.3.30 (2023-12-04)
--------------------------
+## v8.3.30 (2023-12-04)
  * Change channel events so that created_on is db time and is included in queued task payload
 
-v8.3.29 (2023-12-04)
--------------------------
+## v8.3.29 (2023-12-04)
  * Fix FBA timestamps that sometimes are in seconds instead of milliseconds
  * Remove support for HSM template support
  * Update to latest gocommon and phonenumbers
 
-v8.3.28 (2023-11-23)
--------------------------
+## v8.3.28 (2023-11-23)
  * Logging tweak
 
-v8.3.27 (2023-10-31)
--------------------------
+## v8.3.27 (2023-10-31)
  * Prevent all courier HTTP requests from accessing local networks
 
-v8.3.26 (2023-10-30)
--------------------------
+## v8.3.26 (2023-10-30)
  * Update to latest gocommon
 
-v8.3.25 (2023-10-25)
--------------------------
+## v8.3.25 (2023-10-25)
  * Update docker image to go 1.21
  * Remove use of logrus and use slog with sentry
  * Bump golang.org/x/net from 0.14.0 to 0.17.0
 
-v8.3.24 (2023-10-10)
--------------------------
+## v8.3.24 (2023-10-10)
  * Fix handling IG like hearts
  * Ignore attachments of type fallback on FBA channels
  * More logrus replacement to use slog
 
-v8.3.23 (2023-10-04)
--------------------------
+## v8.3.23 (2023-10-04)
  * Switch channelevent.extra to always be strings
  * Add optin_id to channels_channelevent
  * Allow outgoing tests to check multiple requests
 
-v8.3.22 (2023-09-27)
--------------------------
+## v8.3.22 (2023-09-27)
  * Use Facebook API v17.0
 
-v8.3.21 (2023-09-25)
--------------------------
+## v8.3.21 (2023-09-25)
  * Support sending facebook message with opt-in auth token
 
-v8.3.20 (2023-09-21)
--------------------------
+## v8.3.20 (2023-09-21)
  * Switch to using optin ids instead of uuids
 
-v8.3.19 (2023-09-20)
--------------------------
+## v8.3.19 (2023-09-20)
  * Fix queueing of optin/optout events to mailroom
  * Implement sending opt-in requests for FBA channels
  * Simplfy handlers splitting up messages
 
-v8.3.18 (2023-09-18)
--------------------------
+## v8.3.18 (2023-09-18)
  * Add separate MsgIn and MsgOut interface types
  * Use functional options pattern to create base handlers
  * Improve testing of status updates from handlers and allow testing of multiple status updates per request
  * Split up Meta notification payload into whatsapp and messenger specific parts
 
-v8.3.17 (2023-09-14)
--------------------------
+## v8.3.17 (2023-09-14)
  * Fix stop contact event task names
  * Add support for FB notificaiton messages optin and optout events
 
-v8.3.16 (2023-09-13)
--------------------------
+## v8.3.16 (2023-09-13)
  * Simplify interfaces that handlers have access to
  * Allow handlers to create arbitrary auth tokens with messages and channel events
  * Rename legacy FB and WA handlers
  * Refactor whatsapp handlers to be more DRY
 
-v8.3.15 (2023-09-12)
--------------------------
+## v8.3.15 (2023-09-12)
  * Stop reading from ContactURN.auth and remove from model
 
-v8.3.14 (2023-09-11)
--------------------------
+## v8.3.14 (2023-09-11)
  * Move whatsapp language matching into own util package and use i18n.BCP47Matcher
  * Update to latest gocommon and use i18n.Locale
  * Read from ContactURN.auth_tokens instead of .auth
 
-v8.3.13 (2023-09-06)
--------------------------
+## v8.3.13 (2023-09-06)
  * Start writing ContactURN.auth_tokens
  * Update to latest null library and use Map[string] for channel event extra
 
-v8.3.12 (2023-09-06)
--------------------------
+## v8.3.12 (2023-09-06)
  * Do more debug logging and less info logging
 
-v8.3.11 (2023-09-06)
--------------------------
+## v8.3.11 (2023-09-06)
  * Add logging of requests with no associated channel
  * No need to try making DB queries when all msg IDs got resolved from redis
 
-v8.3.10 (2023-09-05)
--------------------------
+## v8.3.10 (2023-09-05)
  * Don't rely on knowing msg id to determine if a log is attached
  * Rework handler tests so that test cases must explicitly say if they don't generate a channel log
 
-v8.3.9 (2023-09-05)
--------------------------
+## v8.3.9 (2023-09-05)
  * Try to resolve sent external ids from redis
  * For received messages without external id, de-dupe by hash of text+attachments instead of just text
 
-v8.3.8 (2023-08-31)
--------------------------
+## v8.3.8 (2023-08-31)
  * Update to latest redisx which fixes accuracy for sub-minute interval hashes
  * Update to new batchers in gocommon which are more efficient
 
-v8.3.7 (2023-08-30)
--------------------------
+## v8.3.7 (2023-08-30)
  * Sender deletion handled by mailroom task
 
-v8.3.6 (2023-08-30)
--------------------------
+## v8.3.6 (2023-08-30)
  * Rework writing msg statuses to always use id resolving
 
-v8.3.5 (2023-08-30)
--------------------------
+## v8.3.5 (2023-08-30)
  * Rework writing status updates so that updates by external id also use the batcher
 
-v8.3.4 (2023-08-24)
--------------------------
+## v8.3.4 (2023-08-24)
  * Update channel type to save external ID for MO messages if we can, so we can dedupe by that
  * Test with PostgreSQL 15
 
-v8.3.3 (2023-08-17)
--------------------------
+## v8.3.3 (2023-08-17)
  * Remove Legacy Twitter (TT) type registration
  * Remove Blackmyna, Junebug, old Zenvia channel type handlers
 
-v8.3.2 (2023-08-16)
--------------------------
+## v8.3.2 (2023-08-16)
  * Fix retrieve media files for D3C
 
-v8.3.1 (2023-08-09)
--------------------------
+## v8.3.1 (2023-08-09)
  * Revert validator dep upgrade
 
-v8.3.0 (2023-08-09)
--------------------------
+## v8.3.0 (2023-08-09)
  * Update to go 1.20
  * Update deps
  * Add Messagebird channel type
 
-v8.2.1 (2023-08-03)
--------------------------
+## v8.2.1 (2023-08-03)
  * Always save http_logs as [] rather than null
 
-v8.2.0 (2023-07-31)
--------------------------
+## v8.2.0 (2023-07-31)
  * Add docker file for dev
 
-v8.1.33 (2023-07-28)
--------------------------
+## v8.1.33 (2023-07-28)
  * Rework deduping of incoming messages to ignore message content if message has id we can use
  * Use bulk SQL operation for msg status flushing
 
-v8.1.32 (2023-07-26)
--------------------------
+## v8.1.32 (2023-07-26)
  * Fix setting of log type of channel logs and add additional types
 
-v8.1.31 (2023-07-20)
--------------------------
+## v8.1.31 (2023-07-20)
  * Update deps including gocommon which changes requirement for storage paths to start with slash
 
-v8.1.30 (2023-07-14)
--------------------------
+## v8.1.30 (2023-07-14)
  * Adjust to make sure we set the name of the document for the WAC files attached
 
-v8.1.29 (2023-07-12)
--------------------------
+## v8.1.29 (2023-07-12)
  * Add log_policy field to channel
  * Add cpAddress parameters to MTN outbound requests
 
-v8.1.28 (2023-07-10)
--------------------------
+## v8.1.28 (2023-07-10)
  * Tweak error message on media parse failure
 
-v8.1.27 (2023-07-04)
--------------------------
+## v8.1.27 (2023-07-04)
  * Add writer to write attached logs to storage instead of db
 
-v8.1.26 (2023-07-03)
--------------------------
+## v8.1.26 (2023-07-03)
  * Rework writing msg statuses to use Batcher like channel logs
 
-v8.1.25 (2023-07-03)
--------------------------
+## v8.1.25 (2023-07-03)
  * Rework log committer to use new generic Batcher type which will be easier to rework to support S3 logs as well
  * Support requesting attachments for Twilio with basic auth
 
-v8.1.24 (2023-06-28)
--------------------------
+## v8.1.24 (2023-06-28)
  * Update README
 
-v8.1.23 (2023-06-19)
--------------------------
+## v8.1.23 (2023-06-19)
  * Support Dialog360 Cloud API channels
 
-v8.1.22 (2023-06-05)
--------------------------
+## v8.1.22 (2023-06-05)
  * Stop writing ChannelLog.msg
 
-v8.1.21 (2023-05-25)
--------------------------
+## v8.1.21 (2023-05-25)
  * Use Basic auth for fetching BW media attachments
 
-v8.1.20 (2023-05-25)
--------------------------
+## v8.1.20 (2023-05-25)
  * Save received MO media for BW channels
 
-v8.1.19 (2023-05-24)
--------------------------
+## v8.1.19 (2023-05-24)
  * Use max_length from config for external channels
 
-v8.1.18 (2023-04-20)
--------------------------
+## v8.1.18 (2023-04-20)
  * Change default for FBA channels to messaging_type=UPDATE
 
-v8.1.17 (2023-04-20)
--------------------------
+## v8.1.17 (2023-04-20)
  * Use origin and contact last seen on to determine message type and tag for FBA channels
  * Use postgres and redis as services in github actions
 
-v8.1.16 (2023-04-18)
--------------------------
+## v8.1.16 (2023-04-18)
  * Update github actions versions
  * Ignore dates for hormund mo as they're not reliable or accurate
  * Remove chikka handler (company no longer exists)
 
-v8.1.15 (2023-04-17)
--------------------------
+## v8.1.15 (2023-04-17)
  * Remove JSON tags for msg fields not used in sending
 
-v8.1.14 (2023-04-17)
--------------------------
+## v8.1.14 (2023-04-17)
  * Address the expired status for MTN msgs
  * Update test database credentials for consistency with other projects
 
-v8.1.13 (2023-03-29)
--------------------------
+## v8.1.13 (2023-03-29)
  * Fetch attachments endpoint should return connection errors as unavailable attachments
 
-v8.1.12 (2023-03-24)
--------------------------
+## v8.1.12 (2023-03-24)
  * Fix MTN status report payload
 
-v8.1.11 (2023-03-22)
--------------------------
+## v8.1.11 (2023-03-22)
  * MTN status reports are sent to the MO callback URL
 
-v8.1.10 (2023-03-20)
--------------------------
+## v8.1.10 (2023-03-20)
  * Add way to customize the API host for MTN channels in channel config
  * Convert more handlers to use JSONPayload wrapper
 
-v8.1.9 (2023-03-17)
--------------------------
+## v8.1.9 (2023-03-17)
  * Fix config for MTN channel for getting token and setting expiration
  * Add generic JSON handler wrapper that takes care of decoding and validaing incoming JSON payloads
 
-v8.1.8 (2023-03-16)
--------------------------
+## v8.1.8 (2023-03-16)
  * Add support for MTN Developer Portal channel
 
-v8.1.7 (2023-03-14)
--------------------------
+## v8.1.7 (2023-03-14)
  * Remove recipient_id requirements on statuses part of payload
  * Reduce time allowed for attachment requests so that we return before server cancels us
  * Test with org and channel configs as non-null JSONB columns
 
-v8.1.6 (2023-03-08)
--------------------------
+## v8.1.6 (2023-03-08)
  * Create messages with msg_type=T
  * Bump golang.org/x/net from 0.2.0 to 0.7.0
  * Switch to gocommon/uuids for UUID types
 
-v8.1.5 (2023-02-02)
--------------------------
+## v8.1.5 (2023-02-02)
  * Read quick_replies from msg field instead of inside metadata
 
-v8.1.4 (2023-02-01)
--------------------------
+## v8.1.4 (2023-02-01)
  * Update to v2 of nyaruka/null
 
-v8.1.3 (2023-01-31)
--------------------------
+## v8.1.3 (2023-01-31)
  * Add support for localizing Menu header on facebook list messages
 
-v8.1.2 (2023-01-30)
--------------------------
+## v8.1.2 (2023-01-30)
  * Use Msg.locale with on-prem WhatsApp channels too
 
-v8.1.1 (2023-01-30)
--------------------------
+## v8.1.1 (2023-01-30)
  * Support reading msg locale and use that instead of language+country on templating
 
-v8.1.0 (2023-01-23)
--------------------------
+## v8.1.0 (2023-01-23)
  * Remove passing the parameters as null for WA template components
 
-v8.0.2 (2023-01-11)
--------------------------
+## v8.0.2 (2023-01-11)
  * Fix for BW handler not being loaded 
 
-v8.0.0 (2023-01-09)
--------------------------
+## v8.0.0 (2023-01-09)
  * Fix typos in README
 
-v7.5.66 (2023-01-09)
--------------------------
+## v7.5.66 (2023-01-09)
  * Support bandwidth channel type
 
-v7.5.65 (2023-01-05)
--------------------------
+## v7.5.65 (2023-01-05)
  * Enable back Arabiacell SSL validation
 
-v7.5.64 (2022-12-13)
--------------------------
+## v7.5.64 (2022-12-13)
  * Remove temp workaround to stop D360 channels taking longer than 5 seconds to request attachments
 
-v7.5.63 (2022-11-30)
--------------------------
+## v7.5.63 (2022-11-30)
  * Add logs for Facebook, Instagram, Viber, Telgram and Line specific errors
  * Update deps
 
-v7.5.62 (2022-11-21)
--------------------------
+## v7.5.62 (2022-11-21)
  * Rework channel log errors to have separate code and ext_code fields to remove the need for namespaces
  * Add logs for WhatsApp Cloud specific errors
 
-v7.5.61 (2022-11-18)
--------------------------
+## v7.5.61 (2022-11-18)
  * Ensure that URN and contact name are valid utf8 before trying to write to DB
  * Update to latest gocommon which provides dbutil.ToValidUTF8
  * Resolve error codes to messages for Twilio and Vonage and log errors for Twilio DLRs
  * Don't add returned err to channel log if it has logged errors already
 
-v7.5.60 (2022-11-11)
--------------------------
+## v7.5.60 (2022-11-11)
  * Allow msg id to be passed to fetch attachment requests and saved on the channel log
  * Update attachment fetching to handle non-200 response as an unavailable attachment
 
-v7.5.59 (2022-11-09)
--------------------------
+## v7.5.59 (2022-11-09)
  * Fix returning non-nil courier.Channel for deleted channels
 
-v7.5.58 (2022-11-07)
--------------------------
+## v7.5.58 (2022-11-07)
  * Set server idle timeout to 90 seconds
  * Test against redis 6.2 and postgres 14
 
-v7.5.57 (2022-10-31)
--------------------------
+## v7.5.57 (2022-10-31)
  * Update to latest gocommon
 
-v7.5.56 (2022-10-31)
--------------------------
+## v7.5.56 (2022-10-31)
  * Allow empty attachments, e.g. a txt file
 
-v7.5.55 (2022-10-27)
--------------------------
+## v7.5.55 (2022-10-27)
  * Update deps including phonenumbers
 
-v7.5.54 (2022-10-26)
--------------------------
+## v7.5.54 (2022-10-26)
  * Fetch access tokens for WeChat, JioChat channels as needed
 
-v7.5.53 (2022-10-26)
--------------------------
+## v7.5.53 (2022-10-26)
  * Use redisx.IntervalHash for message de-duping checks
 
-v7.5.52 (2022-10-19)
--------------------------
+## v7.5.52 (2022-10-19)
  * Add support for JustCall channel type
 
-v7.5.51 (2022-10-19)
--------------------------
+## v7.5.51 (2022-10-19)
  * Don't try to download WA attachments with no mediaID
  * Add WAC interactive message support with attachments, quick replies and captions.
 
-v7.5.50 (2022-10-18)
--------------------------
+## v7.5.50 (2022-10-18)
  * Fix recording overall time of an attachment-fetch channel log
  * Remove no longer used channel_uuid and channel_type fields from msg event payload queued to mailroom
  * Update to latest gocommon
 
-v7.5.49 (2022-10-13)
--------------------------
+## v7.5.49 (2022-10-13)
  * Stop fetching attachments and let message handling service do that via endpoint
 
-v7.5.48 (2022-10-13)
--------------------------
+## v7.5.48 (2022-10-13)
  * Fix handling empty and non-200 responses from attachment fetches
 
-v7.5.47 (2022-10-10)
--------------------------
+## v7.5.47 (2022-10-10)
  * Fix handling of geo attachments
 
-v7.5.46 (2022-10-10)
--------------------------
+## v7.5.46 (2022-10-10)
  * Rework attachment fetching to keep URL and content type separate
 
-v7.5.45 (2022-10-06)
--------------------------
+## v7.5.45 (2022-10-06)
  * Basic auth on status endpoint should be optional
 
-v7.5.44 (2022-10-06)
--------------------------
+## v7.5.44 (2022-10-06)
  * Add endpoint to download and store attachments by their URL
 
-v7.5.43 (2022-10-05)
--------------------------
+## v7.5.43 (2022-10-05)
  * Update dependencies
  * Skip SSL verification for AC channels
  * Fix channel log type token_refresh
 
-v7.5.42 (2022-09-29)
--------------------------
+## v7.5.42 (2022-09-29)
  * Add channel UUID and type to queued msg events
  * More jsonx.MustMarshal
 
-v7.5.41 (2022-09-27)
--------------------------
+## v7.5.41 (2022-09-27)
  * Customize the http client for D3 attachment fetches to have a timeout of 3 secs
 
-v7.5.40 (2022-09-27)
--------------------------
+## v7.5.40 (2022-09-27)
  * Always return 200 status for all WA webhook requests
  * Remove temporary logging
 
-v7.5.39 (2022-09-26)
--------------------------
+## v7.5.39 (2022-09-26)
  * Tweak large attachment logging
 
-v7.5.38 (2022-09-26)
--------------------------
+## v7.5.38 (2022-09-26)
  * Tweak large attachment logging
 
-v7.5.37 (2022-09-26)
--------------------------
+## v7.5.37 (2022-09-26)
  * Temp logging for large files
 
-v7.5.36 (2022-09-26)
--------------------------
+## v7.5.36 (2022-09-26)
  * Update to latest gocommon and remove previous temp logging
 
-v7.5.35 (2022-09-26)
--------------------------
+## v7.5.35 (2022-09-26)
  * More logging for large attachment downloads
 
-v7.5.34 (2022-09-26)
--------------------------
+## v7.5.34 (2022-09-26)
  * Tweak error message
 
-v7.5.33 (2022-09-26)
--------------------------
+## v7.5.33 (2022-09-26)
  * Add more detail to error message from S3 put
  * Update deps
 
-v7.5.32 (2022-09-26)
--------------------------
+## v7.5.32 (2022-09-26)
  * Include requests to download attachments on the channel log for the incoming message
  * Add support for better channel error reporting
 
-v7.5.31 (2022-09-21)
--------------------------
+## v7.5.31 (2022-09-21)
  * Allow twiml channels to send multiple media urls per message
 
-v7.5.30 (2022-09-20)
--------------------------
+## v7.5.30 (2022-09-20)
  * Update msg status updating to allow skipping WIRED state
 
-v7.5.29 (2022-09-15)
--------------------------
+## v7.5.29 (2022-09-15)
  * Simplify constructing responses and add tests
  * Make it easier to override responses per handler
 
-v7.5.28 (2022-09-15)
--------------------------
+## v7.5.28 (2022-09-15)
  * Update to use SHA256 signature for FBA payload, increase max body bytes limit to 1MiB
  * Meta channels webhooks requests, should always return 200 status
 
-v7.5.27 (2022-09-13)
--------------------------
+## v7.5.27 (2022-09-13)
  * Fix server logging when channel is nil
 
-v7.5.26 (2022-09-13)
--------------------------
+## v7.5.26 (2022-09-13)
  * Fix junebug redaction values
  * Fix redaction on sends and add redaction of error messages
 
-v7.5.25 (2022-09-13)
--------------------------
+## v7.5.25 (2022-09-13)
  * Adjust logging for WAC missing channel
  * Update to latest gocommon
  * Implement redaction of channel logs
 
-v7.5.24 (2022-09-08)
--------------------------
+## v7.5.24 (2022-09-08)
  * Adjust to use the cache by address correctly
  * Rework handler tests to assert more state by default
  * Remove duplicate status writes
@@ -1863,904 +1461,700 @@ v7.5.24 (2022-09-08)
  * Use go 1.19
  * Fix some linter warnings
 
-v7.5.23 (2022-09-07)
--------------------------
+## v7.5.23 (2022-09-07)
  * Support channels receiving embedded attachments and use with thinq handler
 
-v7.5.22 (2022-09-05)
--------------------------
+## v7.5.22 (2022-09-05)
  * Save channel logs with UUID
 
-v7.5.21 (2022-09-05)
--------------------------
+## v7.5.21 (2022-09-05)
  * Add codecov token to ci.yml
  * Add WAC support for sending captioned attachments
  * Cleanup tests
  * Include requests made by DescribeURN methods in the channel log for a receive
 
-v7.5.20 (2022-08-29)
--------------------------
+## v7.5.20 (2022-08-29)
  * Fix writing errors to channel logs
 
-v7.5.19 (2022-08-26)
--------------------------
+## v7.5.19 (2022-08-26)
  * Update to last gocommon
  * Fix local timezone dependent test
  * Don't fail CI for codecov problems
  * Add UUID to channel logs
  * Replace remaining usages of MakeHTTPRequest
 
-v7.5.18 (2022-08-25)
--------------------------
+## v7.5.18 (2022-08-25)
  * Fix insert channel log SQL
 
-v7.5.17 (2022-08-25)
--------------------------
+## v7.5.17 (2022-08-25)
  * Fix writing channel logs
 
-v7.5.16 (2022-08-25)
--------------------------
+## v7.5.16 (2022-08-25)
  * Write channel logs in new format
 
-v7.5.15 (2022-08-24)
--------------------------
+## v7.5.15 (2022-08-24)
  * Use logger for handler func calls
 
-v7.5.14 (2022-08-23)
--------------------------
+## v7.5.14 (2022-08-23)
  * Update to latest gocommon and use new recorder reconstruct option
 
-v7.5.13 (2022-08-18)
--------------------------
+## v7.5.13 (2022-08-18)
  * Use httpx.Recorder to generate traces of incoming requests
  * Rework WhatsApp handler to use logger, remove code for storing logs on status objects
 
-v7.5.12 (2022-08-16)
--------------------------
+## v7.5.12 (2022-08-16)
  * Adjust LINE to support sending attachments with quick replies later
 
-v7.5.11 (2022-08-16)
--------------------------
+## v7.5.11 (2022-08-16)
  * Rework more channel types to pass back traces and errors via logger instead of on status object
 
-v7.5.10 (2022-08-15)
--------------------------
+## v7.5.10 (2022-08-15)
  * Update to latest gocommon and fix some go warnings
  * Support media attachments for LINE
  * Rework handler DescribeURN methods to take a channel logger
  * Update more sending to use channel logger
 
-v7.5.9 (2022-08-11)
--------------------------
+## v7.5.9 (2022-08-11)
  * Rename S3MediaBucket to S3AttachmentsBucket and S3MediaPrefix to S3AttachmentsPrefix
  * More handlers to use new HTTP functions
 
-v7.5.8 (2022-08-10)
--------------------------
+## v7.5.8 (2022-08-10)
  * Move testing code out of courier package and into new test package
  * Rework some handler sending to record logs via a logger rather than on the status object
 
-v7.5.7 (2022-08-09)
--------------------------
+## v7.5.7 (2022-08-09)
  * Convert remaining channel types to use httpx.Trace
 
-v7.5.6 (2022-08-08)
--------------------------
+## v7.5.6 (2022-08-08)
  * Fix URLs from non-resolved attachments that may not be properly escaped
  * Use httpx.DoTrace for some channels
  * Convert telegram handler to use ResolveAttachments
  * Add support for resolving media on the backend
 
-v7.5.5 (2022-08-03)
--------------------------
+## v7.5.5 (2022-08-03)
  * Switch to using null.Map instead of utils.NullMap
 
-v7.5.4 (2022-08-02)
--------------------------
+## v7.5.4 (2022-08-02)
  * Add AWS Cred Chain support for S3
  * Update deps and fix incorrect errors import in some handler packages
 
-v7.5.3 (2022-07-25)
--------------------------
+## v7.5.3 (2022-07-25)
  * Fix receiving attachments in WAC
 
-v7.5.2 (2022-07-22)
--------------------------
+## v7.5.2 (2022-07-22)
  * Support receiving LINE attachments
 
-v7.5.1 (2022-07-22)
--------------------------
+## v7.5.1 (2022-07-22)
  * Support Quick replies for LINE channels
  * Slack channel support
 
-v7.5.0 (2022-07-21)
--------------------------
+## v7.5.0 (2022-07-21)
  * Fix receiving quick replies and list replies in WAC
  * Add link preview support in WAC
 
-v7.4.0 (2022-07-08)
--------------------------
+## v7.4.0 (2022-07-08)
  * Update README
  * Use analytics package from gocommon
 
-v7.3.10 (2022-05-30)
--------------------------
+## v7.3.10 (2022-05-30)
  * Make sure text are sent after audio attachments for WA channels
 
-v7.3.9 (2022-05-26)
--------------------------
+## v7.3.9 (2022-05-26)
  * Add arm64 as a build target
  * Add support for WA Cloud API
  * Refactor FBA tests
 
-v7.3.8 (2022-05-09)
--------------------------
+## v7.3.8 (2022-05-09)
  * Add log to status first when handling telegram opt outs
 
-v7.3.7 (2022-05-04)
--------------------------
+## v7.3.7 (2022-05-04)
  * Fix to not stop contact for other errors
 
-v7.3.6 (2022-05-02)
--------------------------
+## v7.3.6 (2022-05-02)
  * Update to go 1.18 and latest gocommon/phonenumbers/jsonparser
 
-v7.3.5 (2022-04-29)
--------------------------
+## v7.3.5 (2022-04-29)
  * Update Start Mobile send URL
 
-v7.3.4 (2022-04-27)
--------------------------
+## v7.3.4 (2022-04-27)
  * Update WhatsApp handler so that we update the URN if the returned ID doesn't match
  * Stop Telegram contact that have blocked the channel bot
 
-v7.3.3 (2022-04-20)
--------------------------
+## v7.3.3 (2022-04-20)
  * Quick fix to stop JSON content being omitted in logs
 
-v7.3.2 (2022-04-14)
--------------------------
+## v7.3.2 (2022-04-14)
  * Update to latest gocommon and start using httpx.DetectContentType
  * Add link preview attribute for sending whatsapp
  * Update golang.org/x/sys
 
-v7.3.1 (2022-03-21)
--------------------------
+## v7.3.1 (2022-03-21)
  * Fix handling stops via status callbacks on Twilio
 
-v7.3.0 (2022-03-18)
--------------------------
+## v7.3.0 (2022-03-18)
  * Support stopping contacts when we get stop events on status callbacks
 
-v7.2.0 (2022-03-07)
--------------------------
+## v7.2.0 (2022-03-07)
  * CI testing with go 1.17.7
 
-v7.1.19 (2022-02-25)
--------------------------
+## v7.1.19 (2022-02-25)
  * Update D3 handler to support check for whatsapp contact not in contact store
 
-v7.1.18 (2022-02-23)
--------------------------
+## v7.1.18 (2022-02-23)
  * Fix type for IsDeleted field for IG unsend events
  * Fix metadata fetching for new Facebook contacts
 
-v7.1.17 (2022-02-17)
--------------------------
+## v7.1.17 (2022-02-17)
  * Fix whatsapp uploaded attachment file name
  * Use deleted by sender visibity for message unsent on IG channels
  * Add missing languages from whatsapp template
  * Do not save any message when receiving IG story mentions
 
-v7.1.16 (2022-02-03)
--------------------------
+## v7.1.16 (2022-02-03)
  * Update to latest gocommon
  * Pause WA channel bulk queue when we hit the spam rate limit
 
-v7.1.15 (2022-01-25)
--------------------------
+## v7.1.15 (2022-01-25)
  * Fix Gujarati whatsapp language code
  * Send flow name as user_data to HX
 
-v7.1.14 (2022-01-19)
--------------------------
+## v7.1.14 (2022-01-19)
  * Allow more active redis connections
  * Support sending WA quick replies when we have attachments too
  * Add support to receive button text from Twilio WhatsApp
 
-v7.1.13 (2022-01-18)
--------------------------
+## v7.1.13 (2022-01-18)
  * Send db and redis stats to librato in backed heartbeat
  * Include session_status in FCM payloads
 
-v7.1.12 (2022-01-13)
--------------------------
+## v7.1.12 (2022-01-13)
  * Update to latest gocommon
  * Add instagram handler
 
-v7.1.11 (2022-01-10)
--------------------------
+## v7.1.11 (2022-01-10)
  * More bulk sql tweaks
 
-v7.1.10 (2022-01-10)
--------------------------
+## v7.1.10 (2022-01-10)
  * Update to latest gocommon
 
-v7.1.9 (2022-01-10)
--------------------------
+## v7.1.9 (2022-01-10)
  * Fix bulk status updates
 
-v7.1.8 (2022-01-10)
--------------------------
+## v7.1.8 (2022-01-10)
  * Do more error wrapping when creating contacts and URNs
 
-v7.1.7 (2022-01-07)
--------------------------
+## v7.1.7 (2022-01-07)
  * Use dbutil package from gocommon
  * Add quick replies for vk
 
-v7.1.6 (2021-12-08)
--------------------------
+## v7.1.6 (2021-12-08)
  * Throttle WA queues when we get 429 responses
 
-v7.1.5 (2021-12-06)
--------------------------
+## v7.1.5 (2021-12-06)
  * Add Msg.failed_reason and set when msg fails due to reaching error limit
 
-v7.1.4 (2021-12-02)
--------------------------
+## v7.1.4 (2021-12-02)
  * Remove loop detection now that mailroom does this
  * Smarter organization of quick replies for viber keyboards
 
-v7.1.3 (2021-12-01)
--------------------------
+## v7.1.3 (2021-12-01)
  * Use response_to_external_id instead of response_to_id
 
-v7.1.2 (2021-11-23)
--------------------------
+## v7.1.2 (2021-11-23)
  * External channel handler should use headers config setting if provided
 
-v7.1.1 (2021-11-23)
--------------------------
+## v7.1.1 (2021-11-23)
  * Pin to go 1.17.2
 
-v7.1.0 (2021-11-23)
--------------------------
+## v7.1.0 (2021-11-23)
  * Remove chatbase support
  * Test with Redis 3.2.4
  * Add support for 'Expired' status in the AT handler
 
-v7.0.0 (2021-11-01)
--------------------------
+## v7.0.0 (2021-11-01)
  * Tweak README
 
-v6.5.9 (2021-10-25)
--------------------------
+## v6.5.9 (2021-10-25)
  * Fix Viber attachments
  * CI testing on PG12 and 13
  * Update to latest gocommon and go 1.17
 
-v6.5.8 (2021-09-09)
--------------------------
+## v6.5.8 (2021-09-09)
  * Fix Facebook document attachment
  * Update to latest gocommon and phonenumbers
 
-v6.5.7 (2021-08-25)
--------------------------
+## v6.5.7 (2021-08-25)
  * Fix to only set the quick replies keyboard for the last message
  * Update to latest gocommon
 
-v6.5.6 (2021-08-16)
--------------------------
+## v6.5.6 (2021-08-16)
  * Fix FB signing checks by trimming prefix instead of stripping
  * Improve layout of Telegram keyboards
 
-v6.5.5 (2021-08-05)
--------------------------
+## v6.5.5 (2021-08-05)
  * Send WhatsApp buttons and list buttons when supported (thanks Weni)
 
-v6.5.4 (2021-08-04)
--------------------------
+## v6.5.4 (2021-08-04)
  * trim prefix instead of strip when comparing FB sigs
 
-v6.5.3 (2021-08-02)
--------------------------
+## v6.5.3 (2021-08-02)
  * log body when calculating signatures, include expected and calculated
 
-v6.5.2 (2021-07-28)
--------------------------
+## v6.5.2 (2021-07-28)
  * Add ticket_count column to contact and set to zero when creating new contacts
 
-v6.5.1 (2021-07-21)
--------------------------
+## v6.5.1 (2021-07-21)
  * Give S3 storage test new context on startup
  * Make DBMsg.SentOn nullable
 
-v6.5.0 (2021-07-21)
--------------------------
+## v6.5.0 (2021-07-21)
  * Always set sent_on for W/S/D statuses if not already set
  * Update to latest gocommon
 
-v6.4.0 (2021-07-06)
--------------------------
+## v6.4.0 (2021-07-06)
  * 6.4.0 Release Candidate
 
-v6.3.5 (2021-06-13)
--------------------------
+## v6.3.5 (2021-06-13)
  * up max request size to 1M
 
-v6.3.4 (2021-05-18)
--------------------------
+## v6.3.4 (2021-05-18)
  * Include filename when sending WhatsApp attachments
 
-v6.3.3 (2021-05-10)
--------------------------
+## v6.3.3 (2021-05-10)
  * Support using namespace from the template translation
  * Add is_resend to Msg payload to allow for resending messages manually
 
-v6.3.2 (2021-04-26)
--------------------------
+## v6.3.2 (2021-04-26)
  * Do not verify the SSL certificate for Bongo Live
 
-v6.3.1 (2021-04-22)
--------------------------
+## v6.3.1 (2021-04-22)
  * Update BL to remove UDH parameter and use HTTPS URL
 
-v6.2.2 (2021-04-08)
--------------------------
+## v6.2.2 (2021-04-08)
  * Handle whatsapp URNs sent to Twiml handler without prefix
  * Add support for Zenvia SMS
 
-v6.2.1 (2021-03-22)
--------------------------
+## v6.2.1 (2021-03-22)
  * Add support for Zenvia WhatsApp
 
-v6.2.0 (2021-03-01)
--------------------------
+## v6.2.0 (2021-03-01)
  * Add handling for button whatsapp message type
  * Bump CI testing to PG 11 and 12
  * Add Kaleyra channel type
  * 6.2.0 RC
 
-v6.1.7 (2021-01-01)
--------------------------
+## v6.1.7 (2021-01-01)
  * switch id to bigserial
 
-v6.1.6 (2020-12-07)
--------------------------
+## v6.1.6 (2020-12-07)
  * Cache media upload failures localy for 15m
 
-v6.1.5 (2020-12-02)
--------------------------
+## v6.1.5 (2020-12-02)
  * include header when sanitizing request/response
 
-v6.1.4 (2020-12-02)
--------------------------
+## v6.1.4 (2020-12-02)
  * Cleanup of whatsapp media handling
  * Detect media type for uploading media
 
-v6.1.3 (2020-12-01)
--------------------------
+## v6.1.3 (2020-12-01)
  * Better logging of error cases when uploading WhatsApp media
 
-v6.1.2 (2020-12-01)
--------------------------
+## v6.1.2 (2020-12-01)
  * use url.parse to build media URL
 
-v6.1.1 (2020-12-01)
--------------------------
+## v6.1.1 (2020-12-01)
  * Add TextIt WhatsApp channel type
 
-v6.1.0 (2020-11-20)
--------------------------
+## v6.1.0 (2020-11-20)
  * Check and log errors when building URLs for sending
 
-v6.0.0 (2020-11-05)
--------------------------
+## v6.0.0 (2020-11-05)
  * Update README
 
-v5.7.12 (2020-11-02)
--------------------------
+## v5.7.12 (2020-11-02)
  * URN channel change only for channels with SEND role
  * Update to gocommon v1.6.1
  * Add RocketChat handler
  * Add discord handler
 
-v5.7.11 (2020-10-23)
--------------------------
+## v5.7.11 (2020-10-23)
  * Cache media ids for WhatsApp attachments
 
-v5.7.10 (2020-10-20)
--------------------------
+## v5.7.10 (2020-10-20)
  * Support receiving Multipart form data requests for EX channels
 
-v5.7.9 (2020-10-12)
--------------------------
+## v5.7.9 (2020-10-12)
  * Update to latest gocommon 1.5.3 and golang 1.15
  * Add session status from mailroom to MT message sent to external channel API call
  * Remove incoming message prefix for Play Mobile free accounts
 
-v5.7.8 (2020-09-14)
--------------------------
+## v5.7.8 (2020-09-14)
  * deal with empty message in FreshChat incoming requests
 
-v5.7.7 (2020-09-10)
--------------------------
+## v5.7.7 (2020-09-10)
  * Update to gocommon v1.5.1
 
-v5.7.6 (2020-09-08)
--------------------------
+## v5.7.6 (2020-09-08)
  * Remove dummy values for AWS config values so you can use local file system for testing
  * Use gsm7, storage, dates and uuids packages from gocommon
 
-v5.7.5 (2020-08-25)
--------------------------
+## v5.7.5 (2020-08-25)
  * No longer write contact.is_stopped or is_blocked
 
-v5.7.4 (2020-08-20)
--------------------------
+## v5.7.4 (2020-08-20)
  * Support receiving XML for CM channels
  * Write status on new contacts
  * Add support for Whatsapp 360dialog
 
-v5.7.3 (2020-08-05)
--------------------------
+## v5.7.3 (2020-08-05)
  * Include created_on in msg_event
  * Include occurred_on when queueing channel events for mailroom
 
-v5.7.2 (2020-08-05)
--------------------------
+## v5.7.2 (2020-08-05)
  * Deal with Shaqodoon not properly escaping + in from
 
-v5.7.1 (2020-08-03)
--------------------------
+## v5.7.1 (2020-08-03)
  * Add ClickMobile channel type
 
-v5.7.0 (2020-07-23)
--------------------------
+## v5.7.0 (2020-07-23)
  * Save the Ad ID for Facebook postback referral 
 
-v5.6.0 (2020-07-06)
--------------------------
+## v5.6.0 (2020-07-06)
  * 5.6.0 Candidate Release
 
-v5.5.28 (2020-07-03)
--------------------------
+## v5.5.28 (2020-07-03)
  * Fix FBA signature validation and channel lookup
 
-v5.5.27 (2020-07-01)
--------------------------
+## v5.5.27 (2020-07-01)
  * Add country field and support for more template languages on WhatsApp handler
 
-v5.5.26 (2020-06-29)
--------------------------
+## v5.5.26 (2020-06-29)
  * Only log channel events when we have a channel matched
  * HX channel sends MO using ISO 8859-1 encoding
 
-v5.5.25 (2020-06-29)
--------------------------
+## v5.5.25 (2020-06-29)
  * Load FBA channel handler package
 
-v5.5.24 (2020-06-25)
--------------------------
+## v5.5.24 (2020-06-25)
  * Support loading channels with null address
 
-v5.5.23 (2020-06-25)
--------------------------
+## v5.5.23 (2020-06-25)
  * Add support for FBA channel type
 
-v5.5.22 (2020-06-03)
--------------------------
+## v5.5.22 (2020-06-03)
  * User reply endpoint when possible for LINE messages
 
-v5.5.21 (2020-05-22)
--------------------------
+## v5.5.21 (2020-05-22)
  * Fix FB location attachment to be handled at geo attachment
 
-v5.5.20 (2020-05-20)
--------------------------
+## v5.5.20 (2020-05-20)
  * TS expects national numbers only
 
-v5.5.19 (2020-05-14)
--------------------------
+## v5.5.19 (2020-05-14)
  * Upgrade FB graph API to 3.3
 
-v5.5.18 (2020-05-11)
--------------------------
+## v5.5.18 (2020-05-11)
  * TS sends should use mobile instead of from
 
-v5.5.17 (2020-05-06)
--------------------------
+## v5.5.17 (2020-05-06)
  * Support sending document attachments for Telegram
 
-v5.5.16 (2020-05-04)
--------------------------
+## v5.5.16 (2020-05-04)
  * Add option for Telesom Send URL
  * Ignore received message request in Telegram handler when a file cannot be resolved
 
-v5.5.15 (2020-04-27)
--------------------------
+## v5.5.15 (2020-04-27)
  * Support using national number for EX channel if configured so
 
-v5.5.14 (2020-04-27)
--------------------------
+## v5.5.14 (2020-04-27)
  * Add Telesom channel type support
 
-v5.5.13 (2020-04-21)
--------------------------
+## v5.5.13 (2020-04-21)
  * Use Channel specific max_length config value if set
 
-v5.5.12 (2020-04-20)
--------------------------
+## v5.5.12 (2020-04-20)
  * Increase ArabiaCell max length to 1530
 
-v5.5.11 (2020-04-14)
--------------------------
+## v5.5.11 (2020-04-14)
  * Retry WhatsApp channel messaging after contact check with returned WhatsApp ID
 
-v5.5.10 (2020-04-07)
--------------------------
+## v5.5.10 (2020-04-07)
  * Fix sending WA template messages on new WhatsApp docker
 
-v5.5.9 (2020-04-06)
--------------------------
+## v5.5.9 (2020-04-06)
  * Add option for Kannel channels to ignore duplicative sent status
 
-v5.5.8 (2020-04-06)
--------------------------
+## v5.5.8 (2020-04-06)
  * More tweaks to slowing down batching of status commits when approaching max queue size
 
-v5.5.7 (2020-04-06)
--------------------------
+## v5.5.7 (2020-04-06)
  * slow queuing before reaching our max batch size
 
-v5.5.6 (2020-04-06)
--------------------------
+## v5.5.6 (2020-04-06)
  * Slow queuing into a batch when batches are full
 
-v5.5.5 (2020-04-06)
--------------------------
+## v5.5.5 (2020-04-06)
  * Increase buffer size
  * Add support for Viber stickers as image attachments for incoming messages
 
-v5.5.4 (2020-03-21)
--------------------------
+## v5.5.4 (2020-03-21)
  * handle error cases for whatsapp callbacks
 
-v5.5.3 (2020-03-21)
--------------------------
+## v5.5.3 (2020-03-21)
  * add native panic handling
 
-v5.5.2 (2020-03-18)
--------------------------
+## v5.5.2 (2020-03-18)
  * Send msg in batches and add image msg type in the LINE channel
 
-v5.5.1 (2020-03-18)
--------------------------
+## v5.5.1 (2020-03-18)
  * Add contacts not already present for WhatsApp when sending error detected (thanks @koallann)
 
-v5.5.0 (2020-03-16)
--------------------------
+## v5.5.0 (2020-03-16)
  * add fabric to gitignore
 
-v5.6.0 (2020-07-06)
--------------------------
+## v5.6.0 (2020-07-06)
  * add fabric to gitignore
 
-v5.4.1 (2020-03-13)
--------------------------
+## v5.4.1 (2020-03-13)
  * Strip cookie from incoming requests
 
-v5.4.0 (2020-03-02)
--------------------------
+## v5.4.0 (2020-03-02)
  * touch README for 5.4 release
 
-v5.3.9 (2020-02-05)
--------------------------
+## v5.3.9 (2020-02-05)
  * Add VK Channel
 
-v5.3.8 (2020-01-21)
--------------------------
+## v5.3.8 (2020-01-21)
  * Fix Chatbase request body
 
-v5.3.7 (2020-01-21)
--------------------------
+## v5.3.7 (2020-01-21)
  * Fix quick replies variable replacement on external channel long msg
 
-v5.3.6 (2020-01-14)
--------------------------
+## v5.3.6 (2020-01-14)
  * Allow configuring and sending of quick replies for external channels
 
-v5.3.5 (2020-01-13)
--------------------------
+## v5.3.5 (2020-01-13)
  * Refactor FMC channel to support the fixed quick replies structure
 
-v5.3.4 (2020-01-06)
--------------------------
+## v5.3.4 (2020-01-06)
  * Change Arabia Cell max length to 670, fixes #274
  * Add support for Twilio Whatsapp channel type
  * Convert to use Github actions for CI
 
-v5.3.3 (2019-12-06)
--------------------------
+## v5.3.3 (2019-12-06)
  * Fix freshchat image handing
 
-v5.3.2 (2019-11-26)
--------------------------
+## v5.3.2 (2019-11-26)
  * Set Facebook message type tag when topic is set on message
 
-v5.3.1 (2019-11-05)
--------------------------
+## v5.3.1 (2019-11-05)
  * update changelog for v5.3
 
-v5.3.0 (2019-11-05)
--------------------------
+## v5.3.0 (2019-11-05)
  * Send WhatsApp media via URL
  * Log Zenvia errors to ChannelLog instead of Sentry
  * Ignore status updates for incoming messages	
 
-v5.2.0 (2019-10-28)
--------------------------
+## v5.2.0 (2019-10-28)
  * Sync version with RapidPro 5.2
 
-v2.0.18 (2019-10-21)
--------------------------
+## v2.0.18 (2019-10-21)
  * Test matrix release
 
-v2.0.17 (2019-10-21)
--------------------------
+## v2.0.17 (2019-10-21)
  * Test deploying with matrix build
 
-v2.0.16 (2019-10-21)
--------------------------
+## v2.0.16 (2019-10-21)
  * test releasing only on pg10
 
-v2.0.15 (2019-10-17)
--------------------------
+## v2.0.15 (2019-10-17)
  * Derive contact name for new WhatsApp contacts (thanks @devchima)
 
-v2.0.14 (2019-10-16)
--------------------------
+## v2.0.14 (2019-10-16)
  * properly log connection errors for whatsapp
 
-v2.0.13 (2019-10-16)
--------------------------
+## v2.0.13 (2019-10-16)
  * use latest librato library
 
-v2.0.12 (2019-10-16)
--------------------------
+## v2.0.12 (2019-10-16)
  * tune HTTP transport settings
 
-v2.0.11 (2019-10-15)
--------------------------
+## v2.0.11 (2019-10-15)
 n
  * tune HTTPClient settings to better deal with slow hosts
 
-v2.0.10 (2019-10-08)
--------------------------
+## v2.0.10 (2019-10-08)
  * Use multipart form encoding for thinQ
 
-v2.0.9 (2019-10-07)
--------------------------
+## v2.0.9 (2019-10-07)
  * Add thinq handler
 
-v2.0.8 (2019-09-13)
--------------------------
+## v2.0.8 (2019-09-13)
  * turn thumbs up stickers into thumbs up emoji
 
-v2.0.7 (2019-08-16)
--------------------------
+## v2.0.7 (2019-08-16)
  * Tweak lua script for checking loops, add more tests
 
-v2.0.6 (2019-08-16)
--------------------------
+## v2.0.6 (2019-08-16)
  * Make sure we never overflow our count when considering loops
 
-v2.0.5 (2019-08-16)
--------------------------
+## v2.0.5 (2019-08-16)
  * Check whether outgoing message is in a loop before sending
 
-v2.0.4 (2019-08-14)
--------------------------
+## v2.0.4 (2019-08-14)
  * Add FreshChat channel type
  * Latest phonenumbers library
 
-v2.0.3 (2019-08-09)
--------------------------
+## v2.0.3 (2019-08-09)
  * Fix sending for ClickSend
 
-v2.0.2 (2019-06-16)
--------------------------
+## v2.0.2 (2019-06-16)
 0;95;0c# Enter any comments for inclusion in the CHANGELOG on this revision below, you can use markdown
  * ignore viber dlrs as they are sent for both in and out
 
-v2.0.1 (2019-06-14)
--------------------------
+## v2.0.1 (2019-06-14)
  * add WhatsApp scheme support for TWIML channels
 
-v2.0.0 (2019-06-13)
--------------------------
+## v2.0.0 (2019-06-13)
  * ignore flow server enabled attribute on orgs
  * stop looking / writing is_test on contact
 
-v1.2.160 (2019-06-11)
--------------------------
+## v1.2.160 (2019-06-11)
  * add bearer before auth token for Hormuud
 
-v1.2.159 (2019-06-05)
--------------------------
+## v1.2.159 (2019-06-05)
  * add SignalWire handler (https://www.signalwire.com)
  * refactor twilio->twiml
  * remove ignore DLR global config, make per channel for TWIML channels
 
-v1.2.158 (2019-06-03)
--------------------------
+## v1.2.158 (2019-06-03)
  * add ClickSend channel
 
-v1.2.157 (2019-05-30)
--------------------------
+## v1.2.157 (2019-05-30)
  * increase http timeouts to 60 seconds for AfricasTalking, Hormuud token lasts 90 minutes
 
-v1.2.156 (2019-05-17)
--------------------------
+## v1.2.156 (2019-05-17)
  * update Portuguese mapping
 
-v1.2.155 (2019-05-16)
--------------------------
+## v1.2.155 (2019-05-16)
  * new Hormuud channel for somalia
  * add video support for WhatsApp
 
-v1.2.154 (2019-05-09)
--------------------------
+## v1.2.154 (2019-05-09)
  * have batch committer print when flushed
  * move stopping of bulk committers to cleanup phase
 
-v1.2.153 (2019-05-09)
--------------------------
+## v1.2.153 (2019-05-09)
  * Switch to newer library for UUID generation
 
-v1.2.152 (2019-05-09)
--------------------------
+## v1.2.152 (2019-05-09)
  * raise delay before bulk commits to 500ms
 
-v1.2.151 (2019-05-09)
--------------------------
+## v1.2.151 (2019-05-09)
  * optimize sends via bulk inserts and updates
 
-v1.2.150 (2019-05-08)
--------------------------
+## v1.2.150 (2019-05-08)
  * allow configuring custom mo fields for external channels
 
-v1.2.149 (2019-05-01)
--------------------------
+## v1.2.149 (2019-05-01)
 * implement sending whatsapp templates
 
-v1.2.148 (2019-04-12)
--------------------------
+## v1.2.148 (2019-04-12)
  * Add maintenance mode to run without a DB and only spool inbound requests
 
-v1.2.147 (2019-04-11)
--------------------------
+## v1.2.147 (2019-04-11)
  * Prevent Facebook duplicate messages, dedupe in external id
 
-v1.2.146 (2019-04-04)
--------------------------
+## v1.2.146 (2019-04-04)
  * ignore deleted status for whatsapp
 
-v1.2.145 (2019-04-04)
--------------------------
+## v1.2.145 (2019-04-04)
  * mark deleted WhatsApp messages as failed
 
-v1.2.144 (2019-04-03)
--------------------------
+## v1.2.144 (2019-04-03)
  * include extra for channel events in response
 
-v1.2.143 (2019-04-01)
--------------------------
+## v1.2.143 (2019-04-01)
  * deduplicate WA messages on external ID
 
-v1.2.142 (2019-03-19)
--------------------------
+## v1.2.142 (2019-03-19)
  * normalize TEL urns with the country
 
-v1.2.141 (2019-03-19)
--------------------------
+## v1.2.141 (2019-03-19)
  * latest phonenumbers
 
-v1.2.140 (2019-03-14)
--------------------------
+## v1.2.140 (2019-03-14)
  * Queue welcome message event to be handle by mailroom
 
-v1.2.139 (2019-03-11)
--------------------------
+## v1.2.139 (2019-03-11)
  * add sub-message ids for long messages on play mobile
  * send configured welcome message on converssation started for Viber
 
-v1.2.138 (2019-03-05)
--------------------------
+## v1.2.138 (2019-03-05)
  * proper name for queues to check size
 
-v1.2.137 (2019-02-28)
--------------------------
+## v1.2.137 (2019-02-28)
  * log queue sizes and new contact creations to librato
 
-v1.2.136 (2019-02-22)
--------------------------
+## v1.2.136 (2019-02-22)
  * add queued on to all tasks
 
-v1.2.135 (2019-02-22)
--------------------------
+## v1.2.135 (2019-02-22)
  * move queued on to task level
 
-v1.2.134 (2019-02-20)
--------------------------
+## v1.2.134 (2019-02-20)
  * add queued_on to tasks sent to mailroom so we can calculate latency
 
-v1.2.133 (2019-02-18)
--------------------------
+## v1.2.133 (2019-02-18)
  * fixes us creating an orphaned contact when we get two messages at the same instant
 
-v1.2.132 (2019-02-15)
--------------------------
+## v1.2.132 (2019-02-15)
  * send fb attachments first instead of last, add quick replies to last message instead of first
 
-v1.2.131 (2019-02-13)
--------------------------
+## v1.2.131 (2019-02-13)
  * Fix to use DLRID for Bongolive status reports
 
-v1.2.130 (2019-02-07)
--------------------------
+## v1.2.130 (2019-02-07)
  * Use unix timestamp for MO receive on WAVy channels
 
-v1.2.129 (2019-02-05)
--------------------------
+## v1.2.129 (2019-02-05)
  * Make bongolive inbound msg type optional
  * Properly handle long attachment description for Viber
 
-v1.2.128 (2019-01-25)
--------------------------
+## v1.2.128 (2019-01-25)
  * Load BL handler package
  * Add support for Movile/Wavy channels, Thanks to MGov to fund the development of the integration
 
-v1.2.127 (2019-01-24)
--------------------------
+## v1.2.127 (2019-01-24)
  * Use UPPERCASE parameters for BL channels
  * Migrate courier to PostgreSQL 10
 
-v1.2.126 (2019-01-21)
--------------------------
+## v1.2.126 (2019-01-21)
  * Switch BL channels used API
 
-v1.2.125 (2019-01-16)
--------------------------
+## v1.2.125 (2019-01-16)
  * add support for Bongo Live channels
  * Switch to use nyaruka/librato package
  * Complete conversion to module
 
-v1.2.124 (2018-12-22)
--------------------------
+## v1.2.124 (2018-12-22)
  * Updated Zenvia endpoint according to new API
 
-v1.2.123 (2018-12-06)
--------------------------
+## v1.2.123 (2018-12-06)
  * set session timeouts when specified by mailroom
 
-v1.2.122 (2018-12-03)
--------------------------
+## v1.2.122 (2018-12-03)
  * Support using the custom configured content type for EX channels
  * Fix panicr on parsing SOAP body for EX channels
  * Support sending images and videos in Twitter
 
-v1.2.121 (2018-11-28)
--------------------------
+## v1.2.121 (2018-11-28)
  * fix twitter sending
 
-v1.2.120 (2018-11-15)
--------------------------
+## v1.2.120 (2018-11-15)
  * Twitter media attachments
 
-v1.2.118 (2018-11-13)
--------------------------
+## v1.2.118 (2018-11-13)
  * Commit transaction when adding URN to contact with success
  * Fix typo
  * Simply remove URNs by update query
@@ -2768,198 +2162,153 @@ v1.2.118 (2018-11-13)
  * Fix Facebook for contact duplicates when using referral, save the proper Facebook URN when we first successfully send to the referral contact URN
  * Ignore error for Jiochat user name lookup
 
-v1.2.117 (2018-11-06)
--------------------------
+## v1.2.117 (2018-11-06)
  * remove ipv6 binding for redis server
 
-v1.2.116 (2018-11-06)
--------------------------
+## v1.2.116 (2018-11-06)
  * add urn id to channel events
 
-v1.2.115 (2018-10-29)
--------------------------
+## v1.2.115 (2018-10-29)
  * do not return errors from whatsapp send during client errors
 
-v1.2.114 (2018-10-29)
--------------------------
+## v1.2.114 (2018-10-29)
  * Better channel logs support for WA channels
 
-v1.2.113 (2018-10-25)
--------------------------
+## v1.2.113 (2018-10-25)
  * prevent races in dupe detection by clearing before sending
  * use URN identity for URN fingerprint
 
-v1.2.112 (2018-10-22)
--------------------------
+## v1.2.112 (2018-10-22)
  * return empty content when receiving i2sms messages
 
-v1.2.111 (2018-10-22)
--------------------------
+## v1.2.111 (2018-10-22)
  * add i2sms channel
 
-v1.2.110 (2018-10-19)
--------------------------
+## v1.2.110 (2018-10-19)
  * allow setting kannel dlr mask
 
-v1.2.109 (2018-10-17)
--------------------------
+## v1.2.109 (2018-10-17)
  * Support receiving MO msgs in XML format
 
-v1.2.108 (2018-10-17)
--------------------------
+## v1.2.108 (2018-10-17)
  * Add channel log for when we fail to get the response expected
  * Support checking configured response content for EX channels
  * Add stopped event handler for EX channels
 
-v1.2.107 (2018-10-16)
--------------------------
+## v1.2.107 (2018-10-16)
  * queue tasks to mailroom for flow_server_enabled orgs, requires newest rapidpro
 
-v1.2.106 (2018-10-03)
--------------------------
+## v1.2.106 (2018-10-03)
  * flush to librato every second
  * Add authorization token requirement to receive messages on Novo Channel
 
-v1.2.105 (2018-09-28)
--------------------------
+## v1.2.105 (2018-09-28)
  * optimize writing message status for external case
 
-v1.2.104 (2018-09-28)
--------------------------
+## v1.2.104 (2018-09-28)
  * optimize status update when we know message id
 
-v1.2.103 (2018-09-27)
--------------------------
+## v1.2.103 (2018-09-27)
  * add media handling for whatsapp
 
-v1.2.102 (2018-09-13)
--------------------------
+## v1.2.102 (2018-09-13)
  * clear dedupes on outgoing messages
 
-v1.2.101 (2018-09-12)
--------------------------
+## v1.2.101 (2018-09-12)
  * AT date like 2006-01-02 15:04:05, without T nor Z
 
-v1.2.100 (2018-09-11)
--------------------------
+## v1.2.100 (2018-09-11)
  * Accept AT requests with timestamps without Z
  * Ignore status update for incoming messsages
 
-v1.2.99 (2018-09-11)
--------------------------
+## v1.2.99 (2018-09-11)
  * Support smart encoding for post requests on EX channels
  * Add novo channel with send capability
  * log the error when PQ fails to connect
  * Changed the default redis database to match rapid pro redis database
 
-v1.2.98 (2018-07-25)
--------------------------
+## v1.2.98 (2018-07-25)
  * treat empty content type as text
  * updated go.mod and go.sum files for go modules support
 
-v1.2.97 (2018-07-20)
--------------------------
+## v1.2.97 (2018-07-20)
  * add optional transliteration parameter for MT messages with infobip
  * add support to use configured encoding for EX channels
 
-v1.2.96 (2018-07-06)
--------------------------
+## v1.2.96 (2018-07-06)
  * Add support for WeChat
 
-v1.2.95 (2018-06-29)
--------------------------
+## v1.2.95 (2018-06-29)
  * use utf8 to shorten string so we don't end up with an invalid string
 
-v1.2.94 (2018-06-28)
--------------------------
+## v1.2.94 (2018-06-28)
  * proper backdown for Nexmo retries
 
-v1.2.93 (2018-06-27)
--------------------------
+## v1.2.93 (2018-06-27)
  * Trim contact names at 127 characters
 
-v1.2.92 (2018-06-21)
--------------------------
+## v1.2.92 (2018-06-21)
  * move to gocommon, honor e164 numbers handed to us
 
-v1.2.91 (2018-06-21)
--------------------------
+## v1.2.91 (2018-06-21)
  * update to latest phonenumbers, update tests
 
-v1.2.90 (2018-06-20)
--------------------------
+## v1.2.90 (2018-06-20)
  * reduce spacing between messages to 3 seconds
  * add an address option to bind to a specific network interface address
  * honor rapidpro constants for content-type
 
-v1.2.89 (2018-06-13)
--------------------------
+## v1.2.89 (2018-06-13)
  * Add burst sms handler / sender (Australia / New Zealand)
 
-v1.2.88 (2018-06-04)
--------------------------
+## v1.2.88 (2018-06-04)
  * set expiration of sent sets in redis
 
-v1.2.87 (2018-05-24)
--------------------------
+## v1.2.87 (2018-05-24)
  * update line channel to use v2 of API
  * add messangi channel
 
-v1.2.86 (2018-05-21)
--------------------------
+## v1.2.86 (2018-05-21)
  * remove unacked, that's part of celery's job
 
-v1.2.85 (2018-05-21)
--------------------------
+## v1.2.85 (2018-05-21)
  * update celery queuing to new kombu format
 
-v1.2.84 (2018-05-01)
--------------------------
+## v1.2.84 (2018-05-01)
  * write UUID fields for incoming messages
 
-v1.2.83 (2018-04-26)
--------------------------
+## v1.2.83 (2018-04-26)
  * implement unified webhook endpoint for whatsapp
 
-v1.2.82 (2018-04-26)
--------------------------
+## v1.2.82 (2018-04-26)
  * Implement new WhatsApp API for sending
 
-v1.2.81 (2018-04-20)
--------------------------
+## v1.2.81 (2018-04-20)
  * Honor x-forwarded-path header for twilio signatures
 
-v1.2.80 (2018-04-17)
--------------------------
+## v1.2.80 (2018-04-17)
  * Make sure the messageid is unique for multiple part messages for Dartmedia
 
-v1.2.79 (2018-04-12)
--------------------------
+## v1.2.79 (2018-04-12)
  * Decode &amp; in Twitter message bodies
 
-v1.2.78 (2018-04-11)
--------------------------
+## v1.2.78 (2018-04-11)
  * Accept Hub9/Dart encrypted phonenumber identifier and save then as external scheme
 
-v1.2.77 (2018-04-09)
--------------------------
+## v1.2.77 (2018-04-09)
  * Update .gitignore
 
-v1.2.76 (2018-04-09)
--------------------------
+## v1.2.76 (2018-04-09)
  * Update .gitignore
 
-v1.2.75 (2018-04-06)
--------------------------
+## v1.2.75 (2018-04-06)
  * Update readme, formatting
  * Add more lines to show annotation format
  * More lines.. why not
 
-v1.2.74 (2018-04-06)
--------------------------
+## v1.2.74 (2018-04-06)
  * Update changelog, remove spurious version
 
-v1.2.73 (2018-04-06)
--------------------------
+## v1.2.73 (2018-04-06)
  * do not log illegal methods or 404s
 
