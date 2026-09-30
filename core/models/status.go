@@ -299,7 +299,7 @@ func resolveStatusUpdateByExternalIdentifier(ctx context.Context, rt *runtime.Ru
 // sent_on that go with it - and lives here as a single constant so they can't drift apart.
 //
 // Status updates arrive out of order - a provider's callback can overtake the sender's own wired write, and sent and
-// delivered callbacks often land within the same batch window - so a message's status only ever moves forward:
+// delivered callbacks often land within the same batch window - so a message's status doesn't move backwards:
 //
 //   - read is terminal
 //   - failed only moves on to sent, delivered or read, since those show the message did go out - providers can report
