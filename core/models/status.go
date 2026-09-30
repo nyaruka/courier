@@ -301,7 +301,9 @@ func resolveStatusUpdateByExternalIdentifier(ctx context.Context, rt *runtime.Ru
 // Status updates arrive out of order - a provider's callback can overtake the sender's own wired write, and sent and
 // delivered callbacks often land within the same batch window - so a message's status only ever moves forward:
 //
-//   - failed and read are terminal
+//   - read is terminal
+//   - failed only moves on to sent, delivered or read, since those show the message did go out - providers can report
+//     a failure and then deliver the message anyway
 //   - delivered only moves on to read, or to failed for providers that report that way
 //   - sent doesn't go back to wired
 //   - an errored send attempt is recorded against anything short of delivery, and flips the message to failed once
@@ -310,7 +312,8 @@ func resolveStatusUpdateByExternalIdentifier(ctx context.Context, rt *runtime.Ru
 // An update that would move a message backwards leaves the status as it is, but is still recorded on the message's
 // log so it can be seen in the channel log history.
 const sqlNewMsgStatus = `CASE 
-		WHEN msgs_msg.status IN ('F', 'R') THEN msgs_msg.status
+		WHEN msgs_msg.status = 'R' THEN 'R'
+		WHEN msgs_msg.status = 'F' AND s.status NOT IN ('S', 'D', 'R') THEN 'F'
 		WHEN msgs_msg.status = 'D' AND s.status NOT IN ('R', 'F') THEN 'D'
 		WHEN msgs_msg.status = 'S' AND s.status = 'W' THEN 'S'
 		WHEN s.status = 'E' THEN CASE WHEN msgs_msg.error_count >= 2 THEN 'F' ELSE 'E' END
@@ -345,7 +348,7 @@ UPDATE msgs_msg SET
 		END,
 	error_count = CASE WHEN %[2]s THEN msgs_msg.error_count + 1 ELSE msgs_msg.error_count END,
 	next_attempt = CASE WHEN (%[1]s) = 'E' THEN NOW() + (5 * (msgs_msg.error_count+1) * interval '1 minutes') ELSE NULL END,
-	failed_reason = CASE WHEN %[2]s AND msgs_msg.error_count >= 2 THEN 'E' ELSE msgs_msg.failed_reason END,
+	failed_reason = CASE WHEN %[2]s AND msgs_msg.error_count >= 2 THEN 'E' WHEN (%[1]s) != 'F' THEN NULL ELSE msgs_msg.failed_reason END,
 	sent_on = CASE WHEN (%[1]s) IN ('W', 'S', 'D', 'R') THEN COALESCE(msgs_msg.sent_on, NOW()) ELSE NULL END,
 	external_identifier = CASE WHEN s.external_identifier != '' THEN s.external_identifier ELSE msgs_msg.external_identifier END,
 	modified_on = NOW(),

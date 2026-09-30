@@ -278,6 +278,7 @@ func TestStatusTransitions(t *testing.T) {
 	tcs := []struct {
 		from         models.MsgStatus
 		fromErrors   int
+		fromReason   string
 		write        models.MsgStatus
 		status       models.MsgStatus
 		errors       int
@@ -318,12 +319,14 @@ func TestStatusTransitions(t *testing.T) {
 		{from: "R", write: "E", status: "R", sentOn: true, changed: false},
 		{from: "R", write: "F", status: "R", sentOn: true, changed: false},
 
-		// failed is terminal
+		// failed only moves on to sent, delivered or read
 		{from: "F", write: "W", status: "F", sentOn: false, changed: false},
-		{from: "F", write: "S", status: "F", sentOn: false, changed: false},
-		{from: "F", write: "D", status: "F", sentOn: false, changed: false},
-		{from: "F", write: "R", status: "F", sentOn: false, changed: false},
+		{from: "F", write: "S", status: "S", sentOn: true, changed: true},
+		{from: "F", write: "D", status: "D", sentOn: true, changed: true},
+		{from: "F", write: "R", status: "R", sentOn: true, changed: true},
 		{from: "F", write: "E", status: "F", sentOn: false, changed: false},
+		{from: "F", fromErrors: 3, fromReason: "E", write: "E", status: "F", errors: 3, failedReason: "E", sentOn: false, changed: false},
+		{from: "F", fromErrors: 3, fromReason: "E", write: "D", status: "D", errors: 3, sentOn: true, changed: true},
 
 		// errored is retried so moves on to anything, and fails once the attempt limit is reached
 		{from: "E", fromErrors: 1, write: "W", status: "W", errors: 1, sentOn: true, changed: true},
@@ -339,9 +342,9 @@ func TestStatusTransitions(t *testing.T) {
 		desc := fmt.Sprintf("%s -> %s", tc.from, tc.write)
 
 		// an errored message is awaiting a retry
-		rt.DB.MustExec(`UPDATE msgs_msg SET status = $1::varchar, error_count = $2, failed_reason = NULL, log_uuids = '{}',
+		rt.DB.MustExec(`UPDATE msgs_msg SET status = $1::varchar, error_count = $2, failed_reason = NULLIF($4, ''), log_uuids = '{}',
 			next_attempt = CASE WHEN $1::varchar = 'E' THEN NOW() ELSE NULL END,
-			sent_on = CASE WHEN $1::varchar IN ('W', 'S', 'D', 'R') THEN NOW() ELSE NULL END WHERE uuid = $3`, tc.from, tc.fromErrors, msgUUID)
+			sent_on = CASE WHEN $1::varchar IN ('W', 'S', 'D', 'R') THEN NOW() ELSE NULL END WHERE uuid = $3`, tc.from, tc.fromErrors, msgUUID, tc.fromReason)
 
 		changes, err := models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
 			{
