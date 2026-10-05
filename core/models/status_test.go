@@ -461,7 +461,7 @@ func TestWriteStatusUpdatesLogCap(t *testing.T) {
 	const msgUUID = models.MsgUUID("0199df0f-9f82-7689-b02d-f34105991321") // message 1
 
 	// a message one log short of the cap
-	rt.DB.MustExec(`UPDATE msgs_msg SET status = 'W', log_uuids = array_fill('019a6e53-0000-7000-8000-000000000000'::uuid, ARRAY[99])
+	rt.DB.MustExec(`UPDATE msgs_msg SET status = 'W', log_uuids = array_fill('019a6e53-0000-7000-8000-000000000000'::uuid, ARRAY[24])
 	                 WHERE uuid = $1`, msgUUID)
 
 	newUpdate := func(status models.MsgStatus, logUUID svclogs.UUID) *models.StatusUpdate {
@@ -481,7 +481,7 @@ func TestWriteStatusUpdatesLogCap(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	assertdb.Query(t, rt.DB, `SELECT status, cardinality(log_uuids) AS logs, log_uuids[100]::text AS last FROM msgs_msg
+	assertdb.Query(t, rt.DB, `SELECT status, cardinality(log_uuids) AS logs, log_uuids[25]::text AS last FROM msgs_msg
 	                           WHERE uuid = $1`, msgUUID).
-		Columns(map[string]any{"status": "R", "logs": int64(100), "last": "019a6e54-0000-7000-8000-000000000001"})
+		Columns(map[string]any{"status": "R", "logs": int64(25), "last": "019a6e54-0000-7000-8000-000000000001"})
 }

@@ -325,7 +325,7 @@ const sqlIsErrorAttempt = `(s.status = 'E' AND msgs_msg.status NOT IN ('D', 'R',
 // the most channel logs a message records. Every status update adds one, including those that change nothing, so
 // without a cap anything that can replay a status callback can grow a message without limit. Real messages get
 // nowhere near it, and the earliest logs - the send and the first callbacks - are the ones kept.
-const maxMsgLogUUIDs = 100
+const maxMsgLogUUIDs = 25
 
 // the craziness below lets us update our status to 'F' and schedule retries without knowing anything about the message.
 // the folder derivation assumes the message is visible, which holds because nothing makes an outgoing message
