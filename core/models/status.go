@@ -322,6 +322,11 @@ const sqlNewMsgStatus = `CASE
 // message doesn't.
 const sqlIsErrorAttempt = `(s.status = 'E' AND msgs_msg.status NOT IN ('D', 'R', 'F'))`
 
+// the most channel logs a message records. Every status update adds one, including those that change nothing, so
+// without a cap anything that can replay a status callback can grow a message without limit. Real messages get
+// nowhere near it, and the earliest logs - the send and the first callbacks - are the ones kept.
+const maxMsgLogUUIDs = 100
+
 // the craziness below lets us update our status to 'F' and schedule retries without knowing anything about the message.
 // the folder derivation assumes the message is visible, which holds because nothing makes an outgoing message
 // non-visible - if that ever changes, a deleted message needs its own folder rather than one derived from status.
@@ -349,13 +354,13 @@ UPDATE msgs_msg SET
 	sent_on = CASE WHEN (%[1]s) IN ('W', 'S', 'D', 'R') THEN COALESCE(msgs_msg.sent_on, NOW()) ELSE NULL END,
 	external_identifier = CASE WHEN s.external_identifier != '' THEN s.external_identifier ELSE msgs_msg.external_identifier END,
 	modified_on = NOW(),
-	log_uuids = array_append(msgs_msg.log_uuids, s.log_uuid)
+	log_uuids = (array_append(msgs_msg.log_uuids, s.log_uuid))[1:%[3]d]
     FROM 
         (VALUES(:msg_uuid::uuid, :channel_id::int, :status, :external_identifier, :log_uuid::uuid)) AS s(msg_uuid, channel_id, status, external_identifier, log_uuid),
         contacts_contact c,
         msgs_msg old
     WHERE msgs_msg.uuid = s.msg_uuid AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O' AND c.id = msgs_msg.contact_id AND old.id = msgs_msg.id
-RETURNING msgs_msg.uuid AS msg_uuid, msgs_msg.status AS msg_status, msgs_msg.failed_reason, c.uuid AS contact_uuid, msgs_msg.org_id, msgs_msg.status IS DISTINCT FROM old.status AS changed`, sqlNewMsgStatus, sqlIsErrorAttempt)
+RETURNING msgs_msg.uuid AS msg_uuid, msgs_msg.status AS msg_status, msgs_msg.failed_reason, c.uuid AS contact_uuid, msgs_msg.org_id, msgs_msg.status IS DISTINCT FROM old.status AS changed`, sqlNewMsgStatus, sqlIsErrorAttempt, maxMsgLogUUIDs)
 
 // WriteStatusUpdates writes the given status updates to the database and returns the resulting changes in message
 // status. Updates which don't change a message's status - because it's already moved past them - aren't returned.
