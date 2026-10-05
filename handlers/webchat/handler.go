@@ -99,6 +99,9 @@ func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 	receive := channels.Receive(h, channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))
 	r.Add(h, http.MethodPost, "receive", channels.ReceiveKindMsg.LogType(), withCORS(receive))
 
+	status := channels.Receive(h, channels.ReceiveKindStatus, handlers.JSONPayload(h.receiveStatus))
+	r.Add(h, http.MethodPost, "status", channels.ReceiveKindStatus.LogType(), withCORS(status))
+
 	r.Add(h, http.MethodGet, "history", models.ChannelLogTypeChatHistory, withCORS(h.history))
 
 	r.Add(h, http.MethodPost, "upload", models.ChannelLogTypeChatUpload, withCORS(h.upload))
@@ -106,6 +109,7 @@ func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 	// the chat widget runs on arbitrary third-party websites, so all the endpoints need CORS preflight support
 	r.Add(h, http.MethodOptions, "start", models.ChannelLogTypeUnknown, h.preflight)
 	r.Add(h, http.MethodOptions, "receive", models.ChannelLogTypeUnknown, h.preflight)
+	r.Add(h, http.MethodOptions, "status", models.ChannelLogTypeUnknown, h.preflight)
 	r.Add(h, http.MethodOptions, "history", models.ChannelLogTypeUnknown, h.preflight)
 	r.Add(h, http.MethodOptions, "upload", models.ChannelLogTypeUnknown, h.preflight)
 	return h
@@ -297,6 +301,53 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 		msg.WithAttachment(att)
 	}
 	in.Msg(msg)
+	return nil
+}
+
+// the statuses a chat client can report for the messages it's been sent
+var reportableStatuses = map[string]models.MsgStatus{
+	"delivered": models.MsgStatusDelivered,
+	"read":      models.MsgStatusRead,
+}
+
+type statusPayload struct {
+	ChatID string `json:"chat_id" validate:"required"`
+	Status string `json:"status"  validate:"required,oneof=delivered read"`
+	// a client reports in batches - e.g. everything a history fetch returned - capped at a page of history
+	MsgUUIDs []models.MsgUUID `json:"msg_uuids" validate:"required,min=1,max=25,dive,uuid"`
+}
+
+// receiveStatus is our receive function for a chat client reporting that the visitor's browser has received or
+// displayed messages it was sent. Like receive, possession of the chat ID is what authenticates the caller.
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, payload *statusPayload, in *channels.Received, clog *models.ChannelLog) error {
+	urn, err := urns.NewFromParts(urns.WebChat.Prefix, payload.ChatID, nil, "")
+	if err != nil {
+		return fmt.Errorf("invalid chat id: %s", payload.ChatID)
+	}
+
+	contact, err := models.GetContact(ctx, h.Runtime(), channel, urn, nil, "", false, clog)
+	if err != nil {
+		return fmt.Errorf("error looking up contact: %w", err)
+	}
+	if contact == nil {
+		return fmt.Errorf("unknown chat id: %s", payload.ChatID)
+	}
+
+	// status writes are only scoped to the channel, so without this a chat could report on another chat's
+	// messages - anything that isn't an outgoing message in this conversation is ignored
+	owned, err := models.GetChatOutgoingUUIDs(ctx, h.Runtime().DB, channel, contact.URNID_, payload.MsgUUIDs)
+	if err != nil {
+		return fmt.Errorf("error looking up chat messages: %w", err)
+	}
+
+	status := reportableStatuses[payload.Status]
+	for _, msgUUID := range payload.MsgUUIDs {
+		if slices.Contains(owned, msgUUID) {
+			in.Status(models.NewStatusUpdate(channel, msgUUID, status, clog))
+		} else {
+			in.Ignored(fmt.Sprintf("unknown message: %s", msgUUID))
+		}
+	}
 	return nil
 }
 

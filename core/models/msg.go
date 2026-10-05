@@ -517,6 +517,26 @@ func GetChatMsgs(ctx context.Context, db *sqlx.DB, channel *Channel, urnID Conta
 	return msgs, nil
 }
 
+const sqlSelectChatOutgoingUUIDs = `
+SELECT m.uuid
+  FROM msgs_msg m
+ WHERE m.contact_urn_id = $1 AND m.channel_id = $2 AND m.direction = 'O' AND m.uuid = ANY($3::uuid[])`
+
+// GetChatOutgoingUUIDs returns which of the given message UUIDs are outgoing messages between the given URN and
+// channel - scoped like GetChatMsgs to a single conversation
+func GetChatOutgoingUUIDs(ctx context.Context, db *sqlx.DB, channel *Channel, urnID ContactURNID, uuids []MsgUUID) ([]MsgUUID, error) {
+	strs := make([]string, len(uuids))
+	for i, u := range uuids {
+		strs[i] = string(u)
+	}
+
+	found := make([]MsgUUID, 0, len(uuids))
+	if err := db.SelectContext(ctx, &found, sqlSelectChatOutgoingUUIDs, urnID, channel.ID(), pq.Array(strs)); err != nil {
+		return nil, err
+	}
+	return found, nil
+}
+
 type MsgOrigin string
 
 const (

@@ -38,6 +38,7 @@ const (
 	receiveURL  = "/c/wch/" + channelUUID + "/receive"
 	historyURL  = "/c/wch/" + channelUUID + "/history"
 	uploadURL   = "/c/wch/" + channelUUID + "/upload"
+	statusURL   = "/c/wch/" + channelUUID + "/status"
 
 	testChatID = "vM0GGhDrqpTQefIEinK0up3C" // what the secure source seeded below generates
 )
@@ -469,6 +470,80 @@ func TestHistoryRateLimit(t *testing.T) {
 	require.NoError(t, err)
 	assert.Greater(t, ttl, 0)
 	assert.LessOrEqual(t, ttl, historyLimitWindow)
+}
+
+func TestStatus(t *testing.T) {
+	_, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	random.SetSecureSource(random.NewSeededSource(1234))
+	defer random.SetSecureSource(random.DefaultSecureSource)
+
+	s := web.NewServer(rt)
+	testsuite.InsertChannel(t, rt, testChannels[0])
+	s.MountHandler(newHandler)
+
+	req, _ := http.NewRequest(http.MethodPost, "https://localhost"+startURL, strings.NewReader(`{}`))
+	rr := httptest.NewRecorder()
+	s.Router().ServeHTTP(rr, req)
+	require.Equal(t, 200, rr.Code)
+
+	var contactID, urnID int64
+	require.NoError(t, rt.DB.Get(&contactID, `SELECT contact_id FROM contacts_contacturn WHERE identity = $1`, "webchat:"+testChatID))
+	require.NoError(t, rt.DB.Get(&urnID, `SELECT id FROM contacts_contacturn WHERE identity = $1`, "webchat:"+testChatID))
+
+	insertMsg := func(uuid, direction, status string, contID, cURNID int64) {
+		rt.DB.MustExec(`INSERT INTO msgs_msg(uuid, text, created_on, modified_on, direction, status, visibility, msg_type, is_android, high_priority, msg_count, error_count, channel_id, contact_id, contact_urn_id, org_id)
+			VALUES($1, 'Hi', NOW(), NOW(), $2, $3, 'V', 'T', FALSE, FALSE, 1, 0, $4, $5, $6, 1)`,
+			uuid, direction, status, testChannels[0].ID(), contID, cURNID)
+	}
+
+	insertMsg("11f0a1d2-0000-7000-8000-000000000001", "O", "W", contactID, urnID)
+	insertMsg("11f0a1d2-0000-7000-8000-000000000002", "O", "W", contactID, urnID)
+	insertMsg("11f0a1d2-0000-7000-8000-000000000003", "I", "P", contactID, urnID) // the visitor's own message
+	insertMsg("11f0a1d2-0000-7000-8000-000000000004", "O", "W", 100, 1000)        // another contact's message
+
+	post := func(body string) *httptest.ResponseRecorder {
+		req, _ := http.NewRequest(http.MethodPost, "https://localhost"+statusURL, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		s.Router().ServeHTTP(rr, req)
+		return rr
+	}
+
+	// only the outgoing messages in this chat get updates - the rest are ignored and left out of the response
+	rr = post(`{"chat_id": "` + testChatID + `", "status": "delivered", "msg_uuids": [
+		"11f0a1d2-0000-7000-8000-000000000001", "11f0a1d2-0000-7000-8000-000000000002",
+		"11f0a1d2-0000-7000-8000-000000000003", "11f0a1d2-0000-7000-8000-000000000004"
+	]}`)
+	assert.Equal(t, 200, rr.Code)
+	assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+	assert.JSONEq(t, `{"message": "Status Update Accepted", "data": [
+		{"type": "status", "channel_uuid": "`+channelUUID+`", "status": "D"},
+		{"type": "status", "channel_uuid": "`+channelUUID+`", "status": "D"}
+	]}`, rr.Body.String())
+
+	rr = post(`{"chat_id": "` + testChatID + `", "status": "read", "msg_uuids": ["11f0a1d2-0000-7000-8000-000000000001"]}`)
+	assert.Equal(t, 200, rr.Code)
+
+	// bad requests: an unknown chat, a status a client can't report, and no or malformed message UUIDs
+	for _, body := range []string{
+		`{"chat_id": "xxxxxhDrqpTQefIEinK0up3C", "status": "read", "msg_uuids": ["11f0a1d2-0000-7000-8000-000000000001"]}`,
+		`{"chat_id": "` + testChatID + `", "status": "failed", "msg_uuids": ["11f0a1d2-0000-7000-8000-000000000001"]}`,
+		`{"chat_id": "` + testChatID + `", "status": "read", "msg_uuids": []}`,
+		`{"chat_id": "` + testChatID + `", "status": "read", "msg_uuids": ["11f0a1d2"]}`,
+	} {
+		assert.Equal(t, 400, post(body).Code, body)
+	}
+
+	// stopping the status writer flushes what it's queued
+	models.Stop()
+
+	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_msg WHERE uuid = '11f0a1d2-0000-7000-8000-000000000001'`).Returns("R")
+	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_msg WHERE uuid = '11f0a1d2-0000-7000-8000-000000000002'`).Returns("D")
+	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_msg WHERE uuid = '11f0a1d2-0000-7000-8000-000000000003'`).Returns("P")
+	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_msg WHERE uuid = '11f0a1d2-0000-7000-8000-000000000004'`).Returns("W")
 }
 
 // makeUpload posts a multipart upload request from the given IP - a nil file omits the file part entirely
