@@ -155,7 +155,7 @@ func TestCORS(t *testing.T) {
 	s.MountHandler(newHandler)
 
 	// preflights on all the endpoints are answered without needing the channel
-	for _, path := range []string{startURL, receiveURL, historyURL, uploadURL} {
+	for _, path := range []string{startURL, receiveURL, historyURL, uploadURL, statusURL} {
 		req, _ := http.NewRequest(http.MethodOptions, "https://localhost"+path, nil)
 		rr := httptest.NewRecorder()
 		s.Router().ServeHTTP(rr, req)
@@ -188,6 +188,7 @@ func TestAllowedDomains(t *testing.T) {
 	const cfgChannelUUID = "7d3fb8a2-5c1e-4b9f-a6d4-2e8c0f7b5a19"
 	cfgStartURL := "/c/wch/" + cfgChannelUUID + "/start"
 	cfgReceiveURL := "/c/wch/" + cfgChannelUUID + "/receive"
+	cfgStatusURL := "/c/wch/" + cfgChannelUUID + "/status"
 
 	s := web.NewServer(rt)
 	testsuite.InsertChannel(t, rt, testChannels[0])
@@ -233,10 +234,12 @@ func TestAllowedDomains(t *testing.T) {
 		assert.Empty(t, rr.Header().Get("Access-Control-Allow-Origin"), origin)
 	}
 
-	// on the receive endpoint too
-	rr = request(cfgReceiveURL, "https://evil.com")
-	assert.Equal(t, 403, rr.Code)
-	assert.Empty(t, rr.Header().Get("Access-Control-Allow-Origin"))
+	// on the receive and status endpoints too
+	for _, path := range []string{cfgReceiveURL, cfgStatusURL} {
+		rr = request(path, "https://evil.com")
+		assert.Equal(t, 403, rr.Code, path)
+		assert.Empty(t, rr.Header().Get("Access-Control-Allow-Origin"), path)
+	}
 
 	// and on the history endpoint, whose GET requests get the same treatment
 	getHistory := func(origin string) *httptest.ResponseRecorder {
@@ -524,26 +527,88 @@ func TestStatus(t *testing.T) {
 		{"type": "status", "channel_uuid": "`+channelUUID+`", "status": "D"}
 	]}`, rr.Body.String())
 
+	// status updates are batched, so flush them by restarting the status writer
+	flushStatuses := func() {
+		models.Stop()
+		require.NoError(t, models.Start(rt))
+	}
+
+	flushStatuses()
+	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_msg WHERE uuid = '11f0a1d2-0000-7000-8000-000000000001'`).Returns("D")
+	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_msg WHERE uuid = '11f0a1d2-0000-7000-8000-000000000002'`).Returns("D")
+
 	rr = post(`{"chat_id": "` + testChatID + `", "status": "read", "msg_uuids": ["11f0a1d2-0000-7000-8000-000000000001"]}`)
 	assert.Equal(t, 200, rr.Code)
+	assert.Contains(t, rr.Body.String(), `"status":"R"`)
+	flushStatuses()
 
-	// bad requests: an unknown chat, a status a client can't report, and no or malformed message UUIDs
+	// a message already at or past the reported status gets no update - neither a repeated read nor a late delivered
+	for _, status := range []string{"read", "delivered"} {
+		rr = post(`{"chat_id": "` + testChatID + `", "status": "` + status + `", "msg_uuids": ["11f0a1d2-0000-7000-8000-000000000001"]}`)
+		assert.Equal(t, 200, rr.Code, status)
+		assert.JSONEq(t, `{"message": "Status Update Accepted", "data": []}`, rr.Body.String(), status)
+	}
+
+	// bad requests: an unknown chat, a status a client can't report, and no, malformed or duplicate message UUIDs
 	for _, body := range []string{
 		`{"chat_id": "xxxxxhDrqpTQefIEinK0up3C", "status": "read", "msg_uuids": ["11f0a1d2-0000-7000-8000-000000000001"]}`,
 		`{"chat_id": "` + testChatID + `", "status": "failed", "msg_uuids": ["11f0a1d2-0000-7000-8000-000000000001"]}`,
 		`{"chat_id": "` + testChatID + `", "status": "read", "msg_uuids": []}`,
 		`{"chat_id": "` + testChatID + `", "status": "read", "msg_uuids": ["11f0a1d2"]}`,
+		`{"chat_id": "` + testChatID + `", "status": "read", "msg_uuids": ["11f0a1d2-0000-7000-8000-000000000002", "11f0a1d2-0000-7000-8000-000000000002"]}`,
 	} {
 		assert.Equal(t, 400, post(body).Code, body)
 	}
 
-	// stopping the status writer flushes what it's queued
-	models.Stop()
+	flushStatuses()
 
 	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_msg WHERE uuid = '11f0a1d2-0000-7000-8000-000000000001'`).Returns("R")
 	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_msg WHERE uuid = '11f0a1d2-0000-7000-8000-000000000002'`).Returns("D")
 	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_msg WHERE uuid = '11f0a1d2-0000-7000-8000-000000000003'`).Returns("P")
 	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_msg WHERE uuid = '11f0a1d2-0000-7000-8000-000000000004'`).Returns("W")
+
+	// the ignored repeats didn't record anything more on the message than its two real updates
+	assertdb.Query(t, rt.DB, `SELECT array_length(log_uuids, 1) FROM msgs_msg WHERE uuid = '11f0a1d2-0000-7000-8000-000000000001'`).Returns(2)
+}
+
+func TestStatusRateLimit(t *testing.T) {
+	_, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	random.SetSecureSource(random.NewSeededSource(1234))
+	defer random.SetSecureSource(random.DefaultSecureSource)
+
+	s := web.NewServer(rt)
+	testsuite.InsertChannel(t, rt, testChannels[0])
+	s.MountHandler(newHandler)
+
+	req, _ := http.NewRequest(http.MethodPost, "https://localhost"+startURL, strings.NewReader(`{}`))
+	rr := httptest.NewRecorder()
+	s.Router().ServeHTTP(rr, req)
+	require.Equal(t, 200, rr.Code)
+
+	post := func(chatID string) *httptest.ResponseRecorder {
+		body := `{"chat_id": "` + chatID + `", "status": "read", "msg_uuids": ["11f0a1d2-0000-7000-8000-000000000001"]}`
+		req, _ := http.NewRequest(http.MethodPost, "https://localhost"+statusURL, strings.NewReader(body))
+		rr := httptest.NewRecorder()
+		s.Router().ServeHTTP(rr, req)
+		return rr
+	}
+
+	// a chat can report statuses up to the limit of requests within the window...
+	for i := range statusLimit {
+		assert.Equal(t, 200, post(testChatID).Code, "request %d", i)
+	}
+
+	// ...then gets throttled, with the CORS header still on the error so the widget can read it
+	rr = post(testChatID)
+	assert.Equal(t, 429, rr.Code)
+	assert.Contains(t, rr.Body.String(), "rate limit exceeded")
+	assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+
+	// but other chats aren't affected - the limit is per chat (an unknown one just fails its lookup)
+	assert.Equal(t, 400, post("xxxxxhDrqpTQefIEinK0up3C").Code)
 }
 
 // makeUpload posts a multipart upload request from the given IP - a nil file omits the file part entirely
