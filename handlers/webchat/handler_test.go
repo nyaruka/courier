@@ -40,7 +40,6 @@ const (
 	receiveURL  = "/c/wch/" + channelUUID + "/receive"
 	historyURL  = "/c/wch/" + channelUUID + "/history"
 	uploadURL   = "/c/wch/" + channelUUID + "/upload"
-	typingURL   = "/c/wch/" + channelUUID + "/typing"
 
 	testChatID = "vM0GGhDrqpTQefIEinK0up3C" // what the secure source seeded below generates
 )
@@ -157,7 +156,7 @@ func TestCORS(t *testing.T) {
 	s.MountHandler(newHandler)
 
 	// preflights on all the endpoints are answered without needing the channel
-	for _, path := range []string{startURL, receiveURL, historyURL, uploadURL, typingURL} {
+	for _, path := range []string{startURL, receiveURL, historyURL, uploadURL} {
 		req, _ := http.NewRequest(http.MethodOptions, "https://localhost"+path, nil)
 		rr := httptest.NewRecorder()
 		s.Router().ServeHTTP(rr, req)
@@ -755,82 +754,6 @@ func TestOutgoing(t *testing.T) {
 	// a publish failure is returned as a send error
 	rt.Centrifugo.Client.(*centrifugo.MockClient).SetError(errors.New("boom"))
 	assert.EqualError(t, send(), "error publishing message event: boom")
-}
-
-// the framework can't assert socket publishes, so what visitor typing publishes is tested directly
-func TestTyping(t *testing.T) {
-	_, rt := testsuite.Runtime(t)
-	testsuite.ResetDB(t, rt)
-	testsuite.ResetValkey(t, rt)
-
-	random.SetSecureSource(random.NewSeededSource(1234))
-	defer random.SetSecureSource(random.DefaultSecureSource)
-
-	dates.SetNowFunc(dates.NewFixedNow(time.Date(2025, 10, 13, 11, 20, 30, 0, time.UTC)))
-	defer dates.SetNowFunc(time.Now)
-
-	s := web.NewServer(rt)
-	testsuite.InsertChannel(t, rt, testChannels[0])
-	s.MountHandler(newHandler)
-
-	req, _ := http.NewRequest(http.MethodPost, "https://localhost"+startURL, strings.NewReader(`{}`))
-	rr := httptest.NewRecorder()
-	s.Router().ServeHTTP(rr, req)
-	require.Equal(t, 200, rr.Code)
-
-	var contactUUID models.ContactUUID
-	require.NoError(t, rt.DB.Get(&contactUUID, `SELECT c.uuid FROM contacts_contact c JOIN contacts_contacturn u ON u.contact_id = c.id WHERE u.identity = $1`, "webchat:"+testChatID))
-	socket := models.HistorySocket(contactUUID)
-
-	post := func(typ string) *httptest.ResponseRecorder {
-		req, _ := http.NewRequest(http.MethodPost, "https://localhost"+typingURL, strings.NewReader(`{"chat_id": "`+testChatID+`", "type": "`+typ+`"}`))
-		rr := httptest.NewRecorder()
-		s.Router().ServeHTTP(rr, req)
-		return rr
-	}
-
-	// nobody is watching the contact's history yet so the publish is dropped
-	assert.Equal(t, 204, post("typing_started").Code)
-	assert.Empty(t, testsuite.CentrifugoHistory(t, rt, socket))
-
-	vc := rt.VK.Get()
-	defer vc.Close()
-	_, err := vc.Do("SET", centrifugo.SubscriptionKey(socket), "1")
-	require.NoError(t, err)
-
-	// with a subscriber, typing is published as an incoming engine typing event
-	assert.Equal(t, 204, post("typing_started").Code)
-	assert.Equal(t, 204, post("typing_stopped").Code)
-
-	sent := testsuite.CentrifugoHistory(t, rt, socket)
-	require.Len(t, sent, 2)
-	for i, typ := range []string{"typing_started", "typing_stopped"} {
-		decoded := map[string]any{}
-		require.NoError(t, json.Unmarshal(sent[i], &decoded))
-		assert.NotEmpty(t, decoded["uuid"])
-		delete(decoded, "uuid")
-		assert.Equal(t, map[string]any{
-			"type":       typ,
-			"created_on": "2025-10-13T11:20:30Z",
-			"direction":  "incoming",
-			"channel":    map[string]any{"uuid": channelUUID, "name": "Channel: " + channelUUID},
-			"urn":        "webchat:" + testChatID,
-		}, decoded)
-	}
-
-	// a chat can report typing up to the limit within the window, then gets throttled with the CORS header still
-	// on the error so the widget can read it
-	for i := 3; i < typingLimit; i++ {
-		assert.Equal(t, 204, post("typing_started").Code, "request %d", i)
-	}
-	rr = post("typing_started")
-	assert.Equal(t, 429, rr.Code)
-	assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
-
-	ttl, err := redis.Int(vc.Do("TTL", "chat-typing:"+channelUUID+"|"+testChatID))
-	require.NoError(t, err)
-	assert.Greater(t, ttl, 0)
-	assert.LessOrEqual(t, ttl, typingLimitWindow)
 }
 
 // like sends, user typing is a publish rather than an HTTP request so it's tested directly

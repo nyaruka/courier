@@ -40,11 +40,6 @@ const (
 	eventTypeMsgOut = "msg_out"
 	eventTypeMsgIn  = "msg_in"
 
-	// the types of the events a chat client sees while a user is composing a reply, published to the
-	// conversation's chat socket - and the types a client reports for the visitor's own typing
-	eventTypeTypingStarted = "typing_started"
-	eventTypeTypingStopped = "typing_stopped"
-
 	// how many chats a single IP can start on a channel per window - generous for a real visitor (who starts
 	// one chat, ever) while capping how fast anyone can mint contacts
 	startLimit       = 10
@@ -55,11 +50,6 @@ const (
 	historyPageSize    = 25
 	historyLimit       = 10
 	historyLimitWindow = 60 // seconds
-
-	// how many typing reports a single chat can make per window - enough for a client pulsing typing_started
-	// every few seconds while the visitor composes, plus the typing_stopped after each message
-	typingLimit       = 30
-	typingLimitWindow = 60 // seconds
 
 	// the most a visitor can upload in one file - matching what the platform accepts for media uploads
 	// elsewhere - and how many uploads a single chat can make per window
@@ -115,14 +105,11 @@ func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 
 	r.Add(h, http.MethodPost, "upload", models.ChannelLogTypeChatUpload, withCORS(h.upload))
 
-	r.Add(h, http.MethodPost, "typing", models.ChannelLogTypeChatTyping, withCORS(h.typing))
-
 	// the chat widget runs on arbitrary third-party websites, so all the endpoints need CORS preflight support
 	r.Add(h, http.MethodOptions, "start", models.ChannelLogTypeUnknown, h.preflight)
 	r.Add(h, http.MethodOptions, "receive", models.ChannelLogTypeUnknown, h.preflight)
 	r.Add(h, http.MethodOptions, "history", models.ChannelLogTypeUnknown, h.preflight)
 	r.Add(h, http.MethodOptions, "upload", models.ChannelLogTypeUnknown, h.preflight)
-	r.Add(h, http.MethodOptions, "typing", models.ChannelLogTypeUnknown, h.preflight)
 	return h
 }
 
@@ -400,63 +387,6 @@ func (h *handler) upload(ctx context.Context, channel *models.Channel, w http.Re
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonx.MustMarshal(&uploadResponse{Attachment: fmt.Sprintf("%s:%s", fileType.MIME.Value, storageURL)}))
-	return nil, nil
-}
-
-type typingPayload struct {
-	ChatID string `json:"chat_id" validate:"required"`
-	Type   string `json:"type"    validate:"required,oneof=typing_started typing_stopped"`
-}
-
-// typing is our HTTP handler for a chat client reporting that the visitor has started or stopped composing a
-// message. Nothing is written - like the typing users publish, it's ephemeral indicator state - so it's published
-// straight to the contact's history socket, as an incoming engine typing event, for any users watching. Like
-// receive, possession of the chat ID is what authenticates the caller.
-func (h *handler) typing(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
-	payload := &typingPayload{}
-	if err := handlers.DecodeAndValidateJSON(payload, r); err != nil {
-		channels.LogRequestError(r, channel, err)
-		return nil, channels.RespondError(w, http.StatusBadRequest, err)
-	}
-
-	// validated before the throttle so malformed chat IDs can't mint valkey keys
-	urn, err := urns.NewFromParts(urns.WebChat.Prefix, payload.ChatID, nil, "")
-	if err != nil {
-		channels.LogRequestError(r, channel, fmt.Errorf("invalid chat id: %s", payload.ChatID))
-		return nil, channels.RespondError(w, http.StatusBadRequest, fmt.Errorf("invalid chat id"))
-	}
-
-	// throttled per chat like history - a composing visitor only pulses every few seconds
-	if !h.allow(fmt.Sprintf("chat-typing:%s|%s", channel.UUID(), payload.ChatID), typingLimit, typingLimitWindow) {
-		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
-		return nil, channels.RespondError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
-	}
-
-	// like receive, a chat ID we've never minted is a bad request
-	contact, err := models.GetContact(ctx, h.Runtime(), channel, urn, nil, "", false, clog)
-	if err != nil {
-		return nil, fmt.Errorf("error looking up contact: %w", err)
-	}
-	if contact == nil {
-		channels.LogRequestError(r, channel, fmt.Errorf("unknown chat id: %s", payload.ChatID))
-		return nil, channels.RespondError(w, http.StatusBadRequest, fmt.Errorf("unknown chat id"))
-	}
-
-	channelRef := assets.NewChannelReference(assets.ChannelUUID(channel.UUID()), channel.Name())
-	var event events.Event
-	if payload.Type == eventTypeTypingStarted {
-		event = events.NewTypingStarted(events.DirectionIncoming, channelRef, urn, "")
-	} else {
-		event = events.NewTypingStopped(events.DirectionIncoming, channelRef, urn, "")
-	}
-
-	// presence-aware and best-effort like all socket publishes - nobody watching means nothing is sent
-	pub := &centrifugo.Publication{Channel: models.HistorySocket(contact.UUID_), Data: event}
-	if err := h.Runtime().Centrifugo.Publish(ctx, pub); err != nil {
-		return nil, fmt.Errorf("error publishing typing event: %w", err)
-	}
-
-	w.WriteHeader(http.StatusNoContent)
 	return nil, nil
 }
 
