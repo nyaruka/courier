@@ -24,6 +24,8 @@ import (
 	"github.com/nyaruka/gocommon/random"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
+	"github.com/nyaruka/goflow/assets"
+	"github.com/nyaruka/goflow/core/events"
 )
 
 const (
@@ -541,5 +543,51 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		return fmt.Errorf("error publishing message event: %w", err)
 	}
 
+	return nil
+}
+
+// typingEvent is how a chat client sees a user composing a reply. The client decays the indicator on its own,
+// so a lost typing_stopped only leaves it showing until then.
+type typingEvent struct {
+	Type      string    `json:"type"`
+	CreatedOn time.Time `json:"created_on"`
+
+	// who is typing - without an avatar since engine events only reference users by UUID and name, which a
+	// client can match against the senders of messages it has seen
+	User *msgUser `json:"user,omitempty"`
+}
+
+// publishing is cheap so typing_stopped is supported too, and typing_started is resent often enough to stay
+// ahead of a client decaying the indicator
+var sendableEvents = map[string]time.Duration{events.TypeTypingStarted: 5 * time.Second, events.TypeTypingStopped: 0}
+
+// SendableEvents declares support for typing indicators
+func (h *handler) SendableEvents(*models.Channel) map[string]time.Duration {
+	return sendableEvents
+}
+
+// SendEvent publishes a user's typing to the conversation's chat socket
+func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event events.Event, clog *models.ChannelLog) error {
+	var urn urns.URN
+	var user *assets.UserReference
+	switch typed := event.(type) {
+	case *events.TypingStarted:
+		urn, user = typed.URN, typed.User_
+	case *events.TypingStopped:
+		urn, user = typed.URN, typed.User_
+	default:
+		return fmt.Errorf("unsupported event type: %s", event.Type())
+	}
+
+	data := &typingEvent{Type: event.Type(), CreatedOn: dates.Now()}
+	if user != nil {
+		data.User = &msgUser{UUID: models.UserUUID(user.UUID), Name: user.Name}
+	}
+
+	// like message sends, dropped if the visitor doesn't have the chat open
+	pub := &centrifugo.Publication{Channel: models.ChatSocket(ch.UUID(), urn.Path()), Data: data}
+	if err := h.Runtime().Centrifugo.Publish(ctx, pub); err != nil {
+		return fmt.Errorf("error publishing typing event: %w", err)
+	}
 	return nil
 }

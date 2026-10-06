@@ -28,6 +28,8 @@ import (
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/random"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/goflow/assets"
+	"github.com/nyaruka/goflow/core/events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -752,6 +754,55 @@ func TestOutgoing(t *testing.T) {
 	// a publish failure is returned as a send error
 	rt.Centrifugo.Client.(*centrifugo.MockClient).SetError(errors.New("boom"))
 	assert.EqualError(t, send(), "error publishing message event: boom")
+}
+
+// like sends, user typing is a publish rather than an HTTP request so it's tested directly
+func TestSendEvent(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	dates.SetNowFunc(dates.NewFixedNow(time.Date(2025, 10, 13, 11, 20, 30, 0, time.UTC)))
+	defer dates.SetNowFunc(time.Now)
+
+	ch := testChannels[0]
+	testsuite.InsertChannel(t, rt, ch)
+
+	h := newHandler(rt, channels.NewRoutes())
+	assert.Equal(t, map[string]time.Duration{events.TypeTypingStarted: 5 * time.Second, events.TypeTypingStopped: 0}, h.SendableEvents(ch))
+
+	socket := models.ChatSocket(ch.UUID(), testChatID)
+	vc := rt.VK.Get()
+	_, err := vc.Do("SET", centrifugo.SubscriptionKey(socket), "1")
+	vc.Close()
+	require.NoError(t, err)
+
+	channelRef := assets.NewChannelReference(assets.ChannelUUID(ch.UUID()), "WebChat")
+	urn := urns.URN("webchat:" + testChatID)
+
+	send := func(e events.Event) error {
+		return h.SendEvent(ctx, ch, e, models.NewChannelLogForEventSend(ch, nil))
+	}
+
+	// typing by a user is attributed to them...
+	started := events.NewTypingStarted(events.DirectionOutgoing, channelRef, urn, "")
+	started.SetUser(assets.NewUserReference("c7c5c4a2-1b2c-4d3e-8f9a-0b1c2d3e4f5a", "Bob McBob"), "ui")
+	require.NoError(t, send(started))
+
+	// ...and anything else isn't
+	require.NoError(t, send(events.NewTypingStopped(events.DirectionOutgoing, channelRef, urn, "")))
+
+	sent := testsuite.CentrifugoHistory(t, rt, socket)
+	require.Len(t, sent, 2)
+	assert.JSONEq(t, `{"type": "typing_started", "created_on": "2025-10-13T11:20:30Z", "user": {"uuid": "c7c5c4a2-1b2c-4d3e-8f9a-0b1c2d3e4f5a", "name": "Bob McBob"}}`, string(sent[0]))
+	assert.JSONEq(t, `{"type": "typing_stopped", "created_on": "2025-10-13T11:20:30Z"}`, string(sent[1]))
+
+	// other event types aren't sendable
+	assert.EqualError(t, send(events.NewContactNameChanged("Bob")), "unsupported event type: contact_name_changed")
+
+	// and a publish failure is returned as an error
+	rt.Centrifugo.Client.(*centrifugo.MockClient).SetError(errors.New("boom"))
+	assert.EqualError(t, send(started), "error publishing typing event: boom")
 }
 
 func TestStartAtContactLimit(t *testing.T) {
