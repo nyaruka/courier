@@ -32,6 +32,7 @@ const (
 	ChannelLogTypeChatStart       svclogs.Type = "chat_start"
 	ChannelLogTypeChatHistory     svclogs.Type = "chat_history"
 	ChannelLogTypeChatUpload      svclogs.Type = "chat_upload"
+	ChannelLogTypeChatTyping      svclogs.Type = "chat_typing"
 )
 
 // ErrorRequestUnparseable is used when we couldn't fully decode an incoming request but carried on with what
