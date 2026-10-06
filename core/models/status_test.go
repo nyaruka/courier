@@ -13,6 +13,7 @@ import (
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -450,4 +451,37 @@ func TestWriteStatusUpdatesSameMsg(t *testing.T) {
 			"sent_on": true,
 			"logs":    "019a6e53-e1e8-7df7-a264-ce2372824e1d,019a6e54-671f-789a-bbb1-31cddd66c681",
 		})
+}
+
+func TestWriteStatusUpdatesLogCap(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+
+	defer testsuite.ResetDB(t, rt)
+
+	const msgUUID = models.MsgUUID("0199df0f-9f82-7689-b02d-f34105991321") // message 1
+
+	// a message one log short of the cap
+	rt.DB.MustExec(`UPDATE msgs_msg SET status = 'W', log_uuids = array_fill('019a6e53-0000-7000-8000-000000000000'::uuid, ARRAY[24])
+	                 WHERE uuid = $1`, msgUUID)
+
+	newUpdate := func(status models.MsgStatus, logUUID svclogs.UUID) *models.StatusUpdate {
+		return &models.StatusUpdate{
+			ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
+			ChannelID_:   10,
+			MsgUUID_:     msgUUID,
+			Status_:      status,
+			LogUUID:      logUUID,
+		}
+	}
+
+	// the first update takes the last place, and later ones still update the status but aren't recorded
+	_, err := models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
+		newUpdate(models.MsgStatusDelivered, "019a6e54-0000-7000-8000-000000000001"),
+		newUpdate(models.MsgStatusRead, "019a6e54-0000-7000-8000-000000000002"),
+	})
+	assert.NoError(t, err)
+
+	assertdb.Query(t, rt.DB, `SELECT status, cardinality(log_uuids) AS logs, log_uuids[25]::text AS last FROM msgs_msg
+	                           WHERE uuid = $1`, msgUUID).
+		Columns(map[string]any{"status": "R", "logs": int64(25), "last": "019a6e54-0000-7000-8000-000000000001"})
 }
