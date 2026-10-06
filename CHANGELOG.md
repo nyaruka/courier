@@ -1,3 +1,8 @@
+## v26.3.59 (2026-10-06)
+ * Send typing indicators to webchat visitors
+ * Disable review progress tracking and bump the review model to Opus 5.5
+ * Drop .gitignore entries for the retired deploy tooling
+
 ## v26.3.58 (2026-09-29)
  * Update to latest phonenumbers
 
