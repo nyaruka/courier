@@ -51,6 +51,11 @@ const (
 	historyLimit       = 10
 	historyLimitWindow = 60 // seconds
 
+	// how many status reports a single chat can make per window - a client acks each batch of messages it's
+	// shown, so a handful covers reconnects and paging back through history
+	statusLimit       = 20
+	statusLimitWindow = 60 // seconds
+
 	// the most a visitor can upload in one file - matching what the platform accepts for media uploads
 	// elsewhere - and how many uploads a single chat can make per window
 	maxUploadBytes    = 25 * 1024 * 1024
@@ -68,6 +73,9 @@ const (
 )
 
 var chatIDChars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+// errRateLimited is returned by receive functions to have the request answered as throttled rather than bad
+var errRateLimited = errors.New("rate limit exceeded")
 
 // the media types a visitor may upload - the same kinds of media the platform handles on other channels.
 // Entries ending in / allow a whole family of types.
@@ -101,6 +109,9 @@ func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 	receive := channels.Receive(h, channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))
 	r.Add(h, http.MethodPost, "receive", channels.ReceiveKindMsg.LogType(), withCORS(receive))
 
+	status := channels.Receive(h, channels.ReceiveKindStatus, handlers.JSONPayload(h.receiveStatus))
+	r.Add(h, http.MethodPost, "status", channels.ReceiveKindStatus.LogType(), withCORS(status))
+
 	r.Add(h, http.MethodGet, "history", models.ChannelLogTypeChatHistory, withCORS(h.history))
 
 	r.Add(h, http.MethodPost, "upload", models.ChannelLogTypeChatUpload, withCORS(h.upload))
@@ -108,6 +119,7 @@ func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 	// the chat widget runs on arbitrary third-party websites, so all the endpoints need CORS preflight support
 	r.Add(h, http.MethodOptions, "start", models.ChannelLogTypeUnknown, h.preflight)
 	r.Add(h, http.MethodOptions, "receive", models.ChannelLogTypeUnknown, h.preflight)
+	r.Add(h, http.MethodOptions, "status", models.ChannelLogTypeUnknown, h.preflight)
 	r.Add(h, http.MethodOptions, "history", models.ChannelLogTypeUnknown, h.preflight)
 	r.Add(h, http.MethodOptions, "upload", models.ChannelLogTypeUnknown, h.preflight)
 	return h
@@ -120,6 +132,14 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (*models.Chan
 		return nil, nil
 	}
 	return h.BaseHandler.GetChannel(ctx, r)
+}
+
+// RespondError answers a throttled request with a 429 so the widget can tell it apart from a bad one
+func (h *handler) RespondError(ctx context.Context, w http.ResponseWriter, err error) error {
+	if errors.Is(err, errRateLimited) {
+		return channels.RespondError(w, http.StatusTooManyRequests, err)
+	}
+	return h.BaseHandler.RespondError(ctx, w, err)
 }
 
 // withCORS wraps a handler function to enforce the channel's allowed domains and set the CORS header that all
@@ -299,6 +319,69 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 		msg.WithAttachment(att)
 	}
 	in.Msg(msg)
+	return nil
+}
+
+// the statuses a chat client can report for the messages it's been sent
+var reportableStatuses = map[string]models.MsgStatus{
+	"delivered": models.MsgStatusDelivered,
+	"read":      models.MsgStatusRead,
+}
+
+// the statuses a message can't be moved on from by each reportable status. Every status update is recorded on
+// the message even when it changes nothing, so messages already there are skipped rather than letting repeated
+// acks - a client re-acking on reconnect - grow them. Status writes are batched, so a repeat that races the
+// first write still gets through, which the per-chat throttle bounds.
+var reportedOrPast = map[models.MsgStatus][]models.MsgStatus{
+	models.MsgStatusDelivered: {models.MsgStatusDelivered, models.MsgStatusRead, models.MsgStatusFailed},
+	models.MsgStatusRead:      {models.MsgStatusRead, models.MsgStatusFailed},
+}
+
+type statusPayload struct {
+	ChatID string `json:"chat_id" validate:"required"`
+	Status string `json:"status"  validate:"required,oneof=delivered read"`
+	// a client reports in batches - e.g. everything a history fetch returned - capped at a page of history
+	MsgUUIDs []models.MsgUUID `json:"msg_uuids" validate:"required,min=1,max=25,unique,dive,uuid"`
+}
+
+// receiveStatus is our receive function for a chat client reporting that the visitor's browser has received or
+// displayed messages it was sent. Like receive, possession of the chat ID is what authenticates the caller.
+func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, payload *statusPayload, in *channels.Received, clog *models.ChannelLog) error {
+	urn, err := urns.NewFromParts(urns.WebChat.Prefix, payload.ChatID, nil, "")
+	if err != nil {
+		return fmt.Errorf("invalid chat id: %s", payload.ChatID)
+	}
+
+	// throttled per chat like history, and after validating the chat ID for the same reason
+	if !h.allow(fmt.Sprintf("chat-statuses:%s|%s", channel.UUID(), payload.ChatID), statusLimit, statusLimitWindow) {
+		return errRateLimited
+	}
+
+	contact, err := models.GetContact(ctx, h.Runtime(), channel, urn, nil, "", false, clog)
+	if err != nil {
+		return fmt.Errorf("error looking up contact: %w", err)
+	}
+	if contact == nil {
+		return fmt.Errorf("unknown chat id: %s", payload.ChatID)
+	}
+
+	status := reportableStatuses[payload.Status]
+
+	// status writes are only scoped to the channel, so without this a chat could report on another chat's
+	// messages - anything that isn't an outgoing message in this conversation, or is already at or past the
+	// reported status, is ignored
+	toUpdate, err := models.GetChatOutgoingUUIDs(ctx, h.Runtime().DB, channel, contact.URNID_, payload.MsgUUIDs, reportedOrPast[status])
+	if err != nil {
+		return fmt.Errorf("error looking up chat messages: %w", err)
+	}
+
+	for _, msgUUID := range payload.MsgUUIDs {
+		if slices.Contains(toUpdate, msgUUID) {
+			in.Status(models.NewStatusUpdate(channel, msgUUID, status, clog))
+		} else {
+			in.Ignored(fmt.Sprintf("no update needed: %s", msgUUID))
+		}
+	}
 	return nil
 }
 
