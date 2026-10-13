@@ -69,10 +69,10 @@ const (
 )
 
 var (
-	startLimiter    = vkutil.NewRateLimiter(startLimit, startLimitWindow*time.Second)
-	historyLimiter  = vkutil.NewRateLimiter(historyLimit, historyLimitWindow*time.Second)
-	uploadLimiter   = vkutil.NewRateLimiter(uploadLimit, uploadLimitWindow*time.Second)
-	uploadIPLimiter = vkutil.NewRateLimiter(uploadIPLimit, uploadIPLimitWindow*time.Second)
+	startLimiter    = vkutil.NewRateLimiter("chat-starts", startLimit, startLimitWindow*time.Second)
+	historyLimiter  = vkutil.NewRateLimiter("chat-history", historyLimit, historyLimitWindow*time.Second)
+	uploadLimiter   = vkutil.NewRateLimiter("chat-uploads", uploadLimit, uploadLimitWindow*time.Second)
+	uploadIPLimiter = vkutil.NewRateLimiter("chat-uploads-ip", uploadIPLimit, uploadIPLimitWindow*time.Second)
 )
 
 var chatIDChars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
@@ -246,7 +246,7 @@ func (h *handler) start(ctx context.Context, channel *models.Channel, w http.Res
 
 // allowStart checks the requesting IP against the channel's start rate limit
 func (h *handler) allowStart(ctx context.Context, channel *models.Channel, r *http.Request) bool {
-	return h.allow(ctx, startLimiter, fmt.Sprintf("chat-starts:%s|%s", channel.UUID(), requestIP(r)))
+	return h.allow(ctx, startLimiter, fmt.Sprintf("%s|%s", channel.UUID(), requestIP(r)))
 }
 
 // requestIP returns the requesting IP. The server's RealIP middleware has already resolved forwarded headers
@@ -259,15 +259,15 @@ func requestIP(r *http.Request) string {
 	return ip
 }
 
-// allow checks a rate limit on the given key, failing open so that a valkey problem doesn't stop visitors using
+// allow checks a rate limit for the given id, failing open so that a valkey problem doesn't stop visitors using
 // their chats
-func (h *handler) allow(ctx context.Context, limiter *vkutil.RateLimiter, key string) bool {
+func (h *handler) allow(ctx context.Context, limiter *vkutil.RateLimiter, id string) bool {
 	vc := h.Runtime().VK.Get()
 	defer vc.Close()
 
-	allowed, err := limiter.Allow(ctx, vc, key)
+	allowed, err := limiter.Allow(ctx, vc, id)
 	if err != nil {
-		slog.Error("error checking rate limit", "error", err, "key", key)
+		slog.Error("error checking rate limit", "error", err, "id", id)
 		return true
 	}
 	return allowed
@@ -330,7 +330,7 @@ func (h *handler) upload(ctx context.Context, channel *models.Channel, w http.Re
 	// bodies freely by rotating chat IDs. This per-IP cap doesn't need the body, so it runs first and a
 	// throttled request is rejected before anything is buffered. Like start, distributed floods are left to
 	// edge protection.
-	if !h.allow(ctx, uploadIPLimiter, fmt.Sprintf("chat-uploads-ip:%s|%s", channel.UUID(), requestIP(r))) {
+	if !h.allow(ctx, uploadIPLimiter, fmt.Sprintf("%s|%s", channel.UUID(), requestIP(r))) {
 		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
 		return nil, channels.RespondError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
 	}
@@ -360,7 +360,7 @@ func (h *handler) upload(ctx context.Context, channel *models.Channel, w http.Re
 
 	// throttled per chat rather than per IP - a visitor attaching files only needs a handful at a time, and
 	// like start, anything distributed is left to edge protection
-	if !h.allow(ctx, uploadLimiter, fmt.Sprintf("chat-uploads:%s|%s", channel.UUID(), chatID)) {
+	if !h.allow(ctx, uploadLimiter, fmt.Sprintf("%s|%s", channel.UUID(), chatID)) {
 		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
 		return nil, channels.RespondError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
 	}
@@ -445,7 +445,7 @@ func (h *handler) history(ctx context.Context, channel *models.Channel, w http.R
 
 	// throttled per chat rather than per IP - a real client only needs a small burst at reconnect, and like
 	// start, anything distributed is left to edge protection
-	if !h.allow(ctx, historyLimiter, fmt.Sprintf("chat-history:%s|%s", channel.UUID(), chatID)) {
+	if !h.allow(ctx, historyLimiter, fmt.Sprintf("%s|%s", channel.UUID(), chatID)) {
 		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
 		return nil, channels.RespondError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
 	}
