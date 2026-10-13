@@ -44,35 +44,35 @@ const (
 	// how many chats a single IP can start on a channel per window - generous for a real visitor (who starts
 	// one chat, ever) while capping how fast anyone can mint contacts
 	startLimit       = 10
-	startLimitWindow = 60 // seconds
+	startLimitWindow = time.Minute
 
 	// how many messages a history request returns, and how many requests a single chat can make per window -
 	// enough for a reconnecting client to catch up without letting anyone hammer the database
 	historyPageSize    = 25
 	historyLimit       = 10
-	historyLimitWindow = 60 // seconds
+	historyLimitWindow = time.Minute
 
 	// the most a visitor can upload in one file - matching what the platform accepts for media uploads
 	// elsewhere - and how many uploads a single chat can make per window
 	maxUploadBytes    = 25 * 1024 * 1024
 	uploadLimit       = 5
-	uploadLimitWindow = 60 // seconds
+	uploadLimitWindow = time.Minute
 
 	// how many uploads a single IP can make on a channel per window - a backstop above the per-chat limit
 	// (so visitors sharing a NAT aren't broken) that a caller can't reset by rotating chat IDs. It also
 	// bounds upload memory per source: the worst case is this many bodies buffered per IP per window.
 	uploadIPLimit       = 10
-	uploadIPLimitWindow = 60 // seconds
+	uploadIPLimitWindow = time.Minute
 
 	// slack on the request body cap for the multipart framing and fields around the file itself
 	uploadFormOverheadBytes = 64 * 1024
 )
 
 var (
-	startLimiter    = vkutil.NewRateLimiter("chat-starts", startLimit, startLimitWindow*time.Second)
-	historyLimiter  = vkutil.NewRateLimiter("chat-history", historyLimit, historyLimitWindow*time.Second)
-	uploadLimiter   = vkutil.NewRateLimiter("chat-uploads", uploadLimit, uploadLimitWindow*time.Second)
-	uploadIPLimiter = vkutil.NewRateLimiter("chat-uploads-ip", uploadIPLimit, uploadIPLimitWindow*time.Second)
+	startLimiter    = vkutil.NewRateLimiter("chat-starts", startLimit, startLimitWindow)
+	historyLimiter  = vkutil.NewRateLimiter("chat-history", historyLimit, historyLimitWindow)
+	uploadLimiter   = vkutil.NewRateLimiter("chat-uploads", uploadLimit, uploadLimitWindow)
+	uploadIPLimiter = vkutil.NewRateLimiter("chat-uploads-ip", uploadIPLimit, uploadIPLimitWindow)
 )
 
 var chatIDChars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")

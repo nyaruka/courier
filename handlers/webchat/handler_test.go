@@ -142,7 +142,7 @@ func TestStartRateLimit(t *testing.T) {
 	ttl, err := redis.Int(vc.Do("TTL", "chat-starts:"+channelUUID+"|41.23.45.67"))
 	require.NoError(t, err)
 	assert.Greater(t, ttl, 0)
-	assert.LessOrEqual(t, ttl, startLimitWindow)
+	assert.LessOrEqual(t, ttl, int(startLimitWindow.Seconds()))
 }
 
 // the framework can't assert response headers or make OPTIONS requests, so CORS support is tested directly
@@ -470,7 +470,7 @@ func TestHistoryRateLimit(t *testing.T) {
 	ttl, err := redis.Int(vc.Do("TTL", "chat-history:"+channelUUID+"|"+testChatID))
 	require.NoError(t, err)
 	assert.Greater(t, ttl, 0)
-	assert.LessOrEqual(t, ttl, historyLimitWindow)
+	assert.LessOrEqual(t, ttl, int(historyLimitWindow.Seconds()))
 }
 
 // makeUpload posts a multipart upload request from the given IP - a nil file omits the file part entirely
@@ -633,11 +633,11 @@ func TestUploadRateLimit(t *testing.T) {
 	ttl, err := redis.Int(vc.Do("TTL", "chat-uploads:"+channelUUID+"|"+testChatID))
 	require.NoError(t, err)
 	assert.Greater(t, ttl, 0)
-	assert.LessOrEqual(t, ttl, uploadLimitWindow)
+	assert.LessOrEqual(t, ttl, int(uploadLimitWindow.Seconds()))
 	ttl, err = redis.Int(vc.Do("TTL", "chat-uploads-ip:"+channelUUID+"|41.23.45.69"))
 	require.NoError(t, err)
 	assert.Greater(t, ttl, 0)
-	assert.LessOrEqual(t, ttl, uploadIPLimitWindow)
+	assert.LessOrEqual(t, ttl, int(uploadIPLimitWindow.Seconds()))
 }
 
 // sends don't make HTTP requests so the framework's outgoing cases don't fit - instead we test the socket
