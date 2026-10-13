@@ -26,6 +26,7 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/core/events"
+	"github.com/nyaruka/vkutil"
 )
 
 const (
@@ -65,6 +66,13 @@ const (
 
 	// slack on the request body cap for the multipart framing and fields around the file itself
 	uploadFormOverheadBytes = 64 * 1024
+)
+
+var (
+	startLimiter    = vkutil.NewRateLimiter(startLimit, startLimitWindow*time.Second)
+	historyLimiter  = vkutil.NewRateLimiter(historyLimit, historyLimitWindow*time.Second)
+	uploadLimiter   = vkutil.NewRateLimiter(uploadLimit, uploadLimitWindow*time.Second)
+	uploadIPLimiter = vkutil.NewRateLimiter(uploadIPLimit, uploadIPLimitWindow*time.Second)
 )
 
 var chatIDChars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
@@ -208,7 +216,7 @@ type startResponse struct {
 // relies on the edge overwriting client-supplied headers. Spoofed-header and distributed floods are left to
 // edge-level protection like any other unauthenticated endpoint.
 func (h *handler) start(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
-	if !h.allowStart(channel, r) {
+	if !h.allowStart(ctx, channel, r) {
 		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
 		return nil, channels.RespondError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
 	}
@@ -237,8 +245,8 @@ func (h *handler) start(ctx context.Context, channel *models.Channel, w http.Res
 }
 
 // allowStart checks the requesting IP against the channel's start rate limit
-func (h *handler) allowStart(channel *models.Channel, r *http.Request) bool {
-	return h.allow(fmt.Sprintf("chat-starts:%s|%s", channel.UUID(), requestIP(r)), startLimit, startLimitWindow)
+func (h *handler) allowStart(ctx context.Context, channel *models.Channel, r *http.Request) bool {
+	return h.allow(ctx, startLimiter, fmt.Sprintf("chat-starts:%s|%s", channel.UUID(), requestIP(r)))
 }
 
 // requestIP returns the requesting IP. The server's RealIP middleware has already resolved forwarded headers
@@ -253,8 +261,16 @@ func requestIP(r *http.Request) string {
 
 // allow checks a rate limit on the given key, failing open so that a valkey problem doesn't stop visitors using
 // their chats
-func (h *handler) allow(key string, limit, window int) bool {
-	return channels.AllowRate(h.Runtime(), key, limit, window)
+func (h *handler) allow(ctx context.Context, limiter *vkutil.RateLimiter, key string) bool {
+	vc := h.Runtime().VK.Get()
+	defer vc.Close()
+
+	allowed, err := limiter.Allow(ctx, vc, key)
+	if err != nil {
+		slog.Error("error checking rate limit", "error", err, "key", key)
+		return true
+	}
+	return allowed
 }
 
 type receivePayload struct {
@@ -314,7 +330,7 @@ func (h *handler) upload(ctx context.Context, channel *models.Channel, w http.Re
 	// bodies freely by rotating chat IDs. This per-IP cap doesn't need the body, so it runs first and a
 	// throttled request is rejected before anything is buffered. Like start, distributed floods are left to
 	// edge protection.
-	if !h.allow(fmt.Sprintf("chat-uploads-ip:%s|%s", channel.UUID(), requestIP(r)), uploadIPLimit, uploadIPLimitWindow) {
+	if !h.allow(ctx, uploadIPLimiter, fmt.Sprintf("chat-uploads-ip:%s|%s", channel.UUID(), requestIP(r))) {
 		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
 		return nil, channels.RespondError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
 	}
@@ -344,7 +360,7 @@ func (h *handler) upload(ctx context.Context, channel *models.Channel, w http.Re
 
 	// throttled per chat rather than per IP - a visitor attaching files only needs a handful at a time, and
 	// like start, anything distributed is left to edge protection
-	if !h.allow(fmt.Sprintf("chat-uploads:%s|%s", channel.UUID(), chatID), uploadLimit, uploadLimitWindow) {
+	if !h.allow(ctx, uploadLimiter, fmt.Sprintf("chat-uploads:%s|%s", channel.UUID(), chatID)) {
 		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
 		return nil, channels.RespondError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
 	}
@@ -429,7 +445,7 @@ func (h *handler) history(ctx context.Context, channel *models.Channel, w http.R
 
 	// throttled per chat rather than per IP - a real client only needs a small burst at reconnect, and like
 	// start, anything distributed is left to edge protection
-	if !h.allow(fmt.Sprintf("chat-history:%s|%s", channel.UUID(), chatID), historyLimit, historyLimitWindow) {
+	if !h.allow(ctx, historyLimiter, fmt.Sprintf("chat-history:%s|%s", channel.UUID(), chatID)) {
 		channels.LogRequestError(r, channel, fmt.Errorf("rate limit exceeded"))
 		return nil, channels.RespondError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
 	}
