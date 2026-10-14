@@ -13,6 +13,7 @@ import (
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -335,48 +336,68 @@ func TestStatusTransitions(t *testing.T) {
 		{from: "E", fromErrors: 2, write: "W", status: "W", errors: 2, sentOn: true, changed: true},
 	}
 
-	for _, tc := range tcs {
-		desc := fmt.Sprintf("%s -> %s", tc.from, tc.write)
+	// a message with no logs yet, one with a NULL array, and one at the cap which only takes updates that change it
+	logsSetups := map[string]string{
+		"empty": `'{}'`,
+		"null":  `NULL`,
+		"cap":   `array_fill('019a6e53-0000-7000-8000-000000000000'::uuid, ARRAY[25])`,
+	}
 
-		// an errored message is awaiting a retry
-		rt.DB.MustExec(`UPDATE msgs_msg SET status = $1::varchar, error_count = $2, failed_reason = NULL, log_uuids = '{}',
-			next_attempt = CASE WHEN $1::varchar = 'E' THEN NOW() ELSE NULL END,
-			sent_on = CASE WHEN $1::varchar IN ('W', 'S', 'D', 'R') THEN NOW() ELSE NULL END WHERE uuid = $3`, tc.from, tc.fromErrors, msgUUID)
+	for logs, logsSQL := range logsSetups {
+		for _, tc := range tcs {
+			desc := fmt.Sprintf("%s -> %s (%s logs)", tc.from, tc.write, logs)
 
-		changes, err := models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
-			{
-				ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
-				ChannelID_:   10,
-				MsgUUID_:     msgUUID,
-				Status_:      tc.write,
-				LogUUID:      "019a6e53-e1e8-7df7-a264-ce2372824e1d",
-			},
-		})
-		assert.NoError(t, err, desc)
+			// an errored message is awaiting a retry
+			rt.DB.MustExec(`UPDATE msgs_msg SET status = $1::varchar, error_count = $2, failed_reason = NULL, log_uuids = `+logsSQL+`,
+				next_attempt = CASE WHEN $1::varchar = 'E' THEN NOW() ELSE NULL END, modified_on = '2020-01-01T00:00:00Z',
+				sent_on = CASE WHEN $1::varchar IN ('W', 'S', 'D', 'R') THEN NOW() ELSE NULL END WHERE uuid = $3`, tc.from, tc.fromErrors, msgUUID)
 
-		if tc.changed {
-			if assert.Len(t, changes, 1, desc) {
-				assert.Equal(t, tc.status, changes[0].MsgStatus, desc)
-				assert.Equal(t, tc.failedReason, string(changes[0].FailedReason), desc)
+			changes, err := models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
+				{
+					ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
+					ChannelID_:   10,
+					MsgUUID_:     msgUUID,
+					Status_:      tc.write,
+					LogUUID:      "019a6e53-e1e8-7df7-a264-ce2372824e1d",
+				},
+			})
+			assert.NoError(t, err, desc)
+
+			if tc.changed {
+				if assert.Len(t, changes, 1, desc) {
+					assert.Equal(t, tc.status, changes[0].MsgStatus, desc)
+					assert.Equal(t, tc.failedReason, string(changes[0].FailedReason), desc)
+				}
+			} else {
+				assert.Len(t, changes, 0, desc)
 			}
-		} else {
-			assert.Len(t, changes, 0, desc)
+
+			// the log is recorded on the message even if it didn't change its status, unless it's at the cap, where only
+			// updates that change it - its status or its error count - are written at all
+			written := logs != "cap" || tc.changed || tc.errors != tc.fromErrors
+			expectedLogs := map[string]int64{"empty": 1, "null": 1, "cap": 25}[logs]
+			if logs == "cap" && written {
+				expectedLogs = 26
+			}
+
+			// a message is awaiting a retry exactly whilst it's errored - an errored attempt that was recorded schedules
+			// one, a rejected one doesn't, and moving on to any other status (including failing on the last attempt)
+			// clears it
+			retryScheduled := tc.status == "E"
+
+			assertdb.Query(t, rt.DB, `SELECT status, error_count, COALESCE(failed_reason, '') AS failed_reason, sent_on IS NOT NULL AS sent_on, 
+				next_attempt IS NOT NULL AS retry, cardinality(log_uuids) AS logs, modified_on > '2020-01-01T00:00:00Z' AS written 
+				FROM msgs_msg WHERE uuid = $1`, msgUUID).
+				Columns(map[string]any{
+					"status":        string(tc.status),
+					"error_count":   int64(tc.errors),
+					"failed_reason": tc.failedReason,
+					"sent_on":       tc.sentOn,
+					"retry":         retryScheduled,
+					"logs":          expectedLogs,
+					"written":       written,
+				}, desc)
 		}
-
-		// a message is awaiting a retry exactly whilst it's errored - an errored attempt that was recorded schedules one,
-		// a rejected one doesn't, and moving on to any other status (including failing on the last attempt) clears it
-		retryScheduled := tc.status == "E"
-
-		assertdb.Query(t, rt.DB, `SELECT status, error_count, COALESCE(failed_reason, '') AS failed_reason, sent_on IS NOT NULL AS sent_on, 
-			next_attempt IS NOT NULL AS retry, array_length(log_uuids, 1) AS logs FROM msgs_msg WHERE uuid = $1`, msgUUID).
-			Columns(map[string]any{
-				"status":        string(tc.status),
-				"error_count":   int64(tc.errors),
-				"failed_reason": tc.failedReason,
-				"sent_on":       tc.sentOn,
-				"retry":         retryScheduled,
-				"logs":          int64(1), // log is recorded on the message even if it didn't change its status
-			}, desc)
 	}
 }
 
@@ -450,4 +471,65 @@ func TestWriteStatusUpdatesSameMsg(t *testing.T) {
 			"sent_on": true,
 			"logs":    "019a6e53-e1e8-7df7-a264-ce2372824e1d,019a6e54-671f-789a-bbb1-31cddd66c681",
 		})
+}
+
+func TestWriteStatusUpdatesLogCap(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+
+	defer testsuite.ResetDB(t, rt)
+
+	const msgUUID = models.MsgUUID("0199df0f-9f82-7689-b02d-f34105991321") // message 1
+
+	// a wired message which has already reached the cap
+	rt.DB.MustExec(`UPDATE msgs_msg SET status = 'W', error_count = 0, next_attempt = NULL,
+	                 log_uuids = array_fill('019a6e53-0000-7000-8000-000000000000'::uuid, ARRAY[25]) WHERE uuid = $1`, msgUUID)
+
+	write := func(statuses ...models.MsgStatus) []models.MsgStatus {
+		updates := make([]*models.StatusUpdate, len(statuses))
+		for i, status := range statuses {
+			updates[i] = &models.StatusUpdate{
+				ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
+				ChannelID_:   10,
+				MsgUUID_:     msgUUID,
+				Status_:      status,
+				LogUUID:      svclogs.UUID(fmt.Sprintf("019a6e54-0000-7000-8000-%012d", i)),
+			}
+		}
+		changes, err := models.WriteStatusUpdates(ctx, rt, updates)
+		assert.NoError(t, err)
+
+		changed := make([]models.MsgStatus, len(changes))
+		for i, c := range changes {
+			changed[i] = c.MsgStatus
+		}
+		return changed
+	}
+	assertMsg := func(status string, errors, logs int, retry bool) {
+		t.Helper()
+		assertdb.Query(t, rt.DB, `SELECT status, error_count, cardinality(log_uuids) AS logs, next_attempt IS NOT NULL AS retry
+		                           FROM msgs_msg WHERE uuid = $1`, msgUUID).
+			Columns(map[string]any{"status": status, "error_count": int64(errors), "logs": int64(logs), "retry": retry})
+	}
+	mailroomRetries := func() {
+		rt.DB.MustExec(`UPDATE msgs_msg SET status = 'Q', folder = 'O', next_attempt = NULL WHERE uuid = $1`, msgUUID)
+	}
+
+	// replayed callbacks are ignored
+	assert.Empty(t, write("W", "W", "W"))
+	assertMsg("W", 0, 25, false)
+
+	// but an errored send is retried, and a successful resend clears the retry
+	assert.Equal(t, []models.MsgStatus{"E"}, write("E"))
+	assertMsg("E", 1, 26, true)
+	mailroomRetries()
+	assert.Equal(t, []models.MsgStatus{"W"}, write("W", "W"))
+	assertMsg("W", 1, 27, false)
+
+	// and errored sends still reach the attempt limit
+	assert.Equal(t, []models.MsgStatus{"E", "F"}, write("E", "E", "E"))
+	assertMsg("F", 3, 29, false)
+
+	// after which nothing more is recorded
+	assert.Empty(t, write("W", "D", "E"))
+	assertMsg("F", 3, 29, false)
 }

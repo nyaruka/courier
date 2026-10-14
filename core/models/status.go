@@ -308,7 +308,7 @@ func resolveStatusUpdateByExternalIdentifier(ctx context.Context, rt *runtime.Ru
 //     the attempt limit is reached
 //
 // An update that would move a message backwards leaves the status as it is, but is still recorded on the message's
-// log so it can be seen in the channel log history.
+// log so it can be seen in the channel log history - up to a limit, see maxMsgLogUUIDs.
 const sqlNewMsgStatus = `CASE 
 		WHEN msgs_msg.status IN ('F', 'R') THEN msgs_msg.status
 		WHEN msgs_msg.status = 'D' AND s.status NOT IN ('R', 'F') THEN 'D'
@@ -321,6 +321,12 @@ const sqlNewMsgStatus = `CASE
 // its error count and schedules a retry - an errored attempt reported against an already delivered, read or failed
 // message doesn't.
 const sqlIsErrorAttempt = `(s.status = 'E' AND msgs_msg.status NOT IN ('D', 'R', 'F'))`
+
+// the number of channel logs after which a message ignores status updates that wouldn't change it. Real messages get
+// nowhere near it, so past it they're replays, which would otherwise grow the message's logs and rewrite its row
+// without limit. Updates that do change it are always written so a message can't be left stuck mid-send, and there
+// can only be a few more of those because a message's status only moves forward and its errored attempts are limited.
+const maxMsgLogUUIDs = 25
 
 // the craziness below lets us update our status to 'F' and schedule retries without knowing anything about the message.
 // the folder derivation assumes the message is visible, which holds because nothing makes an outgoing message
@@ -355,7 +361,8 @@ UPDATE msgs_msg SET
         contacts_contact c,
         msgs_msg old
     WHERE msgs_msg.uuid = s.msg_uuid AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O' AND c.id = msgs_msg.contact_id AND old.id = msgs_msg.id
-RETURNING msgs_msg.uuid AS msg_uuid, msgs_msg.status AS msg_status, msgs_msg.failed_reason, c.uuid AS contact_uuid, msgs_msg.org_id, msgs_msg.status IS DISTINCT FROM old.status AS changed`, sqlNewMsgStatus, sqlIsErrorAttempt)
+      AND (COALESCE(cardinality(msgs_msg.log_uuids), 0) < %[3]d OR (%[1]s) != msgs_msg.status OR %[2]s)
+RETURNING msgs_msg.uuid AS msg_uuid, msgs_msg.status AS msg_status, msgs_msg.failed_reason, c.uuid AS contact_uuid, msgs_msg.org_id, msgs_msg.status IS DISTINCT FROM old.status AS changed`, sqlNewMsgStatus, sqlIsErrorAttempt, maxMsgLogUUIDs)
 
 // WriteStatusUpdates writes the given status updates to the database and returns the resulting changes in message
 // status. Updates which don't change a message's status - because it's already moved past them - aren't returned.
