@@ -549,8 +549,20 @@ func TestStatus(t *testing.T) {
 
 	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_msg WHERE uuid = '11f0a1d2-0000-7000-8000-000000000001'`).Returns("R")
 
-	// bad requests: an unknown chat, a status a client can't report, and no, malformed or duplicate message UUIDs
+	// a client can report up to a page of history at once
+	pageOfUUIDs := func(n int) string {
+		uuids := make([]string, n)
+		for i := range uuids {
+			uuids[i] = fmt.Sprintf(`"11f0a1d2-0000-7000-8000-0000000001%02d"`, i)
+		}
+		return `{"chat_id": "` + testChatID + `", "status": "read", "msg_uuids": [` + strings.Join(uuids, ",") + `]}`
+	}
+	assert.Equal(t, 200, post(pageOfUUIDs(historyPageSize)).Code)
+
+	// bad requests: an unknown chat, a status a client can't report, and no, too many, malformed or duplicate
+	// message UUIDs
 	for _, body := range []string{
+		pageOfUUIDs(historyPageSize + 1),
 		`{"chat_id": "xxxxxhDrqpTQefIEinK0up3C", "status": "read", "msg_uuids": ["11f0a1d2-0000-7000-8000-000000000002"]}`,
 		`{"chat_id": "` + testChatID + `", "status": "failed", "msg_uuids": ["11f0a1d2-0000-7000-8000-000000000002"]}`,
 		`{"chat_id": "` + testChatID + `", "status": "read", "msg_uuids": []}`,
