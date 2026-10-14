@@ -1,3 +1,8 @@
+## v26.3.61 (2026-10-14)
+ * Add webchat endpoint for clients to report messages as delivered or read
+ * Ignore status updates that don't change a message once it has 25 channel logs
+ * Update to latest goflow and gocommon
+
 ## v26.3.60 (2026-10-13)
  * Rate limit webchat using vkutil v0.29.0's RateLimiter
 
