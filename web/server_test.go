@@ -106,7 +106,7 @@ func TestOutgoing(t *testing.T) {
 			httpx.NewMockResponse(403, nil, []byte(`stop!`)),
 		},
 		// the webchat service, which the webchat channel's message below is posted to
-		"http://localhost:8071/chi/send": {
+		"http://localhost:8071/wi/send": {
 			httpx.NewMockResponse(200, nil, []byte(`{}`)),
 		},
 	}))

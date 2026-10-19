@@ -114,7 +114,7 @@ func TestSendEvent(t *testing.T) {
 	assert.Equal(t, map[string]time.Duration{events.TypeTypingStarted: 5 * time.Second, events.TypeTypingStopped: 0}, h.SendableEvents(ch))
 
 	mocks := httpx.WithMocks(rt.HTTP.Default.Transport, map[string][]*httpx.MockResponse{
-		"http://chip/chi/event": {
+		"http://chip/wi/event": {
 			httpx.NewMockResponse(200, nil, []byte(`{}`)),
 			httpx.NewMockResponse(200, nil, []byte(`{}`)),
 			httpx.NewMockResponse(500, nil, []byte(`{"error": "error publishing event"}`)),

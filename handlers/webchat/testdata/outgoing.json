@@ -6,7 +6,7 @@
             "urn": "webchat:vM0GGhDrqpTQefIEinK0up3C"
         },
         "http_mocks": {
-            "http://chip/chi/send": [
+            "http://chip/wi/send": [
                 {
                     "status": 200,
                     "body": "{}"
@@ -16,7 +16,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "http://chip/chi/send",
+                "url": "http://chip/wi/send",
                 "headers": {
                     "Authorization": "Token sesame",
                     "Content-Type": "application/json"
@@ -53,7 +53,7 @@
             ]
         },
         "http_mocks": {
-            "http://chip/chi/send": [
+            "http://chip/wi/send": [
                 {
                     "status": 200,
                     "body": "{}"
@@ -63,7 +63,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "http://chip/chi/send",
+                "url": "http://chip/wi/send",
                 "headers": {
                     "Authorization": "Token sesame",
                     "Content-Type": "application/json"
@@ -96,7 +96,7 @@
             "user_id": 2
         },
         "http_mocks": {
-            "http://chip/chi/send": [
+            "http://chip/wi/send": [
                 {
                     "status": 200,
                     "body": "{}"
@@ -106,7 +106,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "http://chip/chi/send",
+                "url": "http://chip/wi/send",
                 "headers": {
                     "Authorization": "Token sesame",
                     "Content-Type": "application/json"
@@ -134,7 +134,7 @@
             "user_id": 3
         },
         "http_mocks": {
-            "http://chip/chi/send": [
+            "http://chip/wi/send": [
                 {
                     "status": 200,
                     "body": "{}"
@@ -144,7 +144,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "http://chip/chi/send",
+                "url": "http://chip/wi/send",
                 "headers": {
                     "Authorization": "Token sesame",
                     "Content-Type": "application/json"
@@ -171,7 +171,7 @@
             "user_id": 999
         },
         "http_mocks": {
-            "http://chip/chi/send": [
+            "http://chip/wi/send": [
                 {
                     "status": 200,
                     "body": "{}"
@@ -181,7 +181,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "http://chip/chi/send",
+                "url": "http://chip/wi/send",
                 "headers": {
                     "Authorization": "Token sesame",
                     "Content-Type": "application/json"
@@ -203,7 +203,7 @@
             "urn": "webchat:vM0GGhDrqpTQefIEinK0up3C"
         },
         "http_mocks": {
-            "http://chip/chi/send": [
+            "http://chip/wi/send": [
                 {
                     "status": 500,
                     "body": "{\"error\": \"error publishing event\"}"
@@ -213,7 +213,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "http://chip/chi/send",
+                "url": "http://chip/wi/send",
                 "headers": {
                     "Authorization": "Token sesame",
                     "Content-Type": "application/json"
@@ -242,7 +242,7 @@
             "urn": "webchat:vM0GGhDrqpTQefIEinK0up3C"
         },
         "http_mocks": {
-            "http://chip/chi/send": [
+            "http://chip/wi/send": [
                 {
                     "status": 0,
                     "body": ""
@@ -252,7 +252,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "http://chip/chi/send",
+                "url": "http://chip/wi/send",
                 "headers": {
                     "Authorization": "Token sesame",
                     "Content-Type": "application/json"

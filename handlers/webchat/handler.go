@@ -266,7 +266,7 @@ func (h *handler) post(ctx context.Context, action string, payload any, clog *mo
 		return channels.ErrChannelConfig
 	}
 
-	url := fmt.Sprintf("%s/chi/%s", strings.TrimSuffix(cfg.ChipURL, "/"), action)
+	url := fmt.Sprintf("%s/wi/%s", strings.TrimSuffix(cfg.ChipURL, "/"), action)
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonx.MustMarshal(payload)))
 	req.Header.Set("Content-Type", "application/json")
 	if cfg.ChipAuthToken != "" {
