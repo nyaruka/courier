@@ -1,3 +1,7 @@
+## v26.3.63 (2026-10-19)
+ * Rename the WebChat channel type's code to CHP
+ * Slim the WebChat handler to the webchat service contract
+
 ## v26.3.62 (2026-10-19)
  * Collect WhatsApp BSUIDs from Twilio delivery reports
  * Keep handling a provider's request when it hangs up, rather than failing what it sent
