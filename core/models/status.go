@@ -381,6 +381,7 @@ RETURNING msgs_msg.uuid AS msg_uuid, msgs_msg.status AS msg_status, msgs_msg.fai
 // status. Updates which don't change a message's status - because it's already moved past them - aren't returned.
 func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*StatusUpdate) ([]*StatusChange, error) {
 	changes := make([]*StatusChange, 0, len(statuses))
+	newURNs := make([]*contactNewURN, 0)
 
 	// a single bulk update can only apply one update per message - postgres silently drops the others - so updates for
 	// the same message are written in successive rounds, each holding at most one per message, in the order queued
@@ -398,29 +399,39 @@ func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*St
 			}
 		}
 
-		roundChanges, err := writeStatusUpdateRound(ctx, rt, round)
+		roundChanges, roundNewURNs, err := writeStatusUpdateRound(ctx, rt, round)
 		if err != nil {
 			return nil, err
 		}
 
 		changes = append(changes, roundChanges...)
+		newURNs = append(newURNs, roundNewURNs...)
 		statuses = rest
+	}
+
+	// queued once all rounds are written so that a contact whose statuses span rounds - delivered and read for the
+	// same message arriving together - is only queued one task. Best-effort - the statuses themselves are written.
+	if len(newURNs) > 0 {
+		if err := queueContactNewURNs(ctx, rt, newURNs); err != nil {
+			slog.Error("error queuing new URNs from status updates", "error", err)
+		}
 	}
 
 	return changes, nil
 }
 
-// writes a set of status updates, containing at most one per message, as a single bulk update
-func writeStatusUpdateRound(ctx context.Context, rt *runtime.Runtime, statuses []*StatusUpdate) ([]*StatusChange, error) {
+// writes a set of status updates, containing at most one per message, as a single bulk update. Returns the changes
+// in message status, and the URNs reported by statuses that were written, resolved to the messages' contacts.
+func writeStatusUpdateRound(ctx context.Context, rt *runtime.Runtime, statuses []*StatusUpdate) ([]*StatusChange, []*contactNewURN, error) {
 	// rewrite query as a bulk operation
 	query, args, err := dbutil.BulkSQL(rt.DB, sqlUpdateMsgByUUID, statuses)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	rows, err := rt.DB.QueryxContext(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("error writing statuses in bulk: %w", err)
+		return nil, nil, fmt.Errorf("error writing statuses in bulk: %w", err)
 	}
 	defer rows.Close()
 
@@ -440,7 +451,7 @@ func writeStatusUpdateRound(ctx context.Context, rt *runtime.Runtime, statuses [
 		}{StatusChange: StatusChange{CreatedOn: time.Now()}}
 
 		if err := rows.StructScan(row); err != nil {
-			return nil, fmt.Errorf("error scanning status change: %w", err)
+			return nil, nil, fmt.Errorf("error scanning status change: %w", err)
 		}
 
 		if row.Changed {
@@ -454,17 +465,10 @@ func writeStatusUpdateRound(ctx context.Context, rt *runtime.Runtime, statuses [
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error reading status changes: %w", err)
+		return nil, nil, fmt.Errorf("error reading status changes: %w", err)
 	}
 
-	if len(newURNs) > 0 {
-		// best-effort - the statuses themselves are written regardless
-		if err := queueContactNewURNs(ctx, rt, newURNs); err != nil {
-			slog.Error("error queuing new URNs from status updates", "error", err)
-		}
-	}
-
-	return changes, nil
+	return changes, newURNs, nil
 }
 
 // contactNewURN is a URN reported with a status update, resolved to the contact that received the message

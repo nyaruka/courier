@@ -3,13 +3,13 @@ package models_test
 import (
 	"cmp"
 	"fmt"
-	"github.com/gomodule/redigo/redis"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/gocommon/aws/dynamo"
@@ -558,9 +558,11 @@ func TestWriteStatusUpdatesNewURN(t *testing.T) {
 		return s.WithNewURN(newURN)
 	}
 
-	// statuses for two messages to the same contact reporting the same URN, which the contact doesn't have yet
+	// statuses for two messages to the same contact reporting the same URN, which the contact doesn't have yet -
+	// including delivered and read for the same message, which are written in separate rounds
 	_, err := models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
 		newStatus("0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusDelivered, "whatsapp:US.1234"),
+		newStatus("0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusRead, "whatsapp:US.1234"),
 		newStatus("019bb29e-b2c6-7e5f-b980-ccb3e9e21fbc", models.MsgStatusDelivered, "whatsapp:US.1234"),
 		newStatus("019a6e61-a4ce-7e60-86d0-aca6405ddb90", models.MsgStatusDelivered, "whatsapp:US.5678"), // no such message
 	})
