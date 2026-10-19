@@ -116,6 +116,7 @@ func TestIncomingClientGone(t *testing.T) {
 	// hold up writing the message until the provider has given up waiting for a response
 	tx, err := rt.DB.BeginTx(t.Context(), nil)
 	require.NoError(t, err)
+	defer tx.Rollback()
 	_, err = tx.ExecContext(t.Context(), `LOCK TABLE msgs_msg IN ACCESS EXCLUSIVE MODE`)
 	require.NoError(t, err)
 
@@ -125,6 +126,8 @@ func TestIncomingClientGone(t *testing.T) {
 	_, err = http.DefaultClient.Do(req)
 	assert.ErrorIs(t, err, context.DeadlineExceeded)
 
+	// give the server time to notice the client has gone, which it does in the background
+	time.Sleep(100 * time.Millisecond)
 	require.NoError(t, tx.Rollback())
 
 	select {
