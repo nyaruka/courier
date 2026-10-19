@@ -54,15 +54,13 @@ func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 
 // withAuth wraps a handler function to refuse requests that aren't from the webchat service. The widget's requests
 // come to us through it, which is where they're rate limited and checked against the channel's allowed domains, so
-// nothing may reach these endpoints directly. Checked only if a token is configured (might not be for dev
-// environments).
+// nothing may reach these endpoints directly - and with no token configured nothing can, rather than everything.
 func (h *handler) withAuth(fn channels.HandleFunc) channels.HandleFunc {
 	return func(ctx context.Context, channel *models.Channel, w http.ResponseWriter, r *http.Request, clog *models.ChannelLog) ([]channels.Event, error) {
-		if token := h.Runtime().Config.ChipAuthToken; token != "" {
-			auth := r.Header.Get("Authorization")
-			if !strings.HasPrefix(auth, "Token ") || !utils.SecretEqual(auth[6:], token) {
-				return nil, channels.RespondError(w, http.StatusUnauthorized, errors.New("invalid or missing authorization header"))
-			}
+		token := h.Runtime().Config.ChipAuthToken
+		auth := r.Header.Get("Authorization")
+		if token == "" || !strings.HasPrefix(auth, "Token ") || !utils.SecretEqual(auth[6:], token) {
+			return nil, channels.RespondError(w, http.StatusUnauthorized, errors.New("invalid or missing authorization header"))
 		}
 		return fn(ctx, channel, w, r, clog)
 	}
@@ -260,21 +258,26 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 }
 
 // post posts the given payload to one of the webchat service's internal endpoints. Anything but success is an
-// error, so that a message is retried like any other failed send.
+// error, so that a message is retried like any other failed send - with the service being unreachable told apart
+// from it refusing, since the service is our own infrastructure.
 func (h *handler) post(ctx context.Context, action string, payload any, clog *models.ChannelLog) error {
 	cfg := h.Runtime().Config
 	if cfg.ChipURL == "" {
 		return channels.ErrChannelConfig
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/chi/%s", cfg.ChipURL, action), bytes.NewReader(jsonx.MustMarshal(payload)))
+	url := fmt.Sprintf("%s/chi/%s", strings.TrimSuffix(cfg.ChipURL, "/"), action)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonx.MustMarshal(payload)))
 	req.Header.Set("Content-Type", "application/json")
 	if cfg.ChipAuthToken != "" {
 		req.Header.Set("Authorization", "Token "+cfg.ChipAuthToken)
 	}
 
 	resp, _, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
+	if err != nil {
+		return channels.ErrConnectionFailed
+	}
+	if resp.StatusCode/100 != 2 {
 		return channels.ErrResponseStatus
 	}
 	return nil

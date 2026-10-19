@@ -58,20 +58,25 @@ func post(t *testing.T, rt *runtime.Runtime, path, body string) (int, string) {
 	s.MountHandler(newHandler)
 
 	req, _ := http.NewRequest(http.MethodPost, "https://localhost"+path, strings.NewReader(body))
+	if token := rt.Config.ChipAuthToken; token != "" {
+		req.Header.Set("Authorization", "Token "+token)
+	}
 	rr := httptest.NewRecorder()
 	s.Router().ServeHTTP(rr, req)
 	return rr.Code, rr.Body.String()
 }
 
-// the service's token is only required when one is configured, as it might not be for dev environments
-func TestAuthOptional(t *testing.T) {
+// with no token configured nothing can authenticate, rather than everything: the widget's requests must come through
+// the service, where they're throttled and origin-checked
+func TestAuthRequired(t *testing.T) {
 	_, rt := testsuite.Runtime(t)
 	testsuite.ResetDB(t, rt)
 	testsuite.ResetValkey(t, rt)
 
 	code, body := post(t, rt, startURL, `{"chat_id": "`+testChatID+`"}`)
-	assert.Equal(t, 200, code, body)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contacturn WHERE identity = $1`, "webchat:"+testChatID).Returns(1)
+	assert.Equal(t, 401, code, body)
+	assert.JSONEq(t, `{"message":"Error","data":[{"type":"error","error":"invalid or missing authorization header"}]}`, body)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contacturn WHERE identity = $1`, "webchat:"+testChatID).Returns(0)
 }
 
 func TestStartAtContactLimit(t *testing.T) {
@@ -86,6 +91,7 @@ func TestStartAtContactLimit(t *testing.T) {
 	rt.DB.MustExec(`UPDATE orgs_org SET limits = '{"contacts": 1}' WHERE id = 1`)
 	models.FlushChannelCache()
 	models.FlushContactCounts()
+	setup(t, rt)
 
 	// a chat can't be started because there's no room for the visitor's contact
 	code, body := post(t, rt, startURL, `{"chat_id": "`+testChatID+`"}`)
@@ -112,6 +118,7 @@ func TestSendEvent(t *testing.T) {
 			httpx.NewMockResponse(200, nil, []byte(`{}`)),
 			httpx.NewMockResponse(200, nil, []byte(`{}`)),
 			httpx.NewMockResponse(500, nil, []byte(`{"error": "error publishing event"}`)),
+			httpx.MockConnectionError,
 		},
 	})
 	rt.HTTP.Default.Transport = mocks
@@ -142,8 +149,9 @@ func TestSendEvent(t *testing.T) {
 	// other event types aren't sendable
 	assert.EqualError(t, send(events.NewContactNameChanged("Bob")), "unsupported event type: contact_name_changed")
 
-	// and the service refusing is an error
+	// and the service refusing is an error, distinct from it being unreachable
 	assert.ErrorIs(t, send(started), channels.ErrResponseStatus)
+	assert.ErrorIs(t, send(started), channels.ErrConnectionFailed)
 
 	// as is it being unconfigured
 	rt.Config.ChipURL = ""

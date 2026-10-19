@@ -266,10 +266,11 @@
             }
         ],
         "error": {
-            "message": "response status code",
+            "message": "channel connection failed",
+            "retryable": true,
             "log_error": {
-                "code": "response_status",
-                "message": "Response has non-success status code."
+                "code": "connection_failed",
+                "message": "Connection to server failed."
             }
         },
         "log_errors": []
