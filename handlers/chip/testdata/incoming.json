@@ -1,7 +1,7 @@
 [
     {
         "label": "Start Chat",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/start",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/start",
         "headers": {
             "Authorization": "Token sesame"
         },
@@ -23,7 +23,7 @@
     },
     {
         "label": "Start Chat Unauthorized",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/start",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/start",
         "headers": {
             "Authorization": "Token wrong"
         },
@@ -49,7 +49,7 @@
     },
     {
         "label": "Start Chat Invalid ID",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/start",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/start",
         "headers": {
             "Authorization": "Token sesame"
         },
@@ -75,7 +75,7 @@
     },
     {
         "label": "Receive Msg",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
         "headers": {
             "Authorization": "Token sesame"
         },
@@ -122,7 +122,7 @@
     },
     {
         "label": "Receive Msg Retried",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
         "headers": {
             "Authorization": "Token sesame"
         },
@@ -169,7 +169,7 @@
     },
     {
         "label": "Receive Msg With Attachments",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
         "headers": {
             "Authorization": "Token sesame"
         },
@@ -221,7 +221,7 @@
     },
     {
         "label": "Receive Unauthorized",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
         "data": {
             "chat_id": "vM0GGhDrqpTQefIEinK0up3C",
             "text": "Hello"
@@ -245,7 +245,7 @@
     },
     {
         "label": "Receive Unknown Chat ID",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
         "headers": {
             "Authorization": "Token sesame"
         },
@@ -272,7 +272,7 @@
     },
     {
         "label": "Receive Invalid Chat ID",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
         "headers": {
             "Authorization": "Token sesame"
         },
@@ -299,7 +299,7 @@
     },
     {
         "label": "Receive Nothing",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/receive",
         "headers": {
             "Authorization": "Token sesame"
         },
@@ -325,7 +325,7 @@
     },
     {
         "label": "Status Delivered",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/status",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/status",
         "headers": {
             "Authorization": "Token sesame"
         },
@@ -378,7 +378,7 @@
     },
     {
         "label": "Status Read",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/status",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/status",
         "headers": {
             "Authorization": "Token sesame"
         },
@@ -418,7 +418,7 @@
     },
     {
         "label": "Status Unauthorized",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/status",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/status",
         "data": {
             "chat_id": "vM0GGhDrqpTQefIEinK0up3C",
             "status": "read",
@@ -445,7 +445,7 @@
     },
     {
         "label": "Status Not Reportable",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/status",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/status",
         "headers": {
             "Authorization": "Token sesame"
         },
@@ -475,7 +475,7 @@
     },
     {
         "label": "Status Unknown Chat ID",
-        "url": "/c/wch/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/status",
+        "url": "/c/chp/0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71/status",
         "headers": {
             "Authorization": "Token sesame"
         },

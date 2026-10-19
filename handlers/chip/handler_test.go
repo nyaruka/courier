@@ -1,4 +1,4 @@
-package webchat
+package chip
 
 import (
 	"io"
@@ -26,13 +26,13 @@ import (
 
 const (
 	channelUUID = "0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71"
-	startURL    = "/c/wch/" + channelUUID + "/start"
+	startURL    = "/c/chp/" + channelUUID + "/start"
 
 	testChatID = "vM0GGhDrqpTQefIEinK0up3C"
 )
 
 var testChannels = []*models.Channel{
-	test.NewMockChannel(channelUUID, "WCH", "", "", []string{urns.WebChat.Prefix}, nil),
+	test.NewMockChannel(channelUUID, "CHP", "", "", []string{urns.WebChat.Prefix}, nil),
 }
 
 // the webchat service is configured with the token its requests have to carry and the address we post to

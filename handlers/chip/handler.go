@@ -1,4 +1,4 @@
-package webchat
+package chip
 
 import (
 	"bytes"
@@ -21,8 +21,8 @@ import (
 	"github.com/nyaruka/goflow/core/events"
 )
 
-// WebChat is the platform's own chat widget, embedded on websites. Its provider is the webchat service, which the
-// widget talks to: it mints chat IDs, takes visitors' messages and uploads, serves their history and delivers what
+// WebChat is the platform's own chat widget, embedded on websites. Its provider is chip, the webchat service, which
+// the widget talks to: it mints chat IDs, takes visitors' messages and uploads, serves their history and delivers what
 // we send over the realtime server. Like any provider it posts what it receives to this handler's endpoints and we
 // post what the platform sends to it - the difference being that those endpoints only answer to it.
 
@@ -37,7 +37,7 @@ type handler struct {
 func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 	// the transport is our own webchat service, so channel logs would only describe internal infrastructure and
 	// aren't stored for users
-	h := &handler{handlers.NewBaseHandler(rt, models.ChannelType("WCH"), "WebChat", handlers.DisableChannelLogStorage())}
+	h := &handler{handlers.NewBaseHandler(rt, models.ChannelType("CHP"), "WebChat", handlers.DisableChannelLogStorage())}
 
 	r.Add(h, http.MethodPost, "start", models.ChannelLogTypeChatStart, h.withAuth(h.start))
 

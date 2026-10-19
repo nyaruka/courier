@@ -15,7 +15,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/core/sender"
-	_ "github.com/nyaruka/courier/v26/handlers/webchat" // for a channel type that doesn't store channel logs
+	_ "github.com/nyaruka/courier/v26/handlers/chip" // for a channel type that doesn't store channel logs
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
@@ -320,23 +320,23 @@ func TestOutgoing(t *testing.T) {
 
 	// queue a message on a webchat channel - a type that doesn't store channel logs - it should still be
 	// sent (a post to the webchat service) and marked as wired...
-	wchChannel := test.NewMockChannel("0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71", "WCH", "", "", []string{urns.WebChat.Prefix}, nil)
-	testsuite.InsertChannel(t, rt, wchChannel)
+	chpChannel := test.NewMockChannel("0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71", "CHP", "", "", []string{urns.WebChat.Prefix}, nil)
+	testsuite.InsertChannel(t, rt, chpChannel)
 
 	wchMsg := &models.MsgOut{
 		OrgID_: 1, UUID_: "0199df05-a01b-7000-8f5e-2c3d4e5f6a7b", Contact_: &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc"},
-		Text_: "hi", HighPriority_: true, CreatedOn_: time.Now(), ChannelUUID_: wchChannel.UUID(), URN_: "webchat:65vbbDAQCdPdEWlEhDGy4utO", Origin_: models.MsgOriginChat,
+		Text_: "hi", HighPriority_: true, CreatedOn_: time.Now(), ChannelUUID_: chpChannel.UUID(), URN_: "webchat:65vbbDAQCdPdEWlEhDGy4utO", Origin_: models.MsgOriginChat,
 	}
-	insertMsg(wchMsg.UUID_, wchChannel)
+	insertMsg(wchMsg.UUID_, chpChannel)
 	rc = rt.VK.Get()
-	require.NoError(t, queue.PushOntoQueue(rc, "msgs", string(wchChannel.UUID()), 10, "["+string(jsonx.MustMarshal(wchMsg))+"]", queue.HighPriority))
+	require.NoError(t, queue.PushOntoQueue(rc, "msgs", string(chpChannel.UUID()), 10, "["+string(jsonx.MustMarshal(wchMsg))+"]", queue.HighPriority))
 	rc.Close()
 	assertStatus(wchMsg.UUID_, models.MsgStatusWired)
 
 	// ...but without a channel log being stored for it
 	rt.Dynamo.Main.Flush()
 	for _, item := range dyntest.ScanAll(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table()) {
-		assert.False(t, strings.HasPrefix(item.Key.PK, "cha#"+string(wchChannel.UUID())), "unexpected channel log stored for webchat channel")
+		assert.False(t, strings.HasPrefix(item.Key.PK, "cha#"+string(chpChannel.UUID())), "unexpected channel log stored for webchat channel")
 	}
 }
 
@@ -421,8 +421,8 @@ func TestFetchAttachment(t *testing.T) {
 	assert.JSONEq(t, `{"attachment": {"content_type": "unavailable", "url": "http://mock.com/media/hello.pdf", "size": 0}, "log_uuid": "0191e180-8530-7000-8920-17713634b9f5"}`, string(respBody))
 
 	// a fetch for a channel type that doesn't store channel logs still works
-	testsuite.InsertChannel(t, rt, test.NewMockChannel("0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71", "WCH", "", "", []string{urns.WebChat.Prefix}, nil))
-	statusCode, respBody = submit(`{"channel_uuid": "0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71", "channel_type": "WCH", "url": "http://mock.com/media/hello2.jpg"}`, "sesame")
+	testsuite.InsertChannel(t, rt, test.NewMockChannel("0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71", "CHP", "", "", []string{urns.WebChat.Prefix}, nil))
+	statusCode, respBody = submit(`{"channel_uuid": "0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71", "channel_type": "CHP", "url": "http://mock.com/media/hello2.jpg"}`, "sesame")
 	assert.Equal(t, 200, statusCode)
 	assert.Contains(t, string(respBody), `"image/jpeg"`)
 
