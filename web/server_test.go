@@ -105,6 +105,10 @@ func TestOutgoing(t *testing.T) {
 			httpx.NewMockResponse(429, nil, []byte(`too much!`)),
 			httpx.NewMockResponse(403, nil, []byte(`stop!`)),
 		},
+		// the webchat service, which the webchat channel's message below is posted to
+		"http://localhost:8071/chi/send": {
+			httpx.NewMockResponse(200, nil, []byte(`{}`)),
+		},
 	}))
 
 	require.NoError(t, s.Start())
@@ -233,7 +237,7 @@ func TestOutgoing(t *testing.T) {
 	assert.Equal(t, 1, numStopEvents)
 
 	// queue a message on a webchat channel - a type that doesn't store channel logs - it should still be
-	// sent (an internal publish) and marked as wired...
+	// sent (a post to the webchat service) and marked as wired...
 	wchChannel := test.NewMockChannel("0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71", "WCH", "", "", []string{urns.WebChat.Prefix}, nil)
 	testsuite.InsertChannel(t, rt, wchChannel)
 
