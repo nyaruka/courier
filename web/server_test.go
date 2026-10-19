@@ -1,9 +1,12 @@
 package web_test
 
 import (
+	"context"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -90,6 +93,85 @@ func TestIncoming(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 2, stored)
+}
+
+func TestIncomingClientGone(t *testing.T) {
+	rt := serverRuntime(t)
+
+	s := web.NewServer(rt)
+
+	handled := make(chan struct{}, 1)
+	s.OnRequestHandled(func(ch *models.Channel, evts []channels.Event, clog *models.ChannelLog) { handled <- struct{}{} })
+
+	require.NoError(t, s.Start())
+	defer s.Stop()
+
+	testsuite.InsertChannel(t, rt, test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{}))
+
+	logs := &capturingHandler{}
+	prev := slog.Default()
+	slog.SetDefault(slog.New(logs))
+	defer slog.SetDefault(prev)
+
+	// hold up writing the message until the provider has given up waiting for a response
+	tx, err := rt.DB.BeginTx(t.Context(), nil)
+	require.NoError(t, err)
+	defer tx.Rollback()
+	_, err = tx.ExecContext(t.Context(), `LOCK TABLE msgs_msg IN ACCESS EXCLUSIVE MODE`)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Millisecond)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "GET", "http://localhost:8180/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive?from=2065551212&text=hello", nil)
+	_, err = http.DefaultClient.Do(req)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+
+	// give the server time to notice the client has gone, which it does in the background
+	time.Sleep(100 * time.Millisecond)
+	require.NoError(t, tx.Rollback())
+
+	select {
+	case <-handled:
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "request wasn't handled")
+	}
+
+	// the message was still written, with nothing to report
+	var count int
+	require.NoError(t, rt.DB.Get(&count, `SELECT count(*) FROM msgs_msg WHERE text = 'hello'`))
+	assert.Equal(t, 1, count)
+	assert.Empty(t, logs.messages(slog.LevelError))
+}
+
+type capturingHandler struct {
+	mu      sync.Mutex
+	records []slog.Record
+}
+
+func (h *capturingHandler) Enabled(context.Context, slog.Level) bool { return true }
+
+func (h *capturingHandler) Handle(_ context.Context, r slog.Record) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	h.records = append(h.records, r)
+	return nil
+}
+
+func (h *capturingHandler) WithAttrs([]slog.Attr) slog.Handler { return h }
+func (h *capturingHandler) WithGroup(string) slog.Handler      { return h }
+
+func (h *capturingHandler) messages(level slog.Level) []string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	var msgs []string
+	for _, r := range h.records {
+		if r.Level == level {
+			msgs = append(msgs, r.Message)
+		}
+	}
+	return msgs
 }
 
 func TestOutgoing(t *testing.T) {
