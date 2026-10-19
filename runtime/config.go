@@ -37,6 +37,9 @@ type Config struct {
 	CentrifugoEndpoint string `validate:"url" help:"the endpoint of the Centrifugo server"`
 	CentrifugoKey      string `help:"the API key for the Centrifugo server"`
 
+	ChipURL       string `validate:"omitempty,url" help:"the base URL of the webchat service, which outgoing webchat messages and events are posted to"`
+	ChipAuthToken string `help:"the authentication token sent to the webchat service, and which it sends to the webchat channel endpoints"`
+
 	FacebookApplicationSecret    string `help:"the Facebook app secret"`
 	FacebookWebhookSecret        string `help:"the secret for Facebook webhook URL verification"`
 	WhatsappAdminSystemUserToken string `help:"the token of the admin system user for WhatsApp"`
@@ -83,6 +86,8 @@ func NewDefaultConfig() *Config {
 		S3PathStyle:         false,
 
 		CentrifugoEndpoint: "http://localhost:8000/api",
+
+		ChipURL: "http://localhost:8071",
 
 		FacebookApplicationSecret:    "missing_facebook_app_secret",
 		FacebookWebhookSecret:        "missing_facebook_webhook_secret",

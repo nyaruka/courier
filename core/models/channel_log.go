@@ -30,8 +30,6 @@ const (
 	ChannelLogTypePageSubscribe   svclogs.Type = "page_subscribe"
 	ChannelLogTypeWebhookVerify   svclogs.Type = "webhook_verify"
 	ChannelLogTypeChatStart       svclogs.Type = "chat_start"
-	ChannelLogTypeChatHistory     svclogs.Type = "chat_history"
-	ChannelLogTypeChatUpload      svclogs.Type = "chat_upload"
 )
 
 // ErrorRequestUnparseable is used when we couldn't fully decode an incoming request but carried on with what
