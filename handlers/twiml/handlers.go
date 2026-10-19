@@ -105,10 +105,11 @@ type moForm struct {
 }
 
 type statusForm struct {
-	MessageSID    string `validate:"required"`
-	MessageStatus string `validate:"required"`
-	ErrorCode     string
-	To            string
+	MessageSID     string `validate:"required"`
+	MessageStatus  string `validate:"required"`
+	ErrorCode      string
+	To             string
+	ExternalUserId string
 }
 
 var statusMapping = map[string]models.MsgStatus{
@@ -216,6 +217,17 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 		clog.Error(twilioError(errorCode))
 		if errorCode == errorThrottled {
 			status = models.NewStatusUpdateByExternalID(channel, form.MessageSID, models.MsgStatusErrored, clog)
+		}
+	}
+
+	// WhatsApp delivery reports carry the recipient's business-scoped user ID, which is only otherwise learned from a
+	// message they send us - so attach it to the status to be added to the contact if they don't have it yet
+	if form.ExternalUserId != "" && channel.IsScheme(urns.WhatsApp) {
+		userIDURN, urnErr := h.parseURN(channel, form.ExternalUserId, "")
+		if urnErr == nil && urns.IsWhatsAppBSUID(userIDURN) {
+			status.WithNewURN(userIDURN)
+		} else if urnErr != nil {
+			slog.Warn("ignoring invalid ExternalUserId for status", "ExternalUserId", form.ExternalUserId, "MessageSID", form.MessageSID, "Error", urnErr.Error())
 		}
 	}
 

@@ -232,6 +232,71 @@
         }
     },
     {
+        "label": "Status with ExternalUserId attaches BSUID as new URN",
+        "url": "/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "data": "ChannelPrefix=whatsapp\u0026MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026MessageStatus=delivered\u0026ExternalUserId=whatsapp:CO.1600798971519754\u0026To=whatsapp:%2B14133881111\u0026From=whatsapp:%2B12028831111",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "SMe287d7109a5a925f182f0e07fe5b223b"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "SMe287d7109a5a925f182f0e07fe5b223b",
+                "status": "D",
+                "log_uuid": "0199f4f2-dcc8-7000-81c9-e7556b07fbc7",
+                "new_urn": "whatsapp:CO.1600798971519754"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status with invalid ExternalUserId ignores it",
+        "url": "/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+        "data": "ChannelPrefix=whatsapp\u0026MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026MessageStatus=delivered\u0026ExternalUserId=whatsapp:foo_bar\u0026To=whatsapp:%2B14133881111",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "SMe287d7109a5a925f182f0e07fe5b223b"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "SMe287d7109a5a925f182f0e07fe5b223b",
+                "status": "D",
+                "log_uuid": "0199fe46-8ec8-7000-80d2-2a64ffc69341"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
         "label": "Status ID Valid",
         "url": "/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?uuid=019a0719-ac96-7eb9-a837-cac215164834",
         "data": "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b\u0026MessageStatus=delivered",
