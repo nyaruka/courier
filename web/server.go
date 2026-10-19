@@ -220,8 +220,10 @@ func (s *Server) channelHandleWrapper(handler channels.Handler, handlerFunc chan
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		// stuff a few things in our context that help with logging
-		baseCtx := channels.WithRequestContext(r.Context(), r.URL.String(), start)
+		// stuff a few things in our context that help with logging, and detach it from the request's cancellation:
+		// a provider that hangs up mid-request still gets what it sent written, rather than failing the write and
+		// leaving it to come back from the spool or a retry
+		baseCtx := channels.WithRequestContext(context.WithoutCancel(r.Context()), r.URL.String(), start)
 
 		// add a 30 second timeout to the request
 		ctx, cancel := context.WithTimeout(baseCtx, time.Second*30)
