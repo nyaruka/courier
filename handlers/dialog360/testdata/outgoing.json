@@ -188,7 +188,9 @@
             "157b5e14568e8"
         ],
         "log_errors": [],
-        "new_urn": "whatsapp:US.1234"
+        "other_urns": [
+            "whatsapp:US.1234"
+        ]
     },
     {
         "label": "Send to BSUID with same user_id in response",
@@ -295,7 +297,10 @@
         "external_ids": [
             "157b5e14568e8"
         ],
-        "log_errors": []
+        "log_errors": [],
+        "other_urns": [
+            "whatsapp:US.1234"
+        ]
     },
     {
         "label": "Unicode Send",

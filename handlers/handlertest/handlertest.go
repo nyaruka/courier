@@ -2,7 +2,6 @@ package handlertest
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -11,12 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/httpx"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -112,39 +109,6 @@ func newServer(rt *runtime.Runtime) *web.Server {
 	rt.Config.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
 
 	return web.NewServer(rt)
-}
-
-func contactQueueKey(ch *models.Channel, msg *models.MsgOut) string {
-	return fmt.Sprintf("c:%d:%d", ch.OrgID(), msg.Contact_.ID)
-}
-
-// returns the new URNs of the contact_changed tasks queued for the contact of the given message, which is how a send
-// reporting a URN the contact already has can be seen to queue none
-func queuedContactChangedURNs(t *testing.T, rt *runtime.Runtime, ch *models.Channel, msg *models.MsgOut) []urns.URN {
-	rc := rt.VK.Get()
-	defer rc.Close()
-
-	tasks, err := redis.Strings(rc.Do("LRANGE", contactQueueKey(ch, msg), 0, -1))
-	require.NoError(t, err)
-
-	newURNs := make([]urns.URN, 0, len(tasks))
-	for _, task := range tasks {
-		payload := &struct {
-			Type string `json:"type"`
-			Task struct {
-				NewURN struct {
-					Value urns.URN `json:"value"`
-				} `json:"new_urn"`
-			} `json:"task"`
-		}{}
-		require.NoError(t, json.Unmarshal([]byte(task), payload), "error unmarshaling queued task: %s", task)
-
-		if payload.Type == "contact_changed" {
-			newURNs = append(newURNs, payload.Task.NewURN.Value)
-		}
-	}
-
-	return newURNs
 }
 
 // asserts that the given channel log doesn't contain any of the given values

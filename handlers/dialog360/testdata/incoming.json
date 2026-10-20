@@ -153,10 +153,9 @@
                     "019a97fb-ec48-7000-a9e8-af8a4231ac65"
                 ],
                 "contact_name": "Kerry Fisher",
-                "new_urn": {
-                    "value": "whatsapp:US.1234",
-                    "action": "append"
-                }
+                "other_urns": [
+                    "whatsapp:US.1234"
+                ]
             }
         ],
         "log": {

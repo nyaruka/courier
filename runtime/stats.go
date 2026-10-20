@@ -43,6 +43,7 @@ type Stats struct {
 	OutgoingDuration DurationByType // total time spent sending messages
 
 	ContactsCreated int
+	URNConflicts    int // URNs not added to contacts because they belong to other contacts
 }
 
 func newStats() *Stats {
@@ -76,6 +77,7 @@ func (s *Stats) ToMetrics(advanced bool) []types.MetricDatum {
 		metrics = append(metrics, s.IncomingDuration.metrics("IncomingDuration", func(typ string) int { return s.IncomingRequests[typ] })...)
 		metrics = append(metrics, s.OutgoingDuration.metrics("OutgoingDuration", func(typ string) int { return s.OutgoingSends[typ] + s.OutgoingErrors[typ] })...)
 		metrics = append(metrics, cwatch.Datum("ContactsCreated", float64(s.ContactsCreated), types.StandardUnitCount))
+		metrics = append(metrics, cwatch.Datum("URNConflicts", float64(s.URNConflicts), types.StandardUnitCount))
 	}
 
 	return metrics
@@ -126,6 +128,12 @@ func (c *StatsCollector) RecordOutgoing(typ string, success bool, d time.Duratio
 func (c *StatsCollector) RecordContactCreated() {
 	c.mutex.Lock()
 	c.stats.ContactsCreated++
+	c.mutex.Unlock()
+}
+
+func (c *StatsCollector) RecordURNConflict() {
+	c.mutex.Lock()
+	c.stats.URNConflicts++
 	c.mutex.Unlock()
 }
 

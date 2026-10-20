@@ -8,11 +8,11 @@ import (
 // hooks to expose package internals to tests in the models_test package
 
 var (
-	ContactForURN     = contactForURN
-	ContactForMsg     = contactForMsg
-	AddContactURN     = addContactURN
-	WriteMsgToDB      = writeMsgToDB
-	InsertTimeoutFire = insertTimeoutFire
+	ContactForURN         = contactForURN
+	ContactForMsg         = contactForMsg
+	AppendableContactURNs = appendableContactURNs
+	WriteMsgToDB          = writeMsgToDB
+	InsertTimeoutFire     = insertTimeoutFire
 )
 
 // SetURNSleep enables or disables the artificial sleep used to test URN creation races

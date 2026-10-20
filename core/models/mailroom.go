@@ -8,6 +8,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/queues"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var mrQueue = queues.NewFairV2("tasks:realtime", 100)
@@ -25,14 +26,30 @@ func queueMsgHandling(ctx context.Context, rc redis.Conn, c *Contact, m *MsgIn) 
 		"attachments":     m.Attachments(),
 		"new_contact":     c.IsNew_,
 	}
-	if m.NewURN_ != nil {
-		body["new_urn"] = m.NewURN_
+	if len(c.URNsToAppend_) > 0 {
+		body["new_urn"] = newURNTask(c.URNsToAppend_[0]) // mailroom takes one, any others will be reported again
 	}
 	if len(m.Payload_) > 0 {
 		body["payload"] = m.Payload_
 	}
 
 	return queueMailroomTask(ctx, rc, "msg_received", channel.OrgID_, c.ID_, body)
+}
+
+// the payload for a URN that mailroom should append to a contact
+func newURNTask(urn urns.URN) map[string]string {
+	return map[string]string{"value": urn.String(), "action": "append"}
+}
+
+// queueContactNewURNs queues a contact_changed task for each of the given URNs to append it to the contact
+func queueContactNewURNs(ctx context.Context, rc redis.Conn, orgID OrgID, contactID ContactID, channelID ChannelID, urnz []urns.URN) error {
+	for _, u := range urnz {
+		body := map[string]any{"channel_id": channelID, "new_urn": newURNTask(u)}
+		if err := queueMailroomTask(ctx, rc, "contact_changed", orgID, contactID, body); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func queueEventHandling(ctx context.Context, rc redis.Conn, c *Contact, e *ChannelEvent) error {

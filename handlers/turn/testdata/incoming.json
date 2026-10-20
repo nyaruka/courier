@@ -115,10 +115,9 @@
                     "019a534b-63a8-7000-9027-e46e4a15495d"
                 ],
                 "contact_name": "Jerry Cooney",
-                "new_urn": {
-                    "value": "whatsapp:US.1234",
-                    "action": "append"
-                }
+                "other_urns": [
+                    "whatsapp:US.1234"
+                ]
             }
         ],
         "log": {

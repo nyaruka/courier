@@ -538,7 +538,7 @@ func TestWriteStatusUpdatesLogCap(t *testing.T) {
 	assertMsg("F", 3, 29, false)
 }
 
-func TestWriteStatusUpdatesNewURN(t *testing.T) {
+func TestWriteStatusUpdatesOtherURNs(t *testing.T) {
 	ctx, rt := testsuite.Runtime(t)
 
 	defer testsuite.ResetDB(t, rt)
@@ -547,7 +547,7 @@ func TestWriteStatusUpdatesNewURN(t *testing.T) {
 	rc := rt.VK.Get()
 	defer rc.Close()
 
-	newStatus := func(msgUUID models.MsgUUID, status models.MsgStatus, newURN urns.URN) *models.StatusUpdate {
+	newStatus := func(msgUUID models.MsgUUID, status models.MsgStatus, otherURN urns.URN) *models.StatusUpdate {
 		s := &models.StatusUpdate{
 			ChannelUUID_: "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
 			ChannelID_:   10,
@@ -555,11 +555,25 @@ func TestWriteStatusUpdatesNewURN(t *testing.T) {
 			Status_:      status,
 			LogUUID:      "019a6e53-e1e8-7df7-a264-ce2372824e1d",
 		}
-		return s.WithNewURN(newURN)
+		return s.WithOtherURN(otherURN)
+	}
+	assertQueuedNewURN := func(urn string) {
+		assertvk.LLen(t, rc, "c:1:100", 1)
+
+		data, err := redis.Bytes(rc.Do("LPOP", "c:1:100"))
+		assert.NoError(t, err)
+
+		var task map[string]any
+		jsonx.MustUnmarshal(data, &task)
+		assert.Equal(t, "contact_changed", task["type"])
+		assert.Equal(t, map[string]any{
+			"channel_id": float64(10),
+			"new_urn":    map[string]any{"value": urn, "action": "append"},
+		}, task["task"])
 	}
 
-	// statuses for two messages to the same contact reporting the same URN, which the contact doesn't have yet -
-	// including delivered and read for the same message, which are written in separate rounds
+	// statuses for two messages to the same contact reporting the same URN, which nobody has yet - including
+	// delivered and read for the same message, which are written in separate rounds
 	_, err := models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
 		newStatus("0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusDelivered, "whatsapp:US.1234"),
 		newStatus("0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusRead, "whatsapp:US.1234"),
@@ -569,18 +583,7 @@ func TestWriteStatusUpdatesNewURN(t *testing.T) {
 	assert.NoError(t, err)
 
 	// a single task to add the URN to the contact
-	assertvk.LLen(t, rc, "c:1:100", 1)
-
-	data, err := redis.Bytes(rc.Do("LPOP", "c:1:100"))
-	assert.NoError(t, err)
-
-	var task map[string]any
-	jsonx.MustUnmarshal(data, &task)
-	assert.Equal(t, "contact_changed", task["type"])
-	assert.Equal(t, map[string]any{
-		"channel_id": float64(10),
-		"new_urn":    map[string]any{"value": "whatsapp:US.1234", "action": "append"},
-	}, task["task"])
+	assertQueuedNewURN("whatsapp:US.1234")
 
 	// once the contact has the URN, further statuses reporting it don't queue anything
 	rt.DB.MustExec(`INSERT INTO contacts_contacturn("identity", "path", "scheme", "priority", "contact_id", "org_id") VALUES('whatsapp:US.1234', 'US.1234', 'whatsapp', 50, 100, 1)`)
@@ -591,4 +594,26 @@ func TestWriteStatusUpdatesNewURN(t *testing.T) {
 	assert.NoError(t, err)
 
 	assertvk.LLen(t, rc, "c:1:100", 0)
+
+	// a URN owned by a contact with no other URNs is queued, as mailroom will reassign it
+	rt.DB.MustExec(`INSERT INTO contacts_contact("id", "is_active", "status", "created_on", "modified_on", "uuid", "ticket_count", "created_by_id", "modified_by_id", "org_id") VALUES(101, TRUE, 'A', NOW(), NOW(), 'c7e8f5d2-6a3b-4e1f-9d2c-8b5a4f3e2d1c', 0, 1, 1, 1)`)
+	rt.DB.MustExec(`INSERT INTO contacts_contacturn("identity", "path", "scheme", "priority", "contact_id", "org_id") VALUES('whatsapp:US.2345', 'US.2345', 'whatsapp', 50, 101, 1)`)
+
+	_, err = models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
+		newStatus("0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusRead, "whatsapp:US.2345"),
+	})
+	assert.NoError(t, err)
+
+	assertQueuedNewURN("whatsapp:US.2345")
+
+	// a URN owned by a contact with other URNs isn't, as mailroom would refuse to append it
+	rt.DB.MustExec(`INSERT INTO contacts_contacturn("identity", "path", "scheme", "priority", "contact_id", "org_id") VALUES('tel:+12065550101', '+12065550101', 'tel', 40, 101, 1)`)
+
+	_, err = models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{
+		newStatus("0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusRead, "whatsapp:US.2345"),
+	})
+	assert.NoError(t, err)
+
+	assertvk.LLen(t, rc, "c:1:100", 0)
+	assert.Equal(t, 1, rt.Stats.Extract().URNConflicts)
 }

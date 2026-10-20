@@ -272,7 +272,7 @@ func (h *handler) parseEvents(channel *models.Channel, payload *eventsPayload, r
 			userIDURN, urnErr := urns.New(urns.WhatsApp, msg.FromBSUID)
 			if urnErr == nil {
 				if userIDURN != urn {
-					event.WithNewURN(userIDURN, models.NewURNAppend)
+					event.WithOtherURN(userIDURN)
 				}
 			} else {
 				channels.LogRequestError(r, channel, fmt.Errorf("invalid from_bsuid for whatsapp URN: %w", urnErr))

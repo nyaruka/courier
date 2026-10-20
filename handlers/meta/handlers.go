@@ -559,14 +559,13 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg *models.MsgOut, res *
 		}
 	}
 
-	// if we got a user_id in the response, set it as a new URN on the send result so that send completion
-	// can queue a contact_changed task to append it to the contact (unless it is the URN we sent to)
+	// if we got a user_id in the response, report it as another URN of the recipient (unless it's the one we sent to)
 	if userID != "" {
 		userIDURN, err := urns.New(urns.WhatsApp, userID)
 		if err != nil {
 			clog.RawError(fmt.Errorf("unable to make whatsapp URN from user_id %s: %w", userID, err))
 		} else if userIDURN != msg.URN() {
-			res.SetNewURN(userIDURN)
+			res.AddOtherURN(userIDURN)
 		}
 	}
 

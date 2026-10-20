@@ -230,11 +230,11 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 	}
 
 	// mark our send task as complete
-	var newURN urns.URN
+	var otherURNs []urns.URN
 	if res != nil {
-		newURN = res.NewURN()
+		otherURNs = res.OtherURNs()
 	}
-	models.OnSendComplete(writeCTX, rt, msg, status, newURN, clog)
+	models.OnSendComplete(writeCTX, rt, msg, status, otherURNs, clog)
 }
 
 func (w *Sender) sendByHandler(ctx context.Context, h channels.Handler, m *models.MsgOut, clog *models.ChannelLog, log *slog.Logger) (*models.StatusUpdate, *channels.SendResult) {
