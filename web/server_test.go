@@ -178,6 +178,8 @@ func TestOutgoing(t *testing.T) {
 	rt := serverRuntime(t)
 	dyntest.Truncate(t, rt.Dynamo.Main.Client(), rt.Dynamo.Main.Table())
 
+	rt.Config.ChipAuthToken = "sesame"
+
 	s := web.NewServer(rt)
 	rt.HTTP.Default.Transport = httpx.WithTraces(httpx.WithMocks(nil, map[string][]*httpx.MockResponse{
 		"http://mock.com/send": {

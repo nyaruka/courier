@@ -154,6 +154,9 @@ func TestSendEvent(t *testing.T) {
 	assert.ErrorIs(t, send(started), channels.ErrConnectionFailed)
 
 	// as is it being unconfigured
+	rt.Config.ChipAuthToken = ""
+	assert.ErrorIs(t, send(started), channels.ErrChannelConfig)
+	rt.Config.ChipAuthToken = "sesame"
 	rt.Config.ChipURL = ""
 	assert.ErrorIs(t, send(started), channels.ErrChannelConfig)
 }

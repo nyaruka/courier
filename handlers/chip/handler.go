@@ -262,7 +262,7 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 // from it refusing, since the service is our own infrastructure.
 func (h *handler) post(ctx context.Context, action string, payload any, clog *models.ChannelLog) error {
 	cfg := h.Runtime().Config
-	if cfg.ChipURL == "" {
+	if cfg.ChipURL == "" || cfg.ChipAuthToken == "" {
 		return channels.ErrChannelConfig
 	}
 
