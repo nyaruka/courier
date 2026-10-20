@@ -414,7 +414,7 @@ func WriteStatusUpdates(ctx context.Context, rt *runtime.Runtime, statuses []*St
 	// queued once all rounds are written so that a contact whose statuses span rounds - delivered and read for the
 	// same message arriving together - is only queued one task. Best-effort - the statuses themselves are written.
 	if len(newURNs) > 0 {
-		if err := queueContactNewURNs(ctx, rt, newURNs); err != nil {
+		if err := queueStatusNewURNs(ctx, rt, newURNs); err != nil {
 			slog.Error("error queuing new URNs from status updates", "error", err)
 		}
 	}
@@ -480,9 +480,9 @@ type contactNewURNs struct {
 	URNs      []urns.URN
 }
 
-// queueContactNewURNs queues a contact_changed task to append the URNs reported by statuses to their contacts, where
+// queueStatusNewURNs queues a contact_changed task to append the URNs reported by statuses to their contacts, where
 // mailroom will accept them (see appendableURNs).
-func queueContactNewURNs(ctx context.Context, rt *runtime.Runtime, newURNs []*contactNewURNs) error {
+func queueStatusNewURNs(ctx context.Context, rt *runtime.Runtime, newURNs []*contactNewURNs) error {
 	// merge across the batch so a contact is only checked once, as a provider reports the same URNs on every status
 	byContact := make(map[ContactID]*contactNewURNs, len(newURNs))
 	order := make([]ContactID, 0, len(newURNs))
@@ -518,10 +518,9 @@ func queueContactNewURNs(ctx context.Context, rt *runtime.Runtime, newURNs []*co
 	for _, contactID := range order {
 		n := byContact[contactID]
 
-		if toAppend := appendableURNs(rt, n.Contact, n.URNs, owners); len(toAppend) > 0 {
-			if err := queueContactNewURN(ctx, rc, n.Contact.OrgID_, n.Contact.ID_, n.ChannelID, toAppend[0]); err != nil {
-				return fmt.Errorf("error queuing contact_changed task: %w", err)
-			}
+		toAppend := appendableURNs(rt, n.Contact, n.URNs, owners)
+		if err := queueContactNewURNs(ctx, rc, n.Contact.OrgID_, n.Contact.ID_, n.ChannelID, toAppend); err != nil {
+			return fmt.Errorf("error queuing contact_changed task: %w", err)
 		}
 	}
 	return nil

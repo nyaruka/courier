@@ -700,7 +700,7 @@ func (ts *ModelsTestSuite) TestCheckForDuplicate() {
 	// an outgoing message should clear things
 	msgJSON := `[{
 		"text": "test",
-		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
+		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc", "other_urns": ["whatsapp:US.9999"]},
 		"id": 10000,
 		"channel_uuid": "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
 		"uuid": "0199df0f-9f82-7689-b02d-f34105991321",
@@ -749,7 +749,7 @@ func (ts *ModelsTestSuite) TestOutgoingQueue() {
 		"uuid": "0199df0f-9f82-7689-b02d-f34105991321",
 		"high_priority": true,
 		"text": "test message",
-		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
+		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc", "other_urns": ["whatsapp:US.9999"]},
 		"created_on": "2025-10-14T20:16:03.821434Z",
 		"channel_uuid": "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
 		"urn": "tel:+12067799192",
@@ -772,11 +772,12 @@ func (ts *ModelsTestSuite) TestOutgoingQueue() {
 	// and that it has the appropriate text
 	ts.Equal(msg.Text(), "test message")
 
-	// mark this message as dealt with, with the provider having reported another URN for the recipient as well
-	// as the one we sent to
-	models.OnSendComplete(ctx, ts.rt, msg, models.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusWired, clog), []urns.URN{"tel:+12067799192", "whatsapp:US.4321"}, clog)
+	// mark this message as dealt with, with the provider having reported the URN we sent to, one the contact already
+	// has, and a new one for the recipient
+	models.OnSendComplete(ctx, ts.rt, msg, models.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusWired, clog), []urns.URN{"tel:+12067799192", "whatsapp:US.9999", "whatsapp:US.4321"}, clog)
 
-	// mailroom is asked to append the other URN
+	// mailroom is asked to append only the new one
+	assertvk.LLen(ts.T(), r, "c:1:100", 1)
 	data, err := redis.Bytes(r.Do("LPOP", "c:1:100"))
 	ts.NoError(err)
 	var task map[string]any
@@ -1016,6 +1017,12 @@ func (ts *ModelsTestSuite) TestContactForMsg() {
 	ts.False(b1Again.IsNew_)
 	ts.Equal(b1.ID_, b1Again.ID_)
 
+	// a provider reporting that contact's only URN - as a status does for a message sent to the BSUID - isn't
+	// something to append, even though it looks like a shell contact
+	toAppend, err := models.AppendableContactURNs(ctx, ts.rt, b1, []urns.URN{"whatsapp:US.7777"})
+	ts.NoError(err)
+	ts.Nil(toAppend)
+
 	// existing contact known only by a BSUID: a message with a new phone number and that BSUID is matched to it
 	// (not duplicated) and the phone number is added to it
 	existingByBSUID, err := models.ContactForURN(ctx, ts.rt, waChannel.OrgID_, waChannel, "whatsapp:US.5555", nil, "", true, clog)
@@ -1075,10 +1082,12 @@ func (ts *ModelsTestSuite) TestContactForMsg() {
 	ts.NoError(err)
 	ts.True(c2.IsNew_)
 
-	// a URN owned by a contact with no other URNs is appendable, as mailroom will reassign it
-	toAppend, err := models.AppendableContactURNs(ctx, ts.rt, existingByBSUID, []urns.URN{"whatsapp:12065550000"})
+	// only a BSUID owned by a contact with no other URNs is appendable - a phone number is that contact's identity,
+	// not a sign that it's a shell, so mailroom wouldn't reassign it
+	toAppend, err = models.AppendableContactURNs(ctx, ts.rt, existingByBSUID, []urns.URN{"whatsapp:12065550000"})
 	ts.NoError(err)
-	ts.Equal([]urns.URN{"whatsapp:12065550000"}, toAppend)
+	ts.Nil(toAppend)
+	ts.Equal(1, ts.rt.Stats.Extract().URNConflicts)
 }
 
 func (ts *ModelsTestSuite) TestSaveAttachment() {
@@ -1351,7 +1360,7 @@ func (ts *ModelsTestSuite) TestSessionTimeout() {
 		"id": 204,
 		"org_id": 1,
 		"text": "Test message 21",
-		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
+		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc", "other_urns": ["whatsapp:US.9999"]},
 		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba",
 		"urn": "telegram:3527065",
 		"created_on": "2017-07-21T19:22:23.242757Z",

@@ -727,10 +727,7 @@ func queueSentContactNewURNs(ctx context.Context, rt *runtime.Runtime, rc redis.
 	if err != nil {
 		return err
 	}
-	if len(toAppend) > 0 {
-		return queueContactNewURN(ctx, rc, ch.OrgID_, contact.ID_, ch.ID_, toAppend[0])
-	}
-	return nil
+	return queueContactNewURNs(ctx, rc, ch.OrgID_, contact.ID_, ch.ID_, toAppend)
 }
 
 const sqlInsertTimeoutFire = `

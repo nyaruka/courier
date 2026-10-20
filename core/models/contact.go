@@ -423,10 +423,10 @@ func lookupURNOwners(ctx context.Context, rt *runtime.Runtime, keys []urnKey) (m
 }
 
 // appendableURNs returns which of the given URNs are worth asking mailroom to append to the contact: those nobody
-// owns, and those owned by a shell contact - one created from messages received with only that URN - which mailroom
-// reassigns. A URN owned by any other contact is a duplicate contact we can't resolve, and mailroom would refuse the
-// append, so it's left where it is and counted rather than requeued on every message, send and status. Owners are as
-// looked up by lookupURNOwners.
+// owns, and WhatsApp BSUIDs owned by a shell contact - one created from messages received with only the BSUID -
+// which mailroom reassigns. A URN owned by any other contact is a duplicate contact we can't resolve, and mailroom
+// would refuse the append, so it's left where it is and counted rather than requeued on every message, send and
+// status. Owners are as looked up by lookupURNOwners.
 func appendableURNs(rt *runtime.Runtime, contact *Contact, others []urns.URN, owners map[urnKey]*urnOwner) []urns.URN {
 	var toAppend []urns.URN
 
@@ -434,9 +434,9 @@ func appendableURNs(rt *runtime.Runtime, contact *Contact, others []urns.URN, ow
 		owner := owners[urnKey{contact.OrgID_, string(u.Identity())}]
 
 		switch {
-		case owner == nil || owner.ContactID == NilContactID || owner.IsShell:
+		case owner != nil && owner.ContactID == contact.ID_: // already ours
+		case owner == nil || owner.ContactID == NilContactID || (owner.IsShell && urns.IsWhatsAppBSUID(u)):
 			toAppend = append(toAppend, u)
-		case owner.ContactID == contact.ID_: // already ours
 		default:
 			slog.Info("URN not appended to contact because it belongs to another contact", "urn", u, "contact", contact.UUID_, "owner_id", owner.ContactID)
 			rt.Stats.RecordURNConflict()

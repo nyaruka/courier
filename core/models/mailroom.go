@@ -27,7 +27,7 @@ func queueMsgHandling(ctx context.Context, rc redis.Conn, c *Contact, m *MsgIn) 
 		"new_contact":     c.IsNew_,
 	}
 	if len(c.URNsToAppend_) > 0 {
-		body["new_urn"] = newURNTask(c.URNsToAppend_[0])
+		body["new_urn"] = newURNTask(c.URNsToAppend_[0]) // mailroom takes one, any others will be reported again
 	}
 	if len(m.Payload_) > 0 {
 		body["payload"] = m.Payload_
@@ -41,10 +41,15 @@ func newURNTask(urn urns.URN) map[string]string {
 	return map[string]string{"value": urn.String(), "action": "append"}
 }
 
-// queueContactNewURN queues a contact_changed task to append the given URN to the contact
-func queueContactNewURN(ctx context.Context, rc redis.Conn, orgID OrgID, contactID ContactID, channelID ChannelID, urn urns.URN) error {
-	body := map[string]any{"channel_id": channelID, "new_urn": newURNTask(urn)}
-	return queueMailroomTask(ctx, rc, "contact_changed", orgID, contactID, body)
+// queueContactNewURNs queues a contact_changed task for each of the given URNs to append it to the contact
+func queueContactNewURNs(ctx context.Context, rc redis.Conn, orgID OrgID, contactID ContactID, channelID ChannelID, urnz []urns.URN) error {
+	for _, u := range urnz {
+		body := map[string]any{"channel_id": channelID, "new_urn": newURNTask(u)}
+		if err := queueMailroomTask(ctx, rc, "contact_changed", orgID, contactID, body); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func queueEventHandling(ctx context.Context, rc redis.Conn, c *Contact, e *ChannelEvent) error {
