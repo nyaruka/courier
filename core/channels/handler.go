@@ -20,7 +20,7 @@ type Event interface {
 // HandleFunc is the raw form of a route: it owns the whole exchange, writing the response itself and
 // returning the events it created. Routes that receive events don't implement this directly - they register
 // a ReceiveFunc with AddReceive and the seam handles the exchange for them - so this is the form for routes
-// that aren't receiving anything: verification handshakes, CORS preflights, contact registration.
+// that aren't receiving anything: verification handshakes, contact registration.
 // The server takes care of looking up the channel by UUID before passing it to this function.
 // Errors in format of the request or by the caller should be handled and logged internally. Errors in
 // execution or in courier itself should be passed back.

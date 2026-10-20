@@ -479,21 +479,6 @@ type QuickReply struct {
 	Extra string `json:"extra,omitempty"`
 }
 
-// QuickReplies is a slice of quick replies that can be scanned from a nullable JSONB column
-type QuickReplies []QuickReply
-
-func (qr *QuickReplies) Scan(value any) error {
-	if value == nil {
-		*qr = nil
-		return nil
-	}
-	b, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("failed to scan quick replies: expected []byte, got %T", value)
-	}
-	return json.Unmarshal(b, qr)
-}
-
 // RequiresExtra returns whether quick replies of this type need an extra value - a form ID or a URL - to be sendable
 func (qr QuickReply) RequiresExtra() bool {
 	return qr.Type == QuickReplyTypeForm || qr.Type == QuickReplyTypeURL

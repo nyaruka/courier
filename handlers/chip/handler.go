@@ -262,16 +262,14 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 // from it refusing, since the service is our own infrastructure.
 func (h *handler) post(ctx context.Context, action string, payload any, clog *models.ChannelLog) error {
 	cfg := h.Runtime().Config
-	if cfg.ChipURL == "" {
+	if cfg.ChipURL == "" || cfg.ChipAuthToken == "" {
 		return channels.ErrChannelConfig
 	}
 
 	url := fmt.Sprintf("%s/wi/%s", strings.TrimSuffix(cfg.ChipURL, "/"), action)
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonx.MustMarshal(payload)))
 	req.Header.Set("Content-Type", "application/json")
-	if cfg.ChipAuthToken != "" {
-		req.Header.Set("Authorization", "Token "+cfg.ChipAuthToken)
-	}
+	req.Header.Set("Authorization", "Token "+cfg.ChipAuthToken)
 
 	resp, _, err := h.RequestHTTP(req, clog)
 	if err != nil {
