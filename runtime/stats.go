@@ -43,10 +43,8 @@ type Stats struct {
 	OutgoingDuration DurationByType // total time spent sending messages
 
 	ContactsCreated           int
-	ContactsCreatedFromBSUID  int // contacts created from a WhatsApp request without a phone number
 	ContactsMatchedByOtherURN int // messages whose contact was found by another URN the sender reported, e.g. their BSUID
 	URNAppends                int // reported URNs found addable to their contact
-	URNReassigns              int // reported URNs found movable to their contact from a contact with no other URNs
 	URNConflicts              int // reported URNs left with another contact that owns them
 }
 
@@ -81,10 +79,8 @@ func (s *Stats) ToMetrics(advanced bool) []types.MetricDatum {
 		metrics = append(metrics, s.IncomingDuration.metrics("IncomingDuration", func(typ string) int { return s.IncomingRequests[typ] })...)
 		metrics = append(metrics, s.OutgoingDuration.metrics("OutgoingDuration", func(typ string) int { return s.OutgoingSends[typ] + s.OutgoingErrors[typ] })...)
 		metrics = append(metrics, cwatch.Datum("ContactsCreated", float64(s.ContactsCreated), types.StandardUnitCount))
-		metrics = append(metrics, cwatch.Datum("ContactsCreatedFromBSUID", float64(s.ContactsCreatedFromBSUID), types.StandardUnitCount))
 		metrics = append(metrics, cwatch.Datum("ContactsMatchedByOtherURN", float64(s.ContactsMatchedByOtherURN), types.StandardUnitCount))
 		metrics = append(metrics, cwatch.Datum("URNAppends", float64(s.URNAppends), types.StandardUnitCount))
-		metrics = append(metrics, cwatch.Datum("URNReassigns", float64(s.URNReassigns), types.StandardUnitCount))
 		metrics = append(metrics, cwatch.Datum("URNConflicts", float64(s.URNConflicts), types.StandardUnitCount))
 	}
 
@@ -133,12 +129,9 @@ func (c *StatsCollector) RecordOutgoing(typ string, success bool, d time.Duratio
 	c.mutex.Unlock()
 }
 
-func (c *StatsCollector) RecordContactCreated(fromBSUID bool) {
+func (c *StatsCollector) RecordContactCreated() {
 	c.mutex.Lock()
 	c.stats.ContactsCreated++
-	if fromBSUID {
-		c.stats.ContactsCreatedFromBSUID++
-	}
 	c.mutex.Unlock()
 }
 
@@ -148,24 +141,14 @@ func (c *StatsCollector) RecordContactMatchedByOtherURN() {
 	c.mutex.Unlock()
 }
 
-// URNOutcome is what became of a URN a provider reported for a contact which the contact didn't have. Counted as
-// decided, which is before any message is written or append queued, so a duplicate message still counts.
-type URNOutcome int
-
-const (
-	URNAppended   URNOutcome = iota // can be added
-	URNReassigned                   // can be moved from a contact with no other URNs
-	URNConflicted                   // left with the other contact that owns it
-)
-
-func (c *StatsCollector) RecordURNOutcome(outcome URNOutcome) {
+// RecordURNOutcome records what became of a URN a provider reported for a contact which the contact didn't have:
+// addable, or left with another contact. Counted as decided, which is before any message is written or append
+// queued, so a duplicate message still counts.
+func (c *StatsCollector) RecordURNOutcome(appendable bool) {
 	c.mutex.Lock()
-	switch outcome {
-	case URNAppended:
+	if appendable {
 		c.stats.URNAppends++
-	case URNReassigned:
-		c.stats.URNReassigns++
-	case URNConflicted:
+	} else {
 		c.stats.URNConflicts++
 	}
 	c.mutex.Unlock()

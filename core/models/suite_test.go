@@ -1012,7 +1012,6 @@ func (ts *ModelsTestSuite) TestContactForMsg() {
 
 	stats := ts.rt.Stats.Extract()
 	ts.Equal(1, stats.ContactsCreated)
-	ts.Equal(0, stats.ContactsCreatedFromBSUID)
 	ts.Equal(2, stats.URNAppends) // the BSUID, twice
 
 	// no existing contact: a BSUID-only message creates one keyed on the BSUID
@@ -1020,10 +1019,6 @@ func (ts *ModelsTestSuite) TestContactForMsg() {
 	ts.NoError(err)
 	ts.True(b1.IsNew_)
 	ts.Equal(b1.ID_, lookup("whatsapp:US.7777").ID_)
-
-	stats = ts.rt.Stats.Extract()
-	ts.Equal(1, stats.ContactsCreated)
-	ts.Equal(1, stats.ContactsCreatedFromBSUID)
 
 	// existing contact known only by a BSUID: a BSUID-only message is matched to it
 	b1Again, err := models.ContactForMsg(ctx, ts.rt, newWAMsg("whatsapp:US.7777", urns.NilURN), clog)
@@ -1077,7 +1072,7 @@ func (ts *ModelsTestSuite) TestContactForMsg() {
 	ts.Equal(existingByBSUID.ID_, matchedByPhone.ID_)
 	ts.Equal([]urns.URN{"whatsapp:US.8888"}, matchedByPhone.URNsToAppend_)
 	ts.Equal(shell.ID_, lookup("whatsapp:US.8888").ID_) // still with the shell contact
-	ts.Equal(1, ts.rt.Stats.Extract().URNReassigns)
+	ts.Equal(1, ts.rt.Stats.Extract().URNAppends)       // to be moved from the shell contact
 
 	// existing contact known by the phone number, BSUID owned by a contact with other URNs: matched by the phone
 	// number and the BSUID is left where it is, as mailroom would refuse to append it

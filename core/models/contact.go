@@ -250,7 +250,7 @@ func contactForURN(ctx context.Context, rt *runtime.Runtime, org OrgID, channel 
 	contact.URNID_ = contactURN.ID
 	contact.URNs_ = pq.StringArray{string(urn.Identity())}
 
-	rt.Stats.RecordContactCreated(urns.IsWhatsAppBSUID(urn))
+	rt.Stats.RecordContactCreated()
 	contactCreated(org)
 
 	return contact, nil
@@ -442,15 +442,12 @@ func appendableURNs(rt *runtime.Runtime, contact *Contact, others []urns.URN, ow
 
 		switch {
 		case owner != nil && owner.ContactID == contact.ID_: // already ours
-		case owner == nil || owner.ContactID == NilContactID:
+		case owner == nil || owner.ContactID == NilContactID || (owner.IsShell && urns.IsWhatsAppBSUID(u)):
 			toAppend = append(toAppend, u)
-			rt.Stats.RecordURNOutcome(runtime.URNAppended)
-		case owner.IsShell && urns.IsWhatsAppBSUID(u):
-			toAppend = append(toAppend, u)
-			rt.Stats.RecordURNOutcome(runtime.URNReassigned)
+			rt.Stats.RecordURNOutcome(true)
 		default:
 			slog.Info("URN not appended to contact because it belongs to another contact", "urn", u, "contact", contact.UUID_, "owner_id", owner.ContactID)
-			rt.Stats.RecordURNOutcome(runtime.URNConflicted)
+			rt.Stats.RecordURNOutcome(false)
 		}
 	}
 
