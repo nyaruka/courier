@@ -156,7 +156,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 
 		if urnErr == nil {
 			if userIDURN != urn {
-				msg.WithNewURN(userIDURN, models.NewURNAppend)
+				msg.WithOtherURN(userIDURN)
 			}
 		} else {
 			slog.Warn("ignoring invalid ExternalUserId for message", "ExternalUserId", form.ExternalUserId, "MessageSID", form.MessageSID, "Error", urnErr.Error())
@@ -225,7 +225,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 	if form.ExternalUserId != "" && channel.IsScheme(urns.WhatsApp) {
 		userIDURN, urnErr := h.parseURN(channel, form.ExternalUserId, "")
 		if urnErr == nil && urns.IsWhatsAppBSUID(userIDURN) {
-			status.WithNewURN(userIDURN)
+			status.WithOtherURN(userIDURN)
 		} else if urnErr != nil {
 			slog.Warn("ignoring invalid ExternalUserId for status", "ExternalUserId", form.ExternalUserId, "MessageSID", form.MessageSID, "Error", urnErr.Error())
 		}

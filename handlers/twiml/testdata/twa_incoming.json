@@ -46,10 +46,9 @@
                 "log_uuids": [
                     "019a9797-3708-7000-bb67-34f0faf7146f"
                 ],
-                "new_urn": {
-                    "value": "whatsapp:US.1234",
-                    "action": "append"
-                }
+                "other_urns": [
+                    "whatsapp:US.1234"
+                ]
             }
         ],
         "log": {
@@ -256,7 +255,9 @@
                 "external_identifier": "SMe287d7109a5a925f182f0e07fe5b223b",
                 "status": "D",
                 "log_uuid": "0199f4f2-dcc8-7000-81c9-e7556b07fbc7",
-                "new_urn": "whatsapp:CO.1600798971519754"
+                "other_urns": [
+                    "whatsapp:CO.1600798971519754"
+                ]
             }
         ],
         "log": {

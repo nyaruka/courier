@@ -58,7 +58,9 @@ type Contact struct {
 	CreatedBy_  UserID `db:"created_by_id"`
 	ModifiedBy_ UserID `db:"modified_by_id"`
 
-	IsNew_ bool
+	// set when resolved for an incoming message
+	IsNew_        bool       // created for this message
+	URNsToAppend_ []urns.URN // other URNs of the sender for mailroom to append (see appendableURNs)
 }
 
 // UUID returns the UUID for this contact
@@ -320,67 +322,149 @@ func contactCreated(orgID OrgID) {
 	}
 }
 
-// contactForMsg resolves the contact for an incoming message. Normally that's a lookup by (or creation from) the
-// message's primary URN. But when a WhatsApp message arrives with a phone number as its primary URN and a
-// business-scoped user ID attached as its new URN, and the phone number doesn't match an existing contact, we also
-// look for one by the BSUID - so a contact created from messages received while the user's phone number was omitted
-// (see https://developers.facebook.com/documentation/business-messaging/whatsapp/business-scoped-user-ids/) is
-// reused rather than duplicated. In that case the phone number is added to the matched contact so the message is
-// still attributed to it as the primary URN.
+// contactForMsg resolves the contact for an incoming message: the one owning its URN, or failing that one owning any
+// of the other URNs the handler reported for the sender - so a contact created from WhatsApp messages received with
+// only a business-scoped user ID (see https://developers.facebook.com/documentation/business-messaging/whatsapp/business-scoped-user-ids/)
+// is reused rather than duplicated when the phone number appears. Otherwise a new contact is created. The other URNs
+// are left for mailroom to append where that will succeed (see appendableURNs).
 func contactForMsg(ctx context.Context, rt *runtime.Runtime, m *MsgIn, clog *ChannelLog) (*Contact, error) {
-	altURN := altLookupURN(m)
+	org, channel := m.Channel_.OrgID(), m.Channel_
 
-	// simple case: no alternative URN to consider, look up or create by the primary URN
-	if altURN == urns.NilURN {
-		return contactForURN(ctx, rt, m.Channel_.OrgID(), m.Channel_, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
+	// simple case: no other URNs to consider, look up or create by the primary URN
+	if len(m.OtherURNs_) == 0 {
+		return contactForURN(ctx, rt, org, channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
 	}
 
 	// try the primary URN first, without creating a contact
-	contact, err := contactForURN(ctx, rt, m.Channel_.OrgID(), m.Channel_, m.URN_, m.URNAuthTokens_, m.ContactName_, false, clog)
-	if err != nil || contact != nil {
-		return contact, err
-	}
-
-	// the primary URN didn't match an existing contact, try the alternative
-	contact, err = contactForURN(ctx, rt, m.Channel_.OrgID(), m.Channel_, altURN, nil, "", false, clog)
+	contact, err := contactForURN(ctx, rt, org, channel, m.URN_, m.URNAuthTokens_, m.ContactName_, false, clog)
 	if err != nil {
 		return nil, err
 	}
-	if contact != nil {
-		// matched an existing contact by the BSUID - add the primary URN to it so the message stays attributed to
-		// the primary URN
-		added, err := addContactURN(ctx, rt, m.Channel_, contact, m.URN_, m.URNAuthTokens_)
+
+	// the primary URN didn't match an existing contact, try the others
+	for _, other := range m.OtherURNs_ {
+		if contact != nil {
+			break
+		}
+		contact, err = contactForURN(ctx, rt, org, channel, other, nil, "", false, clog)
 		if err != nil {
 			return nil, err
 		}
-		if !added {
-			// the primary URN was created for another contact while we were looking, start over with a lookup
-			return contactForMsg(ctx, rt, m, clog)
+		if contact != nil {
+			// add the primary URN to it so the message stays attributed to the primary URN
+			cu, added, err := claimURN(ctx, rt, channel, contact, m.URN_, m.URNAuthTokens_)
+			if err != nil {
+				return nil, err
+			}
+			if !added {
+				// the primary URN was created for another contact while we were looking, start over with a lookup
+				return contactForMsg(ctx, rt, m, clog)
+			}
+			contact.URNID_ = cu.ID
 		}
-		return contact, nil
 	}
 
-	// no existing contact matched either URN, create one from the primary URN
-	return contactForURN(ctx, rt, m.Channel_.OrgID(), m.Channel_, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
-}
-
-// altLookupURN returns an alternative URN to look up an existing contact by when the message's primary URN doesn't
-// match one: for a message from a WhatsApp phone number with a business-scoped user ID attached as its new URN,
-// that's the BSUID.
-func altLookupURN(m *MsgIn) urns.URN {
-	if m.NewURN_ != nil && m.URN_.Scheme() == urns.WhatsApp.Prefix && urns.IsWhatsAppBSUID(m.NewURN_.Value) {
-		return m.NewURN_.Value
+	// no existing contact matched any URN, create one from the primary URN
+	if contact == nil {
+		contact, err = contactForURN(ctx, rt, org, channel, m.URN_, m.URNAuthTokens_, m.ContactName_, true, clog)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return urns.NilURN
+
+	contact.URNsToAppend_, err = appendableContactURNs(ctx, rt, contact, m.OtherURNs_)
+	if err != nil {
+		return nil, err
+	}
+
+	return contact, nil
 }
 
-// addContactURN adds the given URN to the contact (if not already present) and points the contact's URNID at it, so
-// an incoming message is attributed to this URN. Returns false without adding if the URN belongs to another contact
-// or was concurrently inserted by another writer, rather than stealing it - the caller should restart its lookup.
-func addContactURN(ctx context.Context, rt *runtime.Runtime, channel *Channel, contact *Contact, urn urns.URN, authTokens map[string]string) (bool, error) {
+const sqlSelectURNOwners = `
+SELECT u.org_id, u.identity, u.contact_id,
+       NOT EXISTS(SELECT 1 FROM contacts_contacturn o WHERE o.contact_id = u.contact_id AND o.id != u.id) AS is_shell
+  FROM contacts_contacturn u
+ WHERE (u.org_id, u.identity) IN (VALUES(:org_id::int, :identity))`
+
+// urnKey identifies a URN within an org
+type urnKey struct {
+	OrgID    OrgID  `db:"org_id"`
+	Identity string `db:"identity"`
+}
+
+// urnOwner is who owns a URN, if anyone
+type urnOwner struct {
+	urnKey
+	ContactID ContactID `db:"contact_id"` // nil if the URN is orphaned
+	IsShell   bool      `db:"is_shell"`   // the owner has no other URNs
+}
+
+// lookupURNOwners looks up the owners of the given URNs, in one query so that a batch of statuses costs one
+func lookupURNOwners(ctx context.Context, rt *runtime.Runtime, keys []urnKey) (map[urnKey]*urnOwner, error) {
+	query, args, err := dbutil.BulkSQL(rt.DB, sqlSelectURNOwners, keys)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := rt.DB.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("error looking up URN owners: %w", err)
+	}
+	defer rows.Close()
+
+	owners := make(map[urnKey]*urnOwner, len(keys))
+	for rows.Next() {
+		o := &urnOwner{}
+		if err := rows.StructScan(o); err != nil {
+			return nil, fmt.Errorf("error scanning URN owner: %w", err)
+		}
+		owners[o.urnKey] = o
+	}
+	return owners, rows.Err()
+}
+
+// appendableURNs returns which of the given URNs are worth asking mailroom to append to the contact: those nobody
+// owns, and those owned by a shell contact - one created from messages received with only that URN - which mailroom
+// reassigns. A URN owned by any other contact is a duplicate contact we can't resolve, and mailroom would refuse the
+// append, so it's left where it is and counted rather than requeued on every message, send and status. Owners are as
+// looked up by lookupURNOwners.
+func appendableURNs(rt *runtime.Runtime, contact *Contact, others []urns.URN, owners map[urnKey]*urnOwner) []urns.URN {
+	var toAppend []urns.URN
+
+	for _, u := range others {
+		owner := owners[urnKey{contact.OrgID_, string(u.Identity())}]
+
+		switch {
+		case owner == nil || owner.ContactID == NilContactID || owner.IsShell:
+			toAppend = append(toAppend, u)
+		case owner.ContactID == contact.ID_: // already ours
+		default:
+			slog.Info("URN not appended to contact because it belongs to another contact", "urn", u, "contact", contact.UUID_, "owner_id", owner.ContactID)
+			rt.Stats.RecordURNConflict()
+		}
+	}
+
+	return toAppend
+}
+
+// looks up the owners of the given URNs and returns those to ask mailroom to append (see appendableURNs)
+func appendableContactURNs(ctx context.Context, rt *runtime.Runtime, contact *Contact, others []urns.URN) ([]urns.URN, error) {
+	keys := make([]urnKey, len(others))
+	for i, u := range others {
+		keys[i] = urnKey{contact.OrgID_, string(u.Identity())}
+	}
+	owners, err := lookupURNOwners(ctx, rt, keys)
+	if err != nil {
+		return nil, err
+	}
+	return appendableURNs(rt, contact, others, owners), nil
+}
+
+// claimURN adds the given URN to the contact if not already present. Returns false without adding if the URN belongs
+// to another contact or was concurrently inserted by another writer, rather than stealing it.
+func claimURN(ctx context.Context, rt *runtime.Runtime, channel *Channel, contact *Contact, urn urns.URN, authTokens map[string]string) (*ContactURN, bool, error) {
 	tx, err := rt.DB.BeginTxx(ctx, nil)
 	if err != nil {
-		return false, fmt.Errorf("error beginning transaction: %w", err)
+		return nil, false, fmt.Errorf("error beginning transaction: %w", err)
 	}
 
 	contactURN, err := GetOrCreateContactURN(ctx, tx, channel, contact.ID_, urn, authTokens)
@@ -389,21 +473,20 @@ func addContactURN(ctx context.Context, rt *runtime.Runtime, channel *Channel, c
 
 		// the URN was inserted by someone else after we tried to look it up
 		if dbutil.IsUniqueViolation(err) {
-			return false, nil
+			return nil, false, nil
 		}
-		return false, fmt.Errorf("error adding URN to contact: %w", err)
+		return nil, false, fmt.Errorf("error adding URN to contact: %w", err)
 	}
 
 	// the URN was created for another contact while we were looking, roll back rather than steal it
 	if contactURN.PrevContactID != NilContactID {
 		tx.Rollback()
-		return false, nil
+		return nil, false, nil
 	}
 
 	if err := tx.Commit(); err != nil {
-		return false, fmt.Errorf("error committing transaction: %w", err)
+		return nil, false, fmt.Errorf("error committing transaction: %w", err)
 	}
 
-	contact.URNID_ = contactURN.ID
-	return true, nil
+	return contactURN, true, nil
 }

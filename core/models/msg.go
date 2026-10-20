@@ -47,19 +47,6 @@ const (
 	MsgStatusFailed    MsgStatus = "F"
 )
 
-// NewURNAction is the action to perform with a new URN
-type NewURNAction string
-
-const (
-	NewURNAppend NewURNAction = "append"
-)
-
-// NewURNSpec specifies a new URN to add or replace on the contact
-type NewURNSpec struct {
-	Value  urns.URN     `json:"value"`
-	Action NewURNAction `json:"action"`
-}
-
 // MsgDirection is the direction of a message
 type MsgDirection string
 
@@ -95,7 +82,7 @@ type MsgIn struct {
 	// optional extras set by handlers, used to update the contact or passed to mailroom for handling
 	ContactName_   string            `json:"contact_name,omitempty"`
 	URNAuthTokens_ map[string]string `json:"auth_tokens,omitempty"`
-	NewURN_        *NewURNSpec       `json:"new_urn,omitempty"`
+	OtherURNs_     []urns.URN        `json:"other_urns,omitempty"` // other URNs the sender is known by
 	Payload_       json.RawMessage   `json:"payload,omitempty"`
 
 	Channel_   *Channel `json:"-"`
@@ -139,8 +126,11 @@ func (m *MsgIn) WithURNAuthTokens(tokens map[string]string) *MsgIn {
 	return m
 }
 func (m *MsgIn) WithReceivedOn(date time.Time) *MsgIn { m.ReceivedOn_ = &date; return m }
-func (m *MsgIn) WithNewURN(urn urns.URN, action NewURNAction) *MsgIn {
-	m.NewURN_ = &NewURNSpec{Value: urn, Action: action}
+
+// WithOtherURN adds a URN the sender is also known by, e.g. a WhatsApp business-scoped user ID on a message from a
+// phone number, to be added to their contact if nobody else owns it
+func (m *MsgIn) WithOtherURN(urn urns.URN) *MsgIn {
+	m.OtherURNs_ = append(m.OtherURNs_, urn)
 	return m
 }
 func (m *MsgIn) WithPayload(payload json.RawMessage) *MsgIn { m.Payload_ = payload; return m }
@@ -683,9 +673,9 @@ func ClearMsgSent(ctx context.Context, rt *runtime.Runtime, uuid MsgUUID) error 
 	return sentMsgs.Rem(ctx, rc, string(uuid))
 }
 
-// OnSendComplete is called when the sender has finished trying to send a message, with the new URN from the send
-// result if there was one
-func OnSendComplete(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, status *StatusUpdate, newURN urns.URN, clog *ChannelLog) {
+// OnSendComplete is called when the sender has finished trying to send a message, with any other URNs the provider
+// reported for the recipient
+func OnSendComplete(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, status *StatusUpdate, otherURNs []urns.URN, clog *ChannelLog) {
 	log := slog.With("channel", msg.Channel().UUID(), "msg", msg.UUID(), "clog", clog.UUID, "status", status)
 
 	rc := rt.VK.Get()
@@ -710,22 +700,37 @@ func OnSendComplete(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, statu
 		}
 	}
 
-	// if send result includes a new URN to add to the contact, queue a contact_changed task
-	if wasSuccess && newURN != urns.NilURN && !msg.Contact().HasOtherURN(newURN) {
-		ch := msg.Channel()
-		err := queueMailroomTask(ctx, rc, "contact_changed", ch.OrgID_, msg.Contact().ID, map[string]any{
-			"channel_id": ch.ID_,
-			"new_urn": map[string]string{
-				"value":  newURN.String(),
-				"action": "append",
-			},
-		})
-		if err != nil {
-			log.Error("unable to queue contact_changed task", "error", err)
+	// if the provider reported URNs for the recipient which we don't know them by, ask mailroom to append them
+	if wasSuccess {
+		unknown := make([]urns.URN, 0, len(otherURNs))
+		for _, u := range otherURNs {
+			if !msg.Contact().HasOtherURN(u) && u.Identity() != msg.URN().Identity() {
+				unknown = append(unknown, u)
+			}
+		}
+		if len(unknown) > 0 {
+			if err := queueSentContactNewURNs(ctx, rt, rc, msg.Channel(), msg.Contact(), unknown); err != nil {
+				log.Error("unable to queue contact_changed task", "error", err)
+			}
 		}
 	}
 
 	rt.Stats.RecordOutgoing(string(msg.Channel().ChannelType()), wasSuccess, clog.Elapsed)
+}
+
+// queues a contact_changed task to append the given URNs of the contact a message was sent to, where mailroom will
+// accept them (see appendableURNs)
+func queueSentContactNewURNs(ctx context.Context, rt *runtime.Runtime, rc redis.Conn, ch *Channel, ref *ContactReference, otherURNs []urns.URN) error {
+	contact := &Contact{OrgID_: ch.OrgID_, ID_: ref.ID, UUID_: ref.UUID}
+
+	toAppend, err := appendableContactURNs(ctx, rt, contact, otherURNs)
+	if err != nil {
+		return err
+	}
+	if len(toAppend) > 0 {
+		return queueContactNewURN(ctx, rc, ch.OrgID_, contact.ID_, ch.ID_, toAppend[0])
+	}
+	return nil
 }
 
 const sqlInsertTimeoutFire = `

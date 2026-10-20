@@ -58,7 +58,7 @@ func Reply(contentType string, body []byte) error {
 
 type SendResult struct {
 	externalIDs []string
-	newURN      urns.URN
+	otherURNs   []urns.URN
 }
 
 func (r *SendResult) AddExternalID(id string) {
@@ -69,12 +69,13 @@ func (r *SendResult) ExternalIDs() []string {
 	return r.externalIDs
 }
 
-func (r *SendResult) SetNewURN(urn urns.URN) {
-	r.newURN = urn
+// AddOtherURN adds a URN the provider reported for the recipient, to be added to their contact if nobody else owns it
+func (r *SendResult) AddOtherURN(urn urns.URN) {
+	r.otherURNs = append(r.otherURNs, urn)
 }
 
-func (r *SendResult) NewURN() urns.URN {
-	return r.newURN
+func (r *SendResult) OtherURNs() []urns.URN {
+	return r.otherURNs
 }
 
 type SendError struct {

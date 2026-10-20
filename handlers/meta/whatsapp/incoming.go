@@ -85,7 +85,7 @@ func ParseChanges(channel *models.Channel, changes []Change, resolveMedia Resolv
 				userIDURN, urnErr := urns.New(urns.WhatsApp, waMsg.FromUserID)
 				if urnErr == nil {
 					if userIDURN != urn {
-						event.WithNewURN(userIDURN, models.NewURNAppend)
+						event.WithOtherURN(userIDURN)
 					}
 				} else {
 					channels.LogRequestError(r, channel, fmt.Errorf("invalid user_id for whatsapp URN: %w", urnErr))
