@@ -1,3 +1,7 @@
+## v26.3.64 (2026-10-20)
+ * Check ownership of other URNs a request reports before asking mailroom to append them
+ * Remove leftover webchat code now that chip is its provider
+
 ## v26.3.63 (2026-10-19)
  * Rename the WebChat channel type's code to CHP
  * Slim the WebChat handler to the webchat service contract
