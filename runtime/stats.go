@@ -43,11 +43,11 @@ type Stats struct {
 	OutgoingDuration DurationByType // total time spent sending messages
 
 	ContactsCreated           int
-	ContactsCreatedFromBSUID  int // contacts created from a WhatsApp message without a phone number
+	ContactsCreatedFromBSUID  int // contacts created from a WhatsApp request without a phone number
 	ContactsMatchedByOtherURN int // messages whose contact was found by another URN the sender reported, e.g. their BSUID
-	URNAppends                int // URNs queued to mailroom to add to contacts
-	URNReassigns              int // URNs queued to mailroom to move from a contact with no other URNs
-	URNConflicts              int // URNs not added to contacts because they belong to other contacts
+	URNAppends                int // reported URNs found addable to their contact
+	URNReassigns              int // reported URNs found movable to their contact from a contact with no other URNs
+	URNConflicts              int // reported URNs left with another contact that owns them
 }
 
 func newStats() *Stats {
@@ -148,12 +148,13 @@ func (c *StatsCollector) RecordContactMatchedByOtherURN() {
 	c.mutex.Unlock()
 }
 
-// URNOutcome is what became of a URN a provider reported for a contact which the contact didn't have
+// URNOutcome is what became of a URN a provider reported for a contact which the contact didn't have. Counted as
+// decided, which is before any message is written or append queued, so a duplicate message still counts.
 type URNOutcome int
 
 const (
-	URNAppended   URNOutcome = iota // queued to be added
-	URNReassigned                   // queued to be moved from a contact with no other URNs
+	URNAppended   URNOutcome = iota // can be added
+	URNReassigned                   // can be moved from a contact with no other URNs
 	URNConflicted                   // left with the other contact that owns it
 )
 
