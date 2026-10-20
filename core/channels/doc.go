@@ -14,8 +14,8 @@
 // request and logging what the request was are all the seam's. A branch whose provider dictates the response
 // body - a verification challenge echoed back, Viber's welcome message - returns Reply with that body, and
 // the batch is still written first. The routes registered with Add and a raw HandleFunc are the ones that
-// aren't receiving anything at all: the GET verification handshakes, a chat widget's CORS preflight,
-// Firebase's contact registration.
+// aren't receiving anything at all: the GET verification handshakes, webchat's chat start and Firebase's
+// contact registration.
 //
 // What a request is being handled as travels on the Received as a ReceiveKind. It starts as whatever the route was
 // registered as, and a route serving more than one purpose says which with As(). That one declaration decides

@@ -19,7 +19,7 @@ import (
 type ReceiveFunc func(context.Context, *models.Channel, *http.Request, *Received, *models.ChannelLog) error
 
 // AddReceive adds a route served by a receive function. Routes that need to own their whole response - a
-// verification handshake, a CORS preflight - use Add with a HandleFunc instead.
+// verification handshake - use Add with a HandleFunc instead.
 //
 // The kind is what the route serves, and is where the batch starts out - so a route serving one purpose names
 // it, and a route serving several registers ReceiveKindAny and narrows it with Received.As once it knows which it's
@@ -30,8 +30,8 @@ func (r *Routes) AddReceive(handler Handler, method string, action string, kind 
 }
 
 // Receive adapts a ReceiveFunc into a HandleFunc, for a route serving the given kind. AddReceive is how routes
-// normally get this; it's exported for the rare route that wraps its handling in something else, like the chat
-// widget's CORS headers.
+// normally get this; it's exported for the rare route that wraps its handling in something else, like an auth
+// check that has to refuse a request before anything is received.
 //
 // The lifecycle is two steps: write what the receive function parsed, then answer the request. They're
 // separate because they always both happen - even a request that ends in a parse error keeps the good
