@@ -965,6 +965,8 @@ func (ts *ModelsTestSuite) TestContactForMsg() {
 	waChannel := ts.getChannel("WAC", "dbc126ed-66bc-4e28-b67b-81dc33277a17")
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, waChannel, nil, nil)
 
+	ts.rt.Stats.Extract() // discard stats from other tests
+
 	// sender is the primary URN - a phone number, or a BSUID for a webhook with no phone number, in which case
 	// handlers attach no other URN
 	newWAMsg := func(sender, bsuid urns.URN) *models.MsgIn {
@@ -1008,6 +1010,10 @@ func (ts *ModelsTestSuite) TestContactForMsg() {
 	ts.ElementsMatch([]string{"whatsapp:12065551234", "whatsapp:US.1234"}, c1Both.URNs_) // loaded with the contact
 	ts.Nil(c1Both.URNsToAppend_)
 
+	stats := ts.rt.Stats.Extract()
+	ts.Equal(1, stats.ContactsCreated)
+	ts.Equal(2, stats.URNAppends) // the BSUID, twice
+
 	// no existing contact: a BSUID-only message creates one keyed on the BSUID
 	b1, err := models.ContactForMsg(ctx, ts.rt, newWAMsg("whatsapp:US.7777", urns.NilURN), clog)
 	ts.NoError(err)
@@ -1038,6 +1044,7 @@ func (ts *ModelsTestSuite) TestContactForMsg() {
 	ts.Equal(existingByBSUID.ID_, matched.ID_)
 	ts.Equal(existingByBSUID.ID_, lookup("whatsapp:12065555555").ID_) // phone number now resolves to the same contact
 	ts.NotEqual(existingByBSUID.URNID_, matched.URNID_)               // and the message is attributed to the phone URN
+	ts.Equal(1, ts.rt.Stats.Extract().ContactsMatchedByOtherURN)
 
 	// existing contact known by both URNs: a BSUID-only message is matched by the BSUID
 	matchedBSUIDOnly, err := models.ContactForMsg(ctx, ts.rt, newWAMsg("whatsapp:US.5555", urns.NilURN), clog)
@@ -1065,6 +1072,7 @@ func (ts *ModelsTestSuite) TestContactForMsg() {
 	ts.Equal(existingByBSUID.ID_, matchedByPhone.ID_)
 	ts.Equal([]urns.URN{"whatsapp:US.8888"}, matchedByPhone.URNsToAppend_)
 	ts.Equal(shell.ID_, lookup("whatsapp:US.8888").ID_) // still with the shell contact
+	ts.Equal(1, ts.rt.Stats.Extract().URNAppends)       // to be moved from the shell contact
 
 	// existing contact known by the phone number, BSUID owned by a contact with other URNs: matched by the phone
 	// number and the BSUID is left where it is, as mailroom would refuse to append it

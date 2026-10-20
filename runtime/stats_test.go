@@ -14,7 +14,10 @@ func TestStats(t *testing.T) {
 	sc := runtime.NewStatsCollector()
 	sc.RecordContactCreated()
 	sc.RecordContactCreated()
-	sc.RecordURNConflict()
+	sc.RecordContactMatchedByOtherURN()
+	sc.RecordURNOutcome(true)
+	sc.RecordURNOutcome(true)
+	sc.RecordURNOutcome(false)
 	sc.RecordIncoming("T", 0, 0, 0, 1, time.Second)
 	sc.RecordOutgoing("T", true, time.Second)
 	sc.RecordOutgoing("T", true, time.Second)
@@ -25,6 +28,8 @@ func TestStats(t *testing.T) {
 	stats := sc.Extract()
 
 	assert.Equal(t, 2, stats.ContactsCreated)
+	assert.Equal(t, 1, stats.ContactsMatchedByOtherURN)
+	assert.Equal(t, 2, stats.URNAppends)
 	assert.Equal(t, 1, stats.URNConflicts)
 	assert.Equal(t, runtime.CountByType{"T": 1}, stats.IncomingRequests)
 	assert.Equal(t, runtime.CountByType{}, stats.IncomingMessages)
@@ -36,7 +41,7 @@ func TestStats(t *testing.T) {
 	assert.Equal(t, runtime.DurationByType{"T": time.Second * 2, "FBA": time.Second * 3}, stats.OutgoingDuration)
 
 	metrics := stats.ToMetrics(true)
-	assert.Len(t, metrics, 9)
+	assert.Len(t, metrics, 11)
 
 	sc.RecordOutgoing("FBA", true, time.Second)
 	sc.RecordOutgoing("FBA", true, time.Second)
@@ -54,11 +59,13 @@ func TestStats(t *testing.T) {
 	assert.Equal(t, runtime.DurationByType{"FBA": time.Second * 2}, stats.OutgoingDuration)
 
 	metrics = stats.ToMetrics(true)
-	assert.Len(t, metrics, 4)
+	assert.Len(t, metrics, 6)
 	assert.Equal(t, []types.MetricDatum{
 		cwatch.Datum("OutgoingSends", 2, "Count", cwatch.Dimension("ChannelType", "FBA")),
 		cwatch.Datum("OutgoingDuration", 1, "Seconds", cwatch.Dimension("ChannelType", "FBA")),
 		cwatch.Datum("ContactsCreated", 0, "Count"),
+		cwatch.Datum("ContactsMatchedByOtherURN", 0, "Count"),
+		cwatch.Datum("URNAppends", 0, "Count"),
 		cwatch.Datum("URNConflicts", 0, "Count"),
 	}, metrics)
 }
