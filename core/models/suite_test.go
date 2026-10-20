@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gomodule/redigo/redis"
+	"github.com/lib/pq"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
@@ -984,6 +985,7 @@ func (ts *ModelsTestSuite) TestContactForMsg() {
 	c1, err := models.ContactForMsg(ctx, ts.rt, newWAMsg("whatsapp:12065551234", "whatsapp:US.1234"), clog)
 	ts.NoError(err)
 	ts.True(c1.IsNew_)
+	ts.Equal(pq.StringArray{"whatsapp:12065551234"}, c1.URNs_)
 	ts.Equal([]urns.URN{"whatsapp:US.1234"}, c1.URNsToAppend_)
 	ts.Equal(c1.ID_, lookup("whatsapp:12065551234").ID_)
 	ts.Nil(lookup("whatsapp:US.1234"))
@@ -1003,6 +1005,7 @@ func (ts *ModelsTestSuite) TestContactForMsg() {
 	ts.NoError(err)
 	ts.False(c1Both.IsNew_)
 	ts.Equal(c1.ID_, c1Both.ID_)
+	ts.ElementsMatch([]string{"whatsapp:12065551234", "whatsapp:US.1234"}, c1Both.URNs_) // loaded with the contact
 	ts.Nil(c1Both.URNsToAppend_)
 
 	// no existing contact: a BSUID-only message creates one keyed on the BSUID

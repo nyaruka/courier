@@ -6,10 +6,12 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"time"
 	"unicode/utf8"
 
+	"github.com/lib/pq"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/urns"
@@ -50,7 +52,8 @@ type Contact struct {
 	UUID_  ContactUUID `db:"uuid"`
 	Name_  null.String `db:"name"`
 
-	URNID_ ContactURNID `db:"urn_id"`
+	URNID_ ContactURNID   `db:"urn_id"` // the URN the contact was resolved by
+	URNs_  pq.StringArray `db:"urns"`   // identities of all the contact's URNs
 
 	CreatedOn_  time.Time `db:"created_on"`
 	ModifiedOn_ time.Time `db:"modified_on"`
@@ -111,7 +114,8 @@ SELECT
 	c.modified_on,
 	c.created_on,
 	c.name,
-	u.id as "urn_id"
+	u.id as "urn_id",
+	ARRAY(SELECT identity FROM contacts_contacturn WHERE contact_id = c.id) AS "urns"
 FROM
 	contacts_contact AS c,
 	contacts_contacturn AS u
@@ -244,6 +248,7 @@ func contactForURN(ctx context.Context, rt *runtime.Runtime, org OrgID, channel 
 
 	// store this URN on our contact
 	contact.URNID_ = contactURN.ID
+	contact.URNs_ = pq.StringArray{string(urn.Identity())}
 
 	rt.Stats.RecordContactCreated()
 	contactCreated(org)
@@ -361,6 +366,7 @@ func contactForMsg(ctx context.Context, rt *runtime.Runtime, m *MsgIn, clog *Cha
 				return contactForMsg(ctx, rt, m, clog)
 			}
 			contact.URNID_ = cu.ID
+			contact.URNs_ = append(contact.URNs_, string(m.URN_.Identity()))
 		}
 	}
 
@@ -446,17 +452,26 @@ func appendableURNs(rt *runtime.Runtime, contact *Contact, others []urns.URN, ow
 	return toAppend
 }
 
-// looks up the owners of the given URNs and returns those to ask mailroom to append (see appendableURNs)
+// looks up the owners of the given URNs and returns those to ask mailroom to append (see appendableURNs). URNs the
+// contact is already known to have - the common case for a contact loaded with its URNs - aren't looked up.
 func appendableContactURNs(ctx context.Context, rt *runtime.Runtime, contact *Contact, others []urns.URN) ([]urns.URN, error) {
-	keys := make([]urnKey, len(others))
-	for i, u := range others {
-		keys[i] = urnKey{contact.OrgID_, string(u.Identity())}
+	unknown := make([]urns.URN, 0, len(others))
+	keys := make([]urnKey, 0, len(others))
+	for _, u := range others {
+		if !slices.Contains(contact.URNs_, string(u.Identity())) {
+			unknown = append(unknown, u)
+			keys = append(keys, urnKey{contact.OrgID_, string(u.Identity())})
+		}
 	}
+	if len(unknown) == 0 {
+		return nil, nil
+	}
+
 	owners, err := lookupURNOwners(ctx, rt, keys)
 	if err != nil {
 		return nil, err
 	}
-	return appendableURNs(rt, contact, others, owners), nil
+	return appendableURNs(rt, contact, unknown, owners), nil
 }
 
 // claimURN adds the given URN to the contact if not already present. Returns false without adding if the URN belongs
