@@ -15,6 +15,13 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
+// ConfigDirectSend is the channel config key which enables Direct Send - sending a message outside the customer
+// service window as a utility message, without a pre-approved template. Meta generates the template behind the
+// scenes. Applies to channels that send Cloud API payloads directly or via a partner that forwards the category
+// field, such as 360dialog.
+// See https://developers.facebook.com/documentation/business-messaging/whatsapp/direct-send
+const ConfigDirectSend = "wa_direct_send"
+
 func GetMsgPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.ChannelLog) ([]SendRequest, error) {
 	if msg.Templating() != nil {
 		return []SendRequest{newBasePayload(msg).withTemplate(msg.Templating())}, nil
@@ -67,6 +74,48 @@ func truncateQuickReplyText(clog *models.ChannelLog, text string, limit int) str
 	return truncated
 }
 
+// isHeaderMediaType returns whether an attachment of the given content type can be used as the header of an
+// interactive message (application/* is sent as a document)
+func isHeaderMediaType(contentType string) bool {
+	attType := strings.Split(contentType, "/")[0]
+	return attType == "image" || attType == "video" || attType == "document" || attType == "application"
+}
+
+// useDirectSend returns whether the message should be sent with Direct Send, i.e. as a utility message which doesn't
+// need a pre-approved template. That requires the channel to have Direct Send enabled, the message to be flagged as
+// outside the customer service window, and content that Direct Send supports: text, optionally with text or URL
+// quick replies, and at most one image, video or document attachment which is sent as the header of those buttons.
+// Anything else is sent as a regular message, with the reason logged - that will likely be rejected outside the
+// window but it's consistent with what would happen without Direct Send and the rejection is recorded.
+func useDirectSend(msg *models.MsgOut, locationQRs, formQRs, urlQRs, textQRs []models.QuickReply, clog *models.ChannelLog) bool {
+	if !msg.OutsideWindow() || !msg.Channel().BoolConfigForKey(ConfigDirectSend, false) {
+		return false
+	}
+
+	var reason string
+	switch {
+	case msg.Text() == "":
+		reason = "message has no text"
+	case len(locationQRs) > 0 || len(formQRs) > 0:
+		reason = "location and form quick replies aren't supported"
+	case len(msg.Attachments()) > 1:
+		reason = "only a single attachment is supported"
+	case len(msg.Attachments()) == 1:
+		contentType, _ := handlers.SplitAttachment(msg.Attachments()[0])
+		if !isHeaderMediaType(contentType) {
+			reason = fmt.Sprintf("attachment type %s isn't supported", contentType)
+		} else if len(urlQRs) == 0 && len(textQRs) == 0 {
+			reason = "an attachment can only be sent as the header of a message with quick replies"
+		}
+	}
+
+	if reason != "" {
+		clog.Error(&svclogs.Error{Message: fmt.Sprintf("message is outside the customer service window but can't be sent with Direct Send because %s, sending as a regular message which will likely be rejected", reason)})
+		return false
+	}
+	return true
+}
+
 // buildContentPayloads constructs payloads for a non-template message with text, attachments, and quick replies.
 func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.ChannelLog) ([]SendRequest, error) {
 	sqrs := handlers.FilterSupportedQuickReplies(msg.QuickReplies(), clog, models.QuickReplyTypeText, models.QuickReplyTypeLocation, models.QuickReplyTypeForm, models.QuickReplyTypeURL)
@@ -76,12 +125,20 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 	urlQRs := handlers.FilterQuickRepliesByType(sqrs, models.QuickReplyTypeURL)
 	menuButton := handlers.GetText("Menu", msg.Locale())
 
-	// if text could end up as a media caption or an interactive message body, use their lower length limit
-	if len(msg.Attachments()) > 0 || len(qrs) > 0 || len(locationQRs) > 0 || len(formQRs) > 0 || len(urlQRs) > 0 {
+	direct := useDirectSend(msg, locationQRs, formQRs, urlQRs, qrs, clog)
+
+	// if text could end up as a media caption or an interactive message body, use their lower length limit.. which is
+	// also the limit for Direct Send text messages
+	if direct || len(msg.Attachments()) > 0 || len(qrs) > 0 || len(locationQRs) > 0 || len(formQRs) > 0 || len(urlQRs) > 0 {
 		maxMsgLength = min(maxMsgLength, maxCaptionAndBodyLength)
 	}
 
 	msgParts := splitText(msg, maxMsgLength)
+
+	// each part of a Direct Send message is a separate utility message with its own generated template
+	if direct && len(msgParts) > 1 {
+		clog.Error(&svclogs.Error{Message: fmt.Sprintf("text exceeds the %d character limit for Direct Send and will be sent as %d utility messages", maxCaptionAndBodyLength, len(msgParts))})
+	}
 
 	// log any quick replies that will be dropped - because interactive messages require body text, or because a
 	// different kind of quick reply takes precedence on this message
@@ -93,12 +150,17 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 		logDroppedQuickReplies(clog, locationQRs, formQRs, urlQRs, qrs)
 	}
 
-	qrsAsList := shouldUseList(qrs)
+	// Direct Send doesn't support list messages but allows up to 10 reply buttons, so text quick replies are always
+	// rendered as buttons, without their descriptions
+	qrsAsList := !direct && shouldUseList(qrs)
 
 	// truncate quick replies to max 10 - only relevant if text quick replies are what will be rendered
 	if len(locationQRs) == 0 && len(formQRs) == 0 && len(urlQRs) == 0 && len(qrs) > 10 {
 		clog.Error(&svclogs.Error{Message: "too many quick replies WhatsApp supports only up to 10 quick replies"})
 		qrs = qrs[:10]
+	}
+	if direct && len(urlQRs) == 0 && slices.ContainsFunc(qrs, func(qr models.QuickReply) bool { return qr.Extra != "" }) {
+		clog.Error(&svclogs.Error{Message: "quick reply descriptions aren't supported with Direct Send and won't be sent"})
 	}
 
 	var payloads []SendRequest
@@ -106,13 +168,11 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 	// determine if the attachment can be used as a header in an interactive message - button (max 3, not shown as a
 	// list) and CTA URL messages support media headers, but interactive messages require body text so without text
 	// the attachment has to be sent as a standalone media message
-	headerCapable := len(urlQRs) > 0 || (len(qrs) > 0 && len(qrs) <= 3 && !qrsAsList)
+	headerCapable := len(urlQRs) > 0 || (len(qrs) > 0 && (direct || (len(qrs) <= 3 && !qrsAsList)))
 	hasHeaderAttachment := false
 	if len(msg.Attachments()) > 0 && len(msgParts) > 0 && headerCapable && len(locationQRs) == 0 && len(formQRs) == 0 {
-		attType, _ := handlers.SplitAttachment(msg.Attachments()[0])
-		attType = strings.Split(attType, "/")[0]
-		// only certain media types can be used as an interactive header (application/* is sent as a document)
-		if attType == "image" || attType == "video" || attType == "document" || attType == "application" {
+		contentType, _ := handlers.SplitAttachment(msg.Attachments()[0])
+		if isHeaderMediaType(contentType) {
 			hasHeaderAttachment = true
 		}
 	}
@@ -181,6 +241,16 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 			payloads = append(payloads, buildTextPayload(msg, part))
 		}
 	}
+
+	// Direct Send messages are sent as utility messages and don't support the preview_url field
+	if direct {
+		for i := range payloads {
+			payloads[i].Category = "utility"
+			if payloads[i].Text != nil {
+				payloads[i].Text.PreviewURL = nil
+			}
+		}
+	}
 	return payloads, nil
 }
 
@@ -237,7 +307,8 @@ func hasURLPreview(text string) bool {
 func buildTextPayload(msg *models.MsgOut, body string) SendRequest {
 	p := newBasePayload(msg)
 	p.Type = "text"
-	p.Text = &Text{Body: body, PreviewURL: hasURLPreview(body)}
+	previewURL := hasURLPreview(body)
+	p.Text = &Text{Body: body, PreviewURL: &previewURL}
 	return p
 }
 
