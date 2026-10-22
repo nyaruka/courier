@@ -381,6 +381,9 @@ type SendRequest struct {
 	Recipient        string `json:"recipient,omitempty"`
 	Type             string `json:"type"`
 
+	// utility or authentication to send the message with Direct Send, omitted for a regular service message
+	Category string `json:"category,omitempty"`
+
 	Text *Text `json:"text,omitempty"`
 
 	Document *Media `json:"document,omitempty"`
@@ -406,6 +409,9 @@ type SendResponse struct {
 	Error struct {
 		Message string `json:"message"`
 		Code    int    `json:"code"`
+		Data    struct {
+			Details string `json:"details"`
+		} `json:"error_data"`
 	} `json:"error"`
 }
 
@@ -446,7 +452,12 @@ func (r *SendResponse) ExternalID() string {
 // Err returns the appropriate send error if this response contains an error, or nil if it doesn't.
 func (r *SendResponse) Err() error {
 	if r.Error.Code != 0 || r.Error.Message != "" {
-		return SendErrorFromCode(r.Error.Code, r.Error.Message)
+		// generic errors like (#100) Invalid parameter have the useful part in the details
+		message := r.Error.Message
+		if r.Error.Data.Details != "" {
+			message = fmt.Sprintf("%s: %s", message, r.Error.Data.Details)
+		}
+		return SendErrorFromCode(r.Error.Code, message)
 	}
 	return nil
 }

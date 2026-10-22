@@ -1,0 +1,382 @@
+[
+    {
+        "label": "Text outside window is sent as utility",
+        "msg": {
+            "text": "Your appointment is tomorrow, see https://example.com/appt",
+            "urn": "whatsapp:250788123123",
+            "outside_window": true
+        },
+        "http_mocks": {
+            "*/12345_ID/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/12345_ID/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer wac_admin_system_user_token",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "category": "utility",
+                    "text": {
+                        "body": "Your appointment is tomorrow, see https://example.com/appt",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Text inside window is sent as a regular message",
+        "msg": {
+            "text": "Your appointment is tomorrow",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/12345_ID/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/12345_ID/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer wac_admin_system_user_token",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Your appointment is tomorrow",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Quick replies outside window are sent as buttons",
+        "msg": {
+            "text": "Confirm your appointment",
+            "urn": "whatsapp:250788123123",
+            "quick_replies": [
+                {
+                    "type": "text",
+                    "text": "Confirm"
+                },
+                {
+                    "type": "text",
+                    "text": "Reschedule"
+                },
+                {
+                    "type": "text",
+                    "text": "Cancel"
+                },
+                {
+                    "type": "text",
+                    "text": "Call me"
+                }
+            ],
+            "outside_window": true
+        },
+        "http_mocks": {
+            "*/12345_ID/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/12345_ID/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer wac_admin_system_user_token",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "category": "utility",
+                    "interactive": {
+                        "type": "button",
+                        "body": {
+                            "text": "Confirm your appointment"
+                        },
+                        "action": {
+                            "buttons": [
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "0",
+                                        "title": "Confirm"
+                                    }
+                                },
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "1",
+                                        "title": "Reschedule"
+                                    }
+                                },
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "2",
+                                        "title": "Cancel"
+                                    }
+                                },
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "3",
+                                        "title": "Call me"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "URL button with image outside window is sent with a header",
+        "msg": {
+            "text": "Your receipt",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "image/jpeg:https://example.com/receipt.jpg"
+            ],
+            "quick_replies": [
+                {
+                    "type": "url",
+                    "text": "View",
+                    "extra": "https://example.com/receipt"
+                }
+            ],
+            "outside_window": true
+        },
+        "http_mocks": {
+            "*/12345_ID/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/12345_ID/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer wac_admin_system_user_token",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "interactive",
+                    "category": "utility",
+                    "interactive": {
+                        "type": "cta_url",
+                        "header": {
+                            "type": "image",
+                            "image": {
+                                "link": "https://example.com/receipt.jpg"
+                            }
+                        },
+                        "body": {
+                            "text": "Your receipt"
+                        },
+                        "action": {
+                            "name": "cta_url",
+                            "parameters": {
+                                "display_text": "View",
+                                "url": "https://example.com/receipt"
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Unsupported content outside window falls back to a regular message",
+        "msg": {
+            "text": "Here's your file",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "application/pdf:https://example.com/file.pdf"
+            ],
+            "outside_window": true
+        },
+        "http_mocks": {
+            "*/12345_ID/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/12345_ID/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer wac_admin_system_user_token",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "document",
+                    "document": {
+                        "link": "https://example.com/file.pdf",
+                        "caption": "Here's your file",
+                        "filename": "file.pdf"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "log_errors": [
+            {
+                "code": "",
+                "message": "message is outside the customer service window but can't be sent with Direct Send because an attachment can only be sent as the header of a message with quick replies, sending as a regular message"
+            }
+        ]
+    },
+    {
+        "label": "Error Direct Send not enabled for account",
+        "msg": {
+            "text": "Your appointment is tomorrow",
+            "urn": "whatsapp:250788123123",
+            "outside_window": true
+        },
+        "http_mocks": {
+            "*/12345_ID/messages": [
+                {
+                    "status": 400,
+                    "body": {
+                        "error": {
+                            "message": "(#100) Invalid parameter",
+                            "type": "OAuthException",
+                            "code": 100,
+                            "error_data": {
+                                "messaging_product": "whatsapp",
+                                "details": "Parameter Invalid: The 'category' value requires Direct Send, which isn't enabled for this account."
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/12345_ID/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer wac_admin_system_user_token",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": "250788123123",
+                    "type": "text",
+                    "category": "utility",
+                    "text": {
+                        "body": "Your appointment is tomorrow",
+                        "preview_url": false
+                    }
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "100",
+                "message": "(#100) Invalid parameter: Parameter Invalid: The 'category' value requires Direct Send, which isn't enabled for this account."
+            }
+        },
+        "log_errors": []
+    }
+]

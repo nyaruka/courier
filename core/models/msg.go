@@ -555,6 +555,7 @@ type MsgOut struct {
 	URNAuth_              string            `json:"urn_auth"`
 	ResponseToExternalID_ string            `json:"response_to_external_id"`
 	IsResend_             bool              `json:"is_resend"`
+	OutsideWindow_        bool              `json:"outside_window"`
 	Flow_                 *FlowReference    `json:"flow"`
 	UserID_               UserID            `json:"user_id"`
 	Origin_               MsgOrigin         `json:"origin"         validate:"required"`
@@ -578,6 +579,7 @@ func (m *MsgOut) URNAuth() string              { return m.URNAuth_ }
 func (m *MsgOut) Origin() MsgOrigin            { return m.Origin_ }
 func (m *MsgOut) ResponseToExternalID() string { return m.ResponseToExternalID_ }
 func (m *MsgOut) IsResend() bool               { return m.IsResend_ }
+func (m *MsgOut) OutsideWindow() bool          { return m.OutsideWindow_ }
 func (m *MsgOut) Flow() *FlowReference         { return m.Flow_ }
 func (m *MsgOut) UserID() UserID               { return m.UserID_ }
 func (m *MsgOut) Session() *Session            { return m.Session_ }
