@@ -145,7 +145,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 }
 
 // RespondMsgs writes our response
-func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, c *models.Channel, msgs []*models.MsgIn) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "") // WeChat expected empty string to not retry looking for passive reply
 	return err

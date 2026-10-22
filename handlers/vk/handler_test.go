@@ -36,6 +36,9 @@ var testChannels = []*models.Channel{
 
 func TestIncoming(t *testing.T) {
 	RunIncomingTests(t, testChannels, newHandler, "testdata/incoming.json", nil)
+
+	// VK retries anything not answered with its ack, so a refused message still gets it
+	RunIncomingTests(t, testChannels, newHandler, "testdata/incoming_refused.json", &IncomingOptions{Setup: RefuseMsgs("spam")})
 }
 
 func TestDescribeURN(t *testing.T) {

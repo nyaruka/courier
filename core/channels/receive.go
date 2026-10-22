@@ -111,7 +111,7 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 				msgs = append(msgs, m)
 			}
 		}
-		return h.RespondMsgs(ctx, w, msgs)
+		return h.RespondMsgs(ctx, w, c, msgs)
 
 	case ReceiveKindStatus:
 		statuses := make([]*models.StatusUpdate, 0, len(events))
@@ -120,7 +120,7 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 				statuses = append(statuses, s)
 			}
 		}
-		return h.RespondStatuses(ctx, w, statuses)
+		return h.RespondStatuses(ctx, w, c, statuses)
 
 	case ReceiveKindEvent:
 		chEvents := make([]*models.ChannelEvent, 0, len(events))

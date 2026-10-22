@@ -49,8 +49,11 @@ type Handler interface {
 	SendableEvents(*models.Channel) map[string]time.Duration
 	SendEvent(context.Context, *models.Channel, events.Event, *models.ChannelLog) error
 
-	RespondStatuses(context.Context, http.ResponseWriter, []*models.StatusUpdate) error
-	RespondMsgs(context.Context, http.ResponseWriter, []*models.MsgIn) error
+	// RespondStatuses and RespondMsgs answer a request handled as that kind, with what was accepted from it. A
+	// handler whose provider demands a particular body overrides them, and the channel is there for one whose
+	// body is configured per channel - the batch may be empty, if everything in the request was dropped.
+	RespondStatuses(context.Context, http.ResponseWriter, *models.Channel, []*models.StatusUpdate) error
+	RespondMsgs(context.Context, http.ResponseWriter, *models.Channel, []*models.MsgIn) error
 	RespondError(context.Context, http.ResponseWriter, error) error
 	RespondIgnored(context.Context, http.ResponseWriter, string) error
 }

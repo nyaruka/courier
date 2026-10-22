@@ -28,6 +28,9 @@ func TestIncoming(t *testing.T) {
 	})
 	RunIncomingTests(t, []*models.Channel{soapChannel}, newHandler, "testdata/incoming_soap.json", nil)
 
+	// a channel's configured response doesn't depend on what was accepted, so a refused message still gets it
+	RunIncomingTests(t, []*models.Channel{soapChannel}, newHandler, "testdata/incoming_refused.json", &IncomingOptions{Setup: RefuseMsgs("spam")})
+
 	RunIncomingTests(t, []*models.Channel{newChannel("GM", phone, nil)}, newHandler, "testdata/incoming_gm.json", nil)
 
 	customFieldsChannel := newChannel("US", phone, map[string]any{

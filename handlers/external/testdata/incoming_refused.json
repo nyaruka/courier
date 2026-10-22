@@ -1,0 +1,15 @@
+[
+    {
+        "label": "Receive Refused",
+        "url": "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+        "data": "\u003csoapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:com=\"com.hero\"\u003e\u003csoapenv:Header/\u003e\u003csoapenv:Body\u003e\u003ccom:moRequest\u003e\u003csource\u003e2349067554729\u003c/source\u003e\u003ccontent\u003espam\u003c/content\u003e\u003c/com:moRequest\u003e\u003c/soapenv:Body\u003e\u003c/soapenv:Envelope\u003e",
+        "response": {
+            "status": 200,
+            "body": "\u003c?xml version=“1.0”?\u003e\u003creturn\u003e0\u003c/return\u003e"
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

@@ -15,6 +15,9 @@ func TestIncoming(t *testing.T) {
 	}
 
 	RunIncomingTests(t, chs, newHandler, "testdata/incoming.json", nil)
+
+	// a refused message leaves nothing to name in the response
+	RunIncomingTests(t, chs, newHandler, "testdata/incoming_refused.json", &IncomingOptions{Setup: RefuseMsgs("spam")})
 }
 
 func TestOutgoing(t *testing.T) {

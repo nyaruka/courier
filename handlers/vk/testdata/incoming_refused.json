@@ -1,0 +1,27 @@
+[
+    {
+        "label": "Receive Refused",
+        "url": "/c/vk/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
+        "data": {
+            "type": "message_new",
+            "object": {
+                "message": {
+                    "id": 1,
+                    "date": 1580125800,
+                    "from_id": 123456,
+                    "text": "spam",
+                    "attachments": []
+                }
+            },
+            "secret": "abc123xyz"
+        },
+        "response": {
+            "status": 200,
+            "body": "ok"
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

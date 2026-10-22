@@ -93,11 +93,11 @@ func (h *mockHandler) SendableEvents(ch *models.Channel) map[string]time.Duratio
 	return map[string]time.Duration{events.TypeTypingStarted: 10 * time.Second}
 }
 
-func (h *mockHandler) RespondStatuses(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
+func (h *mockHandler) RespondStatuses(ctx context.Context, w http.ResponseWriter, c *models.Channel, statuses []*models.StatusUpdate) error {
 	return channels.RespondStatuses(w, statuses)
 }
 
-func (h *mockHandler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+func (h *mockHandler) RespondMsgs(ctx context.Context, w http.ResponseWriter, c *models.Channel, msgs []*models.MsgIn) error {
 	return channels.RespondMsgs(w, msgs)
 }
 
