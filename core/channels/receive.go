@@ -103,12 +103,6 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 	// answers as a status callback.
 	events := AcceptedEvents(results)
 
-	// a batch we found something in but accepted none of - a message dropped for a limit, say - is answered
-	// with what became of each part rather than handed to the handler, whose response describes what it accepted
-	if len(events) == 0 {
-		return RespondReceived(w, results)
-	}
-
 	switch in.Kind() {
 	case ReceiveKindMsg:
 		msgs := make([]*models.MsgIn, 0, len(events))
@@ -117,7 +111,7 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 				msgs = append(msgs, m)
 			}
 		}
-		return h.RespondMsgs(ctx, w, msgs)
+		return h.RespondMsgs(ctx, w, c, msgs)
 
 	case ReceiveKindStatus:
 		statuses := make([]*models.StatusUpdate, 0, len(events))
@@ -126,7 +120,7 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 				statuses = append(statuses, s)
 			}
 		}
-		return h.RespondStatuses(ctx, w, statuses)
+		return h.RespondStatuses(ctx, w, c, statuses)
 
 	case ReceiveKindEvent:
 		chEvents := make([]*models.ChannelEvent, 0, len(events))

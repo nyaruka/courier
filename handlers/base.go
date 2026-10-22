@@ -161,12 +161,12 @@ func userAgent(version string) string {
 }
 
 // RespondStatuses writes a success response for the statuses
-func (h *BaseHandler) RespondStatuses(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
+func (h *BaseHandler) RespondStatuses(ctx context.Context, w http.ResponseWriter, c *models.Channel, statuses []*models.StatusUpdate) error {
 	return channels.RespondStatuses(w, statuses)
 }
 
 // RespondMsgs writes a success response for the messages
-func (h *BaseHandler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+func (h *BaseHandler) RespondMsgs(ctx context.Context, w http.ResponseWriter, c *models.Channel, msgs []*models.MsgIn) error {
 	return channels.RespondMsgs(w, msgs)
 }
 

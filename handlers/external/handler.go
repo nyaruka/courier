@@ -210,12 +210,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r
 }
 
 // RespondMsgs writes the channel's configured MO response if it has one
-func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
-	moResponse := msgs[0].Channel().StringConfigForKey(configMOResponse, "")
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, c *models.Channel, msgs []*models.MsgIn) error {
+	moResponse := c.StringConfigForKey(configMOResponse, "")
 	if moResponse == "" {
 		return channels.RespondMsgs(w, msgs)
 	}
-	moResponseContentType := msgs[0].Channel().StringConfigForKey(configMOResponseContentType, "")
+	moResponseContentType := c.StringConfigForKey(configMOResponseContentType, "")
 	if moResponseContentType != "" {
 		w.Header().Set("Content-Type", moResponseContentType)
 	}

@@ -103,11 +103,11 @@ func (h *handler) receiveMessage(ctx context.Context, c *models.Channel, r *http
 	return nil
 }
 
-func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, c *models.Channel, msgs []*models.MsgIn) error {
 	return writeJasminACK(w)
 }
 
-func (h *handler) RespondStatuses(ctx context.Context, w http.ResponseWriter, statuses []*models.StatusUpdate) error {
+func (h *handler) RespondStatuses(ctx context.Context, w http.ResponseWriter, c *models.Channel, statuses []*models.StatusUpdate) error {
 	return writeJasminACK(w)
 }
 

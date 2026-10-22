@@ -34,8 +34,12 @@ func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 }
 
 // RespondMsgs writes a success response for the messages
-func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, msgs []*models.MsgIn) error {
+func (h *handler) RespondMsgs(ctx context.Context, w http.ResponseWriter, c *models.Channel, msgs []*models.MsgIn) error {
 	w.Header().Set("Content-Type", "application/json")
+	if len(msgs) == 0 {
+		_, err := fmt.Fprint(w, "SMS Accepted")
+		return err
+	}
 	_, err := fmt.Fprintf(w, "SMS Accepted: %s", msgs[0].UUID())
 	return err
 }

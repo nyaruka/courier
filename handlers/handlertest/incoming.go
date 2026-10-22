@@ -1,6 +1,7 @@
 package handlertest
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"slices"
@@ -50,6 +51,21 @@ type IncomingOptions struct {
 
 	// Setup is called with the runtime before any cases run
 	Setup func(*testing.T, *runtime.Runtime)
+}
+
+// RefuseMsgs is a Setup that has the deployment's incoming message check refuse any message with the given
+// text, the way one would for a workspace over a limit - so a case can see how a handler answers a request
+// it accepted nothing from.
+func RefuseMsgs(text string) func(*testing.T, *runtime.Runtime) {
+	return func(t *testing.T, rt *runtime.Runtime) {
+		models.IncomingMsgCheck = func(ctx context.Context, rt *runtime.Runtime, m *models.MsgIn, clog *models.ChannelLog) error {
+			if m.Text() == text {
+				return &models.LimitReachedError{Limit: "test messages", Max: 1}
+			}
+			return models.CheckDuplicateMsg(ctx, rt, m, clog)
+		}
+		t.Cleanup(func() { models.IncomingMsgCheck = models.CheckDuplicateMsg })
+	}
 }
 
 // returns the function to prepare the given case's request with, if any
