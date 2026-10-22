@@ -1,11 +1,13 @@
 package external
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
+	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
@@ -27,6 +29,18 @@ func TestIncoming(t *testing.T) {
 		configMOResponseContentType: "text/xml",
 	})
 	RunIncomingTests(t, []*models.Channel{soapChannel}, newHandler, "testdata/incoming_soap.json", nil)
+
+	// a message the deployment refuses leaves the handler nothing to answer for, even on a channel with its own response
+	refuseSpam := func(t *testing.T, rt *runtime.Runtime) {
+		models.IncomingMsgCheck = func(ctx context.Context, rt *runtime.Runtime, m *models.MsgIn, clog *models.ChannelLog) error {
+			if m.Text() == "spam" {
+				return &models.LimitReachedError{Limit: "test messages", Max: 1}
+			}
+			return models.CheckDuplicateMsg(ctx, rt, m, clog)
+		}
+		t.Cleanup(func() { models.IncomingMsgCheck = models.CheckDuplicateMsg })
+	}
+	RunIncomingTests(t, []*models.Channel{soapChannel}, newHandler, "testdata/incoming_refused.json", &IncomingOptions{Setup: refuseSpam})
 
 	RunIncomingTests(t, []*models.Channel{newChannel("GM", phone, nil)}, newHandler, "testdata/incoming_gm.json", nil)
 

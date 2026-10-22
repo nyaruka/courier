@@ -103,6 +103,12 @@ func respond(ctx context.Context, h Handler, w http.ResponseWriter, r *http.Requ
 	// answers as a status callback.
 	events := AcceptedEvents(results)
 
+	// a batch we found something in but accepted none of - a message dropped for a limit, say - is answered
+	// with what became of each part rather than handed to the handler, whose response describes what it accepted
+	if len(events) == 0 {
+		return RespondReceived(w, results)
+	}
+
 	switch in.Kind() {
 	case ReceiveKindMsg:
 		msgs := make([]*models.MsgIn, 0, len(events))
