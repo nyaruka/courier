@@ -1,3 +1,8 @@
+## v26.3.65 (2026-10-22)
+ * Pass the channel to RespondMsgs and RespondStatuses so handlers can answer an empty batch
+ * Count contacts matched by another reported URN and reported URNs found addable
+ * Update vkutil to v0.30.0 so Valkey connections have timeouts
+
 ## v26.3.64 (2026-10-20)
  * Check ownership of other URNs a request reports before asking mailroom to append them
  * Remove leftover webchat code now that chip is its provider
