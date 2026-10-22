@@ -36,8 +36,7 @@
                     "type": "text",
                     "category": "utility",
                     "text": {
-                        "body": "Your appointment is tomorrow, see https://example.com/appt",
-                        "preview_url": false
+                        "body": "Your appointment is tomorrow, see https://example.com/appt"
                     }
                 }
             }
@@ -363,8 +362,7 @@
                     "type": "text",
                     "category": "utility",
                     "text": {
-                        "body": "Your appointment is tomorrow",
-                        "preview_url": false
+                        "body": "Your appointment is tomorrow"
                     }
                 }
             }

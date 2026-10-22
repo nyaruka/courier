@@ -501,7 +501,7 @@ func (h *handler) buildPayloads(ctx context.Context, msg *models.MsgOut, clog *m
 func (h *handler) convertPayload(ctx context.Context, msg *models.MsgOut, rcpt recipient, request whatsapp.SendRequest, clog *models.ChannelLog) (any, error) {
 	switch request.Type {
 	case "text":
-		payload := mtTextPayload{recipient: rcpt, Type: "text", PreviewURL: request.Text.PreviewURL}
+		payload := mtTextPayload{recipient: rcpt, Type: "text", PreviewURL: request.Text.PreviewURL != nil && *request.Text.PreviewURL}
 		payload.Text.Body = request.Text.Body
 		return payload, nil
 

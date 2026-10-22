@@ -307,7 +307,7 @@ type Component struct {
 
 type Text struct {
 	Body       string `json:"body"`
-	PreviewURL bool   `json:"preview_url"`
+	PreviewURL *bool  `json:"preview_url,omitempty"` // omitted for Direct Send messages which don't support it
 }
 
 type Language struct {

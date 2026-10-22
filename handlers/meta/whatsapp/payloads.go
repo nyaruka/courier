@@ -17,7 +17,8 @@ import (
 
 // ConfigDirectSend is the channel config key which enables Direct Send - sending a message outside the customer
 // service window as a utility message, without a pre-approved template. Meta generates the template behind the
-// scenes. Applies to any channel that sends Cloud API payloads, directly or via a partner like 360dialog.
+// scenes. Applies to channels that send Cloud API payloads directly or via a partner that forwards the category
+// field, such as 360dialog.
 // See https://developers.facebook.com/documentation/business-messaging/whatsapp/direct-send
 const ConfigDirectSend = "wa_direct_send"
 
@@ -152,14 +153,14 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 	// Direct Send doesn't support list messages but allows up to 10 reply buttons, so text quick replies are always
 	// rendered as buttons, without their descriptions
 	qrsAsList := !direct && shouldUseList(qrs)
-	if direct && len(urlQRs) == 0 && slices.ContainsFunc(qrs, func(qr models.QuickReply) bool { return qr.Extra != "" }) {
-		clog.Error(&svclogs.Error{Message: "quick reply descriptions aren't supported with Direct Send and won't be sent"})
-	}
 
 	// truncate quick replies to max 10 - only relevant if text quick replies are what will be rendered
 	if len(locationQRs) == 0 && len(formQRs) == 0 && len(urlQRs) == 0 && len(qrs) > 10 {
 		clog.Error(&svclogs.Error{Message: "too many quick replies WhatsApp supports only up to 10 quick replies"})
 		qrs = qrs[:10]
+	}
+	if direct && len(urlQRs) == 0 && slices.ContainsFunc(qrs, func(qr models.QuickReply) bool { return qr.Extra != "" }) {
+		clog.Error(&svclogs.Error{Message: "quick reply descriptions aren't supported with Direct Send and won't be sent"})
 	}
 
 	var payloads []SendRequest
@@ -241,12 +242,12 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 		}
 	}
 
-	// Direct Send messages are sent as utility messages and don't support URL previews
+	// Direct Send messages are sent as utility messages and don't support the preview_url field
 	if direct {
 		for i := range payloads {
 			payloads[i].Category = "utility"
 			if payloads[i].Text != nil {
-				payloads[i].Text.PreviewURL = false
+				payloads[i].Text.PreviewURL = nil
 			}
 		}
 	}
@@ -306,7 +307,8 @@ func hasURLPreview(text string) bool {
 func buildTextPayload(msg *models.MsgOut, body string) SendRequest {
 	p := newBasePayload(msg)
 	p.Type = "text"
-	p.Text = &Text{Body: body, PreviewURL: hasURLPreview(body)}
+	previewURL := hasURLPreview(body)
+	p.Text = &Text{Body: body, PreviewURL: &previewURL}
 	return p
 }
 
