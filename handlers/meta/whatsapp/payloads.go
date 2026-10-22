@@ -17,7 +17,8 @@ import (
 
 // ConfigDirectSend is the channel config key which enables Direct Send - sending a message outside the customer
 // service window as a utility message, without a pre-approved template. Meta generates the template behind the
-// scenes. See https://developers.facebook.com/documentation/business-messaging/whatsapp/direct-send
+// scenes. Applies to any channel that sends Cloud API payloads, directly or via a partner like 360dialog.
+// See https://developers.facebook.com/documentation/business-messaging/whatsapp/direct-send
 const ConfigDirectSend = "wa_direct_send"
 
 func GetMsgPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.ChannelLog) ([]SendRequest, error) {
