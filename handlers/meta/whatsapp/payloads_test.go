@@ -736,12 +736,13 @@ func TestGetMsgPayloadsDirectSend(t *testing.T) {
 			},
 		},
 		{
-			label:          "long text outside window is split at the body limit with every part sent as utility",
-			channel:        channel,
-			outsideWindow:  true,
-			text:           strings.Repeat("a", 1500),
-			expectedTypes:  []string{"text", "text"},
-			expectedDirect: true,
+			label:             "long text outside window is split at the body limit with every part sent as utility",
+			channel:           channel,
+			outsideWindow:     true,
+			text:              strings.Repeat("a", 1500),
+			expectedTypes:     []string{"text", "text"},
+			expectedDirect:    true,
+			expectedLogErrors: []string{"text exceeds the 1024 character limit for Direct Send and will be sent as 2 utility messages"},
 		},
 		{
 			label:         "text inside window is sent as a regular message",
@@ -821,7 +822,7 @@ func TestGetMsgPayloadsDirectSend(t *testing.T) {
 			outsideWindow:     true,
 			attachments:       []string{"image/jpeg:https://example.com/image.jpg"},
 			expectedTypes:     []string{"image"},
-			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because message has no text, sending as a regular message"},
+			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because message has no text, sending as a regular message which will likely be rejected"},
 		},
 		{
 			label:             "attachment without quick replies outside window falls back to a regular message",
@@ -830,7 +831,7 @@ func TestGetMsgPayloadsDirectSend(t *testing.T) {
 			text:              "Look",
 			attachments:       []string{"image/jpeg:https://example.com/image.jpg"},
 			expectedTypes:     []string{"image"},
-			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because an attachment can only be sent as the header of a message with quick replies, sending as a regular message"},
+			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because an attachment can only be sent as the header of a message with quick replies, sending as a regular message which will likely be rejected"},
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest) {
 				assert.Equal(t, "Look", payloads[0].Image.Caption)
 			},
@@ -843,7 +844,7 @@ func TestGetMsgPayloadsDirectSend(t *testing.T) {
 			attachments:       []string{"audio/mp3:https://example.com/audio.mp3"},
 			quickReplies:      []models.QuickReply{{Type: "text", Text: "A"}},
 			expectedTypes:     []string{"audio", "interactive"},
-			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because attachment type audio/mp3 isn't supported, sending as a regular message"},
+			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because attachment type audio/mp3 isn't supported, sending as a regular message which will likely be rejected"},
 		},
 		{
 			label:             "multiple attachments outside window fall back to a regular message",
@@ -853,7 +854,7 @@ func TestGetMsgPayloadsDirectSend(t *testing.T) {
 			attachments:       []string{"image/jpeg:https://example.com/1.jpg", "image/jpeg:https://example.com/2.jpg"},
 			quickReplies:      []models.QuickReply{{Type: "text", Text: "A"}},
 			expectedTypes:     []string{"image", "interactive"}, // second attachment standalone, first as header
-			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because only a single attachment is supported, sending as a regular message"},
+			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because only a single attachment is supported, sending as a regular message which will likely be rejected"},
 		},
 		{
 			label:             "form quick reply outside window falls back to a regular message",
@@ -862,7 +863,7 @@ func TestGetMsgPayloadsDirectSend(t *testing.T) {
 			text:              "Fill this in",
 			quickReplies:      []models.QuickReply{{Type: "form", Text: "Start", Extra: "12345"}},
 			expectedTypes:     []string{"interactive"},
-			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because location and form quick replies aren't supported, sending as a regular message"},
+			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because location and form quick replies aren't supported, sending as a regular message which will likely be rejected"},
 			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest) {
 				assert.Equal(t, "flow", payloads[0].Interactive.Type)
 			},
@@ -874,7 +875,7 @@ func TestGetMsgPayloadsDirectSend(t *testing.T) {
 			text:              "Where are you?",
 			quickReplies:      []models.QuickReply{{Type: "location", Text: "Share"}},
 			expectedTypes:     []string{"interactive"},
-			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because location and form quick replies aren't supported, sending as a regular message"},
+			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because location and form quick replies aren't supported, sending as a regular message which will likely be rejected"},
 		},
 	}
 

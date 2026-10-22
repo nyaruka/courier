@@ -84,7 +84,8 @@ func isHeaderMediaType(contentType string) bool {
 // need a pre-approved template. That requires the channel to have Direct Send enabled, the message to be flagged as
 // outside the customer service window, and content that Direct Send supports: text, optionally with text or URL
 // quick replies, and at most one image, video or document attachment which is sent as the header of those buttons.
-// Anything else is sent as a regular message, with the reason logged.
+// Anything else is sent as a regular message, with the reason logged - that will likely be rejected outside the
+// window but it's consistent with what would happen without Direct Send and the rejection is recorded.
 func useDirectSend(msg *models.MsgOut, locationQRs, formQRs, urlQRs, textQRs []models.QuickReply, clog *models.ChannelLog) bool {
 	if !msg.OutsideWindow() || !msg.Channel().BoolConfigForKey(ConfigDirectSend, false) {
 		return false
@@ -108,7 +109,7 @@ func useDirectSend(msg *models.MsgOut, locationQRs, formQRs, urlQRs, textQRs []m
 	}
 
 	if reason != "" {
-		clog.Error(&svclogs.Error{Message: fmt.Sprintf("message is outside the customer service window but can't be sent with Direct Send because %s, sending as a regular message", reason)})
+		clog.Error(&svclogs.Error{Message: fmt.Sprintf("message is outside the customer service window but can't be sent with Direct Send because %s, sending as a regular message which will likely be rejected", reason)})
 		return false
 	}
 	return true
@@ -132,6 +133,11 @@ func buildContentPayloads(msg *models.MsgOut, maxMsgLength int, clog *models.Cha
 	}
 
 	msgParts := splitText(msg, maxMsgLength)
+
+	// each part of a Direct Send message is a separate utility message with its own generated template
+	if direct && len(msgParts) > 1 {
+		clog.Error(&svclogs.Error{Message: fmt.Sprintf("text exceeds the %d character limit for Direct Send and will be sent as %d utility messages", maxCaptionAndBodyLength, len(msgParts))})
+	}
 
 	// log any quick replies that will be dropped - because interactive messages require body text, or because a
 	// different kind of quick reply takes precedence on this message

@@ -318,7 +318,7 @@
         "log_errors": [
             {
                 "code": "",
-                "message": "message is outside the customer service window but can't be sent with Direct Send because an attachment can only be sent as the header of a message with quick replies, sending as a regular message"
+                "message": "message is outside the customer service window but can't be sent with Direct Send because an attachment can only be sent as the header of a message with quick replies, sending as a regular message which will likely be rejected"
             }
         ]
     },
