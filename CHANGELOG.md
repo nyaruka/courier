@@ -1,3 +1,7 @@
+## v26.3.66 (2026-10-28)
+ * Pass the contact's email to the webchat service with sent messages
+ * Update dependencies
+
 ## v26.3.65 (2026-10-22)
  * Pass the channel to RespondMsgs and RespondStatuses so handlers can answer an empty batch
  * Count contacts matched by another reported URN and reported URNs found addable
