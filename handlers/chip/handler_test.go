@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/courier/v26/web"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
@@ -25,8 +26,9 @@ import (
 )
 
 const (
-	channelUUID = "0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71"
-	startURL    = "/c/chp/" + channelUUID + "/start"
+	channelUUID      = "0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71"
+	emailChannelUUID = "5b0f3c1e-8a2d-4e7f-9c6b-1d3a5e7f9b2c"
+	startURL         = "/c/chp/" + channelUUID + "/start"
 
 	testChatID = "vM0GGhDrqpTQefIEinK0up3C"
 )
@@ -34,6 +36,14 @@ const (
 var testChannels = []*models.Channel{
 	test.NewMockChannel(channelUUID, "CHP", "", "", []string{urns.WebChat.Prefix}, nil),
 }
+
+// a channel which also emails visitors who've left
+var emailChannel = test.NewMockChannel(emailChannelUUID, "CHP", "", "", []string{urns.WebChat.Prefix}, map[string]any{
+	"email_from":      "Support <support@mg.example.com>",
+	"mailgun_domain":  "mg.example.com",
+	"mailgun_region":  "eu",
+	"mailgun_api_key": "key-123456",
+})
 
 // the webchat service is configured with the token its requests have to carry and the address we post to
 func setup(t *testing.T, rt *runtime.Runtime) {
@@ -47,6 +57,33 @@ func TestIncoming(t *testing.T) {
 
 func TestOutgoing(t *testing.T) {
 	RunOutgoingTests(t, testChannels[0], newHandler, "testdata/outgoing.json", &OutgoingOptions{Setup: setup})
+}
+
+func TestOutgoingEmail(t *testing.T) {
+	RunOutgoingTests(t, emailChannel, newHandler, "testdata/outgoing_email.json", &OutgoingOptions{
+		Setup:         setup,
+		CheckRedacted: []string{"key-123456", httpx.BasicAuth("api", "key-123456")},
+	})
+}
+
+// a visitor who's just messaged is still in the chat, so they're only emailed once they've been gone a while
+func TestShouldEmailLiveChat(t *testing.T) {
+	_, rt := testsuite.Runtime(t)
+
+	now := time.Date(2025, 10, 13, 11, 20, 0, 0, time.UTC)
+	dates.SetNowFunc(dates.NewFixedNow(now))
+	defer dates.SetNowFunc(time.Now)
+
+	h := newHandler(rt, channels.NewRoutes()).(*handler)
+	msg := func(lastSeen time.Time) *models.MsgOut {
+		return &models.MsgOut{
+			Contact_: &models.ContactReference{Email: "bob@example.com", LastSeenOn: &lastSeen},
+			Channel_: emailChannel,
+		}
+	}
+
+	assert.False(t, h.shouldEmail(msg(now.Add(-time.Minute))))
+	assert.True(t, h.shouldEmail(msg(now.Add(-10*time.Minute))))
 }
 
 // posts to the handler on a server with the channel mounted

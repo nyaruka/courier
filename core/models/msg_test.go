@@ -20,7 +20,7 @@ func TestMsgOut(t *testing.T) {
 		"attachments": ["https://foo.bar/image.jpg"],
 		"quick_replies": [{"type": "text", "text": "Yes"}, {"type": "text", "text": "No"}],
 		"text": "Test message 21",
-		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
+		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc", "email": "bob@example.com"},
 		"flow": {"uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", "name": "Favorites"},
 		"id": 204,
 		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba",
@@ -40,6 +40,7 @@ func TestMsgOut(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, models.ContactID(100), msg.Contact_.ID)
 	assert.Equal(t, models.ContactUUID("a984069d-0008-4d8c-a772-b14a8a6acccc"), msg.Contact_.UUID)
+	assert.Equal(t, "bob@example.com", msg.Contact_.Email)
 	assert.Equal(t, models.ChannelUUID("f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba"), msg.ChannelUUID_)
 	assert.Equal(t, []string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	assert.Equal(t, "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2", msg.URNAuth_)

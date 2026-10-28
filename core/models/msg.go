@@ -493,6 +493,7 @@ type ContactReference struct {
 	UUID       ContactUUID `json:"uuid" validate:"uuid,required"` // for creating status updates in DynamoDB
 	LastSeenOn *time.Time  `json:"last_seen_on,omitempty"`
 	OtherURNs  []urns.URN  `json:"other_urns,omitempty"` // contact's URNs other than the one used for this message
+	Email      string      `json:"email,omitempty"`
 }
 
 // HasOtherURN returns true if the contact has the given URN in their OtherURNs list

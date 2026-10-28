@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -15,11 +16,29 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/core/events"
 )
+
+const (
+	configEmailFrom     = "email_from"
+	configMailgunDomain = "mailgun_domain"
+	configMailgunRegion = "mailgun_region"
+	configMailgunAPIKey = "mailgun_api_key"
+)
+
+var mailgunBaseURLs = map[string]string{
+	"us": "https://api.mailgun.net",
+	"eu": "https://api.eu.mailgun.net",
+}
+
+// a visitor who messaged within this long is assumed to still have the chat open, so isn't emailed as well
+const liveChatWindow = 5 * time.Minute
 
 // WebChat is the platform's own chat widget, embedded on websites. Its provider is chip, the webchat service, which
 // the widget talks to: it mints chat IDs, takes visitors' messages and uploads, serves their history and delivers what
@@ -216,7 +235,79 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		User:         h.sender(ctx, msg),
 	}
 
-	return h.post(ctx, "send", payload, clog)
+	if err := h.post(ctx, "send", payload, clog); err != nil {
+		return err
+	}
+
+	if h.shouldEmail(msg) {
+		h.sendEmail(ctx, msg, clog)
+	}
+	return nil
+}
+
+// shouldEmail returns whether a message should also be emailed to the visitor, which needs the channel to have email
+// configured and the contact to have an address. Email is how a visitor who has left hears from us, so a visitor
+// in the middle of a conversation isn't emailed too.
+func (h *handler) shouldEmail(msg *models.MsgOut) bool {
+	if msg.Channel().StringConfigForKey(configMailgunDomain, "") == "" || msg.Contact().Email == "" {
+		return false
+	}
+	lastSeen := msg.Contact().LastSeenOn
+	return lastSeen == nil || dates.Since(*lastSeen) > liveChatWindow
+}
+
+// sendEmail sends a message to the visitor's email address via Mailgun. Email is a best-effort extra on top of the
+// chat itself, which has already delivered the message, so a failure is logged rather than failing the send - which
+// would have the message retried and redelivered to the chat.
+func (h *handler) sendEmail(ctx context.Context, msg *models.MsgOut, clog *models.ChannelLog) {
+	ch := msg.Channel()
+	domain := ch.StringConfigForKey(configMailgunDomain, "")
+	baseURL, ok := mailgunBaseURLs[ch.StringConfigForKey(configMailgunRegion, "us")]
+	if !ok {
+		baseURL = mailgunBaseURLs["us"]
+	}
+
+	form := url.Values{
+		"from":    {ch.StringConfigForKey(configEmailFrom, "")},
+		"to":      {msg.Contact().Email},
+		"subject": {fmt.Sprintf("New message from %s", ch.Name())},
+		"text":    {emailText(msg)},
+	}
+
+	sendURL := fmt.Sprintf("%s/v3/%s/messages", baseURL, url.PathEscape(domain))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth("api", ch.StringConfigForKey(configMailgunAPIKey, ""))
+
+	resp, _, err := h.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		clog.Error(&svclogs.Error{Message: "unable to send message by email"})
+		slog.Error("error sending webchat message by email", "error", err, "channel_uuid", ch.UUID(), "msg_uuid", msg.UUID())
+	}
+}
+
+// emailText is a message as plain text, with what the chat would show as media or buttons listed after it
+func emailText(msg *models.MsgOut) string {
+	lines := []string{msg.Text()}
+	for _, a := range msg.Attachments() {
+		_, attURL := handlers.SplitAttachment(a)
+		lines = append(lines, attURL)
+	}
+	for _, qr := range msg.QuickReplies() {
+		if qr.Type == models.QuickReplyTypeText {
+			lines = append(lines, "- "+qr.Text)
+		}
+	}
+	return strings.TrimSpace(strings.Join(lines, "\n"))
+}
+
+// RedactValues redacts the Mailgun API key, including as part of the basic auth it's sent as
+func (h *handler) RedactValues(ch *models.Channel) []string {
+	key := ch.StringConfigForKey(configMailgunAPIKey, "")
+	if key == "" {
+		return nil
+	}
+	return []string{key, httpx.BasicAuth("api", key)}
 }
 
 // eventPayload is something other than a message we have the webchat service show the visitor - a user typing
