@@ -37,6 +37,7 @@ type OutgoingMsg struct {
 	Origin               models.MsgOrigin      `json:"origin,omitempty"`
 	ContactLastSeenOn    *time.Time            `json:"contact_last_seen_on,omitempty"`
 	ContactOtherURNs     []urns.URN            `json:"contact_other_urns,omitempty"`
+	ContactEmail         string                `json:"contact_email,omitempty"`
 }
 
 // builds the actual message to send on the given channel
@@ -46,7 +47,7 @@ func (m *OutgoingMsg) build(ch *models.Channel) *models.MsgOut {
 		origin = m.Origin
 	}
 
-	contact := &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc", LastSeenOn: m.ContactLastSeenOn, OtherURNs: m.ContactOtherURNs}
+	contact := &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc", LastSeenOn: m.ContactLastSeenOn, OtherURNs: m.ContactOtherURNs, Email: m.ContactEmail}
 
 	msg := &models.MsgOut{
 		OrgID_:                ch.OrgID(),

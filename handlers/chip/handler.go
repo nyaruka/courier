@@ -185,6 +185,8 @@ type sendPayload struct {
 	Attachments  []string            `json:"attachments,omitempty"`
 	QuickReplies []models.QuickReply `json:"quick_replies,omitempty"`
 	User         *msgUser            `json:"user,omitempty"`
+	// the visitor's email address, if known, for reaching them by email when they've left the chat
+	Email string `json:"email,omitempty"`
 }
 
 // sender looks up the user who sent a message, if it was sent by one. Attribution is best-effort: a lookup that
@@ -214,6 +216,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		// the widget only renders text quick replies, so like any other channel we filter to what's supported
 		QuickReplies: handlers.FilterQuickRepliesByType(msg.QuickReplies(), models.QuickReplyTypeText),
 		User:         h.sender(ctx, msg),
+		Email:        msg.Contact().Email,
 	}
 
 	return h.post(ctx, "send", payload, clog)
