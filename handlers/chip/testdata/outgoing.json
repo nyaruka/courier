@@ -276,7 +276,7 @@
         "log_errors": []
     },
     {
-        "label": "Contact Email Without Email Configured",
+        "label": "Send To Contact With Email",
         "msg": {
             "text": "Hello there",
             "urn": "webchat:vM0GGhDrqpTQefIEinK0up3C",
@@ -302,7 +302,8 @@
                     "channel_uuid": "0665bf36-4d2e-4c3f-b8a1-9f8e6a5c2d71",
                     "chat_id": "vM0GGhDrqpTQefIEinK0up3C",
                     "msg_uuid": "0191e180-7d60-7000-aded-7d8b151cbd5b",
-                    "text": "Hello there"
+                    "text": "Hello there",
+                    "email": "bob@example.com"
                 }
             }
         ],
