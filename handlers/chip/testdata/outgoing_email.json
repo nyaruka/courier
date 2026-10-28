@@ -241,8 +241,74 @@
         ],
         "log_errors": [
             {
-                "code": "",
-                "message": "unable to send message by email"
+                "code": "response_status_code",
+                "message": "Unexpected response status code."
+            }
+        ]
+    },
+    {
+        "label": "Mailgun Unreachable",
+        "msg": {
+            "text": "Hello there",
+            "urn": "webchat:vM0GGhDrqpTQefIEinK0up3C",
+            "contact_email": "bob@example.com"
+        },
+        "http_mocks": {
+            "http://chip/wi/send": [
+                {
+                    "status": 200,
+                    "body": "{}"
+                }
+            ],
+            "https://api.eu.mailgun.net/v3/mg.example.com/messages": [
+                {
+                    "status": 0,
+                    "body": ""
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://chip/wi/send",
+                "headers": {
+                    "Authorization": "Token sesame",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "channel_uuid": "5b0f3c1e-8a2d-4e7f-9c6b-1d3a5e7f9b2c",
+                    "chat_id": "vM0GGhDrqpTQefIEinK0up3C",
+                    "msg_uuid": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "text": "Hello there"
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.eu.mailgun.net/v3/mg.example.com/messages",
+                "headers": {
+                    "Authorization": "Basic YXBpOmtleS0xMjM0NTY=",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "from": [
+                        "Support <support@mg.example.com>"
+                    ],
+                    "subject": [
+                        "New message from Channel: 5b0f3c1e-8a2d-4e7f-9c6b-1d3a5e7f9b2c"
+                    ],
+                    "text": [
+                        "Hello there"
+                    ],
+                    "to": [
+                        "bob@example.com"
+                    ]
+                }
+            }
+        ],
+        "log_errors": [
+            {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
             }
         ]
     },

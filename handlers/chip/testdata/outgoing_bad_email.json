@@ -1,0 +1,40 @@
+[
+    {
+        "label": "Invalid Email Config",
+        "msg": {
+            "text": "Hello there",
+            "urn": "webchat:vM0GGhDrqpTQefIEinK0up3C",
+            "contact_email": "bob@example.com"
+        },
+        "http_mocks": {
+            "http://chip/wi/send": [
+                {
+                    "status": 200,
+                    "body": "{}"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "http://chip/wi/send",
+                "headers": {
+                    "Authorization": "Token sesame",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "channel_uuid": "9e1d7c3a-4b5f-4a8e-b2d6-7f0c1e3a5b9d",
+                    "chat_id": "vM0GGhDrqpTQefIEinK0up3C",
+                    "msg_uuid": "0191e180-7d60-7000-aded-7d8b151cbd5b",
+                    "text": "Hello there"
+                }
+            }
+        ],
+        "log_errors": [
+            {
+                "code": "email_config",
+                "message": "email is enabled but its region or sender address is invalid"
+            }
+        ]
+    }
+]

@@ -261,14 +261,24 @@ func (h *handler) shouldEmail(msg *models.MsgOut) bool {
 // would have the message retried and redelivered to the chat.
 func (h *handler) sendEmail(ctx context.Context, msg *models.MsgOut, clog *models.ChannelLog) {
 	ch := msg.Channel()
+	log := slog.With("channel_uuid", ch.UUID(), "msg_uuid", msg.UUID())
 	domain := ch.StringConfigForKey(configMailgunDomain, "")
-	baseURL, ok := mailgunBaseURLs[ch.StringConfigForKey(configMailgunRegion, "us")]
-	if !ok {
-		baseURL = mailgunBaseURLs["us"]
+	from := ch.StringConfigForKey(configEmailFrom, "")
+	region := ch.StringConfigForKey(configMailgunRegion, "")
+	if region == "" {
+		region = "us"
+	}
+
+	// a channel with a domain but a bad region or no sender address would fail every email at Mailgun, so say why
+	baseURL, ok := mailgunBaseURLs[region]
+	if !ok || from == "" {
+		clog.Error(&svclogs.Error{Code: "email_config", Message: "email is enabled but its region or sender address is invalid"})
+		log.Error("invalid webchat email config", "mailgun_region", region, "email_from", from)
+		return
 	}
 
 	form := url.Values{
-		"from":    {ch.StringConfigForKey(configEmailFrom, "")},
+		"from":    {from},
 		"to":      {msg.Contact().Email},
 		"subject": {fmt.Sprintf("New message from %s", ch.Name())},
 		"text":    {emailText(msg)},
@@ -280,9 +290,12 @@ func (h *handler) sendEmail(ctx context.Context, msg *models.MsgOut, clog *model
 	req.SetBasicAuth("api", ch.StringConfigForKey(configMailgunAPIKey, ""))
 
 	resp, _, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		clog.Error(&svclogs.Error{Message: "unable to send message by email"})
-		slog.Error("error sending webchat message by email", "error", err, "channel_uuid", ch.UUID(), "msg_uuid", msg.UUID())
+	if err != nil {
+		clog.Error(channels.ErrConnectionFailed.(*channels.SendError).ClogError())
+		log.Error("error sending webchat message by email", "error", err)
+	} else if resp.StatusCode/100 != 2 {
+		clog.Error(models.ErrorResponseStatusCode())
+		log.Error("error sending webchat message by email", "status", resp.StatusCode)
 	}
 }
 

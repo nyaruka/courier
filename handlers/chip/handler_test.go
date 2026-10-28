@@ -59,11 +59,27 @@ func TestOutgoing(t *testing.T) {
 	RunOutgoingTests(t, testChannels[0], newHandler, "testdata/outgoing.json", &OutgoingOptions{Setup: setup})
 }
 
+// a channel with no region, which uses Mailgun's US endpoint
+var usEmailChannel = test.NewMockChannel("2c4e6a8b-0d1f-4e3a-9b5c-7d9f1a3c5e7b", "CHP", "", "", []string{urns.WebChat.Prefix}, map[string]any{
+	"email_from":      "support@mg.example.com",
+	"mailgun_domain":  "mg.example.com",
+	"mailgun_api_key": "key-123456",
+})
+
+// a channel whose email config would fail every send at Mailgun
+var badEmailChannel = test.NewMockChannel("9e1d7c3a-4b5f-4a8e-b2d6-7f0c1e3a5b9d", "CHP", "", "", []string{urns.WebChat.Prefix}, map[string]any{
+	"mailgun_domain":  "mg.example.com",
+	"mailgun_region":  "EU",
+	"mailgun_api_key": "key-123456",
+})
+
 func TestOutgoingEmail(t *testing.T) {
 	RunOutgoingTests(t, emailChannel, newHandler, "testdata/outgoing_email.json", &OutgoingOptions{
 		Setup:         setup,
 		CheckRedacted: []string{"key-123456", httpx.BasicAuth("api", "key-123456")},
 	})
+	RunOutgoingTests(t, usEmailChannel, newHandler, "testdata/outgoing_email_us.json", &OutgoingOptions{Setup: setup})
+	RunOutgoingTests(t, badEmailChannel, newHandler, "testdata/outgoing_bad_email.json", &OutgoingOptions{Setup: setup})
 }
 
 // a visitor who's just messaged is still in the chat, so they're only emailed once they've been gone a while
