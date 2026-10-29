@@ -706,3 +706,267 @@ func TestGetMsgPayloads(t *testing.T) {
 		})
 	}
 }
+
+func TestGetMsgPayloadsDirectSend(t *testing.T) {
+	channel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WAC", "12345", "", []string{urns.WhatsApp.Prefix}, map[string]any{whatsapp.ConfigDirectSend: true})
+	channelNoDirect := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WAC", "12345", "", []string{urns.WhatsApp.Prefix}, nil)
+
+	tcs := []struct {
+		label             string
+		channel           *models.Channel
+		outsideWindow     bool
+		text              string
+		attachments       []string
+		quickReplies      []models.QuickReply
+		templating        bool
+		expectedTypes     []string
+		expectedDirect    bool
+		expectedLogErrors []string
+		checkFunc         func(*testing.T, []whatsapp.SendRequest)
+	}{
+		{
+			label:          "text outside window is sent as utility without URL preview",
+			channel:        channel,
+			outsideWindow:  true,
+			text:           "See https://example.com",
+			expectedTypes:  []string{"text"},
+			expectedDirect: true,
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest) {
+				assert.Equal(t, "See https://example.com", payloads[0].Text.Body)
+				assert.Nil(t, payloads[0].Text.PreviewURL)
+			},
+		},
+		{
+			label:             "long text outside window is split at the body limit with every part sent as utility",
+			channel:           channel,
+			outsideWindow:     true,
+			text:              strings.Repeat("a", 1500),
+			expectedTypes:     []string{"text", "text"},
+			expectedDirect:    true,
+			expectedLogErrors: []string{"text exceeds the 1024 character limit for Direct Send and will be sent as 2 utility messages"},
+		},
+		{
+			label:         "text inside window is sent as a regular message",
+			channel:       channel,
+			outsideWindow: false,
+			text:          "See https://example.com",
+			expectedTypes: []string{"text"},
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest) {
+				assert.True(t, *payloads[0].Text.PreviewURL)
+			},
+		},
+		{
+			label:         "text outside window on channel without Direct Send is sent as a regular message",
+			channel:       channelNoDirect,
+			outsideWindow: true,
+			text:          "Hello",
+			expectedTypes: []string{"text"},
+		},
+		{
+			label:          "more than 3 quick replies outside window are sent as buttons rather than a list",
+			channel:        channel,
+			outsideWindow:  true,
+			text:           "Pick one",
+			quickReplies:   []models.QuickReply{{Type: "text", Text: "A"}, {Type: "text", Text: "B"}, {Type: "text", Text: "C"}, {Type: "text", Text: "D"}, {Type: "text", Text: "E"}},
+			expectedTypes:  []string{"interactive"},
+			expectedDirect: true,
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest) {
+				assert.Equal(t, "button", payloads[0].Interactive.Type)
+				assert.Len(t, payloads[0].Interactive.Action.Buttons, 5)
+			},
+		},
+		{
+			label:             "quick replies with descriptions outside window are sent as buttons without descriptions",
+			channel:           channel,
+			outsideWindow:     true,
+			text:              "Pick one",
+			quickReplies:      []models.QuickReply{{Type: "text", Text: "A", Extra: "Option A"}, {Type: "text", Text: "B", Extra: "Option B"}},
+			expectedTypes:     []string{"interactive"},
+			expectedDirect:    true,
+			expectedLogErrors: []string{"quick reply descriptions aren't supported with Direct Send and won't be sent"},
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest) {
+				assert.Equal(t, "button", payloads[0].Interactive.Type)
+				assert.Equal(t, "A", payloads[0].Interactive.Action.Buttons[0].Reply.Title)
+			},
+		},
+		{
+			label:          "image with 5 quick replies outside window is sent as a header",
+			channel:        channel,
+			outsideWindow:  true,
+			text:           "Pick one",
+			attachments:    []string{"image/jpeg:https://example.com/image.jpg"},
+			quickReplies:   []models.QuickReply{{Type: "text", Text: "A"}, {Type: "text", Text: "B"}, {Type: "text", Text: "C"}, {Type: "text", Text: "D"}, {Type: "text", Text: "E"}},
+			expectedTypes:  []string{"interactive"},
+			expectedDirect: true,
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest) {
+				assert.Equal(t, "image", payloads[0].Interactive.Header.Type)
+				assert.Len(t, payloads[0].Interactive.Action.Buttons, 5)
+			},
+		},
+		{
+			label:          "document with URL button outside window is sent as a CTA URL message with header",
+			channel:        channel,
+			outsideWindow:  true,
+			text:           "Read this",
+			attachments:    []string{"application/pdf:https://example.com/doc.pdf"},
+			quickReplies:   []models.QuickReply{{Type: "url", Text: "Open", Extra: "https://example.com"}},
+			expectedTypes:  []string{"interactive"},
+			expectedDirect: true,
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest) {
+				assert.Equal(t, "cta_url", payloads[0].Interactive.Type)
+				assert.Equal(t, "document", payloads[0].Interactive.Header.Type)
+			},
+		},
+		{
+			label:             "long text with image and quick replies outside window puts the header and buttons on the last part only",
+			channel:           channel,
+			outsideWindow:     true,
+			text:              strings.Repeat("a", 1500),
+			attachments:       []string{"video/mp4:https://example.com/video.mp4"},
+			quickReplies:      []models.QuickReply{{Type: "text", Text: "A"}, {Type: "text", Text: "B"}, {Type: "text", Text: "C"}, {Type: "text", Text: "D"}},
+			expectedTypes:     []string{"text", "interactive"},
+			expectedDirect:    true,
+			expectedLogErrors: []string{"text exceeds the 1024 character limit for Direct Send and will be sent as 2 utility messages"},
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest) {
+				assert.Nil(t, payloads[0].Text.PreviewURL)
+				assert.Equal(t, "video", payloads[1].Interactive.Header.Type)
+				assert.Len(t, payloads[1].Interactive.Action.Buttons, 4)
+			},
+		},
+		{
+			label:         "more than 10 quick replies outside window are truncated to 10 buttons",
+			channel:       channel,
+			outsideWindow: true,
+			text:          "Pick one",
+			quickReplies: []models.QuickReply{
+				{Type: "text", Text: "1"}, {Type: "text", Text: "2"}, {Type: "text", Text: "3"}, {Type: "text", Text: "4"}, {Type: "text", Text: "5"}, {Type: "text", Text: "6"},
+				{Type: "text", Text: "7"}, {Type: "text", Text: "8"}, {Type: "text", Text: "9"}, {Type: "text", Text: "10"}, {Type: "text", Text: "11", Extra: "dropped anyway"},
+			},
+			expectedTypes:     []string{"interactive"},
+			expectedDirect:    true,
+			expectedLogErrors: []string{"too many quick replies WhatsApp supports only up to 10 quick replies"},
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest) {
+				assert.Len(t, payloads[0].Interactive.Action.Buttons, 10)
+			},
+		},
+		{
+			label:             "URL quick reply with text quick replies outside window is sent as CTA URL with the others dropped",
+			channel:           channel,
+			outsideWindow:     true,
+			text:              "Read this",
+			quickReplies:      []models.QuickReply{{Type: "url", Text: "Open", Extra: "https://example.com"}, {Type: "text", Text: "A", Extra: "Option A"}},
+			expectedTypes:     []string{"interactive"},
+			expectedDirect:    true,
+			expectedLogErrors: []string{"quick reply of type text can't be combined with a url quick reply and won't be sent"},
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest) {
+				assert.Equal(t, "cta_url", payloads[0].Interactive.Type)
+			},
+		},
+		{
+			label:         "templated message outside window is sent as a template",
+			channel:       channel,
+			outsideWindow: true,
+			text:          "Hello",
+			templating:    true,
+			expectedTypes: []string{"template"},
+		},
+		{
+			label:             "attachment without text outside window falls back to a regular message",
+			channel:           channel,
+			outsideWindow:     true,
+			attachments:       []string{"image/jpeg:https://example.com/image.jpg"},
+			expectedTypes:     []string{"image"},
+			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because message has no text, sending as a regular message which will likely be rejected"},
+		},
+		{
+			label:             "attachment without quick replies outside window falls back to a regular message",
+			channel:           channel,
+			outsideWindow:     true,
+			text:              "Look",
+			attachments:       []string{"image/jpeg:https://example.com/image.jpg"},
+			expectedTypes:     []string{"image"},
+			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because an attachment can only be sent as the header of a message with quick replies, sending as a regular message which will likely be rejected"},
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest) {
+				assert.Equal(t, "Look", payloads[0].Image.Caption)
+			},
+		},
+		{
+			label:             "audio attachment outside window falls back to a regular message",
+			channel:           channel,
+			outsideWindow:     true,
+			text:              "Listen",
+			attachments:       []string{"audio/mp3:https://example.com/audio.mp3"},
+			quickReplies:      []models.QuickReply{{Type: "text", Text: "A"}},
+			expectedTypes:     []string{"audio", "interactive"},
+			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because attachment type audio/mp3 isn't supported, sending as a regular message which will likely be rejected"},
+		},
+		{
+			label:             "multiple attachments outside window fall back to a regular message",
+			channel:           channel,
+			outsideWindow:     true,
+			text:              "Look",
+			attachments:       []string{"image/jpeg:https://example.com/1.jpg", "image/jpeg:https://example.com/2.jpg"},
+			quickReplies:      []models.QuickReply{{Type: "text", Text: "A"}},
+			expectedTypes:     []string{"image", "interactive"}, // second attachment standalone, first as header
+			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because only a single attachment is supported, sending as a regular message which will likely be rejected"},
+		},
+		{
+			label:             "form quick reply outside window falls back to a regular message",
+			channel:           channel,
+			outsideWindow:     true,
+			text:              "Fill this in",
+			quickReplies:      []models.QuickReply{{Type: "form", Text: "Start", Extra: "12345"}},
+			expectedTypes:     []string{"interactive"},
+			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because location and form quick replies aren't supported, sending as a regular message which will likely be rejected"},
+			checkFunc: func(t *testing.T, payloads []whatsapp.SendRequest) {
+				assert.Equal(t, "flow", payloads[0].Interactive.Type)
+			},
+		},
+		{
+			label:             "location quick reply outside window falls back to a regular message",
+			channel:           channel,
+			outsideWindow:     true,
+			text:              "Where are you?",
+			quickReplies:      []models.QuickReply{{Type: "location", Text: "Share"}},
+			expectedTypes:     []string{"interactive"},
+			expectedLogErrors: []string{"message is outside the customer service window but can't be sent with Direct Send because location and form quick replies aren't supported, sending as a regular message which will likely be rejected"},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.label, func(t *testing.T) {
+			msg := test.NewMockMsg("87995844-2017-4ba0-bc73-f3da75b32f9b", tc.channel, "whatsapp:250788123123", tc.text, tc.attachments)
+			msg.QuickReplies_ = tc.quickReplies
+			msg.OutsideWindow_ = tc.outsideWindow
+			if tc.templating {
+				msg.Templating_ = &models.Templating{Language: "en_US"}
+				msg.Templating_.Template.Name = "hello"
+			}
+			clog := models.NewChannelLogForSend(msg, nil)
+
+			payloads, err := whatsapp.GetMsgPayloads(msg, 4096, clog)
+			require.NoError(t, err)
+
+			types := make([]string, len(payloads))
+			for i, p := range payloads {
+				types[i] = p.Type
+				if tc.expectedDirect {
+					assert.Equal(t, "utility", p.Category, "payload %d should be sent as utility", i)
+				} else {
+					assert.Equal(t, "", p.Category, "payload %d should not have a category", i)
+				}
+			}
+			assert.Equal(t, tc.expectedTypes, types)
+
+			var logErrors []string
+			for _, e := range clog.Errors {
+				logErrors = append(logErrors, e.Message)
+			}
+			assert.Equal(t, tc.expectedLogErrors, logErrors)
+
+			if tc.checkFunc != nil {
+				tc.checkFunc(t, payloads)
+			}
+		})
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
+	"github.com/nyaruka/courier/v26/handlers/meta/whatsapp"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/web"
@@ -35,6 +36,12 @@ func TestWhatsAppOutgoing(t *testing.T) {
 	checkRedacted := []string{"wac_admin_system_user_token", "missing_facebook_app_secret", "missing_facebook_webhook_secret", "a123"}
 
 	RunOutgoingTests(t, ch, newHandler("WAC", "Cloud API WhatsApp"), "testdata/whatsapp_outgoing.json", &OutgoingOptions{CheckRedacted: checkRedacted})
+}
+
+func TestWhatsAppDirectSendOutgoing(t *testing.T) {
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WAC", "12345_ID", "", []string{urns.WhatsApp.Prefix}, map[string]any{models.ConfigAuthToken: "a123", whatsapp.ConfigDirectSend: true})
+
+	RunOutgoingTests(t, ch, newHandler("WAC", "Cloud API WhatsApp"), "testdata/whatsapp_direct_send_outgoing.json", &OutgoingOptions{CheckRedacted: []string{"wac_admin_system_user_token", "a123"}})
 }
 
 func TestWhatsAppDescribeURN(t *testing.T) {
