@@ -1,3 +1,6 @@
+## v26.3.67 (2026-10-29)
+ * Stop writing contact ticket_count
+
 ## v26.3.66 (2026-10-28)
  * Pass the contact's email to the webchat service with sent messages
  * Update dependencies
