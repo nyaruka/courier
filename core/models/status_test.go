@@ -596,7 +596,7 @@ func TestWriteStatusUpdatesOtherURNs(t *testing.T) {
 	assertvk.LLen(t, rc, "c:1:100", 0)
 
 	// a URN owned by a contact with no other URNs is queued, as mailroom will reassign it
-	rt.DB.MustExec(`INSERT INTO contacts_contact("id", "is_active", "status", "created_on", "modified_on", "uuid", "ticket_count", "created_by_id", "modified_by_id", "org_id") VALUES(101, TRUE, 'A', NOW(), NOW(), 'c7e8f5d2-6a3b-4e1f-9d2c-8b5a4f3e2d1c', 0, 1, 1, 1)`)
+	rt.DB.MustExec(`INSERT INTO contacts_contact("id", "is_active", "status", "created_on", "modified_on", "uuid", "created_by_id", "modified_by_id", "org_id") VALUES(101, TRUE, 'A', NOW(), NOW(), 'c7e8f5d2-6a3b-4e1f-9d2c-8b5a4f3e2d1c', 1, 1, 1)`)
 	rt.DB.MustExec(`INSERT INTO contacts_contacturn("identity", "path", "scheme", "priority", "contact_id", "org_id") VALUES('whatsapp:US.2345', 'US.2345', 'whatsapp', 50, 101, 1)`)
 
 	_, err = models.WriteStatusUpdates(ctx, rt, []*models.StatusUpdate{

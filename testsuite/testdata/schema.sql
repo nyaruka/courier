@@ -45,7 +45,7 @@ CREATE TABLE contacts_contact (
     name character varying(128),
     language character varying(3),
     status character varying(1) NOT NULL,
-    ticket_count integer NOT NULL,
+    ticket_count integer,
     created_by_id integer references users_user(id),
     modified_by_id integer references users_user(id),
     org_id integer NOT NULL references orgs_org(id) on delete cascade

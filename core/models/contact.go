@@ -71,8 +71,8 @@ func (c *Contact) UUID() ContactUUID { return c.UUID_ }
 
 const sqlInsertContact = `
 INSERT INTO 
-	contacts_contact(org_id, is_active, status, uuid, created_on, modified_on, created_by_id, modified_by_id, name, ticket_count) 
-              VALUES(:org_id, TRUE, 'A', :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name, 0)
+	contacts_contact(org_id, is_active, status, uuid, created_on, modified_on, created_by_id, modified_by_id, name) 
+              VALUES(:org_id, TRUE, 'A', :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name)
 RETURNING id
 `
 
