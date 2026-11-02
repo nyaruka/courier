@@ -1,3 +1,6 @@
+## v26.3.68 (2026-11-02)
+ * Send WhatsApp messages outside the customer service window with Direct Send
+
 ## v26.3.67 (2026-10-29)
  * Stop writing contact ticket_count
 
