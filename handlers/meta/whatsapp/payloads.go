@@ -6,10 +6,12 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
@@ -81,14 +83,36 @@ func isHeaderMediaType(contentType string) bool {
 	return attType == "image" || attType == "video" || attType == "document" || attType == "application"
 }
 
+const (
+	// customerServiceWindow is how long after a contact's last incoming message that they can be sent free-form messages
+	customerServiceWindow = 24 * time.Hour
+
+	// customerServiceWindowMargin is how long before the window closes that we treat it as closed, since a message can
+	// wait in a channel's queue for a while before it's actually sent
+	customerServiceWindowMargin = time.Hour
+)
+
+// isOutsideWindow returns whether a flow message falls outside the customer service window. The contact's last seen on
+// is never earlier than their last incoming message on this channel, so this can mistake a closed window for an open
+// one but never the reverse, and a message which can't be sent with Direct Send would be rejected either way. A reply
+// is always inside the window.
+func isOutsideWindow(msg *models.MsgOut) bool {
+	if msg.Origin() != models.MsgOriginFlow || msg.ResponseToExternalID() != "" || msg.Contact() == nil {
+		return false
+	}
+
+	lastSeenOn := msg.Contact().LastSeenOn
+	return lastSeenOn == nil || dates.Now().Sub(*lastSeenOn) > customerServiceWindow-customerServiceWindowMargin
+}
+
 // useDirectSend returns whether the message should be sent with Direct Send, i.e. as a utility message which doesn't
-// need a pre-approved template. That requires the channel to have Direct Send enabled, the message to be flagged as
-// outside the customer service window, and content that Direct Send supports: text, optionally with text or URL
+// need a pre-approved template. That requires the channel to have Direct Send enabled, the message to be outside the
+// customer service window, and content that Direct Send supports: text, optionally with text or URL
 // quick replies, and at most one image, video or document attachment which is sent as the header of those buttons.
 // Anything else is sent as a regular message, with the reason logged - that will likely be rejected outside the
 // window but it's consistent with what would happen without Direct Send and the rejection is recorded.
 func useDirectSend(msg *models.MsgOut, locationQRs, formQRs, urlQRs, textQRs []models.QuickReply, clog *models.ChannelLog) bool {
-	if !msg.OutsideWindow() || !msg.Channel().BoolConfigForKey(ConfigDirectSend, false) {
+	if !msg.Channel().BoolConfigForKey(ConfigDirectSend, false) || !isOutsideWindow(msg) {
 		return false
 	}
 

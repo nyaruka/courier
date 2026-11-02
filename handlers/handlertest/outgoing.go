@@ -32,7 +32,6 @@ type OutgoingMsg struct {
 	Templating           json.RawMessage       `json:"templating,omitempty"`
 	HighPriority         bool                  `json:"high_priority,omitempty"`
 	ResponseToExternalID string                `json:"response_to_external_id,omitempty"`
-	OutsideWindow        bool                  `json:"outside_window,omitempty"`
 	Flow                 *models.FlowReference `json:"flow,omitempty"`
 	UserID               models.UserID         `json:"user_id,omitempty"`
 	Origin               models.MsgOrigin      `json:"origin,omitempty"`
@@ -61,7 +60,6 @@ func (m *OutgoingMsg) build(ch *models.Channel) *models.MsgOut {
 		Locale_:               m.Locale,
 		HighPriority_:         m.HighPriority,
 		ResponseToExternalID_: m.ResponseToExternalID,
-		OutsideWindow_:        m.OutsideWindow,
 		Flow_:                 m.Flow,
 		UserID_:               m.UserID,
 		Origin_:               origin,

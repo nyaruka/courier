@@ -4,7 +4,7 @@
         "msg": {
             "text": "Your appointment is tomorrow, see https://example.com/appt",
             "urn": "whatsapp:250788123123",
-            "outside_window": true
+            "contact_last_seen_on": "2025-01-01T00:00:00Z"
         },
         "http_mocks": {
             "https://waba-v2.360dialog.io/messages": [
@@ -50,7 +50,8 @@
         "label": "Text inside window is sent as a regular message",
         "msg": {
             "text": "Your appointment is tomorrow",
-            "urn": "whatsapp:250788123123"
+            "urn": "whatsapp:250788123123",
+            "response_to_external_id": "wamid.ABGGFlA5FpafAgo6EhvB"
         },
         "http_mocks": {
             "https://waba-v2.360dialog.io/messages": [
@@ -115,7 +116,7 @@
                     "text": "Call me"
                 }
             ],
-            "outside_window": true
+            "contact_last_seen_on": "2025-01-01T00:00:00Z"
         },
         "http_mocks": {
             "https://waba-v2.360dialog.io/messages": [
@@ -207,7 +208,7 @@
                     "extra": "https://example.com/receipt"
                 }
             ],
-            "outside_window": true
+            "contact_last_seen_on": "2025-01-01T00:00:00Z"
         },
         "http_mocks": {
             "https://waba-v2.360dialog.io/messages": [
@@ -273,7 +274,7 @@
             "attachments": [
                 "application/pdf:https://example.com/file.pdf"
             ],
-            "outside_window": true
+            "contact_last_seen_on": "2025-01-01T00:00:00Z"
         },
         "http_mocks": {
             "https://waba-v2.360dialog.io/messages": [
@@ -326,7 +327,7 @@
         "msg": {
             "text": "Your appointment is tomorrow",
             "urn": "whatsapp:250788123123",
-            "outside_window": true
+            "contact_last_seen_on": "2025-01-01T00:00:00Z"
         },
         "http_mocks": {
             "https://waba-v2.360dialog.io/messages": [

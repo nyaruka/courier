@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers/meta/whatsapp"
 	"github.com/nyaruka/courier/v26/test"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
@@ -937,7 +939,12 @@ func TestGetMsgPayloadsDirectSend(t *testing.T) {
 		t.Run(tc.label, func(t *testing.T) {
 			msg := test.NewMockMsg("87995844-2017-4ba0-bc73-f3da75b32f9b", tc.channel, "whatsapp:250788123123", tc.text, tc.attachments)
 			msg.QuickReplies_ = tc.quickReplies
-			msg.OutsideWindow_ = tc.outsideWindow
+			msg.Origin_ = models.MsgOriginFlow
+			lastSeenOn := dates.Now().Add(-time.Hour)
+			if tc.outsideWindow {
+				lastSeenOn = dates.Now().Add(-48 * time.Hour)
+			}
+			msg.Contact_ = &models.ContactReference{LastSeenOn: &lastSeenOn}
 			if tc.templating {
 				msg.Templating_ = &models.Templating{Language: "en_US"}
 				msg.Templating_.Template.Name = "hello"
@@ -968,5 +975,41 @@ func TestGetMsgPayloadsDirectSend(t *testing.T) {
 				tc.checkFunc(t, payloads)
 			}
 		})
+	}
+}
+
+func TestGetMsgPayloadsDirectSendWindow(t *testing.T) {
+	now := time.Date(2025, 10, 13, 12, 0, 0, 0, time.UTC)
+	dates.SetNowFunc(dates.NewFixedNow(now))
+	defer dates.SetNowFunc(time.Now)
+
+	channel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WAC", "12345", "", []string{urns.WhatsApp.Prefix}, map[string]any{whatsapp.ConfigDirectSend: true})
+	ago := func(d time.Duration) *time.Time { t := now.Add(-d); return &t }
+
+	tcs := []struct {
+		label          string
+		origin         models.MsgOrigin
+		lastSeenOn     *time.Time
+		responseToExt  string
+		expectedDirect bool
+	}{
+		{label: "contact never seen", origin: models.MsgOriginFlow, lastSeenOn: nil, expectedDirect: true},
+		{label: "contact seen 22 hours ago", origin: models.MsgOriginFlow, lastSeenOn: ago(22 * time.Hour), expectedDirect: false},
+		{label: "contact seen 23.5 hours ago is treated as outside", origin: models.MsgOriginFlow, lastSeenOn: ago(23*time.Hour + 30*time.Minute), expectedDirect: true},
+		{label: "reply is always inside", origin: models.MsgOriginFlow, lastSeenOn: ago(48 * time.Hour), responseToExt: "wamid.123", expectedDirect: false},
+		{label: "chat message", origin: models.MsgOriginChat, lastSeenOn: ago(48 * time.Hour), expectedDirect: false},
+		{label: "broadcast message", origin: models.MsgOriginBroadcast, lastSeenOn: ago(48 * time.Hour), expectedDirect: false},
+	}
+
+	for _, tc := range tcs {
+		msg := test.NewMockMsg("87995844-2017-4ba0-bc73-f3da75b32f9b", channel, "whatsapp:250788123123", "Hello", nil)
+		msg.Origin_ = tc.origin
+		msg.Contact_ = &models.ContactReference{LastSeenOn: tc.lastSeenOn}
+		msg.ResponseToExternalID_ = tc.responseToExt
+
+		payloads, err := whatsapp.GetMsgPayloads(msg, 4096, models.NewChannelLogForSend(msg, nil))
+		require.NoError(t, err)
+		require.Len(t, payloads, 1)
+		assert.Equal(t, tc.expectedDirect, payloads[0].Category == "utility", tc.label)
 	}
 }
