@@ -8,6 +8,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
+	"github.com/nyaruka/courier/v26/handlers/meta/whatsapp"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/web"
@@ -53,6 +54,16 @@ func TestOutgoing(t *testing.T) {
 	})
 
 	RunOutgoingTests(t, ch, newWAHandler(models.ChannelType("D3C"), "360Dialog"), "testdata/outgoing.json", &OutgoingOptions{CheckRedacted: []string{"the-auth-token"}})
+}
+
+func TestOutgoingDirectSend(t *testing.T) {
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "D3C", "12345_ID", "", []string{urns.WhatsApp.Prefix}, map[string]any{
+		"auth_token":              "the-auth-token",
+		"base_url":                "https://waba-v2.360dialog.io",
+		whatsapp.ConfigDirectSend: true,
+	})
+
+	RunOutgoingTests(t, ch, newWAHandler(models.ChannelType("D3C"), "360Dialog"), "testdata/outgoing_direct_send.json", &OutgoingOptions{CheckRedacted: []string{"the-auth-token"}})
 }
 
 func TestSendEvent(t *testing.T) {
