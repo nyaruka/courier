@@ -1,3 +1,6 @@
+## v26.3.70 (2026-11-03)
+ * Update to gocommon v1.98.2 tallies API with per-scope retention
+
 ## v26.3.69 (2026-11-03)
  * Increment channel and workspace tallies for incoming messages
 
