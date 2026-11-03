@@ -18,7 +18,7 @@ require (
 	github.com/h2non/filetype v1.1.3
 	github.com/lib/pq v1.12.3
 	github.com/nyaruka/ezconf v0.8.0
-	github.com/nyaruka/gocommon v1.97.0
+	github.com/nyaruka/gocommon v1.98.0
 	github.com/nyaruka/goflow v0.302.0
 	github.com/nyaruka/null/v3 v3.1.0
 	github.com/nyaruka/vkutil v0.30.0
@@ -64,7 +64,7 @@ require (
 	github.com/muir/sqltoken v0.5.2 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.1 // indirect
-	github.com/nyaruka/phonenumbers/v2 v2.0.14 // indirect
+	github.com/nyaruka/phonenumbers/v2 v2.0.16 // indirect
 	github.com/shopspring/decimal v1.5.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.58.0 // indirect

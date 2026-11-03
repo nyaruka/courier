@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/testsuite"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/svclogs"
+	"github.com/nyaruka/vkutil/assertvk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -198,4 +201,55 @@ func TestIncomingMsgCheck(t *testing.T) {
 	spooled, err := filepath.Glob(filepath.Join(rt.Config.SpoolDir, "msgs", "*.jsonl"))
 	require.NoError(t, err)
 	assert.Empty(t, spooled)
+}
+
+func TestWriteMsgTallies(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	defer testsuite.ResetDB(t, rt)
+	defer dates.SetNowFunc(time.Now)
+
+	vc := rt.VK.Get()
+	defer vc.Close()
+
+	kn, err := models.GetChannel(ctx, "KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	require.NoError(t, err)
+	fba, err := models.GetChannel(ctx, "FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
+	require.NoError(t, err)
+
+	writeMsg := func(ch *models.Channel, text string) {
+		clog := models.NewChannelLog(models.ChannelLogTypeReceive, ch, nil, nil)
+		require.NoError(t, models.WriteMsg(ctx, rt, models.NewIncomingMsg(ch, "tel:+12067799192", text, "", clog), clog))
+	}
+
+	// tallies are by the UTC day the message was created on
+	dates.SetNowFunc(dates.NewFixedNow(time.Date(2026, 11, 3, 23, 30, 0, 0, time.FixedZone("", -2*3600))))
+
+	writeMsg(kn, "one")
+	writeMsg(kn, "two")
+	writeMsg(kn, "two") // duplicate isn't written or counted
+	writeMsg(fba, "three")
+
+	assertvk.HGetAll(t, vc, "tallies:1", map[string]string{
+		"channels/10/text/in/2026-11-04": "2",
+		"channels/11/text/in/2026-11-04": "1",
+		"msgs/text/in/2026-11-04":        "3",
+	})
+	assertvk.SMembers(t, vc, "tallies:pending", []string{"1"})
+
+	// a spooled message is counted when it's written, on the day it was received
+	clog := models.NewChannelLog(models.ChannelLogTypeReceive, kn, nil, nil)
+	require.NoError(t, models.MsgSpool().Add([]*models.MsgIn{models.NewIncomingMsg(kn, "tel:+12067799192", "four", "", clog)}))
+
+	dates.SetNowFunc(dates.NewFixedNow(time.Date(2026, 11, 5, 12, 0, 0, 0, time.UTC)))
+
+	require.NoError(t, models.MsgSpool().Flush())
+
+	assertvk.HGetAll(t, vc, "tallies:1", map[string]string{
+		"channels/10/text/in/2026-11-04": "3",
+		"channels/11/text/in/2026-11-04": "1",
+		"msgs/text/in/2026-11-04":        "4",
+	})
 }
