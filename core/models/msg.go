@@ -315,8 +315,8 @@ func incrementMsgTallies(ctx context.Context, rt *runtime.Runtime, m *MsgIn) {
 	defer vc.Close()
 
 	amounts := map[string]int64{
-		tallies.Daily(fmt.Sprintf("channels/%d/text/in", m.Channel_.ID()), m.CreatedOn_): 1,
-		tallies.Daily("msgs/text/in", m.CreatedOn_):                                      1,
+		tallies.Daily(fmt.Sprintf("channels/%d/text:in", m.Channel_.ID()), m.CreatedOn_): 1,
+		tallies.Daily("msgs/text:in", m.CreatedOn_):                                      1,
 	}
 
 	if err := tallies.Increment(ctx, vc, tallies.OwnerID(m.Channel_.OrgID()), amounts); err != nil {
