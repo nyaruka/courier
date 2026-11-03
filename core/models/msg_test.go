@@ -207,7 +207,7 @@ func TestIncomingMsgCheck(t *testing.T) {
 	defer vc.Close()
 
 	today := dates.Now().UTC().Format(time.DateOnly)
-	assertvk.HGetAll(t, vc, "tallies:1", map[string]string{"channels/10/text:in/" + today: "1", "msgs/text:in/" + today: "1"})
+	assertvk.HGetAll(t, vc, "tallies:1", map[string]string{"channels/10/text:in@" + today: "1", "msgs/text:in@" + today: "1"})
 }
 
 func TestWriteMsgTallies(t *testing.T) {
@@ -240,9 +240,9 @@ func TestWriteMsgTallies(t *testing.T) {
 	writeMsg(fba, "three")
 
 	assertvk.HGetAll(t, vc, "tallies:1", map[string]string{
-		"channels/10/text:in/2026-11-04": "2",
-		"channels/11/text:in/2026-11-04": "1",
-		"msgs/text:in/2026-11-04":        "3",
+		"channels/10/text:in@2026-11-04": "2",
+		"channels/11/text:in@2026-11-04": "1",
+		"msgs/text:in@2026-11-04":        "3",
 	})
 	assertvk.SMembers(t, vc, "tallies:pending", []string{"1"})
 
@@ -256,9 +256,9 @@ func TestWriteMsgTallies(t *testing.T) {
 	require.NoError(t, models.MsgSpool().Flush())
 
 	assertvk.HGetAll(t, vc, "tallies:1", map[string]string{
-		"channels/10/text:in/2026-11-04": "3",
-		"channels/11/text:in/2026-11-04": "1",
-		"msgs/text:in/2026-11-04":        "4",
+		"channels/10/text:in@2026-11-04": "3",
+		"channels/11/text:in@2026-11-04": "1",
+		"msgs/text:in@2026-11-04":        "4",
 	})
 
 	// and isn't counted again if it's spooled again after being written
@@ -266,8 +266,8 @@ func TestWriteMsgTallies(t *testing.T) {
 	require.NoError(t, models.MsgSpool().Flush())
 
 	assertvk.HGetAll(t, vc, "tallies:1", map[string]string{
-		"channels/10/text:in/2026-11-04": "3",
-		"channels/11/text:in/2026-11-04": "1",
-		"msgs/text:in/2026-11-04":        "4",
+		"channels/10/text:in@2026-11-04": "3",
+		"channels/11/text:in@2026-11-04": "1",
+		"msgs/text:in@2026-11-04":        "4",
 	})
 }
