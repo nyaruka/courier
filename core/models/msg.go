@@ -23,6 +23,7 @@ import (
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/svclogs"
+	"github.com/nyaruka/gocommon/tallies"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
@@ -302,7 +303,25 @@ func writeMsgToDB(ctx context.Context, rt *runtime.Runtime, m *MsgIn, clog *Chan
 		return nil, fmt.Errorf("error inserting message: %w", err)
 	}
 
+	incrementMsgTallies(ctx, rt, m)
+
 	return contact, nil
+}
+
+// counts the given inserted message on its channel and workspace for its day, logging rather than failing on errors
+// since the message has already been written
+func incrementMsgTallies(ctx context.Context, rt *runtime.Runtime, m *MsgIn) {
+	vc := rt.VK.Get()
+	defer vc.Close()
+
+	amounts := map[string]int64{
+		tallies.Daily(fmt.Sprintf("channels/%d/text:in", m.Channel_.ID()), m.CreatedOn_): 1,
+		tallies.Daily("msgs/text:in", m.CreatedOn_):                                      1,
+	}
+
+	if err := tallies.Increment(ctx, vc, tallies.OwnerID(m.Channel_.OrgID()), amounts); err != nil {
+		slog.Error("error incrementing msg tallies", "error", err, "msg", m.UUID_)
+	}
 }
 
 // flushMsgs is the flush function for the msg spool - it retries writing spooled msgs to the database, returning
