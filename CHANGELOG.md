@@ -1,3 +1,6 @@
+## v26.3.69 (2026-11-03)
+ * Increment channel and workspace tallies for incoming messages
+
 ## v26.3.68 (2026-11-02)
  * Send WhatsApp messages outside the customer service window with Direct Send
 
