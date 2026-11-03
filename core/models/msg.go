@@ -308,18 +308,21 @@ func writeMsgToDB(ctx context.Context, rt *runtime.Runtime, m *MsgIn, clog *Chan
 	return contact, nil
 }
 
+// how long per-channel daily message counts are kept, whereas workspace-level counts are kept forever
+const channelTallyTTL = 2 * 365 * 24 * time.Hour
+
 // counts the given inserted message on its channel and workspace for its day, logging rather than failing on errors
 // since the message has already been written
 func incrementMsgTallies(ctx context.Context, rt *runtime.Runtime, m *MsgIn) {
 	vc := rt.VK.Get()
 	defer vc.Close()
 
-	amounts := map[string]int64{
-		tallies.Daily(fmt.Sprintf("channels/%d/text:in", m.Channel_.ID()), m.CreatedOn_): 1,
-		tallies.Daily("msgs/text:in", m.CreatedOn_):                                      1,
+	amounts := map[tallies.Key]int64{
+		tallies.Daily(fmt.Sprintf("channels/%d/text:in", m.Channel_.ID()), m.CreatedOn_, channelTallyTTL): 1,
+		tallies.Daily("msgs/text:in", m.CreatedOn_, 0):                                                    1,
 	}
 
-	if err := tallies.Increment(ctx, vc, tallies.OwnerID(m.Channel_.OrgID()), amounts); err != nil {
+	if err := rt.Tallies.Increment(ctx, vc, tallies.OwnerID(m.Channel_.OrgID()), amounts); err != nil {
 		slog.Error("error incrementing msg tallies", "error", err, "msg", m.UUID_)
 	}
 }
