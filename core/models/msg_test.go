@@ -201,6 +201,13 @@ func TestIncomingMsgCheck(t *testing.T) {
 	spooled, err := filepath.Glob(filepath.Join(rt.Config.SpoolDir, "msgs", "*.jsonl"))
 	require.NoError(t, err)
 	assert.Empty(t, spooled)
+
+	// only the written message is tallied
+	vc := rt.VK.Get()
+	defer vc.Close()
+
+	today := dates.Now().UTC().Format(time.DateOnly)
+	assertvk.HGetAll(t, vc, "tallies:1", map[string]string{"channels/10/text:in/" + today: "1", "msgs/text:in/" + today: "1"})
 }
 
 func TestWriteMsgTallies(t *testing.T) {
@@ -241,10 +248,21 @@ func TestWriteMsgTallies(t *testing.T) {
 
 	// a spooled message is counted when it's written, on the day it was received
 	clog := models.NewChannelLog(models.ChannelLogTypeReceive, kn, nil, nil)
-	require.NoError(t, models.MsgSpool().Add([]*models.MsgIn{models.NewIncomingMsg(kn, "tel:+12067799192", "four", "", clog)}))
+	spooled := models.NewIncomingMsg(kn, "tel:+12067799192", "four", "", clog)
+	require.NoError(t, models.MsgSpool().Add([]*models.MsgIn{spooled}))
 
 	dates.SetNowFunc(dates.NewFixedNow(time.Date(2026, 11, 5, 12, 0, 0, 0, time.UTC)))
 
+	require.NoError(t, models.MsgSpool().Flush())
+
+	assertvk.HGetAll(t, vc, "tallies:1", map[string]string{
+		"channels/10/text:in/2026-11-04": "3",
+		"channels/11/text:in/2026-11-04": "1",
+		"msgs/text:in/2026-11-04":        "4",
+	})
+
+	// and isn't counted again if it's spooled again after being written
+	require.NoError(t, models.MsgSpool().Add([]*models.MsgIn{spooled}))
 	require.NoError(t, models.MsgSpool().Flush())
 
 	assertvk.HGetAll(t, vc, "tallies:1", map[string]string{
