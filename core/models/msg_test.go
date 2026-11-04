@@ -207,7 +207,10 @@ func TestIncomingMsgCheck(t *testing.T) {
 	defer vc.Close()
 
 	today := dates.Now().UTC().Format(time.DateOnly)
-	assertvk.HGetAll(t, vc, "{tallies}:1", map[string]string{"channels/10/text:in@" + today: "1", "msgs/text:in@" + today: "1"})
+	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{
+		"1|channels/10/text:in@" + today: "1",
+		"1|msgs/text:in@" + today:        "1",
+	})
 }
 
 func TestWriteMsgTallies(t *testing.T) {
@@ -239,15 +242,10 @@ func TestWriteMsgTallies(t *testing.T) {
 	writeMsg(kn, "two") // duplicate isn't written or counted
 	writeMsg(fba, "three")
 
-	assertvk.HGetAll(t, vc, "{tallies}:1", map[string]string{
-		"channels/10/text:in@2026-11-04": "2",
-		"channels/11/text:in@2026-11-04": "1",
-		"msgs/text:in@2026-11-04":        "3",
-	})
-	assertvk.SMembers(t, vc, "{tallies}:pending", []string{"1"})
-	assertvk.HGetAll(t, vc, "{tallies}:1:expiries", map[string]string{
-		"channels/10/text:in@2026-11-04": "2028-11-03",
-		"channels/11/text:in@2026-11-04": "2028-11-03",
+	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{
+		"1|channels/10/text:in@2026-11-04": "2",
+		"1|channels/11/text:in@2026-11-04": "1",
+		"1|msgs/text:in@2026-11-04":        "3",
 	})
 
 	// a spooled message is counted when it's written, on the day it was received
@@ -259,19 +257,19 @@ func TestWriteMsgTallies(t *testing.T) {
 
 	require.NoError(t, models.MsgSpool().Flush())
 
-	assertvk.HGetAll(t, vc, "{tallies}:1", map[string]string{
-		"channels/10/text:in@2026-11-04": "3",
-		"channels/11/text:in@2026-11-04": "1",
-		"msgs/text:in@2026-11-04":        "4",
+	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{
+		"1|channels/10/text:in@2026-11-04": "3",
+		"1|channels/11/text:in@2026-11-04": "1",
+		"1|msgs/text:in@2026-11-04":        "4",
 	})
 
 	// and isn't counted again if it's spooled again after being written
 	require.NoError(t, models.MsgSpool().Add([]*models.MsgIn{spooled}))
 	require.NoError(t, models.MsgSpool().Flush())
 
-	assertvk.HGetAll(t, vc, "{tallies}:1", map[string]string{
-		"channels/10/text:in@2026-11-04": "3",
-		"channels/11/text:in@2026-11-04": "1",
-		"msgs/text:in@2026-11-04":        "4",
+	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{
+		"1|channels/10/text:in@2026-11-04": "3",
+		"1|channels/11/text:in@2026-11-04": "1",
+		"1|msgs/text:in@2026-11-04":        "4",
 	})
 }
