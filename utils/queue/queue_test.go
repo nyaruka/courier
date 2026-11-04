@@ -347,17 +347,19 @@ func TestQueue(t *testing.T) {
 	token, _ = popNext(t, rc)
 	assert.Equal(t, queue.EmptyQueue, token)
 	assertvk.ZGetAll(t, rc, "{msgs}:ready", map[string]float64{})
-	assertvk.HGet(t, rc, "{msgs}:ch:chan1", "inflight", "5")
 
-	// once nothing is in flight, the channel's state expires
-	for range 6 {
-		require.NoError(t, queue.MarkComplete(rc, "chan1"))
-	}
+	// with nothing queued, the channel's sends in flight are forgotten and its state expires
 	assertvk.HGet(t, rc, "{msgs}:ch:chan1", "inflight", "0")
 
 	ttl, err := redis.Int(rc.Do("TTL", "{msgs}:ch:chan1"))
 	assert.NoError(t, err)
 	assert.Greater(t, ttl, 0)
+
+	// so sends that complete afterwards don't take it below zero
+	for range 5 {
+		require.NoError(t, queue.MarkComplete(rc, "chan1"))
+	}
+	assertvk.HGet(t, rc, "{msgs}:ch:chan1", "inflight", "0")
 
 	// until something is pushed
 	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 2, `[{"id":5}]`, queue.LowPriority))
@@ -510,4 +512,28 @@ func TestQueuePushWhenThrottled(t *testing.T) {
 
 	_, value = popNext(t, rc)
 	assert.Equal(t, `{"id":2}`, value)
+}
+
+func TestQueueForgetsLostSends(t *testing.T) {
+	rc := getPool(t).Get()
+	defer rc.Close()
+
+	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 0, `[{"id":1}]`, queue.LowPriority))
+	require.NoError(t, queue.PushOntoQueue(rc, "chan2", 0, `[{"id":2}]`, queue.LowPriority))
+
+	// pop from chan1 and never mark it complete, as if the worker died
+	token, _ := popNext(t, rc)
+	assert.Equal(t, queue.WorkerToken("chan1"), token)
+	assertvk.ZGetAll(t, rc, "{msgs}:ready", map[string]float64{"chan1": 1, "chan2": 0})
+
+	token, _ = popNext(t, rc)
+	assert.Equal(t, queue.WorkerToken("chan2"), token)
+	require.NoError(t, queue.MarkComplete(rc, "chan2"))
+
+	// once chan1 is found drained, the lost send no longer counts against it
+	token, _ = popNext(t, rc)
+	assert.Equal(t, queue.EmptyQueue, token)
+
+	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 0, `[{"id":3}]`, queue.LowPriority))
+	assertvk.ZGetAll(t, rc, "{msgs}:ready", map[string]float64{"chan1": 0})
 }

@@ -32,7 +32,7 @@ local function park(untilTime)
     return {"retry", ""}
 end
 
-local state = redis.call("HMGET", chKey, "tps", "sec", "used", "inflight")
+local state = redis.call("HMGET", chKey, "tps", "sec", "used")
 local tps = tonumber(state[1]) or 0
 local used = 0
 if tonumber(state[2]) == nowSec then
@@ -67,10 +67,11 @@ elseif highValue or bulkValue then
 else
     redis.call("ZREM", readyKey, uuid)
 
-    -- nothing queued or in flight so let the channel's state expire, but not before this second's usage is done
-    if (tonumber(state[4]) or 0) <= 0 then
-        redis.call("EXPIRE", chKey, 60)
-    end
+    -- nothing queued so let the channel's state expire, but not before this second's usage is done. Sends in flight
+    -- are forgotten so that any never marked complete, e.g. by a worker that died, don't count against the channel
+    -- forever - those that are still in flight just complete to zero.
+    redis.call("HSET", chKey, "inflight", 0)
+    redis.call("EXPIRE", chKey, 60)
     return {"retry", ""}
 end
 

@@ -131,12 +131,25 @@ func Size(conn redis.Conn) (high, bulk int, err error) {
 		}
 	}
 
+	// pipeline the counts, as there's a pair for every queue
 	for _, q := range queues {
-		h, err := redis.Int(conn.Do("ZCARD", q+"/1"))
+		if err := conn.Send("ZCARD", q+"/1"); err != nil {
+			return 0, 0, err
+		}
+		if err := conn.Send("ZCARD", q+"/0"); err != nil {
+			return 0, 0, err
+		}
+	}
+	if err := conn.Flush(); err != nil {
+		return 0, 0, err
+	}
+
+	for range queues {
+		h, err := redis.Int(conn.Receive())
 		if err != nil {
 			return 0, 0, err
 		}
-		b, err := redis.Int(conn.Do("ZCARD", q+"/0"))
+		b, err := redis.Int(conn.Receive())
 		if err != nil {
 			return 0, 0, err
 		}
