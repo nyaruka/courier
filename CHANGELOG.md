@@ -1,3 +1,6 @@
+## v26.3.71 (2026-11-04)
+ * Update to gocommon v1.98.3 and its single-hash tallies
+
 ## v26.3.70 (2026-11-03)
  * Update to gocommon v1.98.2 tallies API with per-scope retention
 
