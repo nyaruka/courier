@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/core/sender"
 	"github.com/nyaruka/courier/v26/runtime"
-	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/courier/v26/web"
 )
 
@@ -87,11 +86,6 @@ func startService(rt *runtime.Runtime) (*service, error) {
 	if err := models.Start(rt); err != nil {
 		rt.Stop()
 		return nil, err
-	}
-
-	// start our dethrottler if we are going to be doing some sending
-	if rt.Config.MaxWorkers > 0 {
-		queue.StartDethrottler(rt.VK, s.quit, s.waitFor)
 	}
 
 	startMetricsReporter(rt, time.Minute, s.quit, s.waitFor)
