@@ -1,14 +1,18 @@
--- KEYS: [QueueType, Queue]
+-- KEYS: [Channel, Ready, Waiting]
+-- ARGV: [ChannelUUID]
+local channelKey, readyKey, waitingKey = KEYS[1], KEYS[2], KEYS[3]
+local channelUUID = ARGV[1]
 
--- decrement throttled if present
-local throttled = tonumber(redis.call("zadd", KEYS[1] .. ":throttled", "XX", "CH", "INCR", -1, KEYS[2]))
+local inflight = redis.call("HINCRBY", channelKey, "inflight", -1)
+if inflight < 0 then
+    inflight = 0
+    redis.call("HSET", channelKey, "inflight", 0)
+end
 
--- if we didn't decrement anything, do so to our active set
-if not throttled or throttled == 0 then
-    local active = tonumber(redis.call("zincrby", KEYS[1] .. ":active", -1, KEYS[2]))
-    
-    -- reset to zero if we somehow go below
-    if active < 0 then
-        redis.call("zadd", KEYS[1] .. ":active", 0, KEYS[2])
-    end
+if redis.call("ZSCORE", readyKey, channelUUID) then
+    redis.call("ZADD", readyKey, inflight, channelUUID)
+
+-- a channel that's neither ready nor waiting has nothing queued, so once nothing is in flight let its state expire
+elseif inflight == 0 and not redis.call("ZSCORE", waitingKey, channelUUID) then
+    redis.call("EXPIRE", channelKey, 60)
 end

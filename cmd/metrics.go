@@ -8,9 +8,9 @@ import (
 	"time"
 
 	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
-	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 )
 
@@ -79,32 +79,9 @@ func reportMetrics(ctx context.Context, rt *runtime.Runtime, dbWaitDuration, red
 	// get queue sizes
 	rc := rt.VK.Get()
 	defer rc.Close()
-	active, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("%s:active", models.MsgQueueName), "0", "-1"))
+	prioritySize, bulkSize, err := queue.Size(rc)
 	if err != nil {
-		return 0, fmt.Errorf("error getting active queues: %w", err)
-	}
-	throttled, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("%s:throttled", models.MsgQueueName), "0", "-1"))
-	if err != nil {
-		return 0, fmt.Errorf("error getting throttled queues: %w", err)
-	}
-	queues := append(active, throttled...)
-
-	prioritySize := 0
-	bulkSize := 0
-	for _, queue := range queues {
-		q := fmt.Sprintf("%s/1", queue)
-		count, err := redis.Int(rc.Do("ZCARD", q))
-		if err != nil {
-			return 0, fmt.Errorf("error getting size of priority queue: %s: %w", q, err)
-		}
-		prioritySize += count
-
-		q = fmt.Sprintf("%s/0", queue)
-		count, err = redis.Int(rc.Do("ZCARD", q))
-		if err != nil {
-			return 0, fmt.Errorf("error getting size of bulk queue: %s: %w", q, err)
-		}
-		bulkSize += count
+		return 0, fmt.Errorf("error getting queue sizes: %w", err)
 	}
 
 	// calculate DB and redis pool metrics

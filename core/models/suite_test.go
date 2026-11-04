@@ -713,7 +713,7 @@ func (ts *ModelsTestSuite) TestCheckForDuplicate() {
 		"response_to_external_id": "external-id",
 		"is_resend": true
 	}]`
-	err = queue.PushOntoQueue(rc, models.MsgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
+	err = queue.PushOntoQueue(rc, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
 	ts.NoError(err)
 	_, err = models.PopNextOutgoingMsg(ctx, ts.rt)
 	ts.NoError(err)
@@ -757,7 +757,7 @@ func (ts *ModelsTestSuite) TestOutgoingQueue() {
 		"origin": "chat"
 	}]`
 
-	err := queue.PushOntoQueue(r, models.MsgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
+	err := queue.PushOntoQueue(r, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
 	ts.NoError(err)
 
 	// pop a message off our queue
