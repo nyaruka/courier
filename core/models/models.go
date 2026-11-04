@@ -16,9 +16,6 @@ import (
 )
 
 const (
-	// MsgQueueName is the name of the queue that outgoing messages are popped from
-	MsgQueueName = "msgs"
-
 	// our timeout for looking up channels and contacts
 	fetchTimeout = time.Second * 20
 

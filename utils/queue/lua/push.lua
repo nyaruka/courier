@@ -1,26 +1,28 @@
--- KEYS: [EpochMS, QueueType, QueueName, TPS, Priority, Value]
+-- KEYS: [Queue, Channel, Ready, Waiting]
+-- ARGV: [ChannelUUID, TPS, Value]
+local queueKey, channelKey, readyKey, waitingKey = KEYS[1], KEYS[2], KEYS[3], KEYS[4]
+local channelUUID, tps, value = ARGV[1], tonumber(ARGV[2]), ARGV[3]
 
--- first push onto our specific queue
--- our queue name is built from the type, name and tps, usually something like: "msgs:uuid1-uuid2-uuid3-uuid4|tps"
-local queueKey = KEYS[2] .. ":" .. KEYS[3] .. "|" .. KEYS[4]
+local time = redis.call("TIME")
+local nowSec = tonumber(time[1])
+local now = nowSec + tonumber(time[2]) / 1000000
 
--- our priority queue name also includes the priority of the message (we have one queue for default and one for bulk)
-local priorityQueueKey = queueKey .. "/" .. KEYS[5]
-redis.call("zadd", priorityQueueKey, KEYS[1], KEYS[6])
+redis.call("ZADD", queueKey, now, value)
 
-local tps = tonumber(KEYS[4])
+-- the latest push sets the TPS for everything queued for this channel
+redis.call("HSET", channelKey, "tps", tps)
+redis.call("PERSIST", channelKey)
 
--- if we have a TPS, check whether we are currently throttled
-local curr = -1
-if tps > 0 then
-    local tpsKey = queueKey .. ":tps:" .. math.floor(KEYS[1])
-    curr = tonumber(redis.call("get", tpsKey))
-end
-
--- if we aren't then add to our active
-if not curr or curr < tps then
-    redis.call("zincrby", KEYS[2] .. ":active", 0, queueKey)
-    return 1
-else 
+-- a channel that's used up this second's TPS waits until the next, otherwise make it ready so that this item doesn't
+-- wait on whatever the channel was waiting for, e.g. the rest of a batch
+local state = redis.call("HMGET", channelKey, "sec", "used", "inflight")
+if tps > 0 and tonumber(state[1]) == nowSec and (tonumber(state[2]) or 0) >= tps then
+    if not redis.call("ZSCORE", readyKey, channelUUID) then
+        redis.call("ZADD", waitingKey, "LT", nowSec + 1, channelUUID)
+    end
     return 0
 end
+
+redis.call("ZREM", waitingKey, channelUUID)
+redis.call("ZADD", readyKey, tonumber(state[3]) or 0, channelUUID)
+return 1

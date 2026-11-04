@@ -1,108 +1,97 @@
--- KEYS: [EpochMS QueueType]
+-- KEYS: [Ready, Waiting]
+-- ARGV: [KeyBase, WakeLimit]
+local readyKey, waitingKey = KEYS[1], KEYS[2]
+local keyBase, wakeLimit = ARGV[1], tonumber(ARGV[2])
 
--- get the first key off our active list
-local result = redis.call("zrange", KEYS[2] .. ":active", 0, 0, "WITHSCORES")
-local queue = result[1]
-local workers = result[2]
+local time = redis.call("TIME")
+local nowSec = tonumber(time[1])
+local now = nowSec + tonumber(time[2]) / 1000000
 
--- nothing? return nothing
-if not queue then
+-- channel keys share our hash tag so are safe to construct here even in cluster mode
+local function channelKey(uuid)
+    return keyBase .. ":ch:" .. uuid
+end
+
+-- make ready any channels whose wait is over
+for _, uuid in ipairs(redis.call("ZRANGEBYSCORE", waitingKey, "-inf", now, "LIMIT", 0, wakeLimit)) do
+    redis.call("ZREM", waitingKey, uuid)
+    redis.call("ZADD", readyKey, tonumber(redis.call("HGET", channelKey(uuid), "inflight")) or 0, uuid)
+end
+
+-- take the ready channel with the fewest sends in flight
+local uuid = redis.call("ZRANGE", readyKey, 0, 0)[1]
+if not uuid then
     return {"empty", ""}
 end
 
--- figure out our max transaction per second
-local delim = string.find(queue, "|")
-local tps = 0
-local tpsKey = ""
+local chKey = channelKey(uuid)
 
-if delim then
-    tps = tonumber(string.sub(queue, delim+1))
-end
-
--- if we have a tps, then check whether we exceed it
-if tps > 0 then
-    tpsKey = queue .. ":tps:" .. math.floor(KEYS[1])
-    local curr = redis.call("get", tpsKey)
-    
-    -- we are at or above our tps, move to our throttled queue
-    if curr and tonumber(curr) >= tps then 
-        redis.call("zincrby", KEYS[2] .. ":throttled", workers, queue)
-        redis.call("zrem", KEYS[2] .. ":active", queue)
-        return {"retry", ""}
-    end
-end
-
--- pop our next value out, first from our default queue
-local resultQueue = queue .. "/1"
-local result = redis.call("zrangebyscore", resultQueue, 0, "+inf", "WITHSCORES", "LIMIT", 0, 1)
-
--- keep track as to whether this result is in the future (and therefore ineligible)
-local isFutureResult = result[1] and tonumber(result[2]) > tonumber(KEYS[1])
-
--- if we didn't find one, try again from our bulk queue
-if not result[1] or isFutureResult then
-    local bulkQueue = queue .. "/0"
-    local bulkResult = redis.call("zrangebyscore", bulkQueue, 0, "+inf", "WITHSCORES", "LIMIT", 0, 1)
-
-    -- if we got a result
-    if bulkResult[1] then
-        -- if it is in the future, set ourselves as in the future
-        if tonumber(bulkResult[2]) > tonumber(KEYS[1]) then
-            isFutureResult = true
-        
-        -- otherwise, this is a valid result
-        else 
-            redis.call("echo", "found result")
-            isFutureResult = false
-            result = bulkResult
-            resultQueue = bulkQueue
-        end
-    end
-end
-
--- if we found one
-if result[1] and not isFutureResult then
-    -- then remove it from the queue
-    redis.call('zremrangebyrank', resultQueue, 0, 0)
-
-    -- and add a worker to this queue
-    redis.call("zincrby", KEYS[2] .. ":active", 1, queue)
-
-    -- parse it as JSON to get the first element out
-    local valueList = cjson.decode(result[1])
-    local popped = valueList[1]
-    local popValue = cjson.encode(popped)
-    table.remove(valueList, 1)
-
-    -- increment our tps for this second if we have a limit
-    if tps > 0 then
-        local tpsCost = 1
-        if type(popped) == "table" and type(popped["tps_cost"]) == "number" then
-            tpsCost = math.max(1, math.floor(popped["tps_cost"]))
-        end
-        redis.call("incrby", tpsKey, tpsCost)
-        redis.call("expire", tpsKey, 10)
-    end
-
-    -- encode it back if there is anything left
-    if table.getn(valueList) > 0 then
-        local remaining = cjson.encode(valueList)
-        
-        -- schedule it in the future 3 seconds on our main queue
-        redis.call("zadd", queue .. "/1", tonumber(KEYS[1]) + 3, remaining)
-        redis.call("zincrby", KEYS[2] .. ":future", 0, queue)
-    end
-
-    return {queue, popValue}
-
--- otherwise, the queue only contains future results, remove from active and add to future, have the caller retry
-elseif isFutureResult then
-    redis.call("zincrby", KEYS[2] .. ":future", 0, queue)
-    redis.call("zrem", KEYS[2] .. ":active", queue)
+local function park(untilTime)
+    redis.call("ZREM", readyKey, uuid)
+    redis.call("ZADD", waitingKey, untilTime, uuid)
     return {"retry", ""}
+end
 
--- otherwise, the queue is empty, remove it from active
+local state = redis.call("HMGET", chKey, "tps", "sec", "used", "inflight")
+local tps = tonumber(state[1]) or 0
+local used = 0
+if tonumber(state[2]) == nowSec then
+    used = tonumber(state[3]) or 0
+end
+
+if tps > 0 and used >= tps then
+    return park(nowSec + 1)
+end
+
+local function head(key)
+    local result = redis.call("ZRANGE", key, 0, 0, "WITHSCORES")
+    if result[1] then
+        return result[1], tonumber(result[2])
+    end
+    return nil, nil
+end
+
+-- high priority items first, then bulk
+local highKey, bulkKey = keyBase .. ":q:" .. uuid .. "/1", keyBase .. ":q:" .. uuid .. "/0"
+local highValue, highScore = head(highKey)
+local bulkValue, bulkScore = head(bulkKey)
+local fromKey, value
+
+if highValue and highScore <= now then
+    fromKey, value = highKey, highValue
+elseif bulkValue and bulkScore <= now then
+    fromKey, value = bulkKey, bulkValue
+elseif highValue or bulkValue then
+    -- only items scheduled for later, so wait until the first of those
+    return park(math.min(highScore or math.huge, bulkScore or math.huge))
 else
-    redis.call("zrem", KEYS[2] .. ":active", queue)
+    redis.call("ZREM", readyKey, uuid)
+
+    -- nothing queued or in flight so let the channel's state expire, but not before this second's usage is done
+    if (tonumber(state[4]) or 0) <= 0 then
+        redis.call("EXPIRE", chKey, 60)
+    end
     return {"retry", ""}
 end
+
+redis.call("ZREM", fromKey, value)
+redis.call("ZADD", readyKey, redis.call("HINCRBY", chKey, "inflight", 1), uuid)
+
+-- items are batches of messages for a single contact, of which we take the first
+local batch = cjson.decode(value)
+local popped = table.remove(batch, 1)
+
+if tps > 0 then
+    local cost = 1
+    if type(popped) == "table" and type(popped["tps_cost"]) == "number" then
+        cost = math.max(1, math.floor(popped["tps_cost"]))
+    end
+    redis.call("HSET", chKey, "sec", nowSec, "used", used + cost)
+end
+
+-- and schedule the rest a few seconds out so they're sent in order
+if #batch > 0 then
+    redis.call("ZADD", highKey, now + 3, cjson.encode(batch))
+end
+
+return {uuid, cjson.encode(popped)}

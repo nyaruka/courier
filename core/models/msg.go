@@ -610,19 +610,19 @@ func PopNextOutgoingMsg(ctx context.Context, rt *runtime.Runtime) (*MsgOut, erro
 	defer vc.Close()
 
 	markComplete := func(token queue.WorkerToken) {
-		if err := queue.MarkComplete(vc, MsgQueueName, token); err != nil {
+		if err := queue.MarkComplete(vc, token); err != nil {
 			slog.Error("error marking queue task complete", "error", err)
 		}
 	}
 
 	// pop the next message off our queue
-	token, msgJSON, err := queue.PopFromQueue(vc, MsgQueueName)
+	token, msgJSON, err := queue.PopFromQueue(vc)
 	if err != nil {
 		return nil, err
 	}
 
 	for token == queue.Retry {
-		token, msgJSON, err = queue.PopFromQueue(vc, MsgQueueName)
+		token, msgJSON, err = queue.PopFromQueue(vc)
 		if err != nil {
 			return nil, err
 		}
@@ -686,7 +686,7 @@ func OnSendComplete(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, statu
 	rc := rt.VK.Get()
 	defer rc.Close()
 
-	if err := queue.MarkComplete(rc, MsgQueueName, msg.WorkerToken_); err != nil {
+	if err := queue.MarkComplete(rc, msg.WorkerToken_); err != nil {
 		log.Error("unable to mark queue task complete", "error", err)
 	}
 

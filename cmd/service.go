@@ -91,7 +91,7 @@ func startService(rt *runtime.Runtime) (*service, error) {
 
 	// start our dethrottler if we are going to be doing some sending
 	if rt.Config.MaxWorkers > 0 {
-		queue.StartDethrottler(rt.VK, s.quit, s.waitFor, models.MsgQueueName)
+		queue.StartDethrottler(rt.VK, s.quit, s.waitFor)
 	}
 
 	startMetricsReporter(rt, time.Minute, s.quit, s.waitFor)
