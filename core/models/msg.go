@@ -23,7 +23,6 @@ import (
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/svclogs"
-	"github.com/nyaruka/gocommon/tallies"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
@@ -314,14 +313,21 @@ func incrementMsgTallies(ctx context.Context, rt *runtime.Runtime, m *MsgIn) {
 	vc := rt.VK.Get()
 	defer vc.Close()
 
+	orgID := m.Channel_.OrgID()
 	amounts := map[string]int64{
-		tallies.Daily(fmt.Sprintf("channels/%d/text:in", m.Channel_.ID()), m.CreatedOn_): 1,
-		tallies.Daily("msgs/text:in", m.CreatedOn_):                                      1,
+		dailyOrgTally(orgID, fmt.Sprintf("channels/%d/text:in", m.Channel_.ID()), m.CreatedOn_): 1,
+		dailyOrgTally(orgID, "msgs/text:in", m.CreatedOn_):                                      1,
 	}
 
-	if err := rt.Tallies.Increment(ctx, vc, tallies.OwnerID(m.Channel_.OrgID()), amounts); err != nil {
+	if err := rt.Tallies.Increment(ctx, vc, amounts); err != nil {
 		slog.Error("error incrementing msg tallies", "error", err, "msg", m.UUID_)
 	}
+}
+
+// dailyOrgTally returns the tally field for the given org's total of scope on the UTC day of t, in the form the
+// tallies flusher in mailroom parses, e.g. 123|msgs/text:in@2025-05-04
+func dailyOrgTally(orgID OrgID, scope string, t time.Time) string {
+	return fmt.Sprintf("%d|%s@%s", orgID, scope, t.UTC().Format(time.DateOnly))
 }
 
 // flushMsgs is the flush function for the msg spool - it retries writing spooled msgs to the database, returning
