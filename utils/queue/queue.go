@@ -74,23 +74,52 @@ var luaPop string
 var scriptPop = redis.NewScript(2, luaPop)
 
 // queues are read in both the current and legacy layouts while producers move from one to the other, alternating
-// between them so that neither starves the other
-var popCount atomic.Uint64
+// between them so that neither starves the other. Pops are made one at a time, so a layout found empty is tried
+// second for a while, rather than costing every other pop an extra call while the other layout is the only one used.
+type layout struct {
+	pop        func(redis.Conn) (WorkerToken, string, error)
+	emptyUntil atomic.Int64
+}
+
+var (
+	currentLayout = &layout{pop: pop}
+	legacyLayout  = &layout{pop: popLegacy}
+	popCount      atomic.Uint64
+)
+
+const emptyLayoutTTL = time.Second
 
 // PopFromQueue pops the next available message from the queue. If QueueRetry is returned the caller should
 // immediately make another call to get the next value. A worker token of EmptyQueue will be returned if there are
 // no more items to retrive. Otherwise the WorkerToken should be saved in order to mark the task as complete later.
 func PopFromQueue(conn redis.Conn) (WorkerToken, string, error) {
-	first, second := pop, popLegacy
+	now := time.Now().UnixNano()
+
+	first, second := currentLayout, legacyLayout
 	if popCount.Add(1)%2 == 0 {
 		first, second = second, first
 	}
+	if first.emptyUntil.Load() > now && second.emptyUntil.Load() <= now {
+		first, second = second, first
+	}
 
-	token, value, err := first(conn)
+	token, value, err := first.tryPop(conn, now)
 	if err != nil || token != EmptyQueue {
 		return token, value, err
 	}
-	return second(conn)
+	return second.tryPop(conn, now)
+}
+
+func (l *layout) tryPop(conn redis.Conn, now int64) (WorkerToken, string, error) {
+	token, value, err := l.pop(conn)
+	if err == nil {
+		if token == EmptyQueue {
+			l.emptyUntil.Store(now + int64(emptyLayoutTTL))
+		} else {
+			l.emptyUntil.Store(0)
+		}
+	}
+	return token, value, err
 }
 
 func pop(conn redis.Conn) (WorkerToken, string, error) {

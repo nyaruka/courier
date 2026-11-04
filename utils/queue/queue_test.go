@@ -537,3 +537,43 @@ func TestQueueForgetsLostSends(t *testing.T) {
 	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 0, `[{"id":3}]`, queue.LowPriority))
 	assertvk.ZGetAll(t, rc, "{msgs}:ready", map[string]float64{"chan1": 0})
 }
+
+// counts the scripts run on a connection
+type scriptCounter struct {
+	redis.Conn
+	scripts int
+}
+
+func (c *scriptCounter) Do(cmd string, args ...any) (any, error) {
+	if cmd == "EVALSHA" || cmd == "EVAL" {
+		c.scripts++
+	}
+	return c.Conn.Do(cmd, args...)
+}
+
+func TestQueueEmptyLayoutTriedSecond(t *testing.T) {
+	rc := getPool(t).Get()
+	defer rc.Close()
+
+	// whichever layout is the only one used, popping its items shouldn't cost an extra call to the other for each
+	for _, push := range []func(redis.Conn, string, int, string, queue.Priority) error{queue.PushOntoLegacyQueue, queue.PushOntoQueue} {
+		for i := range 10 {
+			require.NoError(t, push(rc, "chan1", 0, fmt.Sprintf(`[{"id":%d}]`, i), queue.LowPriority))
+		}
+
+		counter := &scriptCounter{Conn: rc}
+		for i := range 10 {
+			token, value, err := queue.PopFromQueue(counter)
+			require.NoError(t, err)
+			require.NotEqual(t, queue.EmptyQueue, token)
+			assert.Equal(t, fmt.Sprintf(`{"id":%d}`, i), value)
+			require.NoError(t, queue.MarkComplete(rc, token))
+		}
+
+		// at most one call to the empty layout before it's tried second
+		assert.LessOrEqual(t, counter.scripts, 11)
+
+		token, _ := popNext(t, rc)
+		assert.Equal(t, queue.EmptyQueue, token)
+	}
+}
