@@ -1,3 +1,9 @@
+## v26.3.72 (2026-11-04)
+ * Add per-channel outgoing queue layout, read alongside the legacy one
+ * Forget a drained channel's sends in flight and pipeline queue size counts
+ * Try a recently empty queue layout second so pops don't pay for it
+ * Update to gocommon v1.98.4 and vkutil v0.31.0, using vkutil.Tallies for msg tallies
+
 ## v26.3.71 (2026-11-04)
  * Update to gocommon v1.98.3 and its single-hash tallies
 
