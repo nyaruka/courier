@@ -21,7 +21,6 @@ import (
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
 	"github.com/nyaruka/gocommon/centrifugo"
@@ -713,7 +712,7 @@ func (ts *ModelsTestSuite) TestCheckForDuplicate() {
 		"response_to_external_id": "external-id",
 		"is_resend": true
 	}]`
-	err = queue.PushOntoQueue(rc, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
+	err = models.MsgQueue.Push(ctx, rc, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, true, []byte(msgJSON))
 	ts.NoError(err)
 	_, err = models.PopNextOutgoingMsg(ctx, ts.rt)
 	ts.NoError(err)
@@ -757,7 +756,7 @@ func (ts *ModelsTestSuite) TestOutgoingQueue() {
 		"origin": "chat"
 	}]`
 
-	err := queue.PushOntoQueue(r, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
+	err := models.MsgQueue.Push(ctx, r, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, true, []byte(msgJSON))
 	ts.NoError(err)
 
 	// pop a message off our queue

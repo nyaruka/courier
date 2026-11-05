@@ -18,10 +18,10 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
-	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/queues"
 	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -587,8 +587,8 @@ type MsgOut struct {
 	Session_              *Session          `json:"session"`
 
 	// set when popped from the queue rather than unmarshaled
-	Channel_     *Channel          `json:"-"`
-	WorkerToken_ queue.WorkerToken `json:"-"`
+	Channel_    *Channel       `json:"-"`
+	QueueOwner_ queues.OwnerID `json:"-"`
 }
 
 func (m *MsgOut) UUID() MsgUUID                { return m.UUID_ }
@@ -615,50 +615,43 @@ func PopNextOutgoingMsg(ctx context.Context, rt *runtime.Runtime) (*MsgOut, erro
 	vc := rt.VK.Get()
 	defer vc.Close()
 
-	markComplete := func(token queue.WorkerToken) {
-		if err := queue.MarkComplete(vc, token); err != nil {
+	markComplete := func(owner queues.OwnerID) {
+		if err := MsgQueue.Done(ctx, vc, owner); err != nil {
 			slog.Error("error marking queue task complete", "error", err)
 		}
 	}
 
 	// pop the next message off our queue
-	token, msgJSON, err := queue.PopFromQueue(vc)
+	owner, msgJSON, err := MsgQueue.Pop(ctx, vc)
 	if err != nil {
 		return nil, err
 	}
 
-	for token == queue.Retry {
-		token, msgJSON, err = queue.PopFromQueue(vc)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if msgJSON == "" {
+	if owner == "" {
 		return nil, nil
 	}
 
 	msg := &MsgOut{}
-	if err := json.Unmarshal([]byte(msgJSON), msg); err != nil {
-		markComplete(token)
+	if err := json.Unmarshal(msgJSON, msg); err != nil {
+		markComplete(owner)
 		return nil, fmt.Errorf("unable to unmarshal message: %s: %w", string(msgJSON), err)
 	}
 
 	if err := utils.Validate(msg); err != nil {
-		markComplete(token)
+		markComplete(owner)
 		return nil, fmt.Errorf("queued message failed validation: %s: %w", string(msgJSON), err)
 	}
 
 	// populate the channel on our msg object
 	channel, err := GetChannel(ctx, AnyChannelType, msg.ChannelUUID_)
 	if err != nil {
-		markComplete(token)
+		markComplete(owner)
 		return nil, err
 	}
 
 	// add some extra info to the popped message
 	msg.Channel_ = channel
-	msg.WorkerToken_ = token
+	msg.QueueOwner_ = owner
 
 	// clear out our seen incoming messages
 	clearMsgSeen(ctx, vc, msg)
@@ -692,7 +685,7 @@ func OnSendComplete(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, statu
 	rc := rt.VK.Get()
 	defer rc.Close()
 
-	if err := queue.MarkComplete(rc, msg.WorkerToken_); err != nil {
+	if err := MsgQueue.Done(ctx, rc, msg.QueueOwner_); err != nil {
 		log.Error("unable to mark queue task complete", "error", err)
 	}
 
