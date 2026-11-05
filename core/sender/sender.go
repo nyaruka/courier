@@ -265,7 +265,11 @@ func (w *Sender) sendByHandler(ctx context.Context, h channels.Handler, m *model
 		// if the channel can't take any more for now, stop popping its messages so they wait rather than use up retries
 		if serr.Backoff() > 0 {
 			log.Info("pausing sending on channel", "backoff", serr.Backoff())
-			if err := models.PauseSending(ctx, rt, m, time.Now().Add(serr.Backoff())); err != nil {
+			// the send may have used up most of its context, so the pause gets its own
+			pauseCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			err := models.PauseSending(pauseCtx, rt, m, time.Now().Add(serr.Backoff()))
+			cancel()
+			if err != nil {
 				log.Error("error pausing sending on channel", "error", err)
 			}
 		}
