@@ -154,6 +154,7 @@ type SendErrorInfo struct {
 	Message   string         `json:"message"`
 	Retryable bool           `json:"retryable,omitempty"`
 	Loggable  bool           `json:"loggable,omitempty"`
+	Backoff   string         `json:"backoff,omitempty"`
 	LogError  *svclogs.Error `json:"log_error,omitempty"`
 }
 
@@ -165,6 +166,9 @@ func newSendErrorInfo(err error) *SendErrorInfo {
 	if serr, ok := err.(*channels.SendError); ok {
 		info.Retryable = serr.Retryable()
 		info.Loggable = serr.Loggable()
+		if serr.Backoff() > 0 {
+			info.Backoff = serr.Backoff().String()
+		}
 		info.LogError = serr.ClogError()
 	}
 	return info

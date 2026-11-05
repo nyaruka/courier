@@ -262,6 +262,14 @@ func (w *Sender) sendByHandler(ctx context.Context, h channels.Handler, m *model
 
 		clog.Error(serr.ClogError())
 
+		// if the channel can't take any more for now, stop popping its messages so they wait rather than use up retries
+		if serr.Backoff() > 0 {
+			log.Info("pausing sending on channel", "backoff", serr.Backoff())
+			if err := models.PauseSending(ctx, rt, m, time.Now().Add(serr.Backoff())); err != nil {
+				log.Error("error pausing sending on channel", "error", err)
+			}
+		}
+
 		// if handler returned ErrContactStopped need to write a stop event
 		if serr == channels.ErrContactStopped {
 			channelEvent := models.NewChannelEvent(m.Channel(), models.EventTypeStopContact, m.URN(), clog)

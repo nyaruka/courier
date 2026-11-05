@@ -29,6 +29,10 @@ const (
 	// see: https://kannel.org/download/1.5.0/userguide-1.5.0/userguide.html#DELIVERY-REPORTS
 	// registers us for submit to smsc failure, submit to smsc success, delivery to handset success, delivery to handset failure
 	defaultDLRMask = "27"
+
+	// how long to stop sending on a channel when Kannel says it can't take any more, which is mostly when the queue of
+	// its SMSC connection has reached sms-outgoing-queue-limit
+	unavailableBackoff = 30 * time.Second
 )
 
 func init() {
@@ -178,7 +182,14 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		return err
 	}
 
-	resp, _, err := h.RequestHTTP(req, clog)
+	resp, respBody, err := h.RequestHTTP(req, clog)
+
+	// sendsms answers with this when bearerbox rejects a message temporarily, i.e. its queues are full or it's shutting
+	// down, which other 503s, e.g. from a proxy in front of it, won't have
+	if err == nil && resp.StatusCode == http.StatusServiceUnavailable && strings.HasPrefix(string(respBody), "Temporal failure") {
+		return channels.ErrConnectionBackoff(unavailableBackoff)
+	}
+
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
 	}
