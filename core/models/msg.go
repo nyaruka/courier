@@ -677,6 +677,14 @@ func ClearMsgSent(ctx context.Context, rt *runtime.Runtime, uuid MsgUUID) error 
 	return sentMsgs.Rem(ctx, rc, string(uuid))
 }
 
+// PauseSending stops messages being popped for the given msg's channel until the given time
+func PauseSending(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, until time.Time) error {
+	rc := rt.VK.Get()
+	defer rc.Close()
+
+	return MsgQueue.Pause(ctx, rc, msg.QueueOwner_, until)
+}
+
 // OnSendComplete is called when the sender has finished trying to send a message, with any other URNs the provider
 // reported for the recipient
 func OnSendComplete(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, status *StatusUpdate, otherURNs []urns.URN, clog *ChannelLog) {

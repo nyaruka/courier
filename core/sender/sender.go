@@ -242,6 +242,18 @@ func (w *Sender) sendByHandler(ctx context.Context, h channels.Handler, m *model
 	res := &channels.SendResult{}
 	err := h.Send(ctx, m, res, clog)
 
+	// if the channel can't take any more for now, stop popping its messages so they wait in our queue rather than its
+	if res.Backoff() > 0 {
+		log.Info("pausing sending on channel", "backoff", res.Backoff())
+
+		// the send may have used up most of its context, so the pause gets its own
+		pauseCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		if err := models.PauseSending(pauseCtx, rt, m, time.Now().Add(res.Backoff())); err != nil {
+			log.Error("error pausing sending on channel", "error", err)
+		}
+		cancel()
+	}
+
 	status := models.NewStatusUpdate(m.Channel(), m.UUID(), models.MsgStatusWired, clog)
 
 	// fow now we can only store one external id per message

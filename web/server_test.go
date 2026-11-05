@@ -12,6 +12,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/core/sender"
@@ -188,6 +189,8 @@ func TestOutgoing(t *testing.T) {
 			httpx.NewMockResponse(200, nil, []byte(`SENT`)),
 			httpx.NewMockResponse(429, nil, []byte(`too much!`)),
 			httpx.NewMockResponse(403, nil, []byte(`stop!`)),
+			httpx.NewMockResponse(503, nil, []byte(`full!`)),
+			httpx.NewMockResponse(200, nil, []byte(`SENT`)),
 		},
 		// the webchat service, which the webchat channel's message below is posted to
 		"http://localhost:8071/wi/send": {
@@ -319,6 +322,27 @@ func TestOutgoing(t *testing.T) {
 	var numStopEvents int
 	require.NoError(t, rt.DB.Get(&numStopEvents, `SELECT count(*) FROM channels_channelevent WHERE event_type = 'stop_contact'`))
 	assert.Equal(t, 1, numStopEvents)
+
+	// send message which will have mocked backoff error.. should be marked as errored (retryable) and pause the channel
+	send("0199df05-1a2b-7c3d-8e4f-5a6b7c8d9e0f", mockChannel, "7")
+	assertStatus("0199df05-1a2b-7c3d-8e4f-5a6b7c8d9e0f", models.MsgStatusErrored)
+
+	rc = rt.VK.Get()
+	pausedUntil, err := redis.Float64(rc.Do("HGET", "{msgs}:ch:"+string(mockChannel.UUID()), "paused_until"))
+	rc.Close()
+	require.NoError(t, err)
+	assert.InDelta(t, float64(time.Now().Add(time.Minute).Unix()), pausedUntil, 5)
+
+	// so the channel's next message waits in the queue
+	send("0199df05-2b3c-7d4e-8f5a-6b7c8d9e0f1a", mockChannel, "8")
+	time.Sleep(500 * time.Millisecond)
+	assertStatus("0199df05-2b3c-7d4e-8f5a-6b7c8d9e0f1a", models.MsgStatusQueued)
+
+	rc = rt.VK.Get()
+	high, _, err := models.MsgQueue.Size(t.Context(), rc)
+	rc.Close()
+	require.NoError(t, err)
+	assert.Equal(t, 1, high)
 
 	// queue a message on a webchat channel - a type that doesn't store channel logs - it should still be
 	// sent (a post to the webchat service) and marked as wired...

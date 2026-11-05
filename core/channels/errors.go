@@ -3,6 +3,7 @@ package channels
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/nyaruka/gocommon/svclogs"
 	"github.com/nyaruka/gocommon/urns"
@@ -59,6 +60,7 @@ func Reply(contentType string, body []byte) error {
 type SendResult struct {
 	externalIDs []string
 	otherURNs   []urns.URN
+	backoff     time.Duration
 }
 
 func (r *SendResult) AddExternalID(id string) {
@@ -76,6 +78,17 @@ func (r *SendResult) AddOtherURN(urn urns.URN) {
 
 func (r *SendResult) OtherURNs() []urns.URN {
 	return r.otherURNs
+}
+
+// SetBackoff asks for all sending on the channel to stop for the given duration, e.g. because the provider can't take
+// any more for now. It applies whether or not this send succeeded, and unlike ErrConnectionThrottled, which may only
+// apply to this message or its recipient, it holds back every message on the channel.
+func (r *SendResult) SetBackoff(d time.Duration) {
+	r.backoff = d
+}
+
+func (r *SendResult) Backoff() time.Duration {
+	return r.backoff
 }
 
 type SendError struct {

@@ -147,6 +147,90 @@
         "log_errors": []
     },
     {
+        "label": "Queue Full",
+        "msg": {
+            "text": "Not Routable",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 503,
+                    "body": "Temporal failure, try again later."
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Not+Routable&to=%2B250788383383&username=Username"
+            }
+        ],
+        "error": {
+            "message": "channel rate limited",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
+            }
+        },
+        "log_errors": [],
+        "backoff": "30s"
+    },
+    {
+        "label": "Other Unavailable",
+        "msg": {
+            "text": "Not Routable",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 503,
+                    "body": "<html><body>503 Service Temporarily Unavailable</body></html>"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Not+Routable&to=%2B250788383383&username=Username"
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Queued For Later",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 202,
+                    "body": "3: Queued for later delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Simple+Message&to=%2B250788383383&username=Username"
+            }
+        ],
+        "log_errors": [],
+        "backoff": "10s"
+    },
+    {
         "label": "Error Sending",
         "msg": {
             "text": "Error Message",
