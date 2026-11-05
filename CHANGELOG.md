@@ -1,3 +1,6 @@
+## v26.3.74 (2026-11-05)
+ * Pause sending on a Kannel channel when Kannel can't take more messages
+
 ## v26.3.73 (2026-11-05)
  * Remove support for the legacy outgoing queue layout
  * Use gocommon's queues.MsgsV2 for the outgoing message queue
