@@ -35,6 +35,10 @@ func TestErrorFromResponse(t *testing.T) {
 
 		assert.Equal(t, tc.expectedErr, handlers.ErrorFromResponse(resp, tc.err), "mismatch for status %d", tc.status)
 	}
+
+	// a Retry-After doesn't hold back the channel unless the handler opts in with ThrottledError
+	resp := &http.Response{StatusCode: 429, Header: http.Header{"Retry-After": []string{"30"}}}
+	assert.Equal(t, channels.ErrConnectionThrottled, handlers.ErrorFromResponse(resp, nil))
 }
 
 func TestThrottledError(t *testing.T) {
@@ -43,7 +47,7 @@ func TestThrottledError(t *testing.T) {
 		if retryAfter != "" {
 			resp.Header.Set("Retry-After", retryAfter)
 		}
-		return handlers.ErrorFromResponse(resp, nil)
+		return handlers.ThrottledError(resp)
 	}
 	backoff := func(err error) time.Duration {
 		return channels.RequestedBackoff(&channels.SendResult{}, err)

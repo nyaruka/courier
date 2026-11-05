@@ -356,9 +356,6 @@
             "https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": [
                 {
                     "status": 429,
-                    "headers": {
-                        "Retry-After": "30"
-                    },
                     "body": {
                         "error": "error"
                     }

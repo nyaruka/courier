@@ -14,15 +14,13 @@ const maxRetryAfter = 5 * time.Minute
 
 // ErrorFromResponse converts the response and error from a send request into the send error that should be
 // returned to the sender, or nil if the response indicates success. Note that HTTP 429 is treated as throttling
-// for every channel type - it's a standard status code and no channel uses it to mean permanent failure - and holds
-// back the whole channel if it has a Retry-After (see ThrottledError), so handlers for providers whose rate limits can
-// apply to a single recipient should check IsThrottled first.
+// for every channel type - it's a standard status code and no channel uses it to mean permanent failure.
 func ErrorFromResponse(resp *http.Response, err error) error {
 	if err != nil || resp.StatusCode/100 == 5 {
 		return channels.ErrConnectionFailed
 	}
 	if resp.StatusCode == http.StatusTooManyRequests {
-		return ThrottledError(resp)
+		return channels.ErrConnectionThrottled
 	}
 	if resp.StatusCode/100 != 2 {
 		return channels.ErrResponseStatus
@@ -37,8 +35,8 @@ func IsThrottled(resp *http.Response) bool {
 }
 
 // ThrottledError returns the error for a rate limited response, which holds back the whole channel if the response says
-// how long to wait with a Retry-After header. Handlers should only use this where the provider's rate limit applies to
-// the whole channel rather than to the recipient.
+// how long to wait with a Retry-After header. Handlers should only use this, rather than ErrorFromResponse, where it's
+// known that the provider's rate limits apply to the whole channel and never just to the recipient.
 func ThrottledError(resp *http.Response) error {
 	if d := retryAfter(resp); d > 0 {
 		return channels.ErrConnectionThrottledFor(min(d, maxRetryAfter))
