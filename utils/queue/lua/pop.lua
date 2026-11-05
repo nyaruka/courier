@@ -1,7 +1,8 @@
 -- KEYS: [Ready, Waiting]
--- ARGV: [KeyBase, WakeLimit]
+-- ARGV: [KeyBase, WakeLimit, UnackedTTL, AckLagFloor, AckRateWindow]
 local readyKey, waitingKey = KEYS[1], KEYS[2]
 local keyBase, wakeLimit = ARGV[1], tonumber(ARGV[2])
+local unackedTTL, ackLagFloor, ackRateWindow = tonumber(ARGV[3]), tonumber(ARGV[4]), tonumber(ARGV[5])
 
 local time = redis.call("TIME")
 local nowSec = tonumber(time[1])
@@ -73,6 +74,45 @@ else
     redis.call("HSET", chKey, "inflight", 0)
     redis.call("EXPIRE", chKey, 60)
     return {"retry", ""}
+end
+
+-- a channel with unacknowledged send limits waits while the provider has too many of its sends that it hasn't
+-- acknowledged, or while those would take too long to clear at the rate it's been acknowledging them. Sends never
+-- acknowledged are forgotten after a while so that lost acknowledgements can't hold the channel back forever.
+local limits = redis.call("HMGET", keyBase .. ":acklimits:" .. uuid, "max_unacked", "max_ack_lag")
+local maxUnacked, maxAckLag = tonumber(limits[1]) or 0, tonumber(limits[2]) or 0
+
+if maxUnacked > 0 or maxAckLag > 0 then
+    local unackedKey = keyBase .. ":unacked:" .. uuid
+    redis.call("ZREMRANGEBYSCORE", unackedKey, "-inf", now - unackedTTL)
+    local unacked = redis.call("ZCARD", unackedKey)
+
+    if maxUnacked > 0 and unacked >= maxUnacked then
+        return park(nowSec + 1)
+    end
+
+    -- the lag only counts once there's a real backlog, so that a few lost acknowledgements can't park a quiet channel.
+    -- It's the time the backlog would take to clear at the rate acknowledgements arrived over the last few whole
+    -- seconds - which unlike the age of the oldest send, rises as soon as the backlog does.
+    if maxAckLag > 0 and unacked >= ackLagFloor then
+        local acks = redis.call("HGETALL", keyBase .. ":acks:" .. uuid)
+        local slots = {}
+        for i = 1, #acks, 2 do
+            slots[acks[i]] = tonumber(acks[i + 1])
+        end
+
+        local acked = 0
+        for s = 0, ackRateWindow do
+            local sec = slots["s" .. s]
+            if sec and sec < nowSec and sec >= nowSec - ackRateWindow then
+                acked = acked + (slots["c" .. s] or 0)
+            end
+        end
+
+        if acked == 0 or unacked / (acked / ackRateWindow) > maxAckLag then
+            return park(nowSec + 1)
+        end
+    end
 end
 
 redis.call("ZREM", fromKey, value)
