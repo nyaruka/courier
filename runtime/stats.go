@@ -40,6 +40,7 @@ type Stats struct {
 
 	OutgoingSends    CountByType    // number of sends that succeeded
 	OutgoingErrors   CountByType    // number of sends that errored
+	OutgoingBackoffs CountByType    // number of sends after which the channel asked for sending to stop
 	OutgoingDuration DurationByType // total time spent sending messages
 
 	ContactsCreated           int
@@ -59,6 +60,7 @@ func newStats() *Stats {
 
 		OutgoingSends:    make(CountByType),
 		OutgoingErrors:   make(CountByType),
+		OutgoingBackoffs: make(CountByType),
 		OutgoingDuration: make(DurationByType),
 
 		ContactsCreated: 0,
@@ -70,6 +72,7 @@ func (s *Stats) ToMetrics(advanced bool) []types.MetricDatum {
 	metrics = append(metrics, s.IncomingMessages.metrics("IncomingMessages")...)
 	metrics = append(metrics, s.OutgoingSends.metrics("OutgoingSends")...)
 	metrics = append(metrics, s.OutgoingErrors.metrics("OutgoingErrors")...)
+	metrics = append(metrics, s.OutgoingBackoffs.metrics("OutgoingBackoffs")...)
 
 	if advanced {
 		metrics = append(metrics, s.IncomingRequests.metrics("IncomingRequests")...)
@@ -126,6 +129,12 @@ func (c *StatsCollector) RecordOutgoing(typ string, success bool, d time.Duratio
 		c.stats.OutgoingErrors[typ]++
 	}
 	c.stats.OutgoingDuration[typ] += d
+	c.mutex.Unlock()
+}
+
+func (c *StatsCollector) RecordOutgoingBackoff(typ string) {
+	c.mutex.Lock()
+	c.stats.OutgoingBackoffs[typ]++
 	c.mutex.Unlock()
 }
 

@@ -243,12 +243,12 @@ func (w *Sender) sendByHandler(ctx context.Context, h channels.Handler, m *model
 	err := h.Send(ctx, m, res, clog)
 
 	// if the channel can't take any more for now, stop popping its messages so they wait in our queue rather than its
-	if res.Backoff() > 0 {
-		log.Info("pausing sending on channel", "backoff", res.Backoff())
+	if backoff := channels.RequestedBackoff(res, err); backoff > 0 {
+		log.Info("pausing sending on channel", "backoff", backoff)
 
 		// the send may have used up most of its context, so the pause gets its own
 		pauseCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		if err := models.PauseSending(pauseCtx, rt, m, time.Now().Add(res.Backoff())); err != nil {
+		if err := models.PauseSending(pauseCtx, rt, m, time.Now().Add(backoff)); err != nil {
 			log.Error("error pausing sending on channel", "error", err)
 		}
 		cancel()

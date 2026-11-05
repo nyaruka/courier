@@ -1,6 +1,7 @@
 package channels
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -91,6 +92,15 @@ func (r *SendResult) Backoff() time.Duration {
 	return r.backoff
 }
 
+// RequestedBackoff returns how long a send asked for all sending on the channel to stop, through its result or its error
+func RequestedBackoff(res *SendResult, err error) time.Duration {
+	var serr *SendError
+	if errors.As(err, &serr) {
+		return max(res.Backoff(), serr.Backoff())
+	}
+	return res.Backoff()
+}
+
 type SendError struct {
 	msg       string
 	retryable bool
@@ -99,6 +109,8 @@ type SendError struct {
 	clogCode    string
 	clogMsg     string
 	clogExtCode string
+
+	backoff time.Duration
 }
 
 func (e *SendError) Error() string {
@@ -110,6 +122,9 @@ func (e *SendError) Retryable() bool { return e.retryable }
 
 // Loggable returns whether this failure indicates a problem on our side worth logging as an error
 func (e *SendError) Loggable() bool { return e.loggable }
+
+// Backoff returns how long all sending on the channel should stop after a send failed this way
+func (e *SendError) Backoff() time.Duration { return e.backoff }
 
 // ClogError returns the user facing error to record on the channel log
 func (e *SendError) ClogError() *svclogs.Error {
@@ -150,6 +165,14 @@ var ErrConnectionThrottled error = &SendError{
 	loggable:  false,
 	clogCode:  "connection_throttled",
 	clogMsg:   "Connection to server has been rate limited.",
+}
+
+// ErrConnectionThrottledFor should be returned when channel tells us we're rate limited and for how long, which unlike
+// ErrConnectionThrottled holds back every message on the channel for that long
+func ErrConnectionThrottledFor(d time.Duration) *SendError {
+	err := *ErrConnectionThrottled.(*SendError)
+	err.backoff = d
+	return &err
 }
 
 // ErrResponseStatus should be returned when the response from the channel has a non-success status code

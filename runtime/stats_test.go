@@ -24,6 +24,7 @@ func TestStats(t *testing.T) {
 	sc.RecordOutgoing("FBA", true, time.Second)
 	sc.RecordOutgoing("FBA", true, time.Second)
 	sc.RecordOutgoing("FBA", true, time.Second)
+	sc.RecordOutgoingBackoff("KN")
 
 	stats := sc.Extract()
 
@@ -38,10 +39,11 @@ func TestStats(t *testing.T) {
 	assert.Equal(t, runtime.DurationByType{"T": time.Second}, stats.IncomingDuration)
 	assert.Equal(t, runtime.CountByType{"T": 2, "FBA": 3}, stats.OutgoingSends)
 	assert.Equal(t, runtime.CountByType{}, stats.OutgoingErrors)
+	assert.Equal(t, runtime.CountByType{"KN": 1}, stats.OutgoingBackoffs)
 	assert.Equal(t, runtime.DurationByType{"T": time.Second * 2, "FBA": time.Second * 3}, stats.OutgoingDuration)
 
 	metrics := stats.ToMetrics(true)
-	assert.Len(t, metrics, 11)
+	assert.Len(t, metrics, 12)
 
 	sc.RecordOutgoing("FBA", true, time.Second)
 	sc.RecordOutgoing("FBA", true, time.Second)

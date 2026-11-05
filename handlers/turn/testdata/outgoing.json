@@ -3193,7 +3193,8 @@
                 "message": "Connection to server has been rate limited."
             }
         },
-        "log_errors": []
+        "log_errors": [],
+        "backoff": "1s"
     },
     {
         "label": "Error Retryable",
