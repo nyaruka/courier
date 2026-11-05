@@ -19,13 +19,13 @@ import (
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
-	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/courier/v26/web"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/dynamo/dyntest"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/queues"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/stretchr/testify/assert"
@@ -233,7 +233,7 @@ func TestOutgoing(t *testing.T) {
 
 		rc := rt.VK.Get()
 		defer rc.Close()
-		require.NoError(t, queue.PushOntoQueue(rc, string(ch.UUID()), 10, "["+string(jsonx.MustMarshal(m))+"]", queue.HighPriority))
+		require.NoError(t, models.MsgQueue.Push(t.Context(), rc, queues.OwnerID(ch.UUID()), 10, true, []byte("["+string(jsonx.MustMarshal(m))+"]")))
 	}
 
 	// waits for the msg to reach the given status in the database (status writes are batched), reporting the status
@@ -290,7 +290,7 @@ func TestOutgoing(t *testing.T) {
 		OrgID_: 1, UUID_: "0199df01-dacc-754b-a830-ab2bf0f511d3", Contact_: &models.ContactReference{ID: 100, UUID: "a984069d-0008-4d8c-a772-b14a8a6acccc"},
 		Text_: "test message 2", HighPriority_: true, CreatedOn_: time.Now(), ChannelUUID_: mockChannel.UUID(), URN_: "tel:+12067799192", Origin_: models.MsgOriginChat,
 	}
-	require.NoError(t, queue.PushOntoQueue(rc, string(mockChannel.UUID()), 10, "["+string(jsonx.MustMarshal(m2))+"]", queue.HighPriority))
+	require.NoError(t, models.MsgQueue.Push(t.Context(), rc, queues.OwnerID(mockChannel.UUID()), 10, true, []byte("["+string(jsonx.MustMarshal(m2))+"]")))
 	rc.Close()
 
 	var numLogs int
@@ -331,7 +331,7 @@ func TestOutgoing(t *testing.T) {
 	}
 	insertMsg(wchMsg.UUID_, chpChannel)
 	rc = rt.VK.Get()
-	require.NoError(t, queue.PushOntoQueue(rc, string(chpChannel.UUID()), 10, "["+string(jsonx.MustMarshal(wchMsg))+"]", queue.HighPriority))
+	require.NoError(t, models.MsgQueue.Push(t.Context(), rc, queues.OwnerID(chpChannel.UUID()), 10, true, []byte("["+string(jsonx.MustMarshal(wchMsg))+"]")))
 	rc.Close()
 	assertStatus(wchMsg.UUID_, models.MsgStatusWired)
 

@@ -10,7 +10,6 @@ import (
 	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/runtime"
-	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 )
 
@@ -79,7 +78,7 @@ func reportMetrics(ctx context.Context, rt *runtime.Runtime, dbWaitDuration, red
 	// get queue sizes
 	rc := rt.VK.Get()
 	defer rc.Close()
-	prioritySize, bulkSize, err := queue.Size(rc)
+	prioritySize, bulkSize, err := models.MsgQueue.Size(ctx, rc)
 	if err != nil {
 		return 0, fmt.Errorf("error getting queue sizes: %w", err)
 	}
