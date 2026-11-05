@@ -167,15 +167,15 @@
             }
         ],
         "error": {
-            "message": "channel backed off",
+            "message": "channel rate limited",
             "retryable": true,
-            "backoff": "30s",
             "log_error": {
-                "code": "connection_backoff",
-                "message": "Server can't accept more messages for now, so sending on this channel has been paused."
+                "code": "connection_throttled",
+                "message": "Connection to server has been rate limited."
             }
         },
-        "log_errors": []
+        "log_errors": [],
+        "backoff": "30s"
     },
     {
         "label": "Other Unavailable",
@@ -206,6 +206,29 @@
             }
         },
         "log_errors": []
+    },
+    {
+        "label": "Queued For Later",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "http://example.com/send*": [
+                {
+                    "status": 202,
+                    "body": "3: Queued for later delivery"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Simple+Message&to=%2B250788383383&username=Username"
+            }
+        ],
+        "log_errors": [],
+        "backoff": "10s"
     },
     {
         "label": "Error Sending",

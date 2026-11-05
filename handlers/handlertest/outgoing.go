@@ -88,6 +88,7 @@ type OutgoingCase struct {
 	Error       *SendErrorInfo     `json:"error,omitempty"`
 	LogErrors   []*svclogs.Error   `json:"log_errors"`
 	OtherURNs   []urns.URN         `json:"other_urns,omitempty"` // URNs the provider reported for the recipient
+	Backoff     string             `json:"backoff,omitempty"`    // how long the channel asked for sending to stop
 }
 
 // OutgoingOptions are the options for running a file of outgoing cases
@@ -158,6 +159,9 @@ func RunOutgoingTests(t *testing.T, ch *models.Channel, newFn channels.NewHandle
 			actual.Error = newSendErrorInfo(serr)
 			actual.LogErrors = clog.Errors
 			actual.OtherURNs = res.OtherURNs()
+			if res.Backoff() > 0 {
+				actual.Backoff = res.Backoff().String()
+			}
 
 			if mockHTTP != nil {
 				assert.False(t, mockHTTP.HasUnused(), "unused HTTP mocks")

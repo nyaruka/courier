@@ -60,6 +60,7 @@ func Reply(contentType string, body []byte) error {
 type SendResult struct {
 	externalIDs []string
 	otherURNs   []urns.URN
+	backoff     time.Duration
 }
 
 func (r *SendResult) AddExternalID(id string) {
@@ -79,12 +80,21 @@ func (r *SendResult) OtherURNs() []urns.URN {
 	return r.otherURNs
 }
 
+// SetBackoff asks for all sending on the channel to stop for the given duration, e.g. because the provider can't take
+// any more for now. It applies whether or not this send succeeded, and unlike ErrConnectionThrottled, which may only
+// apply to this message or its recipient, it holds back every message on the channel.
+func (r *SendResult) SetBackoff(d time.Duration) {
+	r.backoff = d
+}
+
+func (r *SendResult) Backoff() time.Duration {
+	return r.backoff
+}
+
 type SendError struct {
 	msg       string
 	retryable bool
 	loggable  bool
-
-	backoff time.Duration
 
 	clogCode    string
 	clogMsg     string
@@ -97,9 +107,6 @@ func (e *SendError) Error() string {
 
 // Retryable returns whether a send which failed this way should be tried again later
 func (e *SendError) Retryable() bool { return e.retryable }
-
-// Backoff returns how long to stop sending on the channel for, or zero if sending can carry on
-func (e *SendError) Backoff() time.Duration { return e.backoff }
 
 // Loggable returns whether this failure indicates a problem on our side worth logging as an error
 func (e *SendError) Loggable() bool { return e.loggable }
@@ -143,20 +150,6 @@ var ErrConnectionThrottled error = &SendError{
 	loggable:  false,
 	clogCode:  "connection_throttled",
 	clogMsg:   "Connection to server has been rate limited.",
-}
-
-// ErrConnectionBackoff should be returned when the channel tells us it can't take any more messages for now, e.g. because
-// its own queue is full. Unlike ErrConnectionThrottled, which may only apply to this message or its recipient, this
-// stops all sending on the channel for the given duration.
-func ErrConnectionBackoff(d time.Duration) *SendError {
-	return &SendError{
-		msg:       "channel backed off",
-		retryable: true,
-		loggable:  false,
-		backoff:   d,
-		clogCode:  "connection_backoff",
-		clogMsg:   "Server can't accept more messages for now, so sending on this channel has been paused.",
-	}
 }
 
 // ErrResponseStatus should be returned when the response from the channel has a non-success status code
