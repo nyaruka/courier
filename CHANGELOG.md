@@ -1,3 +1,8 @@
+## v26.3.73 (2026-11-05)
+ * Remove support for the legacy outgoing queue layout
+ * Use gocommon's queues.MsgsV2 for the outgoing message queue
+ * Stop the review workflow adding Claude Code attribution
+
 ## v26.3.72 (2026-11-04)
  * Add per-channel outgoing queue layout, read alongside the legacy one
  * Forget a drained channel's sends in flight and pipeline queue size counts
