@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/vkutil/assertvk"
 	"github.com/stretchr/testify/assert"
@@ -41,7 +42,7 @@ func TestQueueMaxUnacked(t *testing.T) {
 	assertvk.ZCard(t, rc, "{msgs}:q:chan1/0", 2)
 
 	// an acknowledgement frees a slot, so once its wait is over chan1 pops one more and is at its limit again
-	require.NoError(t, queue.Acked(rc, "chan1", "msg1"))
+	require.NoError(t, queue.Acked(rc, "chan1", "msg1", 2, 0))
 	assertvk.ZCard(t, rc, "{msgs}:unacked:chan1", 1)
 
 	waitForMidSecond(t, rc)
@@ -87,11 +88,11 @@ func TestQueueMaxAckLag(t *testing.T) {
 
 	// acknowledging 100 in a second is a rate of 10/s over the window, so the 200 left would take 20s to clear
 	for i := range 100 {
-		require.NoError(t, queue.Acked(rc, "chan1", fmt.Sprintf("msg%d", i)))
+		require.NoError(t, queue.Acked(rc, "chan1", fmt.Sprintf("msg%d", i), 0, 30*time.Second))
 	}
 
 	// repeated reports don't count again
-	require.NoError(t, queue.Acked(rc, "chan1", "msg0"))
+	require.NoError(t, queue.Acked(rc, "chan1", "msg0", 0, 30*time.Second))
 	assertvk.ZCard(t, rc, "{msgs}:unacked:chan1", 200)
 
 	// the second they arrived in only counts once it's over, then 20s is within the max of 30s so chan1 pops
@@ -128,8 +129,87 @@ func TestQueueForgetsLostAcks(t *testing.T) {
 	assert.Equal(t, `{"id":1}`, value)
 	assertvk.ZCard(t, rc, "{msgs}:unacked:chan1", 0)
 
-	// both keys expire once the channel stops sending
-	ttl, err := rc.Do("TTL", "{msgs}:acklimits:chan1")
-	require.NoError(t, err)
-	assert.Greater(t, ttl, int64(0))
+	// the keys expire once the channel stops sending
+	require.NoError(t, queue.TrackUnacked(rc, "chan1", "msg2", 1, 0))
+	for _, key := range []string{"{msgs}:unacked:chan1", "{msgs}:acklimits:chan1"} {
+		ttl, err := redis.Int(rc.Do("TTL", key))
+		require.NoError(t, err)
+		assert.Greater(t, ttl, 0, "no TTL on %s", key)
+	}
+}
+
+func TestQueueMaxUnackedCountsInflight(t *testing.T) {
+	rc := getPool(t).Get()
+	defer rc.Close()
+
+	for i := range 3 {
+		require.NoError(t, queue.PushOntoQueue(rc, "chan1", 0, fmt.Sprintf(`[{"id":%d}]`, i), queue.LowPriority))
+	}
+	require.NoError(t, queue.TrackUnacked(rc, "chan1", "msg1", 2, 0))
+
+	// one send is in flight and not yet tracked, which with the one tracked puts chan1 at its limit
+	token, value := popNext(t, rc)
+	assert.Equal(t, queue.WorkerToken("chan1"), token)
+	assert.Equal(t, `{"id":0}`, value)
+
+	token, _ = popNext(t, rc)
+	assert.Equal(t, queue.EmptyQueue, token)
+	assertvk.ZCard(t, rc, "{msgs}:q:chan1/0", 2)
+}
+
+func TestQueueForgetsOldUnackedForLag(t *testing.T) {
+	rc := getPool(t).Get()
+	defer rc.Close()
+
+	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 0, `[{"id":1}]`, queue.LowPriority))
+
+	// a backlog that will never be acknowledged, e.g. because Kannel restarted and lost its delivery reports
+	for i := range 200 {
+		require.NoError(t, queue.TrackUnacked(rc, "chan1", fmt.Sprintf("msg%d", i), 0, 10*time.Second))
+	}
+
+	token, _ := popNext(t, rc)
+	assert.Equal(t, queue.EmptyQueue, token)
+
+	// once it's older than two lags it no longer holds the channel back, though it's still kept for the count limit
+	now := serverSecond(t, rc)
+	for i := range 200 {
+		_, err := rc.Do("ZADD", "{msgs}:unacked:chan1", now-21, fmt.Sprintf("msg%d", i))
+		require.NoError(t, err)
+	}
+
+	waitForMidSecond(t, rc)
+
+	token, value := popNext(t, rc)
+	assert.Equal(t, queue.WorkerToken("chan1"), token)
+	assert.Equal(t, `{"id":1}`, value)
+	assertvk.ZCard(t, rc, "{msgs}:unacked:chan1", 200)
+}
+
+func TestQueueAckedAppliesLimits(t *testing.T) {
+	rc := getPool(t).Get()
+	defer rc.Close()
+
+	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 0, `[{"id":1}]`, queue.LowPriority))
+	require.NoError(t, queue.TrackUnacked(rc, "chan1", "msg1", 2, 0))
+	require.NoError(t, queue.TrackUnacked(rc, "chan1", "msg2", 2, 0))
+
+	token, _ := popNext(t, rc)
+	assert.Equal(t, queue.EmptyQueue, token)
+
+	// an acknowledgement of a send we weren't tracking still applies the channel's limits, here raising them
+	require.NoError(t, queue.Acked(rc, "chan1", "msg9", 5, 0))
+	assertvk.HGetAll(t, rc, "{msgs}:acklimits:chan1", map[string]string{"max_unacked": "5", "max_ack_lag": "0"})
+	assertvk.ZCard(t, rc, "{msgs}:unacked:chan1", 2)
+
+	// and zero limits remove them
+	require.NoError(t, queue.Acked(rc, "chan1", "msg1", 0, 0))
+	assertvk.NotExists(t, rc, "{msgs}:acklimits:chan1")
+	assertvk.ZCard(t, rc, "{msgs}:unacked:chan1", 1)
+
+	waitForMidSecond(t, rc)
+
+	token, value := popNext(t, rc)
+	assert.Equal(t, queue.WorkerToken("chan1"), token)
+	assert.Equal(t, `{"id":1}`, value)
 }

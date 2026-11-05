@@ -45,10 +45,12 @@ func TrackUnacked(conn redis.Conn, channelUUID, msgUUID string, maxUnacked int, 
 
 //go:embed lua/ack.lua
 var luaAck string
-var scriptAck = redis.NewScript(2, luaAck)
+var scriptAck = redis.NewScript(3, luaAck)
 
-// Acked records that the provider has acknowledged a send previously passed to TrackUnacked
-func Acked(conn redis.Conn, channelUUID, msgUUID string) error {
-	_, err := scriptAck.Do(conn, unackedKey(channelUUID), acksKey(channelUUID), msgUUID, ackRateWindow, int(UnackedTTL/time.Second))
+// Acked records that the provider has acknowledged a send, which may or may not have been passed to TrackUnacked, and
+// applies the channel's current limits - so that changing them reaches a channel that's waiting on them and so isn't
+// sending. Zero limits remove them.
+func Acked(conn redis.Conn, channelUUID, msgUUID string, maxUnacked int, maxAckLag time.Duration) error {
+	_, err := scriptAck.Do(conn, unackedKey(channelUUID), acksKey(channelUUID), ackLimitsKey(channelUUID), msgUUID, maxUnacked, maxAckLag.Seconds(), ackRateWindow, int(UnackedTTL/time.Second))
 	return err
 }

@@ -108,14 +108,15 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 	}
 
 	// done before ignoring any sent report, as that's still the SMSC acknowledging the send
+	// and whatever the channel's current limits, so that removing them still clears its sends and reaches it
 	if ackStatuses[form.Status] {
-		if maxUnacked, maxAckLag := unackedLimits(channel); maxUnacked > 0 || maxAckLag > 0 {
-			vc := h.Runtime().VK.Get()
-			defer vc.Close()
+		maxUnacked, maxAckLag := unackedLimits(channel)
 
-			if err := queue.Acked(vc, string(channel.UUID()), string(form.UUID)); err != nil {
-				slog.Error("error recording kannel send as acknowledged", "error", err, "msg_uuid", form.UUID)
-			}
+		vc := h.Runtime().VK.Get()
+		defer vc.Close()
+
+		if err := queue.Acked(vc, string(channel.UUID()), string(form.UUID), maxUnacked, maxAckLag); err != nil {
+			slog.Error("error recording kannel send as acknowledged", "error", err, "msg_uuid", form.UUID)
 		}
 	}
 
