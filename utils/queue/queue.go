@@ -34,7 +34,9 @@ const (
 // all keys share this hash tag so that scripts can use them together in cluster mode. Each channel has a queue
 // of high and bulk priority items ({msgs}:q:<uuid>/1 and /0) and a hash of its state ({msgs}:ch:<uuid>), and is
 // either ready to be popped from (in {msgs}:ready, scored by sends in flight) or waiting until a time (in
-// {msgs}:waiting, scored by that time).
+// {msgs}:waiting, scored by that time). A channel with unacknowledged send limits also has a set of its sends that the
+// provider hasn't acknowledged ({msgs}:unacked:<uuid>, scored by send time), a hash of those limits
+// ({msgs}:acklimits:<uuid>) and a hash of its recent acknowledgements per second ({msgs}:acks:<uuid>) - see unacked.go.
 const keyBase = "{msgs}"
 
 const (
@@ -73,7 +75,7 @@ var scriptPop = redis.NewScript(2, luaPop)
 // immediately make another call to get the next value. A worker token of EmptyQueue will be returned if there are
 // no more items to retrive. Otherwise the WorkerToken should be saved in order to mark the task as complete later.
 func PopFromQueue(conn redis.Conn) (WorkerToken, string, error) {
-	values, err := redis.Strings(scriptPop.Do(conn, readyKey, waitingKey, keyBase, wakeLimit))
+	values, err := redis.Strings(scriptPop.Do(conn, readyKey, waitingKey, keyBase, wakeLimit, seconds(UnackedTTL), ackLagFloor, ackRateWindow, seconds(unackedRetention)))
 	if err != nil {
 		slog.Error("error popping from queue", "error", err)
 		return "", "", err

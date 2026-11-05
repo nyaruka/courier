@@ -3,8 +3,10 @@ package kannel
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/courier/v26/utils/queue"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
 	"golang.org/x/text/encoding/unicode"
@@ -22,6 +25,11 @@ const (
 	configDLRMask    = "dlr_mask"
 	configIgnoreSent = "ignore_sent"
 
+	// limits on sends that Kannel has accepted but the SMSC hasn't yet acknowledged, beyond which the channel waits: how
+	// many there can be, and how many seconds they can take to clear at the rate the SMSC has been acknowledging them
+	configMaxUnacked = "max_unacked"
+	configMaxAckLag  = "max_ack_lag"
+
 	encodingDefault = "D"
 	encodingUnicode = "U"
 	encodingSmart   = "S"
@@ -29,7 +37,13 @@ const (
 	// see: https://kannel.org/download/1.5.0/userguide-1.5.0/userguide.html#DELIVERY-REPORTS
 	// registers us for submit to smsc failure, submit to smsc success, delivery to handset success, delivery to handset failure
 	defaultDLRMask = "27"
+
+	// the delivery report bit for submit to smsc success, which is how the SMSC acknowledges a send
+	dlrSMSCSubmit = 8
 )
+
+// the delivery report statuses which mean the SMSC has dealt with a send, so Kannel no longer holds it
+var ackStatuses = map[int]bool{1: true, 2: true, 8: true, 16: true}
 
 func init() {
 	channels.RegisterHandler(newHandler)
@@ -91,6 +105,19 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 	if !found {
 		clog.Error(models.ErrorExternal(fmt.Sprintf("dlr:%d", form.Status), fmt.Sprintf("unknown delivery report status '%d'", form.Status)))
 		return channels.Ignore("ignoring unknown status '%d'", form.Status)
+	}
+
+	// done before ignoring any sent report, as that's still the SMSC acknowledging the send
+	// and whatever the channel's current limits, so that removing them still clears its sends and reaches it
+	if ackStatuses[form.Status] {
+		maxUnacked, maxAckLag := unackedLimits(channel)
+
+		vc := h.Runtime().VK.Get()
+		defer vc.Close()
+
+		if err := queue.Acked(vc, string(channel.UUID()), string(form.UUID), maxUnacked, maxAckLag); err != nil {
+			slog.Error("error recording kannel send as acknowledged", "error", err, "msg_uuid", form.UUID)
+		}
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
@@ -178,10 +205,54 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		return err
 	}
 
+	// once Kannel accepts the send it holds it until the SMSC takes it - including when no connection to the SMSC is
+	// up, where it answers "3: Queued for later delivery" - so it counts as unacknowledged until the SMSC's delivery
+	// report arrives. That can come back before Kannel's answer to us does, so the send is tracked before it's made,
+	// and untracked if Kannel doesn't accept it.
+	chUUID, msgUUID := string(msg.Channel().UUID()), string(msg.UUID())
+	tracked := false
+
+	if maxUnacked, maxAckLag := unackedLimits(msg.Channel()); maxUnacked > 0 || maxAckLag > 0 {
+		vc := h.Runtime().VK.Get()
+		err := queue.TrackUnacked(vc, chUUID, msgUUID, maxUnacked, maxAckLag)
+		vc.Close()
+
+		if err != nil {
+			slog.Error("error tracking unacknowledged kannel send", "error", err, "msg_uuid", msgUUID)
+		} else {
+			tracked = true
+		}
+	}
+
 	resp, _, err := h.RequestHTTP(req, clog)
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
+		if tracked {
+			vc := h.Runtime().VK.Get()
+			defer vc.Close()
+
+			if err := queue.Untrack(vc, chUUID, msgUUID); err != nil {
+				slog.Error("error untracking failed kannel send", "error", err, "msg_uuid", msgUUID)
+			}
+		}
 		return err
 	}
 
 	return nil
+}
+
+// unackedLimits returns the channel's limits on unacknowledged sends, which only apply when its delivery reports include
+// the SMSC's acknowledgement, as otherwise nothing would ever clear them
+func unackedLimits(ch *models.Channel) (int, time.Duration) {
+	maxUnacked := ch.IntConfigForKey(configMaxUnacked, 0)
+	maxAckLag := time.Duration(ch.IntConfigForKey(configMaxAckLag, 0)) * time.Second
+	if maxUnacked <= 0 && maxAckLag <= 0 {
+		return 0, 0
+	}
+
+	mask, err := strconv.Atoi(ch.StringConfigForKey(configDLRMask, defaultDLRMask))
+	if err != nil || mask&dlrSMSCSubmit == 0 {
+		return 0, 0
+	}
+
+	return max(maxUnacked, 0), max(maxAckLag, 0)
 }
