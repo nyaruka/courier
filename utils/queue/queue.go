@@ -4,10 +4,6 @@ import (
 	_ "embed"
 	"log/slog"
 	"strconv"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"time"
 
 	"github.com/gomodule/redigo/redis"
 )
@@ -73,56 +69,10 @@ func PushOntoQueue(conn redis.Conn, channelUUID string, tps int, value string, p
 var luaPop string
 var scriptPop = redis.NewScript(2, luaPop)
 
-// queues are read in both the current and legacy layouts while producers move from one to the other, alternating
-// between them so that neither starves the other. Pops are made one at a time, so a layout found empty is tried
-// second for a while, rather than costing every other pop an extra call while the other layout is the only one used.
-type layout struct {
-	pop        func(redis.Conn) (WorkerToken, string, error)
-	emptyUntil atomic.Int64
-}
-
-var (
-	currentLayout = &layout{pop: pop}
-	legacyLayout  = &layout{pop: popLegacy}
-	popCount      atomic.Uint64
-)
-
-const emptyLayoutTTL = time.Second
-
 // PopFromQueue pops the next available message from the queue. If QueueRetry is returned the caller should
 // immediately make another call to get the next value. A worker token of EmptyQueue will be returned if there are
 // no more items to retrive. Otherwise the WorkerToken should be saved in order to mark the task as complete later.
 func PopFromQueue(conn redis.Conn) (WorkerToken, string, error) {
-	now := time.Now().UnixNano()
-
-	first, second := currentLayout, legacyLayout
-	if popCount.Add(1)%2 == 0 {
-		first, second = second, first
-	}
-	if first.emptyUntil.Load() > now && second.emptyUntil.Load() <= now {
-		first, second = second, first
-	}
-
-	token, value, err := first.tryPop(conn, now)
-	if err != nil || token != EmptyQueue {
-		return token, value, err
-	}
-	return second.tryPop(conn, now)
-}
-
-func (l *layout) tryPop(conn redis.Conn, now int64) (WorkerToken, string, error) {
-	token, value, err := l.pop(conn)
-	if err == nil {
-		if token == EmptyQueue {
-			l.emptyUntil.Store(now + int64(emptyLayoutTTL))
-		} else {
-			l.emptyUntil.Store(0)
-		}
-	}
-	return token, value, err
-}
-
-func pop(conn redis.Conn) (WorkerToken, string, error) {
 	values, err := redis.Strings(scriptPop.Do(conn, readyKey, waitingKey, keyBase, wakeLimit))
 	if err != nil {
 		slog.Error("error popping from queue", "error", err)
@@ -131,41 +81,24 @@ func pop(conn redis.Conn) (WorkerToken, string, error) {
 	return WorkerToken(values[0]), values[1], nil
 }
 
-// Size returns the number of high and bulk priority items queued across all channels, in both layouts
+// Size returns the number of high and bulk priority items queued across all channels
 func Size(conn redis.Conn) (high, bulk int, err error) {
-	var queues []string
+	var uuids []string
 
 	for _, set := range []string{readyKey, waitingKey} {
-		uuids, err := redis.Strings(conn.Do("ZRANGE", set, 0, -1))
+		members, err := redis.Strings(conn.Do("ZRANGE", set, 0, -1))
 		if err != nil {
 			return 0, 0, err
 		}
-		for _, uuid := range uuids {
-			queues = append(queues, keyBase+":q:"+uuid)
-		}
-	}
-
-	// a legacy queue can be both active and future
-	legacy := make(map[string]bool)
-	for _, set := range []string{":active", ":throttled", ":future"} {
-		names, err := redis.Strings(conn.Do("ZRANGE", legacyQueueType+set, 0, -1))
-		if err != nil {
-			return 0, 0, err
-		}
-		for _, name := range names {
-			if !legacy[name] {
-				legacy[name] = true
-				queues = append(queues, name)
-			}
-		}
+		uuids = append(uuids, members...)
 	}
 
 	// pipeline the counts, as there's a pair for every queue
-	for _, q := range queues {
-		if err := conn.Send("ZCARD", q+"/1"); err != nil {
+	for _, uuid := range uuids {
+		if err := conn.Send("ZCARD", queueKey(uuid, HighPriority)); err != nil {
 			return 0, 0, err
 		}
-		if err := conn.Send("ZCARD", q+"/0"); err != nil {
+		if err := conn.Send("ZCARD", queueKey(uuid, LowPriority)); err != nil {
 			return 0, 0, err
 		}
 	}
@@ -173,7 +106,7 @@ func Size(conn redis.Conn) (high, bulk int, err error) {
 		return 0, 0, err
 	}
 
-	for range queues {
+	for range uuids {
 		h, err := redis.Int(conn.Receive())
 		if err != nil {
 			return 0, 0, err
@@ -196,85 +129,10 @@ var scriptComplete = redis.NewScript(3, luaComplete)
 // important for callers to call this so that workers are evenly spread across all
 // queues with jobs in them
 func MarkComplete(conn redis.Conn, token WorkerToken) error {
-	var err error
-	if isLegacyToken(token) {
-		_, err = scriptLegacyComplete.Do(conn, legacyQueueType, token)
-	} else {
-		channelUUID := string(token)
-		_, err = scriptComplete.Do(conn, channelKey(channelUUID), readyKey, waitingKey, channelUUID)
-	}
+	channelUUID := string(token)
+	_, err := scriptComplete.Do(conn, channelKey(channelUUID), readyKey, waitingKey, channelUUID)
 	if err != nil {
 		slog.Error("error marking job complete from queue", "error", err, "token", token)
 	}
 	return err
-}
-
-// the legacy layout has queues named by channel and TPS, i.e. msgs:<uuid>|<tps>, which are also its worker tokens
-const legacyQueueType = "msgs"
-
-func isLegacyToken(token WorkerToken) bool {
-	return strings.Contains(string(token), "|")
-}
-
-//go:embed lua/legacy_push.lua
-var luaLegacyPush string
-var scriptLegacyPush = redis.NewScript(6, luaLegacyPush)
-
-func pushOntoLegacyQueue(conn redis.Conn, channelUUID string, tps int, value string, priority Priority) error {
-	_, err := redis.Int(scriptLegacyPush.Do(conn, epochMS(), legacyQueueType, channelUUID, tps, priority, value))
-	return err
-}
-
-//go:embed lua/legacy_pop.lua
-var luaLegacyPop string
-var scriptLegacyPop = redis.NewScript(2, luaLegacyPop)
-
-func popLegacy(conn redis.Conn) (WorkerToken, string, error) {
-	values, err := redis.Strings(scriptLegacyPop.Do(conn, epochMS(), legacyQueueType, keyBase))
-	if err != nil {
-		slog.Error("error popping from legacy queue", "error", err)
-		return "", "", err
-	}
-	return WorkerToken(values[0]), values[1], nil
-}
-
-//go:embed lua/legacy_complete.lua
-var luaLegacyComplete string
-var scriptLegacyComplete = redis.NewScript(2, luaLegacyComplete)
-
-//go:embed lua/legacy_dethrottle.lua
-var luaLegacyDethrottle string
-var scriptLegacyDethrottle = redis.NewScript(1, luaLegacyDethrottle)
-
-// StartDethrottler starts a goroutine responsible for dethrottling any queues in the legacy layout that were
-// throttled every second. The passed in quitter chan can be used to shut down the goroutine
-func StartDethrottler(redis *redis.Pool, quitter chan bool, wg *sync.WaitGroup) {
-	wg.Add(1)
-
-	go func() {
-		// figure out our next delay, we want to land just on the other side of a second boundary
-		delay := time.Second - time.Duration(time.Now().UnixNano()%int64(time.Second))
-
-		for {
-			select {
-			case <-quitter:
-				wg.Done()
-				return
-
-			case <-time.After(delay):
-				rc := redis.Get()
-				_, err := scriptLegacyDethrottle.Do(rc, legacyQueueType)
-				if err != nil {
-					slog.Error("error dethrottling", "error", err)
-				}
-				rc.Close()
-
-				delay = time.Second - time.Duration(time.Now().UnixNano()%int64(time.Second))
-			}
-		}
-	}()
-}
-
-func epochMS() string {
-	return strconv.FormatFloat(float64(time.Now().UnixNano()/int64(time.Microsecond))/float64(1000000), 'f', 6, 64)
 }

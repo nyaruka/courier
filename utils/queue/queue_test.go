@@ -2,7 +2,6 @@ package queue_test
 
 import (
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 
@@ -24,234 +23,6 @@ func getPool(t *testing.T) *redis.Pool {
 	t.Cleanup(func() { redisPool.Close() }) // before the database is released
 
 	return redisPool
-}
-
-func TestLegacyLua(t *testing.T) {
-	rp := getPool(t)
-	rc := rp.Get()
-	defer rc.Close()
-
-	// start our dethrottler
-	quitter := make(chan bool)
-	wg := &sync.WaitGroup{}
-	queue.StartDethrottler(rp, quitter, wg)
-	defer close(quitter)
-
-	rate := 10
-
-	// add 20 messages with ids 0-19
-	for i := range 20 {
-		err := queue.PushOntoLegacyQueue(rc, "chan1", rate, fmt.Sprintf(`[{"id":%d}]`, i), queue.LowPriority)
-		require.NoError(t, err)
-	}
-
-	// align ourselves to mid-second so that our operations don't race the dethrottler (which fires just after
-	// each second boundary) or second boundaries themselves
-	delay := time.Second*2 - time.Duration(time.Now().UnixNano()%int64(time.Second)) + time.Millisecond*500
-	time.Sleep(delay)
-
-	// pop 10 items off
-	for i := 0; i < 10; i++ {
-		q, value, err := queue.PopFromQueue(rc)
-		assert.NoError(t, err)
-		assert.NotEqual(t, q, queue.EmptyQueue)
-		assert.Equal(t, fmt.Sprintf(`{"id":%d}`, i), value)
-	}
-
-	// next value should be throttled
-	q, value, err := queue.PopFromQueue(rc)
-	assert.NoError(t, err)
-	assert.Equal(t, "", value)
-	assert.Equal(t, queue.Retry, q)
-
-	// check our redis state
-	assertvk.ZGetAll(t, rc, "msgs:active", map[string]float64{})
-	assertvk.ZGetAll(t, rc, "msgs:throttled", map[string]float64{"msgs:chan1|10": 10})
-	assertvk.ZGetAll(t, rc, "msgs:future", map[string]float64{})
-
-	// adding more items shouldn't change that
-	err = queue.PushOntoLegacyQueue(rc, "chan1", rate, `[{"id":30}]`, queue.LowPriority)
-	assert.NoError(t, err)
-
-	assertvk.ZGetAll(t, rc, "msgs:active", map[string]float64{})
-	assertvk.ZGetAll(t, rc, "msgs:throttled", map[string]float64{"msgs:chan1|10": 10})
-	assertvk.ZGetAll(t, rc, "msgs:future", map[string]float64{})
-
-	// but if we wait, our next msg should be our highest priority
-	time.Sleep(time.Second)
-
-	err = queue.PushOntoLegacyQueue(rc, "chan1", rate, `[{"id":31}]`, queue.HighPriority)
-	assert.NoError(t, err)
-
-	q, value, err = queue.PopFromQueue(rc)
-	assert.NoError(t, err)
-	assert.Equal(t, queue.WorkerToken("msgs:chan1|10"), q)
-	assert.Equal(t, `{"id":31}`, value)
-
-	// should get next five bulk msgs fine
-	for i := 10; i < 15; i++ {
-		q, value, err := queue.PopFromQueue(rc)
-		assert.NoError(t, err)
-		assert.NotEqual(t, q, queue.EmptyQueue)
-		assert.Equal(t, fmt.Sprintf(`{"id":%d}`, i), value)
-
-	}
-
-	// push a multi-message batch for a single contact
-	err = queue.PushOntoLegacyQueue(rc, "chan1", rate, `[{"id":32}, {"id":33}]`, queue.HighPriority)
-	assert.NoError(t, err)
-
-	q, value, err = queue.PopFromQueue(rc)
-	assert.NoError(t, err)
-	assert.Equal(t, queue.WorkerToken("msgs:chan1|10"), q)
-	assert.Equal(t, `{"id":32}`, value)
-
-	assertvk.ZGetAll(t, rc, "msgs:active", map[string]float64{"msgs:chan1|10": 17})
-	assertvk.ZGetAll(t, rc, "msgs:throttled", map[string]float64{})
-	assertvk.ZGetAll(t, rc, "msgs:future", map[string]float64{"msgs:chan1|10": 0})
-
-	// sleep a few seconds
-	time.Sleep(2 * time.Second)
-
-	// pop remaining bulk off
-	for i := 15; i < 20; i++ {
-		q, value, err := queue.PopFromQueue(rc)
-		assert.NoError(t, err)
-		assert.NotEqual(t, q, queue.EmptyQueue)
-		assert.Equal(t, fmt.Sprintf(`{"id":%d}`, i), value)
-	}
-
-	// next should be 30
-	q, value, err = queue.PopFromQueue(rc)
-	assert.NoError(t, err)
-	assert.NotEqual(t, q, queue.EmptyQueue)
-	assert.Equal(t, `{"id":30}`, value)
-
-	// popping again should give us nothing since it is too soon to send 33
-	q = queue.Retry
-	for q == queue.Retry {
-		q, value, err = queue.PopFromQueue(rc)
-	}
-	assert.NoError(t, err)
-	assert.Equal(t, queue.EmptyQueue, q)
-	assert.Empty(t, value)
-
-	// but if we sleep 6 seconds should get it
-	time.Sleep(time.Second * 6)
-
-	q, value, err = queue.PopFromQueue(rc)
-	assert.NoError(t, err)
-	assert.Equal(t, queue.WorkerToken("msgs:chan1|10"), q)
-	assert.Equal(t, `{"id":33}`, value)
-
-	// nothing should be left
-	q = queue.Retry
-	for q == queue.Retry {
-		q, value, err = queue.PopFromQueue(rc)
-	}
-	assert.NoError(t, err)
-	assert.Equal(t, queue.EmptyQueue, q)
-	assert.Empty(t, value)
-
-}
-
-func TestLegacyTPSCost(t *testing.T) {
-	rp := getPool(t)
-	rc := rp.Get()
-	defer rc.Close()
-
-	rate := 10
-
-	// push a message whose tps_cost consumes the entire rate, followed by a regular message
-	err := queue.PushOntoLegacyQueue(rc, "chan1", rate, `[{"id":0,"tps_cost":10}]`, queue.HighPriority)
-	require.NoError(t, err)
-	err = queue.PushOntoLegacyQueue(rc, "chan1", rate, `[{"id":1}]`, queue.HighPriority)
-	require.NoError(t, err)
-
-	// align ourselves to mid-second so our pops and TPS key reads land in the same second
-	delay := time.Second - time.Duration(time.Now().UnixNano()%int64(time.Second)) + time.Millisecond*500
-	time.Sleep(delay)
-
-	q, value, err := queue.PopFromQueue(rc)
-	assert.NoError(t, err)
-	assert.Equal(t, queue.WorkerToken("msgs:chan1|10"), q)
-	assert.Equal(t, `{"id":0,"tps_cost":10}`, value)
-
-	// popped message should have been charged its full cost against this second's TPS key
-	tpsUsed, err := redis.Int(rc.Do("GET", fmt.Sprintf("msgs:chan1|10:tps:%d", time.Now().Unix())))
-	assert.NoError(t, err)
-	assert.Equal(t, 10, tpsUsed)
-
-	// and against the channel's usage shared with the new layout
-	assertvk.HGet(t, rc, "{msgs}:ch:chan1", "used", "10")
-
-	// so the next pop should be throttled even though only one message was popped
-	q, value, err = queue.PopFromQueue(rc)
-	assert.NoError(t, err)
-	assert.Equal(t, queue.Retry, q)
-	assert.Equal(t, "", value)
-
-	assertvk.ZGetAll(t, rc, "msgs:throttled", map[string]float64{"msgs:chan1|10": 1})
-}
-
-func TestLegacyThrottle(t *testing.T) {
-	assert := assert.New(t)
-	pool := getPool(t)
-	conn := pool.Get()
-	defer conn.Close()
-
-	// start our dethrottler
-	quitter := make(chan bool)
-	wg := &sync.WaitGroup{}
-	queue.StartDethrottler(pool, quitter, wg)
-
-	insertCount := 30
-	rate := 10
-
-	// insert items with our set limit
-	for i := range insertCount {
-		err := queue.PushOntoLegacyQueue(conn, "chan1", rate, fmt.Sprintf(`[{"id":%d}]`, i), queue.HighPriority)
-		assert.NoError(err)
-		time.Sleep(1 * time.Microsecond)
-	}
-
-	// start timing
-	start := time.Now()
-	curr := 0
-	var task queue.WorkerToken
-	var err error
-	var value string
-	for curr < insertCount {
-		task, value, err = queue.PopFromQueue(conn)
-		assert.NoError(err)
-
-		// if this wasn't throttled
-		if value != "" {
-			expected := fmt.Sprintf(`{"id":%d}`, curr)
-			assert.Equal(expected, value, "Out of order msg")
-			curr++
-
-			err = queue.MarkComplete(conn, task)
-			assert.NoError(err)
-		} else {
-			// otherwise sleep a bit
-			time.Sleep(100 * time.Millisecond)
-		}
-	}
-
-	// if we haven't seen all messages, fail
-	assert.Equal(insertCount, curr, "Did not read all messages")
-
-	// if this took less than 1 second or more than 3 seconds, fail, should have throttled
-	expected := time.Duration((insertCount / rate) - 2)
-	elapsed := time.Since(start)
-	if elapsed < expected*time.Second || elapsed > (expected+2)*time.Second {
-		t.Errorf("Did not throttle properly, took: %f", elapsed.Seconds())
-	}
-
-	// close our dethrottler
-	close(quitter)
-	wg.Wait()
 }
 
 // sleeps until the middle of the server's next second so that what follows happens within one second
@@ -424,94 +195,100 @@ func TestQueueFairness(t *testing.T) {
 	assert.Equal(t, queue.WorkerToken("chan2"), token)
 }
 
-func TestQueueBothLayouts(t *testing.T) {
+func TestQueueTPSCost(t *testing.T) {
 	rc := getPool(t).Get()
 	defer rc.Close()
 
-	// a channel with items in both layouts, and another with items only in the legacy layout
-	require.NoError(t, queue.PushOntoLegacyQueue(rc, "chan1", 3, `[{"id":1}]`, queue.HighPriority))
-	require.NoError(t, queue.PushOntoLegacyQueue(rc, "chan1", 3, `[{"id":2}]`, queue.LowPriority))
-	require.NoError(t, queue.PushOntoLegacyQueue(rc, "chan2", 0, `[{"id":3}]`, queue.LowPriority))
-	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 3, `[{"id":4}]`, queue.LowPriority))
-	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 3, `[{"id":5}]`, queue.LowPriority))
-
-	high, bulk, err := queue.Size(rc)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, high)
-	assert.Equal(t, 4, bulk)
+	// a message whose tps_cost consumes the entire rate, followed by a regular message
+	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 10, `[{"id":0,"tps_cost":10}]`, queue.HighPriority))
+	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 10, `[{"id":1}]`, queue.HighPriority))
 
 	waitForMidSecond(t, rc)
-
-	// chan1's TPS is shared between layouts, so we only get 3 of its 4 items this second
-	tokens := map[queue.WorkerToken]int{}
-	values := []string{}
-	for {
-		token, value := popNext(t, rc)
-		if token == queue.EmptyQueue {
-			break
-		}
-		tokens[token]++
-		values = append(values, value)
-	}
-
-	assert.Len(t, values, 4)
-	assert.Equal(t, 1, tokens["msgs:chan2|0"])
-	assert.Equal(t, 3, tokens["msgs:chan1|3"]+tokens["chan1"])
-
-	for token, n := range tokens {
-		for range n {
-			require.NoError(t, queue.MarkComplete(rc, token))
-		}
-	}
-
-	// nothing left in flight in either layout
-	for _, key := range []string{"msgs:active", "msgs:throttled"} {
-		n, err := redis.Int(rc.Do("ZCOUNT", key, "(0", "+inf"))
-		assert.NoError(t, err)
-		assert.Equal(t, 0, n, "workers in %s", key)
-	}
-	assertvk.HGet(t, rc, "{msgs}:ch:chan1", "inflight", "0")
-
-	// and the rest the next second
-	time.Sleep(time.Second)
-
-	quitter := make(chan bool)
-	wg := &sync.WaitGroup{}
-	queue.StartDethrottler(getPool(t), quitter, wg)
-	defer close(quitter)
-
-	time.Sleep(1100 * time.Millisecond)
 
 	token, value := popNext(t, rc)
-	assert.NotEqual(t, queue.EmptyQueue, token)
-	values = append(values, value)
+	assert.Equal(t, queue.WorkerToken("chan1"), token)
+	assert.Equal(t, `{"id":0,"tps_cost":10}`, value)
+	assertvk.HGet(t, rc, "{msgs}:ch:chan1", "used", "10")
 
-	token, _ = popNext(t, rc)
-	assert.Equal(t, queue.EmptyQueue, token)
-
-	assert.ElementsMatch(t, []string{`{"id":1}`, `{"id":2}`, `{"id":3}`, `{"id":4}`, `{"id":5}`}, values)
-}
-
-func TestQueuePushWhenThrottled(t *testing.T) {
-	rc := getPool(t).Get()
-	defer rc.Close()
-
-	waitForMidSecond(t, rc)
-
-	// use this second's TPS from the legacy layout
-	require.NoError(t, queue.PushOntoLegacyQueue(rc, "chan1", 1, `[{"id":1}]`, queue.HighPriority))
-	_, value := popNext(t, rc)
-	assert.Equal(t, `{"id":1}`, value)
-
-	// so an item pushed now waits until the next second
-	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 1, `[{"id":2}]`, queue.HighPriority))
-	assertvk.ZGetAll(t, rc, "{msgs}:ready", map[string]float64{})
+	// so the next pop waits until the next second even though only one message was popped
+	token, value, err := queue.PopFromQueue(rc)
+	assert.NoError(t, err)
+	assert.Equal(t, queue.Retry, token)
+	assert.Equal(t, "", value)
 	assertvk.ZGetAll(t, rc, "{msgs}:waiting", map[string]float64{"chan1": serverSecond(t, rc) + 1})
 
 	time.Sleep(time.Second)
 
 	_, value = popNext(t, rc)
-	assert.Equal(t, `{"id":2}`, value)
+	assert.Equal(t, `{"id":1}`, value)
+}
+
+func TestQueueThrottle(t *testing.T) {
+	rc := getPool(t).Get()
+	defer rc.Close()
+
+	insertCount := 30
+	rate := 10
+
+	for i := range insertCount {
+		require.NoError(t, queue.PushOntoQueue(rc, "chan1", rate, fmt.Sprintf(`[{"id":%d}]`, i), queue.HighPriority))
+	}
+
+	waitForMidSecond(t, rc)
+	start := time.Now()
+
+	for curr := 0; curr < insertCount; {
+		token, value, err := queue.PopFromQueue(rc)
+		require.NoError(t, err)
+
+		if value != "" {
+			assert.Equal(t, fmt.Sprintf(`{"id":%d}`, curr), value, "out of order msg")
+			curr++
+			require.NoError(t, queue.MarkComplete(rc, token))
+		} else if token == queue.EmptyQueue {
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+
+	// 10 a second starting mid-second, so the last 10 are popped at the start of the third second
+	elapsed := time.Since(start)
+	assert.Greater(t, elapsed, 1400*time.Millisecond)
+	assert.Less(t, elapsed, 2500*time.Millisecond)
+}
+
+func TestQueueSize(t *testing.T) {
+	rc := getPool(t).Get()
+	defer rc.Close()
+
+	high, bulk, err := queue.Size(rc)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, high)
+	assert.Equal(t, 0, bulk)
+
+	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 1, `[{"id":1}]`, queue.HighPriority))
+	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 1, `[{"id":2}]`, queue.LowPriority))
+	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 1, `[{"id":3}]`, queue.LowPriority))
+	require.NoError(t, queue.PushOntoQueue(rc, "chan2", 0, `[{"id":4}]`, queue.LowPriority))
+
+	high, bulk, err = queue.Size(rc)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, high)
+	assert.Equal(t, 3, bulk)
+
+	waitForMidSecond(t, rc)
+
+	// pop until chan1 has used this second's TPS and is waiting, as its remaining items still count
+	popNext(t, rc)
+	popNext(t, rc)
+	token, _ := popNext(t, rc)
+	assert.Equal(t, queue.EmptyQueue, token)
+	assertvk.ZGetAll(t, rc, "{msgs}:ready", map[string]float64{})
+	assertvk.ZCard(t, rc, "{msgs}:waiting", 1)
+
+	high, bulk, err = queue.Size(rc)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, high)
+	assert.Equal(t, 2, bulk)
 }
 
 func TestQueueForgetsLostSends(t *testing.T) {
@@ -536,44 +313,4 @@ func TestQueueForgetsLostSends(t *testing.T) {
 
 	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 0, `[{"id":3}]`, queue.LowPriority))
 	assertvk.ZGetAll(t, rc, "{msgs}:ready", map[string]float64{"chan1": 0})
-}
-
-// counts the scripts run on a connection
-type scriptCounter struct {
-	redis.Conn
-	scripts int
-}
-
-func (c *scriptCounter) Do(cmd string, args ...any) (any, error) {
-	if cmd == "EVALSHA" || cmd == "EVAL" {
-		c.scripts++
-	}
-	return c.Conn.Do(cmd, args...)
-}
-
-func TestQueueEmptyLayoutTriedSecond(t *testing.T) {
-	rc := getPool(t).Get()
-	defer rc.Close()
-
-	// whichever layout is the only one used, popping its items shouldn't cost an extra call to the other for each
-	for _, push := range []func(redis.Conn, string, int, string, queue.Priority) error{queue.PushOntoLegacyQueue, queue.PushOntoQueue} {
-		for i := range 10 {
-			require.NoError(t, push(rc, "chan1", 0, fmt.Sprintf(`[{"id":%d}]`, i), queue.LowPriority))
-		}
-
-		counter := &scriptCounter{Conn: rc}
-		for i := range 10 {
-			token, value, err := queue.PopFromQueue(counter)
-			require.NoError(t, err)
-			require.NotEqual(t, queue.EmptyQueue, token)
-			assert.Equal(t, fmt.Sprintf(`{"id":%d}`, i), value)
-			require.NoError(t, queue.MarkComplete(rc, token))
-		}
-
-		// at most one call to the empty layout before it's tried second
-		assert.LessOrEqual(t, counter.scripts, 11)
-
-		token, _ := popNext(t, rc)
-		assert.Equal(t, queue.EmptyQueue, token)
-	}
 }
