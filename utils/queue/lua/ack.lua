@@ -1,14 +1,16 @@
 -- KEYS: [Unacked, Acks, AckLimits]
--- ARGV: [MsgUUID, MaxUnacked, MaxAckLag, AckRateWindow, UnackedRetention]
+-- ARGV: [MsgUUID, MaxUnacked, MaxAckLag, AckRateWindow, UnackedRetention, AckLimitsTTL]
 local unackedKey, acksKey, limitsKey = KEYS[1], KEYS[2], KEYS[3]
 local msgUUID, maxUnacked, maxAckLag = ARGV[1], tonumber(ARGV[2]), tonumber(ARGV[3])
-local window, retention = tonumber(ARGV[4]), tonumber(ARGV[5])
+local window, retention, limitsTTL = tonumber(ARGV[4]), tonumber(ARGV[5]), tonumber(ARGV[6])
 
 -- the channel's current limits are applied here as well as on each send, as a channel waiting on its limits isn't
--- sending, and otherwise raising or removing them wouldn't reach it
+-- sending, and otherwise raising or removing them wouldn't reach it. If neither sends nor acknowledgements arrive, as
+-- when the channel stops getting delivery reports, they lapse, so that changing the config can't leave the channel
+-- held back by limits it no longer has. A stalled SMSC then gets a few sends through to test it each time they lapse.
 if maxUnacked > 0 or maxAckLag > 0 then
     redis.call("HSET", limitsKey, "max_unacked", maxUnacked, "max_ack_lag", maxAckLag)
-    redis.call("EXPIRE", limitsKey, retention)
+    redis.call("EXPIRE", limitsKey, limitsTTL)
 else
     redis.call("DEL", limitsKey)
 end

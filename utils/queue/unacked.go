@@ -14,6 +14,9 @@ const UnackedTTL = 10 * time.Minute
 // how long a send is kept after that, so that its acknowledgement arriving late still counts towards the rate
 const unackedRetention = time.Hour
 
+// how long a channel's limits apply without a send or an acknowledgement to refresh them
+const ackLimitsTTL = time.Minute
+
 // seconds is a duration as whole seconds, the way the scripts take them
 func seconds(d time.Duration) int { return int(d / time.Second) }
 
@@ -45,7 +48,7 @@ var scriptTrack = redis.NewScript(2, luaTrack)
 // provider acknowledged sends over the last ackRateWindow seconds - so a slow provider backs messages up in our queue
 // rather than its own. A zero limit is no limit.
 func TrackUnacked(conn redis.Conn, channelUUID, msgUUID string, maxUnacked int, maxAckLag time.Duration) error {
-	_, err := scriptTrack.Do(conn, unackedKey(channelUUID), ackLimitsKey(channelUUID), msgUUID, maxUnacked, maxAckLag.Seconds(), seconds(unackedRetention))
+	_, err := scriptTrack.Do(conn, unackedKey(channelUUID), ackLimitsKey(channelUUID), msgUUID, maxUnacked, maxAckLag.Seconds(), seconds(unackedRetention), seconds(ackLimitsTTL))
 	return err
 }
 
@@ -64,6 +67,6 @@ var scriptAck = redis.NewScript(3, luaAck)
 // applies the channel's current limits - so that changing them reaches a channel that's waiting on them and so isn't
 // sending. Zero limits remove them.
 func Acked(conn redis.Conn, channelUUID, msgUUID string, maxUnacked int, maxAckLag time.Duration) error {
-	_, err := scriptAck.Do(conn, unackedKey(channelUUID), acksKey(channelUUID), ackLimitsKey(channelUUID), msgUUID, maxUnacked, maxAckLag.Seconds(), ackRateWindow, seconds(unackedRetention))
+	_, err := scriptAck.Do(conn, unackedKey(channelUUID), acksKey(channelUUID), ackLimitsKey(channelUUID), msgUUID, maxUnacked, maxAckLag.Seconds(), ackRateWindow, seconds(unackedRetention), seconds(ackLimitsTTL))
 	return err
 }

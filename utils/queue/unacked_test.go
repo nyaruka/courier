@@ -256,3 +256,34 @@ func TestQueueAckRate(t *testing.T) {
 	assertvk.HGet(t, rc, "{msgs}:acks:chan1", fmt.Sprintf("c%d", slot), "2")
 	assertvk.ZCard(t, rc, "{msgs}:unacked:chan1", 147)
 }
+
+func TestQueueAckLimitsLapse(t *testing.T) {
+	rc := getPool(t).Get()
+	defer rc.Close()
+
+	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 0, `[{"id":1}]`, queue.LowPriority))
+	require.NoError(t, queue.TrackUnacked(rc, "chan1", "msg1", 1, 0))
+
+	token, _ := popNext(t, rc)
+	assert.Equal(t, queue.EmptyQueue, token)
+
+	// the limits only last a minute unless a send or an acknowledgement refreshes them, unlike the sends themselves
+	limitsTTL, err := redis.Int(rc.Do("TTL", "{msgs}:acklimits:chan1"))
+	require.NoError(t, err)
+	assert.True(t, limitsTTL > 0 && limitsTTL <= 60, "unexpected limits TTL %d", limitsTTL)
+
+	sendsTTL, err := redis.Int(rc.Do("TTL", "{msgs}:unacked:chan1"))
+	require.NoError(t, err)
+	assert.Greater(t, sendsTTL, 60)
+
+	// so a channel that stops getting delivery reports, e.g. after they're turned off, isn't held back by them for long
+	_, err = rc.Do("PEXPIRE", "{msgs}:acklimits:chan1", 1)
+	require.NoError(t, err)
+
+	waitForMidSecond(t, rc)
+
+	token, value := popNext(t, rc)
+	assert.Equal(t, queue.WorkerToken("chan1"), token)
+	assert.Equal(t, `{"id":1}`, value)
+	assertvk.ZCard(t, rc, "{msgs}:unacked:chan1", 1)
+}
