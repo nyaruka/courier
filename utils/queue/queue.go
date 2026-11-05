@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"log/slog"
 	"strconv"
-	"time"
 
 	"github.com/gomodule/redigo/redis"
 )
@@ -76,7 +75,7 @@ var scriptPop = redis.NewScript(2, luaPop)
 // immediately make another call to get the next value. A worker token of EmptyQueue will be returned if there are
 // no more items to retrive. Otherwise the WorkerToken should be saved in order to mark the task as complete later.
 func PopFromQueue(conn redis.Conn) (WorkerToken, string, error) {
-	values, err := redis.Strings(scriptPop.Do(conn, readyKey, waitingKey, keyBase, wakeLimit, int(UnackedTTL/time.Second), ackLagFloor, ackRateWindow))
+	values, err := redis.Strings(scriptPop.Do(conn, readyKey, waitingKey, keyBase, wakeLimit, seconds(UnackedTTL), ackLagFloor, ackRateWindow, seconds(unackedRetention)))
 	if err != nil {
 		slog.Error("error popping from queue", "error", err)
 		return "", "", err

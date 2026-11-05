@@ -1,8 +1,9 @@
 -- KEYS: [Ready, Waiting]
--- ARGV: [KeyBase, WakeLimit, UnackedTTL, AckLagFloor, AckRateWindow]
+-- ARGV: [KeyBase, WakeLimit, UnackedTTL, AckLagFloor, AckRateWindow, UnackedRetention]
 local readyKey, waitingKey = KEYS[1], KEYS[2]
 local keyBase, wakeLimit = ARGV[1], tonumber(ARGV[2])
 local unackedTTL, ackLagFloor, ackRateWindow = tonumber(ARGV[3]), tonumber(ARGV[4]), tonumber(ARGV[5])
+local unackedRetention = tonumber(ARGV[6])
 
 local time = redis.call("TIME")
 local nowSec = tonumber(time[1])
@@ -85,8 +86,9 @@ local maxUnacked, maxAckLag = tonumber(limits[1]) or 0, tonumber(limits[2]) or 0
 
 if maxUnacked > 0 or maxAckLag > 0 then
     local unackedKey = keyBase .. ":unacked:" .. uuid
-    redis.call("ZREMRANGEBYSCORE", unackedKey, "-inf", now - unackedTTL)
-    local unacked = redis.call("ZCARD", unackedKey)
+    -- sends are kept for longer than they count, so that a late acknowledgement still counts towards the rate
+    redis.call("ZREMRANGEBYSCORE", unackedKey, "-inf", now - unackedRetention)
+    local unacked = redis.call("ZCOUNT", unackedKey, now - unackedTTL, "+inf")
 
     -- sends in flight aren't tracked until they complete, so they count too or concurrent workers could overshoot
     if maxUnacked > 0 and unacked + (tonumber(state[4]) or 0) >= maxUnacked then
@@ -100,7 +102,7 @@ if maxUnacked > 0 or maxAckLag > 0 then
     -- there's a real backlog, so that a few lost acknowledgements can't park a quiet channel.
     local recent = 0
     if maxAckLag > 0 then
-        recent = redis.call("ZCOUNT", unackedKey, now - 2 * maxAckLag, "+inf")
+        recent = redis.call("ZCOUNT", unackedKey, now - math.min(2 * maxAckLag, unackedTTL), "+inf")
     end
 
     if recent >= ackLagFloor then

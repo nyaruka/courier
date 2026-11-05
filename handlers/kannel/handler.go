@@ -205,20 +205,36 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		return err
 	}
 
-	resp, _, err := h.RequestHTTP(req, clog)
-	if err := handlers.ErrorFromResponse(resp, err); err != nil {
-		return err
-	}
+	// once Kannel accepts the send it holds it until the SMSC takes it - including when no connection to the SMSC is
+	// up, where it answers "3: Queued for later delivery" - so it counts as unacknowledged until the SMSC's delivery
+	// report arrives. That can come back before Kannel's answer to us does, so the send is tracked before it's made,
+	// and untracked if Kannel doesn't accept it.
+	chUUID, msgUUID := string(msg.Channel().UUID()), string(msg.UUID())
+	tracked := false
 
-	// Kannel now holds the send until the SMSC takes it - including when no connection to the SMSC is up, where it
-	// answers "3: Queued for later delivery" - so it counts as unacknowledged until the SMSC's delivery report arrives
 	if maxUnacked, maxAckLag := unackedLimits(msg.Channel()); maxUnacked > 0 || maxAckLag > 0 {
 		vc := h.Runtime().VK.Get()
-		defer vc.Close()
+		err := queue.TrackUnacked(vc, chUUID, msgUUID, maxUnacked, maxAckLag)
+		vc.Close()
 
-		if err := queue.TrackUnacked(vc, string(msg.Channel().UUID()), string(msg.UUID()), maxUnacked, maxAckLag); err != nil {
-			slog.Error("error tracking unacknowledged kannel send", "error", err, "msg_uuid", msg.UUID())
+		if err != nil {
+			slog.Error("error tracking unacknowledged kannel send", "error", err, "msg_uuid", msgUUID)
+		} else {
+			tracked = true
 		}
+	}
+
+	resp, _, err := h.RequestHTTP(req, clog)
+	if err := handlers.ErrorFromResponse(resp, err); err != nil {
+		if tracked {
+			vc := h.Runtime().VK.Get()
+			defer vc.Close()
+
+			if err := queue.Untrack(vc, chUUID, msgUUID); err != nil {
+				slog.Error("error untracking failed kannel send", "error", err, "msg_uuid", msgUUID)
+			}
+		}
+		return err
 	}
 
 	return nil

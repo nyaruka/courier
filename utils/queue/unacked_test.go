@@ -118,19 +118,22 @@ func TestQueueForgetsLostAcks(t *testing.T) {
 
 	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 0, `[{"id":1}]`, queue.LowPriority))
 	require.NoError(t, queue.TrackUnacked(rc, "chan1", "msg1", 1, 0))
+	require.NoError(t, queue.TrackUnacked(rc, "chan1", "msg2", 1, 0))
 
-	// pretend that send was so long ago that its acknowledgement must have been lost
+	// pretend those sends were so long ago that their acknowledgements must have been lost - one long enough ago that
+	// it's no longer kept even for a late acknowledgement
 	now := serverSecond(t, rc)
-	_, err := rc.Do("ZADD", "{msgs}:unacked:chan1", now-queue.UnackedTTL.Seconds()-1, "msg1")
+	_, err := rc.Do("ZADD", "{msgs}:unacked:chan1", now-queue.UnackedTTL.Seconds()-1, "msg1", now-(2*time.Hour).Seconds(), "msg2")
 	require.NoError(t, err)
 
+	// neither counts against the limit any more, but the more recent is kept in case its acknowledgement is just late
 	token, value := popNext(t, rc)
 	assert.Equal(t, queue.WorkerToken("chan1"), token)
 	assert.Equal(t, `{"id":1}`, value)
-	assertvk.ZCard(t, rc, "{msgs}:unacked:chan1", 0)
+	assertvk.ZRange(t, rc, "{msgs}:unacked:chan1", 0, -1, []string{"msg1"})
 
 	// the keys expire once the channel stops sending
-	require.NoError(t, queue.TrackUnacked(rc, "chan1", "msg2", 1, 0))
+	require.NoError(t, queue.TrackUnacked(rc, "chan1", "msg3", 1, 0))
 	for _, key := range []string{"{msgs}:unacked:chan1", "{msgs}:acklimits:chan1"} {
 		ttl, err := redis.Int(rc.Do("TTL", key))
 		require.NoError(t, err)
@@ -212,4 +215,44 @@ func TestQueueAckedAppliesLimits(t *testing.T) {
 	token, value := popNext(t, rc)
 	assert.Equal(t, queue.WorkerToken("chan1"), token)
 	assert.Equal(t, `{"id":1}`, value)
+}
+
+func TestQueueAckRate(t *testing.T) {
+	rc := getPool(t).Get()
+	defer rc.Close()
+
+	require.NoError(t, queue.PushOntoQueue(rc, "chan1", 0, `[{"id":1}]`, queue.LowPriority))
+	for i := range 150 {
+		require.NoError(t, queue.TrackUnacked(rc, "chan1", fmt.Sprintf("msg%d", i), 0, 10*time.Second))
+	}
+
+	waitForMidSecond(t, rc)
+	now := int(serverSecond(t, rc))
+	slot := now % 11
+
+	// acknowledgements from before the window, left in the ring of slots, don't count towards the rate
+	_, err := rc.Do("HSET", "{msgs}:acks:chan1", fmt.Sprintf("s%d", (slot+1)%11), now-11, fmt.Sprintf("c%d", (slot+1)%11), 1000)
+	require.NoError(t, err)
+
+	token, _ := popNext(t, rc)
+	assert.Equal(t, queue.EmptyQueue, token)
+
+	// and when the slot comes round again it starts over
+	_, err = rc.Do("HSET", "{msgs}:acks:chan1", fmt.Sprintf("s%d", slot), now-11, fmt.Sprintf("c%d", slot), 1000)
+	require.NoError(t, err)
+	require.NoError(t, queue.Acked(rc, "chan1", "msg0", 0, 10*time.Second))
+	assertvk.HGet(t, rc, "{msgs}:acks:chan1", fmt.Sprintf("s%d", slot), fmt.Sprint(now))
+	assertvk.HGet(t, rc, "{msgs}:acks:chan1", fmt.Sprintf("c%d", slot), "1")
+
+	// a late acknowledgement, of a send that no longer counts against the limits, still counts towards the rate
+	_, err = rc.Do("ZADD", "{msgs}:unacked:chan1", float64(now)-queue.UnackedTTL.Seconds()-60, "msg1")
+	require.NoError(t, err)
+	require.NoError(t, queue.Acked(rc, "chan1", "msg1", 0, 10*time.Second))
+	assertvk.HGet(t, rc, "{msgs}:acks:chan1", fmt.Sprintf("c%d", slot), "2")
+
+	// a send that's untracked doesn't count
+	require.NoError(t, queue.Untrack(rc, "chan1", "msg2"))
+	require.NoError(t, queue.Acked(rc, "chan1", "msg2", 0, 10*time.Second))
+	assertvk.HGet(t, rc, "{msgs}:acks:chan1", fmt.Sprintf("c%d", slot), "2")
+	assertvk.ZCard(t, rc, "{msgs}:unacked:chan1", 147)
 }

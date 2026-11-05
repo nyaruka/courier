@@ -96,7 +96,15 @@ func TestUnackedLimits(t *testing.T) {
 	assertvk.NotExists(t, vc, "{msgs}:unacked:"+chUUID)
 	vc.Close()
 
-	// the SMSC's acknowledgement clears a send even when the channel ignores sent reports, but a buffered report doesn't
+	// a send that Kannel doesn't accept is tracked while it's made, but not afterwards
+	RunOutgoingTests(t, limitedChannel, newHandler, "testdata/outgoing_unacked_failed.json", &OutgoingOptions{Setup: capture})
+
+	vc = rt.VK.Get()
+	assertvk.ZCard(t, vc, "{msgs}:unacked:"+chUUID, 0)
+	vc.Close()
+
+	// the SMSC's acknowledgement or rejection clears a send, even when the channel ignores sent reports, but a buffered
+	// report doesn't
 	ignoreChannel := test.NewMockChannel(chUUID, "KN", "2020", "US", []string{urns.Phone.Prefix},
 		map[string]any{"ignore_sent": true, "max_unacked": 5000})
 	setup := func(t *testing.T, r *runtime.Runtime) {
@@ -105,6 +113,7 @@ func TestUnackedLimits(t *testing.T) {
 		defer vc.Close()
 		require.NoError(t, queue.TrackUnacked(vc, chUUID, "019a06fa-467d-7786-b9cb-5b42177cd53f", 5000, 0))
 		require.NoError(t, queue.TrackUnacked(vc, chUUID, "019a06fa-467d-7786-b9cb-5b42177cd540", 5000, 0))
+		require.NoError(t, queue.TrackUnacked(vc, chUUID, "019a06fa-467d-7786-b9cb-5b42177cd541", 5000, 0))
 	}
 	RunIncomingTests(t, []*models.Channel{ignoreChannel}, newHandler, "testdata/incoming_unacked.json", &IncomingOptions{Setup: setup})
 

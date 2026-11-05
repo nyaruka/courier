@@ -38,5 +38,35 @@
             "type": "msg_status",
             "errors": []
         }
+    },
+    {
+        "label": "Rejected Status Is An Acknowledgement",
+        "url": "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?uuid=019a06fa-467d-7786-b9cb-5b42177cd541&status=16",
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "E"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "msg_uuid": "019a06fa-467d-7786-b9cb-5b42177cd541",
+                "status": "E",
+                "log_uuid": "019a5755-ef68-7000-b55b-03aaf48a9a7c"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
     }
 ]

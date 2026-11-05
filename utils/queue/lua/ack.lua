@@ -1,14 +1,14 @@
 -- KEYS: [Unacked, Acks, AckLimits]
--- ARGV: [MsgUUID, MaxUnacked, MaxAckLag, AckRateWindow, UnackedTTL]
+-- ARGV: [MsgUUID, MaxUnacked, MaxAckLag, AckRateWindow, UnackedRetention]
 local unackedKey, acksKey, limitsKey = KEYS[1], KEYS[2], KEYS[3]
 local msgUUID, maxUnacked, maxAckLag = ARGV[1], tonumber(ARGV[2]), tonumber(ARGV[3])
-local window, unackedTTL = tonumber(ARGV[4]), tonumber(ARGV[5])
+local window, retention = tonumber(ARGV[4]), tonumber(ARGV[5])
 
 -- the channel's current limits are applied here as well as on each send, as a channel waiting on its limits isn't
 -- sending, and otherwise raising or removing them wouldn't reach it
 if maxUnacked > 0 or maxAckLag > 0 then
     redis.call("HSET", limitsKey, "max_unacked", maxUnacked, "max_ack_lag", maxAckLag)
-    redis.call("EXPIRE", limitsKey, unackedTTL)
+    redis.call("EXPIRE", limitsKey, retention)
 else
     redis.call("DEL", limitsKey)
 end
@@ -29,5 +29,5 @@ else
     redis.call("HSET", acksKey, "s" .. slot, nowSec, "c" .. slot, 1)
 end
 
-redis.call("EXPIRE", acksKey, unackedTTL)
+redis.call("EXPIRE", acksKey, retention)
 return 1
