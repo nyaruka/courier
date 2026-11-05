@@ -233,6 +233,11 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+
+		// FCM also rate limits sends to a single device, so a 429 mustn't hold back the whole channel
+		if handlers.IsThrottled(resp) {
+			return channels.ErrConnectionThrottled
+		}
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
 			return err
 		}

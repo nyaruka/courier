@@ -511,6 +511,11 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg *models.MsgO
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+
+		// Messenger rate limits can apply to a single recipient, so a 429 mustn't hold back the whole channel
+		if handlers.IsThrottled(resp) {
+			return channels.ErrConnectionThrottled
+		}
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
 			return err
 		}

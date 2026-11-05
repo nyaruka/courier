@@ -14,7 +14,9 @@ const maxRetryAfter = 5 * time.Minute
 
 // ErrorFromResponse converts the response and error from a send request into the send error that should be
 // returned to the sender, or nil if the response indicates success. Note that HTTP 429 is treated as throttling
-// for every channel type - it's a standard status code and no channel uses it to mean permanent failure.
+// for every channel type - it's a standard status code and no channel uses it to mean permanent failure - and holds
+// back the whole channel if it has a Retry-After (see ThrottledError), so handlers for providers whose rate limits can
+// apply to a single recipient should check IsThrottled first.
 func ErrorFromResponse(resp *http.Response, err error) error {
 	if err != nil || resp.StatusCode/100 == 5 {
 		return channels.ErrConnectionFailed
