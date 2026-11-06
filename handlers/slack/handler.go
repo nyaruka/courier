@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"mime/multipart"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -186,25 +186,8 @@ func (h *handler) sendTextMsgPart(msg *models.MsgOut, token string, clog *models
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err := handlers.ErrorFromResponse(resp, err); err != nil {
-		return err
-	}
-
-	ok, err := jsonparser.GetBoolean(respBody, "ok")
-	if err != nil {
-		return channels.ErrResponseContent
-	}
-
-	if !ok {
-		errDescription, err := jsonparser.GetString(respBody, "error")
-		if err != nil {
-			return channels.ErrResponseContent
-		}
-		clog.Error(&svclogs.Error{Message: errDescription})
-		return channels.ErrFailedWithReason("", errDescription)
-	}
-	return nil
+	_, err = h.callAPI(req, clog)
+	return err
 }
 
 func (h *handler) parseAttachmentToFileParams(msg *models.MsgOut, attachment string, clog *models.ChannelLog) (*FileParams, error) {
@@ -224,56 +207,97 @@ func (h *handler) parseAttachmentToFileParams(msg *models.MsgOut, attachment str
 	if err != nil {
 		return nil, err
 	}
-	return &FileParams{File: respBody, FileName: filename, Channels: msg.URN().Path()}, nil
+	return &FileParams{File: respBody, FileName: filename}, nil
 }
 
+// sendFilePart uploads a file and shares it with the contact using Slack's external upload flow: get an upload URL,
+// upload the bytes to it, then complete the upload which shares the file.
+// https://docs.slack.dev/messaging/working-with-files/#uploading_files
 func (h *handler) sendFilePart(msg *models.MsgOut, token string, fileParams *FileParams, clog *models.ChannelLog) error {
-	uploadURL := apiURL + "/files.upload"
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	mediaPart, err := writer.CreateFormFile("file", fileParams.FileName)
-	if err != nil {
-		return fmt.Errorf("failed to create file form field: %w", err)
+	// step 1: get an upload URL and file ID
+	form := url.Values{
+		"filename": {fileParams.FileName},
+		"length":   {strconv.Itoa(len(fileParams.File))},
 	}
-	io.Copy(mediaPart, bytes.NewReader(fileParams.File))
-
-	filenamePart, err := writer.CreateFormField("filename")
+	req, err := newFormRequest(apiURL+"/files.getUploadURLExternal", form, token)
 	if err != nil {
-		return fmt.Errorf("failed to create filename form field: %w", err)
+		return err
 	}
-	io.Copy(filenamePart, strings.NewReader(fileParams.FileName))
 
-	channelsPart, err := writer.CreateFormField("channels")
+	respBody, err := h.callAPI(req, clog)
 	if err != nil {
-		return fmt.Errorf("failed to create channels form field: %w", err)
+		return err
 	}
-	io.Copy(channelsPart, strings.NewReader(fileParams.Channels))
 
-	writer.Close()
+	var upload uploadURLResponse
+	if err := json.Unmarshal(respBody, &upload); err != nil {
+		return channels.ErrResponseUnparseable
+	}
+	if upload.UploadURL == "" || upload.FileID == "" {
+		return channels.ErrResponseContent
+	}
 
-	req, err := http.NewRequest(http.MethodPost, uploadURL, bytes.NewReader(body.Bytes()))
+	// step 2: upload the file bytes to that URL
+	req, err = http.NewRequest(http.MethodPost, upload.UploadURL, bytes.NewReader(fileParams.File))
 	if err != nil {
-		return fmt.Errorf("error building request to file upload endpoint: %w", err)
+		return fmt.Errorf("error building file upload request: %w", err)
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	req.Header.Add("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Content-Type", "application/octet-stream")
 
-	resp, respBody, err := h.RequestHTTP(req, clog)
+	resp, _, err := h.RequestHTTP(req, clog)
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
 	}
 
-	var fr FileResponse
-	if err := json.Unmarshal(respBody, &fr); err != nil {
-		return channels.ErrResponseUnparseable
+	// step 3: complete the upload, sharing the file with the contact (channels accepts user IDs, channel_id doesn't)
+	files, err := json.Marshal([]completeUploadFile{{ID: upload.FileID, Title: fileParams.FileName}})
+	if err != nil {
+		return err
+	}
+	form = url.Values{
+		"files":    {string(files)},
+		"channels": {msg.URN().Path()},
+	}
+	req, err = newFormRequest(apiURL+"/files.completeUploadExternal", form, token)
+	if err != nil {
+		return err
 	}
 
-	if !fr.OK {
-		return channels.ErrResponseContent
+	_, err = h.callAPI(req, clog)
+	return err
+}
+
+// callAPI makes a request to a Slack Web API method and returns the response body if it indicates success
+func (h *handler) callAPI(req *http.Request, clog *models.ChannelLog) ([]byte, error) {
+	resp, respBody, err := h.RequestHTTP(req, clog)
+	if err := handlers.ErrorFromResponse(resp, err); err != nil {
+		return nil, err
 	}
 
-	return nil
+	ok, err := jsonparser.GetBoolean(respBody, "ok")
+	if err != nil {
+		return nil, channels.ErrResponseContent
+	}
+
+	if !ok {
+		errDescription, err := jsonparser.GetString(respBody, "error")
+		if err != nil {
+			return nil, channels.ErrResponseContent
+		}
+		clog.Error(&svclogs.Error{Message: errDescription})
+		return nil, channels.ErrFailedWithReason("", errDescription)
+	}
+	return respBody, nil
+}
+
+func newFormRequest(methodURL string, form url.Values, token string) (*http.Request, error) {
+	req, err := http.NewRequest(http.MethodPost, methodURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, fmt.Errorf("error building request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	return req, nil
 }
 
 // DescribeURN handles Slack user details
@@ -345,12 +369,24 @@ type FileResponse struct {
 	Error string `json:"error"`
 }
 
-// FileParams is a struct that represents the request params send to slack api files.upload method to send a file to conversation.
-// https://api.slack.com/methods/files.upload.
+// FileParams is a file fetched from an outgoing attachment, to be uploaded to Slack.
 type FileParams struct {
-	File     []byte `json:"file,omitempty"`
-	FileName string `json:"filename,omitempty"`
-	Channels string `json:"channels,omitempty"`
+	File     []byte
+	FileName string
+}
+
+// uploadURLResponse is the response from files.getUploadURLExternal.
+// https://docs.slack.dev/reference/methods/files.getUploadURLExternal/
+type uploadURLResponse struct {
+	UploadURL string `json:"upload_url"`
+	FileID    string `json:"file_id"`
+}
+
+// completeUploadFile is an item in the files param of files.completeUploadExternal.
+// https://docs.slack.dev/reference/methods/files.completeUploadExternal/
+type completeUploadFile struct {
+	ID    string `json:"id"`
+	Title string `json:"title,omitempty"`
 }
 
 // UserInfo is a struct that represents the response from request in users.info slack api method.

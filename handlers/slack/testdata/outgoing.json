@@ -239,14 +239,27 @@
             ]
         },
         "http_mocks": {
-            "*/files.upload": [
+            "*/files.completeUploadExternal": [
                 {
                     "status": 200,
                     "body": {
                         "ok": true,
-                        "file": {
-                            "id": "F1L3SL4CK1D"
-                        }
+                        "files": [
+                            {
+                                "id": "F1L3SL4CK1D",
+                                "title": "image.png"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/files.getUploadURLExternal": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "upload_url": "https://files.slack.com/upload/v1/ABC123",
+                        "file_id": "F1L3SL4CK1D"
                     }
                 }
             ],
@@ -254,6 +267,12 @@
                 {
                     "status": 200,
                     "body": "filetype... ...file bytes... ...end"
+                }
+            ],
+            "https://files.slack.com/upload/v1/ABC123": [
+                {
+                    "status": 200,
+                    "body": "OK - 35"
                 }
             ]
         },
@@ -264,32 +283,165 @@
             },
             {
                 "method": "POST",
-                "url": "https://slack.com/api/files.upload",
+                "url": "https://slack.com/api/files.getUploadURLExternal",
                 "headers": {
                     "Authorization": "Bearer xoxb-abc123",
-                    "Content-Type": "multipart/form-data"
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "filename": [
+                        "image.png"
+                    ],
+                    "length": [
+                        "35"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://files.slack.com/upload/v1/ABC123",
+                "headers": {
+                    "Content-Type": "application/octet-stream"
+                },
+                "body": "filetype... ...file bytes... ...end"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.completeUploadExternal",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
                     "channels": [
                         "U0123ABCDEF"
                     ],
-                    "filename": [
-                        "image.png"
+                    "files": [
+                        "[{\"id\":\"F1L3SL4CK1D\",\"title\":\"image.png\"}]"
                     ]
-                },
-                "files": {
-                    "file": {
-                        "filename": "image.png",
-                        "content_type": "application/octet-stream",
-                        "body": "filetype... ...file bytes... ...end"
-                    }
                 }
             }
         ],
         "log_errors": []
     },
     {
-        "label": "Unexpected Response",
+        "label": "Send Image With Text",
+        "msg": {
+            "text": "Look at this",
+            "urn": "slack:U0123ABCDEF",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.png"
+            ]
+        },
+        "http_mocks": {
+            "*/chat.postMessage": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "channel": "U0123ABCDEF"
+                    }
+                }
+            ],
+            "*/files.completeUploadExternal": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "files": [
+                            {
+                                "id": "F1L3SL4CK1D",
+                                "title": "image.png"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/files.getUploadURLExternal": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "upload_url": "https://files.slack.com/upload/v1/ABC123",
+                        "file_id": "F1L3SL4CK1D"
+                    }
+                }
+            ],
+            "*/image.png": [
+                {
+                    "status": 200,
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ],
+            "https://files.slack.com/upload/v1/ABC123": [
+                {
+                    "status": 200,
+                    "body": "OK - 35"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/image.png"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.getUploadURLExternal",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "filename": [
+                        "image.png"
+                    ],
+                    "length": [
+                        "35"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://files.slack.com/upload/v1/ABC123",
+                "headers": {
+                    "Content-Type": "application/octet-stream"
+                },
+                "body": "filetype... ...file bytes... ...end"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.completeUploadExternal",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "channels": [
+                        "U0123ABCDEF"
+                    ],
+                    "files": [
+                        "[{\"id\":\"F1L3SL4CK1D\",\"title\":\"image.png\"}]"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/chat.postMessage",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                "body": {
+                    "channel": "U0123ABCDEF",
+                    "text": "Look at this"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Get Upload URL Error",
         "msg": {
             "urn": "slack:U0123ABCDEF",
             "attachments": [
@@ -297,14 +449,12 @@
             ]
         },
         "http_mocks": {
-            "*/files.upload": [
+            "*/files.getUploadURLExternal": [
                 {
                     "status": 200,
                     "body": {
                         "ok": false,
-                        "file": {
-                            "id": "F1L3SL4CK1D"
-                        }
+                        "error": "file_uploads_disabled"
                     }
                 }
             ],
@@ -322,25 +472,78 @@
             },
             {
                 "method": "POST",
-                "url": "https://slack.com/api/files.upload",
+                "url": "https://slack.com/api/files.getUploadURLExternal",
                 "headers": {
                     "Authorization": "Bearer xoxb-abc123",
-                    "Content-Type": "multipart/form-data"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "form": {
-                    "channels": [
-                        "U0123ABCDEF"
-                    ],
                     "filename": [
                         "image.png"
+                    ],
+                    "length": [
+                        "35"
                     ]
-                },
-                "files": {
-                    "file": {
-                        "filename": "image.png",
-                        "content_type": "application/octet-stream",
-                        "body": "filetype... ...file bytes... ...end"
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "message": "file_uploads_disabled"
+            }
+        },
+        "log_errors": [
+            {
+                "code": "",
+                "message": "file_uploads_disabled"
+            }
+        ]
+    },
+    {
+        "label": "Get Upload URL Missing File ID",
+        "msg": {
+            "urn": "slack:U0123ABCDEF",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.png"
+            ]
+        },
+        "http_mocks": {
+            "*/files.getUploadURLExternal": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true
                     }
+                }
+            ],
+            "*/image.png": [
+                {
+                    "status": 200,
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/image.png"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.getUploadURLExternal",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "filename": [
+                        "image.png"
+                    ],
+                    "length": [
+                        "35"
+                    ]
                 }
             }
         ],
@@ -352,5 +555,178 @@
             }
         },
         "log_errors": []
+    },
+    {
+        "label": "Upload Failed",
+        "msg": {
+            "urn": "slack:U0123ABCDEF",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.png"
+            ]
+        },
+        "http_mocks": {
+            "*/files.getUploadURLExternal": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "upload_url": "https://files.slack.com/upload/v1/ABC123",
+                        "file_id": "F1L3SL4CK1D"
+                    }
+                }
+            ],
+            "*/image.png": [
+                {
+                    "status": 200,
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ],
+            "https://files.slack.com/upload/v1/ABC123": [
+                {
+                    "status": 500,
+                    "body": "error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/image.png"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.getUploadURLExternal",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "filename": [
+                        "image.png"
+                    ],
+                    "length": [
+                        "35"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://files.slack.com/upload/v1/ABC123",
+                "headers": {
+                    "Content-Type": "application/octet-stream"
+                },
+                "body": "filetype... ...file bytes... ...end"
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Complete Upload Error",
+        "msg": {
+            "urn": "slack:U0123ABCDEF",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.png"
+            ]
+        },
+        "http_mocks": {
+            "*/files.completeUploadExternal": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": false,
+                        "error": "channel_not_found"
+                    }
+                }
+            ],
+            "*/files.getUploadURLExternal": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "upload_url": "https://files.slack.com/upload/v1/ABC123",
+                        "file_id": "F1L3SL4CK1D"
+                    }
+                }
+            ],
+            "*/image.png": [
+                {
+                    "status": 200,
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ],
+            "https://files.slack.com/upload/v1/ABC123": [
+                {
+                    "status": 200,
+                    "body": "OK - 35"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/image.png"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.getUploadURLExternal",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "filename": [
+                        "image.png"
+                    ],
+                    "length": [
+                        "35"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://files.slack.com/upload/v1/ABC123",
+                "headers": {
+                    "Content-Type": "application/octet-stream"
+                },
+                "body": "filetype... ...file bytes... ...end"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.completeUploadExternal",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "channels": [
+                        "U0123ABCDEF"
+                    ],
+                    "files": [
+                        "[{\"id\":\"F1L3SL4CK1D\",\"title\":\"image.png\"}]"
+                    ]
+                }
+            }
+        ],
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "message": "channel_not_found"
+            }
+        },
+        "log_errors": [
+            {
+                "code": "",
+                "message": "channel_not_found"
+            }
+        ]
     }
 ]
