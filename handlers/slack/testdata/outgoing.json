@@ -317,7 +317,7 @@
                         "U0123ABCDEF"
                     ],
                     "files": [
-                        "[{\"id\":\"F1L3SL4CK1D\",\"title\":\"image.png\"}]"
+                        "[{\"id\":\"F1L3SL4CK1D\"}]"
                     ]
                 }
             }
@@ -421,7 +421,7 @@
                         "U0123ABCDEF"
                     ],
                     "files": [
-                        "[{\"id\":\"F1L3SL4CK1D\",\"title\":\"image.png\"}]"
+                        "[{\"id\":\"F1L3SL4CK1D\"}]"
                     ]
                 }
             },
@@ -435,6 +435,151 @@
                 "body": {
                     "channel": "U0123ABCDEF",
                     "text": "Look at this"
+                }
+            }
+        ],
+        "log_errors": []
+    },
+    {
+        "label": "Send Multiple Attachments",
+        "msg": {
+            "urn": "slack:U0123ABCDEF",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.png",
+                "application/pdf:https://foo.bar/doc.pdf"
+            ]
+        },
+        "http_mocks": {
+            "*/files.getUploadURLExternal": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "upload_url": "https://files.slack.com/upload/v1/ABC123",
+                        "file_id": "F1L3SL4CK1D"
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "upload_url": "https://files.slack.com/upload/v1/DEF456",
+                        "file_id": "F2L3SL4CK1D"
+                    }
+                }
+            ],
+            "*/image.png": [
+                {
+                    "status": 200,
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ],
+            "*/doc.pdf": [
+                {
+                    "status": 200,
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ],
+            "https://files.slack.com/upload/v1/ABC123": [
+                {
+                    "status": 200,
+                    "body": "OK - 35"
+                }
+            ],
+            "https://files.slack.com/upload/v1/DEF456": [
+                {
+                    "status": 200,
+                    "body": "OK - 35"
+                }
+            ],
+            "*/files.completeUploadExternal": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "files": [
+                            {
+                                "id": "F1L3SL4CK1D"
+                            },
+                            {
+                                "id": "F2L3SL4CK1D"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/image.png"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.getUploadURLExternal",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "filename": [
+                        "image.png"
+                    ],
+                    "length": [
+                        "35"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://files.slack.com/upload/v1/ABC123",
+                "headers": {
+                    "Content-Type": "application/octet-stream"
+                },
+                "body": "filetype... ...file bytes... ...end"
+            },
+            {
+                "method": "GET",
+                "url": "https://foo.bar/doc.pdf"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.getUploadURLExternal",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "filename": [
+                        "doc.pdf"
+                    ],
+                    "length": [
+                        "35"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://files.slack.com/upload/v1/DEF456",
+                "headers": {
+                    "Content-Type": "application/octet-stream"
+                },
+                "body": "filetype... ...file bytes... ...end"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.completeUploadExternal",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "channels": [
+                        "U0123ABCDEF"
+                    ],
+                    "files": [
+                        "[{\"id\":\"F1L3SL4CK1D\"},{\"id\":\"F2L3SL4CK1D\"}]"
+                    ]
                 }
             }
         ],
@@ -710,7 +855,7 @@
                         "U0123ABCDEF"
                     ],
                     "files": [
-                        "[{\"id\":\"F1L3SL4CK1D\",\"title\":\"image.png\"}]"
+                        "[{\"id\":\"F1L3SL4CK1D\"}]"
                     ]
                 }
             }
@@ -728,5 +873,126 @@
                 "message": "channel_not_found"
             }
         ]
+    },
+    {
+        "label": "Second Upload Failed",
+        "msg": {
+            "urn": "slack:U0123ABCDEF",
+            "attachments": [
+                "image/jpeg:https://foo.bar/image.png",
+                "application/pdf:https://foo.bar/doc.pdf"
+            ]
+        },
+        "http_mocks": {
+            "*/files.getUploadURLExternal": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "upload_url": "https://files.slack.com/upload/v1/ABC123",
+                        "file_id": "F1L3SL4CK1D"
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "upload_url": "https://files.slack.com/upload/v1/DEF456",
+                        "file_id": "F2L3SL4CK1D"
+                    }
+                }
+            ],
+            "*/image.png": [
+                {
+                    "status": 200,
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ],
+            "*/doc.pdf": [
+                {
+                    "status": 200,
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ],
+            "https://files.slack.com/upload/v1/ABC123": [
+                {
+                    "status": 200,
+                    "body": "OK - 35"
+                }
+            ],
+            "https://files.slack.com/upload/v1/DEF456": [
+                {
+                    "status": 500,
+                    "body": "error"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/image.png"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.getUploadURLExternal",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "filename": [
+                        "image.png"
+                    ],
+                    "length": [
+                        "35"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://files.slack.com/upload/v1/ABC123",
+                "headers": {
+                    "Content-Type": "application/octet-stream"
+                },
+                "body": "filetype... ...file bytes... ...end"
+            },
+            {
+                "method": "GET",
+                "url": "https://foo.bar/doc.pdf"
+            },
+            {
+                "method": "POST",
+                "url": "https://slack.com/api/files.getUploadURLExternal",
+                "headers": {
+                    "Authorization": "Bearer xoxb-abc123",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "filename": [
+                        "doc.pdf"
+                    ],
+                    "length": [
+                        "35"
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://files.slack.com/upload/v1/DEF456",
+                "headers": {
+                    "Content-Type": "application/octet-stream"
+                },
+                "body": "filetype... ...file bytes... ...end"
+            }
+        ],
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
     }
 ]
