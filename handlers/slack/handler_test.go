@@ -25,7 +25,14 @@ func TestIncoming(t *testing.T) {
 }
 
 func TestOutgoing(t *testing.T) {
-	opts := &OutgoingOptions{CheckRedacted: []string{"xoxb-abc123", "one-long-verification-token"}}
+	opts := &OutgoingOptions{
+		CheckRedacted: []string{"xoxb-abc123", "one-long-verification-token"},
+		FreeURLs: []string{
+			"https://foo.bar/",
+			"https://slack.com/api/files.getUploadURLExternal",
+			"https://files.slack.com/upload/",
+		},
+	}
 
 	RunOutgoingTests(t, testChannels[0], newHandler, "testdata/outgoing.json", opts)
 }
