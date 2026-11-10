@@ -21,7 +21,7 @@ type Foreman struct {
 	senders          []*Sender
 	availableSenders chan *Sender
 	quit             chan bool
-	assignDone       chan struct{} // closed when the assign loop has returned
+	assignWG         *sync.WaitGroup // tracks the assign loop
 	waitGroup        *sync.WaitGroup
 }
 
@@ -32,7 +32,7 @@ func NewForeman(rt *runtime.Runtime, maxSenders int) *Foreman {
 		senders:          make([]*Sender, maxSenders),
 		availableSenders: make(chan *Sender, maxSenders),
 		quit:             make(chan bool),
-		assignDone:       make(chan struct{}),
+		assignWG:         &sync.WaitGroup{},
 		waitGroup:        &sync.WaitGroup{},
 	}
 
@@ -48,17 +48,22 @@ func (f *Foreman) Start() {
 	for _, sender := range f.senders {
 		sender.Start()
 	}
-	go f.Assign()
+
+	f.assignWG.Add(1)
+	go func() {
+		defer f.assignWG.Done()
+		f.Assign()
+	}()
 }
 
-// Stop stops the foreman and all its senders, the wait group of the server can be used to track progress
+// Stop stops assigning messages, then stops the senders and waits for the sends in progress to finish
 func (f *Foreman) Stop() {
 	slog.Info("foreman stopping", "comp", "foreman", "state", "stopping")
 
 	// stop the assign loop first and wait for it to return, so that nothing more is popped from the queue - a message
 	// popped after the senders have been stopped has nobody to send it and is lost
 	close(f.quit)
-	<-f.assignDone
+	f.assignWG.Wait()
 
 	for _, sender := range f.senders {
 		sender.Stop()
@@ -71,7 +76,6 @@ func (f *Foreman) Stop() {
 // Assign is our main loop for the Foreman, it takes care of popping the next outgoing messages from the
 // queue and assigning them to workers
 func (f *Foreman) Assign() {
-	defer close(f.assignDone)
 	log := slog.With("comp", "foreman")
 
 	log.Info("senders started and waiting",
@@ -81,15 +85,6 @@ func (f *Foreman) Assign() {
 	lastSleep := false
 
 	for {
-		// check for being told to stop before anything else, because a select between that and an available sender
-		// picks at random when both are ready, and could keep popping messages for as long as there are senders
-		select {
-		case <-f.quit:
-			log.Info("foreman stopped", "state", "stopped")
-			return
-		default:
-		}
-
 		select {
 		// return if we have been told to stop
 		case <-f.quit:

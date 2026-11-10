@@ -76,9 +76,9 @@ func TestForemanStopWhilstBusy(t *testing.T) {
 	defer foreman.Stop()
 
 	// every message should have been sent, i.e. none was popped by a stopping foreman and dropped
-	var unsent int
-	assert.Eventually(t, func() bool {
-		require.NoError(t, rt.DB.Get(&unsent, `SELECT count(*) FROM msgs_msg WHERE channel_id = $1 AND status != 'W'`, channel.ID()))
-		return unsent == 0
-	}, 20*time.Second, 100*time.Millisecond, "messages left unsent")
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		var unsent int
+		require.NoError(c, rt.DB.Get(&unsent, `SELECT count(*) FROM msgs_msg WHERE channel_id = $1 AND status != 'W'`, channel.ID()))
+		assert.Zero(c, unsent, "messages left unsent")
+	}, 20*time.Second, 100*time.Millisecond)
 }
