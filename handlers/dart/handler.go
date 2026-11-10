@@ -22,11 +22,12 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 )
 
-const sendURL = "http://202.43.169.11/APIhttpU/receive2waysms.php"
+const (
+	sendURL      = "http://202.43.169.11/APIhttpU/receive2waysms.php"
+	maxMsgLength = 160
+)
 
 var (
-	maxMsgLength = 160
-
 	errorCodes = map[string]string{
 		"001": "Authentication error.",
 		"101": "Account expired or invalid parameters.",
@@ -35,26 +36,17 @@ var (
 
 type handler struct {
 	handlers.BaseHandler
-	sendURL   string
-	maxLength int
 }
 
-// NewHandler returns a new DartMedia handler constructor ready to be registered
-func NewHandler(channelType string, name string, sendURL string, maxLength int) channels.NewHandlerFunc {
-	return func(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
-		h := &handler{
-			handlers.NewBaseHandler(rt, models.ChannelType(channelType), name),
-			sendURL,
-			maxLength,
-		}
-		r.AddReceive(h, http.MethodGet, "receive", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMessage))
-		r.AddReceive(h, http.MethodGet, "delivered", channels.ReceiveKindStatus, handlers.FormPayload(h.receiveStatus))
-		return h
-	}
+func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
+	h := &handler{handlers.NewBaseHandler(rt, models.ChannelType("DA"), "DartMedia")}
+	r.AddReceive(h, http.MethodGet, "receive", channels.ReceiveKindMsg, handlers.FormPayload(h.receiveMessage))
+	r.AddReceive(h, http.MethodGet, "delivered", channels.ReceiveKindStatus, handlers.FormPayload(h.receiveStatus))
+	return h
 }
 
 func init() {
-	channels.RegisterHandler(NewHandler("DA", "DartMedia", sendURL, maxMsgLength))
+	channels.RegisterHandler(newHandler)
 }
 
 type moForm struct {
@@ -142,7 +134,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		return channels.ErrChannelConfig
 	}
 
-	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), h.maxLength)
+	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for i, part := range parts {
 		form := url.Values{
 			"userid":   []string{username},
@@ -160,7 +152,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		}
 		form["messageid"] = []string{messageid}
 
-		partSendURL, _ := url.Parse(h.sendURL)
+		partSendURL, _ := url.Parse(sendURL)
 		partSendURL.RawQuery = form.Encode()
 
 		req, err := http.NewRequest(http.MethodGet, partSendURL.String(), nil)
