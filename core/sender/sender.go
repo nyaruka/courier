@@ -23,10 +23,10 @@ type Foreman struct {
 	quit             chan bool
 	assignWG         *sync.WaitGroup // tracks the assign loop
 	stopOnce         sync.Once
-	waitGroup        *sync.WaitGroup
+	waitGroup        *sync.WaitGroup // tracks the senders
 }
 
-// NewForeman creates a new Foreman for the passed in server with the number of max senders
+// NewForeman creates a new Foreman for the passed in runtime with the number of max senders
 func NewForeman(rt *runtime.Runtime, maxSenders int) *Foreman {
 	foreman := &Foreman{
 		rt:               rt,
@@ -44,7 +44,7 @@ func NewForeman(rt *runtime.Runtime, maxSenders int) *Foreman {
 	return foreman
 }
 
-// Start starts the foreman and all its senders, assigning jobs while there are some
+// Start starts the foreman and all its senders, assigning jobs while there are some. It must be called at most once.
 func (f *Foreman) Start() {
 	for _, sender := range f.senders {
 		sender.Start()
