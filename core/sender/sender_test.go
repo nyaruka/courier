@@ -66,19 +66,35 @@ func TestForemanStopWhilstBusy(t *testing.T) {
 	unstarted.Stop()
 	unstarted.Stop()
 
+	queued := func() int {
+		high, _, err := models.MsgQueue.Size(ctx, vc)
+		require.NoError(t, err)
+		return high
+	}
+
 	// repeatedly stop a foreman that still has messages to assign - a message popped once the senders have been
-	// stopped has nobody to send it, so stopping has to stop the popping first
+	// stopped has nobody to send it, so stopping has to stop the popping first. Each is stopped as soon as it's seen
+	// to have popped something, rather than after a fixed time, so that how many messages it gets through before
+	// then doesn't depend on how fast they're sent.
+	busyStops := 0
 	for range 20 {
+		before := queued()
+		if before == 0 {
+			break
+		}
+
 		foreman := sender.NewForeman(rt, 4)
 		foreman.Start()
-		time.Sleep(5 * time.Millisecond)
+		require.Eventually(t, func() bool { return queued() < before }, 10*time.Second, time.Millisecond)
 		foreman.Stop()
+
+		if queued() > 0 {
+			busyStops++
+		}
 	}
 
 	// check that those foremen really were stopped whilst there were still messages to assign
-	high, _, err := models.MsgQueue.Size(ctx, vc)
-	require.NoError(t, err)
-	require.Positive(t, high, "expected messages still queued")
+	require.GreaterOrEqual(t, busyStops, 5, "expected foremen to be stopped with messages still queued")
 
 	// let a final foreman send whatever is left
 	foreman := sender.NewForeman(rt, 4)
