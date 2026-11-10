@@ -6,7 +6,7 @@
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api.mblox.com/xms/v1/Username/batches": [
+            "https://us.sms.api.sinch.com/xms/v1/Username/batches": [
                 {
                     "status": 200,
                     "body": {
@@ -18,7 +18,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api.mblox.com/xms/v1/Username/batches",
+                "url": "https://us.sms.api.sinch.com/xms/v1/Username/batches",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Bearer Password",
@@ -47,7 +47,7 @@
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api.mblox.com/xms/v1/Username/batches": [
+            "https://us.sms.api.sinch.com/xms/v1/Username/batches": [
                 {
                     "status": 200,
                     "body": {
@@ -65,7 +65,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api.mblox.com/xms/v1/Username/batches",
+                "url": "https://us.sms.api.sinch.com/xms/v1/Username/batches",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Bearer Password",
@@ -82,7 +82,7 @@
             },
             {
                 "method": "POST",
-                "url": "https://api.mblox.com/xms/v1/Username/batches",
+                "url": "https://us.sms.api.sinch.com/xms/v1/Username/batches",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Bearer Password",
@@ -115,7 +115,7 @@
             ]
         },
         "http_mocks": {
-            "https://api.mblox.com/xms/v1/Username/batches": [
+            "https://us.sms.api.sinch.com/xms/v1/Username/batches": [
                 {
                     "status": 200,
                     "body": {
@@ -127,7 +127,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api.mblox.com/xms/v1/Username/batches",
+                "url": "https://us.sms.api.sinch.com/xms/v1/Username/batches",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Bearer Password",
@@ -156,7 +156,7 @@
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api.mblox.com/xms/v1/Username/batches": [
+            "https://us.sms.api.sinch.com/xms/v1/Username/batches": [
                 {
                     "status": 200,
                     "body": {
@@ -168,7 +168,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api.mblox.com/xms/v1/Username/batches",
+                "url": "https://us.sms.api.sinch.com/xms/v1/Username/batches",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Bearer Password",
@@ -199,7 +199,7 @@
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api.mblox.com/xms/v1/Username/batches": [
+            "https://us.sms.api.sinch.com/xms/v1/Username/batches": [
                 {
                     "status": 401,
                     "body": {
@@ -211,7 +211,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api.mblox.com/xms/v1/Username/batches",
+                "url": "https://us.sms.api.sinch.com/xms/v1/Username/batches",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Bearer Password",
@@ -244,7 +244,7 @@
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api.mblox.com/xms/v1/Username/batches": [
+            "https://us.sms.api.sinch.com/xms/v1/Username/batches": [
                 {
                     "status": 429,
                     "body": {
@@ -256,7 +256,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api.mblox.com/xms/v1/Username/batches",
+                "url": "https://us.sms.api.sinch.com/xms/v1/Username/batches",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Bearer Password",
