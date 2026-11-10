@@ -1,3 +1,4 @@
+// API docs: https://help.clickatell.com/developers-api-reference/sms-api.md
 package clickatell
 
 import (

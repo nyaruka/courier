@@ -1,3 +1,4 @@
+// API docs: https://docs.jasminsms.com/en/latest/apis/http/index.html
 package jasmin
 
 import (

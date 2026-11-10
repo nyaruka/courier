@@ -1,3 +1,4 @@
+// API docs: https://www.infobip.com/docs/api/channels/sms/outbound-sms/send-message/send-sms-messages
 package infobip
 
 import (

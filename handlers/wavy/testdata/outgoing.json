@@ -9,7 +9,7 @@
             ]
         },
         "http_mocks": {
-            "https://api-messaging.movile.com/v1/send-sms": [
+            "https://api-messaging.wavy.global/v1/send-sms": [
                 {
                     "status": 200,
                     "body": {
@@ -21,7 +21,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api-messaging.movile.com/v1/send-sms",
+                "url": "https://api-messaging.wavy.global/v1/send-sms",
                 "headers": {
                     "Accept": "application/json",
                     "Authenticationtoken": "token",
@@ -47,7 +47,7 @@
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api-messaging.movile.com/v1/send-sms": [
+            "https://api-messaging.wavy.global/v1/send-sms": [
                 {
                     "status": 403,
                     "body": "Error"
@@ -57,7 +57,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api-messaging.movile.com/v1/send-sms",
+                "url": "https://api-messaging.wavy.global/v1/send-sms",
                 "headers": {
                     "Accept": "application/json",
                     "Authenticationtoken": "token",
@@ -87,7 +87,7 @@
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api-messaging.movile.com/v1/send-sms": [
+            "https://api-messaging.wavy.global/v1/send-sms": [
                 {
                     "status": 429,
                     "body": "Error"
@@ -97,7 +97,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api-messaging.movile.com/v1/send-sms",
+                "url": "https://api-messaging.wavy.global/v1/send-sms",
                 "headers": {
                     "Accept": "application/json",
                     "Authenticationtoken": "token",
@@ -128,7 +128,7 @@
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api-messaging.movile.com/v1/send-sms": [
+            "https://api-messaging.wavy.global/v1/send-sms": [
                 {
                     "status": 501,
                     "body": "Bad Gateway"
@@ -138,7 +138,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api-messaging.movile.com/v1/send-sms",
+                "url": "https://api-messaging.wavy.global/v1/send-sms",
                 "headers": {
                     "Accept": "application/json",
                     "Authenticationtoken": "token",

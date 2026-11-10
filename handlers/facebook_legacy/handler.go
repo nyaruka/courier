@@ -1,3 +1,4 @@
+// API docs: https://developers.facebook.com/docs/messenger-platform/send-messages
 package facebook_legacy
 
 import (

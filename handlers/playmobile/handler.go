@@ -1,3 +1,4 @@
+// API docs: https://wiki.playmobile.uz/doku.php/ru/интеграция_с_сервисом_api/интеграция_по_http
 package playmobile
 
 import (

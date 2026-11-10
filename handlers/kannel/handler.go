@@ -1,3 +1,4 @@
+// API docs: https://www.kannel.org/download/1.4.5/userguide-1.4.5/userguide.html
 package kannel
 
 import (

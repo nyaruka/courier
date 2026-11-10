@@ -1,3 +1,4 @@
+// API docs: https://github.com/weni-ai/RCApps.RapidPro-Channel
 package rocketchat
 
 import (

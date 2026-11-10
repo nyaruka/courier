@@ -1,3 +1,4 @@
+// API docs: https://apidocs.thinq.com/
 package thinq
 
 import (
@@ -43,7 +44,7 @@ func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 	return h
 }
 
-// see https://apidocs.thinq.com/#829c8863-8a47-4273-80fb-d962aa64c901
+// see https://apidocs.thinq.com/#9c5ae132-fc3c-44c6-85a0-cd08fa66f720
 // from: Source DID
 // to: Destination DID
 // type: sms|mms

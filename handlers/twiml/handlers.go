@@ -1,3 +1,4 @@
+// API docs: https://www.twilio.com/docs/messaging/api/message-resource
 package twiml
 
 /*

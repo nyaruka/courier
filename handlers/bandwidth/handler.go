@@ -1,3 +1,4 @@
+// API docs: https://dev.bandwidth.com/apis/messaging-apis/messaging/
 package bandwidth
 
 import (

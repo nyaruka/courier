@@ -1,3 +1,4 @@
+// API docs: https://developers.kaleyra.io/docs/send-a-text-message-through-whatsapp
 package kaleyra
 
 import (

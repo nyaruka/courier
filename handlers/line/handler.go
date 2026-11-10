@@ -1,3 +1,4 @@
+// API docs: https://developers.line.biz/en/reference/messaging-api/
 package line
 
 import (
@@ -211,7 +212,7 @@ func (h *handler) validateSignature(channel *models.Channel, r *http.Request) er
 	return nil
 }
 
-// see https://developers.line.me/en/docs/messaging-api/reference/#signature-validation
+// see https://developers.line.biz/en/reference/messaging-api/#signature-validation
 func calculateSignature(secret string, r *http.Request) ([]byte, error) {
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)

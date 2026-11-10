@@ -1,3 +1,4 @@
+// API docs: https://github.com/globelabs/gl-docs
 package globe
 
 import (

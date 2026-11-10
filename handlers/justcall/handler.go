@@ -1,3 +1,4 @@
+// API docs: https://developer.justcall.io/docs/legacy-apis
 package justcall
 
 import (
