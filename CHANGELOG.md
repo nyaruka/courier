@@ -1,3 +1,12 @@
+## v26.3.76 (2026-11-10)
+ * Send Slack attachments with the external upload flow
+ * Stop popping messages before stopping senders on shutdown
+ * Have handlers report the throughput cost of each send and charge the outgoing queue the throughput each send used, counting rejected requests
+ * Pause sending on a channel when a rate limited response says how long to wait, for handlers that opt in
+ * Fix LINE and Kaleyra send failures and check that message requests are charged
+ * Use Mtarget's documented send endpoint, report an unexpected Mtarget response as such and link each handler to its API docs
+ * Only fail over Yo sends when a gateway can't be reached, and fix two cost edge cases
+
 ## v26.3.75 (2026-11-09)
  * Prefix org tally fields with O
 
