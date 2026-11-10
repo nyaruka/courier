@@ -993,5 +993,55 @@
             }
         },
         "log_errors": []
+    },
+    {
+        "label": "Rejection with error body records its code",
+        "msg": {
+            "text": "Error",
+            "urn": "facebook:12345"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 400,
+                    "body": {
+                        "error": {
+                            "message": "Invalid OAuth access token.",
+                            "type": "OAuthException",
+                            "code": 190
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Error"
+                    }
+                }
+            }
+        ],
+        "cost": 1,
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "190",
+                "message": "Invalid OAuth access token."
+            }
+        },
+        "log_errors": []
     }
 ]
