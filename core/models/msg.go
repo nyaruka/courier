@@ -690,7 +690,10 @@ func PauseSending(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, until t
 
 // OnSendComplete is called when the sender has finished trying to send a message, with what the send cost of the
 // channel's throughput and any other URNs the provider reported for the recipient
-func OnSendComplete(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, status *StatusUpdate, cost int, otherURNs []urns.URN, clog *ChannelLog) {
+func OnSendComplete(
+	ctx context.Context, rt *runtime.Runtime, msg *MsgOut, status *StatusUpdate, cost int, otherURNs []urns.URN,
+	clog *ChannelLog,
+) {
 	log := slog.With("channel", msg.Channel().UUID(), "msg", msg.UUID(), "clog", clog.UUID, "status", status)
 
 	rc := rt.VK.Get()

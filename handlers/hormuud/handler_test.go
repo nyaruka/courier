@@ -38,5 +38,9 @@ func TestOutgoing(t *testing.T) {
 		redis.String(rc.Do("DEL", fmt.Sprintf("hm_token_%s", ch.UUID())))
 	}
 
-	RunOutgoingTests(t, ch, newHandler, "testdata/outgoing_token.json", &OutgoingOptions{CheckRedacted: []string{"sesame"}, Setup: clearToken})
+	RunOutgoingTests(t, ch, newHandler, "testdata/outgoing_token.json", &OutgoingOptions{
+		CheckRedacted: []string{"sesame"},
+		Setup:         clearToken,
+		FreeURLs:      []string{"https://smsapi.hormuud.com/token"},
+	})
 }

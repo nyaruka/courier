@@ -486,5 +486,86 @@
             }
         },
         "log_errors": []
+    },
+    {
+        "label": "Media Send Error On First Attachment",
+        "msg": {
+            "text": "Medias",
+            "urn": "whatsapp:14133881111",
+            "attachments": [
+                "image/jpg:https://foo.bar/image.jpg",
+                "image/png:https://foo.bar/video.wmv"
+            ]
+        },
+        "http_mocks": {
+            "https://api.kaleyra.io/v1/SID/messages": [
+                {
+                    "status": 400,
+                    "body": {
+                        "error": {
+                            "media": "invalid media type"
+                        }
+                    }
+                }
+            ],
+            "https://foo.bar/image.jpg": [
+                {
+                    "status": 200,
+                    "body": "image bytes"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "GET",
+                "url": "https://foo.bar/image.jpg"
+            },
+            {
+                "method": "POST",
+                "url": "https://api.kaleyra.io/v1/SID/messages",
+                "headers": {
+                    "Content-Type": "multipart/form-data"
+                },
+                "form": {
+                    "api-key": [
+                        "123456"
+                    ],
+                    "callback_url": [
+                        "https://localhost/c/kwa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/status"
+                    ],
+                    "caption": [
+                        "Medias"
+                    ],
+                    "channel": [
+                        "WhatsApp"
+                    ],
+                    "from": [
+                        "250788383383"
+                    ],
+                    "to": [
+                        "14133881111"
+                    ],
+                    "type": [
+                        "media"
+                    ]
+                },
+                "files": {
+                    "media": {
+                        "filename": "image.jpg",
+                        "content_type": "application/octet-stream",
+                        "body": "image bytes"
+                    }
+                }
+            }
+        ],
+        "cost": 1,
+        "error": {
+            "message": "response status code",
+            "log_error": {
+                "code": "response_status",
+                "message": "Response has non-success status code."
+            }
+        },
+        "log_errors": []
     }
 ]
