@@ -52,11 +52,12 @@ func (f *Foreman) Start() {
 	f.assignWG.Add(1)
 	go func() {
 		defer f.assignWG.Done()
-		f.Assign()
+		f.assign()
 	}()
 }
 
-// Stop stops assigning messages, then stops the senders and waits for the sends in progress to finish
+// Stop stops assigning messages, then stops the senders and waits for the sends in progress to finish. It must be
+// called at most once.
 func (f *Foreman) Stop() {
 	slog.Info("foreman stopping", "comp", "foreman", "state", "stopping")
 
@@ -73,10 +74,11 @@ func (f *Foreman) Stop() {
 	f.waitGroup.Wait()
 }
 
-// Assign is our main loop for the Foreman, it takes care of popping the next outgoing messages from the
-// queue and assigning them to workers
-func (f *Foreman) Assign() {
+// assign is our main loop for the Foreman, it takes care of popping the next outgoing messages from the
+// queue and assigning them to workers. It's only run by Start, which is what lets Stop wait for it.
+func (f *Foreman) assign() {
 	log := slog.With("comp", "foreman")
+	defer log.Info("foreman stopped", "state", "stopped")
 
 	log.Info("senders started and waiting",
 		"state", "started",
@@ -85,10 +87,17 @@ func (f *Foreman) Assign() {
 	lastSleep := false
 
 	for {
+		// check for being told to stop before looking for a sender - the select below picks at random when both are
+		// ready, and each extra message popped whilst stopping adds its pop and send to how long stopping takes
+		select {
+		case <-f.quit:
+			return
+		default:
+		}
+
 		select {
 		// return if we have been told to stop
 		case <-f.quit:
-			log.Info("foreman stopped", "state", "stopped")
 			return
 
 		// otherwise, grab the next msg and assign it to a sender
@@ -114,7 +123,11 @@ func (f *Foreman) Assign() {
 					lastSleep = true
 				}
 				f.availableSenders <- sender
-				time.Sleep(250 * time.Millisecond)
+
+				select {
+				case <-f.quit:
+				case <-time.After(250 * time.Millisecond):
+				}
 			}
 		}
 	}
@@ -162,7 +175,8 @@ func (w *Sender) Start() {
 	}()
 }
 
-// Stop stops our senders, callers can use the server's wait group to track progress
+// Stop stops our sender once it has sent any message it's been given, callers can use the foreman's wait group to
+// track progress
 func (w *Sender) Stop() {
 	close(w.job)
 }
