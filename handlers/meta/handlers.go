@@ -512,18 +512,28 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg *models.MsgO
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
 		res.AddCost(1)
-		if err := handlers.ErrorFromResponse(resp, err); err != nil {
-			return err
+		if err != nil || resp.StatusCode/100 == 5 {
+			return channels.ErrConnectionFailed
+		}
+		if handlers.IsThrottled(resp) {
+			return channels.ErrConnectionThrottled
 		}
 
+		// rejections come back as 4xx responses with an error body, so parse it before deciding from the status
 		respPayload := &messenger.SendResponse{}
-		err = json.Unmarshal(respBody, respPayload)
-		if err != nil {
-			return channels.ErrResponseUnparseable
-		}
+		parseErr := json.Unmarshal(respBody, respPayload)
 
-		if respPayload.Error.Code != 0 {
+		if parseErr == nil && respPayload.Error.Code != 0 {
+			if respPayload.Error.IsRecipientUnavailable() {
+				return channels.ErrContactStopped
+			}
 			return channels.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
+		}
+		if resp.StatusCode/100 != 2 {
+			return channels.ErrResponseStatus
+		}
+		if parseErr != nil {
+			return channels.ErrResponseUnparseable
 		}
 
 		if respPayload.ExternalID == "" {
