@@ -46,12 +46,28 @@ type QuickReply struct {
 }
 
 type SendResponse struct {
-	ExternalID  string `json:"message_id"`
-	RecipientID string `json:"recipient_id"`
-	Error       struct {
-		Message string `json:"message"`
-		Code    int    `json:"code"`
-	} `json:"error"`
+	ExternalID  string    `json:"message_id"`
+	RecipientID string    `json:"recipient_id"`
+	Error       SendError `json:"error"`
+}
+
+// see https://developers.facebook.com/docs/messenger-platform/error-codes
+type SendError struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+	Subcode int    `json:"error_subcode"`
+}
+
+const (
+	errorCodeUserBlock            = 551
+	errorSubcodePersonUnavailable = 1545041
+)
+
+// IsRecipientUnavailable returns whether this error says that the recipient isn't receiving messages from the sender,
+// which is what a send to somebody who has blocked the sender gets. Sends outside the messaging window get a
+// different error.
+func (e *SendError) IsRecipientUnavailable() bool {
+	return e.Code == errorCodeUserBlock || e.Subcode == errorSubcodePersonUnavailable
 }
 
 // see https://developers.facebook.com/docs/messenger-platform/webhooks/#event-notifications

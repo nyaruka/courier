@@ -793,5 +793,255 @@
             }
         },
         "log_errors": []
+    },
+    {
+        "label": "Recipient unavailable stops contact",
+        "msg": {
+            "text": "Error",
+            "urn": "facebook:12345"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 400,
+                    "body": {
+                        "error": {
+                            "message": "(#551) This person isn't available right now.",
+                            "type": "OAuthException",
+                            "code": 551,
+                            "error_subcode": 1545041
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Error"
+                    }
+                }
+            }
+        ],
+        "cost": 1,
+        "error": {
+            "message": "contact opted out",
+            "log_error": {
+                "code": "contact_stopped",
+                "message": "Contact has opted-out of messages from this channel."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "User block error without subcode stops contact",
+        "msg": {
+            "text": "Error",
+            "urn": "facebook:12345"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 400,
+                    "body": {
+                        "error": {
+                            "message": "(#551) This person isn't receiving messages from you right now.",
+                            "type": "OAuthException",
+                            "code": 551
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Error"
+                    }
+                }
+            }
+        ],
+        "cost": 1,
+        "error": {
+            "message": "contact opted out",
+            "log_error": {
+                "code": "contact_stopped",
+                "message": "Contact has opted-out of messages from this channel."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Recipient unavailable as permission error stops contact",
+        "msg": {
+            "text": "Error",
+            "urn": "facebook:12345"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 403,
+                    "body": {
+                        "error": {
+                            "message": "(#200) This person isn't available right now.",
+                            "type": "OAuthException",
+                            "code": 200,
+                            "error_subcode": 1545041
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Error"
+                    }
+                }
+            }
+        ],
+        "cost": 1,
+        "error": {
+            "message": "contact opted out",
+            "log_error": {
+                "code": "contact_stopped",
+                "message": "Contact has opted-out of messages from this channel."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Outside messaging window doesn't stop contact",
+        "msg": {
+            "text": "Error",
+            "urn": "facebook:12345"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 400,
+                    "body": {
+                        "error": {
+                            "message": "(#10) This message is sent outside of allowed window.",
+                            "type": "OAuthException",
+                            "code": 10,
+                            "error_subcode": 2018278
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Error"
+                    }
+                }
+            }
+        ],
+        "cost": 1,
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "10",
+                "message": "(#10) This message is sent outside of allowed window."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Rejection with error body records its code",
+        "msg": {
+            "text": "Error",
+            "urn": "facebook:12345"
+        },
+        "http_mocks": {
+            "https://graph.facebook.com/v25.0/me/messages*": [
+                {
+                    "status": 400,
+                    "body": {
+                        "error": {
+                            "message": "Invalid OAuth access token.",
+                            "type": "OAuthException",
+                            "code": 190
+                        }
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v25.0/me/messages?access_token=a123",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messaging_type": "UPDATE",
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "message": {
+                        "text": "Error"
+                    }
+                }
+            }
+        ],
+        "cost": 1,
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "190",
+                "message": "Invalid OAuth access token."
+            }
+        },
+        "log_errors": []
     }
 ]
