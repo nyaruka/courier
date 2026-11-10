@@ -60,6 +60,7 @@
         "external_ids": [
             "efa6405d518d4c0c88cce11f7db775fb"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -129,6 +130,7 @@
         "external_ids": [
             "efa6405d518d4c0c88cce11f7db775fb"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -196,6 +198,7 @@
         "external_ids": [
             "efa6405d518d4c0c88cce11f7db775fb"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -265,6 +268,7 @@
         "external_ids": [
             "efa6405d518d4c0c88cce11f7db775fb"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -332,6 +336,7 @@
         "external_ids": [
             "efa6405d518d4c0c88cce11f7db775fb"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -399,6 +404,7 @@
         "external_ids": [
             "efa6405d518d4c0c88cce11f7db775fb"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -459,6 +465,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel connection failed",
             "retryable": true,
@@ -527,6 +534,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -594,6 +602,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,

@@ -161,6 +161,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		if err := h.shareFiles(msg, botToken, files, clog); err != nil {
 			return err
 		}
+		res.AddCost(len(files))
 	}
 
 	if msg.Text() != "" {
@@ -168,6 +169,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		if err != nil {
 			return err
 		}
+		res.AddCost(1)
 	}
 
 	return nil

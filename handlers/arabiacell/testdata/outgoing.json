@@ -52,6 +52,7 @@
         "external_ids": [
             "external1"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -101,6 +102,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response couldn't be parsed",
             "loggable": true,
@@ -158,6 +160,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {
@@ -214,6 +217,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel connection failed",
             "retryable": true,
@@ -271,6 +275,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,

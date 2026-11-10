@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/handlers"
@@ -34,6 +35,43 @@ func TestErrorFromResponse(t *testing.T) {
 
 		assert.Equal(t, tc.expectedErr, handlers.ErrorFromResponse(resp, tc.err), "mismatch for status %d", tc.status)
 	}
+
+	// a Retry-After doesn't hold back the channel unless the handler opts in with ThrottledError
+	resp := &http.Response{StatusCode: 429, Header: http.Header{"Retry-After": []string{"30"}}}
+	assert.Equal(t, channels.ErrConnectionThrottled, handlers.ErrorFromResponse(resp, nil))
+}
+
+func TestThrottledError(t *testing.T) {
+	throttled := func(retryAfter string) error {
+		resp := &http.Response{StatusCode: 429, Header: http.Header{}}
+		if retryAfter != "" {
+			resp.Header.Set("Retry-After", retryAfter)
+		}
+		return handlers.ThrottledError(resp)
+	}
+	backoff := func(err error) time.Duration {
+		return channels.RequestedBackoff(&channels.SendResult{}, err)
+	}
+
+	assert.Equal(t, channels.ErrConnectionThrottled, throttled(""))
+	assert.Equal(t, time.Duration(0), backoff(throttled("")))
+	assert.Equal(t, time.Duration(0), backoff(throttled("soon")))
+	assert.Equal(t, time.Duration(0), backoff(throttled("Wed, 21 Oct 2015 07:28:00 GMT"))) // in the past
+	assert.Equal(t, 30*time.Second, backoff(throttled("30")))
+	assert.Equal(t, 5*time.Minute, backoff(throttled("3600"))) // capped
+
+	future := time.Now().Add(2 * time.Minute).UTC().Format(http.TimeFormat)
+	assert.InDelta(t, 2*time.Minute, backoff(throttled(future)), float64(2*time.Second))
+
+	// a throttled error with a backoff is still a throttled error
+	assert.Equal(t, "channel rate limited", throttled("30").Error())
+	assert.Equal(t, channels.ErrConnectionThrottled.(*channels.SendError).ClogError(), throttled("30").(*channels.SendError).ClogError())
+
+	// and a result's backoff is used if longer
+	res := &channels.SendResult{}
+	res.SetBackoff(time.Minute)
+	assert.Equal(t, time.Minute, channels.RequestedBackoff(res, throttled("30")))
+	assert.Equal(t, time.Minute, channels.RequestedBackoff(res, nil))
 }
 
 func TestIsThrottled(t *testing.T) {

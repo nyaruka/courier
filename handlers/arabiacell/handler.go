@@ -11,6 +11,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/gsm7"
 )
 
 const (
@@ -94,6 +95,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		// we always get 204 on success
 		if response.Code == "204" {
 			res.AddExternalID(response.MessageID)
+			res.AddCost(gsm7.Segments(part))
 		} else {
 			return channels.ErrResponseContent
 		}

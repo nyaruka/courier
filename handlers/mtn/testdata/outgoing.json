@@ -37,6 +37,7 @@
         "external_ids": [
             "OzYDlvf3SQVc"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -80,6 +81,7 @@
         "external_ids": [
             "OzYDlvf3SQVc"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -117,6 +119,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": [
             {
                 "code": "response_value_missing",
@@ -159,6 +162,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -203,6 +207,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,

@@ -1,3 +1,4 @@
+// API docs: https://developers.line.biz/en/reference/messaging-api/
 package line
 
 import (
@@ -211,7 +212,7 @@ func (h *handler) validateSignature(channel *models.Channel, r *http.Request) er
 	return nil
 }
 
-// see https://developers.line.me/en/docs/messaging-api/reference/#signature-validation
+// see https://developers.line.biz/en/reference/messaging-api/#signature-validation
 func calculateSignature(secret string, r *http.Request) ([]byte, error) {
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
@@ -417,6 +418,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			resp, respBody, err := h.RequestHTTP(req, clog)
 
 			if err == nil && resp.StatusCode/100 == 2 {
+				res.AddCost(1)
 				batch = []string{}
 				batchCount = 0
 				continue
@@ -458,6 +460,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 				if resp.StatusCode/100 != 2 {
 					return channels.ErrFailedWithReason(strconv.Itoa(resp.StatusCode), respPayload.Message)
 				}
+				res.AddCost(1)
 			} else {
 				return channels.ErrFailedWithReason(strconv.Itoa(resp.StatusCode), respPayload.Message)
 			}

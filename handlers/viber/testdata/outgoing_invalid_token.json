@@ -4,6 +4,7 @@
         "msg": {
             "urn": ""
         },
+        "cost": 0,
         "error": {
             "message": "channel config invalid",
             "loggable": true,

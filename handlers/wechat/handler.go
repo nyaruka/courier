@@ -201,6 +201,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		if handlers.IsThrottled(resp) {
 			return channels.ErrConnectionThrottled
 		}
+		res.AddCost(1)
 	}
 
 	return nil
@@ -219,7 +220,7 @@ func (h *handler) SendableEvents(*models.Channel) map[string]time.Duration {
 }
 
 // SendEvent sends typing started/stopped events as Typing/CancelTyping customer service commands, see
-// https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Service_Center_messages.html
+// https://developers.weixin.qq.com/doc/service/api/customer/message/api_sendcustommessage.html
 func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event events.Event, clog *models.ChannelLog) error {
 	var urn urns.URN
 	var command string

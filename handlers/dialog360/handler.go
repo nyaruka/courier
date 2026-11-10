@@ -1,3 +1,4 @@
+// API docs: https://docs.360dialog.com/docs/guides/send-and-receive-messages
 package dialog360
 
 import (
@@ -285,5 +286,6 @@ func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, r
 	if id := respPayload.ExternalID(); id != "" {
 		res.AddExternalID(id)
 	}
+	res.AddCost(1)
 	return respPayload.UserID(), nil
 }

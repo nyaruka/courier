@@ -46,6 +46,7 @@
         "external_ids": [
             "1002"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -95,6 +96,7 @@
         "external_ids": [
             "1002"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -144,6 +146,7 @@
         "external_ids": [
             "1002"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -225,6 +228,7 @@
         "external_ids": [
             "1002"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -306,6 +310,7 @@
         "external_ids": [
             "1002"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -387,6 +392,7 @@
         "external_ids": [
             "1002"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -468,6 +474,7 @@
         "external_ids": [
             "1002"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -504,6 +511,7 @@
                 "language": "en_US"
             }
         },
+        "cost": 0,
         "error": {
             "message": "message invalid",
             "loggable": true,
@@ -590,6 +598,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with reason",
             "log_error": {
@@ -676,6 +685,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "contact opted out",
             "log_error": {
@@ -759,6 +769,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": [
             {
                 "code": "response_value_missing",
@@ -842,6 +853,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response status code",
             "log_error": {

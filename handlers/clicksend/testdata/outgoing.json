@@ -37,6 +37,7 @@
         "external_ids": [
             "BF7AD270-0DE2-418B-B606-71D527D9C1AE"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -77,6 +78,7 @@
         "external_ids": [
             "BF7AD270-0DE2-418B-B606-71D527D9C1AE"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -120,6 +122,7 @@
         "external_ids": [
             "BF7AD270-0DE2-418B-B606-71D527D9C1AE"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -161,6 +164,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -209,6 +213,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -254,6 +259,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {
@@ -298,6 +304,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {

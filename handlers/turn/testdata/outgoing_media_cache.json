@@ -45,6 +45,7 @@
                 "body": "media bytes"
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with retryable reason",
             "retryable": true,
@@ -65,6 +66,7 @@
                 "application/pdf:https://foo.bar/document.pdf"
             ]
         },
+        "cost": 0,
         "error": {
             "message": "channel rejected send with retryable reason",
             "retryable": true,
@@ -152,6 +154,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -199,6 +202,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -278,6 +282,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -326,6 +331,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     }
 ]

@@ -30,6 +30,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -63,6 +64,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -96,6 +98,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with reason",
             "log_error": {
@@ -141,6 +144,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -181,6 +185,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {
@@ -221,6 +226,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {
@@ -322,6 +328,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -438,6 +445,7 @@
                 }
             }
         ],
+        "cost": 2,
         "log_errors": []
     },
     {
@@ -450,6 +458,28 @@
             ]
         },
         "http_mocks": {
+            "*/doc.pdf": [
+                {
+                    "status": 200,
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ],
+            "*/files.completeUploadExternal": [
+                {
+                    "status": 200,
+                    "body": {
+                        "ok": true,
+                        "files": [
+                            {
+                                "id": "F1L3SL4CK1D"
+                            },
+                            {
+                                "id": "F2L3SL4CK1D"
+                            }
+                        ]
+                    }
+                }
+            ],
             "*/files.getUploadURLExternal": [
                 {
                     "status": 200,
@@ -474,12 +504,6 @@
                     "body": "filetype... ...file bytes... ...end"
                 }
             ],
-            "*/doc.pdf": [
-                {
-                    "status": 200,
-                    "body": "filetype... ...file bytes... ...end"
-                }
-            ],
             "https://files.slack.com/upload/v1/ABC123": [
                 {
                     "status": 200,
@@ -490,22 +514,6 @@
                 {
                     "status": 200,
                     "body": "OK - 35"
-                }
-            ],
-            "*/files.completeUploadExternal": [
-                {
-                    "status": 200,
-                    "body": {
-                        "ok": true,
-                        "files": [
-                            {
-                                "id": "F1L3SL4CK1D"
-                            },
-                            {
-                                "id": "F2L3SL4CK1D"
-                            }
-                        ]
-                    }
                 }
             ]
         },
@@ -583,6 +591,7 @@
                 }
             }
         ],
+        "cost": 2,
         "log_errors": []
     },
     {
@@ -632,6 +641,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with reason",
             "log_error": {
@@ -692,6 +702,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {
@@ -763,6 +774,7 @@
                 "body": "filetype... ...file bytes... ...end"
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel connection failed",
             "retryable": true,
@@ -860,6 +872,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with reason",
             "log_error": {
@@ -884,6 +897,12 @@
             ]
         },
         "http_mocks": {
+            "*/doc.pdf": [
+                {
+                    "status": 200,
+                    "body": "filetype... ...file bytes... ...end"
+                }
+            ],
             "*/files.getUploadURLExternal": [
                 {
                     "status": 200,
@@ -903,12 +922,6 @@
                 }
             ],
             "*/image.png": [
-                {
-                    "status": 200,
-                    "body": "filetype... ...file bytes... ...end"
-                }
-            ],
-            "*/doc.pdf": [
                 {
                     "status": 200,
                     "body": "filetype... ...file bytes... ...end"
@@ -985,6 +998,7 @@
                 "body": "filetype... ...file bytes... ...end"
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel connection failed",
             "retryable": true,

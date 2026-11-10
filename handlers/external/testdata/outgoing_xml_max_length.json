@@ -67,6 +67,7 @@
                 "body": "\u003cmsg\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003ctext\u003echaracters\u003c/text\u003e\u003cfrom\u003e2020\u003c/from\u003e\u003cquick_replies\u003e\u003citem\u003eOne\u003c/item\u003e\u003citem\u003eTwo\u003c/item\u003e\u003citem\u003eThree\u003c/item\u003e\u003c/quick_replies\u003e\u003c/msg\u003e"
             }
         ],
+        "cost": 3,
         "log_errors": []
     }
 ]

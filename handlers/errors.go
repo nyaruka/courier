@@ -2,9 +2,15 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/nyaruka/courier/v26/core/channels"
 )
+
+// a Retry-After any longer than this is more likely a misconfigured provider than a real rate limit, so we don't let it
+// hold back a channel for longer
+const maxRetryAfter = 5 * time.Minute
 
 // ErrorFromResponse converts the response and error from a send request into the send error that should be
 // returned to the sender, or nil if the response indicates success. Note that HTTP 429 is treated as throttling
@@ -26,4 +32,29 @@ func ErrorFromResponse(resp *http.Response, err error) error {
 // inspect the response body before deciding how to fail should use this to check the status code first.
 func IsThrottled(resp *http.Response) bool {
 	return resp != nil && resp.StatusCode == http.StatusTooManyRequests
+}
+
+// ThrottledError returns the error for a rate limited response, which holds back the whole channel if the response says
+// how long to wait with a Retry-After header. Handlers should only use this, rather than ErrorFromResponse, where it's
+// known that the provider's rate limits apply to the whole channel and never just to the recipient.
+func ThrottledError(resp *http.Response) error {
+	if d := retryAfter(resp); d > 0 {
+		return channels.ErrConnectionThrottledFor(min(d, maxRetryAfter))
+	}
+	return channels.ErrConnectionThrottled
+}
+
+// parses a Retry-After header, which can be a number of seconds or an HTTP date
+func retryAfter(resp *http.Response) time.Duration {
+	v := resp.Header.Get("Retry-After")
+	if v == "" {
+		return 0
+	}
+	if secs, err := strconv.Atoi(v); err == nil {
+		return time.Duration(secs) * time.Second
+	}
+	if t, err := http.ParseTime(v); err == nil {
+		return time.Until(t)
+	}
+	return 0
 }

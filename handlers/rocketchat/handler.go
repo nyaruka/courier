@@ -1,3 +1,4 @@
+// API docs: https://github.com/weni-ai/RCApps.RapidPro-Channel
 package rocketchat
 
 import (
@@ -138,6 +139,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		return channels.ErrResponseContent
 	}
 	res.AddExternalID(msgID)
+	res.AddCost(1)
 
 	return nil
 }
