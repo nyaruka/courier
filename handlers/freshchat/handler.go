@@ -1,3 +1,4 @@
+// API docs: https://developers.freshchat.com/api/
 package freshchat
 
 /*

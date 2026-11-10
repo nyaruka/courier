@@ -1,3 +1,4 @@
+// API docs: https://docs.360dialog.com/docs/guides/send-and-receive-messages
 package dialog360
 
 import (

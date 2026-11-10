@@ -1,3 +1,4 @@
+// API docs: https://developers.kudosity.com/reference/post_send-sms-json
 package burstsms
 
 import (

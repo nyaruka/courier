@@ -1,3 +1,4 @@
+// API docs: https://smsapi.hormuud.com/Help
 package hormuud
 
 import (

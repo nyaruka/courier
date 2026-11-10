@@ -1,3 +1,4 @@
+// API docs: https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages/send
 package firebase
 
 import (

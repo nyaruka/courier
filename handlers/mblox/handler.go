@@ -1,3 +1,4 @@
+// API docs: https://developers.sinch.com/docs/sms/api-reference
 package mblox
 
 import (

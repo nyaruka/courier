@@ -1,3 +1,4 @@
+// API docs: https://docs-latam.messaging.sinch.com/technical-documentation/api-and-integrations/sms-api
 package wavy
 
 import (
@@ -17,7 +18,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-const sendURL = "https://api-messaging.movile.com/v1/send-sms"
+const sendURL = "https://api-messaging.wavy.global/v1/send-sms"
 
 type handler struct {
 	handlers.BaseHandler

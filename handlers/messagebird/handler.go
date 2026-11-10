@@ -1,3 +1,4 @@
+// API docs: https://developers.messagebird.com/api/sms-messaging/
 package messagebird
 
 /*

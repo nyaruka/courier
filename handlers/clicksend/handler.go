@@ -1,3 +1,4 @@
+// API docs: https://developers.clicksend.com/docs/messaging/sms/other/send-sms
 package clicksend
 
 import (

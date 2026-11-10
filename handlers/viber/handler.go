@@ -1,3 +1,4 @@
+// API docs: https://developers.viber.com/docs/api/rest-bot-api/
 package viber
 
 import (

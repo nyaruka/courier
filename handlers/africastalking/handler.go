@@ -1,3 +1,4 @@
+// API docs: https://developers.africastalking.com/docs/sms/sending/bulk
 package africastalking
 
 import (

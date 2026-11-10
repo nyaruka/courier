@@ -1,3 +1,4 @@
+// API docs: https://zenvia.github.io/zenvia-openapi-spec/v2/
 package zenvia
 
 import (

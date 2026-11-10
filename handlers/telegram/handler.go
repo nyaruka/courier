@@ -1,3 +1,4 @@
+// API docs: https://core.telegram.org/bots/api
 package telegram
 
 import (

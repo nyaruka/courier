@@ -1,3 +1,4 @@
+// API docs: https://startmobile.ua/opys-protokolu-ip2sms
 package start
 
 /*
