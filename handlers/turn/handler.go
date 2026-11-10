@@ -688,7 +688,7 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *channels.
 	// Retry-After / X-Ratelimit-* headers. Treat that as throttled so the message is
 	// retried via the errored queue rather than permanently failed.
 	if handlers.IsThrottled(resp) {
-		return channels.ErrConnectionThrottled
+		return handlers.ThrottledError(resp)
 	}
 
 	respPayload := &mtResponsePayload{}

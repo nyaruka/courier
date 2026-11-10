@@ -682,6 +682,8 @@ func PauseSending(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, until t
 	rc := rt.VK.Get()
 	defer rc.Close()
 
+	rt.Stats.RecordOutgoingBackoff(string(msg.Channel().ChannelType()))
+
 	return MsgQueue.Pause(ctx, rc, msg.QueueOwner_, until)
 }
 

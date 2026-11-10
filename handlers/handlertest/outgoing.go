@@ -161,8 +161,8 @@ func RunOutgoingTests(t *testing.T, ch *models.Channel, newFn channels.NewHandle
 			actual.Error = newSendErrorInfo(serr)
 			actual.LogErrors = clog.Errors
 			actual.OtherURNs = res.OtherURNs()
-			if res.Backoff() > 0 {
-				actual.Backoff = res.Backoff().String()
+			if backoff := channels.RequestedBackoff(res, serr); backoff > 0 {
+				actual.Backoff = backoff.String()
 			}
 
 			if mockHTTP != nil {
