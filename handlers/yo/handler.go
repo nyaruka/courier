@@ -110,21 +110,21 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			"password":     []string{password},
 		}
 
-		if err := h.sendPart(form, clog); err != nil {
+		if err := h.sendPart(form, gsm7.Segments(part), res, clog); err != nil {
 			return err
 		}
-		res.AddCost(gsm7.Segments(part))
 	}
 	return nil
 }
 
 // sendPart sends a part to the first of our gateways that can be reached. Once a request has reached a gateway it may
 // have been accepted even if we don't get an answer, so we only move on to the next when we couldn't connect at all.
-func (h *handler) sendPart(form url.Values, clog *models.ChannelLog) error {
+func (h *handler) sendPart(form url.Values, cost int, res *channels.SendResult, clog *models.ChannelLog) error {
 	var err error
 	for _, sendURL := range sendURLs {
 		var reached bool
 		if reached, err = h.sendPartTo(sendURL, form, clog); reached {
+			res.AddCost(cost)
 			return err
 		}
 	}

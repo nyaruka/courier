@@ -80,6 +80,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+		res.AddCost(gsm7.Segments(part))
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
 			return err
 		}
@@ -92,7 +93,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 
 		if response.MessageID != 0 {
 			res.AddExternalID(fmt.Sprintf("%d", response.MessageID))
-			res.AddCost(gsm7.Segments(part))
 		} else {
 			return channels.ErrResponseContent
 		}

@@ -173,11 +173,10 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	}
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
+	res.AddCost(gsm7.Segments(text))
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
 	}
-
-	res.AddCost(gsm7.Segments(text))
 
 	// try to read our external id out
 	matches := idRegex.FindSubmatch(respBody)

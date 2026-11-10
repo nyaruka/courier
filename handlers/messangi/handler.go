@@ -81,6 +81,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		}
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+		res.AddCost(gsm7.Segments(part))
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
 			return err
 		}
@@ -96,8 +97,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		if response.Status != "OK" {
 			return channels.ErrResponseStatus
 		}
-
-		res.AddCost(gsm7.Segments(part))
 	}
 
 	return nil

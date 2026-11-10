@@ -134,7 +134,7 @@
                 "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Error+Sending&SMSChannel=0&SMSType=0&Telco=0&UserId=Username"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -168,7 +168,7 @@
                 "url": "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS?AuthKey=m3-Tech&HandsetPort=0&MobileNo=250788383383&MsgHeader=2020&MsgId=0191e180-7d60-7000-aded-7d8b151cbd5b&Password=Password&SMS=Error+Sending&SMSChannel=0&SMSType=0&Telco=0&UserId=Username"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "channel rate limited",
             "retryable": true,

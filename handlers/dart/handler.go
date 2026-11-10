@@ -171,6 +171,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+		res.AddCost(gsm7.Segments(part))
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
 			return err
 		}
@@ -179,8 +180,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		if responseCode != "000" {
 			return channels.ErrFailedWithReason(responseCode, errorCodes[responseCode])
 		}
-
-		res.AddCost(gsm7.Segments(part))
 	}
 
 	return nil

@@ -179,7 +179,10 @@ type mtResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) sendMsgPart(msg *models.MsgOut, token, path string, form url.Values, keyboard Markup, clog *models.ChannelLog) (string, error) {
+func (h *handler) sendMsgPart(
+	msg *models.MsgOut, token, path string, form url.Values, keyboard Markup, res *channels.SendResult,
+	clog *models.ChannelLog,
+) (string, error) {
 	// either include or remove our keyboard
 	form.Add("parse_mode", "Markdown")
 	if keyboard == nil {
@@ -196,6 +199,7 @@ func (h *handler) sendMsgPart(msg *models.MsgOut, token, path string, form url.V
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
+	res.AddCost(1)
 	if err != nil || resp.StatusCode/100 == 5 {
 		return "", channels.ErrConnectionFailed
 	}
@@ -280,13 +284,12 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 
 		form := url.Values{"chat_id": []string{msg.URN().Path()}, "text": []string{msg.Text()}}
 
-		externalID, err := h.sendMsgPart(msg, authToken, "sendMessage", form, msgKeyBoard, clog)
+		externalID, err := h.sendMsgPart(msg, authToken, "sendMessage", form, msgKeyBoard, res, clog)
 		if err != nil {
 			return err
 		}
 
 		res.AddExternalID(externalID)
-		res.AddCost(1)
 	}
 
 	// send each attachment
@@ -303,12 +306,11 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 				"photo":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
-			externalID, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard, clog)
+			externalID, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard, res, clog)
 			if err != nil {
 				return err
 			}
 			res.AddExternalID(externalID)
-			res.AddCost(1)
 
 		case handlers.MediaTypeVideo:
 			form := url.Values{
@@ -316,12 +318,11 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 				"video":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
-			externalID, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard, clog)
+			externalID, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard, res, clog)
 			if err != nil {
 				return err
 			}
 			res.AddExternalID(externalID)
-			res.AddCost(1)
 
 		case handlers.MediaTypeAudio:
 			form := url.Values{
@@ -329,12 +330,11 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 				"audio":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
-			externalID, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard, clog)
+			externalID, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard, res, clog)
 			if err != nil {
 				return err
 			}
 			res.AddExternalID(externalID)
-			res.AddCost(1)
 
 		case handlers.MediaTypeApplication:
 			form := url.Values{
@@ -342,12 +342,11 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 				"document": []string{attachment.URL},
 				"caption":  []string{caption},
 			}
-			externalID, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard, clog)
+			externalID, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard, res, clog)
 			if err != nil {
 				return err
 			}
 			res.AddExternalID(externalID)
-			res.AddCost(1)
 
 		default:
 			clog.Error(models.ErrorMediaUnsupported(attachment.ContentType))

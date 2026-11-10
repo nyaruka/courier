@@ -223,6 +223,11 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		req.SetBasicAuth(username, password)
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+		if len(payload.Media) > 0 {
+			res.AddCost(1)
+		} else {
+			res.AddCost(gsm7.Segments(part))
+		}
 		if err != nil || resp.StatusCode/100 == 5 {
 			return channels.ErrConnectionFailed
 		}
@@ -241,12 +246,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 
 		if response.ID != "" {
 			res.AddExternalID(response.ID)
-		}
-
-		if len(payload.Media) > 0 {
-			res.AddCost(1)
-		} else {
-			res.AddCost(gsm7.Segments(part))
 		}
 	}
 

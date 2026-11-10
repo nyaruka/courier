@@ -149,26 +149,26 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		}
 
 		if fileAttachment != nil {
-			err = h.sendFilePart(msg, botToken, fileAttachment, clog)
+			err = h.sendFilePart(msg, botToken, fileAttachment, res, clog)
 			if err != nil {
 				return err
 			}
-			res.AddCost(1)
 		}
 	}
 
 	if msg.Text() != "" {
-		err := h.sendTextMsgPart(msg, botToken, clog)
+		err := h.sendTextMsgPart(msg, botToken, res, clog)
 		if err != nil {
 			return err
 		}
-		res.AddCost(1)
 	}
 
 	return nil
 }
 
-func (h *handler) sendTextMsgPart(msg *models.MsgOut, token string, clog *models.ChannelLog) error {
+func (h *handler) sendTextMsgPart(
+	msg *models.MsgOut, token string, res *channels.SendResult, clog *models.ChannelLog,
+) error {
 	sendURL := apiURL + "/chat.postMessage"
 
 	msgPayload := &mtPayload{
@@ -189,6 +189,7 @@ func (h *handler) sendTextMsgPart(msg *models.MsgOut, token string, clog *models
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
+	res.AddCost(1)
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
 	}
@@ -229,7 +230,9 @@ func (h *handler) parseAttachmentToFileParams(msg *models.MsgOut, attachment str
 	return &FileParams{File: respBody, FileName: filename, Channels: msg.URN().Path()}, nil
 }
 
-func (h *handler) sendFilePart(msg *models.MsgOut, token string, fileParams *FileParams, clog *models.ChannelLog) error {
+func (h *handler) sendFilePart(
+	msg *models.MsgOut, token string, fileParams *FileParams, res *channels.SendResult, clog *models.ChannelLog,
+) error {
 	uploadURL := apiURL + "/files.upload"
 
 	body := &bytes.Buffer{}
@@ -262,6 +265,7 @@ func (h *handler) sendFilePart(msg *models.MsgOut, token string, fileParams *Fil
 	req.Header.Add("Content-Type", writer.FormDataContentType())
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
+	res.AddCost(1)
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
 	}

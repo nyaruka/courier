@@ -77,7 +77,7 @@
                 "body": "\u003cmsg\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003ctext\u003eError Message\u003c/text\u003e\u003cfrom\u003e2020\u003c/from\u003e\u003cquick_replies\u003e\u003c/quick_replies\u003e\u003c/msg\u003e"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "response status code",
             "log_error": {

@@ -117,6 +117,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		req.Header.Set("Authorization", fmt.Sprintf("Token %s", auth))
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+		res.AddCost(gsm7.Segments(part))
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
 			return err
 		}
@@ -128,7 +129,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		}
 
 		res.AddExternalID(externalID)
-		res.AddCost(gsm7.Segments(part))
 	}
 
 	return nil
