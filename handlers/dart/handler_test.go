@@ -14,12 +14,10 @@ func TestIncoming(t *testing.T) {
 		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DA", "2020", "ID", []string{urns.Phone.Prefix}, nil),
 	}
 
-	RunIncomingTests(t, chs, NewHandler("DA", "DartMedia", sendURL, maxMsgLength), "testdata/incoming.json", nil)
+	RunIncomingTests(t, chs, newHandler, "testdata/incoming.json", nil)
 }
 
 func TestOutgoing(t *testing.T) {
-	maxMsgLength = 160
-
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DA", "2020", "ID",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
@@ -27,5 +25,5 @@ func TestOutgoing(t *testing.T) {
 			models.ConfigPassword: "Password",
 		})
 
-	RunOutgoingTests(t, ch, NewHandler("DA", "Dartmedia", sendURL, maxMsgLength), "testdata/outgoing.json", &OutgoingOptions{CheckRedacted: []string{"Password"}})
+	RunOutgoingTests(t, ch, newHandler, "testdata/outgoing.json", &OutgoingOptions{CheckRedacted: []string{"Password"}})
 }
