@@ -22,6 +22,7 @@ type Foreman struct {
 	availableSenders chan *Sender
 	quit             chan bool
 	assignWG         *sync.WaitGroup // tracks the assign loop
+	stopOnce         sync.Once
 	waitGroup        *sync.WaitGroup
 }
 
@@ -56,19 +57,21 @@ func (f *Foreman) Start() {
 	}()
 }
 
-// Stop stops assigning messages, then stops the senders and waits for the sends in progress to finish. It must be
-// called at most once.
+// Stop stops assigning messages, then stops the senders and waits for the sends in progress to finish. Calling it
+// again waits for the same thing.
 func (f *Foreman) Stop() {
-	slog.Info("foreman stopping", "comp", "foreman", "state", "stopping")
+	f.stopOnce.Do(func() {
+		slog.Info("foreman stopping", "comp", "foreman", "state", "stopping")
 
-	// stop the assign loop first and wait for it to return, so that nothing more is popped from the queue - a message
-	// popped after the senders have been stopped has nobody to send it and is lost
-	close(f.quit)
-	f.assignWG.Wait()
+		// stop the assign loop first and wait for it to return, so that nothing more is popped from the queue - a
+		// message popped after the senders have been stopped has nobody to send it and is lost
+		close(f.quit)
+		f.assignWG.Wait()
 
-	for _, sender := range f.senders {
-		sender.Stop()
-	}
+		for _, sender := range f.senders {
+			sender.Stop()
+		}
+	})
 
 	// wait for all senders to finish what they're doing
 	f.waitGroup.Wait()

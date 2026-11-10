@@ -16,10 +16,11 @@ import (
 )
 
 // shutdownTimeout is how long we allow for a graceful shutdown before exiting hard. The shutdown phases are
-// individually bounded (in-flight requests and the final status flush at 30s, in-flight sends at 35s) but run
-// partly in sequence, so a legitimate slow shutdown can approach ~60s. Past this budget something is genuinely
-// wedged, and it's better to exit with a record of why than be killed by the orchestrator. Orchestrator stop
-// timeouts should be set a bit above this so the watchdog fires first.
+// individually bounded (in-flight requests and the final status flush at 30s, a pop of the next message at 30s,
+// and an in-flight send at 35s plus up to 20s to pause its channel and write its status) but run partly in
+// sequence, so a slow shutdown can approach this when the things it's waiting on are timing out. Past this budget
+// something is genuinely wedged, and it's better to exit with a record of why than be killed by the orchestrator.
+// Orchestrator stop timeouts should be set a bit above this so the watchdog fires first.
 const shutdownTimeout = 90 * time.Second
 
 // Service starts the courier service, blocks until a termination signal is received, then stops it. The config

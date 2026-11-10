@@ -61,8 +61,10 @@ func TestForemanStopWhilstBusy(t *testing.T) {
 		require.NoError(t, models.MsgQueue.Push(ctx, vc, queues.OwnerID(channel.UUID()), 0, true, []byte("["+string(jsonx.MustMarshal(m))+"]")))
 	}
 
-	// stopping a foreman that was never started has nothing to wait for
-	sender.NewForeman(rt, 4).Stop()
+	// stopping a foreman that was never started has nothing to wait for, and nor does stopping it again
+	unstarted := sender.NewForeman(rt, 4)
+	unstarted.Stop()
+	unstarted.Stop()
 
 	// repeatedly stop a foreman that still has messages to assign - a message popped once the senders have been
 	// stopped has nobody to send it, so stopping has to stop the popping first
