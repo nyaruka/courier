@@ -49,6 +49,7 @@
         "external_ids": [
             "123456-a"
         ],
+        "cost": 1,
         "log_errors": []
     }
 ]

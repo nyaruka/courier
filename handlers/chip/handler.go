@@ -219,7 +219,12 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		Email:        msg.Contact().Email,
 	}
 
-	return h.post(ctx, "send", payload, clog)
+	if err := h.post(ctx, "send", payload, clog); err != nil {
+		return err
+	}
+
+	res.AddCost(1)
+	return nil
 }
 
 // eventPayload is something other than a message we have the webchat service show the visitor - a user typing

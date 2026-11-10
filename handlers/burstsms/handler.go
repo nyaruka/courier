@@ -1,3 +1,4 @@
+// API docs: https://developers.kudosity.com/reference/post_send-sms-json
 package burstsms
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/httpx"
 )
 
@@ -90,6 +92,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 
 		if response.MessageID != 0 {
 			res.AddExternalID(fmt.Sprintf("%d", response.MessageID))
+			res.AddCost(gsm7.Segments(part))
 		} else {
 			return channels.ErrResponseContent
 		}

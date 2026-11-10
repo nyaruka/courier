@@ -1,3 +1,4 @@
+// API docs: https://whatsapp.turn.io/docs/api/messages
 package turn
 
 import (
@@ -711,6 +712,7 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *channels.
 	if id := respPayload.ExternalID(); id != "" {
 		res.AddExternalID(id)
 	}
+	res.AddCost(1)
 	return nil
 }
 

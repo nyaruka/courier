@@ -41,6 +41,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -84,6 +85,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -127,6 +129,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -170,6 +173,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -213,6 +217,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -254,6 +259,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with reason",
             "log_error": {
@@ -304,6 +310,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with reason",
             "log_error": {
@@ -353,6 +360,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with retryable reason",
             "retryable": true,
@@ -402,6 +410,7 @@
                 "body": "data"
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with retryable reason",
             "retryable": true,
@@ -516,6 +525,7 @@
             "157b5e14568e8",
             "157b5e14568e8"
         ],
+        "cost": 2,
         "log_errors": []
     },
     {
@@ -595,6 +605,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -674,6 +685,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -752,6 +764,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -830,6 +843,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -921,6 +935,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -977,6 +992,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -1067,6 +1083,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -1158,6 +1175,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -1248,6 +1266,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -1361,6 +1380,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -1474,6 +1494,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -1588,6 +1609,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -1681,6 +1703,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -1792,6 +1815,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -1949,6 +1973,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -2046,6 +2071,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -2109,6 +2135,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -2176,6 +2203,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -2239,6 +2267,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -2330,6 +2359,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -2402,6 +2432,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -2552,6 +2583,7 @@
             "157b5e14568e8",
             "157b5e14568e8"
         ],
+        "cost": 2,
         "log_errors": []
     },
     {
@@ -2606,6 +2638,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -2667,6 +2700,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -2731,6 +2765,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": [
             {
                 "code": "",
@@ -2785,6 +2820,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": [
             {
                 "code": "",
@@ -2850,6 +2886,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -2913,6 +2950,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": [
             {
                 "code": "",
@@ -2987,6 +3025,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -3036,6 +3075,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": [
             {
                 "code": "",
@@ -3080,6 +3120,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -3127,6 +3168,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -3185,6 +3227,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -3233,6 +3276,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with retryable reason",
             "retryable": true,
@@ -3281,6 +3325,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with reason",
             "log_error": {
@@ -3328,6 +3373,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with reason",
             "log_error": {
@@ -3370,6 +3416,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel connection failed",
             "retryable": true,

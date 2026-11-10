@@ -1,3 +1,4 @@
+// API docs: https://developers.m-target.com/
 package mtarget
 
 import (
@@ -15,10 +16,11 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
 )
 
-const sendURL = "https://api-public.mtarget.fr/api-sms.json"
+const sendURL = "https://api-public.mtarget.fr/messages"
 
 var maxMsgLength = 765
 
@@ -162,12 +164,11 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			"allowunicode": []string{"true"},
 		}
 
-		msgURL, _ := url.Parse(sendURL)
-		msgURL.RawQuery = params.Encode()
-		req, err := http.NewRequest(http.MethodPost, msgURL.String(), nil)
+		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(params.Encode()))
 		if err != nil {
 			return err
 		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
@@ -184,13 +185,24 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		//		"ticket": "760eeaa0-5034-11e7-bb92-00000a0a643a"
 		//  }]
 		// }
-		code, _ := jsonparser.GetString(respBody, "results", "[0]", "code")
+		// code and smscount can come back as either strings or numbers
+		code, _, _, _ := jsonparser.Get(respBody, "results", "[0]", "code")
 		externalID, _ := jsonparser.GetString(respBody, "results", "[0]", "ticket")
-		if code == "0" && externalID != "" {
+		if string(code) == "0" && externalID != "" {
 			res.AddExternalID(externalID)
+
+			// prefer what MTarget says it sent, since it chooses the encoding
+			cost := gsm7.Segments(part)
+			smsCount, _, _, _ := jsonparser.Get(respBody, "results", "[0]", "smscount")
+			if n, err := strconv.Atoi(string(smsCount)); err == nil && n > 0 {
+				cost = n
+			}
+			res.AddCost(cost)
+		} else if len(code) == 0 {
+			return channels.ErrResponseUnexpected
 		} else {
 			reason, _ := jsonparser.GetString(respBody, "results", "[0]", "reason")
-			return channels.ErrFailedWithReason(code, reason)
+			return channels.ErrFailedWithReason(string(code), reason)
 		}
 	}
 

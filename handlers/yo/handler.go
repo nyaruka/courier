@@ -7,6 +7,7 @@ GET /handlers/yo/received/uuid?account=12345&dest=8500&message=Msg&sender=256778
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -108,37 +110,64 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			"password":     []string{password},
 		}
 
-		for _, sendURL := range sendURLs {
-			sendURL, _ := url.Parse(sendURL)
-			sendURL.RawQuery = form.Encode()
-
-			req, err := http.NewRequest(http.MethodGet, sendURL.String(), nil)
-			if err != nil {
-				return err
-			}
-			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-			resp, respBody, err := h.RequestHTTP(req, clog)
-			if err := handlers.ErrorFromResponse(resp, err); err != nil {
-				return err
-			}
-
-			responseQS, _ := url.ParseQuery(string(respBody))
-
-			// check whether we were blacklisted
-			createMessage := responseQS["ybs_autocreate_message"]
-			if len(createMessage) > 0 && strings.Contains(createMessage[0], "BLACKLISTED") {
-				return channels.ErrContactStopped
-			}
-
-			// finally check that we were sent
-			createStatus := responseQS["ybs_autocreate_status"]
-			if len(createStatus) > 0 && createStatus[0] == "OK" {
-				return nil
-			} else {
-				return channels.ErrResponseContent
-			}
+		if err := h.sendPart(form, clog); err != nil {
+			return err
 		}
+		res.AddCost(gsm7.Segments(part))
 	}
 	return nil
+}
+
+// sendPart sends a part to the first of our gateways that can be reached. Once a request has reached a gateway it may
+// have been accepted even if we don't get an answer, so we only move on to the next when we couldn't connect at all.
+func (h *handler) sendPart(form url.Values, clog *models.ChannelLog) error {
+	var err error
+	for _, sendURL := range sendURLs {
+		var reached bool
+		if reached, err = h.sendPartTo(sendURL, form, clog); reached {
+			return err
+		}
+	}
+	return err
+}
+
+func (h *handler) sendPartTo(sendURL string, form url.Values, clog *models.ChannelLog) (bool, error) {
+	u, _ := url.Parse(sendURL)
+	u.RawQuery = form.Encode()
+
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return true, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, respBody, err := h.RequestHTTP(req, clog)
+	if isUnreachable(err) {
+		return false, channels.ErrConnectionFailed
+	}
+	if err := handlers.ErrorFromResponse(resp, err); err != nil {
+		return true, err
+	}
+
+	responseQS, _ := url.ParseQuery(string(respBody))
+
+	// check whether we were blacklisted
+	createMessage := responseQS["ybs_autocreate_message"]
+	if len(createMessage) > 0 && strings.Contains(createMessage[0], "BLACKLISTED") {
+		return true, channels.ErrContactStopped
+	}
+
+	// finally check that we were sent
+	createStatus := responseQS["ybs_autocreate_status"]
+	if len(createStatus) > 0 && createStatus[0] == "OK" {
+		return true, nil
+	}
+	return true, channels.ErrResponseContent
+}
+
+// isUnreachable returns whether a request failed before it could reach the server
+func isUnreachable(err error) bool {
+	var opErr *net.OpError
+	var dnsErr *net.DNSError
+	return errors.As(err, &dnsErr) || (errors.As(err, &opErr) && opErr.Op == "dial")
 }

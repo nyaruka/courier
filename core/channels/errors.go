@@ -62,6 +62,7 @@ type SendResult struct {
 	externalIDs []string
 	otherURNs   []urns.URN
 	backoff     time.Duration
+	cost        int
 }
 
 func (r *SendResult) AddExternalID(id string) {
@@ -90,6 +91,17 @@ func (r *SendResult) SetBackoff(d time.Duration) {
 
 func (r *SendResult) Backoff() time.Duration {
 	return r.backoff
+}
+
+// AddCost adds to what the send used of the channel's throughput, in the units the provider limits it by, e.g.
+// segments for an SMS aggregator or messages for a chat API. Handlers add it as the provider accepts each message, so
+// a send that fails partway costs only what got through.
+func (r *SendResult) AddCost(n int) {
+	r.cost += n
+}
+
+func (r *SendResult) Cost() int {
+	return r.cost
 }
 
 // RequestedBackoff returns how long a send asked for all sending on the channel to stop, through its result or its error

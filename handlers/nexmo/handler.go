@@ -1,3 +1,4 @@
+// API docs: https://developer.vonage.com/en/api/sms
 package nexmo
 
 import (
@@ -239,6 +240,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		if err != nil || nexmoStatus != "0" {
 			return channels.ErrFailedWithReason("send:"+nexmoStatus, sendErrorCodes[errCode])
 		}
+
+		res.AddCost(gsm7.Segments(part))
 
 		externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "message-id")
 		if err == nil {

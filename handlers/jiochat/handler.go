@@ -181,7 +181,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
 			return err
 		}
-
+		res.AddCost(1)
 	}
 
 	return nil

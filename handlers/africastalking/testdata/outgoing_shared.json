@@ -47,6 +47,7 @@
         "external_ids": [
             "1002"
         ],
+        "cost": 1,
         "log_errors": []
     }
 ]

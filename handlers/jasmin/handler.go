@@ -1,3 +1,4 @@
+// API docs: https://docs.jasminsms.com/en/latest/apis/http/index.html
 package jasmin
 
 import (
@@ -146,14 +147,16 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	}
 
 	// if we are smart, first try to convert to GSM7 chars
-	replaced := gsm7.ReplaceSubstitutions(handlers.GetTextAndAttachments(msg))
+	text := handlers.GetTextAndAttachments(msg)
+	replaced := gsm7.ReplaceSubstitutions(text)
 	if gsm7.IsValid(replaced) {
-		form["content"] = []string{replaced}
+		text = replaced
+		form["content"] = []string{text}
 	} else {
 		form["coding"] = []string{"8"}
 
 		encoder := unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM).NewEncoder()
-		utf16beBytes, err := encoder.Bytes([]byte(handlers.GetTextAndAttachments(msg)))
+		utf16beBytes, err := encoder.Bytes([]byte(text))
 		if err != nil {
 			return err
 		}
@@ -173,6 +176,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
 	}
+
+	res.AddCost(gsm7.Segments(text))
 
 	// try to read our external id out
 	matches := idRegex.FindSubmatch(respBody)

@@ -22,6 +22,7 @@
         "external_ids": [
             "External ID1"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -47,6 +48,7 @@
         "external_ids": [
             "External ID1"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -72,6 +74,7 @@
         "external_ids": [
             "External ID1"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -101,6 +104,7 @@
         "external_ids": [
             "External ID1"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -123,6 +127,7 @@
                 "url": "http://example.com/send?coding=0&content=Error+Message&dlr=yes&dlr-level=2&dlr-method=POST&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fjs%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&from=2020&password=Password&to=250788383383&username=Username"
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -152,6 +157,7 @@
                 "url": "http://example.com/send?coding=0&content=Error+Message&dlr=yes&dlr-level=2&dlr-method=POST&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fjs%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&from=2020&password=Password&to=250788383383&username=Username"
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,

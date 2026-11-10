@@ -1,12 +1,14 @@
 package highconnection
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/core/models"
 	. "github.com/nyaruka/courier/v26/handlers/handlertest"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIncoming(t *testing.T) {
@@ -27,4 +29,12 @@ func TestOutgoing(t *testing.T) {
 		})
 
 	RunOutgoingTests(t, ch, newHandler, "testdata/outgoing.json", &OutgoingOptions{CheckRedacted: []string{"Password"}})
+}
+
+func TestUCS2Segments(t *testing.T) {
+	assert.Equal(t, 1, ucs2Segments(""))
+	assert.Equal(t, 1, ucs2Segments(strings.Repeat("a", 70)))
+	assert.Equal(t, 2, ucs2Segments(strings.Repeat("a", 71)))
+	assert.Equal(t, 1, ucs2Segments(strings.Repeat("😀", 35))) // 70 code units
+	assert.Equal(t, 2, ucs2Segments(strings.Repeat("😀", 36))) // 72 code units
 }

@@ -1,3 +1,4 @@
+// API docs: https://core.telegram.org/bots/api
 package telegram
 
 import (
@@ -285,6 +286,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		}
 
 		res.AddExternalID(externalID)
+		res.AddCost(1)
 	}
 
 	// send each attachment
@@ -306,6 +308,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 				return err
 			}
 			res.AddExternalID(externalID)
+			res.AddCost(1)
 
 		case handlers.MediaTypeVideo:
 			form := url.Values{
@@ -318,6 +321,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 				return err
 			}
 			res.AddExternalID(externalID)
+			res.AddCost(1)
 
 		case handlers.MediaTypeAudio:
 			form := url.Values{
@@ -330,6 +334,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 				return err
 			}
 			res.AddExternalID(externalID)
+			res.AddCost(1)
 
 		case handlers.MediaTypeApplication:
 			form := url.Values{
@@ -342,6 +347,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 				return err
 			}
 			res.AddExternalID(externalID)
+			res.AddCost(1)
 
 		default:
 			clog.Error(models.ErrorMediaUnsupported(attachment.ContentType))

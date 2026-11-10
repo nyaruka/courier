@@ -325,9 +325,9 @@ func incrementMsgTallies(ctx context.Context, rt *runtime.Runtime, m *MsgIn) {
 }
 
 // dailyOrgTally returns the tally field for the given org's total of scope on the UTC day of t, in the form the
-// tallies flusher in mailroom parses, e.g. 123|msgs/text:in@2025-05-04
+// tallies flusher in mailroom parses, e.g. O123|msgs/text:in@2025-05-04
 func dailyOrgTally(orgID OrgID, scope string, t time.Time) string {
-	return fmt.Sprintf("%d|%s@%s", orgID, scope, t.UTC().Format(time.DateOnly))
+	return fmt.Sprintf("O%d|%s@%s", orgID, scope, t.UTC().Format(time.DateOnly))
 }
 
 // flushMsgs is the flush function for the msg spool - it retries writing spooled msgs to the database, returning

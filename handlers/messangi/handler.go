@@ -14,6 +14,7 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/gocommon/gsm7"
 )
 
 const (
@@ -95,6 +96,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		if response.Status != "OK" {
 			return channels.ErrResponseStatus
 		}
+
+		res.AddCost(gsm7.Segments(part))
 	}
 
 	return nil
