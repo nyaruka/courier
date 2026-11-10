@@ -7,6 +7,7 @@ GET /handlers/yo/received/uuid?account=12345&dest=8500&message=Msg&sender=256778
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -117,30 +118,35 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	return nil
 }
 
-// sendPart sends a part to the first of our gateways that can be reached
+// sendPart sends a part to the first of our gateways that can be reached. Once a request has reached a gateway it may
+// have been accepted even if we don't get an answer, so we only move on to the next when we couldn't connect at all.
 func (h *handler) sendPart(form url.Values, clog *models.ChannelLog) error {
 	var err error
 	for _, sendURL := range sendURLs {
-		if err = h.sendPartTo(sendURL, form, clog); !errors.Is(err, channels.ErrConnectionFailed) {
+		var reached bool
+		if reached, err = h.sendPartTo(sendURL, form, clog); reached {
 			return err
 		}
 	}
 	return err
 }
 
-func (h *handler) sendPartTo(sendURL string, form url.Values, clog *models.ChannelLog) error {
+func (h *handler) sendPartTo(sendURL string, form url.Values, clog *models.ChannelLog) (bool, error) {
 	u, _ := url.Parse(sendURL)
 	u.RawQuery = form.Encode()
 
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
-		return err
+		return true, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
+	if isUnreachable(err) {
+		return false, channels.ErrConnectionFailed
+	}
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
-		return err
+		return true, err
 	}
 
 	responseQS, _ := url.ParseQuery(string(respBody))
@@ -148,13 +154,20 @@ func (h *handler) sendPartTo(sendURL string, form url.Values, clog *models.Chann
 	// check whether we were blacklisted
 	createMessage := responseQS["ybs_autocreate_message"]
 	if len(createMessage) > 0 && strings.Contains(createMessage[0], "BLACKLISTED") {
-		return channels.ErrContactStopped
+		return true, channels.ErrContactStopped
 	}
 
 	// finally check that we were sent
 	createStatus := responseQS["ybs_autocreate_status"]
 	if len(createStatus) > 0 && createStatus[0] == "OK" {
-		return nil
+		return true, nil
 	}
-	return channels.ErrResponseContent
+	return true, channels.ErrResponseContent
+}
+
+// isUnreachable returns whether a request failed before it could reach the server
+func isUnreachable(err error) bool {
+	var opErr *net.OpError
+	var dnsErr *net.DNSError
+	return errors.As(err, &dnsErr) || (errors.As(err, &opErr) && opErr.Op == "dial")
 }

@@ -249,12 +249,13 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	}
 	res.AddExternalID(externalID)
 
+	cost := 1
 	if channel.ChannelType() == "ZVS" {
+		cost = 0
 		for _, msgPart := range msgParts {
-			res.AddCost(gsm7.Segments(msgPart))
+			cost += gsm7.Segments(msgPart)
 		}
-	} else {
-		res.AddCost(1)
 	}
+	res.AddCost(max(cost, 1))
 	return nil
 }

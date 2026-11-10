@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"time"
-	"unicode/utf8"
+	"unicode/utf16"
 
 	"github.com/nyaruka/courier/v26/core/channels"
 	"github.com/nyaruka/courier/v26/core/models"
@@ -160,9 +160,9 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	return nil
 }
 
-// we always send as UCS-2, so even GSM7 text uses the shorter UCS-2 segments
+// we always send as UCS-2, so even GSM7 text uses the shorter UCS-2 segments, which are measured in UTF-16 code units
 func ucs2Segments(text string) int {
-	if n := utf8.RuneCountInString(text); n > 70 {
+	if n := len(utf16.Encode([]rune(text))); n > 70 {
 		return (n + 66) / 67
 	}
 	return 1
