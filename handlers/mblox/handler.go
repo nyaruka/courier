@@ -20,7 +20,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-const sendURL = "https://api.mblox.com/xms/v1"
+const sendURL = "https://us.sms.api.sinch.com/xms/v1"
 
 var maxMsgLength = 459
 
