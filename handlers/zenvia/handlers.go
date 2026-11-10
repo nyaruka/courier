@@ -14,6 +14,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -247,5 +248,14 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		return channels.ErrResponseContent
 	}
 	res.AddExternalID(externalID)
+
+	cost := 1
+	if channel.ChannelType() == "ZVS" {
+		cost = 0
+		for _, msgPart := range msgParts {
+			cost += gsm7.Segments(msgPart)
+		}
+	}
+	res.AddCost(max(cost, 1))
 	return nil
 }

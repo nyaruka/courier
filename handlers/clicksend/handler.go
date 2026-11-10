@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 )
@@ -94,6 +95,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		id, _ := jsonparser.GetString(respBody, "data", "messages", "[0]", "message_id")
 		if id != "" {
 			res.AddExternalID(id)
+			res.AddCost(gsm7.Segments(part))
 		} else {
 			return channels.ErrResponseContent
 		}

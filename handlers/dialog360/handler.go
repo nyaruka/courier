@@ -285,5 +285,6 @@ func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, r
 	if id := respPayload.ExternalID(); id != "" {
 		res.AddExternalID(id)
 	}
+	res.AddCost(1)
 	return respPayload.UserID(), nil
 }

@@ -44,6 +44,7 @@
         "external_ids": [
             "6b1c15d3-cba2-46f7-9a25-78265e58057d"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -87,6 +88,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {
@@ -137,6 +139,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -187,6 +190,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,

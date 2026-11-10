@@ -27,6 +27,7 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/courier/v26/utils"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -348,6 +349,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			res.AddExternalID(externalID)
 		}
 
+		res.AddCost(1)
+
 	} else {
 
 		parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
@@ -439,6 +442,12 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 				clog.Error(models.ErrorResponseValueMissing("sid"))
 			} else {
 				res.AddExternalID(externalID)
+			}
+
+			if channel.IsScheme(urns.WhatsApp) || (i == 0 && len(attachments) > 0) {
+				res.AddCost(1)
+			} else {
+				res.AddCost(gsm7.Segments(part))
 			}
 		}
 

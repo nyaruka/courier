@@ -370,6 +370,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		if responseCheck != "" && !strings.Contains(string(respBody), responseCheck) {
 			return channels.ErrResponseContent
 		}
+		res.AddCost(1)
 	}
 
 	return nil

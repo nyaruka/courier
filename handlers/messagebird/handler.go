@@ -22,6 +22,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -248,6 +249,12 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
+	}
+
+	if len(msg.Attachments()) > 0 {
+		res.AddCost(1)
+	} else {
+		res.AddCost(gsm7.Segments(payload.Body))
 	}
 
 	externalID, err := jsonparser.GetString(respBody, "id")

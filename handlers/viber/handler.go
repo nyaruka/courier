@@ -429,6 +429,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			return channels.ErrFailedWithReason(strconv.Itoa(respPayload.Status), errorMessage)
 		}
 
+		res.AddCost(1)
 		keyboard = nil
 	}
 	return nil

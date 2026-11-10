@@ -530,6 +530,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg *models.MsgO
 		}
 
 		res.AddExternalID(respPayload.ExternalID)
+		res.AddCost(1)
 	}
 
 	return nil
@@ -726,6 +727,7 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 	if id := respPayload.ExternalID(); id != "" {
 		res.AddExternalID(id)
 	}
+	res.AddCost(1)
 	return respPayload.UserID(), nil
 }
 

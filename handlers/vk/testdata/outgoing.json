@@ -24,6 +24,7 @@
         "external_ids": [
             "1"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -118,6 +119,7 @@
         "external_ids": [
             "1"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -200,6 +202,7 @@
         "external_ids": [
             "1"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -249,6 +252,7 @@
         "external_ids": [
             "1"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -286,6 +290,7 @@
         "external_ids": [
             "1"
         ],
+        "cost": 1,
         "log_errors": [
             {
                 "code": "",
@@ -328,6 +333,7 @@
         "external_ids": [
             "1"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -368,6 +374,7 @@
         "external_ids": [
             "1"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -405,6 +412,7 @@
         "external_ids": [
             "1"
         ],
+        "cost": 1,
         "log_errors": [
             {
                 "code": "",
@@ -443,6 +451,7 @@
         "external_ids": [
             "1"
         ],
+        "cost": 1,
         "log_errors": [
             {
                 "code": "",
@@ -470,6 +479,7 @@
                 "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=&message=Simple+message&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel connection failed",
             "retryable": true,
@@ -500,6 +510,7 @@
                 "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=&message=Simple+message&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -532,6 +543,7 @@
                 "url": "https://api.vk.com/method/messages.send.json?access_token=token123xyz&attachment=&message=Simple+message&random_id=0191e180-7d60-7000-aded-7d8b151cbd5b&user_id=123456789&v=5.103"
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {

@@ -39,6 +39,7 @@
         "external_ids": [
             "mid.133"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -80,6 +81,7 @@
         "external_ids": [
             "mid.133"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -122,6 +124,7 @@
         "external_ids": [
             "mid.133"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -164,6 +167,7 @@
         "external_ids": [
             "mid.133"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -227,6 +231,7 @@
         "external_ids": [
             "mid.133"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -313,6 +318,7 @@
             "mid.133",
             "mid.133"
         ],
+        "cost": 2,
         "log_errors": []
     },
     {
@@ -361,6 +367,7 @@
         "external_ids": [
             "mid.133"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -456,6 +463,7 @@
             "mid.133",
             "mid.133"
         ],
+        "cost": 2,
         "log_errors": []
     },
     {
@@ -504,6 +512,7 @@
         "external_ids": [
             "mid.133"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -552,6 +561,7 @@
         "external_ids": [
             "mid.133"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -589,6 +599,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response not expected values",
             "loggable": true,
@@ -634,6 +645,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -678,6 +690,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -721,6 +734,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response couldn't be parsed",
             "loggable": true,
@@ -769,6 +783,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with reason",
             "log_error": {

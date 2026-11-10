@@ -29,6 +29,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -86,6 +87,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -124,6 +126,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -161,6 +164,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -194,6 +198,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -226,6 +231,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -265,6 +271,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel connection failed",
             "retryable": true,
@@ -307,6 +314,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": []
     }
 ]
