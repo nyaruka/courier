@@ -414,5 +414,123 @@
             }
         },
         "log_errors": []
+    },
+    {
+        "label": "Error Response with numeric code",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api-public.mtarget.fr/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "results": [
+                            {
+                                "code": 3,
+                                "reason": "FAILED",
+                                "ticket": "null"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api-public.mtarget.fr/messages",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "allowunicode": [
+                        "true"
+                    ],
+                    "msg": [
+                        "Error Sending"
+                    ],
+                    "msisdn": [
+                        "+250788383383"
+                    ],
+                    "password": [
+                        "Password"
+                    ],
+                    "serviceid": [
+                        "2020"
+                    ],
+                    "username": [
+                        "Username"
+                    ]
+                }
+            }
+        ],
+        "cost": 0,
+        "error": {
+            "message": "channel rejected send with reason",
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "3",
+                "message": "FAILED"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Unexpected Response",
+        "msg": {
+            "text": "Error Sending",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api-public.mtarget.fr/messages": [
+                {
+                    "status": 200,
+                    "body": {
+                        "error": "not what we expected"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api-public.mtarget.fr/messages",
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "form": {
+                    "allowunicode": [
+                        "true"
+                    ],
+                    "msg": [
+                        "Error Sending"
+                    ],
+                    "msisdn": [
+                        "+250788383383"
+                    ],
+                    "password": [
+                        "Password"
+                    ],
+                    "serviceid": [
+                        "2020"
+                    ],
+                    "username": [
+                        "Username"
+                    ]
+                }
+            }
+        ],
+        "cost": 0,
+        "error": {
+            "message": "response not expected values",
+            "loggable": true,
+            "log_error": {
+                "code": "response_unexpected",
+                "message": "Response doesn't match expected values."
+            }
+        },
+        "log_errors": []
     }
 ]

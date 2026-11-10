@@ -198,6 +198,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 				cost = n
 			}
 			res.AddCost(cost)
+		} else if len(code) == 0 {
+			return channels.ErrResponseUnexpected
 		} else {
 			reason, _ := jsonparser.GetString(respBody, "results", "[0]", "reason")
 			return channels.ErrFailedWithReason(string(code), reason)
