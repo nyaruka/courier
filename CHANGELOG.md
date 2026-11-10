@@ -1,3 +1,8 @@
+## v26.3.77 (2026-11-10)
+ * Stop contacts who can't be messaged on Facebook and Instagram
+ * Test that a rejected Facebook send records the error code it was given
+ * Remove SMS Central, Novo, Messangi, DMark and Hub9 channel handlers
+
 ## v26.3.76 (2026-11-10)
  * Send Slack attachments with the external upload flow
  * Stop popping messages before stopping senders on shutdown
