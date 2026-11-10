@@ -111,7 +111,7 @@
                 "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Not+Routable&to=%2B250788383383&username=Username"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -141,7 +141,7 @@
                 "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Not+Routable&to=%2B250788383383&username=Username"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -172,7 +172,7 @@
                 "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Not+Routable&to=%2B250788383383&username=Username"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -204,7 +204,7 @@
                 "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Not+Routable&to=%2B250788383383&username=Username"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "channel connection failed",
             "retryable": true,
@@ -259,7 +259,7 @@
                 "url": "http://example.com/send?dlr-mask=27&dlr-url=https%3A%2F%2Flocalhost%2Fc%2Fkn%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus%3Fuuid%3D0191e180-7d60-7000-aded-7d8b151cbd5b%26status%3D%25d&from=2020&password=Password&text=Error+Message&to=%2B250788383383&username=Username"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "response status code",
             "log_error": {

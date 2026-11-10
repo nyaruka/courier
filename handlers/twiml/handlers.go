@@ -316,6 +316,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+		res.AddCost(1)
 		if err != nil || resp.StatusCode/100 == 5 {
 			return channels.ErrConnectionFailed
 		}
@@ -349,8 +350,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		} else {
 			res.AddExternalID(externalID)
 		}
-
-		res.AddCost(1)
 
 	} else {
 
@@ -411,6 +410,11 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			req.Header.Set("Accept", "application/json")
 
 			resp, respBody, err := h.RequestHTTP(req, clog)
+			if channel.IsScheme(urns.WhatsApp) || (i == 0 && len(attachments) > 0) {
+				res.AddCost(1)
+			} else {
+				res.AddCost(gsm7.Segments(part))
+			}
 			if err != nil || resp.StatusCode/100 == 5 {
 				return channels.ErrConnectionFailed
 			}
@@ -443,12 +447,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 				clog.Error(models.ErrorResponseValueMissing("sid"))
 			} else {
 				res.AddExternalID(externalID)
-			}
-
-			if channel.IsScheme(urns.WhatsApp) || (i == 0 && len(attachments) > 0) {
-				res.AddCost(1)
-			} else {
-				res.AddCost(gsm7.Segments(part))
 			}
 		}
 

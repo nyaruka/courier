@@ -51,6 +51,7 @@ func (h *mockHandler) Send(ctx context.Context, msg *models.MsgOut, res *channel
 	if trace != nil {
 		clog.HTTP(trace)
 	}
+	res.AddCost(1)
 
 	if err == nil && resp.StatusCode == 503 {
 		res.SetBackoff(time.Minute)

@@ -248,14 +248,13 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	req.Header.Set("Authorization", bearer)
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err := handlers.ErrorFromResponse(resp, err); err != nil {
-		return err
-	}
-
 	if len(msg.Attachments()) > 0 {
 		res.AddCost(1)
 	} else {
 		res.AddCost(gsm7.Segments(payload.Body))
+	}
+	if err := handlers.ErrorFromResponse(resp, err); err != nil {
+		return err
 	}
 
 	externalID, err := jsonparser.GetString(respBody, "id")

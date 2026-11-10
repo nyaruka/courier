@@ -122,7 +122,7 @@
                 "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=Invalid+Parameters&signature=4b640a668fd83223e38d429b15ea737ef58e1ab025b756baaca4743f3adb3f77&to=18686846481"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "response content",
             "log_error": {
@@ -155,7 +155,7 @@
                 "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=Error+Response&signature=9fe49f073109de29f8c6d5108fd5719ee0b70c22cedb23fffdbabc8a99b9a0a9&to=18686846481"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -188,7 +188,7 @@
                 "url": "http://novosmstools.com/novo_te/my-merchant-id/sendSMS?from=2020&msg=Error+Response&signature=9fe49f073109de29f8c6d5108fd5719ee0b70c22cedb23fffdbabc8a99b9a0a9&to=18686846481"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "channel rate limited",
             "retryable": true,

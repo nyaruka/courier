@@ -21,16 +21,19 @@ type Foreman struct {
 	senders          []*Sender
 	availableSenders chan *Sender
 	quit             chan bool
-	waitGroup        *sync.WaitGroup
+	assignWG         *sync.WaitGroup // tracks the assign loop
+	stopOnce         sync.Once
+	waitGroup        *sync.WaitGroup // tracks the senders
 }
 
-// NewForeman creates a new Foreman for the passed in server with the number of max senders
+// NewForeman creates a new Foreman for the passed in runtime with the number of max senders
 func NewForeman(rt *runtime.Runtime, maxSenders int) *Foreman {
 	foreman := &Foreman{
 		rt:               rt,
 		senders:          make([]*Sender, maxSenders),
 		availableSenders: make(chan *Sender, maxSenders),
 		quit:             make(chan bool),
+		assignWG:         &sync.WaitGroup{},
 		waitGroup:        &sync.WaitGroup{},
 	}
 
@@ -41,32 +44,44 @@ func NewForeman(rt *runtime.Runtime, maxSenders int) *Foreman {
 	return foreman
 }
 
-// Start starts the foreman and all its senders, assigning jobs while there are some
+// Start starts the foreman and all its senders, assigning jobs while there are some. It must be called at most once.
 func (f *Foreman) Start() {
 	for _, sender := range f.senders {
 		sender.Start()
 	}
-	go f.Assign()
+
+	f.assignWG.Add(1)
+	go func() {
+		defer f.assignWG.Done()
+		f.assign()
+	}()
 }
 
-// Stop stops the foreman and all its senders, the wait group of the server can be used to track progress
+// Stop stops assigning messages, then stops the senders and waits for the sends in progress to finish. Calling it
+// again waits for the same thing.
 func (f *Foreman) Stop() {
-	for _, sender := range f.senders {
-		sender.Stop()
-	}
-	close(f.quit)
-	slog.Info("foreman stopping", "comp", "foreman", "state", "stopping")
+	f.stopOnce.Do(func() {
+		slog.Info("foreman stopping", "comp", "foreman", "state", "stopping")
 
-	// wait for the assign loop and all senders to finish what they're doing
+		// stop the assign loop first and wait for it to return, so that nothing more is popped from the queue - a
+		// message popped after the senders have been stopped has nobody to send it and is lost
+		close(f.quit)
+		f.assignWG.Wait()
+
+		for _, sender := range f.senders {
+			sender.Stop()
+		}
+	})
+
+	// wait for all senders to finish what they're doing
 	f.waitGroup.Wait()
 }
 
-// Assign is our main loop for the Foreman, it takes care of popping the next outgoing messages from the
-// queue and assigning them to workers
-func (f *Foreman) Assign() {
-	f.waitGroup.Add(1)
-	defer f.waitGroup.Done()
+// assign is our main loop for the Foreman, it takes care of popping the next outgoing messages from the
+// queue and assigning them to workers. It's only run by Start, which is what lets Stop wait for it.
+func (f *Foreman) assign() {
 	log := slog.With("comp", "foreman")
+	defer log.Info("foreman stopped", "state", "stopped")
 
 	log.Info("senders started and waiting",
 		"state", "started",
@@ -75,10 +90,17 @@ func (f *Foreman) Assign() {
 	lastSleep := false
 
 	for {
+		// check for being told to stop before looking for a sender - the select below picks at random when both are
+		// ready, and each extra message popped whilst stopping adds its pop and send to how long stopping takes
+		select {
+		case <-f.quit:
+			return
+		default:
+		}
+
 		select {
 		// return if we have been told to stop
 		case <-f.quit:
-			log.Info("foreman stopped", "state", "stopped")
 			return
 
 		// otherwise, grab the next msg and assign it to a sender
@@ -104,7 +126,11 @@ func (f *Foreman) Assign() {
 					lastSleep = true
 				}
 				f.availableSenders <- sender
-				time.Sleep(250 * time.Millisecond)
+
+				select {
+				case <-f.quit:
+				case <-time.After(250 * time.Millisecond):
+				}
 			}
 		}
 	}
@@ -152,7 +178,8 @@ func (w *Sender) Start() {
 	}()
 }
 
-// Stop stops our senders, callers can use the server's wait group to track progress
+// Stop stops our sender once it has sent any message it's been given, callers can use the foreman's wait group to
+// track progress
 func (w *Sender) Stop() {
 	close(w.job)
 }
@@ -230,11 +257,13 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 	}
 
 	// mark our send task as complete
+	var cost int
 	var otherURNs []urns.URN
 	if res != nil {
+		cost = res.Cost()
 		otherURNs = res.OtherURNs()
 	}
-	models.OnSendComplete(writeCTX, rt, msg, status, otherURNs, clog)
+	models.OnSendComplete(writeCTX, rt, msg, status, cost, otherURNs, clog)
 }
 
 func (w *Sender) sendByHandler(ctx context.Context, h channels.Handler, m *models.MsgOut, clog *models.ChannelLog, log *slog.Logger) (*models.StatusUpdate, *channels.SendResult) {

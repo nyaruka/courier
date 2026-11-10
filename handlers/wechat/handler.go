@@ -195,13 +195,13 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		req.Header.Set("Accept", "application/json")
 
 		resp, _, err := h.RequestHTTP(req, clog)
+		res.AddCost(1)
 		if err != nil || resp.StatusCode/100 == 5 {
 			return channels.ErrConnectionFailed
 		}
 		if handlers.IsThrottled(resp) {
 			return channels.ErrConnectionThrottled
 		}
-		res.AddCost(1)
 	}
 
 	return nil

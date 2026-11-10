@@ -158,24 +158,24 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	}
 
 	if len(files) > 0 {
-		if err := h.shareFiles(msg, botToken, files, clog); err != nil {
+		if err := h.shareFiles(msg, botToken, files, res, clog); err != nil {
 			return err
 		}
-		res.AddCost(len(files))
 	}
 
 	if msg.Text() != "" {
-		err := h.sendTextMsgPart(msg, botToken, clog)
+		err := h.sendTextMsgPart(msg, botToken, res, clog)
 		if err != nil {
 			return err
 		}
-		res.AddCost(1)
 	}
 
 	return nil
 }
 
-func (h *handler) sendTextMsgPart(msg *models.MsgOut, token string, clog *models.ChannelLog) error {
+func (h *handler) sendTextMsgPart(
+	msg *models.MsgOut, token string, res *channels.SendResult, clog *models.ChannelLog,
+) error {
 	sendURL := apiURL + "/chat.postMessage"
 
 	msgPayload := &mtPayload{
@@ -196,6 +196,7 @@ func (h *handler) sendTextMsgPart(msg *models.MsgOut, token string, clog *models
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	_, err = h.callAPI(req, clog)
+	res.AddCost(1)
 	return err
 }
 
@@ -258,7 +259,9 @@ func (h *handler) uploadFile(token string, fileParams *FileParams, clog *models.
 }
 
 // shareFiles completes the upload of the given files, sharing them with the contact
-func (h *handler) shareFiles(msg *models.MsgOut, token string, files []completeUploadFile, clog *models.ChannelLog) error {
+func (h *handler) shareFiles(
+	msg *models.MsgOut, token string, files []completeUploadFile, res *channels.SendResult, clog *models.ChannelLog,
+) error {
 	filesJSON, err := json.Marshal(files)
 	if err != nil {
 		return err
@@ -275,6 +278,7 @@ func (h *handler) shareFiles(msg *models.MsgOut, token string, files []completeU
 	}
 
 	_, err = h.callAPI(req, clog)
+	res.AddCost(len(files))
 	return err
 }
 

@@ -95,6 +95,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+		res.AddCost(gsm7.Segments(part))
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
 			return err
 		}
@@ -103,8 +104,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			clog.Error(&svclogs.Error{Message: fmt.Sprintf("Received invalid response content: %s", string(respBody))})
 			return channels.ErrResponseContent
 		}
-
-		res.AddCost(gsm7.Segments(part))
 	}
 
 	return nil

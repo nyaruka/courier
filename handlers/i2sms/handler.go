@@ -82,6 +82,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+		res.AddCost(gsm7.Segments(part))
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
 			return err
 		}
@@ -96,7 +97,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		// we always get 00 on success
 		if response.ErrorCode == "00" {
 			res.AddExternalID(response.Result.SessionID)
-			res.AddCost(gsm7.Segments(part))
 		} else {
 			return channels.ErrFailedWithReason(response.ErrorCode, response.ErrorDesc)
 		}

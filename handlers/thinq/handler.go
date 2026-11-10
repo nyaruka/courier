@@ -149,6 +149,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		req.SetBasicAuth(tokenUser, token)
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+		res.AddCost(1)
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
 			return err
 		}
@@ -161,7 +162,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		}
 
 		res.AddExternalID(externalID)
-		res.AddCost(1)
 	}
 	// now send our text if we have any
 	if msg.Text() != "" {
@@ -182,6 +182,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			req.SetBasicAuth(tokenUser, token)
 
 			resp, respBody, err := h.RequestHTTP(req, clog)
+			res.AddCost(gsm7.Segments(part))
 			if err := handlers.ErrorFromResponse(resp, err); err != nil {
 				return err
 			}
@@ -194,7 +195,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			}
 
 			res.AddExternalID(externalID)
-			res.AddCost(gsm7.Segments(part))
 		}
 	}
 

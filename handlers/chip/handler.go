@@ -219,12 +219,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		Email:        msg.Contact().Email,
 	}
 
-	if err := h.post(ctx, "send", payload, clog); err != nil {
-		return err
-	}
-
-	res.AddCost(1)
-	return nil
+	return h.post(ctx, "send", payload, res, clog)
 }
 
 // eventPayload is something other than a message we have the webchat service show the visitor - a user typing
@@ -262,13 +257,15 @@ func (h *handler) SendEvent(ctx context.Context, ch *models.Channel, event event
 		payload.User = &msgUser{UUID: models.UserUUID(user.UUID), Name: user.Name}
 	}
 
-	return h.post(ctx, "event", payload, clog)
+	return h.post(ctx, "event", payload, nil, clog)
 }
 
 // post posts the given payload to one of the webchat service's internal endpoints. Anything but success is an
 // error, so that a message is retried like any other failed send - with the service being unreachable told apart
 // from it refusing, since the service is our own infrastructure.
-func (h *handler) post(ctx context.Context, action string, payload any, clog *models.ChannelLog) error {
+func (h *handler) post(
+	ctx context.Context, action string, payload any, res *channels.SendResult, clog *models.ChannelLog,
+) error {
 	cfg := h.Runtime().Config
 	if cfg.ChipURL == "" || cfg.ChipAuthToken == "" {
 		return channels.ErrChannelConfig
@@ -280,6 +277,9 @@ func (h *handler) post(ctx context.Context, action string, payload any, clog *mo
 	req.Header.Set("Authorization", "Token "+cfg.ChipAuthToken)
 
 	resp, _, err := h.RequestHTTP(req, clog)
+	if res != nil {
+		res.AddCost(1)
+	}
 	if err != nil {
 		return channels.ErrConnectionFailed
 	}

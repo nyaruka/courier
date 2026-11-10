@@ -94,8 +94,9 @@ func (r *SendResult) Backoff() time.Duration {
 }
 
 // AddCost adds to what the send used of the channel's throughput, in the units the provider limits it by, e.g.
-// segments for an SMS aggregator or messages for a chat API. Handlers add it as the provider accepts each message, so
-// a send that fails partway costs only what got through.
+// segments for an SMS aggregator or messages for a chat API. Handlers add it for every message request they make,
+// whether or not the provider accepts it, since providers often count rejected requests against the limit too. A
+// send costs nothing only when no message request was made.
 func (r *SendResult) AddCost(n int) {
 	r.cost += n
 }

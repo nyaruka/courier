@@ -173,6 +173,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+		res.AddCost(gsm7.Segments(part))
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
 			return err
 		}
@@ -181,7 +182,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		externalID, _ := jsonparser.GetString(respBody, "messages", "[0]", "apiMessageId")
 		if externalID != "" {
 			res.AddExternalID(externalID)
-			res.AddCost(gsm7.Segments(part))
 		} else {
 			return channels.ErrResponseContent
 		}

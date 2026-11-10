@@ -371,6 +371,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	}
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
+	res.AddCost(cost)
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
 	}
@@ -379,8 +380,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	if err != nil || (groupID != 1 && groupID != 3) {
 		return channels.ErrResponseContent
 	}
-
-	res.AddCost(cost)
 
 	externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "messageId")
 	if err != nil {

@@ -134,7 +134,7 @@
                 "body": "\u003cmessage\u003e\u003cservice id=\"single\" source=\"2020\" validity=\"+12 hours\"\u003e\u003c/service\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003cbody content-type=\"plain/text\" encoding=\"plain\"\u003eSimple Message ☺\u003c/body\u003e\u003c/message\u003e"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "response couldn't be parsed",
             "loggable": true,
@@ -170,7 +170,7 @@
                 "body": "\u003cmessage\u003e\u003cservice id=\"single\" source=\"2020\" validity=\"+12 hours\"\u003e\u003c/service\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003cbody content-type=\"plain/text\" encoding=\"plain\"\u003eError Message\u003c/body\u003e\u003c/message\u003e"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -205,7 +205,7 @@
                 "body": "\u003cmessage\u003e\u003cservice id=\"single\" source=\"2020\" validity=\"+12 hours\"\u003e\u003c/service\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003cbody content-type=\"plain/text\" encoding=\"plain\"\u003eError Message\u003c/body\u003e\u003c/message\u003e"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -241,7 +241,7 @@
                 "body": "\u003cmessage\u003e\u003cservice id=\"single\" source=\"2020\" validity=\"+12 hours\"\u003e\u003c/service\u003e\u003cto\u003e+250788383383\u003c/to\u003e\u003cbody content-type=\"plain/text\" encoding=\"plain\"\u003eSimple Message ☺\u003c/body\u003e\u003c/message\u003e"
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "response content",
             "log_error": {

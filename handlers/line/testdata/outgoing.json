@@ -839,7 +839,199 @@
                 }
             }
         ],
-        "cost": 1,
+        "cost": 2,
+        "log_errors": []
+    },
+    {
+        "label": "Push Message Retry Connection Error",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "line:uabcdefghij",
+            "response_to_external_id": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA"
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 503,
+                    "body": {
+                        "message": "Service unavailable"
+                    }
+                }
+            ],
+            "https://api.line.me/v2/bot/message/reply": [
+                {
+                    "status": 400,
+                    "body": {
+                        "message": "Invalid reply token"
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/reply",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Simple Message"
+                        }
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "Simple Message"
+                        }
+                    ]
+                }
+            }
+        ],
+        "cost": 2,
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Push Message If Invalid Reply Over Two Batches",
+        "msg": {
+            "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word",
+            "urn": "line:uabcdefghij",
+            "response_to_external_id": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA"
+        },
+        "http_mocks": {
+            "https://api.line.me/v2/bot/message/push": [
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ],
+            "https://api.line.me/v2/bot/message/reply": [
+                {
+                    "status": 400,
+                    "body": {
+                        "message": "Invalid reply token"
+                    }
+                },
+                {
+                    "status": 200,
+                    "body": {}
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/reply",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word"
+                        },
+                        {
+                            "type": "text",
+                            "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word"
+                        },
+                        {
+                            "type": "text",
+                            "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word"
+                        },
+                        {
+                            "type": "text",
+                            "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word"
+                        },
+                        {
+                            "type": "text",
+                            "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word"
+                        }
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/push",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "uabcdefghij",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word"
+                        },
+                        {
+                            "type": "text",
+                            "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word"
+                        },
+                        {
+                            "type": "text",
+                            "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word"
+                        },
+                        {
+                            "type": "text",
+                            "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word"
+                        },
+                        {
+                            "type": "text",
+                            "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word"
+                        }
+                    ]
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://api.line.me/v2/bot/message/reply",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer AccessToken",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word"
+                        }
+                    ]
+                }
+            }
+        ],
+        "cost": 3,
         "log_errors": []
     },
     {
@@ -876,7 +1068,7 @@
                 }
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "response couldn't be parsed",
             "loggable": true,
@@ -923,7 +1115,7 @@
                 }
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "channel rejected send with reason",
             "log_error": {
@@ -970,7 +1162,7 @@
                 }
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "channel connection failed",
             "retryable": true,
@@ -1017,7 +1209,7 @@
                 }
             }
         ],
-        "cost": 0,
+        "cost": 1,
         "error": {
             "message": "channel rate limited",
             "retryable": true,

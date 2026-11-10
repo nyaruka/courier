@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -99,6 +100,10 @@ type OutgoingOptions struct {
 
 	// Setup is called with the runtime before any cases run
 	Setup func(*testing.T, *runtime.Runtime)
+
+	// FreeURLs are prefixes of URLs for requests that don't send a message, e.g. token fetches or media uploads, which
+	// cost nothing. Any other request a send makes must be reported as a cost, whether or not the send succeeded.
+	FreeURLs []string
 }
 
 // RunOutgoingTests runs the outgoing cases in the given file against the given channel
@@ -173,8 +178,8 @@ func RunOutgoingTests(t *testing.T, ch *models.Channel, newFn channels.NewHandle
 				}
 			}
 
-			if serr == nil && len(actual.Requests) > 0 {
-				assert.Positive(t, res.Cost(), "successful send reported no cost")
+			if madeChargedRequest(actual.Requests, opts.FreeURLs) {
+				assert.Positive(t, res.Cost(), "send made a message request but reported no cost")
 			}
 
 			AssertChannelLogRedaction(t, clog, opts.CheckRedacted)
@@ -188,4 +193,14 @@ func RunOutgoingTests(t *testing.T, ch *models.Channel, newFn channels.NewHandle
 	if test.UpdateSnapshots {
 		writeTestFile(t, path, actuals)
 	}
+}
+
+// madeChargedRequest returns whether any of the given requests isn't to one of the free URL prefixes
+func madeChargedRequest(requests []*CapturedRequest, freeURLs []string) bool {
+	for _, r := range requests {
+		if !slices.ContainsFunc(freeURLs, func(u string) bool { return strings.HasPrefix(r.URL, u) }) {
+			return true
+		}
+	}
+	return false
 }

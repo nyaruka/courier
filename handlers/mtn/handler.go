@@ -150,11 +150,10 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
+	res.AddCost(gsm7.Segments(mtMsg.Message))
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
 	}
-
-	res.AddCost(gsm7.Segments(mtMsg.Message))
 
 	externalID, err := jsonparser.GetString(respBody, "transactionId")
 	if err != nil {

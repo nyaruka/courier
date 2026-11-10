@@ -191,6 +191,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	}
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
+	res.AddCost(gsm7.Segments(text))
 
 	// sendsms answers with this when bearerbox rejects a message temporarily, i.e. its queues are full or it's shutting
 	// down, which other 503s, e.g. from a proxy in front of it, won't have
@@ -202,8 +203,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
 	}
-
-	res.AddCost(gsm7.Segments(text))
 
 	// sendsms answers with this when it holds a message because none of the SMSC connections it could use are online,
 	// so the message is accepted but anything else we send would pile up in Kannel until one is
