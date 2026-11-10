@@ -188,6 +188,11 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	req.Header.Set("Authorization", fmt.Sprintf("%s:%s", apiKey, apiSecret))
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
+	if len(mediaURLs) > 0 {
+		res.AddCost(1)
+	} else {
+		res.AddCost(gsm7.Segments(text))
+	}
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
 	}
@@ -199,12 +204,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	if respStatus != "success" {
 		return channels.ErrResponseContent
 
-	}
-
-	if len(mediaURLs) > 0 {
-		res.AddCost(1)
-	} else {
-		res.AddCost(gsm7.Segments(text))
 	}
 
 	externalID, err := jsonparser.GetInt(respBody, "id")

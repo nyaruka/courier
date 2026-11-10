@@ -774,7 +774,15 @@ func (ts *ModelsTestSuite) TestOutgoingQueue() {
 
 	// mark this message as dealt with, with the provider having reported the URN we sent to, one the contact already
 	// has, and a new one for the recipient
-	models.OnSendComplete(ctx, ts.rt, msg, models.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusWired, clog), []urns.URN{"tel:+12067799192", "whatsapp:US.9999", "whatsapp:US.4321"}, clog)
+	// and the send having cost 5 of the channel's 10 TPS
+	status := models.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusWired, clog)
+	otherURNs := []urns.URN{"tel:+12067799192", "whatsapp:US.9999", "whatsapp:US.4321"}
+	models.OnSendComplete(ctx, ts.rt, msg, status, 5, otherURNs, clog)
+
+	// which the queue charges as half a second of debt
+	debtUntil, err := redis.Float64(r.Do("HGET", "{msgs}:ch:dbc126ed-66bc-4e28-b67b-81dc3327c95d", "debt_until"))
+	ts.NoError(err)
+	ts.InDelta(float64(time.Now().UnixMicro())/1e6+0.5, debtUntil, 0.25)
 
 	// mailroom is asked to append only the new one
 	assertvk.LLen(ts.T(), r, "c:1:100", 1)

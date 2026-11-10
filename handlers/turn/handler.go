@@ -681,6 +681,7 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *channels.
 	req.Header.Set("Accept", "application/json")
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
+	res.AddCost(1)
 	if err != nil || resp.StatusCode/100 == 5 {
 		return channels.ErrConnectionFailed
 	}
@@ -712,7 +713,6 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *channels.
 	if id := respPayload.ExternalID(); id != "" {
 		res.AddExternalID(id)
 	}
-	res.AddCost(1)
 	return nil
 }
 

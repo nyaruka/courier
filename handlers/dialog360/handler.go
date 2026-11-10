@@ -271,6 +271,7 @@ func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, r
 	req.Header.Set("Accept", "application/json")
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
+	res.AddCost(1)
 	if err != nil || resp.StatusCode/100 == 5 {
 		return "", channels.ErrConnectionFailed
 	}
@@ -286,6 +287,5 @@ func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, r
 	if id := respPayload.ExternalID(); id != "" {
 		res.AddExternalID(id)
 	}
-	res.AddCost(1)
 	return respPayload.UserID(), nil
 }

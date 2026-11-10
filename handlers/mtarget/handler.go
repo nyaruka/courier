@@ -171,6 +171,15 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+
+		// prefer what MTarget says it sent, since it chooses the encoding
+		cost := gsm7.Segments(part)
+		smsCount, _, _, _ := jsonparser.Get(respBody, "results", "[0]", "smscount")
+		if n, err := strconv.Atoi(string(smsCount)); err == nil && n > 0 {
+			cost = n
+		}
+		res.AddCost(cost)
+
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
 			return err
 		}
@@ -190,14 +199,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		externalID, _ := jsonparser.GetString(respBody, "results", "[0]", "ticket")
 		if string(code) == "0" && externalID != "" {
 			res.AddExternalID(externalID)
-
-			// prefer what MTarget says it sent, since it chooses the encoding
-			cost := gsm7.Segments(part)
-			smsCount, _, _, _ := jsonparser.Get(respBody, "results", "[0]", "smscount")
-			if n, err := strconv.Atoi(string(smsCount)); err == nil && n > 0 {
-				cost = n
-			}
-			res.AddCost(cost)
 		} else if len(code) == 0 {
 			return channels.ErrResponseUnexpected
 		} else {

@@ -438,6 +438,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	req.URL.RawQuery = params.Encode()
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
+	res.AddCost(1)
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
 	}
@@ -448,7 +449,6 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	}
 
 	res.AddExternalID(strconv.FormatInt(externalMsgId, 10))
-	res.AddCost(1)
 
 	return nil
 }

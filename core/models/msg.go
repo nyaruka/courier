@@ -616,7 +616,8 @@ func PopNextOutgoingMsg(ctx context.Context, rt *runtime.Runtime) (*MsgOut, erro
 	defer vc.Close()
 
 	markComplete := func(owner queues.OwnerID) {
-		if err := MsgQueue.Done(ctx, vc, owner); err != nil {
+		// nothing was sent so nothing was used of the channel's throughput
+		if err := MsgQueue.Done(ctx, vc, owner, 0); err != nil {
 			slog.Error("error marking queue task complete", "error", err)
 		}
 	}
@@ -687,15 +688,18 @@ func PauseSending(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, until t
 	return MsgQueue.Pause(ctx, rc, msg.QueueOwner_, until)
 }
 
-// OnSendComplete is called when the sender has finished trying to send a message, with any other URNs the provider
-// reported for the recipient
-func OnSendComplete(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, status *StatusUpdate, otherURNs []urns.URN, clog *ChannelLog) {
+// OnSendComplete is called when the sender has finished trying to send a message, with what the send cost of the
+// channel's throughput and any other URNs the provider reported for the recipient
+func OnSendComplete(
+	ctx context.Context, rt *runtime.Runtime, msg *MsgOut, status *StatusUpdate, cost int, otherURNs []urns.URN,
+	clog *ChannelLog,
+) {
 	log := slog.With("channel", msg.Channel().UUID(), "msg", msg.UUID(), "clog", clog.UUID, "status", status)
 
 	rc := rt.VK.Get()
 	defer rc.Close()
 
-	if err := MsgQueue.Done(ctx, rc, msg.QueueOwner_); err != nil {
+	if err := MsgQueue.Done(ctx, rc, msg.QueueOwner_, cost); err != nil {
 		log.Error("unable to mark queue task complete", "error", err)
 	}
 

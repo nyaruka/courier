@@ -511,6 +511,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg *models.MsgO
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
+		res.AddCost(1)
 		if err := handlers.ErrorFromResponse(resp, err); err != nil {
 			return err
 		}
@@ -530,7 +531,6 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg *models.MsgO
 		}
 
 		res.AddExternalID(respPayload.ExternalID)
-		res.AddCost(1)
 	}
 
 	return nil
@@ -711,6 +711,7 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 	req.Header.Set("Accept", "application/json")
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
+	res.AddCost(1)
 	if err != nil || resp.StatusCode/100 == 5 {
 		return "", channels.ErrConnectionFailed
 	}
@@ -727,7 +728,6 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 	if id := respPayload.ExternalID(); id != "" {
 		res.AddExternalID(id)
 	}
-	res.AddCost(1)
 	return respPayload.UserID(), nil
 }
 

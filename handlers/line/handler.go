@@ -416,9 +416,9 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			}
 
 			resp, respBody, err := h.RequestHTTP(req, clog)
+			res.AddCost(1)
 
 			if err == nil && resp.StatusCode/100 == 2 {
-				res.AddCost(1)
 				batch = []string{}
 				batchCount = 0
 				continue
@@ -445,22 +445,26 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 					return err
 				}
 
-				resp, respBody, _ := h.RequestHTTP(req, clog)
+				resp, respBody, err := h.RequestHTTP(req, clog)
+				res.AddCost(1)
 
+				if err != nil || resp.StatusCode/100 == 5 {
+					return channels.ErrConnectionFailed
+				}
 				if handlers.IsThrottled(resp) {
 					return channels.ErrConnectionThrottled
 				}
 
-				respPayload := &mtResponse{}
-				err = json.Unmarshal(respBody, respPayload)
-				if err != nil {
-					return channels.ErrResponseUnparseable
-				}
-
 				if resp.StatusCode/100 != 2 {
+					respPayload := &mtResponse{}
+					if err := json.Unmarshal(respBody, respPayload); err != nil {
+						return channels.ErrResponseUnparseable
+					}
 					return channels.ErrFailedWithReason(strconv.Itoa(resp.StatusCode), respPayload.Message)
 				}
-				res.AddCost(1)
+
+				batch = []string{}
+				batchCount = 0
 			} else {
 				return channels.ErrFailedWithReason(strconv.Itoa(resp.StatusCode), respPayload.Message)
 			}

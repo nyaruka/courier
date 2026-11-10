@@ -46,7 +46,11 @@ func TestOutgoing(t *testing.T) {
 		map[string]any{models.ConfigAuthToken: "a123", "base_url": "https://example.org", "fb_namespace": "waba_namespace"})
 
 	// failed media uploads are remembered in memory so each file starts with that cleared
-	opts := &OutgoingOptions{CheckRedacted: []string{"a123"}, Setup: func(t *testing.T, rt *runtime.Runtime) { failedMediaCache.Clear() }}
+	opts := &OutgoingOptions{
+		CheckRedacted: []string{"a123"},
+		Setup:         func(t *testing.T, rt *runtime.Runtime) { failedMediaCache.Clear() },
+		FreeURLs:      []string{"https://foo.bar/", "https://example.org/v1/media"},
+	}
 
 	RunOutgoingTests(t, ch, newHandler, "testdata/outgoing.json", opts)
 	RunOutgoingTests(t, ch, newHandler, "testdata/outgoing_media_cache.json", opts)
