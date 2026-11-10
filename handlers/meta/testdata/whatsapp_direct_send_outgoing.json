@@ -44,6 +44,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -91,6 +92,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -191,6 +193,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -264,6 +267,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -315,6 +319,7 @@
         "external_ids": [
             "157b5e14568e8"
         ],
+        "cost": 1,
         "log_errors": [
             {
                 "code": "",
@@ -368,6 +373,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with reason",
             "log_error": {

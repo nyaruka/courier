@@ -23,6 +23,7 @@
                 "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=Simple+Message&to=%2B250788383383&user_data=Favorites"
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -45,6 +46,7 @@
                 "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=Simple+Message&to=%2B250788383383&user_data="
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -71,6 +73,7 @@
                 "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=%E2%98%BA&to=%2B250788383383&user_data=Favorites"
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -105,6 +108,7 @@
                 "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=I+need+to+keep+adding+more+things+to+make+it+work&to=%2B250788383383&user_data=Favorites"
             }
         ],
+        "cost": 4,
         "log_errors": []
     },
     {
@@ -134,6 +138,7 @@
                 "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=My+pic%21%0Ahttps%3A%2F%2Ffoo.bar%2Fimage.jpg&to=%2B250788383383&user_data=Favorites"
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -156,6 +161,7 @@
                 "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=Error+Sending&to=%2B250788383383&user_data="
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -185,6 +191,7 @@
                 "url": "https://highpushfastapi-v2.hcnx.eu/api?accountid=Username&datacoding=8&password=Password&ret_id=0191e180-7d60-7000-aded-7d8b151cbd5b&ret_mo_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Freceive&ret_url=https%3A%2F%2Flocalhost%2Fc%2Fhx%2F8eb23e93-5ecb-45ba-b726-3b064e0c56ab%2Fstatus&text=Error+Sending&to=%2B250788383383&user_data="
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,

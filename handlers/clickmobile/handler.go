@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -140,6 +141,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		if responseCode != "000" {
 			return channels.ErrResponseContent
 		}
+
+		res.AddCost(gsm7.Segments(part))
 	}
 
 	return nil

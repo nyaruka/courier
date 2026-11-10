@@ -201,6 +201,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		if handlers.IsThrottled(resp) {
 			return channels.ErrConnectionThrottled
 		}
+		res.AddCost(1)
 	}
 
 	return nil

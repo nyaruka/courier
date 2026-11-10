@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -188,6 +189,14 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		externalID, _ := jsonparser.GetString(respBody, "results", "[0]", "ticket")
 		if code == "0" && externalID != "" {
 			res.AddExternalID(externalID)
+
+			// prefer what MTarget says it sent, since it chooses the encoding
+			cost := gsm7.Segments(part)
+			smsCount, _ := jsonparser.GetString(respBody, "results", "[0]", "smscount")
+			if n, err := strconv.Atoi(smsCount); err == nil && n > 0 {
+				cost = n
+			}
+			res.AddCost(cost)
 		} else {
 			reason, _ := jsonparser.GetString(respBody, "results", "[0]", "reason")
 			return channels.ErrFailedWithReason(code, reason)

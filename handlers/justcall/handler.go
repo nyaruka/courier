@@ -16,6 +16,7 @@ import (
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
 	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -197,6 +198,12 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	if respStatus != "success" {
 		return channels.ErrResponseContent
 
+	}
+
+	if len(mediaURLs) > 0 {
+		res.AddCost(1)
+	} else {
+		res.AddCost(gsm7.Segments(text))
 	}
 
 	externalID, err := jsonparser.GetInt(respBody, "id")

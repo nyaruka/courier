@@ -50,6 +50,7 @@
         "external_ids": [
             "0191e180-7d60-7000-aded-7d8b151cbd5b"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -100,6 +101,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": [
             {
                 "code": "response_value_missing",
@@ -172,6 +174,7 @@
         "external_ids": [
             "0191e180-7d60-7000-aded-7d8b151cbd5b"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -224,6 +227,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -283,6 +287,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -341,6 +346,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {

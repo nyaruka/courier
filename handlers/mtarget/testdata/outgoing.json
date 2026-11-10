@@ -29,6 +29,7 @@
         "external_ids": [
             "externalID"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -61,6 +62,43 @@
         "external_ids": [
             "externalID"
         ],
+        "cost": 1,
+        "log_errors": []
+    },
+    {
+        "label": "Provider Reported SMS Count",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api-public.mtarget.fr/api-sms.json*": [
+                {
+                    "status": 200,
+                    "body": {
+                        "results": [
+                            {
+                                "msisdn": "+250788383383",
+                                "smscount": "2",
+                                "code": "0",
+                                "reason": "ACCEPTED",
+                                "ticket": "externalID"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api-public.mtarget.fr/api-sms.json?allowunicode=true&msg=Simple+Message&msisdn=%2B250788383383&password=Password&serviceid=2020&username=Username"
+            }
+        ],
+        "external_ids": [
+            "externalID"
+        ],
+        "cost": 2,
         "log_errors": []
     },
     {
@@ -96,6 +134,7 @@
         "external_ids": [
             "externalID"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -126,6 +165,7 @@
                 "url": "https://api-public.mtarget.fr/api-sms.json?allowunicode=true&msg=Error+Sending&msisdn=%2B250788383383&password=Password&serviceid=2020&username=Username"
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -163,6 +203,7 @@
                 "url": "https://api-public.mtarget.fr/api-sms.json?allowunicode=true&msg=Error+Sending&msisdn=%2B250788383383&password=Password&serviceid=2020&username=Username"
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -201,6 +242,7 @@
                 "url": "https://api-public.mtarget.fr/api-sms.json?allowunicode=true&msg=Error+Sending&msisdn=%2B250788383383&password=Password&serviceid=2020&username=Username"
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rejected send with reason",
             "log_error": {

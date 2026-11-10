@@ -45,6 +45,7 @@
         "external_ids": [
             "123456-a"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -124,6 +125,7 @@
             "123456-a",
             "123456-a"
         ],
+        "cost": 2,
         "log_errors": []
     },
     {
@@ -186,6 +188,7 @@
         "external_ids": [
             "123456-a"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -231,6 +234,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {
@@ -283,6 +287,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {
@@ -335,6 +340,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel connection failed",
             "retryable": true,
@@ -388,6 +394,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -441,6 +448,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {
@@ -493,6 +501,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {
@@ -545,6 +554,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response content",
             "log_error": {

@@ -50,6 +50,7 @@
         "external_ids": [
             "58f86fab-85c5-4f7c-9b68-9c323248afc4:0"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -106,6 +107,7 @@
         "external_ids": [
             "58f86fab-85c5-4f7c-9b68-9c323248afc4:0"
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -158,6 +160,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -217,6 +220,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,
@@ -349,6 +353,7 @@
         "external_ids": [
             "f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0"
         ],
+        "cost": 2,
         "log_errors": []
     },
     {
@@ -472,6 +477,7 @@
                 }
             }
         ],
+        "cost": 1,
         "error": {
             "message": "response status code",
             "log_error": {

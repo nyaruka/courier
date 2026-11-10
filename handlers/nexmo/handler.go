@@ -240,6 +240,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			return channels.ErrFailedWithReason("send:"+nexmoStatus, sendErrorCodes[errCode])
 		}
 
+		res.AddCost(gsm7.Segments(part))
+
 		externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "message-id")
 		if err == nil {
 			res.AddExternalID(externalID)

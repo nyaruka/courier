@@ -11,6 +11,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/httpx"
 )
 
@@ -95,6 +96,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		// we always get 00 on success
 		if response.ErrorCode == "00" {
 			res.AddExternalID(response.Result.SessionID)
+			res.AddCost(gsm7.Segments(part))
 		} else {
 			return channels.ErrFailedWithReason(response.ErrorCode, response.ErrorDesc)
 		}

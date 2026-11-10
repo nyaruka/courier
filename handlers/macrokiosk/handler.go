@@ -178,6 +178,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			return err
 		}
 
+		res.AddCost(gsm7.Segments(part))
+
 		externalID, err := jsonparser.GetString(respBody, "MsgID")
 		if err != nil {
 			clog.Error(models.ErrorResponseValueMissing("MsgID"))

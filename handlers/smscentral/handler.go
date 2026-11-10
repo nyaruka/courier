@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -62,11 +63,12 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	}
 
 	// build our request
+	text := handlers.GetTextAndAttachments(msg)
 	form := url.Values{
 		"user":    []string{username},
 		"pass":    []string{password},
 		"mobile":  []string{strings.TrimPrefix(msg.URN().Path(), "+")},
-		"content": []string{handlers.GetTextAndAttachments(msg)},
+		"content": []string{text},
 	}
 
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
@@ -79,6 +81,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
 	}
+
+	res.AddCost(gsm7.Segments(text))
 
 	return nil
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
@@ -179,6 +180,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 			return channels.ErrFailedWithReason(responseCode, errorCodes[responseCode])
 		}
 
+		res.AddCost(gsm7.Segments(part))
 	}
 
 	return nil

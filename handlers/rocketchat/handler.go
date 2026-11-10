@@ -138,6 +138,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		return channels.ErrResponseContent
 	}
 	res.AddExternalID(msgID)
+	res.AddCost(1)
 
 	return nil
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -115,6 +116,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		if id != "" && id != "null" { // sometimes we get back "null" as a string
 			res.AddExternalID(id)
 		}
+
+		res.AddCost(gsm7.Segments(part))
 	}
 	return nil
 }

@@ -124,12 +124,14 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	callbackDomain := msg.Channel().CallbackDomain(h.Runtime().Config.Domain)
 	dlrURL := fmt.Sprintf("https://%s/c/kn/%s/status?uuid=%s&status=%%d", callbackDomain, msg.Channel().UUID(), msg.UUID())
 
+	text := handlers.GetTextAndAttachments(msg)
+
 	// build our request
 	form := url.Values{
 		"username": []string{username},
 		"password": []string{password},
 		"from":     []string{msg.Channel().Address()},
-		"text":     []string{handlers.GetTextAndAttachments(msg)},
+		"text":     []string{text},
 		"to":       []string{msg.URN().Path()},
 		"dlr-url":  []string{dlrURL},
 		"dlr-mask": []string{dlrMask},
@@ -152,9 +154,10 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 
 	// if we are smart, first try to convert to GSM7 chars
 	if encoding == encodingSmart {
-		replaced := gsm7.ReplaceSubstitutions(handlers.GetTextAndAttachments(msg))
+		replaced := gsm7.ReplaceSubstitutions(text)
 		if gsm7.IsValid(replaced) {
-			form["text"] = []string{replaced}
+			text = replaced
+			form["text"] = []string{text}
 		} else {
 			encoding = encodingUnicode
 		}
@@ -165,7 +168,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	// builds compiled without iconv) and passes our already-encoded body straight through as coding=2 / UCS-2
 	if encoding == encodingUnicode {
 		encoder := unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM).NewEncoder()
-		utf16beText, err := encoder.String(handlers.GetTextAndAttachments(msg))
+		utf16beText, err := encoder.String(text)
 		if err != nil {
 			return err
 		}
@@ -198,6 +201,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {
 		return err
 	}
+
+	res.AddCost(gsm7.Segments(text))
 
 	// sendsms answers with this when it holds a message because none of the SMSC connections it could use are online,
 	// so the message is accepted but anything else we send would pile up in Kannel until one is

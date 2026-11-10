@@ -38,6 +38,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -106,6 +107,7 @@
                 }
             }
         ],
+        "cost": 6,
         "log_errors": []
     },
     {
@@ -163,6 +165,7 @@
                 }
             }
         ],
+        "cost": 1,
         "log_errors": []
     },
     {
@@ -204,6 +207,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "response status code",
             "log_error": {
@@ -252,6 +256,7 @@
                 }
             }
         ],
+        "cost": 0,
         "error": {
             "message": "channel rate limited",
             "retryable": true,

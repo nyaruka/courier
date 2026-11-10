@@ -510,6 +510,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		}
 
 		res.AddExternalID(externalID)
+		res.AddCost(1)
 	}
 
 	return nil

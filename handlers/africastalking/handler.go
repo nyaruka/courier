@@ -13,6 +13,7 @@ import (
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/handlers"
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -111,11 +112,13 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 		return channels.ErrChannelConfig
 	}
 
+	text := handlers.GetTextAndAttachments(msg)
+
 	// build our request
 	form := url.Values{
 		"username": []string{username},
 		"to":       []string{msg.URN().Path()},
-		"message":  []string{handlers.GetTextAndAttachments(msg)},
+		"message":  []string{text},
 	}
 
 	// if this isn't shared, include our from
@@ -142,6 +145,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	if msgStatus != "Success" {
 		return channels.ErrResponseContent
 	}
+
+	res.AddCost(gsm7.Segments(text))
 
 	// grab the external id if we can
 	externalID, _ := jsonparser.GetString(respBody, "SMSMessageData", "Recipients", "[0]", "messageId")
