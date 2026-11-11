@@ -32,7 +32,6 @@ import (
 	_ "github.com/nyaruka/courier/v26/handlers/line"
 	_ "github.com/nyaruka/courier/v26/handlers/m3tech"
 	_ "github.com/nyaruka/courier/v26/handlers/macrokiosk"
-	_ "github.com/nyaruka/courier/v26/handlers/mblox"
 	_ "github.com/nyaruka/courier/v26/handlers/messagebird"
 	_ "github.com/nyaruka/courier/v26/handlers/meta"
 	_ "github.com/nyaruka/courier/v26/handlers/mtarget"
