@@ -1,3 +1,6 @@
+## v26.3.78 (2026-11-11)
+ * Remove Mblox channel handler
+
 ## v26.3.77 (2026-11-10)
  * Stop contacts who can't be messaged on Facebook and Instagram
  * Test that a rejected Facebook send records the error code it was given
