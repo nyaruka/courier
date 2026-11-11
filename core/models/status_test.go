@@ -617,3 +617,74 @@ func TestWriteStatusUpdatesOtherURNs(t *testing.T) {
 	assertvk.LLen(t, rc, "c:1:100", 0)
 	assert.Equal(t, 1, rt.Stats.Extract().URNConflicts)
 }
+
+func TestFailedMsgTallies(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	defer testsuite.ResetDB(t, rt)
+
+	vc := rt.VK.Get()
+	defer vc.Close()
+
+	kn, err := models.GetChannel(ctx, "KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	assert.NoError(t, err)
+
+	// tallies are by the UTC day the message was created on, rather than the day it failed
+	rt.DB.MustExec(`UPDATE msgs_msg SET created_on = '2026-11-03 23:30:00-02' WHERE direction = 'O'`)
+
+	writeStatus := func(uuid models.MsgUUID, status models.MsgStatus) {
+		clog := models.NewChannelLog(models.ChannelLogTypeMsgStatus, kn, nil, nil)
+		assert.NoError(t, models.WriteStatusUpdate(ctx, rt, models.NewStatusUpdate(kn, uuid, status, clog)))
+		models.FlushStatusWriter()
+	}
+
+	// statuses other than failed aren't counted
+	writeStatus("0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusSent)
+	writeStatus("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusErrored)
+
+	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{})
+
+	// a message failed outright is counted once, however many times it's reported
+	writeStatus("0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusFailed)
+	writeStatus("0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusFailed)
+
+	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{"C10|text:failed@2026-11-04": "1"})
+
+	// as is one which fails by reaching the error limit
+	writeStatus("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusErrored)
+	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{"C10|text:failed@2026-11-04": "1"})
+
+	writeStatus("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusErrored)
+	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_msg WHERE uuid = '0199df10-10dc-7e6e-834b-3d959ece93b2'`).Returns("F")
+	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{"C10|text:failed@2026-11-04": "2"})
+
+	// a delivered message which the provider then reports as failed is counted too, and failures written together are
+	// counted by their own channels and days
+	rt.DB.MustExec(`UPDATE msgs_msg SET status = 'D' WHERE uuid = '019bb29e-b2c6-7e5f-b980-ccb3e9e21fbc'`)
+	rt.DB.MustExec(`UPDATE msgs_msg SET status = 'W', channel_id = 11 WHERE uuid = '0199df0f-9f82-7689-b02d-f34105991321'`)
+	rt.DB.MustExec(`UPDATE msgs_msg SET status = 'W', error_count = 0, failed_reason = NULL, created_on = '2026-11-06 12:00:00+00' WHERE uuid = '0199df10-10dc-7e6e-834b-3d959ece93b2'`)
+
+	fba, err := models.GetChannel(ctx, "FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
+	assert.NoError(t, err)
+
+	for _, s := range []struct {
+		channel *models.Channel
+		uuid    models.MsgUUID
+	}{
+		{kn, "019bb29e-b2c6-7e5f-b980-ccb3e9e21fbc"},
+		{fba, "0199df0f-9f82-7689-b02d-f34105991321"},
+		{kn, "0199df10-10dc-7e6e-834b-3d959ece93b2"},
+	} {
+		clog := models.NewChannelLog(models.ChannelLogTypeMsgStatus, s.channel, nil, nil)
+		assert.NoError(t, models.WriteStatusUpdate(ctx, rt, models.NewStatusUpdate(s.channel, s.uuid, models.MsgStatusFailed, clog)))
+	}
+	models.FlushStatusWriter()
+
+	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{
+		"C10|text:failed@2026-11-04": "3",
+		"C10|text:failed@2026-11-06": "1",
+		"C11|text:failed@2026-11-04": "1",
+	})
+}

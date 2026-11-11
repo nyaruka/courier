@@ -224,10 +224,12 @@ func writeStatusUpdatesToDB(ctx context.Context, rt *runtime.Runtime, statuses [
 			}
 		}
 
-		// publish changes to any subscribed history sockets - best-effort with its own short timeout so a Centrifugo
-		// or Valkey stall can't eat into the batch's DB write budget
+		// tallying failures, and publishing changes to any subscribed history sockets, are best-effort with their own
+		// short timeout so a Centrifugo or Valkey stall can't eat into the batch's DB write budget
 		pubCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
+
+		incrementFailedTallies(pubCtx, rt, changes)
 
 		if err := PublishStatusChanges(pubCtx, rt, changes); err != nil {
 			slog.Error("error publishing status changes", "error", err)
@@ -235,6 +237,34 @@ func writeStatusUpdatesToDB(ctx context.Context, rt *runtime.Runtime, statuses [
 	}
 
 	return unresolved, nil
+}
+
+// counts the messages which the given changes failed on their channels, logging rather than failing on errors since
+// the statuses have already been written. A message is counted on the day it was created, like the tally of outgoing
+// messages it's a fraction of, and only once because failed is terminal.
+func incrementFailedTallies(ctx context.Context, rt *runtime.Runtime, changes []*StatusChange) {
+	amounts := make(map[string]int64)
+	for _, c := range changes {
+		if c.MsgStatus == MsgStatusFailed {
+			amounts[dailyChannelTally(c.ChannelID, "text:failed", c.MsgCreatedOn)]++
+		}
+	}
+	if len(amounts) == 0 {
+		return
+	}
+
+	vc := rt.VK.Get()
+	defer vc.Close()
+
+	if err := rt.Tallies.Increment(ctx, vc, amounts); err != nil {
+		slog.Error("error incrementing failed msg tallies", "error", err)
+	}
+}
+
+// dailyChannelTally returns the tally field for the given channel's total of scope on the UTC day of t, e.g.
+// C123|text:failed@2025-05-04
+func dailyChannelTally(channelID ChannelID, scope string, t time.Time) string {
+	return fmt.Sprintf("C%d|%s@%s", channelID, scope, t.UTC().Format(time.DateOnly))
 }
 
 const sqlResolveStatusByExternalIdentifier = `
@@ -377,7 +407,7 @@ UPDATE msgs_msg SET
         msgs_msg old
     WHERE msgs_msg.uuid = s.msg_uuid AND msgs_msg.channel_id = s.channel_id AND msgs_msg.direction = 'O' AND c.id = msgs_msg.contact_id AND old.id = msgs_msg.id
       AND (COALESCE(cardinality(msgs_msg.log_uuids), 0) < %[3]d OR (%[1]s) != msgs_msg.status OR %[2]s)
-RETURNING msgs_msg.uuid AS msg_uuid, msgs_msg.status AS msg_status, msgs_msg.failed_reason, c.id AS contact_id, c.uuid AS contact_uuid, msgs_msg.org_id, msgs_msg.status IS DISTINCT FROM old.status AS changed`, sqlNewMsgStatus, sqlIsErrorAttempt, maxMsgLogUUIDs)
+RETURNING msgs_msg.uuid AS msg_uuid, msgs_msg.status AS msg_status, msgs_msg.failed_reason, c.id AS contact_id, c.uuid AS contact_uuid, msgs_msg.org_id, msgs_msg.channel_id, msgs_msg.created_on AS msg_created_on, msgs_msg.status IS DISTINCT FROM old.status AS changed`, sqlNewMsgStatus, sqlIsErrorAttempt, maxMsgLogUUIDs)
 
 // WriteStatusUpdates writes the given status updates to the database and returns the resulting changes in message
 // status. Updates which don't change a message's status - because it's already moved past them - aren't returned.
@@ -533,6 +563,8 @@ type StatusChange struct {
 	MsgStatus    MsgStatus   `db:"msg_status"`
 	FailedReason null.String `db:"failed_reason"`
 	OrgID        OrgID       `db:"org_id"`
+	ChannelID    ChannelID   `db:"channel_id"`
+	MsgCreatedOn time.Time   `db:"msg_created_on"`
 	CreatedOn    time.Time
 }
 
