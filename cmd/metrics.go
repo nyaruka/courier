@@ -78,7 +78,7 @@ func reportMetrics(ctx context.Context, rt *runtime.Runtime, dbWaitDuration, red
 	// get queue sizes
 	rc := rt.VK.Get()
 	defer rc.Close()
-	prioritySize, bulkSize, err := models.MsgQueue.Size(ctx, rc)
+	prioritySize, bulkSize, requeuedSize, err := models.MsgQueue.Size(ctx, rc)
 	if err != nil {
 		return 0, fmt.Errorf("error getting queue sizes: %w", err)
 	}
@@ -102,6 +102,7 @@ func reportMetrics(ctx context.Context, rt *runtime.Runtime, dbWaitDuration, red
 		cwatch.Datum("ValkeyConnectionsWaitDuration", float64(redisWaitDurationInPeriod)/float64(time.Second), cwtypes.StandardUnitSeconds),
 		cwatch.Datum("QueuedMsgs", float64(bulkSize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "bulk")),
 		cwatch.Datum("QueuedMsgs", float64(prioritySize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "priority")),
+		cwatch.Datum("QueuedMsgs", float64(requeuedSize), cwtypes.StandardUnitCount, cwatch.Dimension("QueueName", "requeued")),
 		cwatch.Datum("DynamoSpooledItems", float64(rt.Dynamo.Spool.Size()), cwtypes.StandardUnitCount),
 		cwatch.Datum("PostgresSpooledItems", float64(msgSpoolSize), cwtypes.StandardUnitCount, cwatch.Dimension("SpoolName", "msgs")),
 		cwatch.Datum("PostgresSpooledItems", float64(statusSpoolSize), cwtypes.StandardUnitCount, cwatch.Dimension("SpoolName", "statuses")),
