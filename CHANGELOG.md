@@ -1,3 +1,6 @@
+## v26.3.79 (2026-11-11)
+ * Update to gocommon v1.100.1 and report the requeued queue size
+
 ## v26.3.78 (2026-11-11)
  * Remove Mblox channel handler
 
