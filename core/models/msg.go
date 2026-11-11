@@ -589,6 +589,7 @@ type MsgOut struct {
 	// set when popped from the queue rather than unmarshaled
 	Channel_    *Channel       `json:"-"`
 	QueueOwner_ queues.OwnerID `json:"-"`
+	queued      []byte         // as popped, so it can be put back as it was
 }
 
 func (m *MsgOut) UUID() MsgUUID                { return m.UUID_ }
@@ -653,6 +654,7 @@ func PopNextOutgoingMsg(ctx context.Context, rt *runtime.Runtime) (*MsgOut, erro
 	// add some extra info to the popped message
 	msg.Channel_ = channel
 	msg.QueueOwner_ = owner
+	msg.queued = msgJSON
 
 	// clear out our seen incoming messages
 	clearMsgSeen(ctx, vc, msg)
@@ -686,6 +688,23 @@ func PauseSending(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, until t
 	rt.Stats.RecordOutgoingBackoff(string(msg.Channel().ChannelType()))
 
 	return MsgQueue.Pause(ctx, rc, msg.QueueOwner_, until)
+}
+
+// OnSendRequeued is called instead of OnSendComplete for a message the provider didn't take, putting it back in the
+// queue to be sent before anything else queued for its channel
+func OnSendRequeued(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, clog *ChannelLog) error {
+	rc := rt.VK.Get()
+	defer rc.Close()
+
+	batch := make([]byte, 0, len(msg.queued)+2)
+	batch = append(append(append(batch, '['), msg.queued...), ']')
+
+	if err := MsgQueue.Requeue(ctx, rc, msg.QueueOwner_, batch); err != nil {
+		return err
+	}
+
+	rt.Stats.RecordOutgoingRequeue(string(msg.Channel().ChannelType()), clog.Elapsed)
+	return nil
 }
 
 // OnSendComplete is called when the sender has finished trying to send a message, with what the send cost of the

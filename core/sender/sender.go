@@ -238,7 +238,28 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 		log.Warn("duplicate send, marking as wired")
 
 	} else {
-		status, res = w.sendByHandler(sendCTX, handler, msg, clog, log)
+		var notSent bool
+		status, res, notSent = w.sendByHandler(sendCTX, handler, msg, clog, log)
+
+		// the provider didn't take it, so put it back rather than counting it as an attempt, writing no status as it's
+		// still queued
+		if notSent {
+			clog.End()
+
+			requeueCTX, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			if err := models.OnSendRequeued(requeueCTX, rt, msg, clog); err != nil {
+				log.Error("error requeuing message, marking as errored", "error", err)
+			} else {
+				log.Info("provider didn't take message, requeued")
+
+				if handler.StoreChannelLogs() {
+					models.WriteChannelLog(rt, clog)
+				}
+				return
+			}
+		}
 	}
 
 	// we allot 15 seconds to write our status to the db
@@ -266,12 +287,15 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 	models.OnSendComplete(writeCTX, rt, msg, status, cost, otherURNs, clog)
 }
 
-func (w *Sender) sendByHandler(ctx context.Context, h channels.Handler, m *models.MsgOut, clog *models.ChannelLog, log *slog.Logger) (*models.StatusUpdate, *channels.SendResult) {
+// sendByHandler sends the message with the given handler, returning the status to write and whether the message can
+// be put back instead, because the provider didn't take it and sending on the channel has been paused
+func (w *Sender) sendByHandler(ctx context.Context, h channels.Handler, m *models.MsgOut, clog *models.ChannelLog, log *slog.Logger) (*models.StatusUpdate, *channels.SendResult, bool) {
 	rt := w.foreman.rt
 	res := &channels.SendResult{}
 	err := h.Send(ctx, m, res, clog)
 
 	// if the channel can't take any more for now, stop popping its messages so they wait in our queue rather than its
+	paused := false
 	if backoff := channels.RequestedBackoff(res, err); backoff > 0 {
 		log.Info("pausing sending on channel", "backoff", backoff)
 
@@ -279,6 +303,8 @@ func (w *Sender) sendByHandler(ctx context.Context, h channels.Handler, m *model
 		pauseCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		if err := models.PauseSending(pauseCtx, rt, m, time.Now().Add(backoff)); err != nil {
 			log.Error("error pausing sending on channel", "error", err)
+		} else {
+			paused = true
 		}
 		cancel()
 	}
@@ -291,7 +317,11 @@ func (w *Sender) sendByHandler(ctx context.Context, h channels.Handler, m *model
 	}
 
 	var serr *channels.SendError
+	notSent := false
 	if errors.As(err, &serr) {
+		// without the pause it would just be popped again straight away, so it's errored like any other attempt
+		notSent = serr.NotSent() && paused
+
 		if serr.Loggable() {
 			log.Error("error sending message", "error", err)
 		}
@@ -319,5 +349,5 @@ func (w *Sender) sendByHandler(ctx context.Context, h channels.Handler, m *model
 		clog.Error(&svclogs.Error{Code: "internal_error", Message: "An internal error occured."})
 	}
 
-	return status, res
+	return status, res, notSent
 }
