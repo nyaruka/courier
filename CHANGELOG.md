@@ -1,3 +1,8 @@
+## v26.3.80 (2026-11-11)
+ * Update to gocommon v1.100.2
+ * Tally failed messages by channel
+ * Give queue Done calls their own context
+
 ## v26.3.79 (2026-11-11)
  * Update to gocommon v1.100.1 and report the requeued queue size
 
