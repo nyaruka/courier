@@ -224,12 +224,12 @@ func writeStatusUpdatesToDB(ctx context.Context, rt *runtime.Runtime, statuses [
 			}
 		}
 
-		incrementFailedTallies(ctx, rt, changes)
-
-		// publish changes to any subscribed history sockets - best-effort with its own short timeout so a Centrifugo
-		// or Valkey stall can't eat into the batch's DB write budget
+		// tallying failures, and publishing changes to any subscribed history sockets, are best-effort with their own
+		// short timeout so a Centrifugo or Valkey stall can't eat into the batch's DB write budget
 		pubCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
+
+		incrementFailedTallies(pubCtx, rt, changes)
 
 		if err := PublishStatusChanges(pubCtx, rt, changes); err != nil {
 			slog.Error("error publishing status changes", "error", err)
@@ -246,7 +246,7 @@ func incrementFailedTallies(ctx context.Context, rt *runtime.Runtime, changes []
 	amounts := make(map[string]int64)
 	for _, c := range changes {
 		if c.MsgStatus == MsgStatusFailed {
-			amounts[dailyOrgTally(c.OrgID, fmt.Sprintf("channels/%d/text:failed", c.ChannelID), c.MsgCreatedOn)]++
+			amounts[dailyChannelTally(c.ChannelID, "text:failed", c.MsgCreatedOn)]++
 		}
 	}
 	if len(amounts) == 0 {
@@ -259,6 +259,12 @@ func incrementFailedTallies(ctx context.Context, rt *runtime.Runtime, changes []
 	if err := rt.Tallies.Increment(ctx, vc, amounts); err != nil {
 		slog.Error("error incrementing failed msg tallies", "error", err)
 	}
+}
+
+// dailyChannelTally returns the tally field for the given channel's total of scope on the UTC day of t, e.g.
+// C123|text:failed@2025-05-04
+func dailyChannelTally(channelID ChannelID, scope string, t time.Time) string {
+	return fmt.Sprintf("C%d|%s@%s", channelID, scope, t.UTC().Format(time.DateOnly))
 }
 
 const sqlResolveStatusByExternalIdentifier = `

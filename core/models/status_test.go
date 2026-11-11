@@ -650,13 +650,41 @@ func TestFailedMsgTallies(t *testing.T) {
 	writeStatus("0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusFailed)
 	writeStatus("0199df0f-9f82-7689-b02d-f34105991321", models.MsgStatusFailed)
 
-	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{"O1|channels/10/text:failed@2026-11-04": "1"})
+	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{"C10|text:failed@2026-11-04": "1"})
 
 	// as is one which fails by reaching the error limit
 	writeStatus("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusErrored)
-	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{"O1|channels/10/text:failed@2026-11-04": "1"})
+	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{"C10|text:failed@2026-11-04": "1"})
 
 	writeStatus("0199df10-10dc-7e6e-834b-3d959ece93b2", models.MsgStatusErrored)
 	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_msg WHERE uuid = '0199df10-10dc-7e6e-834b-3d959ece93b2'`).Returns("F")
-	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{"O1|channels/10/text:failed@2026-11-04": "2"})
+	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{"C10|text:failed@2026-11-04": "2"})
+
+	// a delivered message which the provider then reports as failed is counted too, and failures written together are
+	// counted by their own channels and days
+	rt.DB.MustExec(`UPDATE msgs_msg SET status = 'D' WHERE uuid = '019bb29e-b2c6-7e5f-b980-ccb3e9e21fbc'`)
+	rt.DB.MustExec(`UPDATE msgs_msg SET status = 'W', channel_id = 11 WHERE uuid = '0199df0f-9f82-7689-b02d-f34105991321'`)
+	rt.DB.MustExec(`UPDATE msgs_msg SET status = 'W', error_count = 0, failed_reason = NULL, created_on = '2026-11-06 12:00:00+00' WHERE uuid = '0199df10-10dc-7e6e-834b-3d959ece93b2'`)
+
+	fba, err := models.GetChannel(ctx, "FBA", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
+	assert.NoError(t, err)
+
+	for _, s := range []struct {
+		channel *models.Channel
+		uuid    models.MsgUUID
+	}{
+		{kn, "019bb29e-b2c6-7e5f-b980-ccb3e9e21fbc"},
+		{fba, "0199df0f-9f82-7689-b02d-f34105991321"},
+		{kn, "0199df10-10dc-7e6e-834b-3d959ece93b2"},
+	} {
+		clog := models.NewChannelLog(models.ChannelLogTypeMsgStatus, s.channel, nil, nil)
+		assert.NoError(t, models.WriteStatusUpdate(ctx, rt, models.NewStatusUpdate(s.channel, s.uuid, models.MsgStatusFailed, clog)))
+	}
+	models.FlushStatusWriter()
+
+	assertvk.HGetAll(t, vc, "{tallies}:live", map[string]string{
+		"C10|text:failed@2026-11-04": "3",
+		"C10|text:failed@2026-11-06": "1",
+		"C11|text:failed@2026-11-04": "1",
+	})
 }
