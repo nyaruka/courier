@@ -68,7 +68,7 @@ func TestForemanStopWhilstBusy(t *testing.T) {
 
 	// asserts rather than requires because it's also called from the goroutine of an eventually check
 	queued := func() int {
-		high, _, err := models.MsgQueue.Size(ctx, vc)
+		high, _, _, err := models.MsgQueue.Size(ctx, vc)
 		assert.NoError(t, err)
 		return high
 	}

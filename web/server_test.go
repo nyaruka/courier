@@ -339,7 +339,7 @@ func TestOutgoing(t *testing.T) {
 	assertStatus("0199df05-2b3c-7d4e-8f5a-6b7c8d9e0f1a", models.MsgStatusQueued)
 
 	rc = rt.VK.Get()
-	high, _, err := models.MsgQueue.Size(t.Context(), rc)
+	high, _, _, err := models.MsgQueue.Size(t.Context(), rc)
 	rc.Close()
 	require.NoError(t, err)
 	assert.Equal(t, 1, high)
