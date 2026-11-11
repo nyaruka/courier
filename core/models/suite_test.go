@@ -819,6 +819,45 @@ func (ts *ModelsTestSuite) TestOutgoingQueue() {
 	ts.False(sent)
 }
 
+func (ts *ModelsTestSuite) TestOutgoingQueueDoneWithExpiredContext() {
+	testsuite.ResetValkey(ts.T(), ts.rt)
+
+	ctx := context.Background()
+	r := ts.rt.VK.Get()
+	defer r.Close()
+
+	msgJSON := `[{
+		"org_id": 1,
+		"id": 10000,
+		"uuid": "0199df0f-9f82-7689-b02d-f34105991321",
+		"high_priority": true,
+		"text": "test message",
+		"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
+		"created_on": "2025-10-14T20:16:03.821434Z",
+		"channel_uuid": "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
+		"urn": "tel:+12067799192",
+		"origin": "chat"
+	}]`
+
+	ts.NoError(models.MsgQueue.Push(ctx, r, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, true, []byte(msgJSON)))
+
+	msg, err := models.PopNextOutgoingMsg(ctx, ts.rt)
+	ts.NoError(err)
+	ts.NotNil(msg)
+
+	// the sender's context may be used up by the time the send completes, but the queue should still be told
+	expired, cancel := context.WithCancel(ctx)
+	cancel()
+
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, msg.Channel(), nil, nil)
+	status := models.NewStatusUpdate(msg.Channel(), msg.UUID(), models.MsgStatusErrored, clog)
+	models.OnSendComplete(expired, ts.rt, msg, status, 5, nil, clog)
+
+	debtUntil, err := redis.Float64(r.Do("HGET", "{msgs}:ch:dbc126ed-66bc-4e28-b67b-81dc3327c95d", "debt_until"))
+	ts.NoError(err)
+	ts.InDelta(float64(time.Now().UnixMicro())/1e6+0.5, debtUntil, 0.25)
+}
+
 func (ts *ModelsTestSuite) TestChannel() {
 	noAddress := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c99a")
 	ts.Equal(i18n.Country("US"), noAddress.Country())
