@@ -1,3 +1,6 @@
+## v26.3.81 (2026-11-11)
+ * Write incoming message counts as channel tallies
+
 ## v26.3.80 (2026-11-11)
  * Update to gocommon v1.100.2
  * Tally failed messages by channel
