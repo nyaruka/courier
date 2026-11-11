@@ -315,8 +315,8 @@ func incrementMsgTallies(ctx context.Context, rt *runtime.Runtime, m *MsgIn) {
 
 	orgID := m.Channel_.OrgID()
 	amounts := map[string]int64{
-		dailyOrgTally(orgID, fmt.Sprintf("channels/%d/text:in", m.Channel_.ID()), m.CreatedOn_): 1,
-		dailyOrgTally(orgID, "msgs/text:in", m.CreatedOn_):                                      1,
+		dailyChannelTally(m.Channel_.ID(), "text:in", m.CreatedOn_): 1,
+		dailyOrgTally(orgID, "msgs/text:in", m.CreatedOn_):          1,
 	}
 
 	if err := rt.Tallies.Increment(ctx, vc, amounts); err != nil {
