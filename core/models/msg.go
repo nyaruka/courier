@@ -617,7 +617,7 @@ func PopNextOutgoingMsg(ctx context.Context, rt *runtime.Runtime) (*MsgOut, erro
 
 	markComplete := func(owner queues.OwnerID) {
 		// nothing was sent so nothing was used of the channel's throughput
-		if err := MsgQueue.Done(ctx, vc, owner, 0); err != nil {
+		if err := markQueueDone(ctx, vc, owner, 0); err != nil {
 			slog.Error("error marking queue task complete", "error", err)
 		}
 	}
@@ -678,6 +678,15 @@ func ClearMsgSent(ctx context.Context, rt *runtime.Runtime, uuid MsgUUID) error 
 	return sentMsgs.Rem(ctx, rc, string(uuid))
 }
 
+// markQueueDone gets its own context because the caller's may already be used up, and a Done that never happens
+// leaves the owner's in-flight count permanently one too high
+func markQueueDone(ctx context.Context, rc redis.Conn, owner queues.OwnerID, cost int) error {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+
+	return MsgQueue.Done(ctx, rc, owner, cost)
+}
+
 // PauseSending stops messages being popped for the given msg's channel until the given time
 func PauseSending(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, until time.Time) error {
 	rc := rt.VK.Get()
@@ -699,7 +708,7 @@ func OnSendComplete(
 	rc := rt.VK.Get()
 	defer rc.Close()
 
-	if err := MsgQueue.Done(ctx, rc, msg.QueueOwner_, cost); err != nil {
+	if err := markQueueDone(ctx, rc, msg.QueueOwner_, cost); err != nil {
 		log.Error("unable to mark queue task complete", "error", err)
 	}
 
