@@ -196,7 +196,8 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	// sendsms answers with this when bearerbox rejects a message temporarily, i.e. its queues are full or it's shutting
 	// down, which other 503s, e.g. from a proxy in front of it, won't have
 	if err == nil && resp.StatusCode == http.StatusServiceUnavailable && strings.HasPrefix(string(respBody), "Temporal failure") {
-		return channels.ErrNotSent(channels.ErrConnectionThrottled, unavailableBackoff)
+		res.SetBackoff(unavailableBackoff)
+		return channels.ErrConnectionThrottled
 	}
 
 	if err := handlers.ErrorFromResponse(resp, err); err != nil {

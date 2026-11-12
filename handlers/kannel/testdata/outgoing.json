@@ -176,7 +176,6 @@
         "error": {
             "message": "channel rate limited",
             "retryable": true,
-            "not_sent": true,
             "log_error": {
                 "code": "connection_throttled",
                 "message": "Connection to server has been rate limited."
