@@ -190,6 +190,7 @@ func TestOutgoing(t *testing.T) {
 			httpx.NewMockResponse(429, nil, []byte(`too much!`)),
 			httpx.NewMockResponse(403, nil, []byte(`stop!`)),
 			httpx.NewMockResponse(503, nil, []byte(`full!`)),
+			httpx.NewMockResponse(507, nil, []byte(`not taken!`)),
 			httpx.NewMockResponse(200, nil, []byte(`SENT`)),
 		},
 		// the webchat service, which the webchat channel's message below is posted to
@@ -343,6 +344,18 @@ func TestOutgoing(t *testing.T) {
 	rc.Close()
 	require.NoError(t, err)
 	assert.Equal(t, 1, high)
+
+	// send a message on another channel which the provider doesn't take.. it should be put back without counting as an
+	// attempt, and sent once the channel's pause ends
+	notSentChannel := test.NewMockChannel("7a0e9d4c-3b1f-4e2a-9c8d-5f6e7a8b9c0d", "MCK", "2022", "US", []string{urns.Phone.Prefix}, map[string]any{})
+	testsuite.InsertChannel(t, rt, notSentChannel)
+
+	send("0199df05-3c4d-7e5f-8a6b-7c8d9e0f1a2b", notSentChannel, "9")
+	assertStatus("0199df05-3c4d-7e5f-8a6b-7c8d9e0f1a2b", models.MsgStatusWired)
+
+	var errorCount int
+	require.NoError(t, rt.DB.Get(&errorCount, `SELECT error_count FROM msgs_msg WHERE uuid = '0199df05-3c4d-7e5f-8a6b-7c8d9e0f1a2b'`))
+	assert.Zero(t, errorCount)
 
 	// queue a message on a webchat channel - a type that doesn't store channel logs - it should still be
 	// sent (a post to the webchat service) and marked as wired...

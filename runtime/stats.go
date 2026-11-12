@@ -41,6 +41,7 @@ type Stats struct {
 	OutgoingSends    CountByType    // number of sends that succeeded
 	OutgoingErrors   CountByType    // number of sends that errored
 	OutgoingBackoffs CountByType    // number of sends after which the channel asked for sending to stop
+	OutgoingRequeues CountByType    // number of messages put back because the provider didn't take them
 	OutgoingDuration DurationByType // total time spent sending messages
 
 	ContactsCreated           int
@@ -61,6 +62,7 @@ func newStats() *Stats {
 		OutgoingSends:    make(CountByType),
 		OutgoingErrors:   make(CountByType),
 		OutgoingBackoffs: make(CountByType),
+		OutgoingRequeues: make(CountByType),
 		OutgoingDuration: make(DurationByType),
 
 		ContactsCreated: 0,
@@ -73,6 +75,7 @@ func (s *Stats) ToMetrics(advanced bool) []types.MetricDatum {
 	metrics = append(metrics, s.OutgoingSends.metrics("OutgoingSends")...)
 	metrics = append(metrics, s.OutgoingErrors.metrics("OutgoingErrors")...)
 	metrics = append(metrics, s.OutgoingBackoffs.metrics("OutgoingBackoffs")...)
+	metrics = append(metrics, s.OutgoingRequeues.metrics("OutgoingRequeues")...)
 
 	if advanced {
 		metrics = append(metrics, s.IncomingRequests.metrics("IncomingRequests")...)
@@ -80,7 +83,7 @@ func (s *Stats) ToMetrics(advanced bool) []types.MetricDatum {
 		metrics = append(metrics, s.IncomingEvents.metrics("IncomingEvents")...)
 		metrics = append(metrics, s.IncomingIgnored.metrics("IncomingIgnored")...)
 		metrics = append(metrics, s.IncomingDuration.metrics("IncomingDuration", func(typ string) int { return s.IncomingRequests[typ] })...)
-		metrics = append(metrics, s.OutgoingDuration.metrics("OutgoingDuration", func(typ string) int { return s.OutgoingSends[typ] + s.OutgoingErrors[typ] })...)
+		metrics = append(metrics, s.OutgoingDuration.metrics("OutgoingDuration", func(typ string) int { return s.OutgoingSends[typ] + s.OutgoingErrors[typ] + s.OutgoingRequeues[typ] })...)
 		metrics = append(metrics, cwatch.Datum("ContactsCreated", float64(s.ContactsCreated), types.StandardUnitCount))
 		metrics = append(metrics, cwatch.Datum("ContactsMatchedByOtherURN", float64(s.ContactsMatchedByOtherURN), types.StandardUnitCount))
 		metrics = append(metrics, cwatch.Datum("URNAppends", float64(s.URNAppends), types.StandardUnitCount))
@@ -135,6 +138,13 @@ func (c *StatsCollector) RecordOutgoing(typ string, success bool, d time.Duratio
 func (c *StatsCollector) RecordOutgoingBackoff(typ string) {
 	c.mutex.Lock()
 	c.stats.OutgoingBackoffs[typ]++
+	c.mutex.Unlock()
+}
+
+func (c *StatsCollector) RecordOutgoingRequeue(typ string, d time.Duration) {
+	c.mutex.Lock()
+	c.stats.OutgoingRequeues[typ]++
+	c.stats.OutgoingDuration[typ] += d
 	c.mutex.Unlock()
 }
 
