@@ -163,6 +163,35 @@ func (ts *ModelsTestSuite) TestContact() {
 
 }
 
+func (ts *ModelsTestSuite) TestGetContact() {
+	testsuite.ResetDB(ts.T(), ts.rt)
+	testsuite.ResetValkey(ts.T(), ts.rt)
+
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
+	urn := urns.URN("tel:+12065551518")
+	ctx := context.Background()
+
+	// not allowed to create, so nothing to tell mailroom
+	contact, err := models.GetContact(ctx, ts.rt, knChannel, urn, nil, "", false, clog)
+	ts.NoError(err)
+	ts.Nil(contact)
+
+	// creating a contact queues it to mailroom as created
+	contact, err = models.GetContact(ctx, ts.rt, knChannel, urn, nil, "", true, clog)
+	ts.NoError(err)
+	ts.True(contact.IsNew_)
+	ts.assertQueuedContactTask(contact.ID_, "contact_created", map[string]any{"channel_id": float64(knChannel.ID())})
+
+	testsuite.ResetValkey(ts.T(), ts.rt)
+
+	// fetching an existing one doesn't
+	contact2, err := models.GetContact(ctx, ts.rt, knChannel, urn, nil, "", true, clog)
+	ts.NoError(err)
+	ts.Equal(contact.ID_, contact2.ID_)
+	ts.assertNoQueuedContactTask(contact.ID_)
+}
+
 func (ts *ModelsTestSuite) TestContactRace() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
@@ -1253,7 +1282,7 @@ func (ts *ModelsTestSuite) TestWriteMsg() {
 		"urn_id":          float64(contact.URNID_),
 		"text":            msg6.Text(),
 		"attachments":     nil,
-		"new_contact":     contact.IsNew_,
+		"contact_created": contact.IsNew_,
 	})
 
 	testsuite.ResetValkey(ts.T(), ts.rt)
@@ -1272,7 +1301,7 @@ func (ts *ModelsTestSuite) TestWriteMsg() {
 		"urn_id":          float64(contact.URNID_),
 		"text":            msg7.Text(),
 		"attachments":     nil,
-		"new_contact":     contact.IsNew_,
+		"contact_created": contact.IsNew_,
 		"new_urn":         map[string]any{"value": "tel:+12065559999", "action": "append"},
 	})
 
@@ -1292,7 +1321,7 @@ func (ts *ModelsTestSuite) TestWriteMsg() {
 		"urn_id":          float64(contact.URNID_),
 		"text":            msg8.Text(),
 		"attachments":     nil,
-		"new_contact":     contact.IsNew_,
+		"contact_created": contact.IsNew_,
 		"payload":         map[string]any{"first_name": "Bob", "age": float64(32)},
 	})
 }
@@ -1396,13 +1425,13 @@ func (ts *ModelsTestSuite) TestChannelEvent() {
 	ts.Equal(contact.URNID_, dbE.ContactURNID)
 
 	ts.assertQueuedContactTask(contact.ID_, "event_received", map[string]any{
-		"event_uuid":  string(event.UUID()),
-		"event_type":  "referral",
-		"channel_id":  float64(10),
-		"urn_id":      float64(contact.URNID_),
-		"extra":       map[string]any{"ref_id": "12345"},
-		"new_contact": true,
-		"occurred_on": event.OccurredOn().Format(time.RFC3339Nano),
+		"event_uuid":      string(event.UUID()),
+		"event_type":      "referral",
+		"channel_id":      float64(10),
+		"urn_id":          float64(contact.URNID_),
+		"extra":           map[string]any{"ref_id": "12345"},
+		"contact_created": true,
+		"occurred_on":     event.OccurredOn().Format(time.RFC3339Nano),
 	})
 }
 
@@ -1466,7 +1495,7 @@ func (ts *ModelsTestSuite) TestMailroomEvents() {
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, channel, nil, nil)
 	urn := urns.URN("tel:+12065551616")
 
-	// ensure contact exists before event write so new_contact is false
+	// ensure contact exists before event write so contact_created is false
 	_, err := models.ContactForURN(ctx, ts.rt, channel.OrgID_, channel, urn, nil, "kermit frog", true, clog)
 	ts.NoError(err)
 
@@ -1489,13 +1518,13 @@ func (ts *ModelsTestSuite) TestMailroomEvents() {
 	ts.Equal(contact.URNID_, dbE.ContactURNID)
 
 	ts.assertQueuedContactTask(contact.ID_, "event_received", map[string]any{
-		"event_uuid":  string(event.UUID()),
-		"event_type":  "referral",
-		"channel_id":  float64(10),
-		"urn_id":      float64(contact.URNID_),
-		"extra":       map[string]any{"ref_id": "12345"},
-		"new_contact": false,
-		"occurred_on": event.OccurredOn().Format(time.RFC3339Nano),
+		"event_uuid":      string(event.UUID()),
+		"event_type":      "referral",
+		"channel_id":      float64(10),
+		"urn_id":          float64(contact.URNID_),
+		"extra":           map[string]any{"ref_id": "12345"},
+		"contact_created": false,
+		"occurred_on":     event.OccurredOn().Format(time.RFC3339Nano),
 	})
 }
 
