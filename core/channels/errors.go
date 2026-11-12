@@ -199,8 +199,8 @@ func ErrConnectionThrottledFor(d time.Duration) *SendError {
 // the channel has stopped for that long. Don't use it when the provider might have taken the message, e.g. after a
 // timeout, as it would then be sent twice.
 func ErrNotSent(err error, d time.Duration) *SendError {
-	serr, ok := err.(*SendError)
-	if !ok {
+	var serr *SendError
+	if !errors.As(err, &serr) {
 		serr = ErrConnectionFailed.(*SendError)
 	}
 

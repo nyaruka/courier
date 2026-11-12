@@ -249,16 +249,18 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 			requeueCTX, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
+			// a failure here may be one where the message was put back, so it isn't also errored, as it would then be
+			// retried from both places and sent twice
 			if err := models.OnSendRequeued(requeueCTX, rt, msg, clog); err != nil {
-				log.Error("error requeuing message, marking as errored", "error", err)
+				log.Error("error requeuing message, leaving it queued", "error", err)
 			} else {
 				log.Info("provider didn't take message, requeued")
-
-				if handler.StoreChannelLogs() {
-					models.WriteChannelLog(rt, clog)
-				}
-				return
 			}
+
+			if handler.StoreChannelLogs() {
+				models.WriteChannelLog(rt, clog)
+			}
+			return
 		}
 	}
 

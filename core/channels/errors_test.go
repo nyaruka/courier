@@ -1,6 +1,7 @@
 package channels_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -25,4 +26,8 @@ func TestErrNotSent(t *testing.T) {
 	// a non-retryable error is made retryable, and anything else is taken as a failed connection
 	assert.True(t, channels.ErrNotSent(channels.ErrResponseStatus, time.Second).Retryable())
 	assert.Equal(t, "connection_failed", channels.ErrNotSent(assert.AnError, time.Second).ClogError().Code)
+
+	// a wrapped send error is still found
+	wrapped := fmt.Errorf("queue full: %w", channels.ErrConnectionThrottled)
+	assert.Equal(t, "connection_throttled", channels.ErrNotSent(wrapped, time.Second).ClogError().Code)
 }
