@@ -138,9 +138,10 @@ func GetContact(ctx context.Context, rt *runtime.Runtime, channel *Channel, urn 
 	rc := rt.VK.Get()
 	defer rc.Close()
 
-	// the contact exists either way, so a failure to queue is logged rather than failing the caller
+	// the contact exists either way, so a failure to queue is logged rather than failing the caller - and it's never
+	// retried, since later lookups find an existing contact
 	if err := queueContactCreated(ctx, rc, channel, contact); err != nil {
-		slog.Error("error queueing contact_created task", "error", err, "contact", contact.UUID_)
+		slog.Error("error queueing contact_created task", "error", err, "org_id", channel.OrgID_, "channel_uuid", channel.UUID(), "contact_uuid", contact.UUID_)
 	}
 
 	return contact, nil
