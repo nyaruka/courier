@@ -24,7 +24,7 @@ func queueMsgHandling(ctx context.Context, rc redis.Conn, c *Contact, m *MsgIn) 
 		"urn_id":          c.URNID_,
 		"text":            m.Text(),
 		"attachments":     m.Attachments(),
-		"new_contact":     c.IsNew_,
+		"contact_created": c.IsNew_,
 	}
 	if len(c.URNsToAppend_) > 0 {
 		body["new_urn"] = newURNTask(c.URNsToAppend_[0]) // mailroom takes one, any others will be reported again
@@ -56,13 +56,13 @@ func queueEventHandling(ctx context.Context, rc redis.Conn, c *Contact, e *Chann
 	channel := e.Channel()
 
 	body := map[string]any{
-		"event_uuid":  e.UUID(),
-		"event_type":  e.EventType_,
-		"urn_id":      c.URNID_,
-		"channel_id":  channel.ID_,
-		"extra":       e.Extra(),
-		"new_contact": c.IsNew_,
-		"occurred_on": e.OccurredOn_,
+		"event_uuid":      e.UUID(),
+		"event_type":      e.EventType_,
+		"urn_id":          c.URNID_,
+		"channel_id":      channel.ID_,
+		"extra":           e.Extra(),
+		"contact_created": c.IsNew_,
+		"occurred_on":     e.OccurredOn_,
 	}
 
 	return queueMailroomTask(ctx, rc, "event_received", channel.OrgID_, c.ID_, body)
