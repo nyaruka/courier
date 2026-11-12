@@ -184,10 +184,6 @@ func (w *Sender) Stop() {
 	close(w.job)
 }
 
-// MaxRequeues is the number of times a message that a provider didn't take is put back, after which that counts as an
-// errored attempt like any other, so that a provider which never takes it can't keep it queued forever
-const MaxRequeues = 100
-
 func (w *Sender) sendMessage(msg *models.MsgOut) {
 	log := slog.With("comp", "sender", "sender_id", w.id, "channel_uuid", msg.Channel().UUID())
 
@@ -247,9 +243,7 @@ func (w *Sender) sendMessage(msg *models.MsgOut) {
 
 		// the provider didn't take it, so put it back rather than counting it as an attempt, writing no status as it's
 		// still queued
-		if notSent && msg.Requeues() >= MaxRequeues {
-			log.Warn("provider didn't take message, but it's been requeued too many times")
-		} else if notSent {
+		if notSent {
 			clog.End()
 
 			requeueCTX, cancel := context.WithTimeout(context.Background(), 5*time.Second)

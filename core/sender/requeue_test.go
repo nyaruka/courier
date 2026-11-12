@@ -222,16 +222,3 @@ func TestNotSentButNotRequeued(t *testing.T) {
 	rt.assertStaysQueued(uuid)
 	assert.Equal(t, 1, rt.notTakenLogs())
 }
-
-func TestNotSentTooManyTimes(t *testing.T) {
-	rt := newRequeueTest(t, &notTakingTransport{})
-
-	// a message that has one requeue left is put back once more, and then errored
-	uuid := rt.queue(func(m map[string]any) { m["requeues"] = sender.MaxRequeues - 1 })
-	rt.assertStatus(uuid, models.MsgStatusErrored, 1)
-	rt.assertNotTakenLogs(2)
-
-	queued, requeued := rt.queued()
-	assert.Zero(t, queued)
-	assert.Zero(t, requeued)
-}

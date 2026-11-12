@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -586,7 +585,6 @@ type MsgOut struct {
 	UserID_               UserID            `json:"user_id"`
 	Origin_               MsgOrigin         `json:"origin"         validate:"required"`
 	Session_              *Session          `json:"session"`
-	Requeues_             int               `json:"requeues,omitempty"`
 
 	// set when popped from the queue rather than unmarshaled
 	Channel_    *Channel       `json:"-"`
@@ -611,9 +609,6 @@ func (m *MsgOut) Flow() *FlowReference         { return m.Flow_ }
 func (m *MsgOut) UserID() UserID               { return m.UserID_ }
 func (m *MsgOut) Session() *Session            { return m.Session_ }
 func (m *MsgOut) HighPriority() bool           { return m.HighPriority_ }
-
-// Requeues returns how many times the message has been put back because a provider didn't take it
-func (m *MsgOut) Requeues() int { return m.Requeues_ }
 
 // PopNextOutgoingMsg pops the next message that needs to be sent, callers should call OnSendComplete with the
 // returned message when they have dealt with the message (regardless of whether it was sent or not)
@@ -701,17 +696,8 @@ func OnSendRequeued(ctx context.Context, rt *runtime.Runtime, msg *MsgOut, clog 
 	rc := rt.VK.Get()
 	defer rc.Close()
 
-	// put back as it was popped, apart from the count of times it's been put back
-	var queued map[string]json.RawMessage
-	if err := json.Unmarshal(msg.queued, &queued); err != nil {
-		return fmt.Errorf("error unmarshaling queued message: %w", err)
-	}
-	queued["requeues"] = json.RawMessage(strconv.Itoa(msg.Requeues_ + 1))
-
-	batch, err := json.Marshal([]map[string]json.RawMessage{queued})
-	if err != nil {
-		return fmt.Errorf("error marshaling requeued message: %w", err)
-	}
+	batch := make([]byte, 0, len(msg.queued)+2)
+	batch = append(append(append(batch, '['), msg.queued...), ']')
 
 	if err := MsgQueue.Requeue(ctx, rc, msg.QueueOwner_, batch); err != nil {
 		return err
