@@ -1,3 +1,9 @@
+## v26.3.82 (2026-11-12)
+ * Queue a contact_created task for contacts created outside of incoming messages and events
+ * Send contact_created instead of new_contact on msg_received and event_received tasks
+ * Log org and channel when a contact_created task can't be queued, and note it's never retried
+ * Let a handler put back a message its provider didn't take rather than counting it as a failed attempt
+
 ## v26.3.81 (2026-11-11)
  * Write incoming message counts as channel tallies
 
