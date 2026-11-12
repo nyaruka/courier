@@ -68,6 +68,10 @@ func queueEventHandling(ctx context.Context, rc redis.Conn, c *Contact, e *Chann
 	return queueMailroomTask(ctx, rc, "event_received", channel.OrgID_, c.ID_, body)
 }
 
+func queueContactCreated(ctx context.Context, rc redis.Conn, ch *Channel, c *Contact) error {
+	return queueMailroomTask(ctx, rc, "contact_created", ch.OrgID_, c.ID_, map[string]any{"channel_id": ch.ID_})
+}
+
 func queueMsgDeleted(ctx context.Context, rc redis.Conn, ch *Channel, msgUUID MsgUUID, contactID ContactID) error {
 	return queueMailroomTask(ctx, rc, "msg_deleted", ch.OrgID_, contactID, map[string]any{"msg_uuid": msgUUID})
 }

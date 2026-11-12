@@ -126,9 +126,24 @@ WHERE
 	c.is_active = TRUE
 `
 
-// GetContact returns (or creates) the contact for the passed in channel and URN
+// GetContact returns (or creates) the contact for the passed in channel and URN. A contact it creates is queued to
+// mailroom as created, since unlike one created for an incoming message or event, nothing else will tell mailroom
+// about it.
 func GetContact(ctx context.Context, rt *runtime.Runtime, channel *Channel, urn urns.URN, authTokens map[string]string, name string, allowCreate bool, clog *ChannelLog) (*Contact, error) {
-	return contactForURN(ctx, rt, channel.OrgID_, channel, urn, authTokens, name, allowCreate, clog)
+	contact, err := contactForURN(ctx, rt, channel.OrgID_, channel, urn, authTokens, name, allowCreate, clog)
+	if err != nil || contact == nil || !contact.IsNew_ {
+		return contact, err
+	}
+
+	rc := rt.VK.Get()
+	defer rc.Close()
+
+	// the contact exists either way, so a failure to queue is logged rather than failing the caller
+	if err := queueContactCreated(ctx, rc, channel, contact); err != nil {
+		slog.Error("error queueing contact_created task", "error", err, "contact", contact.UUID_)
+	}
+
+	return contact, nil
 }
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one

@@ -163,6 +163,35 @@ func (ts *ModelsTestSuite) TestContact() {
 
 }
 
+func (ts *ModelsTestSuite) TestGetContact() {
+	testsuite.ResetDB(ts.T(), ts.rt)
+	testsuite.ResetValkey(ts.T(), ts.rt)
+
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
+	urn := urns.URN("tel:+12065551518")
+	ctx := context.Background()
+
+	// not allowed to create, so nothing to tell mailroom
+	contact, err := models.GetContact(ctx, ts.rt, knChannel, urn, nil, "", false, clog)
+	ts.NoError(err)
+	ts.Nil(contact)
+
+	// creating a contact queues it to mailroom as created
+	contact, err = models.GetContact(ctx, ts.rt, knChannel, urn, nil, "", true, clog)
+	ts.NoError(err)
+	ts.True(contact.IsNew_)
+	ts.assertQueuedContactTask(contact.ID_, "contact_created", map[string]any{"channel_id": float64(knChannel.ID())})
+
+	testsuite.ResetValkey(ts.T(), ts.rt)
+
+	// fetching an existing one doesn't
+	contact2, err := models.GetContact(ctx, ts.rt, knChannel, urn, nil, "", true, clog)
+	ts.NoError(err)
+	ts.Equal(contact.ID_, contact2.ID_)
+	ts.assertNoQueuedContactTask(contact.ID_)
+}
+
 func (ts *ModelsTestSuite) TestContactRace() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := models.NewChannelLog(models.ChannelLogTypeUnknown, knChannel, nil, nil)
