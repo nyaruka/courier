@@ -6,7 +6,7 @@
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api.infobip.com/sms/3/messages": [
+            "https://api.infobip.com/messages-api/1/messages": [
                 {
                     "status": 200,
                     "body": "{\"messages\":[{\"status\":{\"groupId\": 1}, \"messageId\": \"0191e180-7d60-7000-aded-7d8b151cbd5b\"}}"
@@ -16,7 +16,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api.infobip.com/sms/3/messages",
+                "url": "https://api.infobip.com/messages-api/1/messages",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "App test-api-key",
@@ -25,7 +25,8 @@
                 "body": {
                     "messages": [
                         {
-                            "from": "2020",
+                            "channel": "SMS",
+                            "sender": "2020",
                             "destinations": [
                                 {
                                     "to": "250788383383",
@@ -33,14 +34,17 @@
                                 }
                             ],
                             "content": {
-                                "text": "API Key Message"
+                                "body": {
+                                    "type": "TEXT",
+                                    "text": "API Key Message"
+                                }
                             },
                             "webhooks": {
                                 "delivery": {
-                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered",
-                                    "intermediateReport": true,
-                                    "contentType": "application/json"
-                                }
+                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+                                    "intermediateReport": true
+                                },
+                                "contentType": "application/json"
                             }
                         }
                     ]

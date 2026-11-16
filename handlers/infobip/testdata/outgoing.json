@@ -6,7 +6,7 @@
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api.infobip.com/sms/3/messages": [
+            "https://api.infobip.com/messages-api/1/messages": [
                 {
                     "status": 200,
                     "body": "{\"messages\":[{\"status\":{\"groupId\": 1}, \"messageId\": \"0191e180-7d60-7000-aded-7d8b151cbd5b\"}}"
@@ -16,7 +16,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api.infobip.com/sms/3/messages",
+                "url": "https://api.infobip.com/messages-api/1/messages",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
@@ -25,7 +25,8 @@
                 "body": {
                     "messages": [
                         {
-                            "from": "2020",
+                            "channel": "SMS",
+                            "sender": "2020",
                             "destinations": [
                                 {
                                     "to": "250788383383",
@@ -33,14 +34,17 @@
                                 }
                             ],
                             "content": {
-                                "text": "Simple Message"
+                                "body": {
+                                    "type": "TEXT",
+                                    "text": "Simple Message"
+                                }
                             },
                             "webhooks": {
                                 "delivery": {
-                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered",
-                                    "intermediateReport": true,
-                                    "contentType": "application/json"
-                                }
+                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+                                    "intermediateReport": true
+                                },
+                                "contentType": "application/json"
                             }
                         }
                     ]
@@ -60,7 +64,7 @@
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api.infobip.com/sms/3/messages": [
+            "https://api.infobip.com/messages-api/1/messages": [
                 {
                     "status": 200,
                     "body": "{\"messages\":[{\"status\":{\"groupId\": 1}}}"
@@ -70,7 +74,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api.infobip.com/sms/3/messages",
+                "url": "https://api.infobip.com/messages-api/1/messages",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
@@ -79,7 +83,8 @@
                 "body": {
                     "messages": [
                         {
-                            "from": "2020",
+                            "channel": "SMS",
+                            "sender": "2020",
                             "destinations": [
                                 {
                                     "to": "250788383383",
@@ -87,14 +92,17 @@
                                 }
                             ],
                             "content": {
-                                "text": "☺"
+                                "body": {
+                                    "type": "TEXT",
+                                    "text": "☺"
+                                }
                             },
                             "webhooks": {
                                 "delivery": {
-                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered",
-                                    "intermediateReport": true,
-                                    "contentType": "application/json"
-                                }
+                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+                                    "intermediateReport": true
+                                },
+                                "contentType": "application/json"
                             }
                         }
                     ]
@@ -119,7 +127,7 @@
             ]
         },
         "http_mocks": {
-            "https://api.infobip.com/mms/2/messages": [
+            "https://api.infobip.com/messages-api/1/messages": [
                 {
                     "status": 200,
                     "body": "{\"messages\":[{\"status\":{\"groupId\": 1}, \"messageId\": \"0191e180-7d60-7000-aded-7d8b151cbd5b\"}}"
@@ -129,7 +137,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api.infobip.com/mms/2/messages",
+                "url": "https://api.infobip.com/messages-api/1/messages",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
@@ -138,6 +146,7 @@
                 "body": {
                     "messages": [
                         {
+                            "channel": "MMS",
                             "sender": "2020",
                             "destinations": [
                                 {
@@ -146,25 +155,24 @@
                                 }
                             ],
                             "content": {
-                                "title": "",
-                                "messageSegments": [
-                                    {
-                                        "type": "TEXT",
-                                        "text": "Check out this image!"
-                                    },
-                                    {
-                                        "type": "LINK",
-                                        "contentUrl": "https://example.com/my_image.jpg",
-                                        "contentType": "image/jpeg"
-                                    }
-                                ]
+                                "body": {
+                                    "type": "MIXED",
+                                    "items": [
+                                        {
+                                            "text": "Check out this image!"
+                                        },
+                                        {
+                                            "url": "https://example.com/my_image.jpg"
+                                        }
+                                    ]
+                                }
                             },
                             "webhooks": {
                                 "delivery": {
-                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered",
-                                    "intermediateReport": true,
-                                    "contentType": "application/json"
-                                }
+                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+                                    "intermediateReport": true
+                                },
+                                "contentType": "application/json"
                             }
                         }
                     ]
@@ -178,13 +186,149 @@
         "log_errors": []
     },
     {
+        "label": "Send MMS with Attachment Only",
+        "msg": {
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://example.com/my_image.jpg"
+            ]
+        },
+        "http_mocks": {
+            "https://api.infobip.com/messages-api/1/messages": [
+                {
+                    "status": 200,
+                    "body": "{\"messages\":[{\"status\":{\"groupId\": 1}, \"messageId\": \"12345\"}]}"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.infobip.com/messages-api/1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "channel": "MMS",
+                            "sender": "2020",
+                            "destinations": [
+                                {
+                                    "to": "250788383383",
+                                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                                }
+                            ],
+                            "content": {
+                                "body": {
+                                    "type": "MIXED",
+                                    "items": [
+                                        {
+                                            "url": "https://example.com/my_image.jpg"
+                                        }
+                                    ]
+                                }
+                            },
+                            "webhooks": {
+                                "delivery": {
+                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+                                    "intermediateReport": true
+                                },
+                                "contentType": "application/json"
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "12345"
+        ],
+        "cost": 1,
+        "log_errors": []
+    },
+    {
+        "label": "Send MMS with Multiple Attachments",
+        "msg": {
+            "text": "Look at these",
+            "urn": "tel:+250788383383",
+            "attachments": [
+                "image/jpeg:https://example.com/my_image.jpg",
+                "video/mp4:https://example.com/my_video.mp4"
+            ]
+        },
+        "http_mocks": {
+            "https://api.infobip.com/messages-api/1/messages": [
+                {
+                    "status": 200,
+                    "body": "{\"messages\":[{\"status\":{\"groupId\": 1}, \"messageId\": \"12345\"}]}"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.infobip.com/messages-api/1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "channel": "MMS",
+                            "sender": "2020",
+                            "destinations": [
+                                {
+                                    "to": "250788383383",
+                                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                                }
+                            ],
+                            "content": {
+                                "body": {
+                                    "type": "MIXED",
+                                    "items": [
+                                        {
+                                            "text": "Look at these"
+                                        },
+                                        {
+                                            "url": "https://example.com/my_image.jpg"
+                                        },
+                                        {
+                                            "url": "https://example.com/my_video.mp4"
+                                        }
+                                    ]
+                                }
+                            },
+                            "webhooks": {
+                                "delivery": {
+                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+                                    "intermediateReport": true
+                                },
+                                "contentType": "application/json"
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "external_ids": [
+            "12345"
+        ],
+        "cost": 1,
+        "log_errors": []
+    },
+    {
         "label": "Error Sending",
         "msg": {
             "text": "Error Message",
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api.infobip.com/sms/3/messages": [
+            "https://api.infobip.com/messages-api/1/messages": [
                 {
                     "status": 401,
                     "body": {
@@ -196,7 +340,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api.infobip.com/sms/3/messages",
+                "url": "https://api.infobip.com/messages-api/1/messages",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
@@ -205,7 +349,8 @@
                 "body": {
                     "messages": [
                         {
-                            "from": "2020",
+                            "channel": "SMS",
+                            "sender": "2020",
                             "destinations": [
                                 {
                                     "to": "250788383383",
@@ -213,14 +358,17 @@
                                 }
                             ],
                             "content": {
-                                "text": "Error Message"
+                                "body": {
+                                    "type": "TEXT",
+                                    "text": "Error Message"
+                                }
                             },
                             "webhooks": {
                                 "delivery": {
-                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered",
-                                    "intermediateReport": true,
-                                    "contentType": "application/json"
-                                }
+                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+                                    "intermediateReport": true
+                                },
+                                "contentType": "application/json"
                             }
                         }
                     ]
@@ -244,7 +392,7 @@
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api.infobip.com/sms/3/messages": [
+            "https://api.infobip.com/messages-api/1/messages": [
                 {
                     "status": 429,
                     "body": {
@@ -256,7 +404,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api.infobip.com/sms/3/messages",
+                "url": "https://api.infobip.com/messages-api/1/messages",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
@@ -265,7 +413,8 @@
                 "body": {
                     "messages": [
                         {
-                            "from": "2020",
+                            "channel": "SMS",
+                            "sender": "2020",
                             "destinations": [
                                 {
                                     "to": "250788383383",
@@ -273,14 +422,17 @@
                                 }
                             ],
                             "content": {
-                                "text": "Error Message"
+                                "body": {
+                                    "type": "TEXT",
+                                    "text": "Error Message"
+                                }
                             },
                             "webhooks": {
                                 "delivery": {
-                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered",
-                                    "intermediateReport": true,
-                                    "contentType": "application/json"
-                                }
+                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+                                    "intermediateReport": true
+                                },
+                                "contentType": "application/json"
                             }
                         }
                     ]
@@ -305,7 +457,7 @@
             "urn": "tel:+250788383383"
         },
         "http_mocks": {
-            "https://api.infobip.com/sms/3/messages": [
+            "https://api.infobip.com/messages-api/1/messages": [
                 {
                     "status": 200,
                     "body": "{\"messages\":[{\"status\":{\"groupId\": 2}}}"
@@ -315,7 +467,7 @@
         "requests": [
             {
                 "method": "POST",
-                "url": "https://api.infobip.com/sms/3/messages",
+                "url": "https://api.infobip.com/messages-api/1/messages",
                 "headers": {
                     "Accept": "application/json",
                     "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
@@ -324,7 +476,8 @@
                 "body": {
                     "messages": [
                         {
-                            "from": "2020",
+                            "channel": "SMS",
+                            "sender": "2020",
                             "destinations": [
                                 {
                                     "to": "250788383383",
@@ -332,14 +485,17 @@
                                 }
                             ],
                             "content": {
-                                "text": "Simple Message"
+                                "body": {
+                                    "type": "TEXT",
+                                    "text": "Simple Message"
+                                }
                             },
                             "webhooks": {
                                 "delivery": {
-                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered",
-                                    "intermediateReport": true,
-                                    "contentType": "application/json"
-                                }
+                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+                                    "intermediateReport": true
+                                },
+                                "contentType": "application/json"
                             }
                         }
                     ]
@@ -355,5 +511,73 @@
             }
         },
         "log_errors": []
+    },
+    {
+        "label": "Rejected In Response",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "tel:+250788383383"
+        },
+        "http_mocks": {
+            "https://api.infobip.com/messages-api/1/messages": [
+                {
+                    "status": 200,
+                    "body": "{\"messages\":[{\"messageId\":\"12345\",\"status\":{\"groupId\":5,\"groupName\":\"REJECTED\",\"id\":51,\"name\":\"MISSING_TO\",\"description\":\"Message rejected due to missing destination\"}}]}"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://api.infobip.com/messages-api/1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "messages": [
+                        {
+                            "channel": "SMS",
+                            "sender": "2020",
+                            "destinations": [
+                                {
+                                    "to": "250788383383",
+                                    "messageId": "0191e180-7d60-7000-aded-7d8b151cbd5b"
+                                }
+                            ],
+                            "content": {
+                                "body": {
+                                    "type": "TEXT",
+                                    "text": "Simple Message"
+                                }
+                            },
+                            "webhooks": {
+                                "delivery": {
+                                    "url": "https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+                                    "intermediateReport": true
+                                },
+                                "contentType": "application/json"
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "cost": 1,
+        "error": {
+            "message": "response content",
+            "log_error": {
+                "code": "response_content",
+                "message": "Response content indicates non-success."
+            }
+        },
+        "log_errors": [
+            {
+                "code": "external",
+                "ext_code": "MISSING_TO",
+                "message": "Message rejected due to missing destination"
+            }
+        ]
     }
 ]

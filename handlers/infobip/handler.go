@@ -1,9 +1,12 @@
-// API docs: https://www.infobip.com/docs/api/channels/sms/outbound-sms/send-message/send-sms-messages
+// API docs: https://www.infobip.com/docs/api/platform/messages-api/message/send-messages-api-message
 package infobip
 
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -21,7 +24,15 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-const configTransliteration = "transliteration"
+const (
+	configTransliteration = "transliteration"
+	configApplicationID   = "application_id"
+	configEntityID        = "entity_id"
+
+	signatureHeader   = "X-Hub-Signature"
+	signaturePrefix   = "SHA256="
+	maxWebhookBodyLen = 1024 * 1024
+)
 
 func init() {
 	channels.RegisterHandler(newHandler)
@@ -34,7 +45,10 @@ type handler struct {
 func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
 	h := &handler{handlers.NewBaseHandler(rt, models.ChannelType("IB"), "Infobip")}
 
-	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindMsg, handlers.JSONPayload(h.receiveMessage))
+	// the Messages API delivers inbound messages and delivery reports through the same envelope, so both go to receive
+	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveEvents))
+
+	// delivery reports for messages sent before we pointed delivery webhooks at receive
 	r.AddReceive(h, http.MethodPost, "delivered", channels.ReceiveKindStatus, handlers.JSONPayload(h.receiveStatus))
 	return h
 }
@@ -50,15 +64,35 @@ var statusMapping = map[string]models.MsgStatus{
 type statusPayload struct {
 	Results []ibStatus `validate:"required" json:"results"`
 }
+
 type ibStatus struct {
 	MessageID string `validate:"required" json:"messageId"`
 	Status    struct {
 		GroupName string `validate:"required" json:"groupName"`
 	} `validate:"required" json:"status"`
+	Error json.RawMessage `json:"error"`
 }
 
-// receiveStatus is our receive function for status updates
+type ibError struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// logDeliveryError adds the error from a delivery report, if any, to the channel log
+func logDeliveryError(raw json.RawMessage, clog *models.ChannelLog) {
+	e := &ibError{}
+	if len(raw) == 0 || json.Unmarshal(raw, e) != nil || e.ID == 0 || e.Name == "" {
+		return
+	}
+	clog.Error(models.ErrorExternal(e.Name, e.Description))
+}
+
+// receiveStatus is our receive function for delivery reports sent to the legacy delivered URL
 func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r *http.Request, payload *statusPayload, in *channels.Received, clog *models.ChannelLog) error {
+	if err := validateSignature(channel, r); err != nil {
+		return channels.Unauthenticated(err)
+	}
 
 	for _, s := range payload.Results {
 		msgStatus, found := statusMapping[s.Status.GroupName]
@@ -66,173 +100,286 @@ func (h *handler) receiveStatus(ctx context.Context, channel *models.Channel, r 
 			return handlers.UnknownStatusError(statusMapping, s.Status.GroupName)
 		}
 
+		logDeliveryError(s.Error, clog)
 		in.Status(models.NewStatusUpdateByExternalID(channel, s.MessageID, msgStatus, clog))
 	}
 
 	return nil
 }
 
-type v3InboundPayload struct {
-	Results             []v3InboundMessage `validate:"required" json:"results"`
-	MessageCount        int                `json:"messageCount"`
-	PendingMessageCount int                `json:"pendingMessageCount"`
+// eventsPayload is the envelope of every Messages API webhook, and of legacy SMS/MMS inbound webhooks. Results are
+// decoded individually once we know what kind of event each one is.
+type eventsPayload struct {
+	Results []json.RawMessage `validate:"required" json:"results"`
 }
 
-type v3InboundMessage struct {
-	ApplicationID       string                `json:"applicationId,omitempty"`
-	MessageID           string                `json:"messageId"`
-	From                string                `json:"from" validate:"required"`
-	To                  string                `json:"to"`
-	Text                string                `json:"text"` // This will be present for SMS
-	CleanText           string                `json:"cleanText,omitempty"`
-	Keyword             string                `json:"keyword,omitempty"`
-	ReceivedAt          string                `json:"receivedAt"`
-	SmsCount            int                   `json:"smsCount"`
-	Price               v3InboundPrice        `json:"price"`
-	CallbackData        string                `json:"callbackData,omitempty"`
-	EntityID            string                `json:"entityId,omitempty"`
-	CampaignReferenceID string                `json:"campaignReferenceId,omitempty"`
-	Message             []v2MMSInboundSegment `json:"message"` // This will be present for MMS
+type moEvent struct {
+	Event      string      `json:"event"`
+	Channel    string      `json:"channel"`
+	Sender     string      `json:"sender"`
+	MessageID  string      `json:"messageId"`
+	ReceivedAt string      `json:"receivedAt"`
+	Content    []moContent `json:"content"`
 }
 
-type v2MMSInboundSegment struct {
+type moContent struct {
+	Type string `json:"type"`
+	Text string `json:"text,omitempty"`
+	URL  string `json:"url,omitempty"`
+}
+
+type deliveryEvent struct {
+	Event     string `json:"event"`
+	MessageID string `json:"messageId"`
+	Status    struct {
+		GroupName string `json:"groupName"`
+	} `json:"status"`
+	Error json.RawMessage `json:"error"`
+}
+
+// legacyInboundMessage is an inbound message in the SMS API (text) or MMS API (message segments) format
+type legacyInboundMessage struct {
+	MessageID  string                 `json:"messageId"`
+	From       string                 `json:"from"`
+	Text       string                 `json:"text"`
+	ReceivedAt string                 `json:"receivedAt"`
+	Message    []legacyInboundSegment `json:"message"`
+}
+
+type legacyInboundSegment struct {
 	ContentType string `json:"contentType"`
 	URL         string `json:"url,omitempty"`
 	Value       string `json:"value,omitempty"`
 }
 
-type v3InboundPrice struct {
-	PricePerMessage float64 `json:"pricePerMessage"`
-	Currency        string  `json:"currency"`
-}
-
-// receiveMessage is our receive function for incoming messages (both SMS and MMS)
-func (h *handler) receiveMessage(ctx context.Context, channel *models.Channel, r *http.Request, payload *v3InboundPayload, in *channels.Received, clog *models.ChannelLog) error {
-	if payload.MessageCount == 0 {
-		return channels.Ignore("ignoring request, no message")
+// receiveEvents is our receive function for inbound messages and delivery reports
+func (h *handler) receiveEvents(ctx context.Context, channel *models.Channel, r *http.Request, payload *eventsPayload, in *channels.Received, clog *models.ChannelLog) error {
+	if err := validateSignature(channel, r); err != nil {
+		return channels.Unauthenticated(err)
 	}
 
-	for _, infobipMessage := range payload.Results {
-		messageID := infobipMessage.MessageID
-		dateString := infobipMessage.ReceivedAt
-
-		// create our URN
-		urn, err := urns.ParsePhone(infobipMessage.From, channel.Country(), true, false)
-		if err != nil {
-			return err
+	for _, raw := range payload.Results {
+		var envelope struct {
+			Event string `json:"event"`
+		}
+		if err := json.Unmarshal(raw, &envelope); err != nil {
+			return fmt.Errorf("unable to parse result: %w", err)
 		}
 
-		// Check if this is an MMS message by looking at the Message field
-		isMMS := len(infobipMessage.Message) > 0
+		switch envelope.Event {
+		case "MO":
+			in.As(channels.ReceiveKindMsg)
 
-		var text string
-		var attachments []string
-
-		if isMMS {
-			// Handle MMS message
-			var textParts []string
-			for _, segment := range infobipMessage.Message {
-				if segment.ContentType == "text/plain" {
-					textParts = append(textParts, segment.Value)
-				} else if segment.URL != "" {
-					attachment := fmt.Sprintf("%s:%s", segment.ContentType, segment.URL)
-					attachments = append(attachments, attachment)
-				}
+			mo := &moEvent{}
+			if err := json.Unmarshal(raw, mo); err != nil {
+				return fmt.Errorf("unable to parse MO event: %w", err)
 			}
-			text = strings.Join(textParts, "\n")
-		} else {
-			// Handle SMS message
-			text = infobipMessage.Text
-		}
-
-		// Skip if no text and no attachments
-		if text == "" && len(attachments) == 0 {
-			continue
-		}
-
-		// Parse date if provided
-		date := dates.Now()
-		if dateString != "" {
-			// The format for ReceivedAt is "yyyy-MM-dd'T'HH:mm:ss.SSS+0000"
-			// It is not RFC3339 Compliant
-			// In Go 1.26 revisit changing this with json/v2 with custom datetime support
-
-			date, err = time.Parse("2006-01-02T15:04:05.000-0700", dateString)
-			if err != nil {
+			if err := receiveMO(channel, mo, in, clog); err != nil {
 				return err
 			}
-		}
 
-		// build our message
-		msg := models.NewIncomingMsg(channel, urn, text, messageID, clog).WithReceivedOn(date)
-		for _, attachment := range attachments {
-			msg = msg.WithAttachment(attachment)
+		case "DELIVERY":
+			if in.Kind() != channels.ReceiveKindMsg {
+				in.As(channels.ReceiveKindStatus)
+			}
+
+			dr := &deliveryEvent{}
+			if err := json.Unmarshal(raw, dr); err != nil {
+				return fmt.Errorf("unable to parse DELIVERY event: %w", err)
+			}
+
+			msgStatus, found := statusMapping[dr.Status.GroupName]
+			if !found {
+				in.Ignored(fmt.Sprintf("ignoring unknown status '%s'", dr.Status.GroupName))
+				continue
+			}
+			logDeliveryError(dr.Error, clog)
+			in.Status(models.NewStatusUpdateByExternalID(channel, dr.MessageID, msgStatus, clog))
+
+		case "":
+			in.As(channels.ReceiveKindMsg)
+
+			msg := &legacyInboundMessage{}
+			if err := json.Unmarshal(raw, msg); err != nil {
+				return fmt.Errorf("unable to parse inbound message: %w", err)
+			}
+			if err := receiveLegacy(channel, msg, in, clog); err != nil {
+				return err
+			}
+
+		default:
+			in.Ignored(fmt.Sprintf("ignoring %s event", envelope.Event))
 		}
-		in.Msg(msg)
 	}
 
 	return nil
 }
 
-type v3OutboundPayload struct {
-	Messages []v3OutboundMessage `json:"messages"`
+// receiveMO adds a message from a Messages API MO event, which is a list of text and media content items
+func receiveMO(channel *models.Channel, mo *moEvent, in *channels.Received, clog *models.ChannelLog) error {
+	urn, err := urns.ParsePhone(mo.Sender, channel.Country(), true, false)
+	if err != nil {
+		return err
+	}
+
+	var subject string
+	var texts, attachments []string
+	for _, c := range mo.Content {
+		switch c.Type {
+		case "SUBJECT":
+			subject = c.Text
+		case "TEXT":
+			if c.Text != "" {
+				texts = append(texts, c.Text)
+			}
+		case "IMAGE", "AUDIO", "VIDEO", "DOCUMENT", "FILE", "URL":
+			if c.URL != "" {
+				attachments = append(attachments, c.URL)
+			}
+			if c.Text != "" {
+				texts = append(texts, c.Text)
+			}
+		}
+	}
+
+	if subject != "" {
+		texts = append([]string{subject}, texts...)
+	}
+
+	return addMsg(channel, urn, strings.Join(texts, "\n"), attachments, mo.MessageID, mo.ReceivedAt, in, clog)
 }
 
-type v3OutboundMessage struct {
-	From         string                  `json:"from"`
-	Destinations []v3OutboundDestination `json:"destinations"`
-	Content      v3OutboundContent       `json:"content"`
-	Webhooks     *v3OutboundWebhooks     `json:"webhooks,omitempty"`
+// receiveLegacy adds a message from an SMS API or MMS API inbound message
+func receiveLegacy(channel *models.Channel, m *legacyInboundMessage, in *channels.Received, clog *models.ChannelLog) error {
+	urn, err := urns.ParsePhone(m.From, channel.Country(), true, false)
+	if err != nil {
+		return err
+	}
+
+	text := m.Text
+	var attachments []string
+
+	if len(m.Message) > 0 {
+		var texts []string
+		for _, segment := range m.Message {
+			if segment.ContentType == "text/plain" {
+				texts = append(texts, segment.Value)
+			} else if segment.URL != "" {
+				attachments = append(attachments, fmt.Sprintf("%s:%s", segment.ContentType, segment.URL))
+			}
+		}
+		text = strings.Join(texts, "\n")
+	}
+
+	return addMsg(channel, urn, text, attachments, m.MessageID, m.ReceivedAt, in, clog)
 }
 
-type v3OutboundDestination struct {
+func addMsg(channel *models.Channel, urn urns.URN, text string, attachments []string, externalID, receivedAt string, in *channels.Received, clog *models.ChannelLog) error {
+	if text == "" && len(attachments) == 0 {
+		return nil
+	}
+
+	date := dates.Now()
+	if receivedAt != "" {
+		// format is "yyyy-MM-dd'T'HH:mm:ss.SSS+0000" which isn't RFC3339
+		var err error
+		date, err = time.Parse("2006-01-02T15:04:05.000-0700", receivedAt)
+		if err != nil {
+			return err
+		}
+	}
+
+	msg := models.NewIncomingMsg(channel, urn, text, externalID, clog).WithReceivedOn(date)
+	for _, a := range attachments {
+		msg.WithAttachment(a)
+	}
+	in.Msg(msg)
+	return nil
+}
+
+// validateSignature checks the X-Hub-Signature header, which is a hex HMAC-SHA256 of the body using the channel
+// secret. Channels without a secret aren't checked.
+func validateSignature(c *models.Channel, r *http.Request) error {
+	secret := c.StringConfigForKey(models.ConfigSecret, "")
+	if secret == "" {
+		return nil
+	}
+
+	header := strings.TrimSpace(r.Header.Get(signatureHeader))
+	if header == "" {
+		return fmt.Errorf("missing request signature")
+	}
+	if !strings.HasPrefix(strings.ToUpper(header), signaturePrefix) {
+		return fmt.Errorf("invalid request signature format")
+	}
+
+	body, err := handlers.ReadBody(r, maxWebhookBodyLen)
+	if err != nil {
+		return fmt.Errorf("unable to read request body: %w", err)
+	}
+
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(body)
+	expected := hex.EncodeToString(mac.Sum(nil))
+	actual := strings.ToLower(header[len(signaturePrefix):])
+
+	if !hmac.Equal([]byte(expected), []byte(actual)) {
+		return fmt.Errorf("invalid request signature")
+	}
+	return nil
+}
+
+type mtPayload struct {
+	Messages []mtMessage `json:"messages"`
+}
+
+type mtMessage struct {
+	Channel      string          `json:"channel"`
+	Sender       string          `json:"sender"`
+	Destinations []mtDestination `json:"destinations"`
+	Content      mtContent       `json:"content"`
+	Options      *mtOptions      `json:"options,omitempty"`
+	Webhooks     *mtWebhooks     `json:"webhooks,omitempty"`
+}
+
+type mtDestination struct {
 	To        string `json:"to"`
 	MessageID string `json:"messageId,omitempty"`
 }
 
-type v3OutboundContent struct {
-	Text            string `json:"text,omitempty"`
-	Transliteration string `json:"transliteration,omitempty"`
+type mtContent struct {
+	Body mtBody `json:"body"`
 }
 
-type v3OutboundWebhooks struct {
-	Delivery v3OutboundDelivery `json:"delivery"`
+type mtBody struct {
+	Type  string        `json:"type"`
+	Text  string        `json:"text,omitempty"`
+	Items []mtMixedItem `json:"items,omitempty"`
 }
 
-type v3OutboundDelivery struct {
+type mtMixedItem struct {
+	Text string `json:"text,omitempty"`
+	URL  string `json:"url,omitempty"`
+}
+
+type mtOptions struct {
+	Platform        *mtPlatform `json:"platform,omitempty"`
+	Transliteration string      `json:"transliteration,omitempty"`
+}
+
+type mtPlatform struct {
+	ApplicationID string `json:"applicationId,omitempty"`
+	EntityID      string `json:"entityId,omitempty"`
+}
+
+type mtWebhooks struct {
+	Delivery    mtDelivery `json:"delivery"`
+	ContentType string     `json:"contentType"`
+}
+
+type mtDelivery struct {
 	URL                string `json:"url"`
 	IntermediateReport bool   `json:"intermediateReport"`
-	ContentType        string `json:"contentType"`
-}
-
-type v2MMSOutboundPayload struct {
-	Messages []v2MMSOutboundMessage `json:"messages"`
-}
-
-type v2MMSOutboundMessage struct {
-	Sender       string                     `json:"sender"`
-	Destinations []v2MMSOutboundDestination `json:"destinations"`
-	Content      v2MMSOutboundContent       `json:"content"`
-	Webhooks     *v3OutboundWebhooks        `json:"webhooks,omitempty"` // Reusing SMS webhooks struct
-}
-
-type v2MMSOutboundDestination struct {
-	To        string `json:"to"`
-	MessageID string `json:"messageId,omitempty"`
-}
-
-type v2MMSOutboundContent struct {
-	Title           string                `json:"title"`
-	MessageSegments []v2MMSMessageSegment `json:"messageSegments"`
-}
-
-type v2MMSMessageSegment struct {
-	Type        string `json:"type"` // "TEXT" or "LINK" for media
-	ContentID   string `json:"contentId,omitempty"`
-	Text        string `json:"text,omitempty"`
-	URL         string `json:"url,omitempty"`         // Deprecated: use ContentURL for media
-	ContentURL  string `json:"contentUrl,omitempty"`  // Required for LINK type
-	ContentType string `json:"contentType,omitempty"` // Required for LINK type (e.g., image/jpeg)
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
@@ -246,121 +393,51 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 
 	baseURL := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "https://api.infobip.com")
 	callbackDomain := msg.Channel().CallbackDomain(h.Runtime().Config.Domain)
-	statusURL := fmt.Sprintf("https://%s%s%s/delivered", callbackDomain, "/c/ib/", msg.Channel().UUID())
+	statusURL := fmt.Sprintf("https://%s/c/ib/%s/receive", callbackDomain, msg.Channel().UUID())
 
-	var requestBody *bytes.Buffer
-	var req *http.Request
-	var err error
-	var cost int
+	mt := mtMessage{
+		Channel: "SMS",
+		Sender:  msg.Channel().Address(),
+		Destinations: []mtDestination{
+			{
+				To:        strings.TrimLeft(msg.URN().Path(), "+"),
+				MessageID: string(msg.UUID()),
+			},
+		},
+		Content:  mtContent{Body: mtBody{Type: "TEXT", Text: msg.Text()}},
+		Options:  messageOptions(msg.Channel()),
+		Webhooks: &mtWebhooks{Delivery: mtDelivery{URL: statusURL, IntermediateReport: true}, ContentType: "application/json"},
+	}
+	cost := gsm7.Segments(msg.Text())
 
 	if len(msg.Attachments()) > 0 {
-		// Handle MMS message
-		mmsPayload := v2MMSOutboundPayload{
-			Messages: []v2MMSOutboundMessage{
-				{
-					Sender: msg.Channel().Address(),
-					Destinations: []v2MMSOutboundDestination{
-						{
-							To:        strings.TrimLeft(msg.URN().Path(), "+"),
-							MessageID: string(msg.UUID()),
-						},
-					},
-					Content: v2MMSOutboundContent{
-						Title:           "",
-						MessageSegments: []v2MMSMessageSegment{},
-					},
-					Webhooks: &v3OutboundWebhooks{
-						Delivery: v3OutboundDelivery{
-							URL:                statusURL,
-							IntermediateReport: true,
-							ContentType:        "application/json",
-						},
-					},
-				},
-			},
-		}
+		mt.Channel = "MMS"
+		cost = 1
 
-		// Add text segment only if there is text content
+		items := make([]mtMixedItem, 0, len(msg.Attachments())+1)
 		if msg.Text() != "" {
-			mmsPayload.Messages[0].Content.MessageSegments = append(mmsPayload.Messages[0].Content.MessageSegments, v2MMSMessageSegment{
-				Type: "TEXT",
-				Text: msg.Text(),
-			})
+			items = append(items, mtMixedItem{Text: msg.Text()})
 		}
-
-		for _, attachmentStr := range msg.Attachments() {
-			mimeType, url := handlers.SplitAttachment(attachmentStr)
-			if mimeType == "" || url == "" {
+		for _, a := range msg.Attachments() {
+			_, url := handlers.SplitAttachment(a)
+			if url == "" {
 				clog.Error(models.ErrorAttachmentNotDecodable())
 				continue
 			}
-
-			mmsPayload.Messages[0].Content.MessageSegments = append(mmsPayload.Messages[0].Content.MessageSegments, v2MMSMessageSegment{
-				Type:        "LINK", // Media content must use LINK type per Infobip API
-				ContentURL:  url,
-				ContentType: mimeType,
-			})
+			items = append(items, mtMixedItem{URL: url})
 		}
-
-		requestBody = &bytes.Buffer{}
-		err = json.NewEncoder(requestBody).Encode(mmsPayload)
-		if err != nil {
-			return err
-		}
-
-		cost = 1
-
-		mmsSendURL := fmt.Sprintf("%s/mms/2/messages", baseURL)
-		req, err = http.NewRequest(http.MethodPost, mmsSendURL, requestBody)
-		if err != nil {
-			return err
-		}
-
-	} else {
-		// Handle SMS message
-
-		transliteration := msg.Channel().StringConfigForKey(configTransliteration, "")
-		text := handlers.GetTextAndAttachments(msg)
-		cost = gsm7.Segments(text)
-
-		smsPayload := v3OutboundPayload{
-			Messages: []v3OutboundMessage{
-				{
-					From: msg.Channel().Address(),
-					Destinations: []v3OutboundDestination{
-						{
-							To:        strings.TrimLeft(msg.URN().Path(), "+"),
-							MessageID: string(msg.UUID()),
-						},
-					},
-					Content: v3OutboundContent{
-						Text:            text,
-						Transliteration: transliteration,
-					},
-					Webhooks: &v3OutboundWebhooks{
-						Delivery: v3OutboundDelivery{
-							URL:                statusURL,
-							IntermediateReport: true,
-							ContentType:        "application/json",
-						},
-					},
-				},
-			},
-		}
-
-		requestBody = &bytes.Buffer{}
-		err = json.NewEncoder(requestBody).Encode(smsPayload)
-		if err != nil {
-			return err
-		}
-
-		smsSendURL := fmt.Sprintf("%s/sms/3/messages", baseURL)
-		req, err = http.NewRequest(http.MethodPost, smsSendURL, requestBody)
-		if err != nil {
-			return err
-		}
+		mt.Content = mtContent{Body: mtBody{Type: "MIXED", Items: items}}
 	}
 
+	requestBody := &bytes.Buffer{}
+	if err := json.NewEncoder(requestBody).Encode(mtPayload{Messages: []mtMessage{mt}}); err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, baseURL+"/messages-api/1/messages", requestBody)
+	if err != nil {
+		return err
+	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
@@ -378,6 +455,11 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 
 	groupID, err := jsonparser.GetInt(respBody, "messages", "[0]", "status", "groupId")
 	if err != nil || (groupID != 1 && groupID != 3) {
+		name, _ := jsonparser.GetString(respBody, "messages", "[0]", "status", "name")
+		if name != "" {
+			description, _ := jsonparser.GetString(respBody, "messages", "[0]", "status", "description")
+			clog.Error(models.ErrorExternal(name, description))
+		}
 		return channels.ErrResponseContent
 	}
 
@@ -389,6 +471,23 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	}
 
 	return nil
+}
+
+// messageOptions builds the message options from the channel config, or nil if there are none
+func messageOptions(ch *models.Channel) *mtOptions {
+	appID := ch.StringConfigForKey(configApplicationID, "")
+	entityID := ch.StringConfigForKey(configEntityID, "")
+	transliteration := ch.StringConfigForKey(configTransliteration, "")
+
+	if appID == "" && entityID == "" && transliteration == "" {
+		return nil
+	}
+
+	opts := &mtOptions{Transliteration: transliteration}
+	if appID != "" || entityID != "" {
+		opts.Platform = &mtPlatform{ApplicationID: appID, EntityID: entityID}
+	}
+	return opts
 }
 
 func (h *handler) RedactValues(ch *models.Channel) []string {
