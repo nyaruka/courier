@@ -1,3 +1,6 @@
+## v26.3.83 (2026-11-19)
+ * Send and receive Infobip messages via the Messages API
+
 ## v26.3.82 (2026-11-12)
  * Queue a contact_created task for contacts created outside of incoming messages and events
  * Send contact_created instead of new_contact on msg_received and event_received tasks
