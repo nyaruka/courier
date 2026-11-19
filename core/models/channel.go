@@ -258,7 +258,8 @@ func (c *Channel) CallbackDomain(fallbackDomain string) string {
 	return c.StringConfigForKey(ConfigCallbackDomain, fallbackDomain)
 }
 
-// channels of suspended workspaces are selected as absent, so their traffic is refused before anything is stored
+// channels of suspended workspaces are selected as absent, so their traffic is refused before anything is stored -
+// though a channel already cached keeps working until its entry expires
 const sqlSelectChannelFromUUID = `
 SELECT
 	c.uuid,

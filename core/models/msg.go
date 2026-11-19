@@ -611,6 +611,8 @@ func (m *MsgOut) UserID() UserID               { return m.UserID_ }
 func (m *MsgOut) Session() *Session            { return m.Session_ }
 func (m *MsgOut) HighPriority() bool           { return m.HighPriority_ }
 
+const maxDropsPerPop = 100
+
 // PopNextOutgoingMsg pops the next message that needs to be sent, callers should call OnSendComplete with the
 // returned message when they have dealt with the message (regardless of whether it was sent or not)
 func PopNextOutgoingMsg(ctx context.Context, rt *runtime.Runtime) (*MsgOut, error) {
@@ -624,7 +626,9 @@ func PopNextOutgoingMsg(ctx context.Context, rt *runtime.Runtime) (*MsgOut, erro
 		}
 	}
 
-	for {
+	// bounded so a large backlog of drops can't outlast the caller's context, and gets handed back to the caller's
+	// loop instead, which also checks for shutdown
+	for range maxDropsPerPop {
 		owner, msgJSON, err := MsgQueue.Pop(ctx, vc)
 		if err != nil {
 			return nil, err
@@ -667,6 +671,8 @@ func PopNextOutgoingMsg(ctx context.Context, rt *runtime.Runtime) (*MsgOut, erro
 
 		return msg, nil
 	}
+
+	return nil, nil
 }
 
 // WasMsgSent returns whether we think the passed in message was already sent - used as a failsafe against double
