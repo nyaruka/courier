@@ -258,6 +258,7 @@ func (c *Channel) CallbackDomain(fallbackDomain string) string {
 	return c.StringConfigForKey(ConfigCallbackDomain, fallbackDomain)
 }
 
+// channels of suspended workspaces are selected as absent, so their traffic is refused before anything is stored
 const sqlSelectChannelFromUUID = `
 SELECT
 	c.uuid,
@@ -275,7 +276,7 @@ SELECT
 	o.is_anon AS org_is_anon
   FROM channels_channel c
   JOIN orgs_org o ON c.org_id = o.id
- WHERE c.uuid = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
+ WHERE c.uuid = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL AND o.status != 'S'`
 
 // a channel that isn't there is loaded as a nil rather than as an error, so that the cache can hold it -
 // cache.Local doesn't remember a fetch that failed, and a provider still calling a deleted channel's URL
@@ -283,9 +284,9 @@ SELECT
 // ErrChannelNotFound. A database error is still an error, so an outage isn't cached as absence.
 //
 // Only lookups by UUID do this. A UUID names one channel for good - it's minted with the channel and no
-// other channel ever takes it - so once it's absent the only way back is the channel returning, which is
-// the same staleness as an edit to a channel already cached. An address is reused, and absence at one is
-// routine rather than terminal: see loadChannelByAddress.
+// other channel ever takes it - so once it's absent the only way back is the channel or its workspace returning,
+// which is the same staleness as an edit to a channel already cached. An address is reused, and absence at one
+// is routine rather than terminal: see loadChannelByAddress.
 func loadChannelByUUID(ctx context.Context, rt *runtime.Runtime, uuid ChannelUUID) (*Channel, error) {
 	channel := &Channel{}
 	err := rt.DB.GetContext(ctx, channel, sqlSelectChannelFromUUID, uuid)
@@ -316,7 +317,7 @@ SELECT
 	o.is_anon AS org_is_anon
   FROM channels_channel c
   JOIN orgs_org o ON c.org_id = o.id
- WHERE c.address = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
+ WHERE c.address = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL AND o.status != 'S'`
 
 // unlike the lookup by UUID above, this one does NOT cache absence. Addresses are looked up from the body of
 // a shared webhook - Meta posts every page's events to one URL - so a request naming an address we have no

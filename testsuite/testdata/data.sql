@@ -6,8 +6,8 @@ INSERT INTO users_user("id", "uuid", "email", "first_name", "last_name", "avatar
               
 /* Org with id 1 */
 DELETE FROM orgs_org;
-INSERT INTO orgs_org("id", "name", "language", "is_anon", "config", "limits")
-              VALUES(1, 'Test Org', 'eng', FALSE, '{ "CHATBASE_API_KEY": "cak" }', '{}');
+INSERT INTO orgs_org("id", "name", "language", "is_anon", "config", "limits", "status")
+              VALUES(1, 'Test Org', 'eng', FALSE, '{ "CHATBASE_API_KEY": "cak" }', '{}', 'A');
 
 /* Status groups with ids 1, 2, 3, 4 - counts are maintained by triggers in the real database so tests insert their own */
 DELETE FROM contacts_contactgroup;

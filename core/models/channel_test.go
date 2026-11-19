@@ -1,11 +1,13 @@
 package models_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/nyaruka/courier/v26/core/models"
 	"github.com/nyaruka/courier/v26/test"
 	"github.com/nyaruka/courier/v26/testsuite"
+	"github.com/nyaruka/gocommon/queues"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -69,6 +71,59 @@ func TestGetChannelByAddressDoesntCacheAbsence(t *testing.T) {
 
 	got, err = models.GetChannelByAddress(ctx, "NX", models.ChannelAddress("2021"))
 	assert.NoError(t, err, "absence should not have been cached")
+	assert.Equal(t, ch.UUID(), got.UUID())
+}
+
+func TestChannelsOfSuspendedOrgsNotFound(t *testing.T) {
+	ctx, rt := testsuite.Runtime(t)
+	testsuite.ResetDB(t, rt)
+	testsuite.ResetValkey(t, rt)
+
+	defer testsuite.ResetDB(t, rt)
+
+	vc := rt.VK.Get()
+	defer vc.Close()
+
+	rt.DB.MustExec(`INSERT INTO orgs_org(id, name, language, is_anon, config, limits, status)
+		VALUES(2, 'Suspended', 'eng', FALSE, '{}', '{}', 'S')`)
+
+	ch := test.NewMockChannel("a3f1c6e2-5b7d-4c8e-9f0a-1b2c3d4e5f60", "NX", "2022", "US", []string{urns.Phone.Prefix}, nil)
+	ch.OrgID_ = 2
+	testsuite.InsertChannel(t, rt, ch)
+
+	_, err := models.GetChannel(ctx, "NX", ch.UUID())
+	assert.ErrorIs(t, err, models.ErrChannelNotFound)
+
+	_, err = models.GetChannelByAddress(ctx, "NX", models.ChannelAddress("2022"))
+	assert.ErrorIs(t, err, models.ErrChannelNotFound)
+
+	// a message already queued for it is dropped when popped, and popping carries on to the next one
+	pushMsg := func(channelUUID models.ChannelUUID, msgUUID string) {
+		msgJSON := fmt.Sprintf(`[{
+			"org_id": 1, "id": 10000, "uuid": %q, "text": "hi", "urn": "tel:+12067799192", "origin": "chat",
+			"contact": {"id": 100, "uuid": "a984069d-0008-4d8c-a772-b14a8a6acccc"},
+			"created_on": "2025-10-14T20:16:03.821434Z", "channel_uuid": %q
+		}]`, msgUUID, channelUUID)
+		require.NoError(t, models.MsgQueue.Push(ctx, vc, queues.OwnerID(channelUUID), 10, true, []byte(msgJSON)))
+	}
+	pushMsg(ch.UUID(), "019a9d4e-1c2b-7a3d-8e4f-5a6b7c8d9e01")
+	pushMsg("dbc126ed-66bc-4e28-b67b-81dc3327c95d", "019a9d4e-1c2b-7a3d-8e4f-5a6b7c8d9e02")
+
+	msg, err := models.PopNextOutgoingMsg(ctx, rt)
+	require.NoError(t, err)
+	require.NotNil(t, msg)
+	assert.Equal(t, models.MsgUUID("019a9d4e-1c2b-7a3d-8e4f-5a6b7c8d9e02"), msg.UUID())
+
+	msg, err = models.PopNextOutgoingMsg(ctx, rt)
+	assert.NoError(t, err)
+	assert.Nil(t, msg)
+
+	// unsuspending brings it back, for a lookup by UUID once the cached absence goes
+	rt.DB.MustExec(`UPDATE orgs_org SET status = 'A' WHERE id = 2`)
+	models.FlushChannelCache()
+
+	got, err := models.GetChannel(ctx, "NX", ch.UUID())
+	assert.NoError(t, err)
 	assert.Equal(t, ch.UUID(), got.UUID())
 }
 

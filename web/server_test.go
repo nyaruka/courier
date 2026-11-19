@@ -96,6 +96,33 @@ func TestIncoming(t *testing.T) {
 	assert.Equal(t, 2, stored)
 }
 
+func TestIncomingForSuspendedOrg(t *testing.T) {
+	rt := serverRuntime(t)
+	defer testsuite.ResetDB(t, rt)
+
+	s := web.NewServer(rt)
+	require.NoError(t, s.Start())
+	defer s.Stop()
+
+	testsuite.InsertChannel(t, rt, test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{}))
+	rt.DB.MustExec(`UPDATE orgs_org SET status = 'S' WHERE id = 1`)
+
+	countMsgs := func() (n int) {
+		require.NoError(t, rt.DB.Get(&n, `SELECT count(*) FROM msgs_msg`))
+		return n
+	}
+	before := countMsgs()
+
+	resp, err := http.Get("http://localhost:8180/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive?from=2065551212&text=hello")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	assert.Equal(t, 400, resp.StatusCode)
+	assert.Contains(t, string(body), "channel not found")
+
+	assert.Equal(t, before, countMsgs(), "nothing should have been written")
+}
+
 func TestIncomingClientGone(t *testing.T) {
 	rt := serverRuntime(t)
 
