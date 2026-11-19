@@ -1,0 +1,221 @@
+[
+    {
+        "label": "Valid signature",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "MO",
+                    "channel": "SMS",
+                    "sender": "385916242493",
+                    "destination": "2020",
+                    "messageId": "ABC1",
+                    "receivedAt": "2024-05-06T09:28:39.220+0000",
+                    "content": [
+                        {
+                            "type": "TEXT",
+                            "text": "Hello there"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a344c-9328-7000-b8d0-a366360f48e4",
+                        "text": "Hello there",
+                        "urn": "tel:+385916242493",
+                        "external_id": "ABC1",
+                        "received_on": "2024-05-06T09:28:39.22Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a344c-9328-7000-b8d0-a366360f48e4",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+385916242493",
+                "text": "Hello there",
+                "external_id": "ABC1",
+                "created_on": "2025-10-30T08:47:04Z",
+                "received_on": "2024-05-06T09:28:39.22Z",
+                "log_uuids": [
+                    "019a344c-8388-7000-afb2-8c1fa3dec5b4"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Valid signature on delivered URL",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered",
+        "data": {
+            "results": [
+                {
+                    "messageId": "12345",
+                    "status": {
+                        "groupName": "DELIVERED"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "D",
+                "log_uuid": "019a9cad-1848-7000-bee0-59c83ab4c15b"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Missing signature",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "MO",
+                    "channel": "SMS",
+                    "sender": "385916242493",
+                    "destination": "2020",
+                    "messageId": "ABC1",
+                    "receivedAt": "2024-05-06T09:28:39.220+0000",
+                    "content": [
+                        {
+                            "type": "TEXT",
+                            "text": "Hello there"
+                        }
+                    ]
+                }
+            ]
+        },
+        "unsigned": true,
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "missing request signature"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Invalid signature",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "headers": {
+            "X-Hub-Signature": "SHA256=0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "data": {
+            "results": [
+                {
+                    "event": "MO",
+                    "channel": "SMS",
+                    "sender": "385916242493",
+                    "destination": "2020",
+                    "messageId": "ABC1",
+                    "receivedAt": "2024-05-06T09:28:39.220+0000",
+                    "content": [
+                        {
+                            "type": "TEXT",
+                            "text": "Hello there"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid request signature"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Signature without prefix",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "headers": {
+            "X-Hub-Signature": "abcdef"
+        },
+        "data": {
+            "results": [
+                {
+                    "event": "MO",
+                    "channel": "SMS",
+                    "sender": "385916242493",
+                    "destination": "2020",
+                    "messageId": "ABC1",
+                    "receivedAt": "2024-05-06T09:28:39.220+0000",
+                    "content": [
+                        {
+                            "type": "TEXT",
+                            "text": "Hello there"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 401,
+            "body": {
+                "message": "Unauthorized",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "invalid request signature format"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    }
+]

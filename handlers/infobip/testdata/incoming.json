@@ -158,7 +158,7 @@
                 "data": [
                     {
                         "type": "error",
-                        "error": "request JSON doesn't match required schema: Key: 'v3InboundPayload.Results' Error:Field validation for 'Results' failed on the 'required' tag"
+                        "error": "request JSON doesn't match required schema: Key: 'eventsPayload.Results' Error:Field validation for 'Results' failed on the 'required' tag"
                     }
                 ]
             }
@@ -553,6 +553,709 @@
         "log": {
             "type": "msg_status",
             "errors": []
+        }
+    },
+    {
+        "label": "Messages API SMS",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "MO",
+                    "channel": "SMS",
+                    "sender": "385916242493",
+                    "destination": "2020",
+                    "messageId": "ABC1",
+                    "receivedAt": "2024-05-06T09:28:39.220+0000",
+                    "content": [
+                        {
+                            "type": "TEXT",
+                            "text": "Hello there"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019abf76-7d88-7000-902e-40b6030acc44",
+                        "text": "Hello there",
+                        "urn": "tel:+385916242493",
+                        "external_id": "ABC1",
+                        "received_on": "2024-05-06T09:28:39.22Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019abf76-7d88-7000-902e-40b6030acc44",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+385916242493",
+                "text": "Hello there",
+                "external_id": "ABC1",
+                "created_on": "2025-11-26T09:20:04Z",
+                "received_on": "2024-05-06T09:28:39.22Z",
+                "log_uuids": [
+                    "019abf76-6de8-7000-bc6f-d6fc378671a7"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Messages API MMS",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "MO",
+                    "channel": "MMS",
+                    "sender": "385916242493",
+                    "destination": "2020",
+                    "messageId": "ABC2",
+                    "receivedAt": "2024-05-06T09:28:39.220+0000",
+                    "content": [
+                        {
+                            "type": "TEXT",
+                            "text": "Look at this"
+                        },
+                        {
+                            "type": "IMAGE",
+                            "url": "https://example.com/image.jpg"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a01e2-62c8-7000-ad22-a955c313204e",
+                        "text": "Look at this",
+                        "urn": "tel:+385916242493",
+                        "attachments": [
+                            "https://example.com/image.jpg"
+                        ],
+                        "external_id": "ABC2",
+                        "received_on": "2024-05-06T09:28:39.22Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a01e2-62c8-7000-ad22-a955c313204e",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+385916242493",
+                "text": "Look at this",
+                "attachments": [
+                    "https://example.com/image.jpg"
+                ],
+                "external_id": "ABC2",
+                "created_on": "2025-10-20T13:50:04Z",
+                "received_on": "2024-05-06T09:28:39.22Z",
+                "log_uuids": [
+                    "019a01e2-5328-7000-8041-6a9746558a1c"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Messages API media with caption",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "MO",
+                    "channel": "MMS",
+                    "sender": "385916242493",
+                    "destination": "2020",
+                    "messageId": "ABC3",
+                    "receivedAt": "2024-05-06T09:28:39.220+0000",
+                    "content": [
+                        {
+                            "type": "VIDEO",
+                            "url": "https://example.com/video.mp4",
+                            "text": "My video"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019afa9a-90e8-7000-9951-62c40a696506",
+                        "text": "My video",
+                        "urn": "tel:+385916242493",
+                        "attachments": [
+                            "https://example.com/video.mp4"
+                        ],
+                        "external_id": "ABC3",
+                        "received_on": "2024-05-06T09:28:39.22Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019afa9a-90e8-7000-9951-62c40a696506",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+385916242493",
+                "text": "My video",
+                "attachments": [
+                    "https://example.com/video.mp4"
+                ],
+                "external_id": "ABC3",
+                "created_on": "2025-12-07T20:57:04Z",
+                "received_on": "2024-05-06T09:28:39.22Z",
+                "log_uuids": [
+                    "019afa9a-8148-7000-9dd7-e3920a86388d"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Messages API MO without content",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "MO",
+                    "channel": "SMS",
+                    "sender": "385916242493",
+                    "destination": "2020",
+                    "messageId": "ABC4",
+                    "receivedAt": "2024-05-06T09:28:39.220+0000",
+                    "content": []
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Ignored",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring request, nothing to handle"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Messages API MO invalid URN",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "MO",
+                    "channel": "SMS",
+                    "sender": "MTN",
+                    "destination": "2020",
+                    "messageId": "ABC5",
+                    "receivedAt": "2024-05-06T09:28:39.220+0000",
+                    "content": [
+                        {
+                            "type": "TEXT",
+                            "text": "Hi"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 400,
+            "body": {
+                "message": "Error",
+                "data": [
+                    {
+                        "type": "error",
+                        "error": "not a possible number"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Messages API delivered",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "DELIVERY",
+                    "channel": "SMS",
+                    "sender": "2020",
+                    "destination": "385916242493",
+                    "messageId": "12345",
+                    "sentAt": "2024-05-06T09:28:39.220+0000",
+                    "doneAt": "2024-05-06T09:28:41.220+0000",
+                    "status": {
+                        "groupId": 3,
+                        "groupName": "DELIVERED",
+                        "id": 5,
+                        "name": "DELIVERED_TO_HANDSET",
+                        "description": "Message delivered to handset"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "D",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "D",
+                "log_uuid": "019b0e71-d9c8-7000-a936-9506b529ddcd"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Messages API rejected",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "DELIVERY",
+                    "channel": "SMS",
+                    "sender": "2020",
+                    "destination": "385916242493",
+                    "messageId": "12345",
+                    "sentAt": "2024-05-06T09:28:39.220+0000",
+                    "doneAt": "2024-05-06T09:28:41.220+0000",
+                    "status": {
+                        "groupId": 3,
+                        "groupName": "REJECTED",
+                        "id": 5,
+                        "name": "DELIVERED_TO_HANDSET",
+                        "description": "Message delivered to handset"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "F",
+                "log_uuid": "019a182a-f9c8-7000-a685-a0cae147a46a"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Messages API unknown status",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "DELIVERY",
+                    "channel": "SMS",
+                    "sender": "2020",
+                    "destination": "385916242493",
+                    "messageId": "12345",
+                    "sentAt": "2024-05-06T09:28:39.220+0000",
+                    "doneAt": "2024-05-06T09:28:41.220+0000",
+                    "status": {
+                        "groupId": 3,
+                        "groupName": "UNKNOWN",
+                        "id": 5,
+                        "name": "DELIVERED_TO_HANDSET",
+                        "description": "Message delivered to handset"
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": []
+            }
+        },
+        "log": {
+            "type": "msg_status",
+            "errors": []
+        }
+    },
+    {
+        "label": "Messages API mixed batch",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "DELIVERY",
+                    "channel": "SMS",
+                    "sender": "2020",
+                    "destination": "385916242493",
+                    "messageId": "12345",
+                    "sentAt": "2024-05-06T09:28:39.220+0000",
+                    "doneAt": "2024-05-06T09:28:41.220+0000",
+                    "status": {
+                        "groupId": 3,
+                        "groupName": "DELIVERED",
+                        "id": 5,
+                        "name": "DELIVERED_TO_HANDSET",
+                        "description": "Message delivered to handset"
+                    }
+                },
+                {
+                    "event": "MO",
+                    "channel": "SMS",
+                    "sender": "385916242493",
+                    "destination": "2020",
+                    "messageId": "ABC6",
+                    "receivedAt": "2024-05-06T09:28:39.220+0000",
+                    "content": [
+                        {
+                            "type": "TEXT",
+                            "text": "Hello again"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019ae145-e2c8-7000-9146-a17675640a4b",
+                        "text": "Hello again",
+                        "urn": "tel:+385916242493",
+                        "external_id": "ABC6",
+                        "received_on": "2024-05-06T09:28:39.22Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019ae145-e2c8-7000-9146-a17675640a4b",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+385916242493",
+                "text": "Hello again",
+                "external_id": "ABC6",
+                "created_on": "2025-12-02T22:54:04Z",
+                "received_on": "2024-05-06T09:28:39.22Z",
+                "log_uuids": [
+                    "019ae145-d328-7000-8670-057cc776fa99"
+                ]
+            }
+        ],
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "D",
+                "log_uuid": "019ae145-d328-7000-8670-057cc776fa99"
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Messages API typing event",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "TYPING_STARTED",
+                    "channel": "WHATSAPP",
+                    "sender": "385916242493",
+                    "destination": "2020"
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Events Handled",
+                "data": [
+                    {
+                        "type": "info",
+                        "info": "ignoring TYPING_STARTED event"
+                    }
+                ]
+            }
+        },
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Messages API undeliverable with error",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "DELIVERY",
+                    "channel": "SMS",
+                    "sender": "2020",
+                    "destination": "385916242493",
+                    "messageId": "12345",
+                    "sentAt": "2024-05-06T09:28:39.220+0000",
+                    "doneAt": "2024-05-06T09:28:41.220+0000",
+                    "status": {
+                        "groupId": 2,
+                        "groupName": "UNDELIVERABLE",
+                        "id": 9,
+                        "name": "UNDELIVERABLE_NOT_DELIVERED",
+                        "description": "Message sent not delivered"
+                    },
+                    "error": {
+                        "groupId": 1,
+                        "groupName": "HANDSET_ERRORS",
+                        "id": 27,
+                        "name": "EC_ABSENT_SUBSCRIBER",
+                        "description": "Absent Subscriber",
+                        "permanent": false
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "F",
+                "log_uuid": "019a3a12-2cc8-7000-b29d-957e7ed37ac2"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": [
+                {
+                    "code": "external",
+                    "ext_code": "EC_ABSENT_SUBSCRIBER",
+                    "message": "Absent Subscriber"
+                }
+            ]
+        }
+    },
+    {
+        "label": "Messages API MMS with subject",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+        "data": {
+            "results": [
+                {
+                    "event": "MO",
+                    "channel": "MMS",
+                    "sender": "385916242493",
+                    "destination": "2020",
+                    "messageId": "ABC7",
+                    "receivedAt": "2024-05-06T09:28:39.220+0000",
+                    "content": [
+                        {
+                            "type": "SUBJECT",
+                            "text": "Holiday",
+                            "cleanText": "Holiday"
+                        },
+                        {
+                            "type": "TEXT",
+                            "text": "Look at this"
+                        },
+                        {
+                            "type": "IMAGE",
+                            "url": "https://example.com/image.jpg"
+                        }
+                    ]
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Message Accepted",
+                "data": [
+                    {
+                        "type": "msg",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "msg_uuid": "019a65d1-e1c8-7000-8401-3786dbc23de5",
+                        "text": "Holiday\nLook at this",
+                        "urn": "tel:+385916242493",
+                        "attachments": [
+                            "https://example.com/image.jpg"
+                        ],
+                        "external_id": "ABC7",
+                        "received_on": "2024-05-06T09:28:39.22Z"
+                    }
+                ]
+            }
+        },
+        "msgs": [
+            {
+                "uuid": "019a65d1-e1c8-7000-8401-3786dbc23de5",
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "urn": "tel:+385916242493",
+                "text": "Holiday\nLook at this",
+                "attachments": [
+                    "https://example.com/image.jpg"
+                ],
+                "external_id": "ABC7",
+                "created_on": "2025-11-08T23:34:04Z",
+                "received_on": "2024-05-06T09:28:39.22Z",
+                "log_uuids": [
+                    "019a65d1-d228-7000-bbf1-8cc0abefacc5"
+                ]
+            }
+        ],
+        "log": {
+            "type": "receive",
+            "errors": []
+        }
+    },
+    {
+        "label": "Status undeliverable with error",
+        "url": "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered",
+        "data": {
+            "results": [
+                {
+                    "messageId": "12345",
+                    "status": {
+                        "groupId": 2,
+                        "groupName": "UNDELIVERABLE",
+                        "id": 9,
+                        "name": "UNDELIVERABLE_NOT_DELIVERED"
+                    },
+                    "error": {
+                        "groupId": 1,
+                        "groupName": "HANDSET_ERRORS",
+                        "id": 27,
+                        "name": "EC_ABSENT_SUBSCRIBER",
+                        "description": "Absent Subscriber",
+                        "permanent": false
+                    }
+                }
+            ]
+        },
+        "response": {
+            "status": 200,
+            "body": {
+                "message": "Status Update Accepted",
+                "data": [
+                    {
+                        "type": "status",
+                        "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                        "status": "F",
+                        "external_id": "12345"
+                    }
+                ]
+            }
+        },
+        "statuses": [
+            {
+                "channel_uuid": "8eb23e93-5ecb-45ba-b726-3b064e0c56ab",
+                "channel_id": 101,
+                "external_identifier": "12345",
+                "status": "F",
+                "log_uuid": "019a56b0-3988-7000-9c1d-2345c73a1143"
+            }
+        ],
+        "log": {
+            "type": "msg_status",
+            "errors": [
+                {
+                    "code": "external",
+                    "ext_code": "EC_ABSENT_SUBSCRIBER",
+                    "message": "Absent Subscriber"
+                }
+            ]
         }
     }
 ]
