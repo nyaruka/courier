@@ -1,4 +1,4 @@
-// API docs: https://www.infobip.com/docs/api/platform/messages-api/message/send-messages-api-message
+// API docs: https://www.infobip.com/docs/api/platform/messages-api/sending-message/send-messages-api-message
 package infobip
 
 import (
