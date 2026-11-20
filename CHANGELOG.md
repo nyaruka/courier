@@ -1,3 +1,6 @@
+## v26.3.84 (2026-11-20)
+ * Discard database connections that turn read-only after a failover
+
 ## v26.3.83 (2026-11-19)
  * Send and receive Infobip messages via the Messages API
 
