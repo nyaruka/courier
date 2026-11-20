@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -610,6 +611,8 @@ func (m *MsgOut) UserID() UserID               { return m.UserID_ }
 func (m *MsgOut) Session() *Session            { return m.Session_ }
 func (m *MsgOut) HighPriority() bool           { return m.HighPriority_ }
 
+const maxDropsPerPop = 100
+
 // PopNextOutgoingMsg pops the next message that needs to be sent, callers should call OnSendComplete with the
 // returned message when they have dealt with the message (regardless of whether it was sent or not)
 func PopNextOutgoingMsg(ctx context.Context, rt *runtime.Runtime) (*MsgOut, error) {
@@ -623,43 +626,53 @@ func PopNextOutgoingMsg(ctx context.Context, rt *runtime.Runtime) (*MsgOut, erro
 		}
 	}
 
-	// pop the next message off our queue
-	owner, msgJSON, err := MsgQueue.Pop(ctx, vc)
-	if err != nil {
-		return nil, err
+	// bounded so a large backlog of drops can't outlast the caller's context, and gets handed back to the caller's
+	// loop instead, which also checks for shutdown
+	for range maxDropsPerPop {
+		owner, msgJSON, err := MsgQueue.Pop(ctx, vc)
+		if err != nil {
+			return nil, err
+		}
+
+		if owner == "" {
+			return nil, nil
+		}
+
+		msg := &MsgOut{}
+		if err := json.Unmarshal(msgJSON, msg); err != nil {
+			markComplete(owner)
+			return nil, fmt.Errorf("unable to unmarshal message: %s: %w", string(msgJSON), err)
+		}
+
+		if err := utils.Validate(msg); err != nil {
+			markComplete(owner)
+			return nil, fmt.Errorf("queued message failed validation: %s: %w", string(msgJSON), err)
+		}
+
+		channel, err := GetChannel(ctx, AnyChannelType, msg.ChannelUUID_)
+		if errors.Is(err, ErrChannelNotFound) {
+			// the channel was removed or its workspace suspended after the message was queued, which is expected
+			// rather than an error - and a suspension can leave a whole backlog of these to get through
+			markComplete(owner)
+			slog.Info("dropping queued message for missing channel", "msg", msg.UUID_, "channel", msg.ChannelUUID_)
+			continue
+		}
+		if err != nil {
+			markComplete(owner)
+			return nil, err
+		}
+
+		msg.Channel_ = channel
+		msg.QueueOwner_ = owner
+		msg.queued = msgJSON
+
+		// clear out our seen incoming messages
+		clearMsgSeen(ctx, vc, msg)
+
+		return msg, nil
 	}
 
-	if owner == "" {
-		return nil, nil
-	}
-
-	msg := &MsgOut{}
-	if err := json.Unmarshal(msgJSON, msg); err != nil {
-		markComplete(owner)
-		return nil, fmt.Errorf("unable to unmarshal message: %s: %w", string(msgJSON), err)
-	}
-
-	if err := utils.Validate(msg); err != nil {
-		markComplete(owner)
-		return nil, fmt.Errorf("queued message failed validation: %s: %w", string(msgJSON), err)
-	}
-
-	// populate the channel on our msg object
-	channel, err := GetChannel(ctx, AnyChannelType, msg.ChannelUUID_)
-	if err != nil {
-		markComplete(owner)
-		return nil, err
-	}
-
-	// add some extra info to the popped message
-	msg.Channel_ = channel
-	msg.QueueOwner_ = owner
-	msg.queued = msgJSON
-
-	// clear out our seen incoming messages
-	clearMsgSeen(ctx, vc, msg)
-
-	return msg, nil
+	return nil, nil
 }
 
 // WasMsgSent returns whether we think the passed in message was already sent - used as a failsafe against double
