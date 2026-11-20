@@ -2,13 +2,16 @@ package runtime
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/centrifugo"
+	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/vkutil"
 	"github.com/vinovest/sqlx"
 )
@@ -32,12 +35,14 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 
 	var err error
 
-	rt.DB, err = sqlx.Open("postgres", cfg.DB)
+	connector, err := dbutil.NewWriteConnector(cfg.DB)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Postgres connection pool: %w", err)
 	}
+	rt.DB = sqlx.NewDb(sql.OpenDB(connector), "postgres")
 	rt.DB.SetMaxIdleConns(4)
 	rt.DB.SetMaxOpenConns(16)
+	rt.DB.SetConnMaxLifetime(10 * time.Minute)
 
 	ctx := context.Background()
 

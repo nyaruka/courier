@@ -6,10 +6,35 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier/v26/runtime"
+	"github.com/nyaruka/courier/v26/testsuite"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestDBDiscardsReadOnlyConns(t *testing.T) {
+	rt := testsuite.NewRuntime(t)
+	ctx := t.Context()
+
+	rt.DB.SetMaxOpenConns(1)
+
+	backendPID := func() int {
+		var pid int
+		require.NoError(t, rt.DB.GetContext(ctx, &pid, `SELECT pg_backend_pid()`))
+		return pid
+	}
+
+	pid1 := backendPID()
+
+	// make the connection behave like one left on a former primary after a failover
+	rt.DB.MustExecContext(ctx, `SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY`)
+
+	_, err := rt.DB.ExecContext(ctx, `DELETE FROM msgs_msg WHERE id = 0`)
+	assert.ErrorContains(t, err, "read-only transaction")
+
+	// the pool should have discarded that connection and opened a new one
+	assert.NotEqual(t, pid1, backendPID())
+}
 
 func TestHTTPProxied(t *testing.T) {
 	// the default config uses virtual-host style S3 URLs, which require a resolvable region
