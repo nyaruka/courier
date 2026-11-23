@@ -123,8 +123,8 @@ github.com/nyaruka/goflow v0.302.0 h1:++HU9vZ6aDhNVw+kpVQYxz8HfAsSDUvE+MXEl5Ta9Z
 github.com/nyaruka/goflow v0.302.0/go.mod h1:APv4e0indV8/eqiMPnQNFhGy0Y2R817843OaBU4omT8=
 github.com/nyaruka/null/v3 v3.1.0 h1:YQsMXz8Nve0JTVduxpqwzMkTca5X+gwSMBkRcSwa2l8=
 github.com/nyaruka/null/v3 v3.1.0/go.mod h1:vH2+lGf6XzKr4USjgfJHj+l87dhCiR+ajAuu515xENg=
-github.com/nyaruka/phonenumbers/v2 v2.0.17 h1:cHksDS+Iif/0mVwqhnFsEPnGPVXujowFdv+uXAXSv34=
-github.com/nyaruka/phonenumbers/v2 v2.0.17/go.mod h1:ch3CB5vKpdcQXyRLWm+ELlEdiUwagKR6pYvXgVXRiN0=
+github.com/nyaruka/phonenumbers/v2 v2.1.0 h1:A9gsXFPmz6WgGAEjfy/MWa9z3KWxpjmmRgqw/go1Ao8=
+github.com/nyaruka/phonenumbers/v2 v2.1.0/go.mod h1:ch3CB5vKpdcQXyRLWm+ELlEdiUwagKR6pYvXgVXRiN0=
 github.com/nyaruka/vkutil v0.31.0 h1:dahXr3jl1kCYwE/a/gFxu4Mm08wMIMVeHOlcGY/QFI0=
 github.com/nyaruka/vkutil v0.31.0/go.mod h1:eh/L5J9IvZsV8qEhWmgC654vl1aEkX86lh8gU+YnKww=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
