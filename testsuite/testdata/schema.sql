@@ -15,7 +15,8 @@ CREATE TABLE orgs_org (
     language character varying(64),
     config jsonb NOT NULL,
     limits jsonb NOT NULL,
-    is_anon boolean NOT NULL
+    is_anon boolean NOT NULL,
+    status character varying(1) NOT NULL
 );
 
 DROP TABLE IF EXISTS channels_channel CASCADE;
