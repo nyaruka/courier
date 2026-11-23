@@ -1,3 +1,7 @@
+## v26.3.85 (2026-11-23)
+ * Treat channels of suspended workspaces as not found
+ * Run CI against PostgreSQL 18
+
 ## v26.3.84 (2026-11-20)
  * Discard database connections that turn read-only after a failover
 
