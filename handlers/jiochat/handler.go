@@ -241,6 +241,13 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Ch
 
 var _ channels.AttachmentRequestBuilder = (*handler)(nil)
 
+var _ channels.AccessTokenProvider = (*handler)(nil)
+
+// GetAccessToken returns a cached access token for the channel, fetching a new one if needed
+func (h *handler) GetAccessToken(ctx context.Context, channel *models.Channel, clog *models.ChannelLog) (string, error) {
+	return h.getAccessToken(channel, clog)
+}
+
 func (h *handler) getAccessToken(channel *models.Channel, clog *models.ChannelLog) (string, error) {
 	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID())
 

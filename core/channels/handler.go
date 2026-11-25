@@ -63,6 +63,13 @@ type AttachmentRequestBuilder interface {
 	BuildAttachmentRequest(context.Context, *models.Channel, string, *models.ChannelLog) (*http.Request, error)
 }
 
+// AccessTokenProvider is the interface handlers which authenticate with short-lived access tokens should satisfy, so
+// that other services can make API calls as the channel without having to obtain tokens themselves. Any requests made
+// to obtain a token are recorded on the given channel log.
+type AccessTokenProvider interface {
+	GetAccessToken(context.Context, *models.Channel, *models.ChannelLog) (string, error)
+}
+
 // NewHandlerFunc constructs a handler with the runtime it should use, registering the routes it serves as it goes.
 // Handlers register one from their package init(), and the server invokes them all at startup once the runtime
 // exists.

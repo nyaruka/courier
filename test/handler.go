@@ -90,6 +90,27 @@ func (h *mockHandler) SendEvent(ctx context.Context, ch *models.Channel, event e
 	return nil
 }
 
+// GetAccessToken returns the channel's configured token if it has one, as though it were cached, and otherwise
+// fetches one, authenticating with a value that should be redacted
+func (h *mockHandler) GetAccessToken(ctx context.Context, ch *models.Channel, clog *models.ChannelLog) (string, error) {
+	if token := ch.StringConfigForKey("token", ""); token != "" {
+		return token, nil
+	}
+
+	req, _ := httpx.NewRequest(ctx, "POST", "http://mock.com/token", nil, map[string]string{"Authorization": "Token sesame"})
+	trace, resp, err := utils.DoTraced(h.rt.HTTP.Default, req)
+	if trace != nil {
+		clog.HTTP(trace)
+	}
+
+	if err != nil || resp.StatusCode/100 != 2 {
+		return "", errors.New("unable to fetch token")
+	}
+	return string(trace.ResponseBody), nil
+}
+
+var _ channels.AccessTokenProvider = (*mockHandler)(nil)
+
 // SendableEvents declares support for typing started with a 10 second resend interval, plus typing
 // stopped for channels configured with supports_stop - so tests can cover both capability cases
 func (h *mockHandler) SendableEvents(ch *models.Channel) map[string]time.Duration {

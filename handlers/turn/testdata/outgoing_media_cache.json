@@ -11,7 +11,7 @@
         "http_mocks": {
             "*/v1/media": [
                 {
-                    "status": 401,
+                    "status": 400,
                     "body": {
                         "errors": [
                             {

@@ -258,6 +258,13 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	return nil
 }
 
+var _ channels.AccessTokenProvider = (*handler)(nil)
+
+// GetAccessToken returns a cached access token for the channel, fetching a new one if needed
+func (h *handler) GetAccessToken(ctx context.Context, channel *models.Channel, clog *models.ChannelLog) (string, error) {
+	return h.getAccessToken(channel)
+}
+
 func (h *handler) getAccessToken(channel *models.Channel) (string, error) {
 	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID())
 
