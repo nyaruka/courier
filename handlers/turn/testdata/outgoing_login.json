@@ -1,0 +1,530 @@
+[
+    {
+        "label": "Send logs in without a cached token",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e8"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/users/login": [
+                {
+                    "status": 200,
+                    "body": {
+                        "users": [
+                            {
+                                "token": "token1"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/users/login",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic Ym9iOnNlc2FtZQ=="
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer token1",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e8"
+        ],
+        "cost": 1,
+        "log_errors": []
+    },
+    {
+        "label": "Send uses cached token",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568e9"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer token1",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568e9"
+        ],
+        "cost": 1,
+        "log_errors": []
+    },
+    {
+        "label": "Rejected token is dropped",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 401,
+                    "body": {
+                        "errors": [
+                            {
+                                "code": 1005,
+                                "title": "Access denied"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer token1",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message"
+                    }
+                }
+            }
+        ],
+        "cost": 1,
+        "error": {
+            "message": "channel rejected send with retryable reason",
+            "retryable": true,
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "token_rejected",
+                "message": "access token was rejected"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Send logs in again after token rejected",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568ea"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/users/login": [
+                {
+                    "status": 200,
+                    "body": {
+                        "users": [
+                            {
+                                "token": "token2"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/users/login",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic Ym9iOnNlc2FtZQ=="
+                }
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer token2",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568ea"
+        ],
+        "cost": 1,
+        "log_errors": []
+    },
+    {
+        "label": "Rejected token is dropped again",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/messages": [
+                {
+                    "status": 401,
+                    "body": {
+                        "errors": [
+                            {
+                                "code": 1005,
+                                "title": "Access denied"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer token2",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "text",
+                    "text": {
+                        "body": "Simple Message"
+                    }
+                }
+            }
+        ],
+        "cost": 1,
+        "error": {
+            "message": "channel rejected send with retryable reason",
+            "retryable": true,
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "token_rejected",
+                "message": "access token was rejected"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Rejected credentials",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/users/login": [
+                {
+                    "status": 401,
+                    "body": {
+                        "errors": [
+                            {
+                                "code": 1005,
+                                "title": "Access denied"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/users/login",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic Ym9iOnNlc2FtZQ=="
+                }
+            }
+        ],
+        "cost": 0,
+        "error": {
+            "message": "channel config invalid",
+            "loggable": true,
+            "log_error": {
+                "code": "channel_config",
+                "message": "Channel configuration is missing required values."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Login unavailable",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:250788123123"
+        },
+        "http_mocks": {
+            "*/v1/users/login": [
+                {
+                    "status": 503,
+                    "body": "unavailable"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/users/login",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic Ym9iOnNlc2FtZQ=="
+                }
+            }
+        ],
+        "cost": 0,
+        "error": {
+            "message": "channel connection failed",
+            "retryable": true,
+            "log_error": {
+                "code": "connection_failed",
+                "message": "Connection to server failed."
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Media upload token rejected",
+        "msg": {
+            "text": "document caption",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "application/pdf:https://foo.bar/document.pdf"
+            ]
+        },
+        "http_mocks": {
+            "*/v1/media": [
+                {
+                    "status": 401,
+                    "body": {
+                        "errors": [
+                            {
+                                "code": 1005,
+                                "title": "Access denied"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/users/login": [
+                {
+                    "status": 200,
+                    "body": {
+                        "users": [
+                            {
+                                "token": "token3"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "https://foo.bar/document.pdf": [
+                {
+                    "status": 200,
+                    "body": "media bytes"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/users/login",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic Ym9iOnNlc2FtZQ=="
+                }
+            },
+            {
+                "method": "GET",
+                "url": "https://foo.bar/document.pdf"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/media",
+                "headers": {
+                    "Authorization": "Bearer token3",
+                    "Content-Type": "text/plain; charset=utf-8"
+                },
+                "body": "media bytes"
+            }
+        ],
+        "cost": 0,
+        "error": {
+            "message": "channel rejected send with retryable reason",
+            "retryable": true,
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "media_upload_failed",
+                "message": "unable to upload media to WhatsApp"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Media upload retried after token rejected",
+        "msg": {
+            "text": "document caption",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "application/pdf:https://foo.bar/document.pdf"
+            ]
+        },
+        "http_mocks": {
+            "*/v1/media": [
+                {
+                    "status": 201,
+                    "body": {
+                        "media": [
+                            {
+                                "id": "f043afd0-f0ae-4b9c-ab3d-696fb4c8cd68"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568eb"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/users/login": [
+                {
+                    "status": 200,
+                    "body": {
+                        "users": [
+                            {
+                                "token": "token4"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "https://foo.bar/document.pdf": [
+                {
+                    "status": 200,
+                    "body": "media bytes"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/users/login",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic Ym9iOnNlc2FtZQ=="
+                }
+            },
+            {
+                "method": "GET",
+                "url": "https://foo.bar/document.pdf"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/media",
+                "headers": {
+                    "Authorization": "Bearer token4",
+                    "Content-Type": "text/plain; charset=utf-8"
+                },
+                "body": "media bytes"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer token4",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "document",
+                    "document": {
+                        "id": "f043afd0-f0ae-4b9c-ab3d-696fb4c8cd68",
+                        "caption": "document caption",
+                        "filename": "document.pdf"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568eb"
+        ],
+        "cost": 1,
+        "log_errors": []
+    }
+]

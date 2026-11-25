@@ -258,6 +258,16 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	return nil
 }
 
+var _ channels.AccessTokenRefresher = (*handler)(nil)
+
+// RefreshAccessToken fetches a new access token for the channel, replacing any cached one
+func (h *handler) RefreshAccessToken(ctx context.Context, channel *models.Channel, clog *models.ChannelLog) (string, error) {
+	h.fetchTokenMutex.Lock()
+	defer h.fetchTokenMutex.Unlock()
+
+	return h.refreshAccessToken(channel)
+}
+
 func (h *handler) getAccessToken(channel *models.Channel) (string, error) {
 	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID())
 
@@ -278,13 +288,18 @@ func (h *handler) getAccessToken(channel *models.Channel) (string, error) {
 		return token, nil
 	}
 
+	return h.refreshAccessToken(channel)
+}
+
+// refreshAccessToken fetches a new token and caches it, and must be called holding fetchTokenMutex
+func (h *handler) refreshAccessToken(channel *models.Channel) (string, error) {
 	token, expires, err := h.fetchAccessToken(channel)
 	if err != nil {
 		return "", fmt.Errorf("error fetching new access token: %w", err)
 	}
 
 	h.WithValkeyConn(func(rc redis.Conn) {
-		_, err = rc.Do("SET", tokenKey, token, "EX", int(expires/time.Second))
+		_, err = rc.Do("SET", fmt.Sprintf("channel-token:%s", channel.UUID()), token, "EX", int(expires/time.Second))
 	})
 
 	if err != nil {

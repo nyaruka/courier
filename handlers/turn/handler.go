@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -34,6 +35,13 @@ const (
 	configNamespace = "fb_namespace"
 
 	mediaCacheKeyPattern = "turn_whatsapp_media_%s"
+	tokenCacheKeyPattern = "channel-token:%s"
+
+	// tokens issued by the on-premises API last 7 days, but we refresh them well before that so that a token we hand
+	// out to another service is still good for a while
+	maxTokenTTL       = 24 * time.Hour
+	minTokenTTL       = time.Minute
+	tokenExpiryMargin = time.Hour
 )
 
 var (
@@ -51,10 +59,12 @@ func init() {
 
 type handler struct {
 	handlers.BaseHandler
+
+	fetchTokenMutex sync.Mutex
 }
 
 func newHandler(rt *runtime.Runtime, r *channels.Routes) channels.Handler {
-	h := &handler{handlers.NewBaseHandler(rt, models.ChannelType("TRN"), "Turn.io WhatsApp")}
+	h := &handler{BaseHandler: handlers.NewBaseHandler(rt, models.ChannelType("TRN"), "Turn.io WhatsApp")}
 
 	r.AddReceive(h, http.MethodPost, "receive", channels.ReceiveKindAny, handlers.JSONPayload(h.receiveAny))
 	return h
@@ -329,9 +339,9 @@ func resolveMediaURL(channel *models.Channel, mediaID string) (string, error) {
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set
 func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
-	token := channel.StringConfigForKey(models.ConfigAuthToken, "")
-	if token == "" {
-		return nil, fmt.Errorf("missing token for TRN channel")
+	token, err := h.getAccessToken(ctx, channel, clog)
+	if err != nil {
+		return nil, err
 	}
 
 	// set the access token as the authorization header
@@ -342,6 +352,135 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Ch
 }
 
 var _ channels.AttachmentRequestBuilder = (*handler)(nil)
+var _ channels.AccessTokenRefresher = (*handler)(nil)
+
+// errLoginUnavailable is returned when the login endpoint can't be reached, as opposed to it rejecting our credentials
+var errLoginUnavailable = errors.New("unable to reach login endpoint")
+
+func (h *handler) RedactValues(ch *models.Channel) []string {
+	if ch == nil {
+		return nil
+	}
+
+	vals := h.BaseHandler.RedactValues(ch)
+
+	username := ch.StringConfigForKey(models.ConfigUsername, "")
+	password := ch.StringConfigForKey(models.ConfigPassword, "")
+	if username != "" || password != "" {
+		vals = append(vals, httpx.BasicAuth(username, password))
+	}
+
+	// the token we'll be authenticating with is as much a secret as the credentials used to obtain it
+	var token string
+	h.WithValkeyConn(func(rc redis.Conn) {
+		token, _ = redis.String(rc.Do("GET", fmt.Sprintf(tokenCacheKeyPattern, ch.UUID())))
+	})
+	if token != "" {
+		vals = append(vals, token)
+	}
+
+	return vals
+}
+
+// getAccessToken returns a cached access token for the channel, logging in to obtain a new one if needed
+func (h *handler) getAccessToken(ctx context.Context, channel *models.Channel, clog *models.ChannelLog) (string, error) {
+	tokenKey := fmt.Sprintf(tokenCacheKeyPattern, channel.UUID())
+
+	h.fetchTokenMutex.Lock()
+	defer h.fetchTokenMutex.Unlock()
+
+	var token string
+	var err error
+	h.WithValkeyConn(func(rc redis.Conn) {
+		token, err = redis.String(rc.Do("GET", tokenKey))
+	})
+	if err != nil && err != redis.ErrNil {
+		return "", fmt.Errorf("error reading cached access token: %w", err)
+	}
+	if token != "" {
+		return token, nil
+	}
+
+	return h.refreshAccessToken(ctx, channel, clog)
+}
+
+// RefreshAccessToken logs in for a new access token for the channel, replacing any cached one
+func (h *handler) RefreshAccessToken(ctx context.Context, channel *models.Channel, clog *models.ChannelLog) (string, error) {
+	h.fetchTokenMutex.Lock()
+	defer h.fetchTokenMutex.Unlock()
+
+	return h.refreshAccessToken(ctx, channel, clog)
+}
+
+// refreshAccessToken logs in for a new token and caches it, and must be called holding fetchTokenMutex
+func (h *handler) refreshAccessToken(ctx context.Context, channel *models.Channel, clog *models.ChannelLog) (string, error) {
+	token, ttl, err := h.fetchAccessToken(ctx, channel, clog)
+	if err != nil {
+		return "", err
+	}
+
+	h.WithValkeyConn(func(rc redis.Conn) {
+		_, err = rc.Do("SET", fmt.Sprintf(tokenCacheKeyPattern, channel.UUID()), token, "EX", int(ttl/time.Second))
+	})
+	if err != nil {
+		return "", fmt.Errorf("error caching access token: %w", err)
+	}
+
+	return token, nil
+}
+
+// clearAccessToken drops the cached token for a channel, e.g. after the API rejects it, so that the next call logs in again
+func (h *handler) clearAccessToken(channel *models.Channel) {
+	h.WithValkeyConn(func(rc redis.Conn) {
+		if _, err := rc.Do("DEL", fmt.Sprintf(tokenCacheKeyPattern, channel.UUID())); err != nil {
+			slog.Error("error clearing cached access token", "error", err, "channel_uuid", channel.UUID())
+		}
+	})
+}
+
+// fetchAccessToken logs in to the API to get a new token, returning it with how long it should be cached for. See
+// https://developers.facebook.com/docs/whatsapp/on-premises/reference/users/login
+//
+//	{"users": [{"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "expires_after": "2018-03-01 15:29:26+00:00"}]}
+func (h *handler) fetchAccessToken(ctx context.Context, channel *models.Channel, clog *models.ChannelLog) (string, time.Duration, error) {
+	baseURL, err := url.Parse(channel.StringConfigForKey(models.ConfigBaseURL, ""))
+	if err != nil || baseURL.Host == "" {
+		return "", 0, errors.New("missing or invalid base url for TRN channel")
+	}
+	username := channel.StringConfigForKey(models.ConfigUsername, "")
+	password := channel.StringConfigForKey(models.ConfigPassword, "")
+	if username == "" || password == "" {
+		return "", 0, errors.New("missing username or password for TRN channel")
+	}
+	loginURL, _ := baseURL.Parse("/v1/users/login")
+
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, loginURL.String(), nil)
+	req.SetBasicAuth(username, password)
+	req.Header.Set("Accept", "application/json")
+
+	resp, respBody, err := h.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return "", 0, errLoginUnavailable
+	}
+	if resp.StatusCode/100 != 2 {
+		return "", 0, fmt.Errorf("login rejected with status %d", resp.StatusCode)
+	}
+
+	token, err := jsonparser.GetString(respBody, "users", "[0]", "token")
+	if err != nil || token == "" {
+		clog.Error(models.ErrorResponseValueMissing("token"))
+		return "", 0, errors.New("login response missing token")
+	}
+
+	ttl := maxTokenTTL
+	if expiresStr, _ := jsonparser.GetString(respBody, "users", "[0]", "expires_after"); expiresStr != "" {
+		if expires, err := time.Parse("2006-01-02 15:04:05-07:00", expiresStr); err == nil {
+			ttl = min(ttl, time.Until(expires)-tokenExpiryMargin)
+		}
+	}
+
+	return token, max(ttl, minTokenTTL), nil
+}
 
 var turnWaStatusMapping = map[string]models.MsgStatus{
 	"sending":   models.MsgStatusWired,
@@ -596,11 +735,20 @@ func (h *handler) fetchMediaID(ctx context.Context, msg *models.MsgOut, mediaURL
 	if err != nil {
 		return "", fmt.Errorf("error building request to media endpoint: %w", err)
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")))
+	accessToken, err := h.getAccessToken(ctx, msg.Channel(), clog)
+	if err != nil {
+		return "", fmt.Errorf("error getting access token: %w", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 	mediaType, _ := httpx.DetectContentType(respBody)
 	req.Header.Add("Content-Type", mediaType)
 
 	resp, respBody, err = h.RequestHTTP(req, clog)
+	// a rejected token says nothing about the media, so it isn't remembered as a failed upload
+	if err == nil && resp.StatusCode == http.StatusUnauthorized {
+		h.clearAccessToken(msg.Channel())
+		return "", errors.New("access token rejected uploading media to whatsapp")
+	}
 	if err != nil || resp.StatusCode/100 != 2 {
 		failedMediaCache.Set(failKey, true)
 		if err != nil {
@@ -629,13 +777,19 @@ func (h *handler) fetchMediaID(ctx context.Context, msg *models.MsgOut, mediaURL
 }
 
 func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.SendResult, clog *models.ChannelLog) error {
-	accessToken := msg.Channel().StringConfigForKey(models.ConfigAuthToken, "")
 	urlStr := msg.Channel().StringConfigForKey(models.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
-	if accessToken == "" || err != nil {
+	if err != nil {
 		return channels.ErrChannelConfig
 	}
 	sendURL, _ := url.Parse("/v1/messages")
+
+	accessToken, err := h.getAccessToken(ctx, msg.Channel(), clog)
+	if errors.Is(err, errLoginUnavailable) {
+		return channels.ErrConnectionFailed
+	} else if err != nil {
+		return channels.ErrChannelConfig
+	}
 
 	requestPayloads, err := h.buildPayloads(ctx, msg, clog)
 	if err != nil {
@@ -643,7 +797,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	}
 
 	for _, payload := range requestPayloads {
-		err := h.makeAPIRequest(payload, accessToken, res, sendURL, clog)
+		err := h.makeAPIRequest(msg.Channel(), payload, accessToken, res, sendURL, clog)
 		if err != nil {
 			return err
 		}
@@ -668,7 +822,7 @@ type mtResponsePayload struct {
 	} `json:"errors"`
 }
 
-func (h *handler) makeAPIRequest(payload any, accessToken string, res *channels.SendResult, wacPhoneURL *url.URL, clog *models.ChannelLog) error {
+func (h *handler) makeAPIRequest(channel *models.Channel, payload any, accessToken string, res *channels.SendResult, wacPhoneURL *url.URL, clog *models.ChannelLog) error {
 	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))
@@ -684,6 +838,11 @@ func (h *handler) makeAPIRequest(payload any, accessToken string, res *channels.
 	res.AddCost(1)
 	if err != nil || resp.StatusCode/100 == 5 {
 		return channels.ErrConnectionFailed
+	}
+	// a rejected token is dropped so that a retry logs in again
+	if resp.StatusCode == http.StatusUnauthorized {
+		h.clearAccessToken(channel)
+		return channels.ErrRetryableWithReason("token_rejected", "access token was rejected")
 	}
 	// Turn returns HTTP 429 with its own rate-limit payload (errors[].code=429) and
 	// Retry-After / X-Ratelimit-* headers. Treat that as throttled so the message is

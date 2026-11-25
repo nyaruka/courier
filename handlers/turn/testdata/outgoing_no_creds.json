@@ -1,0 +1,19 @@
+[
+    {
+        "label": "Missing credentials",
+        "msg": {
+            "text": "Simple Message",
+            "urn": "whatsapp:250788123123"
+        },
+        "cost": 0,
+        "error": {
+            "message": "channel config invalid",
+            "loggable": true,
+            "log_error": {
+                "code": "channel_config",
+                "message": "Channel configuration is missing required values."
+            }
+        },
+        "log_errors": []
+    }
+]
