@@ -13,24 +13,24 @@ import (
 	"github.com/nyaruka/courier/v26/utils"
 )
 
-type fetchTokenRequest struct {
+type refreshTokenRequest struct {
 	ChannelType models.ChannelType `json:"channel_type" validate:"required"`
 	ChannelUUID models.ChannelUUID `json:"channel_uuid" validate:"required,uuid"`
 }
 
-type fetchTokenResponse struct {
+type refreshTokenResponse struct {
 	Token string `json:"token"`
 }
 
-// fetchToken returns an access token for a channel whose handler manages short-lived tokens, so that other services can
-// call the channel's API without obtaining tokens themselves.
-func fetchToken(ctx context.Context, rt *runtime.Runtime, r *http.Request) (*fetchTokenResponse, error) {
+// refreshToken fetches a new access token for a channel whose handler uses short-lived tokens, replacing the one the
+// handler uses for sends, so that other services can call the channel's API without obtaining tokens themselves.
+func refreshToken(ctx context.Context, rt *runtime.Runtime, r *http.Request) (*refreshTokenResponse, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading request body: %w", err)
 	}
 
-	req := &fetchTokenRequest{}
+	req := &refreshTokenRequest{}
 	if err := json.Unmarshal(body, req); err != nil {
 		return nil, fmt.Errorf("error unmarshalling request: %w", err)
 	}
@@ -44,24 +44,23 @@ func fetchToken(ctx context.Context, rt *runtime.Runtime, r *http.Request) (*fet
 	}
 
 	handler := channels.GetHandler(ch.ChannelType())
-	provider, ok := handler.(channels.AccessTokenProvider)
+	refresher, ok := handler.(channels.AccessTokenRefresher)
 	if !ok {
 		return nil, fmt.Errorf("channel type %s doesn't support access tokens", ch.ChannelType())
 	}
 
 	clog := models.NewChannelLog(models.ChannelLogTypeTokenRefresh, ch, nil, handler.RedactValues(ch))
 
-	token, err := provider.GetAccessToken(ctx, ch, clog)
+	token, err := refresher.RefreshAccessToken(ctx, ch, clog)
 
-	// only a token fetch that actually called the provider is worth logging
 	clog.End()
-	if len(clog.HttpLogs) > 0 && handler.StoreChannelLogs() {
+	if handler.StoreChannelLogs() {
 		models.WriteChannelLog(rt, clog)
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("error getting access token for channel %s: %w", ch.UUID(), err)
+		return nil, fmt.Errorf("error refreshing access token for channel %s: %w", ch.UUID(), err)
 	}
 
-	return &fetchTokenResponse{Token: token}, nil
+	return &refreshTokenResponse{Token: token}, nil
 }

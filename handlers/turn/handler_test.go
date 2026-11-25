@@ -61,7 +61,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	assert.Equal(t, "Bearer a123", req.Header.Get("Authorization"))
 }
 
-func TestGetAccessToken(t *testing.T) {
+func TestAccessTokens(t *testing.T) {
 	ctx, rt := testsuite.Runtime(t)
 	testsuite.ResetValkey(t, rt)
 
@@ -96,7 +96,7 @@ func TestGetAccessToken(t *testing.T) {
 
 	// no cached token so we log in, and cache the token for well under its 7 day lifetime
 	clog := newLog()
-	token, err := h.GetAccessToken(ctx, ch, clog)
+	token, err := h.getAccessToken(ctx, ch, clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "token1", token)
 	assert.Len(t, clog.HttpLogs, 1)
@@ -105,38 +105,46 @@ func TestGetAccessToken(t *testing.T) {
 
 	// next call uses the cached token
 	clog = newLog()
-	token, err = h.GetAccessToken(ctx, ch, clog)
+	token, err = h.getAccessToken(ctx, ch, clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "token1", token)
 	assert.Len(t, clog.HttpLogs, 0)
 
-	// once dropped, we log in again - this time getting a token which expires sooner so is cached for less time
-	h.clearAccessToken(ch)
-	token, err = h.GetAccessToken(ctx, ch, newLog())
+	// refreshing logs in regardless of the cached token and replaces it - this time with a token which expires sooner
+	// so is cached for less time
+	clog = newLog()
+	token, err = h.RefreshAccessToken(ctx, ch, clog)
 	assert.NoError(t, err)
 	assert.Equal(t, "token2", token)
+	assert.Len(t, clog.HttpLogs, 1)
 	assert.InDelta(t, 2*time.Hour, tokenTTL(), float64(5*time.Second))
+
+	clog = newLog()
+	token, err = h.getAccessToken(ctx, ch, clog)
+	assert.NoError(t, err)
+	assert.Equal(t, "token2", token)
+	assert.Len(t, clog.HttpLogs, 0)
 
 	// a token without an expiry is cached for our max
 	h.clearAccessToken(ch)
-	token, err = h.GetAccessToken(ctx, ch, newLog())
+	token, err = h.getAccessToken(ctx, ch, newLog())
 	assert.NoError(t, err)
 	assert.Equal(t, "token3", token)
 	assert.InDelta(t, 24*time.Hour, tokenTTL(), float64(5*time.Second))
 
 	// rejected credentials
 	h.clearAccessToken(ch)
-	_, err = h.GetAccessToken(ctx, ch, newLog())
+	_, err = h.getAccessToken(ctx, ch, newLog())
 	assert.EqualError(t, err, "login rejected with status 401")
 
 	// a response without a token
 	clog = newLog()
-	_, err = h.GetAccessToken(ctx, ch, clog)
+	_, err = h.getAccessToken(ctx, ch, clog)
 	assert.EqualError(t, err, "login response missing token")
 	assert.Equal(t, "response_value_missing", clog.Errors[0].Code)
 
 	// login endpoint unavailable
-	_, err = h.GetAccessToken(ctx, ch, newLog())
+	_, err = h.getAccessToken(ctx, ch, newLog())
 	assert.Equal(t, errLoginUnavailable, err)
 }
 

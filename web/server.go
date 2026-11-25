@@ -99,7 +99,7 @@ func (s *Server) Start() error {
 	internalRouter.Get("/", s.handleHealth("internal"))
 	internalRouter.Post("/ci/attachment/fetch", s.tokenAuthRequired(s.handleFetchAttachment))
 	internalRouter.Post("/ci/event/send", s.tokenAuthRequired(s.handleSendEvent))
-	internalRouter.Post("/ci/token/fetch", s.tokenAuthRequired(s.handleFetchToken))
+	internalRouter.Post("/ci/token/refresh", s.tokenAuthRequired(s.handleRefreshToken))
 
 	s.internetServer = &http.Server{
 		Addr:         internetAddr,
@@ -376,13 +376,13 @@ func (s *Server) handleSendEvent(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonx.MustMarshal(resp))
 }
 
-func (s *Server) handleFetchToken(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleRefreshToken(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	resp, err := fetchToken(ctx, s.rt, r)
+	resp, err := refreshToken(ctx, s.rt, r)
 	if err != nil {
-		slog.Error("error fetching token", "error", err)
+		slog.Error("error refreshing token", "error", err)
 		channels.RespondError(w, http.StatusBadRequest, err)
 		return
 	}

@@ -339,7 +339,7 @@ func resolveMediaURL(channel *models.Channel, mediaID string) (string, error) {
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set
 func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Channel, attachmentURL string, clog *models.ChannelLog) (*http.Request, error) {
-	token, err := h.GetAccessToken(ctx, channel, clog)
+	token, err := h.getAccessToken(ctx, channel, clog)
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +352,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, channel *models.Ch
 }
 
 var _ channels.AttachmentRequestBuilder = (*handler)(nil)
-var _ channels.AccessTokenProvider = (*handler)(nil)
+var _ channels.AccessTokenRefresher = (*handler)(nil)
 
 // errLoginUnavailable is returned when the login endpoint can't be reached, as opposed to it rejecting our credentials
 var errLoginUnavailable = errors.New("unable to reach login endpoint")
@@ -382,8 +382,8 @@ func (h *handler) RedactValues(ch *models.Channel) []string {
 	return vals
 }
 
-// GetAccessToken returns a cached access token for the channel, logging in to obtain a new one if needed
-func (h *handler) GetAccessToken(ctx context.Context, channel *models.Channel, clog *models.ChannelLog) (string, error) {
+// getAccessToken returns a cached access token for the channel, logging in to obtain a new one if needed
+func (h *handler) getAccessToken(ctx context.Context, channel *models.Channel, clog *models.ChannelLog) (string, error) {
 	tokenKey := fmt.Sprintf(tokenCacheKeyPattern, channel.UUID())
 
 	h.fetchTokenMutex.Lock()
@@ -401,13 +401,26 @@ func (h *handler) GetAccessToken(ctx context.Context, channel *models.Channel, c
 		return token, nil
 	}
 
+	return h.refreshAccessToken(ctx, channel, clog)
+}
+
+// RefreshAccessToken logs in for a new access token for the channel, replacing any cached one
+func (h *handler) RefreshAccessToken(ctx context.Context, channel *models.Channel, clog *models.ChannelLog) (string, error) {
+	h.fetchTokenMutex.Lock()
+	defer h.fetchTokenMutex.Unlock()
+
+	return h.refreshAccessToken(ctx, channel, clog)
+}
+
+// refreshAccessToken logs in for a new token and caches it, and must be called holding fetchTokenMutex
+func (h *handler) refreshAccessToken(ctx context.Context, channel *models.Channel, clog *models.ChannelLog) (string, error) {
 	token, ttl, err := h.fetchAccessToken(ctx, channel, clog)
 	if err != nil {
 		return "", err
 	}
 
 	h.WithValkeyConn(func(rc redis.Conn) {
-		_, err = rc.Do("SET", tokenKey, token, "EX", int(ttl/time.Second))
+		_, err = rc.Do("SET", fmt.Sprintf(tokenCacheKeyPattern, channel.UUID()), token, "EX", int(ttl/time.Second))
 	})
 	if err != nil {
 		return "", fmt.Errorf("error caching access token: %w", err)
@@ -717,7 +730,7 @@ func (h *handler) fetchMediaID(ctx context.Context, msg *models.MsgOut, mediaURL
 	if err != nil {
 		return "", fmt.Errorf("error building request to media endpoint: %w", err)
 	}
-	accessToken, err := h.GetAccessToken(ctx, msg.Channel(), clog)
+	accessToken, err := h.getAccessToken(ctx, msg.Channel(), clog)
 	if err != nil {
 		return "", fmt.Errorf("error getting access token: %w", err)
 	}
@@ -764,7 +777,7 @@ func (h *handler) Send(ctx context.Context, msg *models.MsgOut, res *channels.Se
 	}
 	sendURL, _ := url.Parse("/v1/messages")
 
-	accessToken, err := h.GetAccessToken(ctx, msg.Channel(), clog)
+	accessToken, err := h.getAccessToken(ctx, msg.Channel(), clog)
 	if errors.Is(err, errLoginUnavailable) {
 		return channels.ErrConnectionFailed
 	} else if err != nil {

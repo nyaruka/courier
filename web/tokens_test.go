@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFetchToken(t *testing.T) {
+func TestRefreshToken(t *testing.T) {
 	_, rt := testsuite.Runtime(t)
 	testsuite.ResetDB(t, rt)
 	testsuite.ResetValkey(t, rt)
@@ -38,13 +38,12 @@ func TestFetchToken(t *testing.T) {
 	require.NoError(t, server.Start())
 	defer server.Stop()
 
-	// a channel whose token is cached, one which has to fetch it, and one whose type doesn't provide tokens
-	testsuite.InsertChannel(t, rt, test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{"token": "cached-token"}))
+	// a channel whose type refreshes tokens, and one whose type doesn't
 	testsuite.InsertChannel(t, rt, test.NewMockChannel("f8be89c7-58b5-4d3c-8e5c-c0d049f4d43b", "MCK", "2021", "US", []string{urns.Phone.Prefix}, map[string]any{}))
 	testsuite.InsertChannel(t, rt, test.NewMockChannel("53e5aafa-8155-449d-9009-fcb30d54bd26", "XX", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{}))
 
 	submit := func(body, authToken string) (int, string) {
-		req, _ := http.NewRequest("POST", "http://localhost:8181/ci/token/fetch", strings.NewReader(body))
+		req, _ := http.NewRequest("POST", "http://localhost:8181/ci/token/refresh", strings.NewReader(body))
 		if authToken != "" {
 			req.Header.Set("Authorization", "Bearer "+authToken)
 		}
@@ -83,17 +82,12 @@ func TestFetchToken(t *testing.T) {
 	assert.Equal(t, 400, statusCode)
 	assert.Contains(t, respBody, `channel type XX doesn't support access tokens`)
 
-	// a cached token makes no requests, so there's nothing to log
-	statusCode, respBody = submit(`{"channel_type": "MCK", "channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230"}`, "sesame")
-	assert.Equal(t, 200, statusCode)
-	assert.JSONEq(t, `{"token": "cached-token"}`, respBody)
-
-	// a fetched token is logged, with the credentials used to fetch it redacted
+	// a refresh is logged, with the credentials used for it redacted
 	statusCode, respBody = submit(`{"channel_type": "MCK", "channel_uuid": "f8be89c7-58b5-4d3c-8e5c-c0d049f4d43b"}`, "sesame")
 	assert.Equal(t, 200, statusCode)
 	assert.JSONEq(t, `{"token": "fetched-token"}`, respBody)
 
-	// a failed fetch is an error, and is also logged
+	// a failed refresh is an error, and is also logged
 	statusCode, respBody = submit(`{"channel_type": "MCK", "channel_uuid": "f8be89c7-58b5-4d3c-8e5c-c0d049f4d43b"}`, "sesame")
 	assert.Equal(t, 400, statusCode)
 	assert.Contains(t, respBody, `unable to fetch token`)
