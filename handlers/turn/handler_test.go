@@ -146,6 +146,20 @@ func TestAccessTokens(t *testing.T) {
 	// login endpoint unavailable
 	_, err = h.getAccessToken(ctx, ch, newLog())
 	assert.Equal(t, errLoginUnavailable, err)
+
+	// missing config is an error without any request being made
+	for _, cfg := range []map[string]any{
+		{"username": "bob", "password": "sesame"},
+		{"base_url": "/relative", "username": "bob", "password": "sesame"},
+		{"base_url": "https://foo.bar/", "username": "bob"},
+	} {
+		badCh := test.NewMockChannel("2b4ce5b6-5ac9-4a2c-a1fc-5f5c7a2d8a6e", "TRN", "250788383383", "RW", []string{urns.WhatsApp.Prefix}, cfg)
+		clog = newLog()
+		_, err = h.getAccessToken(ctx, badCh, clog)
+		assert.Error(t, err, "expected error for config %v", cfg)
+		assert.NotEqual(t, errLoginUnavailable, err)
+		assert.Len(t, clog.HttpLogs, 0)
+	}
 }
 
 func TestOutgoing(t *testing.T) {
@@ -172,8 +186,15 @@ func TestOutgoing(t *testing.T) {
 	// a send without a cached token logs in first, and a send whose token is rejected drops it
 	RunOutgoingTests(t, ch, newHandler, "testdata/outgoing_login.json", &OutgoingOptions{
 		CheckRedacted: []string{"sesame", "Ym9iOnNlc2FtZQ=="},
-		FreeURLs:      []string{"https://example.org/v1/users/login"},
+		Setup:         func(t *testing.T, rt *runtime.Runtime) { failedMediaCache.Clear() },
+		FreeURLs:      []string{"https://example.org/v1/users/login", "https://example.org/v1/media", "https://foo.bar/"},
 	})
+	failedMediaCache.Clear()
+
+	// a channel without login credentials fails as misconfigured rather than being retried
+	noCredsCh := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TRN", "12345_ID", "", []string{urns.WhatsApp.Prefix},
+		map[string]any{"base_url": "https://example.org"})
+	RunOutgoingTests(t, noCredsCh, newHandler, "testdata/outgoing_no_creds.json", nil)
 }
 
 func TestGetSupportedLanguage(t *testing.T) {

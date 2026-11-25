@@ -444,13 +444,18 @@ func (h *handler) clearAccessToken(channel *models.Channel) {
 //	{"users": [{"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "expires_after": "2018-03-01 15:29:26+00:00"}]}
 func (h *handler) fetchAccessToken(ctx context.Context, channel *models.Channel, clog *models.ChannelLog) (string, time.Duration, error) {
 	baseURL, err := url.Parse(channel.StringConfigForKey(models.ConfigBaseURL, ""))
-	if err != nil {
-		return "", 0, fmt.Errorf("invalid base url set for TRN channel: %w", err)
+	if err != nil || baseURL.Host == "" {
+		return "", 0, errors.New("missing or invalid base url for TRN channel")
+	}
+	username := channel.StringConfigForKey(models.ConfigUsername, "")
+	password := channel.StringConfigForKey(models.ConfigPassword, "")
+	if username == "" || password == "" {
+		return "", 0, errors.New("missing username or password for TRN channel")
 	}
 	loginURL, _ := baseURL.Parse("/v1/users/login")
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, loginURL.String(), nil)
-	req.SetBasicAuth(channel.StringConfigForKey(models.ConfigUsername, ""), channel.StringConfigForKey(models.ConfigPassword, ""))
+	req.SetBasicAuth(username, password)
 	req.Header.Set("Accept", "application/json")
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
@@ -739,8 +744,10 @@ func (h *handler) fetchMediaID(ctx context.Context, msg *models.MsgOut, mediaURL
 	req.Header.Add("Content-Type", mediaType)
 
 	resp, respBody, err = h.RequestHTTP(req, clog)
-	if resp != nil && resp.StatusCode == http.StatusUnauthorized {
+	// a rejected token says nothing about the media, so it isn't remembered as a failed upload
+	if err == nil && resp.StatusCode == http.StatusUnauthorized {
 		h.clearAccessToken(msg.Channel())
+		return "", errors.New("access token rejected uploading media to whatsapp")
 	}
 	if err != nil || resp.StatusCode/100 != 2 {
 		failedMediaCache.Set(failKey, true)

@@ -349,5 +349,182 @@
             }
         },
         "log_errors": []
+    },
+    {
+        "label": "Media upload token rejected",
+        "msg": {
+            "text": "document caption",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "application/pdf:https://foo.bar/document.pdf"
+            ]
+        },
+        "http_mocks": {
+            "*/v1/media": [
+                {
+                    "status": 401,
+                    "body": {
+                        "errors": [
+                            {
+                                "code": 1005,
+                                "title": "Access denied"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/users/login": [
+                {
+                    "status": 200,
+                    "body": {
+                        "users": [
+                            {
+                                "token": "token3"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "https://foo.bar/document.pdf": [
+                {
+                    "status": 200,
+                    "body": "media bytes"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/users/login",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic Ym9iOnNlc2FtZQ=="
+                }
+            },
+            {
+                "method": "GET",
+                "url": "https://foo.bar/document.pdf"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/media",
+                "headers": {
+                    "Authorization": "Bearer token3",
+                    "Content-Type": "text/plain; charset=utf-8"
+                },
+                "body": "media bytes"
+            }
+        ],
+        "cost": 0,
+        "error": {
+            "message": "channel rejected send with retryable reason",
+            "retryable": true,
+            "log_error": {
+                "code": "rejected_with_reason",
+                "ext_code": "media_upload_failed",
+                "message": "unable to upload media to WhatsApp"
+            }
+        },
+        "log_errors": []
+    },
+    {
+        "label": "Media upload retried after token rejected",
+        "msg": {
+            "text": "document caption",
+            "urn": "whatsapp:250788123123",
+            "attachments": [
+                "application/pdf:https://foo.bar/document.pdf"
+            ]
+        },
+        "http_mocks": {
+            "*/v1/media": [
+                {
+                    "status": 201,
+                    "body": {
+                        "media": [
+                            {
+                                "id": "f043afd0-f0ae-4b9c-ab3d-696fb4c8cd68"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/messages": [
+                {
+                    "status": 201,
+                    "body": {
+                        "messages": [
+                            {
+                                "id": "157b5e14568eb"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "*/v1/users/login": [
+                {
+                    "status": 200,
+                    "body": {
+                        "users": [
+                            {
+                                "token": "token4"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "https://foo.bar/document.pdf": [
+                {
+                    "status": 200,
+                    "body": "media bytes"
+                }
+            ]
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/users/login",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Basic Ym9iOnNlc2FtZQ=="
+                }
+            },
+            {
+                "method": "GET",
+                "url": "https://foo.bar/document.pdf"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/media",
+                "headers": {
+                    "Authorization": "Bearer token4",
+                    "Content-Type": "text/plain; charset=utf-8"
+                },
+                "body": "media bytes"
+            },
+            {
+                "method": "POST",
+                "url": "https://example.org/v1/messages",
+                "headers": {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer token4",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "to": "250788123123",
+                    "type": "document",
+                    "document": {
+                        "id": "f043afd0-f0ae-4b9c-ab3d-696fb4c8cd68",
+                        "caption": "document caption",
+                        "filename": "document.pdf"
+                    }
+                }
+            }
+        ],
+        "external_ids": [
+            "157b5e14568eb"
+        ],
+        "cost": 1,
+        "log_errors": []
     }
 ]
